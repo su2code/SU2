@@ -38,7 +38,7 @@
  */
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
-  CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -69,13 +69,6 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the max eigenvalue.
@@ -149,7 +142,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline CFluidModel* GetFluidModel(void) const final { return FluidModel;}
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
@@ -372,17 +365,6 @@ public:
                    bool val_update_geo) final;
 
   /*!
-   * \brief Set the initial condition for the Euler Equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry,
-                           CSolver ***solver_container,
-                           CConfig *config,
-                           unsigned long TimeIter) final;
-  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -393,5 +375,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void PrintVerificationError(const CConfig* config) const final;
+
+  /*!
+   * \brief The incompressible Euler and NS solvers support MPI+OpenMP.
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
 
 };

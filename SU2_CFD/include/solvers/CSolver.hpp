@@ -151,6 +151,13 @@ protected:
    */
   inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
 
+  /*!
+   * \brief Compute the undivided laplacian for the solution variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
+
 private:
 
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
@@ -2510,6 +2517,11 @@ public:
   inline virtual void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
   /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
@@ -3916,29 +3928,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual unsigned long GetnDOFsGlobal(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetTauWall_WF(CGeometry *geometry,
-                                    CSolver** solver_container,
-                                    CConfig* config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetNuTilde_WF(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    CConfig *config,
-                                    unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.

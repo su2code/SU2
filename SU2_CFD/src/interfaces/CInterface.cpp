@@ -94,7 +94,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
      * sums) to perform an Allgatherv of donor indices and variables. ---*/
 
     vector<int> nAllVertexDonor(size), nAllVarCounts(size), displIdx(size,0), displVar(size);
-    SU2_MPI::Allgather(&nLocalVertexDonor, 1, MPI_INT, nAllVertexDonor.data(), 1, MPI_INT, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(&nLocalVertexDonor, 1, MPI_INT, nAllVertexDonor.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
     for (int i = 0; i < size; ++i) {
       nAllVarCounts[i] = nAllVertexDonor[i] * nVar;
@@ -131,10 +131,10 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     su2activematrix donorVar(nGlobalVertexDonor, nVar);
 
     SU2_MPI::Allgatherv(sendDonorIdx.data(), sendDonorIdx.size(), MPI_UNSIGNED_LONG, donorIdx.data(),
-                        nAllVertexDonor.data(), displIdx.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                        nAllVertexDonor.data(), displIdx.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     SU2_MPI::Allgatherv(sendDonorVar.data(), sendDonorVar.size(), MPI_DOUBLE, donorVar.data(),
-                        nAllVarCounts.data(), displVar.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+                        nAllVarCounts.data(), displVar.data(), MPI_DOUBLE, SU2_MPI::GetComm());
 
     /*--- This rank does not need to do more work. ---*/
     if (markTarget < 0) continue;
@@ -242,8 +242,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
     BuffDonorFlag[iSize] = -1;
   }
 
-  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, SU2_MPI::GetComm());
 
   Marker_Donor= -1;
   Donor_Flag= -1;
@@ -468,22 +468,22 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   }
 
   SU2_MPI::Allgather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgPressureDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgNuDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNuDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgKineDonor, nSpanDonor , MPI_DOUBLE, BuffAvgKineDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(avgOmegaDonor, nSpanDonor , MPI_DOUBLE, BuffAvgOmegaDonor,
-                     nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+                     nSpanDonor, MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, SU2_MPI::GetComm());
 
   for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
     avgDensityDonor[iSpan]            = -1.0;
