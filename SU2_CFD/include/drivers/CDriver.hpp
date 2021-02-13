@@ -361,11 +361,6 @@ public:
   virtual void DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) { }
 
   /*!
-   * \brief Perform a static mesh deformation, without considering grid velocity.
-   */
-  virtual void StaticMeshUpdate() { }
-
-  /*!
    * \brief Perform a mesh deformation as initial condition.
    */
   virtual void SetInitialMesh() { }
@@ -961,16 +956,6 @@ public:
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
-
-  /*!
-   * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
-   */
-  void StaticMeshUpdate() override;
-
-  /*!
-   * \brief Perform a mesh deformation as initial condition (multiple zone).
-   */
-  void SetInitialMesh() override;
 
   /*!
    * \brief Process the boundary conditions and update the multigrid structure.

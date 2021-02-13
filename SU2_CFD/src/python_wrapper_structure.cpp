@@ -759,44 +759,6 @@ void CDriver::ResetConvergence() {
 
 }
 
-void CFluidDriver::StaticMeshUpdate() {
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
-#endif
-
-  for(iZone = 0; iZone < nZone; iZone++) {
-    if(rank == MASTER_NODE) cout << " Deforming the volume grid." << endl;
-    grid_movement[iZone][INST_0]->SetVolume_Deformation(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], true);
-
-    if(rank == MASTER_NODE) cout << "No grid velocity to be computde : static grid deformation." << endl;
-
-    if(rank == MASTER_NODE) cout << " Updating multigrid structure." << endl;
-    grid_movement[iZone][INST_0]->UpdateMultiGrid(geometry_container[iZone][INST_0], config_container[iZone]);
-  }
-}
-
-void CFluidDriver::SetInitialMesh() {
-
-  StaticMeshUpdate();
-
-  /*--- Propagate the initial deformation to the past ---*/
-  //if (!restart) {
-  for(iZone = 0; iZone < nZone; iZone++) {
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
-      //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n(iPoint);
-      //solver_container[iZone][iMesh][FLOW_SOL]->nodes->Set_Solution_time_n1(iPoint);
-      geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_n();
-      geometry_container[iZone][INST_0][iMesh]->nodes->SetVolume_nM1();
-      geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n();
-      geometry_container[iZone][INST_0][iMesh]->nodes->SetCoord_n1();
-    }
-  }
-  //}
-}
-
 void CSinglezoneDriver::SetInitialMesh() {
 
   DynamicMeshUpdate(0);
