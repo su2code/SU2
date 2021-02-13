@@ -350,7 +350,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
         /*--- For dirichlet boundary condtions, set the correction to zero.
          Note that Solution_Old stores the correction not the actual value ---*/
 
-        sol_coarse->GetNodes()->SetVelSolutionOldZero(Point_Coarse);
+        su2double zero[3] = {0.0};
+        sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
 
       }
     }
@@ -542,13 +543,12 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 
   unsigned long iVertex, Point_Fine, Point_Coarse;
-  unsigned short iMarker, iVar, iChildren, iDim;
-  su2double Area_Parent, Area_Children, Vector[3] = {0.0};
+  unsigned short iMarker, iVar, iChildren;
+  su2double Area_Parent, Area_Children;
   const su2double *Solution_Fine = nullptr, *Grid_Vel = nullptr;
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const unsigned short nVar = sol_coarse->GetnVar();
-  const unsigned short nDim = geo_fine->GetnDim();
   const bool grid_movement = config->GetGrid_Movement();
 
   su2double *Solution = new su2double[nVar];
@@ -594,14 +594,12 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
           if (grid_movement) {
             Grid_Vel = geo_coarse->nodes->GetGridVel(Point_Coarse);
-            for (iDim = 0; iDim < nDim; iDim++)
-              Vector[iDim] = sol_coarse->GetNodes()->GetSolution(Point_Coarse,0)*Grid_Vel[iDim];
-            sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Vector);
+            sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Grid_Vel);
           }
           else {
             /*--- For stationary no-slip walls, set the velocity to zero. ---*/
-
-            sol_coarse->GetNodes()->SetVelSolutionZero(Point_Coarse);
+            su2double zero[3] = {0.0};
+            sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, zero);
           }
 
         }

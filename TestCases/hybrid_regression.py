@@ -338,7 +338,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-7.852778, -2.091519, 0.029298, 1.922006]
+    inc_poly_cylinder.test_vals = [-7.849071, -2.092548, 0.029423, 1.922053]
     inc_poly_cylinder.new_output  = True
     test_list.append(inc_poly_cylinder)
 
@@ -478,7 +478,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280316, 0.379651, 72.212090, 1.277440]
+    Jones_tc.test_vals = [-5.279930, 0.379651, 72.212090, 1.277440]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -596,7 +596,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.762730, -2.263278] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.800461, -2.115195] #last 3 columns
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 

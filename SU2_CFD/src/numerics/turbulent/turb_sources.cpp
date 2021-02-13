@@ -94,8 +94,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
   CrossProduction = 0.0;
   Jacobian_i[0]   = 0.0;
 
-  gamma_BC = 0.0;
-
   /*--- Evaluate Omega ---*/
 
   Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
@@ -153,9 +151,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       su2double term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
       su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.));
       su2double term_exponential = (term1 + term2);
-      su2double gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      Gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = Gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
     }
     else {
       Production = cb1*Shat*TurbVar_i[0]*Volume;
@@ -192,7 +191,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
 
     if (transition) {
-      Jacobian_i[0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += Gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
       Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
