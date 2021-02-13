@@ -133,8 +133,8 @@ protected:
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
-  su2double ***VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+  vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -4339,7 +4339,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+  void ComputeVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
@@ -4356,7 +4356,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+  void RegisterVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.
@@ -4377,7 +4377,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
+  void SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Get minimun volume in the mesh
