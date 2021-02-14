@@ -80,6 +80,8 @@ void CNewtonIntegration::Setup() {
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), 1024);
 
+  LinSolver.SetxIsZero(true);
+
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   if (!std::is_same<Scalar,su2double>::value) {
@@ -254,7 +256,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
     eps *= toleranceFactor;
     iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
-                                      CPreconditionerWrapper(this), eps, iter, eps, false, config, true);
+                                      CPreconditionerWrapper(this), eps, iter, eps, false, config);
     /*--- Scale back the residual to trick the CFL adaptation. ---*/
     eps /= toleranceFactor;
   }

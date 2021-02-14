@@ -27,10 +27,41 @@
 
 #pragma once
 #include "CMultizoneDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+  class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+  public:
+    CDiscAdjMultizoneDriver* const driver;
+    const unsigned short iZone = 0;
+    mutable unsigned long iInnerIter = 0;
+
+    AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+      driver->SetAllSolutions(iZone, true, u);
+      driver->Iterate(iZone, iInnerIter, true);
+      driver->GetAllSolutions(iZone, true, v);
+      v -= u;
+      ++iInnerIter;
+    }
+  };
+
+  class Identity : public CPreconditioner<Scalar> {
+  public:
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+  };
 
   /*!
    * \brief Kinds of recordings (three different ones).
@@ -58,6 +89,7 @@ protected:
 
   int RecordingState = NONE;      /*!< \brief The kind of recording that the tape currently holds. */
 
+  bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
   int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
 
@@ -74,6 +106,12 @@ protected:
               for jZone, we need to store all terms to have BGS-type updates with relaxation. */
   vector<vector<vector<su2passivematrix> > > Cross_Terms;
 
+  vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector;
+
+  static constexpr unsigned long KrylovMinIters = 5;
+  vector<CSysSolve<Scalar> > LinSolver;
+  vector<CSysVector<Scalar> > AdjRHS, AdjSol;
+
 public:
 
   /*!
@@ -82,9 +120,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDiscAdjMultizoneDriver(char* confFile,
-             unsigned short val_nZone,
-             SU2_Comm MPICommunicator);
+  CDiscAdjMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
@@ -102,6 +138,12 @@ protected:
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
+
+  /*!
+   * \brief Run one inner iteration for a given zone.
+   * \return The result of "monitor".
+   */
+  bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
 
   /*!
    * \brief Evaluate sensitivites for the current adjoint solution and output files.
@@ -200,6 +242,25 @@ protected:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */
-  inline bool GetTimeConvergence() const override {return false;};
+  inline bool GetTimeConvergence() const override {return false;}
+
+  /*!
+   * \brief Get the external of all adjoint solvers in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[out] rhs - Object with interface (iPoint,iVar), set to -external.
+   */
+  template<class Container>
+  void GetAdjointRHS(unsigned short iZone, Container& rhs) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && solver->GetAdjoint())) continue;
+      const auto& ext = solver->GetNodes()->Get_External();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          rhs(iPoint,offset+iVar) = -SU2_TYPE::GetValue(ext(iPoint,iVar));
+      offset += solver->GetnVar();
+    }
+  }
 
 };

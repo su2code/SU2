@@ -100,6 +100,9 @@ private:
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
   LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
+  bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
+  bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
+  unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
 
   /*!
    * \brief sign transfer function
@@ -311,12 +314,10 @@ public:
    * \param[out] residual - final normalized residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] xIsZero - If true assume x = 0.
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType & residual, bool monitoring, const CConfig *config,
-                                 bool xIsZero = false) const;
+                                 ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -388,5 +389,20 @@ public:
    * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).
    */
   inline void SetToleranceType(LinearToleranceType type) {tol_type = type;}
+
+  /*!
+   * \brief Assume the initial solution is 0 to save one product, or don't.
+   */
+  inline void SetxIsZero(bool isZero) {xIsZero = isZero;}
+
+  /*!
+   * \brief Set whether to recompute residuals at the end (while monitoring only).
+   */
+  inline void SetRecomputeResidual(bool recompRes) {recomputeRes = recompRes;}
+
+  /*!
+   * \brief Set the screen output frequency during monitoring.
+   */
+  inline void SetMonitoringFrequency(bool frequency) {monitorFreq = frequency;}
 
 };

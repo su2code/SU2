@@ -148,8 +148,7 @@ private:
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner,
-                                                       eps, iters, eps_t, false, config, true);
+    iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
     eps = eps_t;
     return iters;
   }

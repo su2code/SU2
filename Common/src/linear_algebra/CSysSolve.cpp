@@ -235,8 +235,12 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
-  mat_vec(x, A_x);
-  r = b - A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -292,7 +296,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 10 == 0))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
         WriteHistory(i+1, norm_r/norm0);
 
     }
@@ -317,16 +321,17 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     if (master) WriteFinalResidual("CG", i, norm_r/norm0);
 
-    mat_vec(x, A_x);
-    r = b - A_x;
-    ScalarType true_res = r.norm();
+    if (recomputeRes) {
+      mat_vec(x, A_x);
+      r = b - A_x;
+      ScalarType true_res = r.norm();
 
-    if (fabs(true_res - norm_r) > tol*10.0) {
-      if (master) {
-        WriteWarning(norm_r, true_res, tol);
+      if (fabs(true_res - norm_r) > tol*10.0) {
+        if (master) {
+          WriteWarning(norm_r, true_res, tol);
+        }
       }
     }
-
   }
 
   residual = norm_r/norm0;
@@ -337,8 +342,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring,
-                                                      const CConfig *config, bool xIsZero) const {
+                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
 
@@ -460,7 +464,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Output the relative residual if necessary ---*/
 
-    if ((((monitoring) && (master)) && ((i+1) % 10 == 0)) && (master))
+    if ((((monitoring) && (master)) && ((i+1) % monitorFreq == 0)) && (master))
       WriteHistory(i+1, beta/norm0);
   }
 
@@ -477,16 +481,17 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     if (master) WriteFinalResidual("FGMRES", i, beta/norm0);
 
-    mat_vec(x, W[0]);
-    W[0] -= b;
-    ScalarType res = W[0].norm();
+    if (recomputeRes) {
+      mat_vec(x, W[0]);
+      W[0] -= b;
+      ScalarType res = W[0].norm();
 
-    if (fabs(res - beta) > tol*10) {
-      if (master) {
-        WriteWarning(beta, res, tol);
+      if (fabs(res - beta) > tol*10) {
+        if (master) {
+          WriteWarning(beta, res, tol);
+        }
       }
     }
-
   }
 
   residual = beta/norm0;
@@ -533,8 +538,12 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
-  mat_vec(x, A_x);
-  r = b - A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -625,7 +634,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 10 == 0) && (master))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0) && (master))
         WriteHistory(i+1, norm_r/norm0);
 
     }
@@ -638,14 +647,15 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     if (master) WriteFinalResidual("BCGSTAB", i, norm_r/norm0);
 
-    mat_vec(x, A_x);
-    r = b - A_x;
-    ScalarType true_res = r.norm();
+    if (recomputeRes) {
+      mat_vec(x, A_x);
+      r = b - A_x;
+      ScalarType true_res = r.norm();
 
-    if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
-      WriteWarning(norm_r, true_res, tol);
+      if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
+        WriteWarning(norm_r, true_res, tol);
+      }
     }
-
   }
 
   residual = norm_r/norm0;
@@ -690,8 +700,12 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
 
-  mat_vec(x, A_x);
-  r = b - A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -749,7 +763,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     if (config->GetComm_Level() == COMM_FULL) {
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 5 == 0))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
         WriteHistory(i+1, norm_r/norm0);
     }
   }
