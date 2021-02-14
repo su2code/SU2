@@ -178,30 +178,6 @@ passivedouble CDriver::Get_LiftCoeff() {
   return SU2_TYPE::GetValue(CLift);
 }
 
-unsigned short CDriver::GetMovingMarker() {
-
-  unsigned short IDtoSend,iMarker, jMarker, Moving;
-  string Marker_Tag, Moving_Tag;
-
-  IDtoSend = 0;
-  for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
-    Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
-    if (Moving == YES) {
-      for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-        Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
-        Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
-        if (Marker_Tag == Moving_Tag) {
-          IDtoSend = iMarker;
-          break;
-        }
-      }
-    }
-  }
-
-  return IDtoSend;
-
-}
-
 unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
 
   return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];

@@ -413,12 +413,6 @@ public:
   passivedouble Get_LiftCoeff();
 
   /*!
-   * \brief Get the moving marker identifier.
-   * \return Moving marker identifier.
-   */
-  unsigned short GetMovingMarker();
-
-  /*!
    * \brief Get the number of vertices (halo nodes included) from a specified marker.
    * \param[in] iMarker -  Marker identifier.
    * \return Number of vertices.
