@@ -50,12 +50,14 @@ class ImposedMotionFunction:
       self.bias = parameters[0]
       self.amplitude = parameters[1]
       self.frequency = parameters[2]
+      self.timeStart = parameters[3]
 
     elif self.tipo == "BLENDED_STEP":
       self.kmax = parameters[0]
       self.vinf = parameters[1]
       self.lref = parameters[2]
       self.amplitude = parameters[3]
+      self.timeStart = parameters[4]
       self.tmax = 2*pi/self.kmax*self.lref/self.vinf
       self.omega0 = 1/2*self.kmax
 
@@ -64,35 +66,41 @@ class ImposedMotionFunction:
 
 
   def GetDispl(self,time):
-    time = time - self.time0
+    time = time - self.time0 - self.timeStart
     if self.tipo == "SINUSOIDAL":
       return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
     if self.tipo == "BLENDED_STEP":
-      if time < self.tmax:
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
         return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
       return self.amplitude
 
 
   def GetVel(self,time):
-    time = time - self.time0
+    time = time - self.time0 - self.timeStart
 
     if self.tipo == "SINUSOIDAL":
       return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
 
     if self.tipo == "BLENDED_STEP":
-      if time < self.tmax:
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
         return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
       return 0.0
 
   def GetAcc(self,time):
-    time = time - self.time0
+    time = time - self.time0 - self.timeStart
 
     if self.tipo == "SINUSOIDAL":
       return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
 
     if self.tipo == "BLENDED_STEP":
-      if time < self.tmax:
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
         return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
       return 0.0
 
