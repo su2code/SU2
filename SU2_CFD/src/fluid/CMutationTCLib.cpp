@@ -36,7 +36,6 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   /* Allocating memory*/
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
-  h_RT.resize(nSpecies,0.0);
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
 
@@ -149,12 +148,7 @@ su2double CMutationTCLib::ComputeEveSourceTerm(){
 
 vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
-  su2double RuSI = UNIVERSAL_GAS_CONSTANT;
-  su2double Ru   = 1000.0*RuSI;
-
-  mix->speciesHOverRT(val_T, val_Tve, val_T, val_Tve, val_Tve, h_RT.data(), NULL, NULL, NULL, NULL, NULL);
-
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) hs[iSpecies] = h_RT[iSpecies]*(RuSI*val_T*1000.0/MolarMass[iSpecies]);
+  mix->getEnthalpiesMass(hs.data());
 
   return hs;
 }
@@ -214,7 +208,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
    mix->speciesHOverRT(Tref, Tref, Tref, Tref, Tref, NULL, NULL, NULL, NULL, NULL, hf_RT.data());
 
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Enthalpy_Formation[iSpecies] = hf_RT[iSpecies]*(RuSI*Tref*1000.0)/MolarMass[iSpecies];
+   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Enthalpy_Formation[iSpecies] = hf_RT[iSpecies]*(RuSI*Tref*1000.0);
 
    return Enthalpy_Formation;  
 }

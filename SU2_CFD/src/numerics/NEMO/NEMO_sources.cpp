@@ -322,7 +322,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   }
 
   /*--- Calculate inverse of y coordinate ---*/
-  if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
+  if (Coord_i[1] > 1e-7) yinv = 1.0/Coord_i[1];
   else yinv = 0.0;
 
   /*--- Rename for convenience ---*/

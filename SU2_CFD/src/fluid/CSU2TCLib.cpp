@@ -1423,7 +1423,10 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
     }
   }
   // If absolutely no convergence, then assign to the TR temperature
-  if (!Bconvg) Tve = T;
+  if (!Bconvg) {
+    Tve = T;
+    cout << "Warning: temperatures did not converge, error= " << fabs(rhoEve_t - rhoEve) << endl;
+  }
 
   temperatures[0] = T;
   temperatures[1] = Tve;
