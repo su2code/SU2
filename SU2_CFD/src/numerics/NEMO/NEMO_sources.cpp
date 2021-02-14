@@ -342,6 +342,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   residual[nSpecies+1] = yinv*rhov*U_i[nSpecies+1]/rho*Volume;
   residual[nSpecies+2] = yinv*rhov*H*Volume;
   residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
+  cout << V_i[RHO_INDEX]*V_i[VEL_INDEX+1];
 
   if (viscous) {
     if (!rans){ turb_ke_i = 0.0; }
