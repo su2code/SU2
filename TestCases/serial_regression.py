@@ -643,7 +643,7 @@ def main():
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
     schubauer_klebanoff_transition.new_output   = True
-    schubauer_klebanoff_transition.test_vals    = [-8.029786, -14.268310, 0.000053, 0.007986] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.029786, -14.268417, 0.000053, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
