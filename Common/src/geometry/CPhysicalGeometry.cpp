@@ -4557,8 +4557,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   TotalMinCoordZ = 1E10, TotalMaxCoordX = -1E10, TotalMaxCoordY = -1E10, TotalMaxCoordZ = -1E10;
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
-  bool axisymmetric = config->GetAxisymmetric();
-  bool fea = ((config->GetKind_Solver() == FEM_ELASTICITY) || (config->GetKind_Solver() == DISC_ADJ_FEM));
+  const bool axisymmetric = config->GetAxisymmetric();
+  const bool fea = config->GetStructuralProblem();
 
   PositiveXArea = 0.0;
   PositiveYArea = 0.0;
@@ -4569,12 +4569,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-    if ((((Boundary == EULER_WALL)              ||
-          (Boundary == HEAT_FLUX)               ||
-          (Boundary == ISOTHERMAL)              ||
-          (Boundary == LOAD_BOUNDARY)           ||
-          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-        || (fea))
+    if (((config->GetSolid_Wall(iMarker) || Boundary == LOAD_BOUNDARY ||
+          Boundary == DISPLACEMENT_BOUNDARY) && Monitoring == YES) || fea) {
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -4588,8 +4584,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
-          if (nDim == 2) WettedArea = AxiFactor * GeometryToolbox::Norm(nDim, Normal);
-          if (nDim == 3) WettedArea = GeometryToolbox::Norm(nDim, Normal);
+          WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
 
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
@@ -4605,10 +4600,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
             if (CoordZ < MinCoordZ) MinCoordZ = CoordZ;
             if (CoordZ > MaxCoordZ) MaxCoordZ = CoordZ;
           }
-
         }
       }
-
+    }
   }
 
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -4627,80 +4621,54 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
   /*--- Set a reference area if no value is provided ---*/
 
+  const string L = (config->GetSystemMeasurements() == SI)? " m" : " ft";
+  const string A = (config->GetSystemMeasurements() == SI)? " m^2" : " ft^2";
+  const bool D3 = (nDim == 3);
+
   if (config->GetRefArea() == 0.0) {
 
-    if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+    if (D3) config->SetRefArea(TotalPositiveZArea);
     else config->SetRefArea(TotalPositiveYArea);
 
     if (rank == MASTER_NODE) {
-      if (nDim == 3) {
-        cout << "Reference area = "<< TotalPositiveZArea;
-        if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
-      }
-      else {
-        cout << "Reference length = "<< TotalPositiveYArea;
-        if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
-      }
+      if (D3) cout << "Reference area = "<< TotalPositiveZArea << A << ".\n";
+      else cout << "Reference length = "<< TotalPositiveYArea << L << ".\n";
     }
-
   }
 
   /*--- Set a semi-span value if no value is provided ---*/
 
   if (config->GetSemiSpan() == 0.0) {
 
-    if (nDim == 3) config->SetSemiSpan(fabs(TotalMaxCoordY));
+    if (D3) config->SetSemiSpan(fabs(TotalMaxCoordY));
     else config->SetSemiSpan(1.0);
 
-    if ((nDim == 3) && (rank == MASTER_NODE)) {
-      cout << "Semi-span length = "<< TotalMaxCoordY;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+    if (D3 && (rank == MASTER_NODE)) {
+      cout << "Semi-span length = "<< TotalMaxCoordY << L << ".\n";
     }
-
   }
 
   if (rank == MASTER_NODE) {
 
     if (fea) cout << "Surface area = "<< TotalWettedArea;
     else cout << "Wetted area = "<< TotalWettedArea;
+    if (D3 || axisymmetric) cout << A << ".\n";
+    else cout << L << ".\n";
 
-    if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+    cout << "Area projection in the x-plane = "<< TotalPositiveXArea << (D3? A : L);
+    cout << ", y-plane = "<< TotalPositiveYArea << (D3? A : L);
+    if (D3) cout << ", z-plane = "<< TotalPositiveZArea << A;
+    cout << ".\n";
 
-    cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
+    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX << L;
+    cout << ", y-direction = "<< TotalMaxCoordY << L;
+    if (D3) cout << ", z-direction = "<< TotalMaxCoordZ << L;
+    cout << ".\n";
 
-    cout << " y-plane = "<< TotalPositiveYArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
-
-    if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
-
-    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
-
-    cout << " y-direction = "<< TotalMaxCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
-
-    if (nDim == 3) {
-      cout << ", z-direction = "<< TotalMaxCoordZ;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
-    }
-    else cout << "." << endl;
-
-    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
-
-    cout << " y-direction = "<< TotalMinCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
-
-    if (nDim == 3) {
-      cout << ", z-direction = "<< TotalMinCoordZ;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
-    }
-    else cout << "." << endl;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX << L;
+    cout << ", y-direction = "<< TotalMinCoordY << L;
+    if (D3) cout << ", z-direction = "<< TotalMinCoordZ << L;
+    cout << "." << endl;
 
   }
 
