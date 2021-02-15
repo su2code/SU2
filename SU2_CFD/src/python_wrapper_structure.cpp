@@ -637,13 +637,13 @@ void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passiv
                        passivedouble LoadY, passivedouble LoadZ) {
 
   unsigned long iPoint;
-  vector<su2double> NodalForce (3,0.0);
+  su2double NodalForce[3] = {0.0,0.0,0.0};
   NodalForce[0] = LoadX;
   NodalForce[1] = LoadY;
   NodalForce[2] = LoadZ;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->GetNodes()->Set_FlowTraction(iPoint,NodalForce.data());
+  solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL]->GetNodes()->Set_FlowTraction(iPoint,NodalForce);
 
 }
 
@@ -817,7 +817,7 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iV
 void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
 
   unsigned long iPoint;
-  vector<su2double> MeshDispl (3,0.0);
+  su2double MeshDispl[3] =  {0.0,0.0,0.0};
 
   MeshDispl[0] = DispX;
   MeshDispl[1] = DispY;
@@ -825,7 +825,7 @@ void CDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex,
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint,MeshDispl.data());
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->SetBound_Disp(iPoint,MeshDispl);
 
 }
 
