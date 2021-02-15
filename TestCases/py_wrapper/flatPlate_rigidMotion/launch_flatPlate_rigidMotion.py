@@ -134,10 +134,10 @@ def main():
     SU2Driver.Preprocess(TimeIter)
     # Run one time iteration (e.g. dual-time)
     SU2Driver.Run()
-    # Update the solver for the next time iteration
-    SU2Driver.Update()
     # Postprocess the solver
     SU2Driver.Postprocess()
+    # Update the solver for the next time iteration
+    SU2Driver.Update()
     # Monitor the solver and output solution to file if required
     stopCalc = SU2Driver.Monitor(TimeIter)
     SU2Driver.Output(TimeIter)
@@ -146,6 +146,9 @@ def main():
     # Update control parameters
     TimeIter += 1
     time += deltaT
+
+  # Postprocess the solver and exit cleanly
+  SU2Driver.Postprocessing()
 
   if SU2Driver != None:
     del SU2Driver
