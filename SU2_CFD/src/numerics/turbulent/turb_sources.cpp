@@ -764,16 +764,16 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
   axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/
-  beta_star     = constants[6];
   sigma_k_1     = constants[0];
   sigma_k_2     = constants[1];
-  sigma_omega_1 = constants[2];
-  sigma_omega_2 = constants[3];
+  sigma_w_1     = constants[2];
+  sigma_w_2     = constants[3];
   beta_1        = constants[4];
   beta_2        = constants[5];
+  beta_star     = constants[6];
+  a1            = constants[7];
   alfa_1        = constants[8];
   alfa_2        = constants[9];
-  a1            = constants[7];
 
   /*--- Set the ambient values of k and omega to the free stream values. ---*/
   kAmb     = val_kine_Inf;
@@ -848,7 +848,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
-
 
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);

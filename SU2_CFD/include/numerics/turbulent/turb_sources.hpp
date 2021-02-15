@@ -307,8 +307,8 @@ private:
   beta_2,
   sigma_k_1,
   sigma_k_2,
-  sigma_omega_1,
-  sigma_omega_2,
+  sigma_w_1,
+  sigma_w_2,
   beta_star,
   a1;
 
@@ -335,44 +335,40 @@ private:
    */
   inline void ResidualAxisymmetric(su2double alfa_blended, su2double zeta){
 
-    if (Coord_i[1] < EPS) {
-      return;
-    }
+    if (Coord_i[1] < EPS) return;
      
-    su2double yinv, rhov;
-    su2double sigma_k_i, sigma_omega_i;
-    su2double pk_axi, pw_axi, ck_axi, cw_axi, dk_axi, dw_axi;
+    su2double yinv, rhov, k, w;
+    su2double sigma_k_i, sigma_w_i;
+    su2double pk_axi, pw_axi, cdk_axi, cdw_axi;
 
     AD::SetPreaccIn(Coord_i[1]);
+    
     yinv = 1.0/Coord_i[1];
     rhov = Density_i*V_i[2];
+    k = TurbVar_i[0];
+    w = TurbVar_i[1];
     
     /*--- Compute blended constants ---*/
-    sigma_k_i = F1_i*sigma_k_1 + (1.0 - F1_i)*sigma_k_2;
-    sigma_omega_i = F1_i*sigma_omega_1 + (1.0 - F1_i)*sigma_omega_2;
+    sigma_k_i = F1_i*sigma_k_1+(1.0-F1_i)*sigma_k_2;
+    sigma_w_i = F1_i*sigma_w_1+(1.0-F1_i)*sigma_w_2;
 
     /*--- Production ---*/
-    pk_axi = max(0.0,2.0/3.0*rhov*TurbVar_i[0]*(2.0/zeta*(yinv*V_i[2]-PrimVar_Grad_i[2][1]
-                                                                -PrimVar_Grad_i[1][0]) -1.0));
-    pw_axi = alfa_blended*zeta/TurbVar_i[0]*pk_axi;
+    pk_axi = max(0.0,2.0/3.0*rhov*k*(2.0/zeta*(yinv*V_i[2]-PrimVar_Grad_i[2][1]-PrimVar_Grad_i[1][0])-1.0));
+    pw_axi = alfa_blended*zeta/k*pk_axi;
     
-    /*--- Convection ---*/
-    ck_axi = rhov*TurbVar_i[0];
-    cw_axi = rhov*TurbVar_i[1];
+    /*--- Convection-Diffusion ---*/
+    cdk_axi = rhov*k-(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
+    cdw_axi = rhov*w-(Laminar_Viscosity_i+sigma_w_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
     
-    /*--- Diffusion ---*/
-    dk_axi = (Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
-    dw_axi = (Laminar_Viscosity_i+sigma_omega_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
-    
-    /*--- Add all terms to the residuals ---*/
-    Residual[0] += yinv*Volume*(pk_axi-ck_axi+dk_axi);
-    Residual[1] += yinv*Volume*(pw_axi-cw_axi+dw_axi);
+    /*--- Add terms to the residuals ---*/
+    Residual[0] += yinv*Volume*(pk_axi-cdk_axi);
+    Residual[1] += yinv*Volume*(pw_axi-cdw_axi);
   
-    /*--- Add contribution to the jacobian for implicit time integration---*/
-    Jacobian_i[0][0] += yinv*Volume*(sigma_k_i/zeta*TurbVar_Grad_i[0][1]-V_i[2]);
-    Jacobian_i[0][1] -= yinv*Volume*sigma_k_i*TurbVar_i[0]*TurbVar_Grad_i[0][1]/(zeta*zeta);
-    Jacobian_i[1][0] += yinv*Volume*sigma_k_i/zeta*TurbVar_Grad_i[1][1];
-    Jacobian_i[1][1] -= yinv*Volume*(sigma_k_i*TurbVar_i[0]*TurbVar_Grad_i[1][1]/(zeta*zeta)+V_i[2]);
+    /*--- Add contribution to the jacobian for implicit time integration--- */  
+    Jacobian_i[0][0] += yinv*Volume*(sigma_k_i*TurbVar_Grad_i[0][1]/zeta-V_i[2]);
+    Jacobian_i[0][1] += yinv*Volume*(-sigma_k_i*k*TurbVar_Grad_i[0][1]/(zeta*zeta));
+    Jacobian_i[1][0] += yinv*Volume*(sigma_w_i*TurbVar_Grad_i[1][1]/zeta);
+    Jacobian_i[1][1] += yinv*Volume*(-sigma_w_i*k*TurbVar_Grad_i[1][1]/(zeta*zeta)-V_i[2]);
 
   }
 
