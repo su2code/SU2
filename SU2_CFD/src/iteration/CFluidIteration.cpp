@@ -180,7 +180,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
-    SetDualTime_Aeroelastic(config[val_iZone], iMesh);
+    SetDualTime_Aeroelastic(config[val_iZone]);
 
     /*--- Update dual time solver for the turbulence model ---*/
 
