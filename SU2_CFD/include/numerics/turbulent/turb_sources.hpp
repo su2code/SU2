@@ -365,10 +365,10 @@ private:
     Residual[1] += yinv*Volume*(pw_axi-cdw_axi);
   
     /*--- Add contribution to the jacobian for implicit time integration (ignore to conserve diagonal dominance) ---*/
-    Jacobian_i[0][0] += yinv*Volume*(sigma_k_i*TurbVar_Grad_i[0][1]/zeta-V_i[2]);
-    Jacobian_i[0][1] += yinv*Volume*(-sigma_k_i*k*TurbVar_Grad_i[0][1]/(zeta*zeta));
-    Jacobian_i[1][0] += yinv*Volume*(sigma_w_i*TurbVar_Grad_i[1][1]/zeta);
-    Jacobian_i[1][1] += yinv*Volume*(-sigma_w_i*k*TurbVar_Grad_i[1][1]/(zeta*zeta)-V_i[2]);
+    //Jacobian_i[0][0] += yinv*Volume*(sigma_k_i*TurbVar_Grad_i[0][1]/zeta-V_i[2]);
+    //Jacobian_i[0][1] += yinv*Volume*(-sigma_k_i*k*TurbVar_Grad_i[0][1]/(zeta*zeta));
+    //Jacobian_i[1][0] += yinv*Volume*(sigma_w_i*TurbVar_Grad_i[1][1]/zeta);
+    //Jacobian_i[1][1] += yinv*Volume*(-sigma_w_i*k*TurbVar_Grad_i[1][1]/(zeta*zeta)-V_i[2]);
 
   }
 
