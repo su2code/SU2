@@ -569,11 +569,11 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
   return fixed_cl_convergence;
 }
 
-void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config, unsigned short iMesh) const {
+void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
 
   /*--- Store old aeroelastic solutions ---*/
 
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation()) {
 
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();

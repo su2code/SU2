@@ -230,8 +230,7 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
 
   SU2_OMP_PARALLEL
   {
-  /*--- Store old solution, volumes and coordinates (in case there is grid movement). ---*/
-
+  /*--- Store old solution ---*/
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
 

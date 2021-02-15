@@ -152,8 +152,7 @@ class CFluidIteration : public CIteration {
   /*!
    * \brief Store old aeroelastic solutions
    * \param[in,out] config - Definition of the particular problem.
-   * \param[in] iMesh - Grid level
    */
-  void SetDualTime_Aeroelastic(CConfig* config, unsigned short iMesh) const;
+  void SetDualTime_Aeroelastic(CConfig* config) const;
 
 };
