@@ -314,7 +314,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry,
+  void Compute_MassMatrix(const CGeometry *geometry,
                           CNumerics **numerics,
                           const CConfig *config) final;
 
@@ -324,7 +324,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry,
+  void Compute_MassRes(const CGeometry *geometry,
                        CNumerics **numerics,
                        const CConfig *config) final;
 
@@ -472,7 +472,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Iteration(CGeometry *geometry,
+  void ImplicitNewmark_Iteration(const CGeometry *geometry,
                                  CNumerics **numerics,
                                  const CConfig *config) final;
 
@@ -481,14 +481,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Update(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Relaxation(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
@@ -496,7 +496,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_Iteration(CGeometry *geometry,
+  void GeneralizedAlpha_Iteration(const CGeometry *geometry,
                                   CNumerics **numerics,
                                   const CConfig *config) final;
 
@@ -505,21 +505,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateDisp(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateSolution(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) final;
+  void GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Postprocessing.

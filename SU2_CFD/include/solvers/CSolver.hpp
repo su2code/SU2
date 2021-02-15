@@ -1570,7 +1570,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Iteration(CGeometry *geometry,
+  inline virtual void ImplicitNewmark_Iteration(const CGeometry *geometry,
                                                 CNumerics **numerics,
                                                 const CConfig *config) { }
 
@@ -1580,8 +1580,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Update(CGeometry *geometry,
-                                             CConfig *config) { }
+  inline virtual void ImplicitNewmark_Update(const CGeometry *geometry,
+                                             const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1589,8 +1589,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Relaxation(CGeometry *geometry,
-                                                 CConfig *config) { }
+  inline virtual void ImplicitNewmark_Relaxation(const CGeometry *geometry,
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1598,7 +1598,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_Iteration(CGeometry *geometry,
+  inline virtual void GeneralizedAlpha_Iteration(const CGeometry *geometry,
                                                  CNumerics **numerics,
                                                  const CConfig *config) { }
 
@@ -1608,8 +1608,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
-                                                  CConfig *config) { }
+  inline virtual void GeneralizedAlpha_UpdateDisp(const CGeometry *geometry,
+                                                  const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1617,8 +1617,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
-                                                      CConfig *config) { }
+  inline virtual void GeneralizedAlpha_UpdateSolution(const CGeometry *geometry,
+                                                      const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1626,7 +1626,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
+  inline virtual void GeneralizedAlpha_UpdateLoads(const CGeometry *geometry,
                                                    const CConfig *config) { }
 
   /*!
@@ -3783,7 +3783,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_MassMatrix(CGeometry *geometry,
+  inline virtual void Compute_MassMatrix(const CGeometry *geometry,
                                          CNumerics **numerics,
                                          const CConfig *config) { }
 
@@ -3793,7 +3793,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_MassRes(CGeometry *geometry,
+  inline virtual void Compute_MassRes(const CGeometry *geometry,
                                       CNumerics **numerics,
                                       const CConfig *config) { }
 
