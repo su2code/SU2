@@ -201,6 +201,15 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
                                                                        config[val_iZone], MESH_0);
       integration[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
     }
+
+    /*--- Update dual time solver for the weakly coupled energy equation ---*/
+
+    if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
+                                                                      solver[val_iZone][val_iInst][MESH_0][HEAT_SOL],
+                                                                      config[val_iZone], MESH_0);
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
+    }
   }
 }
 
