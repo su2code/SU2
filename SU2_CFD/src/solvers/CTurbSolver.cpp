@@ -438,7 +438,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
       Psi_l[iVar] =  sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-      Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+      // Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
     }
     else
       Psi_l[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
