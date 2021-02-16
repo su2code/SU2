@@ -1392,9 +1392,7 @@ class Interface:
           del sendBuff_X
           del sendBuff_Y
           del sendBuff_Z
-          del self.solidLoads_array_X_recon
-          del self.solidLoads_array_Y_recon
-          del self.solidLoads_array_Z_recon
+          self.comm.barrier()
         else:
           self.localSolidLoads_array_X = self.solidLoads_array_X.getArray().copy()
           self.localSolidLoads_array_Y = self.solidLoads_array_Y.getArray().copy()
