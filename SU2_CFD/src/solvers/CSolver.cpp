@@ -1630,18 +1630,6 @@ void CSolver::GetCommCountAndType(const CConfig* config,
         COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_FEA_OLD:
-      COUNT_PER_POINT  = nVar*3;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case SOLUTION_PRED:
-      COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case SOLUTION_PRED_OLD:
-      COUNT_PER_POINT  = nVar*3;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
     case AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -1787,24 +1775,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel(iPoint, iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel(iPoint, iVar);
               }
-            }
-            break;
-          case SOLUTION_FEA_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar]        = base_nodes->GetSolution_time_n(iPoint, iVar);
-              bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel_time_n(iPoint, iVar);
-              bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel_time_n(iPoint, iVar);
-            }
-            break;
-          case SOLUTION_PRED:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Pred(iPoint, iVar);
-            break;
-          case SOLUTION_PRED_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar]        = base_nodes->GetSolution_Old(iPoint, iVar);
-              bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Pred(iPoint, iVar);
-              bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Pred_Old(iPoint, iVar);
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -1965,24 +1935,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 base_nodes->SetSolution_Vel(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
                 base_nodes->SetSolution_Accel(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
-            }
-            break;
-          case SOLUTION_FEA_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              base_nodes->Set_Solution_time_n(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              base_nodes->SetSolution_Vel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
-              base_nodes->SetSolution_Accel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
-            }
-            break;
-          case SOLUTION_PRED:
-            for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-            break;
-          case SOLUTION_PRED_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
-              base_nodes->SetSolution_Pred_Old(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -2504,8 +2456,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) {
 
-  const auto solution = base_nodes->GetAuxVar();
-  auto gradient = base_nodes->GetAuxVarGradient();
+  const auto& solution = base_nodes->GetAuxVar();
+  auto& gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
@@ -2514,8 +2466,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
 
   bool weighted = true;
-  const auto solution = base_nodes->GetAuxVar();
-  auto gradient = base_nodes->GetAuxVarGradient();
+  const auto& solution = base_nodes->GetAuxVar();
+  auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,

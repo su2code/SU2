@@ -327,6 +327,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
@@ -365,5 +373,14 @@ public:
    */
   inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
   inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
+  }
 
 };
