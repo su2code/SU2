@@ -3375,10 +3375,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
             const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
 
-            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar,  0.5*(dDelta_i-dProj_i));
-            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, -0.5*(dDelta_j-dProj_j));
-            flowNodes->SetLimiterDerivativeGrad(iPoint, iVar,  dProj_i);
-            flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, -dProj_j);
+            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
+            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+            flowNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
+            flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
           }
           break;
         case PIPERNO:
@@ -3440,10 +3440,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
               const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
               const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
 
-              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar,  0.5*(dDelta_i-dProj_i));
-              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, -0.5*(dDelta_j-dProj_j));
-              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar,  dProj_i);
-              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, -dProj_j);
+              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
+              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
+              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
             }
             break;
           case PIPERNO:
