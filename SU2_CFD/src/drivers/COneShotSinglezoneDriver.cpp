@@ -59,7 +59,7 @@ COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned shor
 
   for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
     ConstrFunc.push_back(0.0);
-    multiplier.push_back(0.0);
+    multiplier.push_back(config->GetInitialMultiplier(iConstr));
   }
 
 }
@@ -269,7 +269,8 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
     ConstrFunc[iConstr] = 0.0;
     Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
-    // ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - FunctionValue);
+    // The sign in this equation is a matter of cenvention, just ensure, that you choose the multiplier accordingly.
+    ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
     std::cout<<FunctionValue<<" ";
     if (rank == MASTER_NODE){
       AD::RegisterOutput(ConstrFunc[iConstr]);

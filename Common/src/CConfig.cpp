@@ -945,6 +945,9 @@ void CConfig::SetPointersNull(void) {
   Weight_ObjFunc = nullptr;
 
   Kind_ConstrFunc = nullptr;
+  ConstrFuncTarget = nullptr;
+  ConstrFuncScale = nullptr;
+  InitialMultiplier = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
@@ -2835,6 +2838,15 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
 
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_VALUE", nConstrHelp, ConstrFuncTarget);
+
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addDoubleListOption("CONSTRAINT_SCALE", nConstrHelp, ConstrFuncScale);
+
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addDoubleListOption("INITIAL_MULTIPLIER", nConstrHelp, InitialMultiplier);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3428,6 +3440,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         default:
           break;
       }
+    }
+  }
+
+  /*--- Correction in case constraint function setting have less than nConstr entries specified. ---*/
+
+  if (nConstr!=0 && ConstrFuncTarget==NULL) {
+    ConstrFuncTarget = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      ConstrFuncTarget[iConstr] = 0.0;
+    }
+  }
+  if(nConstr!=0 && ConstrFuncScale==NULL){
+    ConstrFuncScale = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      ConstrFuncScale[iConstr] = 1.0;
+    }
+  }
+  if(nConstr!=0 && InitialMultiplier==NULL){
+    InitialMultiplier = new su2double[nConstr];
+    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
+      InitialMultiplier[iConstr] = 1.0;
     }
   }
 
@@ -7474,6 +7507,9 @@ CConfig::~CConfig(void) {
        delete[] Weight_ObjFunc;
 
   delete [] Kind_ConstrFunc;
+  delete [] ConstrFuncTarget;
+  delete [] ConstrFuncScale;
+  delete [] InitialMultiplier;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];

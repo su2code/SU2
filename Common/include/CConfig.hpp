@@ -1158,10 +1158,13 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
-  unsigned short OneShotMode;   /*!< \brief Kind of One-Shot mode specified */
-  unsigned long PiggybackSteps;  /*!< \brief The number of Piggyback steps in between 2 linesearches */
-  unsigned short nConstr;    /*!< \brief Number of constraint function. */
+  unsigned short OneShotMode;           /*!< \brief Kind of One-Shot mode specified */
+  unsigned long PiggybackSteps;         /*!< \brief The number of Piggyback steps in between 2 linesearches */
+  unsigned short nConstr, nConstrHelp;  /*!< \brief Number of constraint function. */
   unsigned short *Kind_ConstrFunc;      /*!< \brief Kind of constraint function. */
+  su2double *ConstrFuncTarget;          /*!< \brief Kind of constraint function. */
+  su2double *ConstrFuncScale;           /*!< \brief Kind of constraint function. */
+  su2double *InitialMultiplier;         /*!< \brief Initial multiplier value. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9556,10 +9559,33 @@ public:
   /*!
    * \author T. Dick
    * \brief Get the kind of constraint function.
-   * \param[in] val_obj - The number of the marker monitoring
    * \param[in] iConstr - The number of the constraint.
-   * \return Kind of objective function.
+   * \return Kind of constraint function.
    */
-  unsigned short GetKind_ConstrFunc(unsigned int iConstr) const { return Kind_ConstrFunc[iConstr]; }
+  unsigned short GetKind_ConstrFunc(unsigned short iConstr) const { return Kind_ConstrFunc[iConstr]; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the target value of the constraint function.
+   * \param[in] iConstr - The number of the constraint.
+   * \return Target value of the constraint function.
+   */
+  inline su2double GetConstrFuncTarget(unsigned short iConstr) const { return ConstrFuncTarget[iConstr]; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the scale of the constraint function.
+   * \param[in] iConstr - The number of the constraint.
+   * \return Scale of the constraint function.
+   */
+  inline su2double GetConstrFuncScale(unsigned short iConstr) const { return ConstrFuncScale[iConstr]; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the initial values for the constraint multiplier.
+   * \param[in] iConstr - The number of the constraint.
+   * \return Initial multiplier values.
+   */
+  inline su2double GetInitialMultiplier(unsigned short iConstr) const { return InitialMultiplier[iConstr]; }
 
 };
