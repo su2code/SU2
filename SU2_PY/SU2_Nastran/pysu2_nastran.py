@@ -41,7 +41,7 @@ from math import *
 #  Config class
 # ----------------------------------------------------------------------
 
-class ImposedMotionFunction:
+class ImposedMotionClass:
 
   def __init__(self,time0,typeOfMotion,parameters,mode):
 
@@ -779,7 +779,7 @@ class Solver:
           for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
             typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
             parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
-            self.ImposedMotionFunction[iImposedFunc] = ImposedMotionFunction(time, typeOfMotion, parameters, imode)
+            self.ImposedMotionFunction.append(ImposedMotionClass(time, typeOfMotion, parameters, imode))
             iImposedFunc += 1
         self.ImposedMotionToSet = False
       for iImposedFunc in range(len(self.ImposedMotionFunction)):
