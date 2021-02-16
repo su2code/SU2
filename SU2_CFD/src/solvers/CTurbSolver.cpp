@@ -437,7 +437,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double Psi_l[MAXNVAR] = {0.0}, Psi_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
-      Psi_l[iVar] =  nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar)*good_i;
+      Psi_l[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
       // Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
     }
     else

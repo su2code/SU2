@@ -3698,7 +3698,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     if (limiter) {
-      Psi_l[ind] =  nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar)*good_i;
+      Psi_l[ind] =  (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
       // Psi_r[ind] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
     }
     else
@@ -3706,7 +3706,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   }
   if (tkeNeeded) {
     if (limiterTurb) {
-      Psi_l[nVar] =  turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0)*good_i;
+      Psi_l[nVar] =  (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
       // Psi_r[nVar] = -sign* turbNodes->GetLimiterDerivativeGrad(jPoint,0)*good_j;
     }
     else
