@@ -198,6 +198,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                   *primvar_j = good_j? flowPrimVar_j : V_j,
                   *turbvar_i = good_i? turbPrimVar_i : T_i,
                   *turbvar_j = good_j? turbPrimVar_j : T_j;
+        if (geometry->node[iPoint]->GetDomain())
         SetExtrapolationJacobian(solver, geometry, config,
                                  primvar_i, primvar_j,
                                  turbvar_i, turbvar_j,
@@ -205,6 +206,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                  residual.jacobian_j,
                                  good_i, good_j,
                                  iPoint, jPoint);
+        if (geometry->node[jPoint]->GetDomain())
         SetExtrapolationJacobian(solver, geometry, config,
                                  primvar_j, primvar_i,
                                  turbvar_j, turbvar_i,
@@ -289,8 +291,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
     if (config->GetUse_Accurate_Visc_Jacobians()) {
-      CorrectViscousJacobian(solver, geometry, config, iPoint, jPoint, residual.jacobianWeights_i);
-      CorrectViscousJacobian(solver, geometry, config, jPoint, iPoint, residual.jacobianWeights_j);
+      if (geometry->node[iPoint]->GetDomain()) CorrectViscousJacobian(solver, geometry, config, iPoint, jPoint, residual.jacobianWeights_i);
+      if (geometry->node[jPoint]->GetDomain()) CorrectViscousJacobian(solver, geometry, config, jPoint, iPoint, residual.jacobianWeights_j);
     }
   }
   
