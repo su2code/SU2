@@ -43,21 +43,24 @@ from math import *
 
 class ImposedMotionFunction:
 
-  def __init__(self,time0,tipo,parameters):
-    self.time0 = time0
-    self.tipo = tipo
-    if self.tipo == "SINUSOIDAL":
-      self.bias = parameters[0]
-      self.amplitude = parameters[1]
-      self.frequency = parameters[2]
-      self.timeStart = parameters[3]
+  def __init__(self,time0,typeOfMotion,parameters,mode):
 
-    elif self.tipo == "BLENDED_STEP":
-      self.kmax = parameters[0]
-      self.vinf = parameters[1]
-      self.lref = parameters[2]
-      self.amplitude = parameters[3]
-      self.timeStart = parameters[4]
+    self.time0 = time0
+    self.typeOfMotion = typeOfMotion
+    self.mode = mode
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      self.bias = parameters["BIAS"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.frequency = parameters["FREQUENCY"]
+      self.timeStart = parameters["TIME_0"]
+
+    elif self.typeOfMotion == "BLENDED_STEP":
+      self.kmax = parameters["K_MAX"]
+      self.vinf = parameters["V_INF"]
+      self.lref = parameters["L_REF"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.timeStart = parameters["TIME_0"]
       self.tmax = 2*pi/self.kmax*self.lref/self.vinf
       self.omega0 = 1/2*self.kmax
 
@@ -67,10 +70,10 @@ class ImposedMotionFunction:
 
   def GetDispl(self,time):
     time = time - self.time0 - self.timeStart
-    if self.tipo == "SINUSOIDAL":
+    if self.typeOfMotion == "SINUSOIDAL":
       return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
-    if self.tipo == "BLENDED_STEP":
+    if self.typeOfMotion == "BLENDED_STEP":
       if time < 0:
         return 0.0
       elif time < self.tmax:
@@ -81,10 +84,10 @@ class ImposedMotionFunction:
   def GetVel(self,time):
     time = time - self.time0 - self.timeStart
 
-    if self.tipo == "SINUSOIDAL":
+    if self.typeOfMotion == "SINUSOIDAL":
       return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
 
-    if self.tipo == "BLENDED_STEP":
+    if self.typeOfMotion == "BLENDED_STEP":
       if time < 0:
         return 0.0
       elif time < self.tmax:
@@ -94,10 +97,10 @@ class ImposedMotionFunction:
   def GetAcc(self,time):
     time = time - self.time0 - self.timeStart
 
-    if self.tipo == "SINUSOIDAL":
+    if self.typeOfMotion == "SINUSOIDAL":
       return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
 
-    if self.tipo == "BLENDED_STEP":
+    if self.typeOfMotion == "BLENDED_STEP":
       if time < 0:
         return 0.0
       elif time < self.tmax:
@@ -289,7 +292,7 @@ class Solver:
     self.markers = {}
     self.refsystems = []
     self.ImposedMotionToSet = True
-    self.ImposedMotionFunction = {}
+    self.ImposedMotionFunction = []
 
     print("\n")
     print(" Reading the mesh ".center(80,"-"))
@@ -733,14 +736,17 @@ class Solver:
     This method integrates in time the solution.
     """
 
+    self.__reset(self.q)
+    self.__reset(self.qdot)
+    self.__reset(self.qddot)
+    self.__reset(self.a)
+
     if not self.ImposedMotion:
       eps = 1e-6
 
       self.__SetLoads()
 
       # Prediction step
-      self.__reset(self.qddot)
-      self.__reset(self.a)
 
       self.a += (self.alpha_f)/(1-self.alpha_m)*self.qddot_n
       self.a -= (self.alpha_m)/(1-self.alpha_m)*self.a_n
@@ -768,14 +774,20 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       if self.ImposedMotionToSet:
-          for imode in self.Config["IMPOSED_MODES"].keys():
-            self.ImposedMotionFunction[imode] = ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode])
-          self.ImposedMotionToSet = False
-      for imode in self.Config["IMPOSED_MODES"].keys():
-        self.q[imode] = self.ImposedMotionFunction[imode].GetDispl(time)
-        self.qdot[imode] = self.ImposedMotionFunction[imode].GetVel(time)
-        self.qddot[imode] = self.ImposedMotionFunction[imode].GetAcc(time)
-        self.a = np.copy(self.qddot)
+        iImposedFunc = 0
+        for imode in self.Config["IMPOSED_MODES"].keys():
+          for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
+            typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
+            parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
+            self.ImposedMotionFunction[iImposedFunc] = ImposedMotionFunction(time, typeOfMotion, parameters, imode)
+            iImposedFunc += 1
+        self.ImposedMotionToSet = False
+      for iImposedFunc in range(len(self.ImposedMotionFunction)):
+        imode = self.ImposedMotionFunction[iImposedFunc].mode
+        self.q[imode] += self.ImposedMotionFunction[iImposedFunc].GetDispl(time)
+        self.qdot[imode] += self.ImposedMotionFunction[iImposedFunc].GetVel(time)
+        self.qddot[imode] += self.ImposedMotionFunction[iImposedFunc].GetAcc(time)
+      self.a = np.copy(self.qddot)
 
 
   def __SetLoads(self):
