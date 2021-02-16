@@ -3694,23 +3694,21 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi_l[MAXNVARTOT] = {0.0}, Psi_r[MAXNVARTOT] = {0.0};
+  su2double Psi[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     if (limiter) {
-      Psi_l[ind] =  (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-      // Psi_r[ind] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+      Psi[ind] =  (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
     }
     else
-      Psi_l[ind] = 0.5*(1.0-Kappa_Flow)*good_i;
+      Psi[ind] = 0.5*(1.0-Kappa_Flow)*good_i;
   }
   if (tkeNeeded) {
     if (limiterTurb) {
-      Psi_l[nVar] =  (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
-      // Psi_r[nVar] = -sign* turbNodes->GetLimiterDerivativeGrad(jPoint,0)*good_j;
+      Psi[nVar] =  (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
     }
     else
-      Psi_l[nVar] = 0.5*(1.0-Kappa_Turb)*good_i;
+      Psi[nVar] = 0.5*(1.0-Kappa_Turb)*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/
@@ -3724,15 +3722,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
-      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
-          Jacobian_i[iVar][jVar] += sign*(dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
-                                        + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
+          Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
 
   /*--- Neighbor node terms ---*/
@@ -3769,16 +3765,14 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
-      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += sign*(dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
-                                        + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar]*sign_grad_i;
+          Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
           Jacobian_j[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
         }
       }

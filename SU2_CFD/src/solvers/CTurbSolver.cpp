@@ -434,14 +434,13 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
    /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi_l[MAXNVAR] = {0.0}, Psi_r[MAXNVAR] = {0.0};
+  su2double Psi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
-      Psi_l[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-      // Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+      Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
     }
     else
-      Psi_l[iVar] = 0.5*(1.0-Kappa_Turb)*good_i;
+      Psi[iVar] = 0.5*(1.0-Kappa_Turb)*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/
@@ -455,14 +454,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
-      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] += sign*(dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
-                                      + dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi;
+        Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
   }
 
   /*--- Neighbor node terms ---*/
@@ -483,14 +480,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
-      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
-                                      + dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi*sign_grad_i;
+        Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
         Jacobian_j[iVar][jVar]  = sign*dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
       }
     }
