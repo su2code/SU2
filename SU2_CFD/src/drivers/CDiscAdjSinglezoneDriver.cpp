@@ -619,7 +619,11 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
 
     /// new layout for this
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+
+  /*--- in some OneShot applications we might only need the original gradient. ---*/
+  } else if (config->GetSobMode()==ONLY_GRAD) {
+    solver[GRADIENT_SMOOTHING]->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
 
   /*--- warning if choose mode is unsupported. ---*/
   } else {

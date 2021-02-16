@@ -116,9 +116,9 @@ public:
   void ApplyGradientSmoothingDV(CGeometry *geometry,
                                 CSolver *solver,
                                 CNumerics **numerics,
-                                CConfig *config,
                                 CSurfaceMovement *surface_movement,
-                                CVolumetricMovement *grid_movement);
+                                CVolumetricMovement *grid_movement,
+                                CConfig *config);
 
 
   /*!
@@ -194,6 +194,14 @@ public:
   void CalculateOriginalGradient(CGeometry *geometry,
                                  CVolumetricMovement* grid_movement,
                                  CConfig *config);
+
+  /*!
+   * \brief Return the original gradient for application in OneShot.
+   */
+  void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                              CSurfaceMovement *surface_movement,
+                                              CVolumetricMovement *grid_movement,
+                                              CConfig *config);
 
   /*!
    * \brief write the DV gradient into a file

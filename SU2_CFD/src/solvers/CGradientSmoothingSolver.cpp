@@ -281,7 +281,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
 }
 
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement) {
+void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
 
   /// Set to 0
   Jacobian.SetValZero();
@@ -840,6 +840,18 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
   OutputDVGradient("orig_grad.dat");
+}
+
+
+void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
+
+  /// record the parameterization
+  if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
+  RecordParameterizationJacobian(geometry, surface_movement, activeCoord, config);
+
+  /// calculate the original gradinet
+  CalculateOriginalGradient(geometry, grid_movement, config);
+
 }
 
 

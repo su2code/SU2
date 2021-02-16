@@ -2212,12 +2212,14 @@ enum ENUM_SOBOLEV_MODUS {
   PARAM_LEVEL_COMPLETE   = 1,      /*!< \brief Operate on parameter level. */
   MESH_LEVEL  = 3,                 /*!< \brief Operate on mesh level. */
   DEBUG = 4,                       /*!< \brief Special flag for debugging. */
+  ONLY_GRAD = 5,                   /*!< \brief Flag for OneShot to only compute the original gradient. */
 };
 static const map<string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("NONE", NO_MODUS)
   MakePair("PARAM_LEVEL_COMPLETE"  , PARAM_LEVEL_COMPLETE)
   MakePair("MESH_LEVEL" , MESH_LEVEL)
   MakePair("DEBUG" , DEBUG)
+  MakePair("ONLY_GRADIENT" , ONLY_GRAD)
 };
 
 /*!

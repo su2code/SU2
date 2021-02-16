@@ -4529,15 +4529,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void CalculateOriginalGradient(CGeometry *geometry,
-                                         CVolumetricMovement* grid_movement,
-                                         CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition.
    * \param[in] solver - the discrete adjoint flow solver corresponding to the problem.
    * \param[in] numerics - the numerics for this problem.
    * \param[in] config - Definition of the particular problem.
@@ -4567,10 +4558,19 @@ public:
   virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
                                         CSolver *solver,
                                         CNumerics **numerics,
-                                        CConfig *config,
                                         CSurfaceMovement *surface_movement,
-                                        CVolumetricMovement *grid_movement) { }
+                                        CVolumetricMovement *grid_movement,
+                                        CConfig *config) { }
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void RecordTapeAndCalculateOriginalGradient(CGeometry *geometry,
+                                                     CSurfaceMovement *surface_movement,
+                                                     CVolumetricMovement *grid_movement,
+                                                     CConfig *config) { }
 
   /*!
    * \brief A virtual member.
