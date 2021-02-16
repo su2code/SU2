@@ -3226,7 +3226,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (muscl && kappa) {
           su2double *primvar_i = good_i? Primitive_i : V_i,
                     *primvar_j = good_j? Primitive_j : V_j;
-          if (geometry->node[iPoint]->GetDomain())
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
@@ -3234,7 +3233,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    residual.jacobian_j,
                                    good_i, good_j,
                                    iPoint, jPoint);
-          if (geometry->node[jPoint]->GetDomain())
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_j, primvar_i,
                                    &tke_j, &tke_i,
