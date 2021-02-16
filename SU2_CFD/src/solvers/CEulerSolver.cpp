@@ -3593,7 +3593,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto ind = iVar%(nDim+2);
     if (limiter) {  
       dVl_dVi[ind] = 1.0 + (0.5*nodes->GetLimiter_Primitive(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
-      dVr_dVi[ind] =     - (0.5*nodes->GetLimiter_Primitive(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
+      dVr_dVi[ind] =     - (0.5*nodes->GetLimiter_Primitive(jPoint,iVar) - nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
     }
     else {
       dVl_dVi[ind] = 1.0 - 0.5*Kappa_Flow*good_i;
@@ -3603,7 +3603,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   if (tkeNeeded) {
     if (limiterTurb) {
       dVl_dVi[nVar] = 1.0 + (0.5*turbNodes->GetLimiter(iPoint,0) + turbNodes->GetLimiterDerivativeDelta(iPoint,0))*good_i;
-      dVr_dVi[nVar] =     - (0.5*turbNodes->GetLimiter(jPoint,0) + turbNodes->GetLimiterDerivativeDelta(jPoint,0))*good_j;
+      dVr_dVi[nVar] =     - (0.5*turbNodes->GetLimiter(jPoint,0) - turbNodes->GetLimiterDerivativeDelta(jPoint,0))*good_j;
     }
     else {
       dVl_dVi[nVar] = 1.0 - 0.5*Kappa_Turb*good_i;
