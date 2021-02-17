@@ -94,8 +94,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
   CrossProduction = 0.0;
   Jacobian_i[0]   = 0.0;
 
-  gamma_BC = 0.0;
-
   /*--- Evaluate Omega ---*/
 
   Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
@@ -153,9 +151,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       su2double term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
       su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.));
       su2double term_exponential = (term1 + term2);
-      su2double gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      Gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = Gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
     }
     else {
       Production = cb1*Shat*TurbVar_i[0]*Volume;
@@ -192,7 +191,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
 
     if (transition) {
-      Jacobian_i[0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += Gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
       Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
@@ -761,16 +760,19 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/
-  beta_star     = constants[6];
-  sigma_omega_1 = constants[2];
-  sigma_omega_2 = constants[3];
+  sigma_k_1     = constants[0];
+  sigma_k_2     = constants[1];
+  sigma_w_1     = constants[2];
+  sigma_w_2     = constants[3];
   beta_1        = constants[4];
   beta_2        = constants[5];
+  beta_star     = constants[6];
+  a1            = constants[7];
   alfa_1        = constants[8];
   alfa_2        = constants[9];
-  a1            = constants[7];
 
   /*--- Set the ambient values of k and omega to the free stream values. ---*/
   kAmb     = val_kine_Inf;
@@ -846,7 +848,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
 
-
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
 
@@ -890,6 +891,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /*--- Cross diffusion ---*/
 
    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+   
+   /*--- Contribution due to 2D axisymmetric formulation ---*/
+  
+   if (axisymmetric) ResidualAxisymmetric(alfa_blended,zeta);
 
    /*--- Implicit part ---*/
 
