@@ -3908,7 +3908,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
@@ -3963,10 +3963,10 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 
 }

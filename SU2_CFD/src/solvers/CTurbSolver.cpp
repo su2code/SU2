@@ -565,11 +565,11 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 
   Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-  if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
   AD::EndPassive(wasActive);
   
