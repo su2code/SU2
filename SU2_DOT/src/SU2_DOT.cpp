@@ -937,7 +937,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
 
-    /*--- Set the surface filename ---*/
+    /*--- Set the volume filename ---*/ // Note TobiKattmann: Why would I write volume output here as this should be the surface gradient only
 
     output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
 

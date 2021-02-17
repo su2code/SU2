@@ -1641,10 +1641,10 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 
   /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, internal and periodic bc the receive boundaries and periodic boundaries. ---*/
+   plane (which is treated specially, see below), internal and the send-receive boundaries  ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((//(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
          (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
