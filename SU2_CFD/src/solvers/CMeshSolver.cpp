@@ -315,7 +315,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   for (unsigned long iMarker=0, ii=0, jj=0; iMarker<config->GetnMarker_All(); ++iMarker) {
 
-    if (!config->GetSolid_Wall(iMarker) && !config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker)) continue;
+    if (!config->GetSolid_Wall(iMarker) || config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker)) continue;
 
     for (auto iVertex=0u; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
