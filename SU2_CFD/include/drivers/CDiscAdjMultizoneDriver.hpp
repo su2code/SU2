@@ -106,9 +106,12 @@ protected:
               for jZone, we need to store all terms to have BGS-type updates with relaxation. */
   vector<vector<vector<su2passivematrix> > > Cross_Terms;
 
-  vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector;
+  /*!< \brief Fixed-Point corrector that can be applied to inner iterations. */
+  vector<CQuasiNewtonInvLeastSquares<passivedouble> > FixPtCorrector;
 
-  static constexpr unsigned long KrylovMinIters = 5;
+  /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton). */
+  static constexpr unsigned long KrylovMinIters = 3;
+  const Scalar KrylovTol = 0.01;
   vector<CSysSolve<Scalar> > LinSolver;
   vector<CSysVector<Scalar> > AdjRHS, AdjSol;
 

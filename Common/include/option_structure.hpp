@@ -237,7 +237,7 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 };
 
 /*!
- * \brief different solver types for the multizone environment component
+ * \brief Different solver types for multizone problems
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */

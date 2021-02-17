@@ -46,7 +46,8 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
   Has_Deformation.resize(nZone) = false;
 
-  fixPtCorrector.resize(nZone);
+
+  FixPtCorrector.resize(nZone);
   LinSolver.resize(nZone);
   AdjRHS.resize(nZone);
   AdjSol.resize(nZone);
@@ -179,10 +180,10 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 
   /*--- Use QN driver to improve the solution. ---*/
 
-  if (fixPtCorrector[iZone].size()) {
-    GetAllSolutions(iZone, true, fixPtCorrector[iZone].FPresult());
-    fixPtCorrector[iZone].compute();
-    if(iInnerIter) SetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+  if (FixPtCorrector[iZone].size()) {
+    GetAllSolutions(iZone, true, FixPtCorrector[iZone].FPresult());
+    FixPtCorrector[iZone].compute();
+    if(iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
   }
 
   /*--- Residuals during GMRES iterations have no meaning ---*/
@@ -225,14 +226,15 @@ void CDiscAdjMultizoneDriver::Run() {
     const auto nPointDomain = geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain();
     const auto nVar = GetTotalNumberOfVariables(iZone, true);
 
-    if (config_container[iZone]->GetNewtonKrylov() && nInnerIter[iZone] >= KrylovMinIters) {
+    if (config_container[iZone]->GetNewtonKrylov() &&
+        config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
       AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       LinSolver[iZone].SetRecomputeResidual(false);
       LinSolver[iZone].SetMonitoringFrequency(config_container[iZone]->GetScreen_Wrt_Freq(2));
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
-      fixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
+      FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
     }
   }
 
@@ -326,12 +328,12 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Reset QN driver for new inner iterations. ---*/
 
-      if (fixPtCorrector[iZone].size()) {
-        fixPtCorrector[iZone].reset();
-        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+      if (FixPtCorrector[iZone].size()) {
+        FixPtCorrector[iZone].reset();
+        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, FixPtCorrector[iZone]);
       }
 
-      if (!config_container[iZone]->GetNewtonKrylov() || !no_restart || nInnerIter[iZone]<KrylovMinIters) {
+      if (!config_container[iZone]->GetNewtonKrylov() || !no_restart || nInnerIter[iZone] < KrylovMinIters) {
 
         /*--- Regular fixed-point, possibly with quasi-Newton method. ---*/
 
@@ -367,10 +369,18 @@ void CDiscAdjMultizoneDriver::Run() {
         GetAllSolutions(iZone, true, AdjSol[iZone]);
 
         const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
+        const auto product = AdjointProduct(this, iZone);
 
-        Scalar eps = 0.0;
-        LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], AdjointProduct(this,iZone), Identity(),
-                                          Scalar(1e-9), nInnerIter[iZone]-2, eps, monitor, config_container[iZone]);
+        Scalar eps = 1.0;
+        for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
+          Scalar eps_l = 0.0;
+          Scalar tol_l = KrylovTol / eps;
+          auto iter = min(totalIter-1ul, config_container[iZone]->GetnQuasiNewtonSamples()-1ul);
+          iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                                   tol_l, iter, eps_l, monitor, config_container[iZone]);
+          totalIter -= iter+1;
+          eps *= eps_l;
+        }
 
         SetAllSolutions(iZone, true, AdjSol[iZone]);
 
