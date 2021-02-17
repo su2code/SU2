@@ -652,6 +652,11 @@ public:
                    int val_iter,
                    bool val_update_geo) final;
 
+  /*!
+   * \brief The Euler and NS solvers support MPI+OpenMP.
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
+
 protected:
 
   /*!
@@ -849,6 +854,15 @@ protected:
                               unsigned short           val_marker,
                               const su2double          *solIntL,
                               su2double                *solIntR);
+
+  /*!
+   * \brief Function, which converts the entropy variables to the
+   *        primitive variables for the given entities.
+   * \param[in,out] sol  - Matrix, which contains the entropy variables
+   *                       on entry and the primitive variables on exit.
+   */
+  void EntropyToPrimitiveVariables(ColMajorMatrix<su2double> &sol);
+
 private:
 
   /*!

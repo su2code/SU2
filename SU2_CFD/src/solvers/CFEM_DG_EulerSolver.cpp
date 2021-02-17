@@ -1361,7 +1361,7 @@ void CFEM_DG_EulerSolver::ConservativeToEntropyVariables(ColMajorMatrix<su2doubl
 
     case 3: {
 
-      /*--- Two dimensional simulation. Loop over the number of entities
+      /*--- Three dimensional simulation. Loop over the number of entities
             and carry out the conversion. ---*/
       SU2_OMP_SIMD_IF_NOT_AD
       for(unsigned short i=0; i<nItems; ++i) {
@@ -1381,6 +1381,70 @@ void CFEM_DG_EulerSolver::ConservativeToEntropyVariables(ColMajorMatrix<su2doubl
         sol(i,2) =  abv*v;
         sol(i,3) =  abv*w;
         sol(i,4) = -abv;
+      }
+
+      break;
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::EntropyToPrimitiveVariables(ColMajorMatrix<su2double> &sol) {
+
+  /*--- Easier storage of the number of items to be converted and
+        the inverse of 1-gamma. ---*/
+  const unsigned short nItems =  sol.rows();
+  const su2double gm1         =  Gamma_Minus_One;
+  const su2double ov1mg       = -1.0/gm1;
+
+  /*--- Make a distinction between two and three space dimensions
+        in order to have the most efficient code. ---*/
+  switch( nDim ) {
+
+    case 2: {
+
+      /*--- Two dimensional simulation. Loop over the number of entities
+            and carry out the conversion. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nItems; ++i) {
+        const su2double V3Inv =  1.0/sol(i,3);
+        const su2double u     = -V3Inv*sol(i,1);
+        const su2double v     = -V3Inv*sol(i,2);
+        const su2double eKin  =  0.5*(u*u + v*v);
+        const su2double s     =  Gamma - gm1*(sol(i,0) - sol(i,3)*eKin);
+        const su2double tmp   = -sol(i,3)*exp(s);
+        const su2double rho   =  pow(tmp, ov1mg);
+        const su2double p     = -rho*V3Inv;
+
+        sol(i,0) = rho;
+        sol(i,1) = u;
+        sol(i,2) = v;
+        sol(i,3) = p;
+      }
+
+      break;
+    }
+
+    case 3: {
+
+      /*--- Three dimensional simulation. Loop over the number of entities
+            and carry out the conversion. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nItems; ++i) {
+        const su2double V4Inv =  1.0/sol(i,4);
+        const su2double u     = -V4Inv*sol(i,1);
+        const su2double v     = -V4Inv*sol(i,2);
+        const su2double w     = -V4Inv*sol(i,3);
+        const su2double eKin  =  0.5*(u*u + v*v + w*w);
+        const su2double s     =  Gamma - gm1*(sol(i,0) - sol(i,4)*eKin);
+        const su2double tmp   = -sol(i,4)*exp(s);
+        const su2double rho   =  pow(tmp, ov1mg);
+        const su2double p     = -rho*V4Inv;
+
+        sol(i,0) = rho;
+        sol(i,1) = u;
+        sol(i,2) = v;
+        sol(i,3) = w;
+        sol(i,4) = p;
       }
 
       break;
@@ -1490,7 +1554,161 @@ void CFEM_DG_EulerSolver::Set_NewSolution() {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Initialize the minimum and maximum time step. ---*/
+  SU2_OMP_SINGLE
+  {
+    Min_Delta_Time = 1.e25;
+    Max_Delta_Time = 0.0;
+  }
+
+  /*--- Determine the chunk size for the OMP loops, if supported. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Check whether or not a time stepping scheme is used and store
+        the CFL number a bit easier. Note that if we are using explicit
+        time stepping, the regular CFL condition has been overwritten with the
+        unsteady CFL condition in the config post-processing (if non-zero). ---*/
+  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const su2double CFL = config->GetCFL(iMesh);
+
+  /*--- Check for explicit time stepping with imposed time step. If the unsteady
+        CFL is set to zero (default), it uses the defined unsteady time step,
+        otherwise it computes the time step based on the provided unsteady CFL.
+        Note that the regular CFL option in the config is always ignored with
+        time stepping. ---*/
+  if(time_stepping && (config->GetUnst_CFL() == 0.0)) {
+
+    /*--- Loop over the owned volume elements and set the fixed dt. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      volElem[i].deltaTime = config->GetDelta_UnstTimeND();
+  } else {
+
+    /*--- Define the thread local variables for the minimum and maximum time step. ---*/
+    su2double MaxDeltaT = 0.0, MinDeltaT = 1.e25;
+
+    /*--- Loop over the owned volume elements. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+      /*--- Determine the solution in the integration points. ---*/
+      ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints();
+
+      /*--- Abbreviate the number of integration points and its padded version. ---*/
+      const unsigned short nInt    = volElem[l].standardElemFlow->GetNIntegration();
+      const unsigned short nIntPad = volElem[l].standardElemFlow->GetNIntegrationPad();
+
+      /*--- Make a distinction between two and three space dimensions
+            in order to have the most efficient code. ---*/
+      switch( nDim ) {
+
+        case 2: {
+
+          /*--- Two dimensional simulation. Loop over the padded integration
+                points and compute the inviscid spectral radius squared, which
+                is stored in the first entry of solInt. Note that the formulation
+                used is a rather conservative estimate. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            const su2double pOvRho = -1.0/solInt(i,3);
+            const su2double u      =  pOvRho*solInt(i,1) - volElem[l].gridVelocitiesInt(i,0);
+            const su2double v      =  pOvRho*solInt(i,2) - volElem[l].gridVelocitiesInt(i,1);
+            const su2double a      =  sqrt(fabs(Gamma*pOvRho));
+
+            const su2double radx = fabs(u) + a;
+            const su2double rady = fabs(v) + a;
+
+            solInt(i,0) = radx*radx + rady*rady;
+          }
+
+          break;
+        }
+
+        case 3: {
+
+          /*--- Three dimensional simulation. Loop over the padded integration
+                points and compute the inviscid spectral radius squared, which
+                is stored in the first entry of solInt. Note that the formulation
+                used is a rather conservative estimate. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            const su2double pOvRho = -1.0/solInt(i,4);
+            const su2double u      =  pOvRho*solInt(i,1) - volElem[l].gridVelocitiesInt(i,0);
+            const su2double v      =  pOvRho*solInt(i,2) - volElem[l].gridVelocitiesInt(i,1);
+            const su2double w      =  pOvRho*solInt(i,3) - volElem[l].gridVelocitiesInt(i,2);
+            const su2double a      =  sqrt(fabs(Gamma*pOvRho));
+
+            const su2double radx = fabs(u) + a;
+            const su2double rady = fabs(v) + a;
+            const su2double radz = fabs(w) + a;
+
+            solInt(i,0) = radx*radx + rady*rady + radz*radz;
+          }
+
+          break;
+        }
+      }
+
+      /*--- Determine the maximum value of the inviscid spectral radius
+            squared for the integration points. ---*/
+      su2double charVel2Max = 0.0;
+      for(unsigned short i=0; i<nInt; ++i)
+        charVel2Max = max(charVel2Max, solInt(i,0));
+
+      /*--- Compute the time step for the element. Note that for the spectral
+            radius a correction factor, which is a function of the polynomial degree
+            and the element type, must be taken into account. ---*/
+      const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius();
+      volElem[l].deltaTime = CFL*volElem[l].lenScale/(factInv*sqrt(charVel2Max));
+
+      /*--- Update the minimum and maximum value, for which the factor for
+            time accurate local time stepping must be taken into account. ---*/
+      const su2double dtEff = volElem[l].factTimeLevel*volElem[l].deltaTime;
+      MinDeltaT = min(MinDeltaT, dtEff);
+      MaxDeltaT = max(MaxDeltaT, dtEff);
+    }
+
+    /*--- Update the shared variables Min_Delta_Time and Max_Delta_Time. ---*/
+    SU2_OMP_CRITICAL
+    {
+      Min_Delta_Time = min(Min_Delta_Time, MinDeltaT);
+      Max_Delta_Time = max(Max_Delta_Time, MaxDeltaT);
+    }
+
+    /*--- Compute the max and the min dt (in parallel). Note that we only
+          do this for steady calculations if the high verbosity is set, but we
+          always perform the reduction for unsteady calculations where the CFL
+          limit is used to set the global time step. ---*/
+#ifdef HAVE_MPI
+    SU2_OMP_SINGLE
+    {
+      if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
+        su2double rbuf_time = Min_Delta_Time;
+        SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+
+        rbuf_time = Max_Delta_Time;
+        SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      }
+    }
+#endif
+
+    /*--- For explicit time stepping with an unsteady CFL imposed, use the
+          minimum delta time of the entire mesh. As Min_Delta_Time is scaled to
+          the time step of the largest time level, a correction must be used
+          for the time level when time accurate local time stepping is used. ---*/
+    if (time_stepping) {
+      SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+      for(unsigned long l=0; l<nVolElemOwned; ++l)
+        volElem[l].deltaTime = Min_Delta_Time/volElem[l].factTimeLevel;
+
+      SU2_OMP_SINGLE
+      config->SetDelta_UnstTimeND(Min_Delta_Time);
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,

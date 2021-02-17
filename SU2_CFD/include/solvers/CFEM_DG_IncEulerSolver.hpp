@@ -64,6 +64,11 @@ public:
    */
   ~CFEM_DG_IncEulerSolver(void) override;
 
+  /*!
+   * \brief The Euler and NS solvers support MPI+OpenMP.
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
+
 protected:
 
 private:

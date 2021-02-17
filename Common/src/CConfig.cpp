@@ -3388,7 +3388,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
 
-    if (TimeMarching == TIME_STEPPING){ InnerIter = 1; }
+    if (TimeMarching == TIME_STEPPING) {
+      InnerIter = 1;
+      Use_Lumped_MassMatrix_DGFEM = false;
+    }
 
     /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
     if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }

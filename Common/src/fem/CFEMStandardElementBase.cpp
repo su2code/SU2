@@ -35,6 +35,31 @@
 /*          Public member functions of CFEMStandardElementBase.                     */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_nDim,
+                                                       const unsigned short val_nVar) {
+
+  /*--- Start of the parallel region, such that the correct number
+        of threads can be obtained. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Allocate the first index of workSolInt and workGradSolInt.
+          This must be done by only one thread. ---*/
+    SU2_OMP_SINGLE
+    {
+      workSolInt.resize(omp_get_num_threads());
+      workGradSolInt.resize(omp_get_num_threads());
+    }
+
+    /*--- Every thread allocates its own memory. ---*/
+    const int thread = omp_get_thread_num();
+    workSolInt[thread].resize(nIntegrationPad, val_nVar);
+
+    workGradSolInt[thread].resize(val_nDim);
+    for(unsigned short i=0; i<val_nDim; ++i)
+      workGradSolInt[thread][i].resize(nIntegrationPad, val_nVar);
+  }
+}
+
 unsigned short CFEMStandardElementBase::GetNIntStatic(unsigned short VTK_Type,
                                                       unsigned short orderExact) {
 

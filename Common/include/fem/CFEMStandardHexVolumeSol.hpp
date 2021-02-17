@@ -57,16 +57,36 @@ public:
    *                              by the integration rule.
    * \param[in] val_locGridDOFs - Location of the grid DOFs (LGL or Equidistant).
    * \param[in] val_nVar        - Number of variables in the jitted gemm calls (not used).
+   * \param[in] val_useLumpedMM - Whether or not the lumped mass matrix is used.
    */
   CFEMStandardHexVolumeSol(const unsigned short val_nPoly,
                            const unsigned short val_orderExact,
                            const unsigned short val_locGridDOFs,
-                           const unsigned short val_nVar);
+                           const unsigned short val_nVar,
+                           const bool           val_useLumpedMM);
 
   /*!
    * \brief Destructor. Nothing to be done.
    */
   ~CFEMStandardHexVolumeSol() = default;
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, that makes available the correction factor for the inviscid
+   *        spectral radius.
+   * \return The correction factor for the inviscid spectral radius.
+   */
+  inline passivedouble GetFactorInviscidSpectralRadius(void) const override {return factInviscidRad;}
+
+  /*!
+   * \brief Function, that makes available the correction factor for the viscous
+   *        spectral radius.
+   * \return The correction factor for the viscous spectral radius.
+   */
+  inline passivedouble GetFactorViscousSpectralRadius(void) const override {return factViscousRad;}
 
   /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
@@ -98,6 +118,23 @@ public:
   void NodalToModal(ColMajorMatrix<su2double> &solDOFs) override;
 
   /*!
+   * \brief Function that computes the gradients of the solution in integration points.
+   * \param[in]  matSolDOF     - Matrix that contains the modal solution DOFs.
+   * \param[out] matGradSolInt - Vector of matrices the contains the gradients of the
+   *                             solution in the integration points.
+   */
+  void GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                        vector<ColMajorMatrix<su2double> > &matGradSolInt) override;
+
+  /*!
+   * \brief Function that computes the solution in integration points.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  void SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                    ColMajorMatrix<su2double> &matSolInt) override;
+
+  /*!
    * \brief Function that makes available the value of the first (constant)
    *        basis function of this element.
    * \return - The value of the first (constant) basis function.
@@ -105,6 +142,10 @@ public:
   passivedouble ValBasis0(void) override;
 
 private:
+  passivedouble factInviscidRad = -1.0;  /*!< \brief Correction factor for the inviscid spectral radius
+                                                     for the high order element. */
+  passivedouble factViscousRad = -1.0;   /*!< \brief Correction factor for the viscous spectral radius
+                                                     for the high order element. */
 
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
 

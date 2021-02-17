@@ -41,21 +41,23 @@ using namespace std;
 class CVolumeElementFEM_DG final: public CVolumeElementFEM_Base {
 public:
 
-  bool elemAdjLowerTimeLevel;  /*!< \brief Whether or not the element is adjacent to a lower
-                                           time level when time accurate local time stepping
-                                           is employed. */
+  bool elemAdjLowerTimeLevel = false;  /*!< \brief Whether or not the element is adjacent to a lower
+                                                   time level when time accurate local time stepping
+                                                   is employed. */
 
-  short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
-                                           element. Only for halo elements. A -1 indicates no
-                                           periodic transformation. */
-  unsigned short timeLevel;    /*!< \brief Time level of the element when time accurate local
-                                           time stepping is employed. */
+  short periodIndexToDonor = -1;    /*!< \brief The index of the periodic transformation to the donor
+                                                element. Only for halo elements. A -1 indicates no
+                                                periodic transformation. */
+  unsigned short timeLevel = 0;    /*!< \brief Time level of the element when time accurate local
+                                               time stepping is employed. */
 
-  unsigned int factTimeLevel;  /*!< \brief Number of local time steps for this element
-                                           compared to the largest time step when time
-                                           accurate local time stepping is employed. */
+  unsigned int factTimeLevel = 0;  /*!< \brief Number of local time steps for this element
+                                               compared to the largest time step when time
+                                               accurate local time stepping is employed. */
 
-  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
+  unsigned long offsetDOFsSolGlobal = 0; /*!< \brief Global offset of the solution DOFs of this element. */
+
+  su2double deltaTime = -1.0;        /*!< \brief Time step for this element. */
 
   ColMajorMatrix<su2double> metricTerms2ndDer; /*!< \brief The metric terms needed for the computation
                                                            of the 2nd derivatives in the integration
@@ -108,6 +110,18 @@ public:
    */
   void AllocateResiduals(CConfig        *config,
                          unsigned short nVar);
+
+  /*!
+   * \brief Function, which computes the gradients of the solution in the integration points.
+   * \return  A reference to the gradients of the solution in the integration points.
+   */
+  vector<ColMajorMatrix<su2double> > &ComputeGradSolIntPoints(void);
+
+  /*!
+   * \brief Function, which computes the solution in the integration points.
+   * \return  A reference to the solution in the integration points.
+   */
+  ColMajorMatrix<su2double> &ComputeSolIntPoints(void);
 
   /*!
    * \brief Function, which sets the solution in this element

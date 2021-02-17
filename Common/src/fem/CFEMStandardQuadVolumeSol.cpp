@@ -35,7 +35,8 @@
 CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nPoly,
                                                      const unsigned short val_orderExact,
                                                      const unsigned short val_locGridDOFs,
-                                                     const unsigned short val_nVar)
+                                                     const unsigned short val_nVar,
+                                                     const bool           val_useLumpedMM)
   : CFEMStandardQuadBase(val_nPoly, val_orderExact) {
 
   /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
@@ -97,6 +98,49 @@ CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nP
         nodal solution DOFs. ---*/
   SetFunctionPointerVolumeDataQuad(nDOFs1D, nInt1D, TensorProductDataVolIntPoints);
   SetFunctionPointerVolumeDataQuad(nDOFs1D, nDOFs1D, TensorProductDataVolSolDOFs);
+
+  /*--- Determine the correction factors for the inviscid and viscous
+        spectral radii for the high order element. These factors depend
+        on the polynomial degree, the element type and whether or not
+        a lumped mass matrix is used. ---*/
+  if( val_useLumpedMM ) {
+
+    /*--- Lumped mass matrix. Set the values, depending on the
+          polynomial degree of the element. ---*/
+    switch( nPoly ) {
+      case 0: factInviscidRad =  2.0; factViscousRad =    6.0; break;
+      case 1: factInviscidRad =  4.0; factViscousRad =   20.0; break;
+      case 2: factInviscidRad =  8.0; factViscousRad =   80.0; break;
+      case 3: factInviscidRad = 12.0; factViscousRad =  180.0; break;
+      case 4: factInviscidRad = 16.0; factViscousRad =  320.0; break;
+      case 5: factInviscidRad = 20.0; factViscousRad =  500.0; break;
+      case 6: factInviscidRad = 24.0; factViscousRad =  720.0; break;
+      case 7: factInviscidRad = 28.0; factViscousRad =  980.0; break;
+      case 8: factInviscidRad = 32.0; factViscousRad = 1280.0; break;
+      case 9: factInviscidRad = 36.0; factViscousRad = 1620.0; break;
+      default:
+        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
+    }
+  }
+  else {
+
+    /*--- Full mass matrix. Set the values, depending on the
+          polynomial degree of the element. ---*/
+    switch( nPoly ) {
+      case 0: factInviscidRad =  2.0; factViscousRad =     6.0; break;
+      case 1: factInviscidRad =  6.0; factViscousRad =    36.0; break;
+      case 2: factInviscidRad = 12.0; factViscousRad =   150.0; break;
+      case 3: factInviscidRad = 20.0; factViscousRad =   420.0; break;
+      case 4: factInviscidRad = 28.0; factViscousRad =   980.0; break;
+      case 5: factInviscidRad = 38.0; factViscousRad =  1975.0; break;
+      case 6: factInviscidRad = 50.0; factViscousRad =  3575.0; break;
+      case 7: factInviscidRad = 64.0; factViscousRad =  7000.0; break;
+      case 8: factInviscidRad = 80.0; factViscousRad = 14000.0; break;
+      case 9: factInviscidRad = 98.0; factViscousRad = 28000.0; break;
+      default:
+        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
+    }
+  }
 }
 
 void CFEMStandardQuadVolumeSol::BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
@@ -141,6 +185,39 @@ void CFEMStandardQuadVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs)
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D,
                               nDOFs1D, legBasisLineSolDOFsInv, legBasisLineSolDOFsInv,
                               tmp, solDOFs, nullptr);
+}
+
+void CFEMStandardQuadVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                                 vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+  /*--- Call the function TensorProductVolumeDataHex 2 times to compute the derivatives
+        of the solution coordinates w.r.t. the two parametric coordinates. ---*/
+  TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
+                              derLegBasisLineInt, legBasisLineInt, matSolDOF, matGradSolInt[0], nullptr);
+  TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
+                              legBasisLineInt, derLegBasisLineInt, matSolDOF, matGradSolInt[1], nullptr);
+
+  /*--- Fill the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolDOF.cols(); ++j) {
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i) {
+      matGradSolInt[0](i,j) = matGradSolInt[0](0,j);
+      matGradSolInt[1](i,j) = matGradSolInt[1](0,j);
+    }
+  }
+}
+
+void CFEMStandardQuadVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                                             ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call TensorProductVolumeDataQuad with the appropriate arguments
+        to carry out the actual job. ---*/
+  TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
+                              legBasisLineInt, legBasisLineInt, matSolDOF, matSolInt, nullptr);
+
+  /*--- Fill the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolInt.cols(); ++j)
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+      matSolInt(i,j) = matSolInt(0,j);
 }
 
 passivedouble CFEMStandardQuadVolumeSol::ValBasis0(void) {

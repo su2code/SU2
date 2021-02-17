@@ -86,6 +86,12 @@ protected:
 #endif
 
 public:
+  vector<ColMajorMatrix<su2double> > workSolInt;              /*!< \brief Work array to compute the solution
+                                                                          in the integration points. */
+  vector<vector<ColMajorMatrix<su2double> > > workGradSolInt; /*!< \brief Work array to compute the gradients of
+                                                                          the solution in the integration points. */
+
+public:
   /*-----------------------------------------------------------------------------------*/
   /*---                     Constructors and destructors.                           ---*/
   /*-----------------------------------------------------------------------------------*/
@@ -236,6 +242,26 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return The correction factor for the inviscid spectral radius.
+   */
+  virtual passivedouble GetFactorInviscidSpectralRadius(void) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return The correction factor for the viscous spectral radius.
+   */
+  virtual passivedouble GetFactorViscousSpectralRadius(void) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \return The number of faces of the volume element.
    */
   virtual unsigned short GetNFaces(void) const {
@@ -327,6 +353,31 @@ public:
    *                          on exit it contains the modal solution.
    */
   virtual void NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matSolDOF     - Matrix that contains the modal solution DOFs.
+   * \param[out] matGradSolInt - Vector of matrices the contains the gradients of the
+   *                             solution in the integration points.
+   */
+  virtual void GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  virtual void SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                            ColMajorMatrix<su2double> &matSolInt) {
 
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
@@ -523,6 +574,14 @@ public:
   /*-----------------------------------------------------------------------------------*/
   /*---                 Regular public member functions.                            ---*/
   /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which allocates the memory for the working variables.
+   * \param[in] val_nDim - Number of space dimensions.
+   * \param[in] val_nVar - Number of variables for the allocation.
+   */
+  void AllocateWorkingVariables(const unsigned short val_nDim,
+                                const unsigned short val_nVar);
 
   /*!
    * \brief Function, which computes the data and/or derivatives in the

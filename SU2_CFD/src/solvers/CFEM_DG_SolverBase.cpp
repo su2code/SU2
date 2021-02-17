@@ -102,30 +102,6 @@ CFEM_DG_SolverBase::CFEM_DG_SolverBase(CGeometry      *geometry,
   const unsigned int nIntegrationMax = DGGeometry->DetermineMaxNIntegration();
   const unsigned int nDOFsMax        = DGGeometry->DetermineMaxNDOFs();
 
-  /*--- Determine the size of the work array (per variable).
-        Assume a viscous simulation. ---*/
-  unsigned int sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
-
-  unsigned int sizeGradSolInt = nIntegrationMax*nDim*nDOFsMax;
-
-  sizeWorkArray = sizeFluxes + sizeGradSolInt + 4*nIntegrationMax;
-
-  /*--- Check if the size suffices when ADER is used. ---*/
-  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
-
-    const unsigned int nTimeDOFs   = config->GetnTimeDOFsADER_DG();
-    unsigned int sizePredictorADER = 4*nDOFsMax*nTimeDOFs + nDOFsMax;
-
-    if(config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR)
-      sizePredictorADER += nDim*nDOFsMax + nDim*nDim*nIntegrationMax;
-    else
-      sizePredictorADER += (nDim+1)*max(nIntegrationMax, nDOFsMax)
-                         + nDim*nDim*max(nIntegrationMax,nDOFsMax);
-
-    sizeWorkArray = max(sizeWorkArray, sizePredictorADER);
-  }
-
   /*--- Allocate the memory for the aerodynamic coefficients. ---*/
   InvCoeff.allocate(nMarker);
   SurfaceInvCoeff.allocate(nMarker);

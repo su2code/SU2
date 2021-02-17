@@ -79,8 +79,6 @@ protected:
   unsigned long nDOFsLocTot   = 0;    /*!< \brief Total number of local DOFs, including halos. */
   unsigned long nDOFsGlobal   = 0;    /*!< \brief Number of global DOFs. */
 
-  unsigned int sizeWorkArray = 0;     /*!< \brief The size of the work array needed. */
-
   CVolumeElementFEM_DG *volElem = nullptr;   /*!< \brief Array of the local volume elements, including halos. */
 
   const unsigned long *nVolElemOwnedPerTimeLevel = nullptr;    /*!< \brief Number of owned local volume elements

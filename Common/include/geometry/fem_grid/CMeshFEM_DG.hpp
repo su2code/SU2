@@ -304,10 +304,15 @@ private:
   /*!
    * \brief Function, which creates the standard elements for the solution.
    * \param[in] elemTypes   - Information about the element types to be created.
+   * \param[in] nAllocVar   - Number of variables for which memory must be allocated
+   *                          in the working vectors.
    * \param[in] locGridDOFs - Location of the grid DOFs, either LGL or equidistant.
+   * \param[in] useLumpedMM - Whether or not the lumped mass matrix is used.
    */
   void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
-                                            const unsigned short           locGridDOFs);
+                                            const unsigned short           nAllocVar,
+                                            const unsigned short           locGridDOFs,
+                                            const bool                     useLumpedMM);
 
   /*!
    * \brief Function, which computes the parametric coordinates of the given

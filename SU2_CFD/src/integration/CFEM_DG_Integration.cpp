@@ -38,19 +38,25 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short iZone,
                                                unsigned short iInst) {
 
-  unsigned short iMesh, iStep, iLimit = 1;
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+  const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  const unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
   /*--- For now, we assume no geometric multigrid. ---*/
-  iMesh = FinestMesh;
+  const unsigned short iMesh = FinestMesh;
 
   /*--- Check if only the Jacobian of the spatial discretization must
         be computed. If so, call the appropriate function and return. ---*/
-  if (config[iZone]->GetJacobian_Spatial_Discretization_Only()) {
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->ComputeSpatialJacobian(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                                                                                         numerics_container[iZone][iInst][iMesh][SolContainer_Position],
-                                                                                         config[iZone], iMesh, RunTime_EqSystem);
+  if( config[iZone]->GetJacobian_Spatial_Discretization_Only() ) {
+
+    /*--- Start an OpenMP parallel region covering the entire iteration. ---*/
+    SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
+    {
+      solver_container[iZone][iInst][iMesh][Solver_Position]->ComputeSpatialJacobian(geometry[iZone][iInst][iMesh],
+                                                                                     solver_container[iZone][iInst][iMesh],
+                                                                                     numerics_container[iZone][iInst][iMesh][Solver_Position],
+                                                                                     config[iZone], iMesh, RunTime_EqSystem);
+    } // end SU2_OMP_PARALLEL
+
     return;
   }
 
@@ -61,10 +67,11 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         local time stepping.  Note that we are currently hard-coding
         the classical RK4 scheme. ---*/
   bool useADER = false;
+  unsigned short iLimit = 1;
   switch (config[iZone]->GetKind_TimeIntScheme()) {
     case RUNGE_KUTTA_EXPLICIT: iLimit = config[iZone]->GetnRKStep(); break;
     case CLASSICAL_RK4_EXPLICIT: iLimit = 4; break;
-    case ADER_DG: iLimit = 1; useADER = true; break;
+    case ADER_DG: iLimit = 1; useADER = true; break; 
     case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break;
   }
 
@@ -75,77 +82,85 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
   bool TimeSyncSpecified   = false;
   const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
   if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
-     config[iZone]->GetUnst_CFL() != 0.0 &&
-     TimeSync                     != 0.0) TimeSyncSpecified = true;
+     config[iZone]->GetUnst_CFL()      != 0.0 &&
+     TimeSync                          != 0.0) TimeSyncSpecified = true;
 
-  /*--- Outer loop, which is only active when a synchronization time has been
-        specified for an unsteady simulation. ---*/
+  /*--- Initialize the variables which control the outer time stepping loop. ---*/
   bool syncTimeReached = false;
   su2double timeEvolved = 0.0;
-  while( !syncTimeReached ) {
 
-    /* Compute the time step for stability. */
-    solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh],
-                                                                               solver_container[iZone][iInst][iMesh],
-                                                                               config[iZone], iMesh, config[iZone]->GetTimeIter());
-    /* Possibly overrule the specified time step when a synchronization time was
-       specified and determine whether or not the time loop must be continued.
-       When TimeSyncSpecified is false, the loop is always terminated. */
-    if( TimeSyncSpecified )
-      solver_container[iZone][iInst][iMesh][SolContainer_Position]->CheckTimeSynchronization(config[iZone],
-                                                                                             TimeSync, timeEvolved,
-                                                                                             syncTimeReached);
-    else
-      syncTimeReached = true;
+  /*--- Start an OpenMP parallel region covering the entire iteration. ---*/
+  SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
+  {
+    /*--- Outer loop, which is only active when a synchronization time has been
+          specified for an unsteady simulation. ---*/
+    while( !syncTimeReached ) {
 
-    /*--- For ADER in combination with time accurate local time stepping, the
-          space and time integration are tightly coupled and cannot be treated
-          segregatedly. Therefore a different function is called for ADER to
-          carry out the space and time integration. ---*/
-    if( useADER ) {
-      solver_container[iZone][iInst][iMesh][SolContainer_Position]->ADER_SpaceTimeIntegration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                                                                                              numerics_container[iZone][iInst][iMesh][SolContainer_Position],
-                                                                                              config[iZone], iMesh, RunTime_EqSystem);
-    }
-    else {
+      /* Compute the time step for stability. */
+      solver_container[iZone][iInst][iMesh][Solver_Position]->SetTime_Step(geometry[iZone][iInst][iMesh],
+                                                                           solver_container[iZone][iInst][iMesh],
+                                                                           config[iZone], iMesh, config[iZone]->GetTimeIter());
 
-      /*--- Time and space integration can be decoupled. ---*/
-      for (iStep = 0; iStep < iLimit; iStep++) {
+      /* Possibly overrule the specified time step when a synchronization time was
+         specified and determine whether or not the time loop must be continued.
+         When TimeSyncSpecified is false, the loop is always terminated. */
+      if( TimeSyncSpecified ) {
+        solver_container[iZone][iInst][iMesh][Solver_Position]->CheckTimeSynchronization(config[iZone],
+                                                                                         TimeSync, timeEvolved,
+                                                                                         syncTimeReached);
+      }
+      else {
+        SU2_OMP_SINGLE
+        syncTimeReached = true;
+      }
 
-        /*--- Preprocessing ---*/
-        solver_container[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                                                                                    config[iZone], iMesh, iStep, RunTime_EqSystem, false);
+      /*--- For ADER in combination with time accurate local time stepping, the
+            space and time integration are tightly coupled and cannot be treated
+            segregatedly. Therefore a different function is called for ADER to
+            carry out the space and time integration. ---*/
+      if( useADER ) {
+        solver_container[iZone][iInst][iMesh][Solver_Position]->ADER_SpaceTimeIntegration(geometry[iZone][iInst][iMesh],
+                                                                                          solver_container[iZone][iInst][iMesh],
+                                                                                          numerics_container[iZone][iInst][iMesh][Solver_Position],
+                                                                                          config[iZone], iMesh, RunTime_EqSystem);
+      }
+      else {
 
-        /*--- Space integration ---*/
-        Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                          numerics_container[iZone][iInst][iMesh][SolContainer_Position],
-                          config[iZone], iMesh, iStep, RunTime_EqSystem);
+        /*--- Time and space integration can be decoupled. ---*/
+        for(unsigned short iStep=0; iStep<iLimit; ++iStep) {
 
-        /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-        Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                         config[iZone], iStep, RunTime_EqSystem);
+          /*--- Preprocessing ---*/
+          solver_container[iZone][iInst][iMesh][Solver_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                                                                                config[iZone], iMesh, iStep, RunTime_EqSystem, false);
 
-        /*--- Postprocessing ---*/
-        solver_container[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
-                                                                                     config[iZone], iMesh);
+          /*--- Space integration ---*/
+          Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                            numerics_container[iZone][iInst][iMesh][Solver_Position],
+                            config[iZone], iMesh, iStep, RunTime_EqSystem);
+
+          /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+          Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                           config[iZone], iStep, RunTime_EqSystem);
+
+          /*--- Postprocessing ---*/
+          solver_container[iZone][iInst][iMesh][Solver_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                                                                                 config[iZone], iMesh);
+        }
       }
     }
-  }
 
-  /*--- Calculate the inviscid and viscous forces ---*/
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Pressure_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
+    /*--- Calculate the inviscid and viscous forces ---*/
+    solver_container[iZone][iInst][FinestMesh][Solver_Position]->Pressure_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
+    solver_container[iZone][iInst][FinestMesh][Solver_Position]->Friction_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
 
-  solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Friction_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
-
-  /*--- Convergence strategy ---*/
-
-  //Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+  } // end SU2_OMP_PARALLEL
 }
 
-void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics **numerics,
-                                            CConfig *config, unsigned short iMesh,
+void CFEM_DG_Integration::Space_Integration(CGeometry      *geometry,
+                                            CSolver        **solver_container,
+                                            CNumerics      **numerics,
+                                            CConfig        *config,
+                                            unsigned short iMesh,
                                             unsigned short iStep,
                                             unsigned short RunTime_EqSystem) {
 
@@ -166,8 +181,11 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   solver_container[MainSolver]->ProcessTaskList_DG(geometry, solver_container, numerics, config, iMesh);
 }
 
-void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
-                                    unsigned short RunTime_EqSystem) {
+void CFEM_DG_Integration::Time_Integration(CGeometry      *geometry,
+                                           CSolver        **solver_container,
+                                           CConfig        *config,
+                                           unsigned short iStep,
+                                           unsigned short RunTime_EqSystem) {
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

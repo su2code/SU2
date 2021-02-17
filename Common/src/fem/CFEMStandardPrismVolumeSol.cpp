@@ -35,7 +35,8 @@
 CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_nPoly,
                                                        const unsigned short val_orderExact,
                                                        const unsigned short val_locGridDOFs,
-                                                       const unsigned short val_nVar)
+                                                       const unsigned short val_nVar,
+                                                       const bool           val_useLumpedMM)
   : CFEMStandardPrismBase(val_nPoly, val_orderExact) {
 
   /*--- Determine the location of the nodal solution DOFs. ---*/
@@ -83,6 +84,24 @@ CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_
                       hesLegBasisInt[1], hesLegBasisInt[2], hesLegBasisInt[3],
                       hesLegBasisInt[4], hesLegBasisInt[5]);
 
+  /*--- Fill the padded entries of the matrices just computed. ---*/
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i) {
+      legBasisInt(i,j)       = legBasisInt(0,j);
+
+      derLegBasisInt[0](i,j) = derLegBasisInt[0](0,j);
+      derLegBasisInt[1](i,j) = derLegBasisInt[1](0,j);
+      derLegBasisInt[2](i,j) = derLegBasisInt[2](0,j);
+
+      hesLegBasisInt[0](i,j) = hesLegBasisInt[0](0,j);
+      hesLegBasisInt[1](i,j) = hesLegBasisInt[1](0,j);
+      hesLegBasisInt[2](i,j) = hesLegBasisInt[2](0,j);
+      hesLegBasisInt[3](i,j) = hesLegBasisInt[3](0,j);
+      hesLegBasisInt[4](i,j) = hesLegBasisInt[4](0,j);
+      hesLegBasisInt[5](i,j) = hesLegBasisInt[5](0,j);
+    }
+  }
+
   /*--- Compute the Legendre basis functions in the solution DOFs.
         Store it in a square matrix as also the inverse is needed. ---*/
   CSquareMatrixCM Vtmp(nDOFs);
@@ -122,6 +141,49 @@ CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_
                   nDOFs, nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
   SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, nDOFs, nDOFs,
                   nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+
+  /*--- Determine the correction factors for the inviscid and viscous
+        spectral radii for the high order element. These factors depend
+        on the polynomial degree, the element type and whether or not
+        a lumped mass matrix is used. ---*/
+  if( val_useLumpedMM ) {
+
+    /*--- Lumped mass matrix. Set the values, depending on the
+          polynomial degree of the element. ---*/
+    switch( nPoly ) {
+      case 0: factInviscidRad =  2.0; factViscousRad =    6.0; break;
+      case 1: factInviscidRad =  4.0; factViscousRad =   20.0; break;
+      case 2: factInviscidRad =  8.0; factViscousRad =   80.0; break;
+      case 3: factInviscidRad = 12.0; factViscousRad =  180.0; break;
+      case 4: factInviscidRad = 16.0; factViscousRad =  320.0; break;
+      case 5: factInviscidRad = 20.0; factViscousRad =  500.0; break;
+      case 6: factInviscidRad = 24.0; factViscousRad =  720.0; break;
+      case 7: factInviscidRad = 28.0; factViscousRad =  980.0; break;
+      case 8: factInviscidRad = 32.0; factViscousRad = 1280.0; break;
+      case 9: factInviscidRad = 36.0; factViscousRad = 1620.0; break;
+      default:
+        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
+    }
+  }
+  else {
+
+    /*--- Full mass matrix. Set the values, depending on the
+          polynomial degree of the element. ---*/
+    switch( nPoly ) {
+      case 0: factInviscidRad =  2.0; factViscousRad =     6.0; break;
+      case 1: factInviscidRad =  6.0; factViscousRad =    36.0; break;
+      case 2: factInviscidRad = 12.0; factViscousRad =   150.0; break;
+      case 3: factInviscidRad = 20.0; factViscousRad =   420.0; break;
+      case 4: factInviscidRad = 28.0; factViscousRad =   980.0; break;
+      case 5: factInviscidRad = 38.0; factViscousRad =  1975.0; break;
+      case 6: factInviscidRad = 50.0; factViscousRad =  3575.0; break;
+      case 7: factInviscidRad = 64.0; factViscousRad =  7000.0; break;
+      case 8: factInviscidRad = 80.0; factViscousRad = 14000.0; break;
+      case 9: factInviscidRad = 98.0; factViscousRad = 28000.0; break;
+      default:
+        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
+    }
+  }
 }
 
 CFEMStandardPrismVolumeSol::~CFEMStandardPrismVolumeSol() {
@@ -170,3 +232,24 @@ void CFEMStandardPrismVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs
   OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nDOFs, tmp.cols(), nDOFs,
           nDOFs, nDOFs, nDOFs, legBasisSolDOFsInv, tmp, solDOFs, nullptr);
 }
+
+void CFEMStandardPrismVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                                  vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+  /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
+  for(unsigned short nn=0; nn<3; ++nn)
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, matSolDOF.cols(), nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
+            derLegBasisInt[nn], matSolDOF, matGradSolInt[nn], nullptr);
+}
+
+void CFEMStandardPrismVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                                              ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call OwnGemm with the appropriate arguments to carry out the actual job. ---*/
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, matSolDOF.cols(), nDOFs,
+          nIntegrationPad, nDOFs, nIntegrationPad,
+          legBasisInt, matSolDOF, matSolInt, nullptr);
+
+}
+

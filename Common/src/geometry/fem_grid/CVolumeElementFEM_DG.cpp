@@ -76,6 +76,24 @@ void CVolumeElementFEM_DG::AllocateResiduals(CConfig        *config,
     resTotDOFsADER.resize(nDOFsPad,nVar);
 }
 
+vector<ColMajorMatrix<su2double> > &CVolumeElementFEM_DG::ComputeGradSolIntPoints(void) {
+
+  /*--- Perform the gemm call to compute the gradient of the solution in
+        the integration points and return the vector of matrices. ---*/
+  const int thread = omp_get_thread_num();
+  standardElemFlow->GradSolIntPoints(solDOFs, standardElemFlow->workGradSolInt[thread]);
+  return standardElemFlow->workGradSolInt[thread];
+}
+
+ColMajorMatrix<su2double> &CVolumeElementFEM_DG::ComputeSolIntPoints(void) {
+
+  /*--- Perform the gemm call to compute the solution in the
+        integration points and return the matrix. ---*/
+  const int thread = omp_get_thread_num();
+  standardElemFlow->SolIntPoints(solDOFs, standardElemFlow->workSolInt[thread]);
+  return standardElemFlow->workSolInt[thread];
+}
+
 void CVolumeElementFEM_DG::SetConstantSolution(const su2double *sol,
                                                unsigned short  nVar,
                                                unsigned short  startInd) {
