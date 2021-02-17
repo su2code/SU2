@@ -4422,8 +4422,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     std::ofstream f;
     f.open(filename + to_string(rank) + ".csv");
         for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+          unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
           auto Coord = geometry->nodes->GetCoord(iPoint);
-          f << Coord[0] << ", " << Coord[1] << "\n";
+          f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
         }
     f.close();
   }
@@ -4496,6 +4497,9 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Get solver nodes ---*/
   CVariable* nodes = GetNodes();
   
+  /*--- Get number of desired POD modes ---*/
+  unsigned long nModes  = config->GetnPOD_Modes();
+  
   /*--- Read data from the following three files: ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
@@ -4514,8 +4518,12 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       stringstream sep(line);
       string field;
       TrialBasis.push_back({});
+      unsigned long modes = 0;
       while (getline(sep, field, ',')) {
-        TrialBasis[s].push_back(stod(field));
+        if (modes < nModes) {
+          TrialBasis[s].push_back(stod(field));
+          modes++;
+        }
       }
       s++;
     }
@@ -4605,12 +4613,10 @@ bool CSolver::GetRom_Convergence() {
 #ifdef HAVE_LIBROM
 void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   
-  std::cout << "Performing QDEIM selection of nodes." << std::endl;
-  
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 4500; //TODO: create config file option
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   unsigned long iPoint, iVar, nsnaps;
@@ -4640,9 +4646,9 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   num_cols = (int)nsnaps;
   double* PhiNodes = new double[nsnaps*nPointDomain](); // TODO: parallel case?
   int tally = 0;
-  for (unsigned long n = 0; n < nsnaps; n++) {
+  
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
+      for (unsigned long n = 0; n < nsnaps; n++) {
       double norm_phi = 0.0;
       for (iVar = 0; iVar < nVar; iVar++) {
         norm_phi += Phi[0][iPoint*nVar + iVar] * Phi[0][iPoint*nVar + iVar];
@@ -4654,13 +4660,31 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   }
   //int argc; char* argv[0];
   //MPI_Init(&argc, &argv);
-  CAROM::Matrix* u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, false);
+  bool gnat = true; // false if QDEIM is requested
+  CAROM::Matrix* u;
+  std::string fname;
+  
+  if (gnat) {
+    u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, false);
+  }
+  else {
+    u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, true);
+  }
+  
   int* f_sampled_row = new int[desired_nodes] {0};
   int* f_sampled_rows_per_proc = new int[desired_nodes] {0};
   CAROM::Matrix f_basis_sampled_inv = CAROM::Matrix(desired_nodes, num_cols, false);
-  std::cout << "Performing QDEIM." << std::endl;
-  //CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
-  CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+  
+  if (gnat) {
+    std::cout << "Performing GNAT." << std::endl;
+    CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    fname = "masked_nodes_airfoil_GNAT_"+to_string(desired_nodes)+".csv";
+  }
+  else {
+    std::cout << "Performing QDEIM." << std::endl;
+    CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    fname = "masked_nodes_airfoil_QDEIM_"+to_string(desired_nodes)+".csv";
+  }
   
   for (int i = 0; i < desired_nodes; i++){
     Mask.push_back(f_sampled_row[i]);
@@ -4669,7 +4693,6 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   sort(Mask.begin(),Mask.end());
   
   ofstream fs;
-  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4693,7 +4716,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
-  bool read_mask_from_file = false;
+  bool read_mask_from_file = true;
   
 
   
@@ -4703,12 +4726,16 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 500; //TODO: create config file option
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  if (desired_nodes > nPointDomain) {
+    SU2_MPI::Error("Number of nodes desired for hyper-reduction must be less than total number of nodes.", CURRENT_FUNCTION); }
+  
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
   
   if (!read_mask_from_file) {
+    std::cout << "Using greedy algorithm to compute " << desired_nodes << " nodes." << std::endl;
   if (in_phi) {
     std::string line;
     
@@ -4742,7 +4769,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     
   for (i = 0; i < nodestoAdd; i++) {
     nodewithMax = std::distance(PhiNodes.begin(),
-                                              std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+                                std::max_element(PhiNodes.begin(), PhiNodes.end()) );
     Mask.push_back(nodewithMax);
     PhiNodes[nodewithMax] = -100000.0;
   }
@@ -4809,7 +4836,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     
     
     /*--- Add nodes corresponding to a single Phi vector ---*/
-    
+    nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
     for (inode = 0; inode < nodestoAdd; inode++) {
         
       nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
@@ -4817,6 +4844,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       
       if (MaskedNode(nodewithMax) == false) { Mask.push_back(nodewithMax); }
       else { nodestoAdd++; }
+      
+      if (Mask.size() >= desired_nodes) break;
     }
   }
   }
@@ -4824,9 +4853,11 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Masked Nodes (read from file) ---*/
   
   if (read_mask_from_file) {
+    std::cout << "Using all nodes for hyper-reduction." << std::endl;
     for (int i = 0; i < (int)nPointDomain; i++){
       Mask.push_back(i);
     }
+    //std::cout << "Using precomputed nodes." << std::endl;
     //std::string file_name = "masked_nodes_airfoil_4500.csv";
     //std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << file_name << std::endl;
     //ifstream in_ref(file_name);
@@ -4850,7 +4881,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   if (!read_mask_from_file) {
   ofstream fs;
-  std::string fname = "masked_nodes_flatplate_"+to_string(desired_nodes)+".csv";
+  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4866,11 +4897,6 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
 
 
 bool CSolver::MaskedNode(unsigned long iPoint) {
-  //if (Mask.size() < iPoint) {
-  //  std::cout << "Node " << iPoint << " is out of bounds. Returning false." << std::endl;
-  //  return false;
-  //}
-
 
   if (std::find(Mask.begin(), Mask.end(), iPoint) != Mask.end())
     return true;
@@ -4897,6 +4923,17 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     }
     
   }
+  
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  ofstream fs;
+  std::string fname = "masked_nodes_neighs_"+to_string(desired_nodes)+".csv";
+  fs.open(fname);
+  set <unsigned long> :: iterator itr;
+  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
+    fs << *itr << "," ;
+  }
+  fs << "\n";
+  fs.close();
   
   /*--- Include neighbors of neighbors for viscous part of residual ---*/
   
@@ -4927,12 +4964,20 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
        
   }
   
-  ofstream fs;
-  std::string fname = "masked_nodes_neighs.csv";
+  //ofstream fs;
+  //std::string fname = "masked_nodes_neighs.csv";
   fs.open(fname);
-  set <unsigned long> :: iterator itr;
+  //set <unsigned long> :: iterator itr;
   for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
     fs << *itr << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+  std::string fname2 = "masked_nodes_edges.csv";
+  fs.open(fname2);
+  for (unsigned long i : Edge_masked) {
+    fs << i << "," ;
   }
   fs << "\n";
   fs.close();

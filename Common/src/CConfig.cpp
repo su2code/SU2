@@ -1944,6 +1944,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SAVE_LIBROM", libROM, false);
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: Flag for saving data with libROM. */
   addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, STATIC_POD);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
+  addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
+  addUnsignedLongOption("POD_MODES", nPOD_Modes, 0);
   
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/

@@ -3748,7 +3748,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
+      //LinSysSol[total_index] = 0.0;
 
       su2double Res = fabs(LinSysRes[total_index]);
       resRMS[iVar] += Res*Res;
@@ -3777,6 +3777,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   if (false) {
   
     vector<double> rnorm(nVar,0.0);
+    
+    // warning: weights are written for no hyper-reduction
   
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -3850,7 +3852,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         // format phi matrix into su2double*
         su2double phi[nVar];
         for (unsigned long i = 0; i < nVar; i++){
-          phi[i]    = TrialBasis[kPoint*nVar + i][jPoint];
+          phi[i] = TrialBasis[kPoint*nVar + i][jPoint];
         }
         
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -3898,11 +3900,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     
     //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-      iPoint = Mask[iPoint_mask];
       
       for (unsigned long i = 0; i < nVar; i++){
         double prod2 = r[iPoint_mask*nVar + i] * TestBasis2[jPoint*m + iPoint_mask*nVar + i];
-        //double prod2 = r[iPoint*nVar + i] * TestBasis2[jPoint*m + iPoint*nVar + i];
         r_red[jPoint] += prod2;
       }
     }
@@ -4005,7 +4005,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   SU2_MPI::Error("Lapack necessary for ROM.", CURRENT_FUNCTION);
 #endif
 
-  if (INFO < 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
+  if (INFO != 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
   
   
   std::string fname3 = "check_LS_solution.csv";
@@ -4017,7 +4017,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   /*--- Backtracking line search ---*/
   // TODO: backtracking line search to find step size:
-  double a = 0.5;
+  double a = 0.05; //abs(1.0 * r[0] / GenCoordsY[0]);
     
   
   for (int i = 0; i < n; i++) {
