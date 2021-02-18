@@ -3375,8 +3375,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
             const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
 
-            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
-            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i-dProj_i);
+            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j-dProj_j);
             flowNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
             flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
           }
@@ -3440,8 +3440,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
               const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
               const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
 
-              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
-              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i-dProj_i);
+              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j-dProj_j);
               turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
               turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
             }
@@ -3643,8 +3643,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        dFl_dVl[iVar][jVar] += dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
-        dFr_dVr[iVar][jVar] += dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
+        dFl_dVl[iVar][jVar] += sign*dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
+        dFr_dVr[iVar][jVar] += sign*dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
       }
     }
   }
@@ -3676,8 +3676,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
-                                      + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
+        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
+                                 + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
       }
     }
   }
@@ -3728,7 +3728,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
-          Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
 
   /*--- Neighbor node terms ---*/
@@ -3772,8 +3772,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
-          Jacobian_j[iVar][jVar] += sign*dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
+          Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
         }
       }
     }
