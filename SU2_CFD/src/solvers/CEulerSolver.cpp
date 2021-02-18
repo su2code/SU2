@@ -3442,8 +3442,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
               turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i-dProj_i);
               turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j-dProj_j);
-              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
-              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
+              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, 2.0*dProj_i);
+              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, 2.0*dProj_j);
             }
             break;
           case PIPERNO:
