@@ -734,6 +734,8 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short POD_Basis_Gen;       /*!< \brief Type of POD basis generation (static or incremental). */
+  unsigned long nHyper_Nodes;         /*!< \brief Number of hyper-reduction nodes desired. */
+  unsigned long nPOD_Modes;           /*!< \brief Number of POD mdoes desired. */
   bool libROM;           /*!< \brief Toggle saving to libROM. */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -5349,6 +5351,18 @@ public:
    * \return Type of POD generation type
    */
   unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  unsigned long GetnPOD_Modes(void) const { return nPOD_Modes; }
   
   /*!
    * \brief Get the name of the file for libROM to save.
