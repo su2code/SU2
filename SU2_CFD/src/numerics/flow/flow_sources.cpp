@@ -27,6 +27,8 @@
  */
 
 #include "../../../include/numerics/flow/flow_sources.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
 
 CSourceBase_Flow::CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                                    CNumerics(val_nDim, val_nVar, config) {
@@ -681,21 +683,19 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
   Streamwise_Coord_Vector.resize(nDim);
   for (iDim = 0; iDim < nDim; iDim++)
-    Streamwise_Coord_Vector[iDim] = config->GetPeriodic_Translation(iDim);
+    Streamwise_Coord_Vector[iDim] = config->GetPeriodic_Translation(0)[iDim];
 
   /*--- Compute square of the distance between the 2 periodic surfaces via inner product with itself:
         dot_prod(t*t) = (|t|_2)^2  ---*/
-  norm2_translation = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    norm2_translation += pow(Streamwise_Coord_Vector[iDim],2);
+  norm2_translation = GeometryToolbox::SquaredNorm(nDim, Streamwise_Coord_Vector.data());
 
 }
 
 CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const CConfig *config) {
 
-  delta_p             = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
-  massflow            = config->GetStreamwise_Periodic_MassFlow();
-  integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
+  const su2double delta_p             = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref(); /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  const su2double massflow            = config->GetStreamwise_Periodic_MassFlow(); /*!< \brief Massflow through streamwise periodic 'outlet' marker. */
+  const su2double integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow(); /*!< \brief Total heat added into the domain via heatflux marker. */
 
   /*--- No contribution in the continuity equation ---*/
   residual[0] = 0.0;
@@ -713,9 +713,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
     scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
 
     /*--- Compute scalar-product dot_prod(v*t) ---*/
-    dot_product = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      dot_product += Streamwise_Coord_Vector[iDim] * V_i[iDim+1];
+    dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector.data(), &V_i[1]);
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
@@ -727,9 +725,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * Prandtl_Turb);
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
-      dot_product = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
+      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector.data(), PrimVar_Grad_i[nDim+5]);
 
       residual[nDim+1] -= Volume * scalar_factor * dot_product;
     } // if turbulent
@@ -748,25 +744,13 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
 
   for (iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
-  // Compute the residual contribution
-  if (config->GetAxisymmetric()) {
-    if (Coord_i[1] != 0.0)
-      AxiFactor = 2.0*PI_NUMBER*Coord_i[1];
-    else
-      AxiFactor = 1.0;
-  } else {
-    AxiFactor = 1.0;
-  }
-
-  /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
-  FaceArea = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(Normal[iDim] * AxiFactor, 2); }
-  FaceArea = sqrt(FaceArea);
+  /*--- A = sqrt(dot_prod(n_A*n_A)), with n_A beeing the area-normal. ---*/
+  FaceArea = GeometryToolbox::Norm(nDim, Normal);
 
   //compute local massflow [kg/s]
   local_Massflow = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    local_Massflow += Normal[iDim] * V_i[iDim+1] * DensityInc_i * AxiFactor;
+    local_Massflow += Normal[iDim] * V_i[iDim+1] * DensityInc_i;
   }
   
   AreaAvgInletTemp = config->GetStreamwise_Periodic_InletTemperature();

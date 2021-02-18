@@ -7473,9 +7473,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Initialize/Allocate variables. ---*/
-  unsigned short iMarker, iPeriodic, iDim;
-  unsigned long iPoint;
-  su2double norm, min_norm = 0.0;
+  su2double min_norm = 0.0;
 
   vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
                     Buffer_Recv_RefNode(size*nDim);
@@ -7487,25 +7485,25 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*---         therefore the default value of the send value is set super high.            ---*/
   /*-------------------------------------------------------------------------------------------*/
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
 
       /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
-      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
       if (iPeriodic == 1) {
 
-        for (iPoint = 0; iPoint < GetnVertex(iMarker); iPoint++) {
+        for (auto iVertex = 0ul; iVertex < GetnVertex(iMarker); iVertex++) {
+
+          auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
           /*--- Get the squared norm of the current point. ---*/
-          norm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            norm += pow(nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim),2);
+          auto norm = GeometryToolbox::SquaredNorm(nDim, nodes->GetCoord(iPoint));
 
           /*--- Check if new unique reference node is found. ---*/
-          if (norm < min_norm || iPoint == 0) {
+          if (norm < min_norm || iVertex == 0) {
             min_norm = norm;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_RefNode[iDim] = nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim);
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPoint,iDim);
           }
           /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
         }
@@ -7524,18 +7522,16 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*---         config container.                                                           ---*/
   /*-------------------------------------------------------------------------------------------*/
 
-  for (iPoint = 0; iPoint < static_cast<unsigned long>(size); iPoint++) { // loop over all vertices on that marker and fi
+  for (int iRank = 0; iRank < size; iRank++) { // loop over all vertices on that marker and fi
 
     /*--- Get the norm of the current Point. ---*/
-    norm = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      norm += pow(Buffer_Recv_RefNode[iPoint*nDim + iDim],2);
+    auto norm = GeometryToolbox::SquaredNorm(nDim, &Buffer_Recv_RefNode[iRank*nDim]);
 
     /*--- Check if new unique reference node is found. ---*/
-    if (norm < min_norm || iPoint == 0) {
+    if (norm < min_norm || iRank == 0) {
       min_norm = norm;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iPoint*nDim + iDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iRank*nDim + iDim];
     }
     /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
   }
@@ -7546,7 +7542,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*--- Print the reference node to screen. ---*/
   if (rank == MASTER_NODE) {
     cout << "Streamwise Periodic Reference Node: [";
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       cout <<  " " << Buffer_Send_RefNode[iDim];
     cout << " ]" << endl;
   }

@@ -2870,9 +2870,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
 }
 
-void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry,
+void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geometry,
                                                         CConfig        *config,
-                                                        unsigned short iMesh) {
+                                                        const unsigned short iMesh) {
 
   /*---------------------------------------------------------------------------------------------*/
   // 1. evaluate massflow, avg_density, Area at streamwise periodic outlet. also bulk temp at in/outlet. Loop periodic markers. Communicate and set results

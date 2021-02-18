@@ -102,8 +102,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (config->GetKind_Streamwise_Periodic() != NONE) {
 
     /*--- Define and initialize helping variables ---*/
-    su2double norm2_translation = 0.0,
-              dot_product,
+    su2double dot_product,
               Pressure_Recovered,
               Temperature_Recovered;
 
@@ -115,8 +114,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     vector<su2double> ReferenceNode = config->GetStreamwise_Periodic_RefNode();
 
     /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      norm2_translation += pow(config->GetPeriodic_Translation(iDim),2);
+    su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
 
     /*--- Compute recoverd pressure and temperature for all points ---*/
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -124,7 +122,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
       dot_product = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(iDim));
+        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
 
       /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK:: added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
       Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
@@ -211,10 +209,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     massflow = config->GetStreamwise_Periodic_MassFlow();
     integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
 
-    norm2_translation = 0.0;
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      norm2_translation += pow(config->GetPeriodic_Translation(iDim),2);
-    }
+    norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
   }
 
   /*--- Identify the boundary by string name ---*/
@@ -297,10 +292,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
           scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
 
           /*--- Dot product ---*/
-          dot_product = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            dot_product += config->GetPeriodic_Translation(iDim)*Normal[iDim];
-          }
+          dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
           LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
         } // if streamwise_periodic

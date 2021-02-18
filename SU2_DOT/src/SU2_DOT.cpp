@@ -321,7 +321,7 @@ int main(int argc, char *argv[]) {
     }
   } // for iZone
 
-  /*--- Write the gradient in a external file ---*/
+  /*--- Write the gradient to a file ---*/
 
   if (rank == MASTER_NODE)
     Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);

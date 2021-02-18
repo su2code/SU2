@@ -6248,9 +6248,8 @@ public:
    * \param[in] val_index - Index corresponding to the periodic transformation.
    * \return The translation vector.
    */
+  const su2double* GetPeriodic_Translation(unsigned short val_index ) const { return Periodic_Translation[val_index]; }
 
-  const su2double GetPeriodic_Translation(unsigned short iDim, unsigned short val_index = 0) const { return Periodic_Translation[val_index][iDim]; }
-  
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
    * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.

@@ -125,9 +125,9 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
    */
-  void GetStreamwise_Periodic_Properties(CGeometry      *geometry,
-                                         CConfig        *config,
-                                         unsigned short iMesh);
+  void GetStreamwise_Periodic_Properties(const CGeometry *geometry,
+                                         CConfig *config,
+                                         const unsigned short iMesh);
 
 public:
   /*!
