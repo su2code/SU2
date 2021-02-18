@@ -539,7 +539,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto iDim = 0; iDim < nDim; iDim++)
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
+        Jacobian_i[iVar][iVar] += jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
 
   }// physical boundary
 
@@ -559,8 +559,8 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     for (auto iVar = 0; iVar < nVar; iVar++) {
       Jacobian_j[iVar][iVar] = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
-        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*ratio_k;
+        Jacobian_i[iVar][iVar] += jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
+        Jacobian_j[iVar][iVar] += jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*ratio_k;
       }
     }
 

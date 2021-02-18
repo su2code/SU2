@@ -115,8 +115,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
-    // dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
-    // proj_vector_ij += Normal[iDim]*Normal[iDim];
   }
 
   if (correct_gradient)
