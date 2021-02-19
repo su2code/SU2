@@ -47,8 +47,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Diff_U = new su2double [nPrimVarTot] ();
   ProjFlux_i = new su2double [nVar] ();
   ProjFlux_j = new su2double [nVar] ();
-  Conservatives_i = new su2double [nVar] ();
-  Conservatives_j = new su2double [nVar] ();
+  Conservatives_i = new su2double [nPrimVarTot] ();
+  Conservatives_j = new su2double [nPrimVarTot] ();
   Lambda = new su2double [nPrimVarTot] ();
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nPrimVarTot];
@@ -249,6 +249,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   Conservatives_i[nDim+1] = Density_i*Energy_i;
   Conservatives_j[nDim+1] = Density_j*Energy_j;
+  if (tkeNeeded) {
+    Conservatives_i[nDim+2] = Density_i*turb_ke_i;
+    Conservatives_j[nDim+2] = Density_j*turb_ke_j;
+  }
 
   /*--- Compute left and right fluxes ---*/
 
@@ -299,10 +303,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Difference between conservative variables at jPoint and iPoint ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
-  if (tkeNeeded)
-    Diff_U[nDim+2] = Density_j*turb_ke_j-Density_i*turb_ke_i;
 
   /*--- Low dissipation formulation ---*/
   if (roe_low_dissipation)

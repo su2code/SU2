@@ -3358,9 +3358,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
     }
 
-    // good_i = good_i && (Project_Grad_i*V_ij >= 0);
-    // good_j = good_j && (Project_Grad_j*V_ij >= 0);
-
     /*--- Edge-based limiters ---*/
 
     if (limNeeded) {
@@ -3422,9 +3419,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
         Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
       }
-
-      // good_i = good_i && (Project_Grad_i*T_ij >= 0);
-      // good_j = good_j && (Project_Grad_j*T_ij >= 0);
 
       /*--- Edge-based limiters ---*/
 
@@ -3491,13 +3485,6 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
     good_i = good_i && (tke_i >= 0.0);
     good_j = good_j && (tke_j >= 0.0);
   }
-
-  // if (turb) {
-  //   for (auto iVar = 0; iVar < nTurbVar; iVar++) {
-  //     good_i = good_i && (turbvar_i[iVar] >= 0.0);
-  //     good_j = good_j && (turbvar_j[iVar] >= 0.0);
-  //   }
-  // }
 
   /*--- Positive Roe sound speed ---*/
 
@@ -3593,7 +3580,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto ind = iVar%(nDim+2);
     if (limiter) {  
       dVl_dVi[ind] = 1.0 + (0.5*nodes->GetLimiter_Primitive(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
-      dVr_dVi[ind] =     - (0.5*nodes->GetLimiter_Primitive(jPoint,iVar) - nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
+      dVr_dVi[ind] =     - (0.5*nodes->GetLimiter_Primitive(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
     }
     else {
       dVl_dVi[ind] = 1.0 - 0.5*Kappa_Flow*good_i;
@@ -3603,7 +3590,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   if (tkeNeeded) {
     if (limiterTurb) {
       dVl_dVi[nVar] = 1.0 + (0.5*turbNodes->GetLimiter(iPoint,0) + turbNodes->GetLimiterDerivativeDelta(iPoint,0))*good_i;
-      dVr_dVi[nVar] =     - (0.5*turbNodes->GetLimiter(jPoint,0) - turbNodes->GetLimiterDerivativeDelta(jPoint,0))*good_j;
+      dVr_dVi[nVar] =     - (0.5*turbNodes->GetLimiter(jPoint,0) + turbNodes->GetLimiterDerivativeDelta(jPoint,0))*good_j;
     }
     else {
       dVl_dVi[nVar] = 1.0 - 0.5*Kappa_Turb*good_i;
