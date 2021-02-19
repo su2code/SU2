@@ -168,8 +168,9 @@ if get_option('enable-librom')
 
    if not librom_dep.found()
      librom_root = get_option('librom_root')
-     librom_dep = declare_dependency(include_directories: librom_root, compile_args: ['-std=c++11', '-I../'+librom_root],
-                                     link_args: ['-L'+librom_root, '-lROM'])
+     root = '/Users/jessie/Software/libROM/'
+     librom_dep = declare_dependency(include_directories: root, compile_args: ['-std=c++11', '-I../'+root],
+                                     link_args: ['-L'+root+'build/', '-lROM'])
    endif
 
    su2_deps += librom_dep
