@@ -90,10 +90,15 @@ void CSurfaceElementFEM::MetricTermsIntegrationPoints(const unsigned short      
 
   /*--- Allocate the memory for the coordinates of the integration
         points and determine them. The first argument in the function
-       CoorIntPoints is a dummy to be consistent with the declaration. ---*/
+        CoorIntPoints is a dummy to be consistent with the declaration. ---*/
   coorIntegrationPoints.resize(nIntPad, nDim);
 
   standardElemGrid->CoorIntPoints(true, volElem[volElemID].coorGridDOFs, coorIntegrationPoints);
+
+  /*--- Set the coordinates of the padded points to avoid problems. ---*/
+  for(unsigned short j=0; j<nDim; ++j) 
+    for(unsigned short i=standardElemGrid->GetNIntegration(); i<nIntPad; ++i)
+      coorIntegrationPoints(i,j) = coorIntegrationPoints(0,j);
 
   /*--- Allocate the memory for the metric terms of the boundary face. ---*/
   JacobiansFace.resize(nIntPad);

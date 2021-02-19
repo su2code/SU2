@@ -85,7 +85,7 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const unsigned short     
 
 #ifndef NDEBUG
   /*--- DEBUG: Compute the coordinates of the integration points from the data
-               of th elemennt on side 1 and compare the results. ---*/
+               of th element on side 1 and compare the results. ---*/
   ColMajorMatrix<su2double> coorSide1(nIntPad, nDim);
   standardElemGrid->CoorIntPointsFromSide1(volElem[elemID1].coorGridDOFs, coorSide1);
 
@@ -101,6 +101,11 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const unsigned short     
 
   /*--- END DEBUG. ---*/
 #endif
+
+  /*--- Set the coordinates of the padded points to avoid problems. ---*/
+  for(unsigned short j=0; j<nDim; ++j)
+    for(unsigned short i=standardElemGrid->GetNIntegration(); i<nIntPad; ++i)
+      coorIntegrationPoints(i,j) = coorIntegrationPoints(0,j);
 
   /*--- Allocate the memory for the metric terms of the internal face. ---*/
   JacobiansFace.resize(nIntPad);

@@ -2300,7 +2300,288 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Get the reference values for the non-dimensionalization of the
+          prescribed velocities. ---*/
+    const su2double L_RefInv  = 1.0/config->GetLength_Ref();
+    const su2double Omega_Ref = config->GetOmega_Ref();
+    const su2double Vel_Ref   = config->GetVelocity_Ref();
+
+    /*--- Make a distinction between the possibilities. ---*/
+    switch( Kind_Grid_Movement ) {
+
+      /*------------------------------------------------------------*/
+
+      case ROTATING_FRAME: {
+
+        /*--- Get the rotation rate and rotation center from config. ---*/
+        const su2double Center[] = {config->GetMotion_Origin(0),
+                                    config->GetMotion_Origin(1),
+                                    config->GetMotion_Origin(2)};
+        const su2double Omega[]  = {config->GetRotation_Rate(0)/Omega_Ref,
+                                    config->GetRotation_Rate(1)/Omega_Ref,
+                                    config->GetRotation_Rate(2)/Omega_Ref};
+
+        /*--- Loop over the owned number of elements. ---*/
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+        for(unsigned long l=0; l<nVolElemTot; ++l) {
+
+          /*--- Determine the grid velocities in the integration points. ---*/
+          const unsigned short nIntPad = volElem[l].standardElemGrid->GetNIntegrationPad();
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            su2double dist[3] = {0.0};
+            dist[0] = (volElem[l].coorIntegrationPoints(i,0)-Center[0])*L_RefInv;
+            dist[1] = (volElem[l].coorIntegrationPoints(i,1)-Center[1])*L_RefInv;
+            if(nDim == 3) dist[2] = (volElem[l].coorIntegrationPoints(i,2)-Center[2])*L_RefInv;
+
+            volElem[l].gridVelocitiesInt(i,0) = Omega[1]*dist[2] - Omega[2]*dist[1];
+            volElem[l].gridVelocitiesInt(i,1) = Omega[2]*dist[0] - Omega[0]*dist[2];
+            if(nDim == 3) volElem[l].gridVelocitiesInt(i,2) = Omega[0]*dist[1] - Omega[1]*dist[0];
+          }
+
+          /*--- Determine the grid velocities in the solution DOFs. ---*/
+          const unsigned short nDOFsPad = volElem[l].standardElemGrid->GetNSolDOFsPad();
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i) {
+
+            su2double dist[3] = {0.0};
+            dist[0] = (volElem[l].coorSolDOFs(i,0)-Center[0])*L_RefInv;
+            dist[1] = (volElem[l].coorSolDOFs(i,1)-Center[1])*L_RefInv;
+            if(nDim == 3) dist[2] = (volElem[l].coorSolDOFs(i,2)-Center[2])*L_RefInv;
+
+            volElem[l].gridVelocitiesSolDOFs(i,0) = Omega[1]*dist[2] - Omega[2]*dist[1];
+            volElem[l].gridVelocitiesSolDOFs(i,1) = Omega[2]*dist[0] - Omega[0]*dist[2];
+            if(nDim == 3) volElem[l].gridVelocitiesSolDOFs(i,2) = Omega[0]*dist[1] - Omega[1]*dist[0];
+          }
+        }
+
+        /*--- Loop over the internally matching faces. ---*/
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+        for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+
+          /*--- Determine the grid velocities in the integration points. ---*/
+          const unsigned short nIntPad = matchingFaces[l].standardElemGrid->GetNIntegrationPad();
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nIntPad; ++i) {
+
+            su2double dist[3] = {0.0};
+            dist[0] = (matchingFaces[l].coorIntegrationPoints(i,0)-Center[0])*L_RefInv;
+            dist[1] = (matchingFaces[l].coorIntegrationPoints(i,1)-Center[1])*L_RefInv;
+            if(nDim == 3) dist[2] = (matchingFaces[l].coorIntegrationPoints(i,2)-Center[2])*L_RefInv;
+
+            matchingFaces[l].gridVelocities(i,0) = Omega[1]*dist[2] - Omega[2]*dist[1];
+            matchingFaces[l].gridVelocities(i,1) = Omega[2]*dist[0] - Omega[0]*dist[2];
+            if(nDim == 3) matchingFaces[l].gridVelocities(i,2) = Omega[0]*dist[1] - Omega[1]*dist[0];
+          }
+        }
+
+        /*--- Loop over the physical boundaries. Ignore the periodic boundaries. ---*/
+        for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+          if( !boundaries[iMarker].periodicBoundary ) {
+
+            /*--- Easier storage of the surface elements and determine the chunk size
+                  for the OpenMP parallelization, if supported. ---*/
+            vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+#ifdef HAVE_OMP
+            const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
+#endif
+            /*--- Check if this is a shroud boundary. ---*/
+            bool shroudBoundary = false;
+            for(unsigned short iShroud=0; iShroud<config->GetnMarker_Shroud(); ++iShroud) {
+              if(boundaries[iMarker].markerTag == config->GetMarker_Shroud(iShroud)) {
+                shroudBoundary = true;
+                break;
+              }
+            }
+
+            /*--- For a shroud boundary the grid velocities must be set to zero. ---*/
+            if( shroudBoundary ) {
+              SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+              for(unsigned long l=0; l<surfElem.size(); ++l)
+                surfElem[l].coorIntegrationPoints.setConstant(0.0);
+            }
+            else {
+
+              /*--- Normal boundary. Loop over the number of boundary faces. ---*/
+              SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+              for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+                /*--- Determine the grid velocities in the integration points. ---*/
+                const unsigned short nIntPad = surfElem[l].standardElemGrid->GetNIntegrationPad();
+                SU2_OMP_SIMD_IF_NOT_AD
+                for(unsigned short i=0; i<nIntPad; ++i) {
+
+                  su2double dist[3] = {0.0};
+                  dist[0] = (surfElem[l].coorIntegrationPoints(i,0)-Center[0])*L_RefInv;
+                  dist[1] = (surfElem[l].coorIntegrationPoints(i,1)-Center[1])*L_RefInv;
+                  if(nDim == 3) dist[2] = (surfElem[l].coorIntegrationPoints(i,2)-Center[2])*L_RefInv;
+
+                  surfElem[l].gridVelocities(i,0) = Omega[1]*dist[2] - Omega[2]*dist[1];
+                  surfElem[l].gridVelocities(i,1) = Omega[2]*dist[0] - Omega[0]*dist[2];
+                  if(nDim == 3) surfElem[l].gridVelocities(i,2) = Omega[0]*dist[1] - Omega[1]*dist[0];
+                }
+              }
+            }
+          }
+        }
+
+        break;
+      }
+
+      /*------------------------------------------------------------*/
+
+      case STEADY_TRANSLATION: {
+
+        /*--- Get the translation velocity from config. ---*/
+        const su2double vTrans[] = {config->GetTranslation_Rate(0)/Vel_Ref,
+                                    config->GetTranslation_Rate(1)/Vel_Ref,
+                                    config->GetTranslation_Rate(2)/Vel_Ref};
+
+      /*--- Loop over the owned number of elements. ---*/
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+        for(unsigned long l=0; l<nVolElemTot; ++l) {
+
+          /*--- Determine the grid velocities in the integration points. ---*/
+          const unsigned short nIntPad = volElem[l].standardElemGrid->GetNIntegrationPad();
+          for(unsigned short j=0; j<nDim; ++j ) {
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nIntPad; ++i)
+              volElem[l].gridVelocitiesInt(i,j) = vTrans[j];
+          }
+
+          /*--- Determine the grid velocities in the solution DOFs. ---*/
+          const unsigned short nDOFsPad = volElem[l].standardElemGrid->GetNSolDOFsPad();
+          for(unsigned short j=0; j<nDim; ++j ) {
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              volElem[l].gridVelocitiesSolDOFs(i,j) = vTrans[j];
+          }
+        }
+
+        /*--- Loop over the internally matching faces. ---*/
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+        for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+
+          /*--- Determine the grid velocities in the integration points. ---*/
+          const unsigned short nIntPad = matchingFaces[l].standardElemGrid->GetNIntegrationPad();
+          for(unsigned short j=0; j<nDim; ++j ) {
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nIntPad; ++i)
+              matchingFaces[l].gridVelocities(i,j) = vTrans[j];
+          }
+        }
+
+        /*--- Loop over the physical boundaries. Ignore the periodic boundaries. ---*/
+        for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+          if( !boundaries[iMarker].periodicBoundary ) {
+
+            /*--- Easier storage of the surface elements and loop over them. ---*/
+            vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+#ifdef HAVE_OMP
+            const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
+#endif
+            SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+            for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+              /*--- Determine the grid velocities in the integration points. ---*/
+              const unsigned short nIntPad = surfElem[l].standardElemGrid->GetNIntegrationPad();
+              for(unsigned short j=0; j<nDim; ++j ) {
+                SU2_OMP_SIMD_IF_NOT_AD
+                for(unsigned short i=0; i<nIntPad; ++i)
+                  surfElem[l].gridVelocities(i,j) = vTrans[j];
+              }
+            }
+          }
+        }
+
+        break;
+      }
+
+      /*------------------------------------------------------------*/
+
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+
+    /*--- Check if moving walls are present. ---*/
+    if( config->GetSurface_Movement(MOVING_WALL) ) {
+
+      /*--- Loop over the physical boundaries. Skip the periodic boundaries. ---*/
+      for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+        if( !boundaries[iMarker].periodicBoundary ) {
+
+          /*--- Check if for this boundary a motion has been specified. ---*/
+          if(config->GetMarker_All_Moving(iMarker) == YES) {
+
+            /*--- Determine the prescribed translation velocity, rotation rate
+                  and rotation center. ---*/
+            const su2double Center[] = {config->GetMotion_Origin(0),
+                                        config->GetMotion_Origin(1),
+                                        config->GetMotion_Origin(2)};
+            const su2double Omega[]  = {config->GetRotation_Rate(0)/Omega_Ref,
+                                        config->GetRotation_Rate(1)/Omega_Ref,
+                                        config->GetRotation_Rate(2)/Omega_Ref};
+            const su2double vTrans[] = {config->GetTranslation_Rate(0)/Vel_Ref,
+                                        config->GetTranslation_Rate(1)/Vel_Ref,
+                                        config->GetTranslation_Rate(2)/Vel_Ref};
+
+            /*--- Easier storage of the surface elements and loop over them. ---*/
+            vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+#ifdef HAVE_OMP
+            const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
+#endif
+            SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+            for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+              /*--- Loop over the number of integration points. ---*/
+              const unsigned short nIntPad = surfElem[l].standardElemGrid->GetNIntegrationPad();
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nIntPad; ++i) {
+
+                /*--- Calculate the non-dimensional distance from the
+                      rotation center. ---*/
+                su2double r[3] = {0.0};
+                r[0] = (volElem[l].coorSolDOFs(i,0)-Center[0])*L_RefInv;
+                r[1] = (volElem[l].coorSolDOFs(i,1)-Center[1])*L_RefInv;
+                if(nDim == 3) r[2] = (volElem[l].coorSolDOFs(i,2)-Center[2])*L_RefInv;
+
+                /*--- Cross Product of angular velocity and distance from center to
+                      get the rotational velocity. Note that we are adding on the
+                      velocity due to pure translation as well. Also note that for
+                      that 2D case only Omega[2] can be non-zero. ---*/
+                su2double velGrid[] = {vTrans[0] + Omega[1]*r[2] - Omega[2]*r[1],
+                                       vTrans[1] + Omega[2]*r[0] - Omega[0]*r[2],
+                                       vTrans[2] + Omega[0]*r[1] - Omega[1]*r[0]};
+
+                /*--- Store the grid velocities. ---*/
+                surfElem[l].gridVelocities(i,0) = velGrid[0];
+                surfElem[l].gridVelocities(i,1) = velGrid[1];
+                if(nDim == 3) surfElem[l].gridVelocities(i,2) = velGrid[2];
+              }
+            }
+          }
+        }
+      }
+    }
+
+  } /*--- end SU2_OMP_PARALLEL ---*/
 }
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
@@ -2345,7 +2626,7 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
         }        
       }
     }
-  }
+  } /*--- end SU2_OMP_PARALLEL ---*/
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {

@@ -160,8 +160,13 @@ bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           L
   }
 
   /*--- Make sure that the Jacobian for the padded data is
-        not zero, to avoid problems later on. ---*/
-  for(unsigned short i=nInt; i<nIntPad; ++i) JacobiansInt(i) = 1.0;
+        not zero, to avoid problems later on. Something similar
+        for the coordinates. ---*/
+  for(unsigned short i=nInt; i<nIntPad; ++i) {
+    JacobiansInt(i) = 1.0;
+    for(unsigned short j=0; j<nDim; ++j)
+      coorIntegrationPoints(i,j) = coorIntegrationPoints(0,j);
+  }
 
   /*--- Return the value of elemIsGood. ---*/
   return elemIsGood;
@@ -195,8 +200,13 @@ bool CVolumeElementFEM_Base::MetricTermsSolDOFs(const unsigned short nDim) {
     if(JacobiansSolDOFs(i) <= 0.0) elemIsGood = false;
 
   /*--- Make sure that the Jacobian for the padded data is
-        not zero, to avoid problems later on. ---*/
-  for(unsigned short i=nDOFsSol; i<nDOFsSolPad; ++i) JacobiansSolDOFs(i) = 1.0;
+        not zero, to avoid problems later on. Something similar
+        for the coordinates. ---*/
+  for(unsigned short i=nDOFsSol; i<nDOFsSolPad; ++i) {
+    JacobiansSolDOFs(i) = 1.0;
+    for(unsigned short j=0; j<nDim; ++j)
+      coorSolDOFs(i,j) = coorSolDOFs(0,j);
+  }
 
   /*--- Return the value of elemIsGood. ---*/
   return elemIsGood;
