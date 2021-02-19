@@ -204,6 +204,16 @@ public:
                                               CConfig *config);
 
   /*!
+   * \brief Return current parameter gradient.
+   */
+  inline vector<su2double> GetDeltaP() { return deltaP; }
+
+  /*!
+   * \brief Return a handle for the Hessian.
+   */
+  void GetHessianMatrix() {}
+
+  /*!
    * \brief write the DV gradient into a file
    */
   void OutputDVGradient(string out_file="delta_p.txt");

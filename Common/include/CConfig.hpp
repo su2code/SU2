@@ -1159,7 +1159,7 @@ private:
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   unsigned short OneShotMode;           /*!< \brief Kind of One-Shot mode specified */
-  unsigned long PiggybackSteps;         /*!< \brief The number of Piggyback steps in between 2 linesearches */
+  unsigned long OneShotIter;            /*!< \brief The max number of design updates the optimizer makes. */
   unsigned short nConstr, nConstrHelp;  /*!< \brief Number of constraint function. */
   unsigned short *Kind_ConstrFunc;      /*!< \brief Kind of constraint function. */
   su2double *ConstrFuncTarget;          /*!< \brief Kind of constraint function. */
@@ -4322,7 +4322,7 @@ public:
   unsigned short GetRef_Inc_NonDim(void) const { return Ref_Inc_NonDim; }
 
   /*!
-   * \brief Get the kind of SU2 software component.
+   * \brief Set the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
@@ -9548,7 +9548,7 @@ public:
    * \brief Get the number of Piggyback steps between line searches.
    * \return number of steps
    */
-  unsigned long GetPiggybackSteps(void) { return PiggybackSteps; }
+  unsigned long GetOneShotIter(void) { return OneShotIter; }
 
   /*!
    * \brief Get the number of constraints.

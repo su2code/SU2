@@ -4583,6 +4583,16 @@ public:
                                  CConfig *config) { }
 
   /*!
+   * \brief A virtual member.
+   */
+  inline virtual vector<su2double> GetDeltaP() { return vector<su2double>(); }
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetHessianMatrix() {}
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */

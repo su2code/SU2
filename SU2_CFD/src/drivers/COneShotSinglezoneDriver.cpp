@@ -108,15 +108,34 @@ void COneShotSinglezoneDriver::Postprocess() {
 
 void COneShotSinglezoneDriver::RunOneShot(){
 
-  // intialization
+  su2double CombinedFunc=0.0;
+  unsigned long OneShotIter;
+  bool isconverged=false;
 
-  // call to Piggyback
+  /// main loop for the optimization method
+  while (OneShotIter<config->GetOneShotIter()) {
 
-  // get the function value, gradient, hessian
+    /// call to Piggyback
+    PiggyBack();
 
-  // do a linesearch and design update
+    /// get the function value, gradient, hessian
+    CombinedFunc = ObjFunc;
+    for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
+      CombinedFunc+=multiplier[iConstr]*ConstrFunc[iConstr];
+    }
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+    gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
 
-  // check for stop
+    /// do a linesearch and design update
+
+    DeformGeometry(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], gradient, config);
+
+    /// check for convergence and update for next iteration
+
+    UpdateDesignVariable(gradient);
+    if (isconverged) { break; }
+    OneShotIter++;
+  }
 
 }
 
@@ -262,7 +281,7 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
   unsigned short Kind_ConstrFunc, nConstr=config->GetnConstr();
   su2double FunctionValue = 0.0;
 
-  if (nConstr != 0) { std::cout << "Constraint Function Value: "; }
+  if (rank == MASTER_NODE && nConstr != 0) { std::cout << "Constraint Function Value: "; }
 
   for (auto iConstr=0; iConstr < nConstr; iConstr++){
 
@@ -271,13 +290,13 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
     // The sign in this equation is a matter of cenvention, just ensure, that you choose the multiplier accordingly.
     ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
-    std::cout<<FunctionValue<<" ";
     if (rank == MASTER_NODE){
+      std::cout << FunctionValue << ", " << config->GetConstrFuncScale(iConstr) << ", " << multiplier[iConstr] << "; ";
       AD::RegisterOutput(ConstrFunc[iConstr]);
     }
   }
 
-  if (nConstr != 0) { std::cout<<std::endl; }
+  if (rank == MASTER_NODE && nConstr != 0) { std::cout<<std::endl; }
 }
 
 void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
@@ -290,15 +309,34 @@ void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
 
 }
 
-void COneShotSinglezoneDriver::SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient){
-  // implement later
+void COneShotSinglezoneDriver::DeformGeometry(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP, CConfig *config) {
+
+  config->SetKind_SU2(SU2_DEF);
+
+  unsigned short iDV, iDV_Value, nDV_Value;
+  unsigned long iDVtotal=0;
+
+  for (iDV = 0; iDV < config->GetnDV_Total(); iDV++) {
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      config->SetDV_Value(iDV,iDV_Value, deltaP[iDVtotal]);
+      iDVtotal++;
+    }
+  }
+
+  /*--- Surface grid deformation using design variables ---*/
+  surface_movement->SetSurface_Deformation(geometry, config);
+
+  /*--- Volumetric grid deformation/transformations ---*/
+  if (config->GetDesign_Variable(0) != FFD_SETTING) {
+    grid_movement->SetVolume_Deformation(geometry, config, false);
+  }
+
+  config->SetKind_SU2(SU2_CFD);
+
 }
 
-void COneShotSinglezoneDriver::SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement){
-  // implement later
-}
-
-void COneShotSinglezoneDriver::ComputeSearchDirection(){
+void COneShotSinglezoneDriver::ComputeSearchDirection(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP, CConfig *config) {
  // should be something like preconditioner * gradient + constraint projection
 }
 
@@ -306,8 +344,10 @@ bool COneShotSinglezoneDriver::CheckDescent(){
   return false;
 }
 
-void COneShotSinglezoneDriver::UpdateDesignVariable(){
-  // implement later
+void COneShotSinglezoneDriver::UpdateDesignVariable(vector<su2double>& deltaP){
+  for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
+    design[iDV] += deltaP[iDV];
+  }
 }
 
 void COneShotSinglezoneDriver::ComputePreconditioner(){
@@ -317,8 +357,3 @@ void COneShotSinglezoneDriver::ComputePreconditioner(){
 
 
 }
-
-void COneShotSinglezoneDriver::ProjectMeshSensitivities(){
-  // implement later
-}
-

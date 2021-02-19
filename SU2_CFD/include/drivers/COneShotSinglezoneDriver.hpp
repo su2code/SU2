@@ -57,7 +57,10 @@ protected:
   COutput* flowoutput;                /*!< \brief Additional instance of an output class to write flow solution/restart files.*/
 
   vector<su2double> ConstrFunc;       /*!< \brief Constraint function values.*/
-  vector<su2double> multiplier;        /*!< \brief Lagrange multipliers for constraint functions.*/
+  vector<su2double> multiplier;       /*!< \brief Lagrange multipliers for constraint functions.*/
+
+  vector<su2double> design;           /*!< \brief Current Design for the OneShot optimization.*/
+  vector<su2double> gradient;         /*!< \brief Gradient for OneShot optimization.*/
 
 public:
 
@@ -125,27 +128,18 @@ public:
   void SetAdj_ConstrFunction(vector<su2double> seeding);
 
   /*!
-   * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement class of the problem.
-   * \param[in] Gradient - Output to store the gradient data.
-   */
-  void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double* Gradient);
-
-  /*!
-   * \brief Performs a surface deformation and volumetric deformation (see also SU2_DEF) for a design update.
+   * \brief Performs a surface deformation and volumetric deformation (sets kind to SU2_DEF) for a design update.
    * \param[in] geometry - geometry class.
    * \param[in] config - config class.
    * \param[in] surface_movement - surface movement class
    * \param[in] grid_movement - volumetric movement class
    */
-  void SurfaceDeformation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
+  void DeformGeometry(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP,  CConfig *config);
 
   /*!
-   * \brief Compute the search direction using the gradients and the preconditioner.
+   * \brief Compute the search direction using the preconditioned gradient.
    */
-  void ComputeSearchDirection();
+  void ComputeSearchDirection(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP, CConfig *config);
 
   /*!
    * \brief Check if the search direction is a descent direction.
@@ -155,12 +149,7 @@ public:
   /*!
    * \brief Store values for the updated design variables.
    */
-  void UpdateDesignVariable();
-
-  /*!
-   * \brief Project mesh sensitivities to surface and design variables using AD.
-   */
-  void ProjectMeshSensitivities();
+  void UpdateDesignVariable(vector<su2double>& deltaP);
 
   /*!
    * \brief Compute the inverse preconditioner matrix (BCheck^(-1)) for the multiplier update.

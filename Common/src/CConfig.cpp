@@ -2833,7 +2833,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("ONE_SHOT", OneShotMode, Oneshot_Mode_Map, NO_MODE);
 
   /* DESCRIPTION: number of Piggyback steps between 2 design updates */
-  addUnsignedLongOption("PIGGYBACK_ITER", PiggybackSteps, 999999);
+  addUnsignedLongOption("ONESHOT_ITER", OneShotIter, 999999);
 
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
