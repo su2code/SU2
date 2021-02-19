@@ -212,6 +212,8 @@
 		4063F859246A053400DE870E /* COutputFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F854246A053400DE870E /* COutputFactory.cpp */; };
 		4063F85A246A053400DE870E /* CParaviewVTMFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F855246A053400DE870E /* CParaviewVTMFileWriter.cpp */; };
 		4063F85B246A053400DE870E /* CWindowingTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F856246A053400DE870E /* CWindowingTools.cpp */; };
+		40707E002579BE6F00808AF6 /* libmpi.40.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 40707DFE2579BE3E00808AF6 /* libmpi.40.dylib */; };
+		40707E0125886B0800808AF6 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40D4040C24787579008C5E0F /* Accelerate.framework */; };
 		40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40D4040C24787579008C5E0F /* Accelerate.framework */; };
 		E90B4FD822DFDF94000ED392 /* CMMSIncNSSolution.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90B4FCB22DFDF92000ED392 /* CMMSIncNSSolution.cpp */; };
 		E90B4FD922DFDF94000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90B4FCC22DFDF93000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp */; };
@@ -745,6 +747,7 @@
 		4063F854246A053400DE870E /* COutputFactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = COutputFactory.cpp; path = ../../SU2_CFD/src/output/COutputFactory.cpp; sourceTree = "<group>"; };
 		4063F855246A053400DE870E /* CParaviewVTMFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CParaviewVTMFileWriter.cpp; sourceTree = "<group>"; };
 		4063F856246A053400DE870E /* CWindowingTools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CWindowingTools.cpp; path = ../../SU2_CFD/src/output/tools/CWindowingTools.cpp; sourceTree = "<group>"; };
+		40707DFE2579BE3E00808AF6 /* libmpi.40.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi.40.dylib; path = "../../../../../../usr/local/Cellar/open-mpi/4.0.4_1/lib/libmpi.40.dylib"; sourceTree = "<group>"; };
 		40D4040C24787579008C5E0F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		E90B4FCB22DFDF92000ED392 /* CMMSIncNSSolution.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMMSIncNSSolution.cpp; path = ../../Common/src/toolboxes/MMS/CMMSIncNSSolution.cpp; sourceTree = "<group>"; };
 		E90B4FCC22DFDF93000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMMSNSUnitQuadSolutionWallBC.cpp; path = ../../Common/src/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.cpp; sourceTree = "<group>"; };
@@ -866,6 +869,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40707E002579BE6F00808AF6 /* libmpi.40.dylib in Frameworks */,
+				40707E0125886B0800808AF6 /* Accelerate.framework in Frameworks */,
 				40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */,
 				40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */,
 			);
@@ -1806,6 +1811,7 @@
 		40D4040B24787579008C5E0F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				40707DFE2579BE3E00808AF6 /* libmpi.40.dylib */,
 				40084FAC24B8E8330040AA28 /* libROM.dylib */,
 				40D4040C24787579008C5E0F /* Accelerate.framework */,
 			);
@@ -2315,8 +2321,22 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+				);
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
+					/usr/local/opt/libevent/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DHAVE_LAPACK",
@@ -2373,8 +2393,18 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+					"/usr/local/Cellar/open-mpi/4.0.4_1/include",
+				);
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
+					/usr/local/opt/libevent/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DHAVE_LAPACK",
