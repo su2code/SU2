@@ -97,7 +97,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   /// DESCRIPTION: Root-mean square residual of the pressure.
-  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the pressure.", HistoryFieldType::RESIDUAL);
+  if (!pressure_based) AddHistoryOutput("RMS_PRESSURE",   "rms[P]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the pressure.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity x-component.
   AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity y-component.

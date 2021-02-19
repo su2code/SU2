@@ -1728,13 +1728,19 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
 
-            /*--- This is treated as a strong boundary and the velocity set at this node is V - V_{grid}. ---*/
+            if (dynamic_grid)
+              GridVel_i = geometry->nodes->GetGridVel(iPoint);
+                
             MassFlux_Part = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
+            if (dynamic_grid)
+              for (iDim = 0; iDim < nDim; iDim++)
+                MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+            else
+             for (iDim = 0; iDim < nDim; iDim++)
               MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
 
-             if (geometry->nodes->GetDomain(iPoint))
-               nodes->AddMassFlux(iPoint, MassFlux_Part);
+            if (geometry->nodes->GetDomain(iPoint))
+              nodes->AddMassFlux(iPoint, MassFlux_Part);
 
              /*--- Sum up the mass flux entering to be used for mass flow correction at outflow ---*/
              Mass_In += fabs(MassFlux_Part);
@@ -2364,7 +2370,6 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         GridVel_i = geometry->nodes->GetGridVel(iPoint);   
         conv_numerics->SetGridVel(GridVel_i,GridVel_i);
       }
-      
 
       Face_Flux = 0.0;
       if (dynamic_grid)
@@ -2504,11 +2509,12 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim] = Vel_Mag*UnitFlowDir[iDim];
-          
+
+      /*--- Adding the grid velocity because SetVelocityOld sets the solution which is U = U_rel + U_grid. ---*/
       if (dynamic_grid) {
         GridVel_i = geometry->nodes->GetGridVel(iPoint); 
          for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim] -= GridVel_i[iDim];
+          V_inlet[iDim] += GridVel_i[iDim];
       }
 
       /*--- Update the CharacPrimVar for this vertex on inlet marker. ---*/
@@ -2517,7 +2523,7 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       V_Charac[0] = nodes->GetPressure(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
-          V_Charac[iDim+1] = V_inlet[iDim];
+          V_Charac[iDim+1] = V_domain[iDim];
       V_Charac[nDim+1] = nodes->GetDensity(iPoint);
 
       if (viscous) {
@@ -2533,11 +2539,8 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       nodes->SetStrongBC(iPoint);
 
-      /*for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim);*/
       LinSysRes.SetBlock_Zero(iPoint);
       /*--- Jacobian contribution for implicit integration ---*/
-
       if (implicit) {
         for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nVar+iDim;
@@ -2570,7 +2573,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
   su2double *Normal = new su2double[nDim];
   unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double *GridVel_i;
+  su2double *GridVel_j = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -2590,55 +2593,54 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
       /*--- Current solution at this boundary node ---*/
 
       V_domain = nodes->GetPrimitive(iPoint);
 
       V_outlet = GetCharacPrimVar(val_marker, iVertex);
 
+      for (iDim = 0; iDim < nDim; iDim++) GridVel_j[iDim] = 0.0;
       if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), GridVel_j);
 
       switch (Kind_Outlet) {
+        case PRESSURE_OUTLET: {
 
-          case PRESSURE_OUTLET:
-          {
-              /*--- Retrieve the specified back pressure for this outlet. ---*/
-              P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+          /*--- Retrieve the specified back pressure for this outlet. ---*/
+          P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
-              nodes->SetPressure_val(iPoint, P_Outlet);
-              V_outlet[0] = P_Outlet;
-              for (iDim = 0; iDim < nDim; iDim++)
-                V_outlet[iDim+1] = 0.0;
-              V_outlet[nDim+1] = nodes->GetDensity(iPoint);
+          nodes->SetPressure_val(iPoint, P_Outlet);
+          V_outlet[0] = P_Outlet;
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_outlet[iDim+1] = 0.0;
+          V_outlet[nDim+1] = nodes->GetDensity(iPoint);
 
-              conv_numerics->SetPrimitive(V_domain, V_outlet);
+          conv_numerics->SetPrimitive(V_domain, V_outlet);
 
-              /*--- Compute the residual using an upwind scheme ---*/
+          /*--- Compute the residual using an upwind scheme ---*/
 
-              auto residual = conv_numerics->ComputeResidual(config);
+          auto residual = conv_numerics->ComputeResidual(config);
 
-              for (iVar = 0; iVar < nVar; iVar++) {
-                 Residual[iVar] = 2.0*residual.residual[iVar];
-              }
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Residual[iVar] = 2.0*residual.residual[iVar];
+          }
 
-              for (iDim = 0; iDim < nDim; iDim++)
-                  for (jDim = 0; jDim < nDim; jDim++)
-                      Jacobian_i[iDim][jDim] = 2.0*residual.jacobian_i[iDim][jDim];
+          for (iDim = 0; iDim < nDim; iDim++)
+            for (jDim = 0; jDim < nDim; jDim++)
+              Jacobian_i[iDim][jDim] = 2.0*residual.jacobian_i[iDim][jDim];
 
-              /*--- Update residual value ---*/
-              LinSysRes.AddBlock(iPoint, Residual);
+          /*--- Update residual value ---*/
+          LinSysRes.AddBlock(iPoint, Residual);
 
-              if (implicit)
-                Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+          if (implicit)
+            Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
-              for (iDim = 0; iDim < nDim; iDim++)
-                    V_outlet[iDim+1] = V_domain[iDim+1];
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_outlet[iDim+1] = V_domain[iDim+1];
 
           break;
           }
+
           case OPEN:
                    /* Not working yet */
 
@@ -2652,6 +2654,8 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
         V_outlet[nDim+2] = nodes->GetLaminarViscosity(iPoint);
         V_outlet[nDim+3] = nodes->GetEddyViscosity(iPoint);
 
+        /*--- Set the normal vector and the coordinates ---*/
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                                 geometry->nodes->GetCoord(Point_Normal));
@@ -2680,6 +2684,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+  delete [] GridVel_j;
 
 }
 
