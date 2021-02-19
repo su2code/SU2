@@ -18,3 +18,4 @@ option('librom_root', type : 'string', value : '', description: 'libROM base dir
 option('enable-librom', type : 'boolean', value : false, description: 'enable LLNL libROM support')
 option('enable-tests',  type : 'boolean', value : false, description: 'Compile Unit Tests')
 option('enable-mixedprec', type : 'boolean', value : false, description: 'Use single precision floating point arithmetic for sparse algebra')
+option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
