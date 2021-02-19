@@ -494,9 +494,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       FluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
       FluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
       break;
+      delete[] dummy_scalar;
   }
 
-  delete[] dummy_scalar;
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
