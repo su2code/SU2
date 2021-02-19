@@ -33,10 +33,7 @@
 void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
 
   int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
-#endif
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
   for(iZone=0; iZone < nZone; iZone++){
@@ -193,7 +190,7 @@ unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker){
 
 }
 
-unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) {
+unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint, GlobalIndex;
 
@@ -204,7 +201,7 @@ unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned lon
 
 }
 
-bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) {
+bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
 
@@ -214,7 +211,7 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) {
 
 }
 
-vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
 
   vector<su2double> coord(3,0.0);
   vector<passivedouble> coord_passive(3, 0.0);
@@ -231,7 +228,7 @@ vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsig
   return coord_passive;
 }
 
-vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex){
+vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
 
   su2double *Normal;
   su2double Area;
@@ -257,9 +254,9 @@ vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsig
 /* Functions to obtain global parameters from SU2 (time steps, delta t, ecc...) */
 //////////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetnTimeIter() {
+unsigned long CDriver::GetnTimeIter() const {
 
-    return config_container[ZONE_0]->GetnTime_Iter();
+  return config_container[ZONE_0]->GetnTime_Iter();
 }
 
 unsigned long CDriver::GetTime_Iter() const{
@@ -267,7 +264,7 @@ unsigned long CDriver::GetTime_Iter() const{
   return TimeIter;
 }
 
-passivedouble CDriver::GetUnsteady_TimeStep(){
+passivedouble CDriver::GetUnsteady_TimeStep() const {
 
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
@@ -276,7 +273,7 @@ passivedouble CDriver::GetUnsteady_TimeStep(){
 /* Functions related to CHT solver                                           */
 ///////////////////////////////////////////////////////////////////////////////
 
-passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned long iVertex){
+passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   su2double vertexWallTemp(0.0);
@@ -298,7 +295,7 @@ void CDriver::SetVertexTemperature(unsigned short iMarker, unsigned long iVertex
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, val_WallTemp);
 }
 
-vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex){
+vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -313,7 +310,6 @@ vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsig
   vector<passivedouble> HeatFluxPassive (3,0.0);
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-  bool halo;
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -333,7 +329,7 @@ vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsig
   return HeatFluxPassive;
 }
 
-passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex){
+passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const{
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -381,7 +377,7 @@ void CDriver::SetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVer
   geometry_container[ZONE_0][INST_0][MESH_0]->SetCustomBoundaryHeatFlux(iMarker, iVertex, val_WallHeatFlux);
 }
 
-passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned long iVertex){
+passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   su2double Prandtl_Lam  = config_container[ZONE_0]->GetPrandtl_Lam();
@@ -403,7 +399,7 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned l
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<string> CDriver::GetAllBoundaryMarkersTag(){
+vector<string> CDriver::GetAllBoundaryMarkersTag() const {
 
   vector<string> boundariesTagList;
   unsigned short iMarker,nBoundariesMarkers;
@@ -420,7 +416,7 @@ vector<string> CDriver::GetAllBoundaryMarkersTag(){
   return boundariesTagList;
 }
 
-vector<string> CDriver::GetAllDeformMeshMarkersTag(){
+vector<string> CDriver::GetAllDeformMeshMarkersTag() const {
 
   vector<string> interfaceBoundariesTagList;
   unsigned short iMarker, nBoundariesMarker;
@@ -437,7 +433,7 @@ vector<string> CDriver::GetAllDeformMeshMarkersTag(){
   return interfaceBoundariesTagList;
 }
 
-vector<string> CDriver::GetAllCHTMarkersTag(){
+vector<string> CDriver::GetAllCHTMarkersTag() const {
 
   vector<string> CHTBoundariesTagList;
   unsigned short iMarker, nBoundariesMarker;
@@ -456,7 +452,7 @@ vector<string> CDriver::GetAllCHTMarkersTag(){
   return CHTBoundariesTagList;
 }
 
-vector<string> CDriver::GetAllInletMarkersTag(){
+vector<string> CDriver::GetAllInletMarkersTag() const {
 
   vector<string> BoundariesTagList;
   unsigned short iMarker, nBoundariesMarker;
@@ -476,7 +472,7 @@ vector<string> CDriver::GetAllInletMarkersTag(){
   return BoundariesTagList;
 }
 
-map<string, int> CDriver::GetAllBoundaryMarkers(){
+map<string, int> CDriver::GetAllBoundaryMarkers() const {
 
   map<string, int>  allBoundariesMap;
   unsigned short iMarker, nBoundaryMarkers;
@@ -492,7 +488,7 @@ map<string, int> CDriver::GetAllBoundaryMarkers(){
   return allBoundariesMap;
 }
 
-map<string, string> CDriver::GetAllBoundaryMarkersType(){
+map<string, string> CDriver::GetAllBoundaryMarkersType() const {
 
   map<string, string> allBoundariesTypeMap;
   unsigned short iMarker, KindBC;
@@ -647,7 +643,7 @@ void CDriver::SetFEA_Loads(unsigned short iMarker, unsigned long iVertex, passiv
 
 }
 
-vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   vector<su2double> Displacements(3, 0.0);
@@ -672,7 +668,7 @@ vector<passivedouble> CDriver::GetFEA_Displacements(unsigned short iMarker, unsi
 }
 
 
-vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   vector<su2double> Velocity(3, 0.0);
@@ -698,7 +694,7 @@ vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned 
   return Velocity_passive;
 }
 
-vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   vector<su2double> Velocity_n(3, 0.0);
@@ -729,7 +725,7 @@ vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigne
 /* Functions related to adjoint simulations                                   */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   vector<su2double> Disp_Sens(3, 0.0);
@@ -754,9 +750,7 @@ vector<passivedouble> CDriver::GetMeshDisp_Sensitivity(unsigned short iMarker, u
 
 }
 
-
-
-vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const {
 
   unsigned long iPoint;
   vector<su2double> FlowLoad_Sens(3, 0.0);
@@ -842,7 +836,7 @@ void CDriver::CommunicateMeshDisplacement(void) {
 /* Functions related to flow loads */
 ////////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const {
 
   vector<su2double> FlowLoad(3, 0.0);
   vector<passivedouble> FlowLoad_passive(3, 0.0);

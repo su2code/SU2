@@ -428,13 +428,13 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the specified vertex is a halo node.
    */
-  bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex);
+  bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the number of external iterations.
    * \return Number of external iterations.
    */
-  unsigned long GetnTimeIter();
+  unsigned long GetnTimeIter() const;
 
   /*!
    * \brief Get the current external iteration.
@@ -446,7 +446,7 @@ public:
    * \brief Get the unsteady time step.
    * \return Unsteady time step.
    */
-  passivedouble GetUnsteady_TimeStep();
+  passivedouble GetUnsteady_TimeStep() const;
 
   /*!
    * \brief Get the global index of a vertex on a specified marker.
@@ -454,7 +454,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vertex global index.
    */
-  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex);
+  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get undeformed coordinates from the mesh solver.
@@ -462,7 +462,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x,y,z coordinates of the vertex.
    */
-  vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the temperature at a vertex on a specified marker.
@@ -470,7 +470,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Temperature of the vertex.
    */
-  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex);
+  passivedouble GetVertexTemperature(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Set the temperature of a vertex on a specified marker.
@@ -486,7 +486,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return True if the vertex is a halo node.
    */
-  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetVertexHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the wall normal component of the heat flux at a vertex on a specified marker.
@@ -494,7 +494,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Wall normal component of the heat flux at the vertex.
    */
-  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex);
+  passivedouble GetVertexNormalHeatFlux(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Set the wall normal component of the heat flux at a vertex on a specified marker.
@@ -510,7 +510,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Thermal conductivity at the vertex.
    */
-  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex);
+  passivedouble GetThermalConductivity(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Preprocess the inlets via file input for all solvers.
@@ -518,8 +518,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                    CConfig *config) const;
+  void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry, CConfig *config) const;
 
   /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
@@ -527,43 +526,43 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get all the boundary markers tags.
    * \return List of boundary markers tags.
    */
-  vector<string> GetAllBoundaryMarkersTag();
+  vector<string> GetAllBoundaryMarkersTag() const;
 
   /*!
    * \brief Get all the deformable boundary marker tags.
    * \return List of deformable boundary markers tags.
    */
-  vector<string> GetAllDeformMeshMarkersTag();
+  vector<string> GetAllDeformMeshMarkersTag() const;
 
   /*!
    * \brief Get all the heat transfer boundary markers tags.
    * \return List of heat transfer boundary markers tags.
    */
-  vector<string> GetAllCHTMarkersTag();
+  vector<string> GetAllCHTMarkersTag() const;
 
   /*!
    * \brief Get all the (subsonic) inlet boundary markers tags.
    * \return List of inlet boundary markers tags.
    */
-  vector<string> GetAllInletMarkersTag();
+  vector<string> GetAllInletMarkersTag() const;
 
   /*!
    * \brief Get all the boundary markers tags with their associated indices.
    * \return List of boundary markers tags with their indices.
    */
-  map<string, int> GetAllBoundaryMarkers();
+  map<string, int> GetAllBoundaryMarkers() const;
 
   /*!
    * \brief Get all the boundary markers tags with their associated types.
    * \return List of boundary markers tags with their types.
    */
-  map<string, string> GetAllBoundaryMarkersType();
+  map<string, string> GetAllBoundaryMarkersType() const;
 
   /*!
    * \brief Set the mesh displacement for the elasticity mesh solver.
@@ -586,7 +585,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of sensitivities.
    */
-  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetMeshDisp_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Set the load in X direction for the structural solver.
@@ -605,7 +604,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of displacements.
    */
-  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetFEA_Displacements(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -613,7 +612,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities.
    */
-  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetFEA_Velocity(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Return the velocities from the FEA Solver.
@@ -621,7 +620,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Vector of velocities at time n.
    */
-  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetFEA_Velocity_n(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the sensitivity of the flow loads for the structural solver.
@@ -631,7 +630,7 @@ public:
    * \param[in] LoadX - Value of the load in the direction Y.
    * \param[in] LoadX - Value of the load in the direction Z.
    */
-  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetFlowLoad_Sensitivity(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get the flow load (from the extra step - the repeated methods should be unified once the postprocessing
@@ -639,7 +638,7 @@ public:
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    */
-  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetFlowLoad(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Set the adjoint of the flow tractions (from the extra step -
