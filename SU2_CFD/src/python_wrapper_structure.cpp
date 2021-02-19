@@ -63,7 +63,7 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
 /* Functions related to the global performance indices (Lift, Drag, ecc..) */
 /////////////////////////////////////////////////////////////////////////////
 
-passivedouble CDriver::Get_Drag() {
+passivedouble CDriver::Get_Drag() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -78,7 +78,7 @@ passivedouble CDriver::Get_Drag() {
   return SU2_TYPE::GetValue(val_Drag);
 }
 
-passivedouble CDriver::Get_Lift() {
+passivedouble CDriver::Get_Lift() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -93,7 +93,7 @@ passivedouble CDriver::Get_Lift() {
   return SU2_TYPE::GetValue(val_Lift);
 }
 
-passivedouble CDriver::Get_Mx(){
+passivedouble CDriver::Get_Mx() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -110,7 +110,7 @@ passivedouble CDriver::Get_Mx(){
   return SU2_TYPE::GetValue(val_Mx);
 }
 
-passivedouble CDriver::Get_My(){
+passivedouble CDriver::Get_My() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -127,7 +127,7 @@ passivedouble CDriver::Get_My(){
   return SU2_TYPE::GetValue(val_My);
 }
 
-passivedouble CDriver::Get_Mz() {
+passivedouble CDriver::Get_Mz() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -144,7 +144,7 @@ passivedouble CDriver::Get_Mz() {
   return SU2_TYPE::GetValue(val_Mz);
 }
 
-passivedouble CDriver::Get_DragCoeff() {
+passivedouble CDriver::Get_DragCoeff() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -155,7 +155,7 @@ passivedouble CDriver::Get_DragCoeff() {
   return SU2_TYPE::GetValue(CDrag);
 }
 
-passivedouble CDriver::Get_LiftCoeff() {
+passivedouble CDriver::Get_LiftCoeff() const {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
@@ -170,13 +170,13 @@ passivedouble CDriver::Get_LiftCoeff() {
 /* Functions to obtain information from the geometry/mesh                  */
 /////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
+unsigned long CDriver::GetNumberVertices(unsigned short iMarker) const {
 
   return geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker];
 
 }
 
-unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker){
+unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) const {
 
   unsigned long nHaloVertices, iVertex, iPoint;
 

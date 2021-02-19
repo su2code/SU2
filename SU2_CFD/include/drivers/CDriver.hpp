@@ -370,57 +370,57 @@ public:
    * \brief Get the total drag.
    * \return Total drag.
    */
-  passivedouble Get_Drag();
+  passivedouble Get_Drag() const;
 
   /*!
    * \brief Get the total lift.
    * \return Total lift.
    */
-  passivedouble Get_Lift();
+  passivedouble Get_Lift() const;
 
   /*!
    * \brief Get the total x moment.
    * \return Total x moment.
    */
-  passivedouble Get_Mx();
+  passivedouble Get_Mx() const;
 
   /*!
    * \brief Get the total y moment.
    * \return Total y moment.
    */
-  passivedouble Get_My();
+  passivedouble Get_My() const;
 
   /*!
    * \brief Get the total z moment.
    * \return Total z moment.
    */
-  passivedouble Get_Mz();
+  passivedouble Get_Mz() const;
 
   /*!
    * \brief Get the total drag coefficient.
    * \return Total drag coefficient.
    */
-  passivedouble Get_DragCoeff();
+  passivedouble Get_DragCoeff() const;
 
   /*!
    * \brief Get the total lift coefficient.
    * \return Total lift coefficient.
    */
-  passivedouble Get_LiftCoeff();
+  passivedouble Get_LiftCoeff() const;
 
   /*!
    * \brief Get the number of vertices (halo nodes included) from a specified marker.
    * \param[in] iMarker -  Marker identifier.
    * \return Number of vertices.
    */
-  unsigned long GetNumberVertices(unsigned short iMarker);
+  unsigned long GetNumberVertices(unsigned short iMarker) const;
 
   /*!
    * \brief Get the number of halo vertices from a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Number of vertices.
    */
-  unsigned long GetNumberHaloVertices(unsigned short iMarker);
+  unsigned long GetNumberHaloVertices(unsigned short iMarker) const;
 
   /*!
    * \brief Check if a vertex is physical or not (halo node) on a specified marker.
