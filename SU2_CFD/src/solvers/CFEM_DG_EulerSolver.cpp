@@ -1795,7 +1795,24 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
 void CFEM_DG_EulerSolver::Set_OldSolution() {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Loop over owned elements. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /*--- Determine the total number of items to be copied. ---*/
+    const unsigned int nItems = volElem[l].solDOFs.rows()*volElem[l].solDOFs.cols();
+
+    /*--- Set the pointers and copy the data. ---*/
+    const su2double *solDOFs = volElem[l].solDOFs.data();
+    su2double *solDOFsWork   = volElem[l].solDOFsWork.data();
+
+    SU2_OMP_SIMD
+    for(unsigned int i=0; i<nItems; ++i)
+      solDOFsWork[i] = solDOFs[i];
+  }
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
