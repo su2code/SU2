@@ -72,6 +72,9 @@ protected:
   AeroCoeffsArray SurfaceCoeff; /*!< \brief Totals for each monitoring surface. */
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
+  unsigned long counter = 0;          /*!< \brief Shared variable to be able to carry out some
+                                                  global counting in OpenMP. ---*/
+
   unsigned long nVolElemTot   = 0;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned = 0;    /*!< \brief Number of owned local volume elements. */
 

@@ -1528,8 +1528,259 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
+/*--- Determine the chunk size for the OMP loops, if supported. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Initialize the counter for the number of bad elements to zero. ---*/
+  SU2_OMP_SINGLE
+  counter = 0;
+
+  /*--- Define the local counter for the number of bad elements. ---*/
+  unsigned long ErrorCounter = 0;
+
+  /*--- Loop over the number of owned elements and check for non-physical
+        solutions in the integration points. When found the solution in the
+        element is overwritten with a constant free-stream solution. This
+        does not work usually. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /*--- Determine the solution in the integration points and
+          convert it to primitive variables. ---*/
+    ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints();
+    EntropyToPrimitiveVariables(solInt);
+
+    /*--- Check for negative density and pressure in the integration
+          points. If found the element is flag as bad. ---*/
+    bool badElement = false;
+    const unsigned short nInt = volElem[l].standardElemFlow->GetNIntegration();
+    for(unsigned short i=0; i<nInt; ++i)
+      if((solInt(i,0) <= 0.0) || (solInt(i,nDim+1) <= 0.0)) badElement = true;
+
+    /*--- If the element is bad, reset the state in the element and
+          update the counter ErrorCounter. ---*/
+    if( badElement ) {
+      volElem[l].SetConstantSolution(EntropyVarFreeStream.data(), nVar, 0);
+      ++ErrorCounter;
+    }
+  }
+
+  /*--- Determine the total number of bad elements in this partition. ---*/
+  SU2_OMP_ATOMIC
+  counter += ErrorCounter;
+  SU2_OMP_BARRIER
+
+  /*--- Collect the number of non-physical points for this iteration. ---*/
+  SU2_OMP_SINGLE
+  {
+    if (config->GetComm_Level() == COMM_FULL) {
+#ifdef HAVE_MPI
+      ErrorCounter = counter;
+      SU2_MPI::Allreduce(&ErrorCounter, &counter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+#endif
+      if(iMesh == MESH_0) config->SetNonphysical_Points(counter);
+    }
+  }
+
+  /*-----------------------------------------------------------------------------*/
+  /*                       Check for grid motion.                                */
+  /*-----------------------------------------------------------------------------*/
+
+  const bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
+  if(config->GetGrid_Movement() && !harmonic_balance) {
+
+    /*--- Determine the type of grid motion. ---*/
+    switch( config->GetKind_GridMovement() ) {
+
+      case ROTATING_FRAME:
+      case STEADY_TRANSLATION: {
+
+        /*--- Steady motion. This is accounted for in the general preprocessing,
+              where grid velocities are computed. ---*/
+        break;
+      }
+
+      case RIGID_MOTION: {
+
+        /*--- Rigid body motion described. At the moment this is only
+              possible for the Classical Runge Kutta scheme. ---*/
+        if(config->GetKind_TimeIntScheme() != CLASSICAL_RK4_EXPLICIT) {
+          SU2_OMP_SINGLE
+          SU2_MPI::Error("Rigid body motion only possible for CLASSICAL_RK4_EXPLICIT.",
+                         CURRENT_FUNCTION);
+        }
+
+        /*--- Determine whether or not it is needed to compute the motion data. ---*/
+        const unsigned long TimeIter = config->GetTimeIter();
+
+        bool computeMotion = false, firstTime = false;
+        if(TimeIter == 0 && iStep == 0) computeMotion = firstTime = true;
+        if(iStep == 1 || iStep == 3)    computeMotion = true;
+
+        if( computeMotion ) {
+
+          /*--- Determine the number of time levels. For the classical Runge-Kutta
+                scheme this should be 1. ---*/
+          const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+          /*--- Determine the time for which the motion data must be determined. ---*/
+          const su2double deltaT = config->GetDelta_UnstTimeND();
+
+          su2double tNew = TimeIter*deltaT;
+          if( iStep ) tNew += 0.25*(iStep+1)*deltaT;
+
+          /*--- Determine the time for which the currently stored position was
+                calculated. ---*/
+          const su2double tOld = tNew - 0.5*deltaT;
+
+          /*--- Hard code the plunging motion in y-direction. ---*/
+          const su2double b2New    = 0.25*tNew*tNew*(3.0-tNew);
+          const su2double db2Newdt = 0.75*tNew*(2.0-tNew);
+
+          const su2double b2Old = 0.25*tOld*tOld*(3.0-tOld);
+          const su2double dB2   = b2New - b2Old;
+
+          /*--- Compute the chunk sizes for the mesh points and internal faces. ---*/
+#ifdef HAVE_OMP
+          const size_t omp_chunk_size_poin = computeStaticChunkSize(nMeshPoints, omp_get_num_threads(), 64);
+          const size_t omp_chunk_size_face = computeStaticChunkSize(nMatchingInternalFacesWithHaloElem[nTimeLevels],
+                                                                    omp_get_num_threads(), 64);
+#endif
+
+          /*-------------------------------------------------------------------*/
+          /*--- Update the coordinates, if this is not the first time step. ---*/
+          /*-------------------------------------------------------------------*/
+
+          if( !firstTime ) {
+
+            /*--- Update the grid points. ---*/
+            SU2_OMP_FOR_STAT(omp_chunk_size_poin)
+            for(unsigned long l=0; l<nMeshPoints; ++l)
+              meshPoints[l].coor[1] += dB2;
+
+            /*--- Update the coordinates of the volume elements. ---*/
+            SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+            for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+              /*--- Adapt the coordinates of the volume integration points. ---*/
+              unsigned short nItems = volElem[l].coorIntegrationPoints.rows();
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nItems; ++i)
+                volElem[l].coorIntegrationPoints(i,1) += dB2;
+
+              /*--- Update the coordinates of the grid DOFs. ---*/
+              nItems = volElem[l].coorGridDOFs.rows();
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nItems; ++i)
+                volElem[l].coorGridDOFs(i,1) += dB2;
+
+              /*--- Update the coordinates of the solution DOFs. ---*/
+              nItems = volElem[l].coorSolDOFs.rows();
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nItems; ++i)
+                volElem[l].coorSolDOFs(i,1) += dB2;
+            }
+
+            /*--- Loop over the internal matching faces. ---*/
+            SU2_OMP_FOR_STAT(omp_chunk_size_face)
+            for(unsigned long l=0; l<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++l) {
+
+              const unsigned short nItems = matchingInternalFaces[l].coorIntegrationPoints.rows();
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nItems; ++i)
+                matchingInternalFaces[l].coorIntegrationPoints(i,1) += dB2;
+            }
+
+            /*--- The physical boundary faces. Exclude the periodic boundaries,
+                  because these are not physical boundaries. ---*/
+            for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+              if( !(boundaries[iMarker].periodicBoundary) ) {
+
+                /*--- Determine the chunk size for the surface elements. ---*/
+                const unsigned long nSurfElem = boundaries[iMarker].surfElem.size();
+#ifdef HAVE_OMP
+                const size_t omp_chunk_size_surf = computeStaticChunkSize(nSurfElem, omp_get_num_threads(), 64);
+#endif
+                /*--- Loop over the number of surface elements. ---*/
+                SU2_OMP_FOR_STAT(nSurfElem)
+                for(unsigned long l=0; l<nSurfElem; ++l) {
+
+                  const unsigned short nItems = boundaries[iMarker].surfElem[l].coorIntegrationPoints.rows();
+                  SU2_OMP_SIMD_IF_NOT_AD
+                  for(unsigned short i=0; i<nItems; ++i)
+                    boundaries[iMarker].surfElem[l].coorIntegrationPoints(i,1) += dB2;
+                }
+              }
+            }
+          }
+
+          /*-------------------------------------------------------------------*/
+          /*---            Compute the all the grid velocities.             ---*/
+          /*-------------------------------------------------------------------*/
+
+          /*--- Loop over the volume elements. ---*/
+          SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+          for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+            /*--- Grid velocities of the integration points. ---*/
+            unsigned short nItems = volElem[l].gridVelocitiesInt.rows();
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nItems; ++i)
+              volElem[l].gridVelocitiesInt(i,1) = db2Newdt;
+
+            /*--- Grid velocities of the solution DOFs. ---*/
+            nItems = volElem[l].gridVelocitiesSolDOFs.rows();
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nItems; ++i)
+              volElem[l].gridVelocitiesSolDOFs(i,1) = db2Newdt;
+          }
+
+          /*--- Loop over the internal matching faces. ---*/
+          SU2_OMP_FOR_STAT(omp_chunk_size_face)
+          for(unsigned long l=0; l<nMatchingInternalFacesWithHaloElem[nTimeLevels]; ++l) {
+
+            /*--- Grid velocities of the integration points. ---*/
+            const unsigned short nItems = matchingInternalFaces[l].gridVelocities.rows();
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nItems; ++i)
+              matchingInternalFaces[l].gridVelocities(i,1) = db2Newdt;
+          }
+
+          /*--- The physical boundary faces. Exclude the periodic boundaries,
+                because these are not physical boundaries. ---*/
+          for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+            if( !(boundaries[iMarker].periodicBoundary) ) {
+
+              /*--- Determine the chunk size for the surface elements. ---*/
+              const unsigned long nSurfElem = boundaries[iMarker].surfElem.size();
+#ifdef HAVE_OMP
+              const size_t omp_chunk_size_surf = computeStaticChunkSize(nSurfElem, omp_get_num_threads(), 64);
+#endif
+              /*--- Loop over the number of surface elements. ---*/
+              SU2_OMP_FOR_STAT(nSurfElem)
+              for(unsigned long l=0; l<nSurfElem; ++l) {
+
+                const unsigned short nItems = boundaries[iMarker].surfElem[l].gridVelocities.rows();
+                SU2_OMP_SIMD_IF_NOT_AD
+                for(unsigned short i=0; i<nItems; ++i)
+                  boundaries[iMarker].surfElem[l].gridVelocities(i,1) = db2Newdt;
+              }
+            }
+          }
+        }
+
+        break;
+      }
+
+      default: {
+        SU2_OMP_SINGLE
+        SU2_MPI::Error("Only rigid body motion possible for DG-FEM solver at the moment.",
+                       CURRENT_FUNCTION);
+      }
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
