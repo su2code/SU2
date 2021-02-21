@@ -158,6 +158,9 @@ class CFVMFlowSolverBase : public CSolver {
   su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
   su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
 
+  su2double** UTau = nullptr;              /*!< \brief UTau for each boundary and vertex. */
+  su2double** EddyViscWall = nullptr;      /*!< \brief Wall Eddy Viscosity for each boundary and vertex. */
+
   bool space_centered;       /*!< \brief True if space centered scheeme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
   bool least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -2424,16 +2427,7 @@ class CFVMFlowSolverBase : public CSolver {
     return HeatConjugateVar[val_marker][val_vertex][pos_var];
   }
 
-  /*!
-   * \brief Get the skin friction coefficient.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the skin friction coefficient.
-   */
-  inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
-                                    unsigned short val_dim) const final {
-    return CSkinFriction[val_marker][val_dim][val_vertex];
-  }
+  
 
   /*!
    * \brief Get the wall shear stress.
@@ -2446,7 +2440,7 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Get the skin friction coefficient.
+   * \brief Get the heat flux.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
@@ -2475,6 +2469,16 @@ class CFVMFlowSolverBase : public CSolver {
     HeatFluxTarget[val_marker][val_vertex] = val_heat;
   }
 
+/*!
+   * \brief Get the skin friction coefficient.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the skin friction coefficient.
+   */
+  inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
+                                    unsigned short val_dim) const final {
+    return CSkinFriction[val_marker][val_vertex][val_dim];
+  }
   /*!
    * \brief Get the y plus.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2483,5 +2487,26 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
     return YPlus[val_marker][val_vertex];
+  }
+
+
+  /*!
+   * \brief Get the u_tau .
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the u_tau.
+   */
+  inline su2double GetUTau(unsigned short val_marker, unsigned long val_vertex) const final {
+    return UTau[val_marker][val_vertex];
+  }
+
+   /*!
+   * \brief Get the eddy viscosity at the wall (wall functions).
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the eddy viscosity.
+   */
+  inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
+    return EddyViscWall[val_marker][val_vertex];
   }
 };

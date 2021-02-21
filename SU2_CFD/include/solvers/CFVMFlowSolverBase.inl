@@ -131,6 +131,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     }
   };
 
+  
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
   Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
@@ -198,15 +199,24 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   Alloc2D(nMarker, nVertex, YPlus);
 
+  /*--- U Tau in all the markers ---*/
+
+  Alloc2D(nMarker, nVertex, UTau);
+
+  /*--- wall eddy viscosity in all the markers ---*/
+
+  Alloc2D(nMarker, nVertex, EddyViscWall);
+
   /*--- Skin friction in all the markers ---*/
 
-  CSkinFriction = new su2double**[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[nVertex[iMarker]]();
-    }
-  }
+  Alloc3D(nMarker,nVertex,nDim,CSkinFriction);
+  //CSkinFriction = new su2double**[nMarker];
+  //for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  //  CSkinFriction[iMarker] = new su2double*[nVertex[iMarker]];
+  //  for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+  //    CSkinFriction[iMarker][iVertex] = new su2double[nDim]()
+  //  }
+  //}
 
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -467,10 +477,25 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
     delete[] YPlus;
   }
 
+
+ if (UTau != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete[] UTau[iMarker];
+    }
+    delete[] UTau;
+  }
+
+  if (EddyViscWall != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete[] EddyViscWall[iMarker];
+    }
+    delete[] EddyViscWall;
+  }
+
   if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete[] CSkinFriction[iMarker][iDim];
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        delete[] CSkinFriction[iMarker][iVertex];
       }
       delete[] CSkinFriction[iMarker];
     }
@@ -580,6 +605,12 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+
+  /*--- Wall shear stress values (wall functions) ---*/
+
+  numerics->SetTauWall(nodes->GetTauWall(iPoint),
+                       nodes->GetTauWall(jPoint));
+
 
   /*--- Compute and update residual ---*/
 
@@ -2506,7 +2537,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
   su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+            RefDensity = Density_Inf, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2526,6 +2557,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool axisymmetric = config->GetAxisymmetric();
   bool roughwall = (config->GetnRoughWall() > 0);
   bool nemo = config->GetNEMOProblem();
+  bool wallfunctions=false;
+
+  for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
+  
 
   /*--- Get the locations of the primitive variables for NEMO ---*/
   if (nemo) {
@@ -2554,6 +2589,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     if (!config->GetViscous_Wall(iMarker)) continue;
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
@@ -2562,7 +2598,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        //Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
@@ -2576,6 +2612,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     su2double ForceViscous[MAXNDIM] = {0.0}, MomentViscous[MAXNDIM] = {0.0};
     su2double MomentX_Force[MAXNDIM] = {0.0}, MomentY_Force[MAXNDIM] = {0.0}, MomentZ_Force[MAXNDIM] = {0.0};
+
+    /* --- check if wall functions are used --- */
+   
+    wallfunctions = (config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION);
 
     /*--- Loop over the vertices to compute the forces ---*/
 
@@ -2639,7 +2679,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
+        if (!wallfunctions) 
+          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
@@ -2652,7 +2694,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute y+ and non-dimensional velocity ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
-      YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+
+      /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
+      if (!wallfunctions)  
+        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 

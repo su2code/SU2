@@ -403,6 +403,17 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+
+    /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+    if (config->GetWall_Functions()) {
+      /*SU2_OMP_MASTER*/
+      SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+      /*SU2_OMP_BARRIER*/
+      return;
+    }
+
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -470,6 +481,77 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       Jacobian.DeleteValsRowi(iPoint*nVar);
       Jacobian.DeleteValsRowi(iPoint*nVar+1);
     }
+  }
+}
+
+
+void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const unsigned short max_iter = 100;
+
+  /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
+  const su2double tol = 1e-12;
+
+  /*--- Typical constants from boundary layer theory ---*/
+
+  const su2double kappa = 0.4;
+  //const su2double B = 5.5;
+  const su2double cv1_3 = 7.1*7.1*7.1;
+
+ 
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+    su2double Lam_Visc_Normal = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint_Neighbor);
+    su2double Density_Normal = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint_Neighbor);
+    su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
+     
+    su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
+
+    /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
+
+    // sst model 
+    su2double solution[2];
+      
+    su2double omega1,omega0,y_plus,y,k_new,omega_new;
+    su2double k = nodes->GetSolution(iPoint_Neighbor,0);
+    su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
+
+    su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+    su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
+    su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
+
+
+    y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
+
+    omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19 
+    omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20 
+    omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
+    k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson 
+                                                            // (is this the correct density? paper says rho and not rho_w)
+
+    // put some relaxation factor on the k-omega values
+    k += 0.5*(k_new - k);       
+    omega += 0.5*(omega_new - omega);       
+
+    su2double Sol[nVar];
+    //for (iVar = 0; iVar < nVar; iVar++)
+    Sol[0] = k;
+    Sol[1] = omega;
+
+    nodes->SetSolution_Old(iPoint_Neighbor,Sol);
+    LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+
+    /*--- includes 1 in the diagonal ---*/
+    Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
+    Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
+
   }
 }
 

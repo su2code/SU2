@@ -113,7 +113,7 @@ private:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+  //void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
 public:
   /*!
@@ -232,5 +232,15 @@ public:
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) const override {
     return Buffet_Sensor[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry,
+                     CSolver** solver_container,
+                     CConfig* config) override;
 
 };
