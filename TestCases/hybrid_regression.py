@@ -178,6 +178,14 @@ def main():
     turb_oneram6.test_vals = [-2.388851, -6.689340, 0.230320, 0.157649]
     test_list.append(turb_oneram6)
 
+    # ONERA M6 Wing - Newton-Krylov
+    turb_oneram6_nk           = TestCase('turb_oneram6_nk')
+    turb_oneram6_nk.cfg_dir   = "rans/oneram6"
+    turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
+    turb_oneram6_nk.test_iter = 100
+    turb_oneram6_nk.test_vals = [-7.015278, -6.587369, -10.394193, 0.271661, 0.019845, 4, -0.626403, 2.8101e+02]
+    test_list.append(turb_oneram6_nk)
+
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
