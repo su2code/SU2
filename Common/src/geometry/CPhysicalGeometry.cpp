@@ -4318,7 +4318,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      if (checkTetra(iElem,0,1,2,3) < 0.0) {
+      if (checkTetra(iElem,0,1,2,3)) {
         elem[iElem]->Change_Orientation();
         tet_flip++;
       }
