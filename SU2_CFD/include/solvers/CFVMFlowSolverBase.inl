@@ -85,7 +85,7 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   unsigned short iVar;
-  unsigned long iPoint, iMarker;
+  unsigned long iMarker;
 
   /*--- Define some auxiliar vector related with the residual ---*/
 
@@ -173,16 +173,13 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  SlidingState = new su2double***[nMarker]();
+  SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-      SlidingState[iMarker] = new su2double**[nVertex[iMarker]]();
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
       SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
-
-      for (iPoint = 0; iPoint < nVertex[iMarker]; iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar + 1]();
     }
   }
 
@@ -372,21 +369,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
-  unsigned short iVar;
-  unsigned long iMarker, iVertex;
 
-  if (SlidingState != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (SlidingState[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if (SlidingState[iMarker][iVertex] != nullptr) {
-            for (iVar = 0; iVar < nPrimVar + 1; iVar++) delete[] SlidingState[iMarker][iVertex][iVar];
-            delete[] SlidingState[iMarker][iVertex];
-          }
-        delete[] SlidingState[iMarker];
-      }
-    }
-    delete[] SlidingState;
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;

@@ -52,16 +52,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
       break;
   }
 
-  /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
-  /* V = [Y1, ... , Yn, T, Tve, ... ] */
-  primitives_aux = new su2double[nPrimVar];
-
-}
-
-CNEMONSSolver::~CNEMONSSolver(void) {
-
-  if (primitives_aux != nullptr) delete [] primitives_aux;
-
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -150,10 +140,10 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   /*--- Modify species density to mass concentration ---*/
   for ( iPoint = 0; iPoint < nPoint; iPoint++){
-    for( iVar = 0; iVar < nPrimVar; iVar++) {
+    su2double primitives_aux[MAXNVAR] = {0.0};
+    for( iVar = 0; iVar < nPrimVar; iVar++)
       primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for ( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
     for( iVar = 0; iVar < nPrimVar; iVar++)
       nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );

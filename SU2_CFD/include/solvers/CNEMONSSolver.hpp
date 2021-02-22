@@ -38,7 +38,6 @@
  * \brief Main class for defining the NEMO Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.8
  *
  */
 class CNEMONSSolver final : public CNEMOEulerSolver {
@@ -46,10 +45,6 @@ private:
 
   su2double Prandtl_Lam,     /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb;              /*!< \brief Turbulent Prandtl number. */
- 
-  su2double StrainMag_Max,
-  Omega_Max;                 /*!< \brief Maximum Strain Rate magnitude and Omega. */
-  su2double *primitives_aux; /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -77,7 +72,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNEMONSSolver(void) override;
+  ~CNEMONSSolver() = default;
 
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
