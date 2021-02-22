@@ -84,8 +84,8 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iDim, iVar, iMarker;
-  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+  unsigned long iMarker;
 
   /*--- Define some auxiliar vector related with the residual ---*/
 
@@ -119,19 +119,16 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double*[M];
-    for (unsigned long i = 0; i < M; ++i) X[i] = new su2double[N[i]]();
+  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+    X.resize(M);
+    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double**[M];
-    for (unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double*[N[i]];
-      for (unsigned long j = 0; j < N[i]; ++j) X[i][j] = new su2double[P]();
-    }
+  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+    X.resize(M);
+    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -167,28 +164,25 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Heat flux coefficients. ---*/
 
-  HF_Visc = new su2double[nMarker];
-  MaxHF_Visc = new su2double[nMarker];
+  HF_Visc.resize(nMarker,0.0);
+  MaxHF_Visc.resize(nMarker,0.0);
 
-  Surface_HF_Visc = new su2double[config.GetnMarker_Monitoring()];
-  Surface_MaxHF_Visc = new su2double[config.GetnMarker_Monitoring()];
+  Surface_HF_Visc.resize(config.GetnMarker_Monitoring());
+  Surface_MaxHF_Visc.resize(config.GetnMarker_Monitoring());
 
   /*--- Supersonic coefficients ---*/
 
-  CNearFieldOF_Inv = new su2double[nMarker];
+  CNearFieldOF_Inv.resize(nMarker,0.0);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  SlidingState = new su2double***[nMarker]();
-  SlidingStateNodes = new int*[nMarker]();
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-      SlidingState[iMarker] = new su2double**[nVertex[iMarker]]();
-      SlidingStateNodes[iMarker] = new int[nVertex[iMarker]]();
-
-      for (iPoint = 0; iPoint < nVertex[iMarker]; iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar + 1]();
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
 
@@ -203,13 +197,9 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Skin friction in all the markers ---*/
 
-  CSkinFriction = new su2double**[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[nVertex[iMarker]]();
-    }
-  }
+  CSkinFriction.resize(nMarker);
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    CSkinFriction[iMarker].resize(nDim, nVertex[iMarker]) = su2double(0.0);
 
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -219,14 +209,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
 
-  HeatConjugateVar = new su2double**[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double*[nVertex[iMarker]];
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      HeatConjugateVar[iMarker][iVertex] = new su2double[nHeatConjugateVar]();
-      HeatConjugateVar[iMarker][iVertex][0] = config.GetTemperature_FreeStreamND();
-    }
-  }
+  Alloc3D(nMarker, nVertex, nHeatConjugateVar, HeatConjugateVar);
+  for (auto& x : HeatConjugateVar) x = config.GetTemperature_FreeStreamND();
 
   if (MGLevel == MESH_0) {
     VertexTraction.resize(nMarker);
@@ -388,122 +372,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
-  unsigned short iMarker, iVar, iDim;
-  unsigned long iVertex;
 
-  delete[] CNearFieldOF_Inv;
-  delete[] HF_Visc;
-  delete[] MaxHF_Visc;
-  delete[] Surface_HF_Visc;
-  delete[] Surface_MaxHF_Visc;
-
-  if (SlidingState != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (SlidingState[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if (SlidingState[iMarker][iVertex] != nullptr) {
-            for (iVar = 0; iVar < nPrimVar + 1; iVar++) delete[] SlidingState[iMarker][iVertex][iVar];
-            delete[] SlidingState[iMarker][iVertex];
-          }
-        delete[] SlidingState[iMarker];
-      }
-    }
-    delete[] SlidingState;
-  }
-
-  if (SlidingStateNodes != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (SlidingStateNodes[iMarker] != nullptr) delete[] SlidingStateNodes[iMarker];
-    }
-    delete[] SlidingStateNodes;
-  }
-
-  if (CPressure != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) delete[] CPressure[iMarker];
-    delete[] CPressure;
-  }
-
-  if (CPressureTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) delete[] CPressureTarget[iMarker];
-    delete[] CPressureTarget;
-  }
-
-  if (CharacPrimVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) delete[] CharacPrimVar[iMarker][iVertex];
-      delete[] CharacPrimVar[iMarker];
-    }
-    delete[] CharacPrimVar;
-  }
-
-  if (Inlet_Ttotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != nullptr) delete[] Inlet_Ttotal[iMarker];
-    delete[] Inlet_Ttotal;
-  }
-
-  if (Inlet_Ptotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != nullptr) delete[] Inlet_Ptotal[iMarker];
-    delete[] Inlet_Ptotal;
-  }
-
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) delete[] Inlet_FlowDir[iMarker][iVertex];
-        delete[] Inlet_FlowDir[iMarker];
-      }
-    }
-    delete[] Inlet_FlowDir;
-  }
-
-  if (HeatFlux != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] HeatFlux[iMarker];
-    }
-    delete[] HeatFlux;
-  }
-
-  if (HeatFluxTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] HeatFluxTarget[iMarker];
-    }
-    delete[] HeatFluxTarget;
-  }
-
-  if (YPlus != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] YPlus[iMarker];
-    }
-    delete[] YPlus;
-  }
-
-  if (CSkinFriction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete[] CSkinFriction[iMarker][iDim];
-      }
-      delete[] CSkinFriction[iMarker];
-    }
-    delete[] CSkinFriction;
-  }
-
-  if (WallShearStress != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] WallShearStress[iMarker];
-    }
-    delete[] WallShearStress;
-  }
-
-  if (HeatConjugateVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete[] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete[] HeatConjugateVar[iMarker];
-    }
-    delete[] HeatConjugateVar;
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;
@@ -2917,8 +2788,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CMy);
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CMz);
 
-    Allreduce_inplace(nMarkerMon, Surface_HF_Visc);
-    Allreduce_inplace(nMarkerMon, Surface_MaxHF_Visc);
+    Allreduce_inplace(nMarkerMon, Surface_HF_Visc.data());
+    Allreduce_inplace(nMarkerMon, Surface_MaxHF_Visc.data());
 
     delete[] buffer;
   }

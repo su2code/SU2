@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   /*--- Run the test driver supplied by Catch ---*/
   int result = Catch::Session().run(argc, argv);
