@@ -640,17 +640,22 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
     //dw_gust_dx = 0.0;
     //dw_gust_dy = 0.0;
     //dw_gust_dz = 0.0;
-    //dw_gust_dt = WindGustDer_i[2];
-
-
-
+    //dw_gust_dt = 0.0;
   } else {
     du_gust_dx = 0.0;
     du_gust_dy = 0.0;
+    //du_gust_dz = 0.0;
     du_gust_dt = 0.0;
     dv_gust_dx = WindGustDer_i[0];
     dv_gust_dy = WindGustDer_i[1];
+    //dv_gust_dz = WindGustDer_i[2]
     dv_gust_dt = WindGustDer_i[2];
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
+    //
 
   }
 
@@ -665,9 +670,8 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
   /*--- Source terms ---*/
   smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
   smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
-  /*
-  smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
-  */
+  //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
+  
   se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
   //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
 

@@ -210,14 +210,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Skin friction in all the markers ---*/
 
   Alloc3D(nMarker,nVertex,nDim,CSkinFriction);
-  //CSkinFriction = new su2double**[nMarker];
-  //for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //  CSkinFriction[iMarker] = new su2double*[nVertex[iMarker]];
-  //  for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-  //    CSkinFriction[iMarker][iVertex] = new su2double[nDim]()
-  //  }
-  //}
-
+  
   /*--- Wall Shear Stress in all the markers ---*/
 
   Alloc2D(nMarker, nVertex, WallShearStress);
