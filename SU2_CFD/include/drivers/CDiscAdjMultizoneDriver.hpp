@@ -1,7 +1,7 @@
 /*!
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
- * \author O. Burghardt, T. Albring, R. Sanchez
+ * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
  * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
