@@ -829,9 +829,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       LinSysRes.SubtractBlock(iPoint, visc_residual);
 
       Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, visc_residual.jacobianWeights_i);
         CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, visc_residual.jacobianWeights_i);
       }
         

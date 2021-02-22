@@ -8142,9 +8142,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-          Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           if (config->GetUse_Accurate_Visc_Jacobians()) {
-            CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
             CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
           }
         }
