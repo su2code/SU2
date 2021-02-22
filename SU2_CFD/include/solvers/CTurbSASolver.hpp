@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSASolver(void);
+  CTurbSASolver();
 
   /*!
    * \overload
@@ -85,7 +85,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void) override;
+  ~CTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

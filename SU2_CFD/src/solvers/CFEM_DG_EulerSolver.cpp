@@ -1749,8 +1749,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     for(int j=0; j<sizeMess; ++j) {
       const unsigned long jj = recvBuf[j] - nDOFsPerRank[rank];
       if(jj >= nDOFsLocOwned) {
-        cout << "This DOF should be owned, but it is not. This should not happen." << endl;
-        exit(1);
+        SU2_MPI::Error("This DOF should be owned, but it is not. This should not happen.",CURRENT_FUNCTION);
       }
       sendReturnBuf[i][j] = colorLocalDOFs[jj];
     }
