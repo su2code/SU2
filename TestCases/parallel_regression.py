@@ -59,7 +59,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864] 
+    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864]
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -1313,7 +1313,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.614164, 2.242568, -0.028488, 0.173947]
+    pywrapper_rigidMotion.test_vals     = [-1.551335, 2.295594, 0.350036, 0.093081]
     pywrapper_rigidMotion.su2_exec      = "mpirun -np 2 python launch_flatPlate_rigidMotion.py --parallel -f"
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001
