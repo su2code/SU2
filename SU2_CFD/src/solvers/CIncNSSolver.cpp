@@ -402,13 +402,14 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
   su2double UnitNormal[3];
   su2double **grad_primvar, tau[3][3];
+  su2double TauElem[MAXNDIM] = {0.0};
 
-  su2double Vel[3], VelTang[3], VelTangMod, WallDist[3], WallDistMod;
+  su2double VelTangMod, WallDistMod;
   su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0;
   su2double diff, Delta, grad_diff;
   su2double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
-  su2double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
+  su2double TauNormal, WallShearStress;
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double Eddy_Visc;
@@ -463,7 +464,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         /*--- Check if the node belongs to the domain (i.e, not a halo node)
          and the neighbor is not part of the physical boundary ---*/
 
-        //if (geometry->node[iPoint]->GetDomain()) {
 
           /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -472,43 +472,43 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
           /*--- Compute dual-grid area and boundary normal ---*/
 
-          su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          // getnormal and not normal_neighbor
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
           su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-          //su2double Area = 0.0;
-          //for (auto iDim = 0u; iDim < nDim; iDim++)
-          //  Area += Normal[iDim]*Normal[iDim];
-          //Area = sqrt (Area);
 
+          su2double UnitNormal[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             UnitNormal[iDim] = -Normal[iDim]/Area;
 
           /*--- Get the velocity, pressure, and temperature at the nearest
            (normal) interior point. ---*/
-
+          su2double Vel[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+
           P_Normal = nodes->GetPressure(Point_Normal);
           T_Normal = nodes->GetTemperature(Point_Normal);
 
           /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
-          su2double VelNormal = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            VelNormal += Vel[iDim] * UnitNormal[iDim];
+          //su2double VelNormal = 0.0;
+          //for (auto iDim = 0u; iDim < nDim; iDim++)
+          //  VelNormal += Vel[iDim] * UnitNormal[iDim];
+     
+          su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
 
+          su2double VelTang[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
 
-          VelTangMod = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            VelTangMod += VelTang[iDim]*VelTang[iDim];
-          VelTangMod = sqrt(VelTangMod);
+          su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
           /*--- Compute normal distance of the interior point from the wall ---*/
 
+          su2double WallDist[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
 
@@ -557,7 +557,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
                                                + grad_primvar[iDim+1][jDim]) -
               TWO3*Lam_Visc_Wall*div_vel*Delta;
             }
-            TauElem[iDim] = 0.0;
             for (auto jDim = 0u; jDim < nDim; jDim++)
               TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
           }
@@ -569,6 +568,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           for (auto iDim = 0u; iDim < nDim; iDim++)
             TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
+          su2double TauTangent[MAXNDIM] = {0.0};
           for (auto iDim = 0u; iDim < nDim; iDim++)
             TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
@@ -576,7 +576,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           for (auto iDim = 0u; iDim < nDim; iDim++)
             WallShearStress += TauTangent[iDim]*TauTangent[iDim];
 
-          // computed value  
           WallShearStress = sqrt(WallShearStress);
 
           /*--- Calculate the quantities from boundary layer theory and
@@ -592,7 +591,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
           if (Y_Plus_Start < 5.0) {
-            //nodes->SetTauWall_Flag(iPoint,false);
             continue;
           }
 
@@ -631,6 +629,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
             diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
             /* --- Gradient of function defined above --- */
+
             grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
                       kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
                       exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
@@ -641,23 +640,14 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
             U_Tau = U_Tau - 0.5*(diff / grad_diff);
 
             counter++;
+
+            /* --- if we do not converge, then something serious is going on and we stop --- */
+
             if (counter == max_iter) {
-              if (debug){
-                cout << "WARNING: Y_Plus evaluation has not converged in CIncNSSolver.cpp" << endl;
-                cout << rank << " " << iPoint;
-                for (auto iDim = 0u; iDim < nDim; iDim++)
-                  cout << " " << Coord[iDim];
-                cout << endl;
-              }
-              //converged = false;
-              //nodes->SetTauWall_Flag(iPoint,false);
-              break;
+              SU2_MPI::Error("Y+ did not converge within the max number of iterations!",CURRENT_FUNCTION);
             }
 
           }
-          /* --- If not converged jump to the next point. --- */
-
-          //if (!converged) continue;
 
           /*--- Calculate an updated value for the wall shear stress
             using the y+ value, the definition of y+, and the definition of
@@ -673,8 +663,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
  
           for (auto iDim = 0u; iDim < nDim; iDim++)
             CSkinFriction[iMarker][iVertex][iDim] = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
-
- 
 
 
           nodes->SetTauWall(iPoint,Tau_Wall);
