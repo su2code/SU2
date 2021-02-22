@@ -3895,7 +3895,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
@@ -3950,10 +3950,10 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 
 }
@@ -4048,7 +4048,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
@@ -4097,10 +4097,10 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
   
 }
@@ -8143,8 +8143,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-          if (config->GetUse_Accurate_Visc_Jacobians())
+          if (config->GetUse_Accurate_Visc_Jacobians()) {
             CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
+            CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
+          }
         }
         
       }
