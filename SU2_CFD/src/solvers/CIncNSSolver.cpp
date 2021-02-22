@@ -62,7 +62,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-  const bool wall_functions       = config->GetWall_Functions();
+  const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -102,11 +102,11 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the TauWall from the wall functions ---*/
 
   if (wall_functions) {
-    /*SU2_OMP_MASTER*/
+    SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
-// nijso: we have to set this as well??
-// seteddyviscfirstpoint
-    /*SU2_OMP_BARRIER*/
+    // nijso: we have to set this as well??
+    // seteddyviscfirstpoint
+    SU2_OMP_BARRIER
   }
 }
 
