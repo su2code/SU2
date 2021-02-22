@@ -180,7 +180,7 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr bool ReducerStrategy = false;
 #endif
 
-  /*--- Edge fluxes, for OpenMP parallelization off difficult-to-color grids.
+  /*--- Edge fluxes, for OpenMP parallelization of difficult-to-color grids.
    * We first store the fluxes and then compute the sum for each cell.
    * This strategy is thread-safe but lower performance than writting to both
    * end points of each edge, so we only use it when necessary, i.e. when the
