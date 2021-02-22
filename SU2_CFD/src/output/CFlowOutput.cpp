@@ -638,6 +638,8 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
+
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
@@ -680,6 +682,8 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   }
 
   SetHistoryOutputValue("AOA", config->GetAoA());
+
+  SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
 }
 
 void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {

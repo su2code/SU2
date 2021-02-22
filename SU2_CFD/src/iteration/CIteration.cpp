@@ -34,12 +34,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
                                   CVolumetricMovement* grid_movement, CSolver*** solver, CConfig* config,
                                   unsigned long IntIter, unsigned long TimeIter) {
   unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
-  unsigned long nIterMesh;
-  bool stat_mesh = true;
   bool adjoint = config->GetContinuous_Adjoint();
-
-  /*--- Only write to screen if this option is enabled ---*/
-  bool Screen_Output = config->GetDeform_Output();
 
   unsigned short val_iZone = config->GetiZone();
 
@@ -118,32 +113,6 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
       grid_movement->UpdateMultiGrid(geometry, config);
     }
-  }
-
-  if (config->GetSurface_Movement(FLUID_STRUCTURE)) {
-    if (rank == MASTER_NODE && Screen_Output)
-      cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
-
-    /*--- Deform the volume grid around the new boundary locations ---*/
-
-    if (rank == MASTER_NODE && Screen_Output) cout << "Deforming the volume grid." << endl;
-    grid_movement->SetVolume_Deformation(geometry[MESH_0], config, true, false);
-
-    nIterMesh = grid_movement->Get_nIterMesh();
-    stat_mesh = (nIterMesh == 0);
-
-    if (!adjoint && !stat_mesh) {
-      if (rank == MASTER_NODE && Screen_Output) cout << "Computing grid velocities by finite differencing." << endl;
-      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
-    } else if (stat_mesh) {
-      if (rank == MASTER_NODE && Screen_Output)
-        cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
-    }
-
-    /*--- Update the multigrid structure after moving the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    grid_movement->UpdateMultiGrid(geometry, config);
   }
 
   if (config->GetSurface_Movement(EXTERNAL) || config->GetSurface_Movement(EXTERNAL_ROTATION)) {
