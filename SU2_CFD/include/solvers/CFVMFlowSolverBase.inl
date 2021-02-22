@@ -228,11 +228,20 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     }
   }
 
-  /*--- Only initialize when there is a Marker_Fluid_Load defined
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if ((config.GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)) {
-    Alloc3D(nMarker, nVertex, nDim, VertexTraction);
-    if (config.GetDiscrete_Adjoint()) Alloc3D(nMarker, nVertex, nDim, VertexTractionAdjoint);
+  if (MGLevel == MESH_0) {
+    VertexTraction.resize(nMarker);
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (config.GetSolid_Wall(iMarker))
+        VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
+    }
+
+    if (config.GetDiscrete_Adjoint()) {
+      VertexTractionAdjoint.resize(nMarker);
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        if (config.GetSolid_Wall(iMarker))
+          VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
+      }
+    }
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/

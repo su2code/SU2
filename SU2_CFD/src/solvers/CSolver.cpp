@@ -119,10 +119,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   /*--- Flags for the dynamic grid (rigid movement or unsteady deformation). ---*/
   dynamic_grid = false;
 
-  /*--- Container to store the vertex tractions. ---*/
-  VertexTraction = nullptr;
-  VertexTractionAdjoint = nullptr;
-
   /*--- Auxiliary data needed for CFL adaption. ---*/
 
   Old_Func = 0;
@@ -137,7 +133,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 CSolver::~CSolver(void) {
 
   unsigned short iVar;
-  unsigned long iMarker, iVertex;
 
   /*--- Public variables, may be accessible outside ---*/
 
@@ -220,24 +215,6 @@ CSolver::~CSolver(void) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
-  }
-
-  if (VertexTraction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTraction[iMarker][iVertex];
-      delete [] VertexTraction[iMarker];
-    }
-    delete [] VertexTraction;
-  }
-
-  if (VertexTractionAdjoint != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTractionAdjoint[iMarker][iVertex];
-      delete [] VertexTractionAdjoint[iMarker];
-    }
-    delete [] VertexTractionAdjoint;
   }
 
   delete [] nVertex;
@@ -4014,24 +3991,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 }
 
 
-void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
+void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config){
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  su2double *Velocity_ND, *Velocity_Real;
+  const su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
   su2double factor;
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
 
   // Check whether the problem is viscous
-  bool viscous_flow = ((config->GetKind_Solver() == NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == RANS) ||
-                       (config->GetKind_Solver() == INC_RANS) ||
-                       (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-                       (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool viscous_flow = config->GetViscous();
 
   // Parameters for the calculations
   su2double Pn = 0.0;
@@ -4039,7 +4009,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  su2double const *iNormal;
+  const su2double* iNormal;
 
   su2double Pressure_Inf = config->GetPressure_FreeStreamND();
 
@@ -4049,59 +4019,52 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
   Velocity_ND = config->GetVelocity_FreeStreamND();
   Density_ND  = config->GetDensity_FreeStreamND();
 
-  Velocity2_Real = 0.0;
-  Velocity2_ND   = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
-    Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
-  }
+  Velocity2_Real = GeometryToolbox::SquaredNorm(nDim, Velocity_Real);
+  Velocity2_ND   = GeometryToolbox::SquaredNorm(nDim, Velocity_ND);
 
   factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      // Loop over the vertices
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    // Loop over the vertices
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        // Recover the point index
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        // Get the normal at the vertex: this normal goes inside the fluid domain.
-        iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      // Recover the point index
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      // Get the normal at the vertex: this normal goes inside the fluid domain.
+      iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (geometry->nodes->GetDomain(iPoint)) {
 
-          // Retrieve the values of pressure
-          Pn = base_nodes->GetPressure(iPoint);
+        // Retrieve the values of pressure
+        Pn = base_nodes->GetPressure(iPoint);
 
-          // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-          for (iDim = 0; iDim < nDim; iDim++)
-            auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
+        // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+        for (iDim = 0; iDim < nDim; iDim++)
+          auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
 
-          // Calculate tn in the fluid nodes for the viscous term
-          if (viscous_flow) {
-            su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-            su2double Tau[3][3];
-            CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
-            for (iDim = 0; iDim < nDim; iDim++) {
-              for (jDim = 0 ; jDim < nDim; jDim++) {
-                auxForce[iDim] += Tau[iDim][jDim]*iNormal[jDim];
-              }
-            }
-          }
-
-          // Redimensionalize the forces
+        // Calculate tn in the fluid nodes for the viscous term
+        if (viscous_flow) {
+          su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+          su2double Tau[3][3];
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
           for (iDim = 0; iDim < nDim; iDim++) {
-            VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
+            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
           }
         }
-        else{
-          for (iDim = 0; iDim < nDim; iDim++) {
-            VertexTraction[iMarker][iVertex][iDim] = 0.0;
-          }
+
+        // Redimensionalize the forces
+        for (iDim = 0; iDim < nDim; iDim++) {
+          VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
+        }
+      }
+      else{
+        for (iDim = 0; iDim < nDim; iDim++) {
+          VertexTraction[iMarker][iVertex][iDim] = 0.0;
         }
       }
     }
@@ -4109,7 +4072,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
 }
 
-void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
+void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config){
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4117,31 +4080,28 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      /*--- Loop over the vertices ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    /*--- Loop over the vertices ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        /*--- Recover the point index ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*--- Recover the point index ---*/
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          /*--- Register the vertex traction as output ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-            AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
-          }
-
-        }
+      /*--- Register the vertex traction as output ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
       }
     }
   }
 
 }
 
-void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
+void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config){
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4149,26 +4109,22 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      /*--- Loop over the vertices ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    /*--- Loop over the vertices ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        /*--- Recover the point index ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*--- Recover the point index ---*/
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          /*--- Set the adjoint of the vertex traction from the value received ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-
-            SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                    SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
-          }
-
-        }
+      /*--- Set the adjoint of the vertex traction from the value received ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
+                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
   }

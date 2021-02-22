@@ -3128,13 +3128,6 @@ void CConfig::SetnZone(){
 
   }
 
-  /*--- Temporary fix until Multizone Disc. Adj. solver is ready ---- */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-
-    nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
-
-  }
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -3577,11 +3570,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
-    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
-  }
-
-  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
+  if (nKind_SurfaceMovement != nMarker_Moving) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -5604,7 +5593,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
         case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
     }
@@ -8315,7 +8303,6 @@ bool CConfig::GetVolumetric_Movement() const {
 
   if (GetSurface_Movement(AEROELASTIC) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
-      GetSurface_Movement(FLUID_STRUCTURE) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;
