@@ -540,16 +540,16 @@ static const MapType<string, ENUM_SPACE> Space_Map = {
  * \brief Types of fluid model
  */
 enum ENUM_FLUIDMODEL {
-  STANDARD_AIR = 0,       /*!< \brief Standard air gas model. */
-  IDEAL_GAS = 1,          /*!< \brief Ideal gas model. */
-  VW_GAS = 2,             /*!< \brief Van Der Waals gas model. */
-  PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
-  CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
-  INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
-  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
-  FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
+  STANDARD_AIR         = 0, /*!< \brief Standard air gas model. */
+  IDEAL_GAS            = 1, /*!< \brief Ideal gas model. */
+  VW_GAS               = 2, /*!< \brief Van Der Waals gas model. */
+  PR_GAS               = 3, /*!< \brief Perfect Real gas model. */
+  CONSTANT_DENSITY     = 4, /*!< \brief Constant density gas model. */
+  INC_IDEAL_GAS        = 5, /*!< \brief Incompressible ideal gas model. */
+  INC_IDEAL_GAS_POLY   = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
+  MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
+  SU2_NONEQ            = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
+  FLAMELET_FLUID_MODEL = 9  /*!< \brief Flamelet model */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)

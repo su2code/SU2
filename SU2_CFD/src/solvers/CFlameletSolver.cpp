@@ -587,6 +587,8 @@ void CFlameletSolver::Source_Residual(CGeometry       *geometry,
   
   CNumerics *second_numerics = numerics_container[SOURCE_SECOND_TERM];
 
+  CNumerics *first_numerics = numerics_container[SOURCE_FIRST_TERM];
+
   CFluidModel *fluid_model_local;
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -619,23 +621,17 @@ void CFlameletSolver::Source_Residual(CGeometry       *geometry,
       Residual[i_scalar] = next_source * Volume;
     }
 
+    first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
-    /*--- Implicit part for production term (to do). ---*/
-    for (int i_var = 0; i_var < nVar; i_var++) {
-      for (int j_var = 0; j_var < nVar; j_var++) {
-        Jacobian_i[i_var][j_var] = 0.0;
-      }
-    }
-    Jacobian_i[0][0] = Volume*fluid_model_local->GetdSourcePVdPV();
-    
-    
+    auto residual = first_numerics->ComputeResidual(config);
+
     /*--- Add Residual ---*/
     
-    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, residual);
     
     /*--- Implicit part ---*/
     
-    if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
   }
   

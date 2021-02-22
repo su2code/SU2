@@ -1308,33 +1308,34 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Initialize the source residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) 
-    Residual[iVar] = 0.0;
+//  for (iVar = 0; iVar < nVar; iVar++) 
+//    Residual[iVar] = 0.0;
+
 /* nijso changed to active when adiabatic, so only for combustion. WHAT DOES THIS DO?*/
-  if (flamelet_model && flamelet_thermo_system == ADIABATIC) {
+  // if (flamelet_model && flamelet_thermo_system == ADIABATIC) {
 
-      su2double source=73;
-      su2double dummy_temperature=73;
-      su2double scalars[2] = {73,37};
-      CFluidModel *FluidModel_local;
+  //     su2double source=73;
+  //     su2double dummy_temperature=73;
+  //     su2double scalars[2] = {73,37};
+  //     CFluidModel *FluidModel_local;
 
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-        /*--- Compute the production term. ---*/
+  //       /*--- Compute the production term. ---*/
 
-        scalars[0]       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint, 0);
-        scalars[1]       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint, 1);
-        FluidModel_local = solver_container[FLOW_SOL]->GetFluidModel();
+  //       scalars[0]       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint, 0);
+  //       scalars[1]       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint, 1);
+  //       FluidModel_local = solver_container[FLOW_SOL]->GetFluidModel();
 
-        FluidModel_local->SetTDState_T(dummy_temperature, scalars);
+  //       FluidModel_local->SetTDState_T(dummy_temperature, scalars);
 
-        source = FluidModel_local->GetSourceEnergy();
+  //       source = FluidModel_local->GetSourceEnergy();
 
-        /*---  set energy source for paraview viewing ---*/
+  //       /*---  set energy source for paraview viewing ---*/
 
-        nodes->SetSourceEnergy(iPoint, source);
-    }
-  }
+  //       nodes->SetSourceEnergy(iPoint, source);
+  //   }
+  // }
 
 
 
@@ -1762,39 +1763,6 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
 
-}
-
-void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
-
-  Total_ComboObj = EvaluateCommonObjFunc(*config);
-
-  /*--- The following are not per-surface, and so to avoid that they are
-   double-counted when multiple surfaces are specified, they have been
-   placed outside of the loop above. In addition, multi-objective mode is
-   also disabled for these objective functions (error thrown at start). ---*/
-
-  const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-  const auto Kind_ObjFunc = config->GetKind_ObjFunc(0);
-
-  switch(Kind_ObjFunc) {
-    case SURFACE_PRESSURE_DROP:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
-      break;
-    case SURFACE_CO:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_CO(0);
-      break;
-    case SURFACE_NOX:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
-      break;
-    case SURFACE_TEMP:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-      break;
-    case CUSTOM_OBJFUNC:
-      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-      break;
-    default:
-      break;
-  }
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
