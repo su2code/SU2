@@ -67,14 +67,11 @@ CNEMONSSolver::~CNEMONSSolver(void) {
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint       = config->GetContinuous_Adjoint();
-  bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool muscl              = config->GetMUSCL_Flow();
-  bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const bool muscl      = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center     = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
 
   /*--- Common preprocessing steps (implemented by CNEMOEulerSolver) ---*/
 
@@ -82,7 +79,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
-  if ((muscl && !center) && (iMesh == MESH_0)) {
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
         SetPrimitive_Gradient_GG(geometry, config, true); break;
@@ -102,10 +99,9 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
-   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  /*--- Compute the limiters ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 
@@ -136,8 +132,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     su2double MyOmega_Max = Omega_Max;
     //su2double MyStrainMag_Max = StrainMag_Max;
-    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   }
 }

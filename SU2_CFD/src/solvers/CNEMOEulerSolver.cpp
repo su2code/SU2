@@ -254,7 +254,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
@@ -284,58 +284,6 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 
 }
 
-void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
-
-  unsigned long iPoint;
-  unsigned short iMesh;
-  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = false;
-  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                          (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-
-  /*--- Make sure that the solution is well initialized for unsteady
-   calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
-
-  if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))    ) {
-
-    /*--- Push back the initial condition to previous solution containers
-     for a 1st-order restart or when simply intitializing to freestream. ---*/
-
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
-        if (rans) {
-          solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-          solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
-        }
-      }
-    }
-
-    if ((restart && TimeIter == config->GetRestart_Iter()) &&
-        (config->GetTime_Marching() == DT_STEPPING_2ND)) {
-
-      /*--- Load an additional restart file for a 2nd-order restart ---*/
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
-
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), false);
-
-      /*--- Push back this new solution to time level N. ---*/
-
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-          if (rans)
-            solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-        }
-      }
-    }
-  }
-}
-
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
@@ -351,7 +299,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
 
       unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
 
   }
@@ -378,17 +326,17 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool muscl              = config->GetMUSCL_Flow();
-  bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(config->GetFrozen_Limiter_Disc()));
-  bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool center      = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const bool van_albada  = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Common preprocessing steps ---*/
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Upwind second order reconstruction ---*/
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+  if (muscl && !center && !Output) {
 
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -399,7 +347,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
     }
 
     /*--- Limiter computation ---*/
-    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
+    if (limiter && !van_albada) {
       SetPrimitive_Limiter(geometry, config);
     }
   }
@@ -568,11 +516,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
                                        CConfig *config, unsigned short iMesh) {
 
   /*--- Set booleans based on config settings ---*/
-  const auto InnerIter        = config->GetInnerIter();
   //const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                                (InnerIter <= config->GetLimiterIter());
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /*--- Non-physical counter. ---*/
@@ -748,7 +694,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_MASTER
     {
       counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
     SU2_OMP_BARRIER
@@ -1682,8 +1628,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Viscous contribution ---*/
       if (viscous) {
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                geometry->nodes->GetCoord(Point_Normal) );
+        su2double Coord_Reflected[MAXNDIM];
+        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected );
         visc_numerics->SetNormal(Normal);
 
         /*--- Primitive variables, and gradient ---*/
@@ -1981,7 +1929,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
 //        /*--- Set the normal vector and the coordinates ---*/
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        su2double Coord_Reflected[MAXNDIM];
+//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
 
 //        /*--- Primitive variables, and gradient ---*/
 //        visc_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2201,7 +2152,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
 //        /*--- Set the normal vector and the coordinates ---*/
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+//        su2double Coord_Reflected[MAXNDIM];
+//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+//                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(), Coord_Reflected);
 
 //        /*--- Primitive variables, and gradient ---*/
 //        visc_numerics->SetPrimitive(V_domain, V_outlet);
@@ -2435,7 +2389,10 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //
 //        /*--- Set the normal vector and the coordinates ---*/
 //        visc_numerics->SetNormal(Normal);
-//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+//        su2double Coord_Reflected[MAXNDIM];
+//        GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+//                                           geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 //
 //        /*--- Primitive variables, and gradient ---*/
 //        visc_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2539,217 +2496,3 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 //  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 //
 //}
-
-void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-
-  /*--- Restart the solution from file information ---*/
-  unsigned short iDim, iVar, iMesh, iMeshFine;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool dynamic_grid  = config->GetGrid_Movement();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
-                     (config->GetFSI_Simulation()));
-  bool steady_restart = config->GetSteadyRestart();
-  bool turbulent     = false;
-
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  string  restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
-  Coord = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord[iDim] = 0.0;
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-  /*--- Skip coordinates ---*/
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
-
-  /*--- Store the number of variables for the turbulence model
-   (that could appear in the restart file before the grid velocities). ---*/
-  unsigned short turbVars = 0;
-  if (turbulent){
-    if (turb_model == SST) turbVars = 2;
-    else turbVars = 1;
-  }
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
-
-  /*--- Load data from the restart into correct containers. ---*/
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
-
-    if (iPoint_Local > -1) {
-
-      /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
-
-      /*--- For dynamic meshes, read in and store the
-       grid coordinates and grid velocities for each node. ---*/
-      if (dynamic_grid && val_update_geo) {
-
-        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
-        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
-        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        su2double GridVel[3] = {0.0,0.0,0.0};
-        if (!steady_restart) {
-
-          /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[1];
-          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
-
-          /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar + turbVars;
-          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
-          geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
-        }
-      }
-
-      if (static_fsi && val_update_geo) {
-        /*--- Rewind the index to retrieve the Coords. ---*/
-        index = counter*Restart_Vars[1];
-        for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
-        }
-      }
-
-      /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
-    }
-  }
-
-  /*--- Detect a wrong solution file ---*/
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
-
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine
-   on the fine level in order to have all necessary quantities updated,
-   especially if this is a turbulent simulation (eddy viscosity). ---*/
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-
-  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
-    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  }
-
-  /*--- Update the geometry for flows on dynamic meshes ---*/
-  if (dynamic_grid && val_update_geo) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
-
-    /*--- Recompute the edges and dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
-      geometry[iMesh]->SetMaxLength(config);
-    }
-  }
-
-  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
-  if (static_fsi && val_update_geo) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    /*--- Recompute the edges and  dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetMaxLength(config);
-    }
-  }
-
-
-  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && dynamic_grid)
-    Restart_OldGeometry(geometry[MESH_0], config);
-
-  delete [] Coord;
-
-  /*--- Delete the class memory that is used to load the restart. ---*/
-
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
-}
-

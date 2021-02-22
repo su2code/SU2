@@ -39,8 +39,10 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
-from FSI_tools.switch import switch
+import os
+import sys
+import shutil
+import copy
 
 # ----------------------------------------------------------------------
 #  FSI Configuration Class
@@ -56,6 +58,7 @@ class FSIConfig:
         self.ConfigFileName = FileName
         self._ConfigContent = {}
         self.readConfig()
+        self.applyDefaults()
 
     def __str__(self):
         tempString = str()
@@ -85,37 +88,37 @@ class FSIConfig:
             this_param = line[0].strip()
             this_value = line[1].strip()
 
-            for case in switch(this_param):
 	        #integer values
-                if case("NDIM")			      : pass
-                if case("RESTART_ITER")		      : pass
-                if case("TIME_TRESHOLD")          : pass
-                if case("NB_FSI_ITER")		      :
-                    self._ConfigContent[this_param] = int(this_value)
-                    break
+            if (this_param == "NDIM")	or \
+               (this_param == "RESTART_ITER")	or \
+               (this_param == "TIME_TRESHOLD") or \
+               (this_param == "NB_FSI_ITER") :
+                self._ConfigContent[this_param] = int(this_value)
 
             #float values
-                if case("RBF_RADIUS")                 : pass
-                if case("AITKEN_PARAM")		      : pass
-                if case("UNST_TIMESTEP")	      : pass
-                if case("UNST_TIME")		      : pass
-                if case("FSI_TOLERANCE")	      :
-                    self._ConfigContent[this_param] = float(this_value)
-                    break
+            elif (this_param == "RBF_RADIUS") or \
+                 (this_param == "AITKEN_PARAM") or \
+                 (this_param == "UNST_TIMESTEP") or \
+                 (this_param == "UNST_TIME") or \
+                 (this_param == "FSI_TOLERANCE") :
+                self._ConfigContent[this_param] = float(this_value)
 
             #string values
-                if case("CFD_CONFIG_FILE_NAME")	      : pass
-                if case("CSD_SOLVER")		      : pass
-                if case("CSD_CONFIG_FILE_NAME")	      : pass
-                if case("RESTART_SOL")		      : pass
-                if case("MATCHING_MESH")	      : pass
-                if case("MESH_INTERP_METHOD")         : pass
-                if case("DISP_PRED")		      : pass
-                if case("AITKEN_RELAX")               : pass
-                if case("TIME_MARCHING")	      :
-                    self._ConfigContent[this_param] = this_value
-                    break
+            elif (this_param == "CFD_CONFIG_FILE_NAME") or \
+                 (this_param == "CSD_SOLVER") or \
+                 (this_param == "CSD_CONFIG_FILE_NAME") or \
+                 (this_param == "RESTART_SOL") or \
+                 (this_param == "MATCHING_MESH") or \
+                 (this_param == "MESH_INTERP_METHOD") or \
+                 (this_param == "DISP_PRED") or \
+                 (this_param == "AITKEN_RELAX") or \
+                 (this_param == "TIME_MARCHING") :
+                self._ConfigContent[this_param] = this_value
 
-                if case():
-                    print(this_param + " is an invalid option !")
-                    break
+            else :
+                print(this_param + " is an invalid option !")
+
+    def applyDefaults(self):
+        if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
+            self._ConfigContent["AITKEN_RELAX"] = "STATIC"
+            self._ConfigContent["AITKEN_PARAM"] = 1.0

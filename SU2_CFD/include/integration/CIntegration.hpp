@@ -125,20 +125,20 @@ public:
   inline bool GetConvergence_FullMG(void) const { return Convergence_FullMG; }
 
   /*!
-   * \brief Save the solution, and volume at different time steps.
+   * \brief Save the geometry at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow solution.
+   * \param[in] solver - Mesh solver.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+  void SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh);
 
   /*!
-   * \brief Save the structural solution at different time steps.
+   * \brief Save the solution at different time steps, and reset certain fields for the next timestep.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Structural solution.
+   * \param[in] solver - Some solver.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetStructural_Solver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
+  virtual void SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief A virtual member.

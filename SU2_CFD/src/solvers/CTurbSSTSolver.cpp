@@ -255,7 +255,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
-  if (config->GetReconstructionGradientRequired() && muscl) {
+  if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
       SetSolution_Gradient_GG(geometry, config, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
@@ -322,6 +322,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+                                       
+  bool axisymmetric = config->GetAxisymmetric();
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -372,6 +374,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
 
+    if (axisymmetric){
+      /*--- Set y coordinate ---*/
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+    }
+    
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
@@ -591,7 +598,10 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       //
-      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+      //      su2double Coord_Reflected[MAXNDIM];
+      //      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+      //                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      //      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
       //      visc_numerics->SetNormal(Normal);
       //
       //      /*--- Conservative variables w/o reconstruction ---*/
@@ -677,7 +687,10 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
-//      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+//      su2double Coord_Reflected[MAXNDIM];
+//      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+//                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+//      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 //      visc_numerics->SetNormal(Normal);
 //
 //      /*--- Conservative variables w/o reconstruction ---*/
@@ -769,7 +782,10 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/
@@ -873,8 +889,10 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                              geometry->nodes->GetCoord(Point_Normal));
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/

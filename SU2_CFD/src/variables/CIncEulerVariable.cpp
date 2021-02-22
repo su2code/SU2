@@ -32,8 +32,9 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
                                      unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                      (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool viscous   = config->GetViscous();
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -53,20 +54,19 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     }
   }
 
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  /*--- Allocate undivided laplacian (centered) ---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
+      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  }
 
   /*--- Solution initialization ---*/
 
@@ -90,12 +90,14 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
-        We need P, and rho for running the adjoint problem ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
 
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  if (config->GetMUSCL_Flow() || viscous) {
+    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (config->GetReconstructionGradientRequired() &&
+      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
 
@@ -106,7 +108,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
-  Density_Old.resize(nPoint) = su2double(0.0);
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
@@ -127,10 +128,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   unsigned long iVar;
   bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 

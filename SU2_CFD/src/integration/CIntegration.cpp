@@ -208,14 +208,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
 
   SU2_OMP_PARALLEL
   {
-  /*--- Store old solution, volumes and coordinates (in case there is grid movement). ---*/
-
-  solver->GetNodes()->Set_Solution_time_n1();
-  solver->GetNodes()->Set_Solution_time_n();
 
   geometry->nodes->SetVolume_nM1();
   geometry->nodes->SetVolume_n();
@@ -224,6 +220,19 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     geometry->nodes->SetCoord_n1();
     geometry->nodes->SetCoord_n();
   }
+
+  if ((iMesh==MESH_0) && config->GetDeform_Mesh()) mesh_solver->SetDualTime_Mesh();
+
+  } // end SU2_OMP_PARALLEL
+}
+
+void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+
+  SU2_OMP_PARALLEL
+  {
+  /*--- Store old solution ---*/
+  solver->GetNodes()->Set_Solution_time_n1();
+  solver->GetNodes()->Set_Solution_time_n();
 
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
@@ -239,113 +248,5 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
   }
 
-  /*--- Store old aeroelastic solutions ---*/
-  SU2_OMP_MASTER
-  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
-
-    config->SetAeroelastic_n1();
-    config->SetAeroelastic_n();
-
-    /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
-
-#ifdef HAVE_MPI
-    su2double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
-    unsigned short iMarker, iMarker_Monitoring;
-    unsigned long iProcessor, owner, *owner_all = NULL;
-
-    string Marker_Tag, Monitoring_Tag;
-    int nProcessor = size;
-
-    /*--- Only if master node allocate memory ---*/
-
-    if (rank == MASTER_NODE) {
-      plunge_all = new su2double[nProcessor];
-      pitch_all  = new su2double[nProcessor];
-      owner_all  = new unsigned long[nProcessor];
-    }
-
-    /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
-
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-        } else {
-          owner = 0;
-        }
-
-      }
-      plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
-      pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
-
-      /*--- Gather the data on the master node. ---*/
-
-      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-      /*--- Set plunge and pitch on the master node ---*/
-
-      if (rank == MASTER_NODE) {
-        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
-          if (owner_all[iProcessor] == 1) {
-            config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
-            config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
-            break;
-          }
-        }
-      }
-
-    }
-
-    if (rank == MASTER_NODE) {
-      delete [] plunge_all;
-      delete [] pitch_all;
-      delete [] owner_all;
-    }
-#endif
-  }
-  SU2_OMP_BARRIER
-
   } // end SU2_OMP_PARALLEL
-
-}
-
-void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-
-  bool fsi = config->GetFSI_Simulation();
-
-  /*--- Update the solution according to the integration scheme used ---*/
-
-  switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
-      break;
-    case (NEWMARK_IMPLICIT):
-      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, config);
-      break;
-    case (GENERALIZED_ALPHA):
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, config);
-      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, config);
-      break;
-  }
-
-  /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-
-  solver_container[FEA_SOL]->GetNodes()->Set_Solution_time_n();
-  solver_container[FEA_SOL]->GetNodes()->SetSolution_Vel_time_n();
-  solver_container[FEA_SOL]->GetNodes()->SetSolution_Accel_time_n();
-
-  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-
-  if (fsi) {
-
-    su2double WAitk=0.0;
-
-    WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
-    solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
-
-  }
 }

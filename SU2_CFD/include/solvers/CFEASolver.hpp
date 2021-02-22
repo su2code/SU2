@@ -69,6 +69,7 @@ protected:
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
   su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
+  su2double Total_OFStressPenalty;  /*!< \brief Total Objective Function: Stress penalty. */
   su2double ObjFunc;
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
@@ -313,7 +314,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry,
+  void Compute_MassMatrix(const CGeometry *geometry,
                           CNumerics **numerics,
                           const CConfig *config) final;
 
@@ -323,7 +324,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry,
+  void Compute_MassRes(const CGeometry *geometry,
                        CNumerics **numerics,
                        const CConfig *config) final;
 
@@ -471,7 +472,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Iteration(CGeometry *geometry,
+  void ImplicitNewmark_Iteration(const CGeometry *geometry,
                                  CNumerics **numerics,
                                  const CConfig *config) final;
 
@@ -480,14 +481,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Update(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Relaxation(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
@@ -495,7 +496,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_Iteration(CGeometry *geometry,
+  void GeneralizedAlpha_Iteration(const CGeometry *geometry,
                                   CNumerics **numerics,
                                   const CConfig *config) final;
 
@@ -504,21 +505,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateDisp(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateSolution(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) final;
+  void GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Postprocessing.
@@ -546,7 +547,6 @@ public:
 
   /*!
    * \brief Provide the maximum Von Mises Stress for structural analysis.
-   * \return Value of the maximum Von Mises Stress.
    */
   inline su2double GetTotal_CFEA(void) const final { return Total_CFEA; }
 
@@ -572,9 +572,13 @@ public:
 
   /*!
    * \brief Retrieve the value of the structural compliance objective function
-   * \return Value of the objective function.
    */
   inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
+
+  /*!
+   * \brief Retrieve the value of the stress penalty objective function
+   */
+  inline su2double GetTotal_OFStressPenalty(void) const final { return Total_OFStressPenalty; }
 
   /*!
    * \brief Compute the objective function.
@@ -597,6 +601,9 @@ public:
         break;
       case TOPOL_DISCRETENESS:
         ObjFunc = GetTotal_OFDiscreteness();
+        break;
+      case STRESS_PENALTY:
+        ObjFunc = GetTotal_OFStressPenalty();
         break;
     }
   }
