@@ -565,10 +565,8 @@ class Interface:
             # Note that the fluid solver is separated in more processors outside the python script
             # thus when, from a core, we request for the vertices on the interface, we only obtain
             # those in that node
-            GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex) #TODO obtain here the undeformed mesh
-            posx = FluidSolver.GetVertexCoordX(self.fluidInterfaceIdentifier, iVertex)
-            posy = FluidSolver.GetVertexCoordY(self.fluidInterfaceIdentifier, iVertex)
-            posz = FluidSolver.GetVertexCoordZ(self.fluidInterfaceIdentifier, iVertex)
+            GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
+            posx, posy, posz = FluidSolver.GetInitialMeshCoord(self.fluidInterfaceIdentifier, iVertex)
             if GlobalIndex not in self.FluidHaloNodeList[myid].keys():
               fluidIndexing_temp[GlobalIndex] = self.__getGlobalIndex('fluid', myid, localIndex)
               self.localFluidInterface_array_X_init[localIndex] = posx
@@ -1394,9 +1392,7 @@ class Interface:
           del sendBuff_X
           del sendBuff_Y
           del sendBuff_Z
-          del self.solidLoads_array_X_recon
-          del self.solidLoads_array_Y_recon
-          del self.solidLoads_array_Z_recon
+          self.comm.barrier()
         else:
           self.localSolidLoads_array_X = self.solidLoads_array_X.getArray().copy()
           self.localSolidLoads_array_Y = self.solidLoads_array_Y.getArray().copy()
@@ -2094,7 +2090,7 @@ class Interface:
               # mesh pushing back the solution to avoid spurious velocities, as the velocity is not computed at all
               self.MPIPrint('\nPerforming static mesh deformation...\n')
               FluidSolver.Preprocess(0)# This will attempt to always set the initial condition, but there is a flag on the unsteady computation that will avoid it
-              FluidSolver.Run() #TODO check how the preprocess work if fsi is false
+              FluidSolver.Run()
               FluidSolver.Postprocess()
               FluidSolver.Monitor(0) #This is actually not needed, it only saves the fact that the fluid solver converged innerly or reached max iterations
               FluidSolver.Output(0)

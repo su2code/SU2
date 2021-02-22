@@ -279,9 +279,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   Add_CpInverseDesignOutput(config);
 
-  /*--- Add combo obj value --- */
-
-  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -685,10 +682,6 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(NEMO_solver, geometry, config);
-
-  /*--- Set combo obj value --- */
-
-  SetHistoryOutputValue("COMBO", NEMO_solver->GetTotal_ComboObj());
 
 }
 
