@@ -1165,6 +1165,7 @@ private:
   su2double *ConstrFuncTarget;          /*!< \brief Kind of constraint function. */
   su2double *ConstrFuncScale;           /*!< \brief Kind of constraint function. */
   su2double *InitialMultiplier;         /*!< \brief Initial multiplier value. */
+  su2double MaxOneShotStepsize;         /*!< \brief Maximum stepsize for design updates. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9542,7 +9543,7 @@ public:
    * \brief Get the kind of One Shot method from the config file.
    * \return type of iteration to run.
    */
-  bool GetOneShotMode(void) { return OneShotMode; }
+  unsigned short GetOneShotMode(void) { return OneShotMode; }
 
   /*!
    * \brief Get the number of Piggyback steps between line searches.
@@ -9587,5 +9588,12 @@ public:
    * \return Initial multiplier values.
    */
   inline su2double GetInitialMultiplier(unsigned short iConstr) const { return InitialMultiplier[iConstr]; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the max stepsize for design deformations.
+   * \return max stepsize for design updates
+   */
+  su2double GetMaxOneShotStepsize(void) { return MaxOneShotStepsize; }
 
 };

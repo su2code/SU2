@@ -129,17 +129,14 @@ public:
 
   /*!
    * \brief Performs a surface deformation and volumetric deformation (sets kind to SU2_DEF) for a design update.
-   * \param[in] geometry - geometry class.
    * \param[in] config - config class.
-   * \param[in] surface_movement - surface movement class
-   * \param[in] grid_movement - volumetric movement class
    */
-  void DeformGeometry(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP,  CConfig *config);
+  void DeformGeometry(vector<su2double>& delta_design,  CConfig *config);
 
   /*!
    * \brief Compute the search direction using the preconditioned gradient.
    */
-  void ComputeSearchDirection(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, vector<su2double>& deltaP, CConfig *config);
+  void Linesearch(su2double funcValue, vector<su2double> funcGrad, CConfig *config);
 
   /*!
    * \brief Check if the search direction is a descent direction.
@@ -155,4 +152,10 @@ public:
    * \brief Compute the inverse preconditioner matrix (BCheck^(-1)) for the multiplier update.
    */
   void ComputePreconditioner();
+
+  /*!
+   * \brief Small helper function to compute the norm of a std::vector
+   */
+  su2double L2Norm(vector<su2double>& vector);
+
 };

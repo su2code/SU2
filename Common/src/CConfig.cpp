@@ -2832,7 +2832,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Use OneShot method for optimization */
   addEnumOption("ONE_SHOT", OneShotMode, Oneshot_Mode_Map, NO_MODE);
 
-  /* DESCRIPTION: number of Piggyback steps between 2 design updates */
+  /* DESCRIPTION: number of optimizations steps with design updates */
   addUnsignedLongOption("ONESHOT_ITER", OneShotIter, 999999);
 
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
@@ -2846,6 +2846,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addDoubleListOption("INITIAL_MULTIPLIER", nConstrHelp, InitialMultiplier);
+
+  /* DESCRIPTION: max stepsize for design updates */
+  addDoubleOption("MAX_ONESHOT_STEPSIZE", MaxOneShotStepsize, 1.0);
 
   /* END_CONFIG_OPTIONS */
 
