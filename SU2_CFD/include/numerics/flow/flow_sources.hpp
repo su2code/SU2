@@ -336,14 +336,11 @@ private:
   bool turbulent; /*!< \brief Turbulence model used. */
   bool energy;    /*!< \brief Energy equation on. */
   bool streamwisePeriodic_temperature; /*!< \brief Periodicity in energy equation */
-  vector<su2double> Streamwise_Coord_Vector; /*!< \brief Translation vector between streamwise periodic surfaces. */
+  su2double Streamwise_Coord_Vector[MAXNDIM] = {0.0}; /*!< \brief Translation vector between streamwise periodic surfaces. */
 
   su2double norm2_translation, /*!< \brief Square of distance between the 2 periodic surfaces. */
             dot_product, /*!< \brief Container for various dot-products. */
             scalar_factor; /*!< \brief Holds scalar factors to simplify final equations. */
-
-  unsigned short iDim, /*!< brief Counts over Dimensions. */
-                 iVar, jVar; /*!< brief Count over Variables. */
 
 public:
 
@@ -372,17 +369,6 @@ public:
  * \author T. Kattmann
  */
 class CSourceIncStreamwisePeriodic_Outlet : public CSourceBase_Flow {
-private:
-
-  su2double 
-  AxiFactor, /*!< brief Factor for axisymmetric simulations */
-  FaceArea, /*!< brief Boundary face area */
-  local_Massflow, /*!< brief massflow through that one boundary cell */
-  AreaAvgInletTemp; /*!< brief Area avg inlet Temp. Computed in GetStreamwise_Periodic_Properties */
-
-  unsigned short iDim, /*!< brief Counts over Dimensions. */
-                 iVar, jVar; /*!< brief Count over Variables. */
-
 public:
 
   /*!

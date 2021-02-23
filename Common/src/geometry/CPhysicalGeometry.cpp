@@ -7485,7 +7485,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*---         therefore the default value of the send value is set super high.            ---*/
   /*-------------------------------------------------------------------------------------------*/
 
-  for (int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
 
       /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
