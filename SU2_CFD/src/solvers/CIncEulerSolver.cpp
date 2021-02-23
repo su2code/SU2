@@ -865,14 +865,6 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
     SU2_OMP_BARRIER
   }
 
-  /*--- Compute integrated Heatflux and massflow, TK:: Euler equations not implemented yet, probalby wasted here ---*/
-  if (config->GetKind_Streamwise_Periodic() && false) {
-    SU2_OMP_MASTER
-    if(rank==MASTER_NODE) cout << "EulerPrepsocessing GetStreamwise_Periodic_Properties." << endl;
-    GetStreamwise_Periodic_Properties(geometry, config, iMesh);
-    SU2_OMP_BARRIER
-  } 
-
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
@@ -1280,6 +1272,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 
   if (streamwise_periodic) {
+    numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1314,6 +1307,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if(!streamwise_periodic_temperature && energy) {
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+      second_numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2941,8 +2935,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
   Average_Density_Global /= Area_Global;
   Temperature_Global /= Area_Global;
   // What do I do with the temperature now from here on? The only way really is to pipe it through the config...
-  config->SetStreamwise_Periodic_InletTemperature(Temperature_Global);
-  config->SetStreamwise_Periodic_MassFlow(MassFlow_Global);
+  Streamwise_Periodic_InletTemperature = Temperature_Global;
+  Streamwise_Periodic_MassFlow = MassFlow_Global;
 
   if (rank == MASTER_NODE && false) { cout << "MassFlow_Global: " << fabs(MassFlow_Global) * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
   if (rank == MASTER_NODE && false) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
@@ -3038,7 +3032,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
     /*--- Set the Integrated Heatflux ---*/
     if (iMesh == MESH_0)
-      config->SetStreamwise_Periodic_IntegratedHeatFlow(HeatFlow_Global);
+      Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
   } // if energy
 }
 

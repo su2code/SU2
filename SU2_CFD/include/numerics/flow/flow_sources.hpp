@@ -40,6 +40,10 @@ class CSourceBase_Flow : public CNumerics {
 protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
+  su2double
+  Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
+  Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  Streamwise_Periodic_InletTemperature;   /*!< /brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 
   /*!
    * \brief Constructor of the class.
@@ -54,6 +58,18 @@ public:
    * \brief Destructor of the class.
    */
   ~CSourceBase_Flow() override;
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetStreamwise_Periodic_Values(const su2double massflow, const su2double integratedHeat, const su2double inletTemp) {
+    Streamwise_Periodic_MassFlow = massflow;
+    Streamwise_Periodic_IntegratedHeatFlow = integratedHeat;
+    Streamwise_Periodic_InletTemperature = inletTemp;
+  }
 
 };
 

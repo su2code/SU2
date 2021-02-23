@@ -4602,9 +4602,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\"", CURRENT_FUNCTION);
     if (Axisymmetric)
       SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
-
-    /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
-    Streamwise_Periodic_RefNode.resize(val_nDim);
   } else {
     /*--- Safety measure ---*/
     Streamwise_Periodic_Temperature = false;

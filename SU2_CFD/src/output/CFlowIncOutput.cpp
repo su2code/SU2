@@ -342,9 +342,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   if(streamwisePeriodic) {
-    SetHistoryOutputValue("STREAMWISE_MASSFLOW", config->GetStreamwise_Periodic_MassFlow());
+    SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwise_Periodic_MassFlow());
     SetHistoryOutputValue("STREAMWISE_DP", config->GetStreamwise_Periodic_PressureDrop());
-    SetHistoryOutputValue("STREAMWISE_HEAT", config->GetStreamwise_Periodic_IntegratedHeatFlow());
+    SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwise_Periodic_IntegratedHeatFlow());
   }
 
   /*--- Set the analyse surface history values --- */

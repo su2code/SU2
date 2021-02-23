@@ -1717,5 +1717,11 @@ public:
    * \param[out] nNonconvexElements- amount of nonconvex elements in the mesh
    */
   unsigned long GetnNonconvexElements() const {return nNonconvexElements;}
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline virtual const su2double* GetStreamwise_Periodic_RefNode(void) const { return nullptr; }
 };
 

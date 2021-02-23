@@ -1604,6 +1604,7 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
+  virtual inline void SetStreamwise_Periodic_Values(const su2double massflow, const su2double integratedHeat, const su2double inletTemp) { }
 };
 
 /*!

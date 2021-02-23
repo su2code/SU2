@@ -998,11 +998,7 @@ private:
   bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or oterwise outlet source term. */
   su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
-            Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
-            Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-            Streamwise_Periodic_OutletHeat,         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
-            Streamwise_Periodic_InletTemperature;   /*!< /brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
-  vector<su2double> Streamwise_Periodic_RefNode;    /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+            Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
@@ -5755,18 +5751,6 @@ public:
   su2double GetStreamwise_Periodic_OutletHeat(void) const { return Streamwise_Periodic_OutletHeat; }
 
   /*!
-   * \brief Set the value of the area avg periodic inlet Temperature.
-   * \param[in] Temp - area avg periodic inlet Temperature.
-   */
-  void SetStreamwise_Periodic_InletTemperature(su2double Temp) { Streamwise_Periodic_InletTemperature = Temp; }
-
-  /*!
-   * \brief Get the value of the area avg periodic inlet Temperature.
-   * \return Temperature value.
-   */
-  su2double GetStreamwise_Periodic_InletTemperature(void) const { return Streamwise_Periodic_InletTemperature; }
-
-  /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.
    * \return Delta Pressure for body force computation.
    */
@@ -5783,42 +5767,6 @@ public:
    * \return Massflow for body force computation.
    */
   su2double GetStreamwise_Periodic_TargetMassFlow(void) const { return Streamwise_Periodic_TargetMassFlow; }
-
-  /*!
-   * \brief Get a pointer to the reference node coordinate vector.
-   * \return A pointer to the reference node coordinate vector.
-   */
-  vector<su2double> GetStreamwise_Periodic_RefNode(void) { return Streamwise_Periodic_RefNode; }
-
-  /*!
-   * \brief Get a pointer to the reference node coordinate vector.
-   * \return A pointer to the reference node coordinate vector.
-   */
-  void SetStreamwise_Periodic_RefNode(vector<su2double> RefNode) { Streamwise_Periodic_RefNode = RefNode; }
-
-  /*!
-   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
-   * \return The streamwise periodic donor/outlet massflow.
-   */
-  su2double GetStreamwise_Periodic_MassFlow() const { return Streamwise_Periodic_MassFlow; }
-  
-  /*!
-   * \brief Set the massflow at the streamwise periodic donor/outlet boundary.
-   * \param[in] val_massflow - Massflow at the streamwise periodic donor marker.
-   */
-  void SetStreamwise_Periodic_MassFlow(su2double val_massflow) { Streamwise_Periodic_MassFlow = val_massflow; }
-
-  /*!
-   * \brief Get the net sum of the heatflow into the domain.
-   * \return The net sum of the heatflow into the domain.
-   */
-  su2double GetStreamwise_Periodic_IntegratedHeatFlow() const { return Streamwise_Periodic_IntegratedHeatFlow; }
-  
-  /*!
-   * \brief Set the net sum of the heatflow into the domain.
-   * \param[in] val_heatflow - Net sum of the heatflow into the domain.
-   */
-  void SetStreamwise_Periodic_IntegratedHeatFlow(su2double val_heatflow) { Streamwise_Periodic_IntegratedHeatFlow = val_heatflow; }
 
   /*!
    * \brief Get information about the volumetric heat source.

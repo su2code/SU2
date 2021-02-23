@@ -106,12 +106,10 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
               Pressure_Recovered,
               Temperature_Recovered;
 
-    su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref(),
-              HeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow(),
-              MassFlow = config->GetStreamwise_Periodic_MassFlow();
+    su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
 
     /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
-    vector<su2double> ReferenceNode = config->GetStreamwise_Periodic_RefNode();
+    const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
     /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
     su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
@@ -131,7 +129,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- 'InnerIter > 0' as otherwise MassFlow in the denominator would be zero ---*/
       if (energy && InnerIter > 0) {
         Temperature_Recovered  = nodes->GetSolution(iPoint, nDim+1);
-        Temperature_Recovered += HeatFlow / (MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
+        Temperature_Recovered += Streamwise_Periodic_IntegratedHeatFlow / (Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
         nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
       }
     }
@@ -279,10 +277,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
           /*--- Scalar factor of the residual contribution ---*/
-          const su2double massflow = config->GetStreamwise_Periodic_MassFlow();
-          const su2double integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
           const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-          scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
+          scalar_factor = Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (Streamwise_Periodic_MassFlow * Cp * norm2_translation);
 
           /*--- Dot product ---*/
           dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);

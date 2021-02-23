@@ -7531,19 +7531,16 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
     if (norm < min_norm || iRank == 0) {
       min_norm = norm;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iRank*nDim + iDim];
+        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode[iRank*nDim + iDim];
     }
     /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
   }
-
-  /*--- Store the final reference node. ---*/
-  config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode);
 
   /*--- Print the reference node to screen. ---*/
   if (rank == MASTER_NODE) {
     cout << "Streamwise Periodic Reference Node: [";
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      cout <<  " " << Buffer_Send_RefNode[iDim];
+      cout <<  " " << Streamwise_Periodic_RefNode[iDim];
     cout << " ]" << endl;
   }
 
