@@ -33,6 +33,10 @@
 
 COneShotOutput::COneShotOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
+  turb_model = config->GetKind_Turb_Model();
+
+  cont_adj = config->GetContinuous_Adjoint();
+
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
