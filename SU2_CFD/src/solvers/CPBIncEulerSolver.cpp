@@ -2511,11 +2511,11 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
           V_inlet[iDim] = Vel_Mag*UnitFlowDir[iDim];
 
       /*--- Adding the grid velocity because SetVelocityOld sets the solution which is U = U_rel + U_grid. ---*/
-      if (dynamic_grid) {
+      /*if (dynamic_grid) {
         GridVel_i = geometry->nodes->GetGridVel(iPoint); 
          for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim] += GridVel_i[iDim];
-      }
+      }*/
 
       /*--- Update the CharacPrimVar for this vertex on inlet marker. ---*/
       /*--- This is necessary for the turbulent solver. ---*/
