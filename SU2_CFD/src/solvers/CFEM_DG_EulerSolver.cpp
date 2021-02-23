@@ -1243,8 +1243,9 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
 
     // EXTRA FOR DEBUGGING
-/*  for(int i=0; i<size; ++i) {
-      if(i == rank) {
+/*  SU2_OMP_SINGLE
+    {
+      if(rank == 0) {
         cout << endl;
         cout << "Task list for rank " << rank << endl;
         cout << "------------------------------------------------" << endl;
@@ -1286,14 +1287,13 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
           cout << endl << endl;
         }
 
+        cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed" << endl;
       }
-
 #ifdef HAVE_MPI
       SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
     }
 
-    cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed" << endl;
     exit(1); */
 
     // END EXTRA FOR DEBUGGING.
@@ -1454,6 +1454,22 @@ void CFEM_DG_EulerSolver::EntropyToPrimitiveVariables(ColMajorMatrix<su2double> 
 
 void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel) {
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -1461,6 +1477,22 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel,
                                                      const bool commMustBeCompleted) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
   return false;
 }
@@ -1468,12 +1500,44 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
 void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel,
                                                             const bool commMustBeCompleted) {
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
   return false;
 }
@@ -1790,6 +1854,22 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
                                                  CNumerics **numerics, CConfig *config,
                                                  unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -1817,6 +1897,22 @@ void CFEM_DG_EulerSolver::Set_OldSolution() {
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -1985,31 +2081,436 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
                                                    su2double       &timeEvolved,
                                                    bool            &syncTimeReached) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
                                              CNumerics **numerics, CConfig *config,
                                              unsigned short iMesh) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- Initialize the bool vector, that indicates whether or
+        not the tasks from the list have been completed. ---*/
+  SU2_OMP_SINGLE
+  taskCompleted.assign(tasksList.size(), false);
+
+  /*--- Easier storage of the number of time levels. ---*/
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+  /*--- While loop to carry out all the tasks in tasksList. ---*/
+  unsigned long lowestIndexInList = 0;
+  while(lowestIndexInList < tasksList.size()) {
+
+    /*--- Find the next task that can be carried out. The outer loop is there
+          to make sure that a communication is completed in case there are no
+          other tasks ---*/
+    for(unsigned short j=0; j<2; ++j) {
+      bool taskCarriedOut = false;
+      for(unsigned long i=lowestIndexInList; i<tasksList.size(); ++i) {
+
+        /*--- Determine whether or not it can be attempted to carry out
+              this task. ---*/
+        bool taskCanBeCarriedOut = !taskCompleted[i];
+        for(unsigned short ind=0; ind<tasksList[i].nIndMustBeCompleted; ++ind) {
+          if( !taskCompleted[tasksList[i].indMustBeCompleted[ind]] )
+            taskCanBeCarriedOut = false;
+        }
+
+        if( taskCanBeCarriedOut ) {
+
+          /*--- Determine the actual task to be carried out and do so. The
+                only tasks that may fail are the completion of the non-blocking
+                communication. If that is the case the next task needs to be
+                found. ---*/
+          switch( tasksList[i].task ) {
+
+            case CTaskDefinition::ADER_PREDICTOR_STEP_COMM_ELEMENTS: {
+
+              /*--- Carry out the ADER predictor step for the elements whose
+                    solution must be communicated for this time level. ---*/
+              const unsigned short level   = tasksList[i].timeLevel;
+              const unsigned long  elemBeg = nVolElemOwnedPerTimeLevel[level]
+                                           + nVolElemInternalPerTimeLevel[level];
+              const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level+1];
+
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_PREDICTOR_STEP_INTERNAL_ELEMENTS: {
+
+              /*--- Carry out the ADER predictor step for the elements whose
+                    solution must not be communicated for this time level. ---*/
+              const unsigned short level   = tasksList[i].timeLevel;
+              const unsigned long  elemBeg = nVolElemOwnedPerTimeLevel[level];
+              const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level]
+                                           + nVolElemInternalPerTimeLevel[level];
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::INITIATE_MPI_COMMUNICATION: {
+
+              /*--- Start the MPI communication of the solution in the halo elements. ---*/
+              Initiate_MPI_Communication(config, tasksList[i].timeLevel);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_MPI_COMMUNICATION: {
+
+              /*--- Attempt to complete the MPI communication of the solution data.
+                    For j==0, SU2_MPI::Testall will be used, which returns false if
+                    not all requests can be completed. In that case the next task on
+                    the list is carried out. If j==1, this means that the next
+                    tasks are waiting for this communication to be completed and
+                    hence MPI_Waitall is used. ---*/
+              if( Complete_MPI_Communication(config, tasksList[i].timeLevel,
+                                             j==1) ) {
+                taskCarriedOut = true;
+                SU2_OMP_SINGLE
+                taskCompleted[i] = true;
+              }
+              break;
+            }
+
+            case CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION: {
+
+              /*--- Start the communication of the residuals, for which the
+                    reverse communication must be used. ---*/
+              Initiate_MPI_ReverseCommunication(config, tasksList[i].timeLevel);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION: {
+
+              /*--- Attempt to complete the MPI communication of the residual data.
+                    For j==0, SU2_MPI::Testall will be used, which returns false if
+                    not all requests can be completed. In that case the next task on
+                    the list is carried out. If j==1, this means that the next
+                    tasks are waiting for this communication to be completed and
+                    hence MPI_Waitall is used. ---*/
+              if( Complete_MPI_ReverseCommunication(config, tasksList[i].timeLevel,
+                                                    j==1) ) {
+                taskCarriedOut = true;
+                SU2_OMP_SINGLE
+                taskCompleted[i] = true;
+              }
+              break;
+            }
+
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_OWNED_ELEMENTS: {
+
+              /*--- Interpolate the predictor solution of the owned elements
+                    in time to the given time integration point for the
+                    given time level. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
+              if(level < (nTimeLevels-1)) {
+                nAdjElem = ownedElemAdjLowTimeLevel[level+1].size();
+                adjElem  = ownedElemAdjLowTimeLevel[level+1].data();
+              }
+
+              ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
+                                                  nVolElemOwnedPerTimeLevel[level],
+                                                  nVolElemOwnedPerTimeLevel[level+1],
+                                                  nAdjElem, adjElem,
+                                                  tasksList[i].secondPartTimeIntADER);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS: {
+
+              /*--- Interpolate the predictor solution of the halo elements
+                    in time to the given time integration point for the
+                    given time level. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
+              if(level < (nTimeLevels-1)) {
+                nAdjElem = haloElemAdjLowTimeLevel[level+1].size();
+                adjElem  = haloElemAdjLowTimeLevel[level+1].data();
+              }
+
+              ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
+                                                  nVolElemHaloPerTimeLevel[level],
+                                                  nVolElemHaloPerTimeLevel[level+1],
+                                                  nAdjElem, adjElem,
+                                                  tasksList[i].secondPartTimeIntADER);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS: {
+
+              /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              Shock_Capturing_DG(config, nVolElemOwnedPerTimeLevel[level],
+                                 nVolElemOwnedPerTimeLevel[level+1]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS: {
+
+              /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              Shock_Capturing_DG(config, nVolElemHaloPerTimeLevel[level],
+                                 nVolElemHaloPerTimeLevel[level+1]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::VOLUME_RESIDUAL: {
+
+              /*--- Compute the volume portion of the residual. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
+                              nVolElemOwnedPerTimeLevel[level+1]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_OWNED_ELEMENTS: {
+
+              /*--- Compute the residual of the faces that only involve owned elements. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              ResidualFaces(config, nMatchingInternalFacesLocalElem[level],
+                            nMatchingInternalFacesLocalElem[level+1],
+                            numerics[CONV_TERM]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS: {
+
+              /*--- Compute the residual of the faces that involve a halo element. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              ResidualFaces(config, nMatchingInternalFacesWithHaloElem[level],
+                            nMatchingInternalFacesWithHaloElem[level+1],
+                            numerics[CONV_TERM]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_OWNED: {
+
+              /*--- Apply the boundary conditions that only depend on data
+                    of owned elements. ---*/
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, false);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO: {
+
+              /*--- Apply the boundary conditions that also depend on data
+                    of halo elements. ---*/
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, true);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: {
+
+              /*--- Create the final residual by summing up all contributions. ---*/
+              CreateFinalResidual(tasksList[i].timeLevel, true);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: {
+
+              /*--- Create the final residual by summing up all contributions. ---*/
+              CreateFinalResidual(tasksList[i].timeLevel, false);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_OWNED_ELEMENTS: {
+
+              /*--- Accumulate the space time residuals for the owned elements
+                    for ADER-DG. ---*/
+              AccumulateSpaceTimeResidualADEROwnedElem(config, tasksList[i].timeLevel,
+                                                       tasksList[i].intPointADER);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_ACCUMULATE_SPACETIME_RESIDUAL_HALO_ELEMENTS: {
+
+              /*--- Accumulate the space time residuals for the halo elements
+                    for ADER-DG. ---*/
+              AccumulateSpaceTimeResidualADERHaloElem(config, tasksList[i].timeLevel,
+                                                      tasksList[i].intPointADER);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::MULTIPLY_INVERSE_MASS_MATRIX: {
+
+              /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
+              MultiplyResidualByInverseMassMatrix(config, useADER,
+                                                  nVolElemOwnedPerTimeLevel[level],
+                                                  nVolElemOwnedPerTimeLevel[level+1]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            case CTaskDefinition::ADER_UPDATE_SOLUTION: {
+
+              /*--- Perform the update step for ADER-DG. ---*/
+              const unsigned short level = tasksList[i].timeLevel;
+              ADER_DG_Iteration(nVolElemOwnedPerTimeLevel[level],
+                                nVolElemOwnedPerTimeLevel[level+1]);
+              taskCarriedOut = true;
+              SU2_OMP_SINGLE
+              taskCompleted[i] = true;
+              break;
+            }
+
+            default: {
+
+              cout << "Task not defined. This should not happen." << endl;
+              exit(1);
+            }
+          }
+        }
+
+        /* Break the inner loop if a task has been carried out. */
+        if( taskCarriedOut ) break;
+      }
+
+      /* Break the outer loop if a task has been carried out. */
+      if( taskCarriedOut ) break;
+    }
+
+    /* Update the value of lowestIndexInList. */
+    for(; lowestIndexInList < tasksList.size(); ++lowestIndexInList)
+      if( !taskCompleted[lowestIndexInList] ) break;
+  }
 }
 
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
+
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                                                 const unsigned long elemBeg,
-                                                const unsigned long elemEnd,
-                                                su2double           *workArray) {
+                                                const unsigned long elemEnd) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2021,6 +2522,22 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2032,6 +2549,22 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2043,6 +2576,22 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
                                                                  su2double            *res,
                                                                  su2double            *work) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2054,6 +2603,22 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
                                                                  su2double            *res,
                                                                  su2double            *work) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2063,44 +2628,118 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig           
                                                               const unsigned long  elemEnd,
                                                               const unsigned long  nAdjElem,
                                                               const unsigned long  *adjElem,
-                                                              const bool           secondPartTimeInt,
-                                                              su2double            *solTimeLevel) {
+                                                              const bool           secondPartTimeInt) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
                                              const unsigned long elemBeg,
-                                             const unsigned long elemEnd,
-                                             su2double           *workArray) {
+                                             const unsigned long elemEnd) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemBeg,
-                                          const unsigned long elemEnd,
-                                          su2double           *workArray) {
+                                          const unsigned long elemEnd) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               CConfig              *config,
                                               CNumerics            **numerics,
-                                              const bool           haloInfoNeededForBC,
-                                              su2double            *workArray){
+                                              const bool           haloInfoNeededForBC){
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
                                         const unsigned long indFaceBeg,
                                         const unsigned long indFaceEnd,
-                                        unsigned long       &indResFaces,
-                                        CNumerics           *numerics,
-                                        su2double           *workArray) {
+                                        CNumerics           *numerics) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2114,6 +2753,22 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                                               su2double            *fluxes,
                                               CNumerics            *numerics) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2122,6 +2777,22 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2130,12 +2801,44 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
                                               const bool ownedElements) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2143,44 +2846,155 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               CConfig            *config,
                                               const bool          useADER,
                                               const unsigned long elemBeg,
-                                              const unsigned long elemEnd,
-                                              su2double           *workArray) {
+                                              const unsigned long elemEnd) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                  CConfig *config, unsigned short iRKStep) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                    CConfig   *config) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
                                             const unsigned long elemEnd) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2191,6 +3005,22 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *co
                                                     const su2double          *solIntL,
                                                     su2double                *solIntR) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2202,6 +3032,22 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
                                                const su2double          *solIntL,
                                                su2double                *solIntR) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2213,6 +3059,22 @@ void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config
                                                 const su2double          *solIntL,
                                                 su2double                *solIntR) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2224,6 +3086,22 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
                                                  const su2double          *solIntL,
                                                  su2double                *solIntR) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2235,6 +3113,22 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         CNumerics                *conv_numerics,
                                         su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2246,6 +3140,22 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2257,6 +3167,22 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2268,6 +3194,22 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
                                                CNumerics                *conv_numerics,
                                                su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2280,6 +3222,22 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
                                    unsigned short           val_marker,
                                    su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2292,6 +3250,22 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
                                     unsigned short           val_marker,
                                     su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2304,6 +3278,22 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
                                      unsigned short           val_marker,
                                      su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2315,6 +3305,22 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2330,6 +3336,22 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2341,6 +3363,22 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
                                              su2double                *solFace,
                                              su2double                *solIntL) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
@@ -2355,6 +3393,22 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
                                                     su2double            *fluxes,
                                                     CNumerics            *numerics) {
 
+  for(int i=0; i<size; ++i) {
+
+    if(i == rank) {
+
+      const int thread = omp_get_thread_num();
+      for(int j=0; j<omp_get_num_threads(); ++j) {
+        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+        SU2_OMP_BARRIER
+      }
+    }
+
+    SU2_OMP_SINGLE
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
+  SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 

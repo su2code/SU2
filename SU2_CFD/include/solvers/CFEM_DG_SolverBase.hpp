@@ -125,7 +125,7 @@ protected:
   vector<su2double> TolSolADER;   /*!< \brief Vector, which stores the tolerances for the
                                               variables in the ADER predictor step. */
 
-  bool symmetrizingTermsPresent = false;  /*!< \brief Whether or not symmetrizing terms are present in the
+  bool symmetrizingTermsPresent = false; /*!< \brief Whether or not symmetrizing terms are present in the
                                                      discretization. */
 
   vector<unsigned long> nDOFsPerRank;    /*!< \brief Number of DOFs per rank in cumulative storage format. */
@@ -177,6 +177,9 @@ protected:
 
   vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
                                                  intensive part of the solver. */
+
+  vector<bool> taskCompleted;        /*!< \brief Bool vector, that indicates whether or not the tasks
+                                                 from the list tasksList have been completed. ---*/
 
 private:
 

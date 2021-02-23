@@ -207,12 +207,10 @@ public:
    * \param[in]  config    - Definition of the particular problem.
    * \param[in]  elemBeg   - Begin index of the element range to be computed.
    * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
    */
   void ADER_DG_PredictorStep(CConfig             *config,
                              const unsigned long elemBeg,
-                             const unsigned long elemEnd,
-                             su2double           *workArray);
+                             const unsigned long elemEnd);
 
   /*!
    * \brief Function, which interpolates the predictor solution of ADER-DG
@@ -229,8 +227,6 @@ public:
    * \param[in]  adjElem           - The ID's of the adjacent elements.
    * \param[in]  secondPartTimeInt - Whether or not this is the second part of the
                                      time interval for the adjacent elements.
-   * \param[out] solTimeLevel      - Array in which the interpolated solution for the
-                                     time level considered must be stored.
    */
   void ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
                                            const unsigned short iTime,
@@ -238,34 +234,29 @@ public:
                                            const unsigned long  elemEnd,
                                            const unsigned long  nAdjElem,
                                            const unsigned long  *adjElem,
-                                           const bool           secondPartTimeInt,
-                                           su2double            *solTimeLevel);
+                                           const bool           secondPartTimeInt);
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG. It is a virtual
             function, because this function is overruled for Navier-Stokes.
-   * \param[in]  config    - Definition of the particular problem.
-   * \param[in]  elemBeg   - Begin index of the element range to be computed.
-   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elemBeg - Begin index of the element range to be computed.
+   * \param[in]  elemEnd - End index (not included) of the element range to be computed.
    */
   virtual void Shock_Capturing_DG(CConfig             *config,
                                   const unsigned long elemBeg,
-                                  const unsigned long elemEnd,
-                                  su2double           *workArray);
+                                  const unsigned long elemEnd);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual. It is a virtual
             function, because this function is overruled for Navier-Stokes.
-   * \param[in]  config    - Definition of the particular problem.
-   * \param[in]  elemBeg   - Begin index of the element range to be computed.
-   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elemBeg - Begin index of the element range to be computed.
+   * \param[in]  elemEnd - End index (not included) of the element range to be computed.
    */
   virtual void Volume_Residual(CConfig             *config,
                                const unsigned long elemBeg,
-                               const unsigned long elemEnd,
-                               su2double           *workArray);
+                               const unsigned long elemEnd);
 
   /*!
    * \brief Function, which computes the spatial residual for the DG discretization.
@@ -275,31 +266,24 @@ public:
    * \param[in]  numerics            - Description of the numerical method.
    * \param[in]  haloInfoNeededForBC - If true,  treat boundaries for which halo data is needed.
                                        If false, treat boundaries for which only owned data is needed.
-   * \param[out] workArray           - Work array.
    */
   void Boundary_Conditions(const unsigned short timeLevel,
                            CConfig              *config,
                            CNumerics            **numerics,
-                           const bool           haloInfoNeededForBC,
-                           su2double            *workArray);
+                           const bool           haloInfoNeededForBC);
 
   /*!
    * \brief Compute the spatial residual for the given range of faces. It is a virtual
             function, because this function is overruled for Navier-Stokes.
-   * \param[in]     config      - Definition of the particular problem.
-   * \param[in]     indFaceBeg  - Starting index in the matching faces.
-   * \param[in]     indFaceEnd  - End index in the matching faces.
-   * \param[in,out] indResFaces - Index where to store the residuals in
-                                  the vector of face residuals.
-   * \param[in]     numerics    - Description of the numerical method.
-   * \param[out]    workArray   - Work array.
+   * \param[in] config      - Definition of the particular problem.
+   * \param[in] indFaceBeg  - Starting index in the matching faces.
+   * \param[in] indFaceEnd  - End index in the matching faces.
+   * \param[in] numerics    - Description of the numerical method.
    */
   virtual void ResidualFaces(CConfig             *config,
                              const unsigned long indFaceBeg,
                              const unsigned long indFaceEnd,
-                             unsigned long       &indResFaces,
-                             CNumerics           *numerics,
-                             su2double           *workArray);
+                             CNumerics           *numerics);
 
   /*!
    * \brief Function, which accumulates the space time residual of the ADER-DG
@@ -993,17 +977,15 @@ private:
   /*!
    * \brief Function, which multiplies the residual by the inverse
             of the (lumped) mass matrix.
-   * \param[in]  config    - Definition of the particular problem.
-   * \param[in]  useADER   - Whether or not the ADER residual must be multiplied.
-   * \param[in]  elemBeg   - Begin index of the element range to be computed.
-   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  useADER - Whether or not the ADER residual must be multiplied.
+   * \param[in]  elemBeg - Begin index of the element range to be computed.
+   * \param[in]  elemEnd - End index (not included) of the element range to be computed.
    */
   void MultiplyResidualByInverseMassMatrix(CConfig             *config,
                                            const bool          useADER,
                                            const unsigned long elemBeg,
-                                           const unsigned long elemEnd,
-                                           su2double           *workArray);
+                                           const unsigned long elemEnd);
 
   /*!
    * \brief Function, which computes the residual contribution from a boundary

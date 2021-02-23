@@ -77,15 +77,13 @@ public:
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG.
-   * \param[in]  config    - Definition of the particular problem.
-   * \param[in]  elemBeg   - Begin index of the element range to be computed.
-   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elemBeg - Begin index of the element range to be computed.
+   * \param[in]  elemEnd - End index (not included) of the element range to be computed.
    */
   void Shock_Capturing_DG(CConfig             *config,
                           const unsigned long elemBeg,
-                          const unsigned long elemEnd,
-                          su2double           *workArray) override;
+                          const unsigned long elemEnd) override;
 
   /*!
    * \brief Per-Olof Persson's method for capturing shock in DG
@@ -99,32 +97,25 @@ public:
 
   /*!
    * \brief Compute the volume contributions to the spatial residual.
-   * \param[in]  config    - Definition of the particular problem.
-   * \param[in]  elemBeg   - Begin index of the element range to be computed.
-   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elemBeg - Begin index of the element range to be computed.
+   * \param[in]  elemEnd - End index (not included) of the element range to be computed.
    */
   void Volume_Residual(CConfig             *config,
                        const unsigned long elemBeg,
-                       const unsigned long elemEnd,
-                       su2double           *workArray) override;
+                       const unsigned long elemEnd) override;
 
   /*!
    * \brief Compute the spatial residual for the given range of faces.
-   * \param[in]     config      - Definition of the particular problem.
-   * \param[in]     indFaceBeg  - Starting index in the matching faces.
-   * \param[in]     indFaceEnd  - End index in the matching faces.
-   * \param[in,out] indResFaces - Index where to store the residuals in
-                                  the vector of face residuals.
-   * \param[in]     numerics    - Description of the numerical method.
-   * \param[out]    workArray   - Work array.
+   * \param[in] config      - Definition of the particular problem.
+   * \param[in] indFaceBeg  - Starting index in the matching faces.
+   * \param[in] indFaceEnd  - End index in the matching faces.
+   * \param[in] numerics    - Description of the numerical method.
    */
   void ResidualFaces(CConfig             *config,
                      const unsigned long indFaceBeg,
                      const unsigned long indFaceEnd,
-                     unsigned long       &indResFaces,
-                     CNumerics           *numerics,
-                     su2double           *workArray) override;
+                     CNumerics           *numerics) override;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
