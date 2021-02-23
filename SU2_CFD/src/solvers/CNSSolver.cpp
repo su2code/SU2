@@ -41,19 +41,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double* [M];
-    for(unsigned long i = 0; i < M; ++i)
-      X[i] = new su2double [N[i]] ();
-  };
-
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  Alloc2D(nMarker, nVertex, Buffet_Sensor);
-  Buffet_Metric = new su2double[nMarker];
-  Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
+  Buffet_Sensor.resize(nMarker);
+  for (unsigned long i = 0; i< nMarker; ++i) Buffet_Sensor[i].resize(nVertex[i], 0.0);
+  Buffet_Metric.resize(nMarker, 0.0);
+  Surface_Buffet_Metric.resize(config->GetnMarker_Monitoring(), 0.0);
 
   /*--- Read farfield conditions from config ---*/
 
@@ -71,22 +64,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     default:
       /*--- Already done upstream. ---*/
       break;
-  }
-
-}
-
-CNSSolver::~CNSSolver(void) {
-
-  unsigned short iMarker;
-
-  delete [] Buffet_Metric;
-  delete [] Surface_Buffet_Metric;
-
-  if (Buffet_Sensor != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      delete [] Buffet_Sensor[iMarker];
-    }
-    delete [] Buffet_Sensor;
   }
 
 }
@@ -290,8 +267,6 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
   }
 
-#ifdef HAVE_MPI
-
   /*--- Add buffet metric information using all the nodes ---*/
 
   su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
@@ -299,17 +274,8 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
   /*--- Add the buffet metric on the surfaces using all the nodes ---*/
 
-  su2double *MySurface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
-  }
-
-  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  delete [] MySurface_Buffet_Metric;
-
-#endif
+  auto local_copy = Surface_Buffet_Metric;
+  SU2_MPI::Allreduce(local_copy.data(), Surface_Buffet_Metric.data(), local_copy.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 }
 

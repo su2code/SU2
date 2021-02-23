@@ -1245,7 +1245,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
     // EXTRA FOR DEBUGGING
 /*  SU2_OMP_SINGLE
     {
-      if(rank == 0) {
+      if(rank == MASTER_NODE) {
         cout << endl;
         cout << "Task list for rank " << rank << endl;
         cout << "------------------------------------------------" << endl;
@@ -2081,23 +2081,50 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
                                                    su2double       &timeEvolved,
                                                    bool            &syncTimeReached) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Only one thread needs to carry out the first part of this function. ---*/
+  SU2_OMP_SINGLE
+  {
+    /*--- Check if this is the first time this check is carried out
+          and determine the new time evolved. ---*/
+    const bool firstTime = timeEvolved == 0.0;
+    timeEvolved         += Min_Delta_Time;
 
-    if(i == rank) {
+    /*--- Check for a (too) small a value for the synchronization time and
+          print a warning if this happens. ---*/
+    if(firstTime && timeEvolved >= 1.5*TimeSync) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+      if(rank == MASTER_NODE) {
+        cout << endl << "              WARNING" << endl;
+        cout << "The specified synchronization time is " << timeEvolved/TimeSync
+             << " times smaller than the time step for stability" << endl;
+        cout << "This is inefficient!!!!!" << endl << endl;
       }
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- If the current value of timeEvolved is larger or equal than the
+        synchronization time, syncTimeReached is set to true and a correction
+        to the time step is carried out. The factor for the time accurate local
+        time stepping must be taken into account. If the synchronization time
+        has not been reached yet, syncTimeReached is set to false. ---*/
+  if(timeEvolved >= TimeSync) {
+
+    const su2double newDeltaTime = Min_Delta_Time + (TimeSync - timeEvolved);
+
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_vol)
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      volElem[i].deltaTime = newDeltaTime/volElem[i].factTimeLevel;
+
+    SU2_OMP_SINGLE
+    syncTimeReached = true;
+  }
+  else {
+    SU2_OMP_SINGLE
+    syncTimeReached = false;
+  }
 }
 
 void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,

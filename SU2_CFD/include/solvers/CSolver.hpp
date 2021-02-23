@@ -3024,7 +3024,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return nullptr; }
+                                             unsigned long val_vertex) { return nullptr; }
 
   /*!
    * \brief A virtual member
