@@ -52,13 +52,13 @@ protected:
   lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
   upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
   Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
-  ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
+  Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
+  vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
   /*--- Sliding meshes variables. ---*/
 
-  su2double ****SlidingState = nullptr;
-  int **SlidingStateNodes = nullptr;
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -371,8 +371,6 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_TurbVars == nullptr || Inlet_TurbVars[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else if (val_dim >= nVar)
