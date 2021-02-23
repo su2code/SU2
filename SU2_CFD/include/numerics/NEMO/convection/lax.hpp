@@ -34,7 +34,7 @@
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8
+ * \version 7.1.0
  */
 class CCentLax_NEMO : public CNEMONumerics {
 private:

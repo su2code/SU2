@@ -142,5 +142,4 @@ public:
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };
-
 #endif

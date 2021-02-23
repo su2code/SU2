@@ -1449,7 +1449,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       NEMO_euler = compressible = true; break;
 
     case NEMO_NAVIER_STOKES:
-
     case DISC_ADJ_NEMO_NAVIER_STOKES:
       NEMO_ns = compressible = true; break;
 

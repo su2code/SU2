@@ -51,7 +51,7 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
       output = new CNEMOCompOutput(config, nDim);
       break;  
     case HEAT_EQUATION:

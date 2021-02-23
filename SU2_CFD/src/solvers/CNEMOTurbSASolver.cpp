@@ -2,7 +2,7 @@
  * \file CNEMOTurbSASolver.cpp
  * \brief Main subrotuines of CNEMOTurbSASolver class
  * \author F. Palacios, A. Bueno, W. Maier
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -635,7 +635,6 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
-
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 

@@ -3922,8 +3922,10 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
       if (kindSolver == RANS ||
           kindSolver == INC_RANS ||
+          kindSolver == NEMO_RANS ||
           kindSolver == DISC_ADJ_RANS ||
           kindSolver == DISC_ADJ_INC_RANS ||
+          kindSolver == DISC_ADJ_NEMO_RANS ||
           kindSolver == FEM_LES ||
           kindSolver == FEM_RANS){
         wallDistanceNeeded[iZone] = true;

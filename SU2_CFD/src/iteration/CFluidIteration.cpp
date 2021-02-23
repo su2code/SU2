@@ -78,6 +78,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
     case NEMO_EULER:
+    case DISC_ADJ_NEMO_EULER:
       config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
       break;
 
@@ -86,6 +87,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case INC_NAVIER_STOKES:
     case DISC_ADJ_INC_NAVIER_STOKES:
     case NEMO_NAVIER_STOKES:
+    case DISC_ADJ_NEMO_NAVIER_STOKES:
       config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
       break;
 
@@ -93,6 +95,8 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case DISC_ADJ_RANS:
     case INC_RANS:
     case DISC_ADJ_INC_RANS:
+    case NEMO_RANS:
+    case DISC_ADJ_NEMO_RANS:
       config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS);
       break;
   }
@@ -103,6 +107,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                    val_iZone, val_iInst);
 
   if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
+      config[val_iZone]->GetKind_Solver() == NEMO_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_NEMO_RANS ||
        config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
       !frozen_visc) {
     /*--- Solve the turbulence model ---*/
@@ -183,6 +188,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
     /*--- Update dual time solver for the turbulence model ---*/
 
     if ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
+        (config[val_iZone]->GetKind_Solver() == NEMO_RANS) || (config[val_iZone]->GetKind_Solver() == DISC_ADJ_NEMO_RANS) ||
         (config[val_iZone]->GetKind_Solver() == INC_RANS) ||
         (config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS)) {
       integration[val_iZone][val_iInst][TURB_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
