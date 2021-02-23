@@ -1272,6 +1272,9 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           /*--- Vib-el. thermal conductivity ---*/
           numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
 
+          /*--- Vib-el energy ---*/
+          numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
+
           /*--- Set turbulence kinetic energy ---*/
           if (rans){
             CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();

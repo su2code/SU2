@@ -3553,9 +3553,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
   }
 
-  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
-      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
-  }
 
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];

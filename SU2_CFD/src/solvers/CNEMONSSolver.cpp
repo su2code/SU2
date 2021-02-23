@@ -1023,8 +1023,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   C = 1;
 
   /*---Define under-relaxation factors --- */
-  alpha_V = 0.01;
-  alpha_T = 0.25;
+  alpha_V = 0.1;
+  alpha_T = 1.0;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);

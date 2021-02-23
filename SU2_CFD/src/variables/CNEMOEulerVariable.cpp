@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -44,8 +44,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                          nvar,
                                                                          config ),
                                        Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
- 
-  vector<su2double> energies; 
+
+  vector<su2double> energies;
   unsigned short iDim, iSpecies;
   su2double soundspeed, sqvel, rho;
 
@@ -109,14 +109,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nPrimVar) = su2double(0.0);
-  
+
   dPdU.resize(nPoint, nVar)      = su2double(0.0);
   dTdU.resize(nPoint, nVar)      = su2double(0.0);
   dTvedU.resize(nPoint, nVar)    = su2double(0.0);
   Cvves.resize(nPoint, nSpecies) = su2double(0.0);
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
-  
+
   /*--- Compressible flow, gradients primitive variables ---*/
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);
@@ -205,10 +205,14 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+                         dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
-  Gamma(iPoint) = fluidmodel->ComputeGamma();  
+  /*--- Set additional point quantities ---*/
+  Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);
 
@@ -274,15 +278,17 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Temperatures ---*/
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
-  
+
   // Determine if the temperature lies within the acceptable range
   //TODO: fIX THIS
-  if (V[T_INDEX] == Tmin) {
+  if (V[T_INDEX] <= Tmin) {
     nonPhys = true;
-  } else if (V[T_INDEX] == Tmax){
+  } else if (V[T_INDEX] >= Tmax){
+    nonPhys = true;
+  } else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
     nonPhys = true;
   }
-  
+
   /*--- Vibrational-Electronic Temperature ---*/
   vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
   vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
@@ -297,6 +303,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     }
 
     if (rhoEve < rhoEve_min) {
+
       nonPhys      = true;
       V[TVE_INDEX] = Tvemin;
       U[nSpecies+nDim+1] = rhoEve_min;
@@ -310,7 +317,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     V[TVE_INDEX] = Tve_Freestream;
   }
 
-  // Determine other properties of the mixture at the current state  
+  // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
   const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle();
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
@@ -322,7 +329,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   su2double rhoCvtr = fluidmodel->ComputerhoCvtr();
   su2double rhoCvve = fluidmodel->ComputerhoCvve();
-  
+
   V[RHOCVTR_INDEX] = rhoCvtr;
   V[RHOCVVE_INDEX] = rhoCvve;
 
