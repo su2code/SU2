@@ -43,7 +43,7 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
-  VectorType CDkwLimited;  /*!< \brief Whether cross-diffusion is limited. */
+  su2vector<bool> CDkwLimited;  /*!< \brief Whether cross-diffusion is limited. */
 
   MatrixType Primitive;       /*!< \brief Primitive form of the solution. */
 
