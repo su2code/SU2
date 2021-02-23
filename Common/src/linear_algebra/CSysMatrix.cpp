@@ -28,8 +28,6 @@
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
-#include "../../include/CConfig.hpp"
-#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>

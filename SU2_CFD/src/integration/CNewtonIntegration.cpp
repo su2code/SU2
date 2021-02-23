@@ -222,10 +222,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   bool endStartup = false;
 
   if (startupPeriod) {
-    SU2_OMP_MASTER
-    firstResidual = max(firstResidual, residual);
+    SU2_OMP_MASTER {
+      firstResidual = max(firstResidual, residual);
+      if (startupIters) startupIters -= 1;
+    }
     SU2_OMP_BARRIER
-    if (startupIters) startupIters -= 1;
     endStartup = (startupIters == 0) && (residual - firstResidual < startupResidual);
   }
 
@@ -328,8 +329,8 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
     }
   }
 
-  CSysMatrixComms::Initiate(v, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(v, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(v, geometry, config);
+  CSysMatrixComms::Complete(v, geometry, config);
 }
 
 void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
@@ -350,7 +351,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
         v(iPoint,iVar) = SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
 
-    CSysMatrixComms::Initiate(v, geometry, config, SOLUTION_MATRIX);
-    CSysMatrixComms::Complete(v, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(v, geometry, config);
+    CSysMatrixComms::Complete(v, geometry, config);
   }
 }

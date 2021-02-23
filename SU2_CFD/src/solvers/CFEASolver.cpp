@@ -2544,8 +2544,8 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const C
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
-  CSysMatrixComms::Initiate(LinSysSol, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(LinSysSol, geometry, config);
+  CSysMatrixComms::Complete(LinSysSol, geometry, config);
 
   for (auto iPoint : ExtraVerticesToEliminate) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);

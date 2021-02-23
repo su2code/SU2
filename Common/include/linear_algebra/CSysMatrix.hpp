@@ -28,9 +28,7 @@
 
 #pragma once
 
-#include "../../include/parallelization/mpi_structure.hpp"
-#include "../../include/parallelization/omp_structure.hpp"
-#include "../../include/parallelization/vectorization.hpp"
+#include "../../include/CConfig.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
@@ -75,7 +73,6 @@ struct mkl_jit_wrapper<float> {
 #endif
 #endif
 
-class CConfig;
 class CGeometry;
 
 struct CSysMatrixComms {
@@ -88,7 +85,8 @@ struct CSysMatrixComms {
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   template<class T>
-  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config, unsigned short commType);
+  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
@@ -99,7 +97,8 @@ struct CSysMatrixComms {
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   template<class T>
-  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config, unsigned short commType);
+  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
 };
 
 /*!

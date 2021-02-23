@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "./parallelization/mpi_structure.hpp"
+#include "parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cstdlib>

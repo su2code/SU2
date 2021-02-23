@@ -182,8 +182,8 @@ def main():
     turb_oneram6_nk           = TestCase('turb_oneram6_nk')
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
-    turb_oneram6_nk.test_iter = 100
-    turb_oneram6_nk.test_vals = [-7.015278, -6.587369, -10.394193, 0.271661, 0.019845, 4, -0.626403, 2.8101e+02]
+    turb_oneram6_nk.test_iter = 20
+    turb_oneram6_nk.test_vals = [-4.893470, -4.511977, -11.437109, 0.221926, 0.045766, 2, -0.893674, 31.384]
     test_list.append(turb_oneram6_nk)
 
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
