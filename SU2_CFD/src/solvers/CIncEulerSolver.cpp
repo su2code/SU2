@@ -1263,7 +1263,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned long iPoint;
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iVertex;
 
   const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);

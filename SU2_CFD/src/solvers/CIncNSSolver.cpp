@@ -192,25 +192,15 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
-  bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
-  bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   /*--- Variable allocation for streamwise periodicity ---*/
+  bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
+  bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
   su2double Cp,
             thermal_conductivity,
             dot_product,
-            norm2_translation,
-            scalar_factor,
-            massflow,
-            integratedHeatFlow;
+            scalar_factor;
 
-  /*--- Variable initialization for streamwise periodicity ---*/
-  if(energy && streamwise_periodic && streamwise_periodic_temperature) {
-    massflow = config->GetStreamwise_Periodic_MassFlow();
-    integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
-
-    norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-  }
 
   /*--- Identify the boundary by string name ---*/
 
@@ -289,6 +279,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
           /*--- Scalar factor of the residual contribution ---*/
+          const su2double massflow = config->GetStreamwise_Periodic_MassFlow();
+          const su2double integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
+          const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
           scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
 
           /*--- Dot product ---*/
