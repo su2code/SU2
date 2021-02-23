@@ -43,6 +43,7 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
+  VectorType CDkwLimited;  /*!< \brief Whether cross-diffusion is limited. */
 
   MatrixType Primitive;       /*!< \brief Primitive form of the solution. */
 
@@ -77,17 +78,22 @@ public:
   /*!
    * \brief Get the first blending function.
    */
-  inline su2double GetF1blending(unsigned long iPoint) const override { return F1(iPoint); }
+  inline su2double GetF1blending(unsigned long iPoint) const final { return F1(iPoint); }
 
   /*!
    * \brief Get the second blending function.
    */
-  inline su2double GetF2blending(unsigned long iPoint) const override { return F2(iPoint); }
+  inline su2double GetF2blending(unsigned long iPoint) const final { return F2(iPoint); }
 
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */
-  inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+  inline su2double GetCrossDiff(unsigned long iPoint) const final { return CDkw(iPoint); }
+
+  /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  inline bool GetCrossDiffLimited(unsigned long iPoint) const final { return CDkwLimited(iPoint); }
 
   /*!
    * \brief Get the primitive variables for all points.

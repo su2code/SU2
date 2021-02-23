@@ -2245,6 +2245,11 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  inline virtual bool GetCrossDiffLimited(unsigned long iPoint) const { return false; }
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */

@@ -465,7 +465,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Cross diffusion ---*/
 
-      numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
+      numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
+      numerics->SetCrossDiffLimited(nodes->GetCrossDiffLimited(iPoint));
 
       /*--- Compute the source term ---*/
 
@@ -479,7 +480,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
       if ((config->GetUse_Accurate_Turb_Jacobians()) &&
           (config->GetUse_Accurate_Visc_Jacobians()) && 
-          (nodes->GetCrossDiff(iPoint) > CDKW_MIN))
+          (!nodes->GetCrossDiffLimited(iPoint)))
         CrossDiffusionJacobian(solver, geometry, config, iPoint);
       
     }// if dist
@@ -1970,7 +1971,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const bool pk_limited    = (pk > 20.*betastar*r*omega*k);
   const bool pk_positive   = (pk >= 0);
   const bool pw_positive   = (pw >= 0);
-  const bool cdkw_positive = (CDkw >= CDKW_MIN);
+  const bool cdkw_positive = (!varTur->GetCrossDiffLimited(iPoint));
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
