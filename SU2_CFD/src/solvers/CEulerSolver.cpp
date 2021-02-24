@@ -3861,10 +3861,6 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
 
-    for (auto iVar = 1; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
-
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     /*--- Get projection to be multiplied by divergence terms ---*/
@@ -3876,12 +3872,14 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     const su2double factor = 0.5*sign;
     for (auto iDim = 0; iDim < nDim; iDim++)
       for (auto jDim = 0; jDim < nDim; jDim++)
-        Jacobian_i[iDim+1][jDim+1] += factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
-                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
-                                    + delta[iDim][jDim]*diagTerm);
+        Jacobian_i[iDim+1][jDim+1] = factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
+                                   - TWO3*gradWeight[jDim]*Vec[iDim] 
+                                   + delta[iDim][jDim]*diagTerm);
 
     /*--- Now get density and energy Jacobians for iPoint ---*/
+    Jacobian_i[nVar-1][0] = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
+      Jacobian_i[iDim+1][0] = Jacobian_i[nVar-1][iDim+1] = 0.0;
       for (auto jDim = 0; jDim < nDim; jDim++) {
         /*--- Momentum flux Jacobian wrt density ---*/
         Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodes->GetVelocity(iPoint,jDim);
@@ -3905,7 +3903,9 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   /*--------------------------------------------------------------------------*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+
     const auto kPoint = node_i->GetPoint(iNeigh);
+    
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
     const su2double factor = 0.5*sign;
@@ -4019,9 +4019,6 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
   su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
-
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      Jacobian_i[nVar-1][iVar] = 0.0;
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 

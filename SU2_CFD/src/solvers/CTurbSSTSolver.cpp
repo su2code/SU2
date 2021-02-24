@@ -510,13 +510,13 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   const su2double r_i  = flowNodes->GetDensity(iPoint);
   const su2double om_i = nodes->GetPrimitive(iPoint,1);
-  // const su2double z_i  = max(om_i, flowNodes->GetVorticityMag(iPoint)*F2/a1);
+  const su2double z_i  = max(om_i, flowNodes->GetVorticityMag(iPoint)*F2/a1);
 
   const su2double sigma_om2 = constants[3];
   const su2double Vol       = node_i->GetVolume();
 
-  const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
-  // const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/z_i*Vol;
+  // const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
+  const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/z_i*Vol;
   
   /*--- Reset Jacobian i and first row of Jacobian j now so we don't need to later ---*/
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
