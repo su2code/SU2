@@ -236,14 +236,16 @@ public:
    * \brief Sets value of first blending function.
    */
   void SetF1blending(su2double val_F1_i, su2double val_F1_j) {
-    F1_i = val_F1_i; F1_j = val_F1_j;
+    F1_i = val_F1_i; 
+    F1_j = val_F1_j;
   }
   
   /*!
    * \brief Sets value of second blending function.
    */
   void SetF2blending(su2double val_F2_i, su2double val_F2_j) {
-    F2_i = val_F2_i; F2_j = val_F2_j;
+    F2_i = val_F2_i; 
+    F2_j = val_F2_j;
   }
 
 };

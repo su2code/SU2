@@ -309,8 +309,8 @@ private:
   beta_star,
   a1;
 
-  su2double CDkw_i;
-  bool CDkw_Limited_i;
+  su2double CDkw;
+  bool CDkw_Limited;
 
   su2double kAmb, omegaAmb;
 
@@ -376,18 +376,18 @@ public:
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
-   * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
+   * \param[in] val_CDkw - Value of the cross diffusion at point i.
    */
-  inline void SetCrossDiff(su2double val_CDkw_i) override {
-    CDkw_i = val_CDkw_i;
+  inline void SetCrossDiff(su2double val_CDkw) override {
+    CDkw = val_CDkw;
   }
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
    * \param[in] val_CDkw_Limited_i - Value of the cross diffusion at point i.
    */
-  inline void SetCrossDiffLimited(bool val_CDkw_Limited_i) override {
-    CDkw_Limited_i = val_CDkw_Limited_i;
+  inline void SetCrossDiffLimited(bool val_CDkw_Limited) override {
+    CDkw_Limited = val_CDkw_Limited;
   }
 
   /*!

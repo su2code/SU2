@@ -513,15 +513,15 @@ public:
   
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
-   * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
+   * \param[in] val_CDkw - Value of the cross diffusion at point i.
    */
-  virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+  virtual void SetCrossDiff(su2double val_CDkw) {/* empty */};
 
   /*!
    * \brief Set the value of the cross diffusion for the SST model.
-   * \param[in] val_CDkw_Limited_i - Whether cross diffusion is limited at point i.
+   * \param[in] val_CDkw_Limited - Whether cross diffusion is limited at point i.
    */
-  virtual void SetCrossDiffLimited(bool val_CDkw_Limited_i) {/* empty */};
+  virtual void SetCrossDiffLimited(bool val_CDkw_Limited) {/* empty */};
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

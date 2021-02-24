@@ -790,7 +790,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); 
   AD::SetPreaccIn(F2_i); 
-  AD::SetPreaccIn(CDkw_i);
+  AD::SetPreaccIn(CDkw);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(StrainMag_i);
@@ -892,14 +892,14 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   /*--- Cross diffusion ---*/
 
-  // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+  Residual[1] += (1.0 - F1_i)*CDkw*Volume;
   
-  su2double CrossDiff = 0.0;
-  for (unsigned long iDim = 0; iDim < nDim; iDim++)
-    CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-  CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
-  const bool cdkw_positive  = (CrossDiff > CDKW_MIN);
-  Residual[1] += (1.0 - F1_i)*CrossDiff*Volume*cdkw_positive;
+  // su2double CrossDiff = 0.0;
+  // for (unsigned long iDim = 0; iDim < nDim; iDim++)
+  //   CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+  // CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
+  // const bool cdkw_positive  = (CrossDiff > CDKW_MIN);
+  // Residual[1] += (1.0 - F1_i)*CrossDiff*Volume*cdkw_positive;
 
   /*--- Implicit part ---*/
 
@@ -918,25 +918,21 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
       Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
       Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
     }
-    // Jacobian_i[0][0] += min(StrainMag2/zeta-TWO3*diverg,0.)*Volume;
-    // Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
      
     /*--- omega production Jacobian ---*/
 
     if (!stress_limited && pw_positive) {
       Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-    }
-    // Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.)*Volume*(!stress_limited);
 
     /*--- Cross-diffusion Jacobian ---*/
 
-    // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(!CDkw_Limited_i);
-    Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited)*cdkw_positive;
+    Jacobian_i[1][1] -= (1. - F1_i)*CDkw/(Density_i*TurbVar_i[1])*Volume*(!CDkw_Limited);
+    // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited)*cdkw_positive;
 
     if (Residual[1] > 1e10) {
       su2double dKdOmega = 0;
       for (auto iDim = 0; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-      cout << "CDkw= "  << CDkw_i << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
+      cout << "CDkw= "  << CDkw << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
     }
   }
   
