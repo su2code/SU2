@@ -923,6 +923,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
     if (!stress_limited && pw_positive) {
       Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
+    }
 
     /*--- Cross-diffusion Jacobian ---*/
 
