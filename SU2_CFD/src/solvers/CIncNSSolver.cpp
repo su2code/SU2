@@ -420,10 +420,11 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   /*--- Get the freestream velocity magnitude for non-dim. purposes ---*/
 
   su2double *VelInf = config->GetVelocity_FreeStreamND();
-  su2double VelInfMod = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    VelInfMod += VelInf[iDim];
-  VelInfMod = sqrt(VelInfMod);
+  
+  //su2double VelInfMod = 0.0;
+  //for (auto iDim = 0u; iDim < nDim; iDim++)
+  //  VelInfMod += VelInf[iDim];
+  //VelInfMod = sqrt(VelInfMod);
 
   /*--- Compute the recovery factor ---*/
   // Double-check: laminar or turbulent Pr for this?

@@ -156,10 +156,15 @@ class CFVMFlowSolverBase : public CSolver {
   su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
   su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
   su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
 
-  su2double** UTau = nullptr;              /*!< \brief UTau for each boundary and vertex. */
-  su2double** EddyViscWall = nullptr;      /*!< \brief Wall Eddy Viscosity for each boundary and vertex. */
+  //su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
+  //su2double** UTau = nullptr;              /*!< \brief UTau for each boundary and vertex. */
+  //su2double** EddyViscWall = nullptr;      /*!< \brief Wall Eddy Viscosity for each boundary and vertex. */
+vector<vector<su2double> > YPlus;
+vector<vector<su2double> > UTau;
+vector<vector<su2double> > EddyViscWall;
+  
+
 
   bool space_centered;       /*!< \brief True if space centered scheeme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */

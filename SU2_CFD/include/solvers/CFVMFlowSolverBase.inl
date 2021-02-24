@@ -84,7 +84,7 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iDim, iVar, iMarker;
+  unsigned short iVar, iMarker;
   unsigned long iPoint, iVertex;
 
   /*--- Define some auxiliar vector related with the residual ---*/
@@ -197,15 +197,18 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Y plus in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, YPlus);
+  //Alloc2D(nMarker, nVertex, YPlus);
+  YPlus.resize(nMarker, vector<su2double>(nVertex)); 
 
   /*--- U Tau in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, UTau);
+  //Alloc2D(nMarker, nVertex, UTau);
+  UTau.resize(nMarker,vector<su2double>(nVertex));
 
   /*--- wall eddy viscosity in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, EddyViscWall);
+  //Alloc2D(nMarker, nVertex, EddyViscWall);
+  EddyViscWall.resize(nMarker,vector<su2double>(nVertex));
 
   /*--- Skin friction in all the markers ---*/
 
@@ -379,7 +382,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
-  unsigned short iMarker, iVar, iDim;
+  unsigned short iMarker, iVar;
   unsigned long iVertex;
 
   delete[] CNearFieldOF_Inv;
@@ -463,27 +466,27 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
     delete[] HeatFluxTarget;
   }
 
-  if (YPlus != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] YPlus[iMarker];
-    }
-    delete[] YPlus;
-  }
+  //if (YPlus != nullptr) {
+  //  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  //    delete[] YPlus[iMarker];
+  //  }
+  //  delete[] YPlus;
+  //}
 
 
- if (UTau != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] UTau[iMarker];
-    }
-    delete[] UTau;
-  }
+ //if (UTau != nullptr) {
+ //   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+ //     delete[] UTau[iMarker];
+ //   }
+ //   delete[] UTau;
+ // }
 
-  if (EddyViscWall != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] EddyViscWall[iMarker];
-    }
-    delete[] EddyViscWall;
-  }
+//  if (EddyViscWall != nullptr) {
+//    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//      delete[] EddyViscWall[iMarker];
+//    }
+//    delete[] EddyViscWall;
+//  }
 
   if (CSkinFriction != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2691,6 +2694,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
       if (!wallfunctions)  
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+
+
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
