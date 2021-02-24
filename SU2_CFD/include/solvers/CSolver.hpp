@@ -324,6 +324,18 @@ public:
                                 bool                &good_j,
                                 const unsigned long nFlowVarGrad,
                                 const unsigned long nTurbVarGrad) {}
+
+  /*!
+   * \brief Check if the kappa scheme extrapolation gives physical L and R states.
+   */
+  virtual void CheckExtrapolatedState(const CConfig       *config,
+                                      const su2double     *primvar_i, 
+                                      const su2double     *primvar_j, 
+                                      const su2double     *turbvar_i, 
+                                      const su2double     *turbvar_j,
+                                      const unsigned long nTurbVar,
+                                      bool &good_i, 
+                                      bool &good_j) {};
   
   /*!
    * \brief Correct the gradient at symmetry planes.
