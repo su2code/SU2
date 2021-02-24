@@ -91,6 +91,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    System.SetxIsZero(true);
 
     if (ReducerStrategy)
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
@@ -204,6 +205,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
@@ -212,7 +214,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
    * reducer strategy as we write over the entire matrix. ---*/
   if (!ReducerStrategy) {
     LinSysRes.SetValZero();
-    Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValZero();
+    else {SU2_OMP_BARRIER}
   }
 
   /*--- Upwind second order reconstruction and gradients ---*/
@@ -287,6 +290,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   bool axisymmetric = config->GetAxisymmetric();
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
@@ -348,7 +353,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
-    Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
 
@@ -360,6 +365,9 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
 
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   unsigned short WallType; su2double Roughness_Height;
@@ -435,9 +443,11 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         LinSysRes.SetBlock_Zero(iPoint);
       }
 
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint*nVar);
-      Jacobian.DeleteValsRowi(iPoint*nVar+1);
+      if (implicit) {
+        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+        Jacobian.DeleteValsRowi(iPoint*nVar);
+        Jacobian.DeleteValsRowi(iPoint*nVar+1);
+      }
     }
   }
 }
@@ -451,6 +461,8 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -497,7 +509,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Add residuals and Jacobians ---*/
 
       LinSysRes.AddBlock(iPoint, residual);
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
 
@@ -505,6 +517,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -556,7 +570,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
       //
@@ -596,6 +610,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -645,7 +661,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
@@ -685,6 +701,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
 void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
@@ -741,7 +759,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Jacobian contribution for implicit integration ---*/
       LinSysRes.AddBlock(iPoint, conv_residual);
-      Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
       su2double Coord_Reflected[MAXNDIM];
@@ -765,7 +783,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }
@@ -774,6 +792,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
 void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
@@ -848,7 +868,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Jacobian contribution for implicit integration ---*/
       LinSysRes.AddBlock(iPoint, conv_residual);
-      Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, conv_residual.jacobian_i);
 
       /*--- Viscous contribution ---*/
       su2double Coord_Reflected[MAXNDIM];
@@ -873,7 +893,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
-      Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
   }

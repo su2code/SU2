@@ -70,5 +70,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
 }
 
 template class CSysSolve_b<su2mixedfloat>;
-
+#ifdef USE_MIXED_PRECISION
+template class CSysSolve_b<passivedouble>;
+#endif
 #endif

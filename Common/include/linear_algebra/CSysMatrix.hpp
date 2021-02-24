@@ -28,9 +28,7 @@
 
 #pragma once
 
-#include "../../include/parallelization/mpi_structure.hpp"
-#include "../../include/parallelization/omp_structure.hpp"
-#include "../../include/parallelization/vectorization.hpp"
+#include "../../include/CConfig.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 
@@ -75,8 +73,33 @@ struct mkl_jit_wrapper<float> {
 #endif
 #endif
 
-class CConfig;
 class CGeometry;
+
+struct CSysMatrixComms {
+  /*!
+   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
+   *        communication and to launch non-blocking sends and recvs.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  template<class T>
+  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
+
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by
+   *        Initiate() and unpacking of the data in the vector.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  template<class T>
+  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+                       unsigned short commType = SOLUTION_MATRIX);
+};
 
 /*!
  * \class CSysMatrix
@@ -85,6 +108,8 @@ class CGeometry;
 template<class ScalarType>
 class CSysMatrix {
 private:
+  friend class CSysMatrixComms;
+
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
@@ -163,9 +188,11 @@ private:
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
-   * \note See specialization for discrete adjoint right outside this class's declaration.
    */
-  template<class DstType, class SrcType>
+  template<class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
+
+  template<class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
   FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return val; }
 
   /*!
@@ -377,34 +404,6 @@ public:
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
   void SetValDiagonalZero(void);
-
-  /*!
-   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
-   *        communication and to launch non-blocking sends and recvs.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be communicated.
-   */
-  template<class OtherType>
-  void InitiateComms(const CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
-
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched by
-   *        InitiateComms() and unpacking of the data in the vector.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be unpacked.
-   */
-  template<class OtherType>
-  void CompleteComms(CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
 
   /*!
    * \brief Get a pointer to the start of block "ij"
@@ -918,8 +917,3 @@ public:
                                    CGeometry *geometry, const CConfig *config) const;
 
 };
-
-#ifdef CODI_REVERSE_TYPE
-template<> template<>
-FORCEINLINE su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
-#endif
