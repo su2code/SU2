@@ -692,7 +692,8 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
 CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const CConfig *config) {
 
-  const su2double delta_p             = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref(); /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  const su2double delta_p = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 

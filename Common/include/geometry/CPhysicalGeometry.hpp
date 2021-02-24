@@ -107,7 +107,7 @@ class CPhysicalGeometry final : public CGeometry {
   vector<int> GlobalMarkerStorageDispl;
   vector<su2double> GlobalRoughness_Height;
 
-  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
+  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only. Size nDim.*/
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -471,7 +471,7 @@ public:
    * \brief For streamwise periodicity, find a unique reference node on the designated inlet.
    * \param[in] config - Definition of the particular problem.
    */
-  void FindUniqueNode_PeriodicBound(CConfig *config) override;
+  void FindUniqueNode_PeriodicBound(CConfig *config) final;
 
   /*!
    * \brief Set boundary vertex structure of the control volume.

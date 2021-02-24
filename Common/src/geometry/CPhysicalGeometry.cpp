@@ -7522,7 +7522,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*---         config container.                                                           ---*/
   /*-------------------------------------------------------------------------------------------*/
 
-  for (int iRank = 0; iRank < size; iRank++) { // loop over all vertices on that marker and fi
+  for (int iRank = 0; iRank < size; iRank++) {
 
     /*--- Get the norm of the current Point. ---*/
     auto norm = GeometryToolbox::SquaredNorm(nDim, &Buffer_Recv_RefNode[iRank*nDim]);

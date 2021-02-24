@@ -60,10 +60,10 @@ public:
   ~CSourceBase_Flow() override;
 
   /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
+   * \param[in] massflow - massflow through periodic marker [kg/s].
+   * \param[in] integratedHeat - integrated heatflow over heatflux boundaries [W].
+   * \param[in] inletTemp - massflow averaged periodic inlet temperature [K].
    */
   void SetStreamwise_Periodic_Values(const su2double massflow, const su2double integratedHeat, const su2double inletTemp) {
     Streamwise_Periodic_MassFlow = massflow;

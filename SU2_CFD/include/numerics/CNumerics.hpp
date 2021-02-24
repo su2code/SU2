@@ -1604,7 +1604,15 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
-  virtual inline void SetStreamwise_Periodic_Values(const su2double massflow, const su2double integratedHeat, const su2double inletTemp) { }
+  /*!
+   * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
+   * \param[in] massflow - massflow through periodic marker [kg/s].
+   * \param[in] integratedHeat - integrated heatflow over heatflux boundaries [W].
+   * \param[in] inletTemp - massflow averaged periodic inlet temperature [K].
+   */
+  virtual inline void SetStreamwise_Periodic_Values(const su2double massflow,
+                                                    const su2double integratedHeat,
+                                                    const su2double inletTemp) { }
 };
 
 /*!

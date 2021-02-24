@@ -992,7 +992,6 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
-  su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
 
   unsigned short Kind_Streamwise_Periodic;          /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
   bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or oterwise outlet source term. */
@@ -3091,14 +3090,6 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Outlet_TagBound(unsigned short val_marker) const { return Marker_Outlet[val_marker]; }
-
-  /*!
-   * \brief Get the index of the periodic surface defined in the geometry file.
-   * \param[in] val_marker - Value of the marker in which we are interested.
-   * \return Value of the index that is in the geometry file for the surface that
-   *         has the marker <i>val_marker</i>.
-   */
-  string GetMarker_Periodic_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -6191,8 +6182,7 @@ public:
   const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
-   * \brief Get the translation vector for a periodic transformation. In streamwise periodic flow we currently only
-   *        allow for one periodic boundary (pair) and there always acces val_index=0.
+   * \brief Get the translation vector for a periodic transformation.
    * \param[in] val_index - Index corresponding to the periodic transformation.
    * \return The translation vector.
    */

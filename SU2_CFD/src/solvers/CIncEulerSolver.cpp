@@ -1272,19 +1272,18 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 
   if (streamwise_periodic) {
-    numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
+    numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow,
+                                            Streamwise_Periodic_InletTemperature);
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the primitve variables ---*/
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), 
-                             NULL);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
       /*--- Set incompressible density ---*/
-      numerics->SetDensity(nodes->GetDensity(iPoint), 
-                           0.0);
+      numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
 
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -1292,8 +1291,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- If viscous, we need gradients for extra terms. ---*/
       if (viscous) {
         /*--- Gradient of the primitive variables ---*/
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), 
-                                     NULL);
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
       }
 
       /*--- Compute the streamwise periodic source residual and add to the total ---*/
@@ -1307,13 +1305,14 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if(!streamwise_periodic_temperature && energy) {
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
-      second_numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
+      second_numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow,
+                                                     Streamwise_Periodic_InletTemperature);
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
         /*--- Only "inlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-            config->GetMarker_All_PerBound(iMarker) == 1) { // here it doesnt matter whether 1 or 2
+            config->GetMarker_All_PerBound(iMarker) == 1) {
 
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -1322,13 +1321,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
             if (geometry->nodes->GetDomain(iPoint)) {
 
               /*--- Load the primitive variables ---*/
-              second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+              second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
               /*--- Set the specific heat ---*/
               second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
 
               /*--- Set the Point coordinates ---*/
-              second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),NULL);
+              second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
 
               /*--- Set the area normal ---*/
               second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
@@ -2938,9 +2937,6 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
   Streamwise_Periodic_InletTemperature = Temperature_Global;
   Streamwise_Periodic_MassFlow = MassFlow_Global;
 
-  if (rank == MASTER_NODE && false) { cout << "MassFlow_Global: " << fabs(MassFlow_Global) * config->GetDensity_Ref() * config->GetVelocity_Ref() << endl; }
-  if (rank == MASTER_NODE && false) { cout << "Average_Density_Global: " << Average_Density_Global << endl; }
-
   if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
     /*------------------------------------------------------------------------------------------------*/
     /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/ 
@@ -2956,7 +2952,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     
     /*--- Compute update to Delta p based on massflow-difference ---*/
     ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
-    
+
     /*--- Store updated pressure difference ---*/
     Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
     /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times 
@@ -2973,21 +2969,9 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     if((nZone==1 && InnerIter > 0) ||
        (nZone>1  && OuterIter > 0))
       config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
-    
-    /*--- Output the new value of Delta P and ddp ---*/
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0)  && false) { //TK:: Move whole computation up in front of output
-    
-      cout.precision(5);
-      cout.setf(ios::fixed, ios::floatfield);
-      
-      cout << "Delta Delta P: " << ddP * config->GetPressure_Ref() << endl;
-      cout << "New Delta P: " << Pressure_Drop_new * config->GetPressure_Ref() << endl;
-      
-      cout.unsetf(ios_base::floatfield);
-      
-    } // output
+
   } // if massflow
-  
+
   if (config->GetEnergy_Equation()) {
     /*---------------------------------------------------------------------------------------------*/
     /*--- 3. Compute the integrated Heatflow [W] for the energy equation source term, heatflux  ---*/
@@ -3031,8 +3015,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Set the Integrated Heatflux ---*/
-    if (iMesh == MESH_0)
-      Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
+    Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
   } // if energy
 }
 
