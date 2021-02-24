@@ -389,6 +389,10 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
     /*--- Loop over each node in the volume mesh ---*/
 
     for (iPoint = 0; iPoint < geometry[iMGlevel]->GetnPoint(); iPoint++) {
+      /*--- Reset the Grid Velocity to zero if there is no grid movement ---*/
+      if (Kind_Grid_Movement == GUST && !(config->GetFSI_Simulation())) {
+        for (iDim = 0; iDim < nDim; iDim++) geometry[iMGlevel]->nodes->SetGridVel(iPoint, iDim, 0.0);
+      }
 
       /*--- initialize the gust and derivatives to zero everywhere ---*/
 
