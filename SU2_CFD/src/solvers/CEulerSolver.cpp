@@ -3057,7 +3057,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                             config->GetDiscrete_Adjoint() || 
                             config->GetRestart());
 
-  const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+  // const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+  const auto nTurbVarGrad = tkeNeeded? 2 : 0;
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3073,6 +3074,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+  su2double Turbulent_i[MAXNVAR] = {0.0}, Turbulent_j[MAXNVAR] = {0.0};
 
   su2double tke_i = 0.0, tke_j = 0.0;
 
@@ -3123,13 +3125,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+                       Turbulent_i, Turbulent_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
+      CheckExtrapolatedState(config, Primitive_i, Primitive_j, Turbulent_i, Turbulent_j, nTurbVarGrad, good_i, good_j);
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
@@ -3156,8 +3158,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_i? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_j? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = good_i? Turbulent_i[0] : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j? Turbulent_j[0] : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
@@ -3194,14 +3196,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      if (residual[iVar] != residual[iVar])
-        cout << "Roe: iVar= " << iVar << ", Sol= " << nodes->GetSolution(iPoint,iVar) << endl;
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        if (residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar] || residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar])
-          cout << "Roe: iVar= " << iVar << ", jVar= " << jVar << ", Sol= " << nodes->GetSolution(iPoint,iVar) << endl;
-    }
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
@@ -3482,8 +3476,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
   if (tkeNeeded) {
-    good_i = good_i && (tke_i >= 0.0);
-    good_j = good_j && (tke_j >= 0.0);
+    good_i = good_i && (turbvar_i[0] >= 0.0) && (turbvar_i[1] >= 0.0);
+    good_j = good_j && (turbvar_j[0] >= 0.0) && (turbvar_j[1] >= 0.0);
   }
 
   /*--- Positive Roe sound speed ---*/
@@ -3905,7 +3899,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     const auto kPoint = node_i->GetPoint(iNeigh);
-    
+
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
     const su2double factor = 0.5*sign;
