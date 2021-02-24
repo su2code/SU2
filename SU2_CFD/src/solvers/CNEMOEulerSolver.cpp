@@ -938,6 +938,21 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- If necessary, set variables needed for viscous computation ---*/
         if (viscous) {
 
+          // TODO: NOTE: Some of these are set above. They need to be set here as well, otherwise they are passed in incorrectly.
+          // Do not remove.
+          
+          /*--- Set volume ---*/
+          numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+          /*--- Set coords ---*/
+          numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+          /*--- Set conservative vars ---*/
+          numerics->SetConservative(nodes->GetSolution(iPoint),   nodes->GetSolution(iPoint));
+
+          /*--- Set primitive vars ---*/
+          numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
+
           /*--- Set gradient of primitive variables ---*/
           numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
