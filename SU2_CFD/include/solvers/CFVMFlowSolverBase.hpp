@@ -2364,7 +2364,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
-    return CSkinFriction[val_marker][val_dim][val_vertex];
+    return CSkinFriction[val_marker](val_vertex,val_dim);
   }
 
   /*!
