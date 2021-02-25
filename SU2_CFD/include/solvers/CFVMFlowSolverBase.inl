@@ -64,6 +64,9 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  /*--- LinSysSol will always be init to 0. ---*/
+  System.SetxIsZero(true);
+
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
   auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
@@ -488,7 +491,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -521,6 +524,30 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, nullptr, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, nullptr, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -1599,7 +1626,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)

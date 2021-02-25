@@ -102,6 +102,8 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
+  /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+
   if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
        config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
       !frozen_visc) {
