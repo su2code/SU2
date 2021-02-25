@@ -531,7 +531,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Volume_i);
   if (tkeNeeded) {
     AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
     AD::SetPreaccIn(TurbVar_Grad_j[0], nDim);
@@ -641,9 +640,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (implicit) {
 
     const bool wasActive = AD::BeginPassive();
-
-    // if (!correct_gradient) dist_ij_2 = -4.0*Volume_i;
-    // if (dist_ij_2 != 0.0) {
+    
     if (correct_gradient) {
       SetTauJacobian();
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
