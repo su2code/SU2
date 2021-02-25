@@ -2388,6 +2388,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
           Project_Grad_i *= lim_i;
           Project_Grad_j *= lim_j;
+          limiter_i[iVar] = lim_i;
+          limiter_j[iVar] = lim_j;
         }
         
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
