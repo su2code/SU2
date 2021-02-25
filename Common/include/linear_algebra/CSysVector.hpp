@@ -66,7 +66,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
   unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
-  unsigned long nVar = 0;          /*!< \brief Number of elements in a block. */
+  unsigned long nVar = 1;          /*!< \brief Number of elements in a block. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -111,7 +111,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] val - Default value for elements.
    */
-  CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
+  explicit CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
 
   /*!
    * \brief Construct from size and value (block version).
@@ -129,7 +129,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] u_array - Vector stored as array being copied.
    */
-  explicit CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
+  CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
 
   /*!
    * \brief Constructor from array (block version).
@@ -138,8 +138,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - number of variables in each block
    * \param[in] u_array - vector stored as array being copied
    */
-  explicit CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
-                      const ScalarType* u_array) {
+  CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* u_array) {
     Initialize(numBlk, numBlkDomain, numVar, u_array, true);
   }
 

@@ -28,6 +28,7 @@
 #include "../../include/integration/CIntegrationFactory.hpp"
 #include "../../include/integration/CSingleGridIntegration.hpp"
 #include "../../include/integration/CMultiGridIntegration.hpp"
+#include "../../include/integration/CNewtonIntegration.hpp"
 #include "../../include/integration/CStructuralIntegration.hpp"
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
@@ -59,6 +60,9 @@ CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integratio
       break;
     case INTEGRATION_TYPE::MULTIGRID:
       integration = new CMultiGridIntegration();
+      break;
+    case INTEGRATION_TYPE::NEWTON:
+      integration = new CNewtonIntegration();
       break;
     case INTEGRATION_TYPE::STRUCTURAL:
       integration = new CStructuralIntegration();

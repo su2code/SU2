@@ -1614,7 +1614,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
     nodes->SetBound_Disp(iPoint, zeros);
 
     LinSysSol.SetBlock(iPoint, zeros);
-    LinSysReact.SetBlock(iPoint, zeros);
+    if (LinSysReact.GetLocSize() > 0) LinSysReact.SetBlock(iPoint, zeros);
     Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
   }
@@ -1694,9 +1694,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
     LinSysSol(iPoint, axis) = 0.0;
-    if (LinSysReact.GetLocSize() > 0){
-      LinSysReact(iPoint, axis) = 0.0;
-    }
+    if (LinSysReact.GetLocSize() > 0) LinSysReact(iPoint, axis) = 0.0;
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
 
   }
@@ -2546,8 +2544,8 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const C
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
-  Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-  Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(LinSysSol, geometry, config);
+  CSysMatrixComms::Complete(LinSysSol, geometry, config);
 
   for (auto iPoint : ExtraVerticesToEliminate) {
     Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
