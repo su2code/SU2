@@ -2478,44 +2478,60 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Preprocessing. ---*/
+  Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
+  TolerancesADERPredictorStep();
 
-    if(i == rank) {
+  /*--- Process the tasks list to carry out one ADER space time integration step. ---*/
+  ProcessTaskList_DG(geometry, solver_container, numerics, config, iMesh);
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Postprocessing. ---*/
+  Postprocessing(geometry, solver_container, config, iMesh);
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Initialize the tolerance vector. ---*/
+  SU2_OMP_SINGLE
+  TolSolADER.assign(nVar, 0.0);
 
-    if(i == rank) {
+  /*--- Parallel loop over the owned elements to determine
+        the local values of the tolerances. ---*/
+  su2double WRef[5] = {0.0};
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemTot, omp_get_num_threads(), 64);
+#endif
+  SU2_OMP_FOR_STAT(omp_chunk_size_vol)
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
+    /*--- Determine the value of the first basis function
+          for this element. ---*/
+    const passivedouble basis0 = volElem[i].standardElemFlow->ValBasis0();
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    /*--- Loop over the number of variables and update WRef. ---*/
+    for(unsigned short iVar=0; iVar<nVar; ++iVar)
+      WRef[iVar] = max(WRef[iVar], basis0*volElem[i].solDOFs(0,iVar));
   }
 
+  /*--- Determine the maximum values of all threads. ---*/
+  SU2_OMP_CRITICAL
+  {
+    for(unsigned short iVar=0; iVar<nVar; ++iVar)
+      TolSolADER[iVar] = max(TolSolADER[iVar], WRef[iVar]);
+  }
+  SU2_OMP_BARRIER
+
+  /*--- Determine the global maximum when MPI is used. ---*/
+#ifdef HAVE_MPI
   SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  {
+    for(unsigned short iVar=0; iVar<nVar; ++iVar)
+      WRef[iVar] = TolSolADER[iVar];
+
+    SU2_MPI::Allreduce(WRef, TolSolADER.data(), nVar, MPI_DOUBLE, MPI_MAX,
+                       SU2_MPI::GetComm());
+  }
+#endif
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
