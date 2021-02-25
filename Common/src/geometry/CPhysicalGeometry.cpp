@@ -7476,7 +7476,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   su2double min_norm = 0.0;
 
   vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
-                    Buffer_Recv_RefNode(size*nDim);
+                    Buffer_Recv_RefNode(static_cast<size_t>(size)*nDim);
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
@@ -7525,7 +7525,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   for (int iRank = 0; iRank < size; iRank++) {
 
     /*--- Get the norm of the current Point. ---*/
-    auto norm = GeometryToolbox::SquaredNorm(nDim, &Buffer_Recv_RefNode[iRank*nDim]);
+    auto norm = GeometryToolbox::SquaredNorm(nDim, &Buffer_Recv_RefNode[static_cast<size_t>(iRank)*nDim]);
 
     /*--- Check if new unique reference node is found. ---*/
     if (norm < min_norm || iRank == 0) {
