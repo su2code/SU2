@@ -70,7 +70,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
   Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(1.0);
-  Limiter.resize(nPoint,nPrimVarGrad) = su2double(1.0);
+  Limiter.resize(nPoint,nVar) = su2double(1.0);
   if (config->GetUse_Accurate_Kappa_Jacobians()) {
     LimiterDerivativeDelta.resize(nPoint,nPrimVarGrad) = su2double(1.0);
     LimiterDerivativeGrad.resize(nPoint,nPrimVarGrad) = su2double(1.0);
