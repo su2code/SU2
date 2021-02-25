@@ -2308,10 +2308,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Roe Turkel preconditioning ---*/
 
     if (roe_turkel) {
-      su2double sqvel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim ++)
-        sqvel += pow(config->GetVelocity_FreeStream()[iDim], 2);
-      numerics->SetVelocity2_Inf(sqvel);
+      numerics->SetVelocity2_Inf(GeometryToolbox::SquaredNorm(nDim, config->GetVelocity_FreeStream()));
     }
 
     /*--- Grid movement ---*/
