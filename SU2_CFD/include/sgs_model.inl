@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -191,8 +191,7 @@ inline void CSmagorinskyModel::ComputeGradEddyViscosity_2D(const su2double rho,
                                                            const su2double distToWall,
                                                                  su2double &dMuTdx,
                                                                  su2double &dMuTdy) {
-  cout << "CSmagorinskyModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 inline void CSmagorinskyModel::ComputeGradEddyViscosity_3D(const su2double rho,
@@ -231,8 +230,7 @@ inline void CSmagorinskyModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                                  su2double &dMuTdx,
                                                                  su2double &dMuTdy,
                                                                  su2double &dMuTdz) {
-  cout << "CSmagorinskyModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 inline CWALEModel::CWALEModel(void) : CSGSModel() {
@@ -363,8 +361,7 @@ inline void CWALEModel::ComputeGradEddyViscosity_2D(const su2double rho,
                                                     const su2double distToWall,
                                                           su2double &dMuTdx,
                                                           su2double &dMuTdy) {
-  cout << "CWALEModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 inline void CWALEModel::ComputeGradEddyViscosity_3D(const su2double rho,
@@ -403,12 +400,11 @@ inline void CWALEModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                           su2double &dMuTdx,
                                                           su2double &dMuTdy,
                                                           su2double &dMuTdz) {
-  cout << "CWALEModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 inline CVremanModel::CVremanModel(void) : CSGSModel() {
-  
+
   /* const_Vreman = 2.5*Cs*Cs where Cs is the Smagorinsky constant */
   const_Vreman = 0.07;
 }
@@ -422,8 +418,8 @@ inline su2double CVremanModel::ComputeEddyViscosity_2D(const su2double rho,
                                                      const su2double dvdy,
                                                      const su2double lenScale,
                                                      const su2double distToWall) {
-  cout << "CVremanModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  return 0;
 }
 
 inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
@@ -438,7 +434,7 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
                                                      const su2double dwdz,
                                                      const su2double lenScale,
                                                      const su2double distToWall) {
-  
+
   su2double alpha11 = dudx;
   su2double alpha22 = dvdy;
   su2double alpha33 = dwdz;
@@ -495,8 +491,7 @@ inline void CVremanModel::ComputeGradEddyViscosity_2D(const su2double rho,
                                                     const su2double distToWall,
                                                     su2double &dMuTdx,
                                                     su2double &dMuTdy) {
-  cout << "CWALEModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 inline void CVremanModel::ComputeGradEddyViscosity_3D(const su2double rho,
@@ -535,6 +530,5 @@ inline void CVremanModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                     su2double &dMuTdx,
                                                     su2double &dMuTdy,
                                                     su2double &dMuTdz) {
-  cout << "CWALEModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
-  exit(1);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }

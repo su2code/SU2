@@ -18,9 +18,11 @@ if build_machine.system() != 'windows'
     default_warning_flags += ['-Wno-empty-body']
   endif
   default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-format-security',
-                            '-Wno-deprecated-declarations',
-                            '-Wno-non-virtual-dtor']
+                            '-Wno-deprecated-declarations']
+
+  if get_option('enable-autodiff') or get_option('enable-directdiff')
+    default_warning_flags += ['-Wno-non-virtual-dtor']
+  endif
 endif
 
 # meson script path

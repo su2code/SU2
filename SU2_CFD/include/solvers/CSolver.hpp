@@ -133,8 +133,8 @@ protected:
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
-  su2double ***VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+  vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -1526,16 +1526,29 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CConfig *config) { }
+  inline virtual void PrepareImplicitIteration(CGeometry *geometry,
+                                               CSolver **solver_container,
+                                               CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
+  inline virtual void CompleteImplicitIteration(CGeometry *geometry,
+                                                CSolver **solver_container,
+                                                CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -2976,7 +2989,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return nullptr; }
+                                             unsigned long val_vertex) { return nullptr; }
 
   /*!
    * \brief A virtual member
@@ -4339,7 +4352,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+  void ComputeVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
@@ -4356,7 +4369,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+  void RegisterVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.
@@ -4377,7 +4390,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
+  void SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Get minimun volume in the mesh

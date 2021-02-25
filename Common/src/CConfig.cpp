@@ -368,7 +368,14 @@ void CConfig::addEnumListOption(const string name, unsigned short & input_size, 
 void CConfig::addDoubleArrayOption(const string name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionDoubleArray(name, size, option_field);
+  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addUShortArrayOption(const string name, const int size, unsigned short* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1571,6 +1578,13 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
+
+  /* DESCRIPTION: Use a Newton-Krylov method. */
+  addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
+  /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
@@ -3116,13 +3130,6 @@ void CConfig::SetnZone(){
 
   }
 
-  /*--- Temporary fix until Multizone Disc. Adj. solver is ready ---- */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-
-    nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
-
-  }
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -3565,11 +3572,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
-    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
-  }
-
-  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
+  if (nKind_SurfaceMovement != nMarker_Moving) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -4155,9 +4158,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Check if the byte alignment of the matrix multiplications is a
      multiple of 64. */
   if( byteAlignmentMatMul%64 ) {
-    if(rank == MASTER_NODE)
-      cout << "ALIGNED_BYTES_MATMUL must be a multiple of 64." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("ALIGNED_BYTES_MATMUL must be a multiple of 64.", CURRENT_FUNCTION);
   }
 
   /* Determine the value of sizeMatMulPadding, which is the matrix size in
@@ -4358,7 +4359,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
@@ -5603,7 +5604,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
         case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
     }
@@ -7942,7 +7942,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
@@ -8327,7 +8326,6 @@ bool CConfig::GetVolumetric_Movement() const {
 
   if (GetSurface_Movement(AEROELASTIC) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
-      GetSurface_Movement(FLUID_STRUCTURE) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;
