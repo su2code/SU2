@@ -197,9 +197,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Skin friction in all the markers ---*/
 
-  CSkinFriction.resize(nMarker);
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    CSkinFriction[iMarker].resize(nDim, nVertex[iMarker]) = su2double(0.0);
+  Alloc3D(nMarker, nVertex, nDim, CSkinFriction);
 
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -2412,8 +2410,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
+            GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2443,6 +2441,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   }
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
+  const su2double factorFric = config->GetRefArea() * factor;
 
   /*--- Variables initialization ---*/
 
@@ -2546,7 +2545,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
