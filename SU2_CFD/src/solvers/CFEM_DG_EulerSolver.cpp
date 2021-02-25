@@ -1454,23 +1454,73 @@ void CFEM_DG_EulerSolver::EntropyToPrimitiveVariables(ColMajorMatrix<su2double> 
 
 void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel) {
-  for(int i=0; i<size; ++i) {
+#ifdef HAVE_MPI
 
-    if(i == rank) {
+  /*--- Check if there is anything to communicate. ---*/
+  if( commRequests[timeLevel].size() ) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+    /*--- Easier storage whether or not an ADER simulation is performed
+          and the number of time DOFs to be communicated. ---*/
+    const bool ADER = (config->GetKind_TimeIntScheme_Flow() == ADER_DG);
+    const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+
+    /*--- OpenMP loop over the number of ranks to which
+          data must be sent. ---*/
+    SU2_OMP(for schedule(static,1) nowait)
+    for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
+      unsigned long ii = 0;
+
+      /*--- Loop over the elements to be sent and copy the solution data
+            into the send buffer. ---*/
+      su2double *sendBuf = commSendBuf[timeLevel][i].data();
+      for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
+        const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
+        const unsigned long nItems = volElem[jj].nDOFsSol;
+
+        /*--- Make a distinction between ADER and a standard time
+              integration scheme. ---*/
+        if( ADER ) {
+          for(unsigned short k=0; k<nTimeDOFs; ++k) {
+            for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+              SU2_OMP_SIMD
+              for(unsigned long mm=0; mm<nItems; ++mm)
+                sendBuf[mm+ii] = volElem[jj].solDOFsADERPredictor[k](mm,iVar);
+              ii += nItems;
+            }
+          }
+        }
+        else {
+          for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+            SU2_OMP_SIMD
+            for(unsigned long mm=0; mm<nItems; ++mm)
+              sendBuf[mm+ii] = volElem[jj].solDOFsWork(mm,iVar);
+            ii += nItems;
+          }
+        }
       }
+
+      /*--- Send the data using non-blocking sends. ---*/
+      int dest = ranksSendMPI[timeLevel][i];
+      int tag  = dest + timeLevel;
+      SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
+                     &commRequests[timeLevel][i]);
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-  }
+    /*--- OpenMP loop over the number of ranks from which data is received. ---*/
+    SU2_OMP_FOR_STAT(1)
+    for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+      /*--- Post the non-blocking receive. ---*/
+      unsigned long indComm = i + ranksSendMPI[timeLevel].size();
+      int source = ranksRecvMPI[timeLevel][i];
+      int tag    = rank + timeLevel;
+      SU2_MPI::Irecv(commRecvBuf[timeLevel][i].data(),
+                     commRecvBuf[timeLevel][i].size(),
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
+                     &commRequests[timeLevel][indComm]);
+    }
+  }
+#endif
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
