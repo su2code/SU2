@@ -1003,9 +1003,11 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
   if(Kind_TransCoeffModel == WILKE)
-   DiffusionCoeffWBE();
+    DiffusionCoeffWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
-   DiffusionCoeffGY();
+    DiffusionCoeffGY();
+  if(Kind_TransCoeffModel == DEBUG)
+    DiffusionCoeffD();
 
   return DiffusionCoeff;
 
@@ -1017,7 +1019,8 @@ su2double CSU2TCLib::GetViscosity(){
     ViscosityWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
     ViscosityGY();
-
+  if(Kind_TransCoeffModel == DEBUG)
+    ViscosityD();
   return Mu;
 
 }
@@ -1028,6 +1031,8 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
     ThermalConductivitiesWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
     ThermalConductivitiesGY();
+  if(Kind_TransCoeffModel == DEBUG)
+    ThermalConductivitiesD();
 
   return ThermalConductivities;
 
@@ -1148,6 +1153,104 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   ThermalConductivities[0] = ThermalCond_tr;
   ThermalConductivities[1] = ThermalCond_ve;
 }
+
+void CSU2TCLib::DiffusionCoeffD(){
+
+  su2double conc, Mi, Mj, M, Omega_ij, denom;
+  su2activematrix Dij;
+
+  Dij.resize(nSpecies, nSpecies) = su2double(0.0);
+
+  /*--- Calculate species mole fraction ---*/
+  conc = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
+    conc               += MolarFracWBE[iSpecies];
+  }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
+  /*--- Calculate mixture molar mass (kg/mol) ---*/
+  // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
+  M = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
+  M = M*1E-3;
+  /*---+++                  +++---*/
+  /*--- Diffusion coefficients ---*/
+  /*---+++                  +++---*/
+  /*--- Solve for binary diffusion coefficients ---*/
+  // Note: Dij = Dji, so only loop through req'd indices
+  // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Mi = MolarMass[iSpecies]*1E-3;
+    for (jSpecies = iSpecies; jSpecies < nSpecies; jSpecies++) {
+      Mj = MolarMass[jSpecies]*1E-3;
+      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+      Omega_ij = 1E-20/PI_NUMBER * Omega00(iSpecies,jSpecies,3)
+          * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+          +  Omega00(iSpecies,jSpecies,1)*log(T)
+          +  Omega00(iSpecies,jSpecies,2));
+      Dij(iSpecies,jSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
+      Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
+    }
+  }
+  /*--- Calculate species-mixture diffusion coefficient --*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    DiffusionCoeff[iSpecies] = 0.0;
+    denom = 0.0;
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      if (jSpecies != iSpecies) {
+        denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
+      }
+    }
+
+    if (nSpecies==1) DiffusionCoeff[0] = 0;
+    else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
+  }    
+
+}
+
+void CSU2TCLib::ViscosityD(){
+  
+
+  su2double Mu_ref = 1.716E-5;
+  su2double T_ref  = 273.15;
+  su2double S_ref  = 111;
+
+  su2double T_nd = T / T_ref;
+
+  /*--- Calculate mixture laminar viscosity ---*/
+  Mu = Mu_ref * T_nd * sqrt(T_nd) * ((T_ref + S_ref) / (T + S_ref));
+
+}
+
+void CSU2TCLib::ThermalConductivitiesD(){
+
+  su2double Pr_lam  = 0.69;
+  su2double Ru      = 1000.0*UNIVERSAL_GAS_CONSTANT;
+
+  su2double mass = 0.0;
+  su2double rho = 0.0;
+  for (unsigned short ii=0; ii<nSpecies; ii++)
+  {
+    mass += rhos[ii]*MolarMass[ii]
+    rho  += rhos[ii];
+  } 
+
+  su2double Cvtr = ComputerhoCvtr()/rho;
+  su2double Cvve = ComputerhoCvve()/rho;
+   
+
+  su2double scl  = Cvve/Cvtr;
+   
+  su2double Cptr = Cvtr + R;
+  su2double Cpve = scl*Cptr;
+
+  
+  ThermalConductivities[0] = Mu*Cptr/Pr_lam;
+  ThermalConductivities[1] = Mu*Cpve/Pr_lam;
+}
+
 
 void CSU2TCLib::DiffusionCoeffGY(){
 

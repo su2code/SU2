@@ -197,6 +197,13 @@ public:
   void ThermalConductivitiesGY();
 
   /*!
+   * \brief Get transport model (Sutherland/debug).
+   */
+  void DiffusionCoeffD();
+  void ViscosityD();
+  void ThermalConductivitiesD();
+
+  /*!
    * \brief Get reference temperature.
    */
   vector<su2double>& GetRefTemperature() final { return Ref_Temperature; }

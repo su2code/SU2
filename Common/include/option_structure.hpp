@@ -596,11 +596,13 @@ MakePair("ONESPECIES", ONESPECIES)
  */
 enum ENUM_TRANSCOEFFMODEL {
   WILKE      = 0,
-  GUPTAYOS   = 1
+  GUPTAYOS   = 1,
+  DEBUG      = 2
 };
 static const MapType<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
 MakePair("WILKE", WILKE)
 MakePair("GUPTA-YOS", GUPTAYOS)
+MakePair("DEBUG",DEBUG)
 };
 
 /*!

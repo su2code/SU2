@@ -209,7 +209,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
       eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
 
-       nodes->SetEddyViscosity(iPoint, eddy_visc);
+      nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
 
     /*--- Incompressible flow, primitive variables ---*/

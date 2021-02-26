@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
@@ -194,7 +194,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
   Primitive(iPoint, LAM_VISC_INDEX) = LaminarViscosity(iPoint);
-
+  
   return nonPhys;
 }
 
