@@ -1527,69 +1527,416 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel,
                                                      const bool commMustBeCompleted) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Easier storage whether or not an ADER simulation is performed
+        and the number of time DOFs to be communicated. ---*/
+  const bool ADER = (config->GetKind_TimeIntScheme_Flow() == ADER_DG);
+  const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
 
-    if(i == rank) {
+  /*-----------------------------------------------------------------------*/
+  /*--- Complete the MPI communication, if needed and if possible, and  ---*/
+  /*--- copy the data from the receive buffers into the correct         ---*/
+  /*--- location in volElem.                                            ---*/
+  /*-----------------------------------------------------------------------*/
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+#ifdef HAVE_MPI
+  if( commRequests[timeLevel].size() ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case Waitall is used.
+          Otherwise, Testall is used to check if all the requests have
+          been completed. If not, false is returned. Use the member variable
+          counter as a flag for all threads. ---*/
+    SU2_OMP_SINGLE
+    {
+      counter = 1;
+      if( commMustBeCompleted ) {
+        SU2_MPI::Waitall(commRequests[timeLevel].size(),
+                         commRequests[timeLevel].data(), MPI_STATUSES_IGNORE);
+      }
+      else {
+        int flag;
+        SU2_MPI::Testall(commRequests[timeLevel].size(),
+                         commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
+        if( !flag ) counter = 0;
       }
     }
+    if( !counter ) return false;
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    /*--- OpenMP loop over the number of ranks from which
+          this rank has received data. ---*/
+    SU2_OMP(for schedule(static,1) nowait)
+    for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
+      unsigned long ii = 0;
+
+      /*--- Loop over the elements to be received and copy the solution data
+            into the appropriate locations in volElem. ---*/
+      su2double *recvBuf = commRecvBuf[timeLevel][i].data();
+      for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
+        const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
+        const unsigned long nItems = volElem[jj].nDOFsSol;
+
+        /*--- Make a distinction between ADER and a standard time
+              integration scheme. ---*/
+        if( ADER ) {
+          for(unsigned short k=0; k<nTimeDOFs; ++k) {
+            for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+              SU2_OMP_SIMD
+              for(unsigned long mm=0; mm<nItems; ++mm)
+                volElem[jj].solDOFsADERPredictor[k](mm,iVar) = recvBuf[mm+ii];
+              ii += nItems;
+            }
+          }
+        }
+        else {
+          for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+            SU2_OMP_SIMD
+            for(unsigned long mm=0; mm<nItems; ++mm)
+              volElem[jj].solDOFsWork(mm,iVar) = recvBuf[mm+ii];
+            ii += nItems;
+          }
+        }
+      }
+    }
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  return false;
+#endif
+
+  /*-----------------------------------------------------------------------*/
+  /*---               Carry out the self communication.                 ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /*--- Determine the chunk size for the OMP loops, if supported. ---*/
+  const unsigned long nSelfCom = elementsSendSelfComm[timeLevel].size();
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nSelfCom, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the elements for self-communication. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+  for(unsigned long i=0; i<nSelfCom; ++i) {
+    const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
+    const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
+    const unsigned long nItems = volElem[elemS].nDOFsSol;
+
+    /*--- Make a distinction between ADER and a standard time
+          integration scheme. ---*/
+    if( ADER ) {
+      for(unsigned short k=0; k<nTimeDOFs; ++k) {
+        for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+          SU2_OMP_SIMD
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            volElem[elemR].solDOFsADERPredictor[k](mm,iVar) = volElem[elemS].solDOFsADERPredictor[k](mm,iVar);
+        }
+      }
+    }
+    else {
+      for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+        SU2_OMP_SIMD
+        for(unsigned long mm=0; mm<nItems; ++mm)
+          volElem[elemR].solDOFsWork(mm,iVar) = volElem[elemS].solDOFsWork(mm,iVar);
+      }
+    }
+  }
+
+  /*------------------------------------------------------------------------*/
+  /*--- Correct the vector quantities in the rotational periodic halo's. ---*/
+  /*------------------------------------------------------------------------*/
+
+  /*--- Loop over the markers for which a rotational periodic
+        correction must be applied to the momentum variables. ---*/
+  unsigned int ii = 0;
+  const unsigned long nRotPerMarkers = halosRotationalPeriodicity[timeLevel].size();
+  for(unsigned long l=0; l<nRotPerMarkers; ++l) {
+
+    /*--- Easier storage of the rotational matrix. ---*/
+    su2double rotMatrix[3][3];
+
+    rotMatrix[0][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[0][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[0][2] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[1][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][2] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[2][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][2] = rotationMatricesPeriodicity[ii++];
+
+    /*--- Determine the number of elements for this transformation and
+          loop over them. ---*/
+    const unsigned long nHaloElem = halosRotationalPeriodicity[timeLevel][l].size();
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_halo = computeStaticChunkSize(nHaloElem, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_halo)
+    for(unsigned long j=0; j<nHaloElem; ++j) {
+      const unsigned long ind = halosRotationalPeriodicity[timeLevel][l][j];
+      const unsigned long nItems = volElem[ind].nDOFsSol;
+
+      /*--- Make a distinction between ADER and a standard time
+            integration scheme. ---*/
+      if( ADER ) {
+        for(unsigned short k=0; k<nTimeDOFs; ++k) {
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned long mm=0; mm<nItems; ++mm) {
+            const su2double u = volElem[ind].solDOFsADERPredictor[k](mm,1),
+                            v = volElem[ind].solDOFsADERPredictor[k](mm,2),
+                            w = volElem[ind].solDOFsADERPredictor[k](mm,3);
+
+            volElem[ind].solDOFsADERPredictor[k](mm,1) = rotMatrix[0][0]*u + rotMatrix[0][1]*v + rotMatrix[0][2]*w;
+            volElem[ind].solDOFsADERPredictor[k](mm,2) = rotMatrix[1][0]*u + rotMatrix[1][1]*v + rotMatrix[1][2]*w;
+            volElem[ind].solDOFsADERPredictor[k](mm,3) = rotMatrix[2][0]*u + rotMatrix[2][1]*v + rotMatrix[2][2]*w;
+          }
+        }
+      }
+      else {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned long mm=0; mm<nItems; ++mm) {
+          const su2double u = volElem[ind].solDOFsWork(mm,1),
+                          v = volElem[ind].solDOFsWork(mm,2),
+                          w = volElem[ind].solDOFsWork(mm,3);
+
+          volElem[ind].solDOFsWork(mm,1) = rotMatrix[0][0]*u + rotMatrix[0][1]*v + rotMatrix[0][2]*w;
+          volElem[ind].solDOFsWork(mm,2) = rotMatrix[1][0]*u + rotMatrix[1][1]*v + rotMatrix[1][2]*w;
+          volElem[ind].solDOFsWork(mm,3) = rotMatrix[2][0]*u + rotMatrix[2][1]*v + rotMatrix[2][2]*w;
+        }
+      }
+    }
+  }
+
+  /*--- Return true to indicate that the communication has been completed. ---*/
+  return true;
 }
 
 void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Easier storage whether or not an ADER simulation is performed. ---*/
+  const bool ADER = (config->GetKind_TimeIntScheme_Flow() == ADER_DG);
 
-    if(i == rank) {
+  /*------------------------------------------------------------------------*/
+  /*--- Correct the vector residuals in the rotational periodic halo's.  ---*/
+  /*------------------------------------------------------------------------*/
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+  /*--- Loop over the markers for which a rotational periodic
+        correction must be applied to the momentum variables. ---*/
+  unsigned int ii = 0;
+  const unsigned short nRotPerMarkers = halosRotationalPeriodicity[0].size();
+  for(unsigned short l=0; l<nRotPerMarkers; ++l) {
+
+    /* Easier storage of the transpose of the rotational matrix. */
+    su2double rotMatrix[3][3];
+
+    rotMatrix[0][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][0] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[0][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][1] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[0][2] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][2] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][2] = rotationMatricesPeriodicity[ii++];
+
+    /*--- Determine the number of elements for this transformation and
+          loop over them. ---*/
+    const unsigned long nHaloElem = halosRotationalPeriodicity[timeLevel][l].size();
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_halo = computeStaticChunkSize(nHaloElem, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_halo)
+    for(unsigned long j=0; j<nHaloElem; ++j) {
+      const unsigned long ind = halosRotationalPeriodicity[timeLevel][l][j];
+      const unsigned long nItems = volElem[ind].nDOFsSol;
+
+      /*--- Set the reference for the residual, depending whether
+            or not an ADER simulation is carried out. ---*/
+      ColMajorMatrix<su2double> &res = ADER ? volElem[ind].resTotDOFsADER
+                                            : volElem[ind].resDOFs;
+
+      /*--- Loop over the items and correct the momentum residuals. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned long mm=0; mm<nItems; ++mm) {
+        const su2double ru = res(mm,1), rv = res(mm,2), rw = res(mm,3);
+
+        res(mm,1) = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
+        res(mm,2) = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
+        res(mm,3) = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
       }
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+#ifdef HAVE_MPI
+
+  /*--- Check if there is anything to communicate. ---*/
+  if( commRequests[timeLevel].size() ) {
+
+    /*--- Loop over the number of ranks from which this rank receives data in
+          the original communication pattern. In the reverse pattern, data
+          has to be sent. ---*/
+    SU2_OMP(for schedule(static,1) nowait)
+    for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
+      unsigned long ii = 0;
+
+      /*--- Loop over the elements copy the residual data into recvBuf. ---*/
+      su2double *recvBuf = commRecvBuf[timeLevel][i].data();
+      for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
+        const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
+        const unsigned long nItems = volElem[jj].nDOFsSol;
+
+        /*--- Set the reference to the correct residual to be communicated. ---*/
+        ColMajorMatrix<su2double> &res = ADER ? volElem[jj].resTotDOFsADER
+                                              : volElem[jj].resDOFs;
+
+        /*--- Copy the data into recvBuf. ---*/
+        for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+          SU2_OMP_SIMD
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            recvBuf[mm+ii] = res(mm,iVar);
+           ii += nItems;
+        }
+      }
+
+      /*--- Send the data using non-blocking sends. ---*/
+      int dest = ranksRecvMPI[timeLevel][i];
+      int tag  = dest + timeLevel + 20;
+      SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
+                     &commRequests[timeLevel][i]);
+    }
+
+    /*--- Post the non-blocking receives. As this is the reverse communication,
+          a loop over the sending ranks must be carried out. ---*/
+    SU2_OMP_FOR_STAT(1)
+    for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
+
+      unsigned long indComm = i + ranksRecvMPI[timeLevel].size();
+      int source = ranksSendMPI[timeLevel][i];
+      int tag    = rank + timeLevel + 20;
+      SU2_MPI::Irecv(commSendBuf[timeLevel][i].data(),
+                     commSendBuf[timeLevel][i].size(),
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
+                     &commRequests[timeLevel][indComm]);
+    }
+  }
+#endif
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel,
                                                             const bool commMustBeCompleted) {
-  for(int i=0; i<size; ++i) {
 
-    if(i == rank) {
+  /*--- Easier storage whether or not an ADER simulation is performed. ---*/
+  const bool ADER = (config->GetKind_TimeIntScheme_Flow() == ADER_DG);
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+  /*-----------------------------------------------------------------------*/
+  /*--- Complete the MPI communication, if needed and if possible, and  ---*/
+  /*--- copy the data from the receive buffers into the correct         ---*/
+  /*--- location in volElem.                                            ---*/
+  /*-----------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+  if( commRequests[timeLevel].size() ) {
+
+    /*--- There are communication requests to be completed. Check if these
+          requests must be completed. In that case Waitall is used.
+          Otherwise, Testall is used to check if all the requests have
+          been completed. If not, false is returned. Use the member variable
+          counter as a flag for all threads. ---*/
+    SU2_OMP_SINGLE
+    {
+      counter = 1;
+      if( commMustBeCompleted ) {
+        SU2_MPI::Waitall(commRequests[timeLevel].size(),
+                         commRequests[timeLevel].data(), MPI_STATUSES_IGNORE);
+      }
+      else {
+        int flag;
+        SU2_MPI::Testall(commRequests[timeLevel].size(),
+                         commRequests[timeLevel].data(), &flag, MPI_STATUSES_IGNORE);
+        if( !flag ) counter = 0;
       }
     }
+    if( !counter ) return false;
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    /*-------------------------------------------------------------------------*/
+    /*---    Update the residuals of the owned DOFs with the data received. ---*/
+    /*-------------------------------------------------------------------------*/
+
+    /*--- Loop over the received residual data from all ranks and update the
+          residual of the DOFs of the corresponding elements. Note that in
+          reverse mode the send communication data must be used. ---*/
+    SU2_OMP(for schedule(static,1) nowait)
+    for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
+      unsigned long ii = 0;
+
+      /*--- Loop over the elements that must be updated. ---*/
+      su2double *sendBuf = commSendBuf[timeLevel][i].data();
+      for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
+        const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
+        const unsigned long nItems = volElem[jj].nDOFsSol;
+
+        /*--- Set the reference for the residual, depending on the situation. ---*/
+        ColMajorMatrix<su2double> &res = ADER ? volElem[jj].resTotDOFsADER
+                                              : volElem[jj].resDOFs;
+
+        /*--- Update the residuals of the DOFs. ---*/
+        for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            res(mm,iVar) += sendBuf[mm+ii];
+          ii += nItems;
+        }
+      }
+    }
+  }
+#endif
+
+  /*-----------------------------------------------------------------------*/
+  /*---               Carry out the self communication.                 ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /*--- Determine the chunk size for the OMP loops, if supported. ---*/
+  const unsigned long nSelfCom = elementsSendSelfComm[timeLevel].size();
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nSelfCom, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the elements for self-communication. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+  for(unsigned long i=0; i<nSelfCom; ++i) {
+    const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
+    const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
+    const unsigned long nItems = volElem[elemS].nDOFsSol;
+
+    /*--- Set the references for the residual, depending on the situation. ---*/
+    ColMajorMatrix<su2double> &resS = ADER ? volElem[elemS].resTotDOFsADER
+                                           : volElem[elemS].resDOFs;
+    ColMajorMatrix<su2double> &resR = ADER ? volElem[elemR].resTotDOFsADER
+                                           : volElem[elemR].resDOFs;
+
+    /*--- Update the send residual. ---*/
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned long j=0; j<nItems; ++j)
+        resS(j,iVar) += resR(j,iVar);
+    }
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  return false;
+  /*-----------------------------------------------------------------------*/
+  /*---   Initialize the halo residuals for this time level for ADER.   ---*/
+  /*-----------------------------------------------------------------------*/
+
+  if( ADER ) {
+    for(unsigned long i=nVolElemHaloPerTimeLevel[timeLevel];
+                      i<nVolElemHaloPerTimeLevel[timeLevel+1]; ++i)
+      volElem[i].resTotDOFsADER.setConstant(0.0);
+  }
+
+  /*--- Return true to indicate that the communication has been completed. ---*/
+  return true;
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
