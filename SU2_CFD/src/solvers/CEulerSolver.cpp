@@ -3476,8 +3476,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
   if (tkeNeeded) {
-    good_i = good_i && (turbvar_i[0] >= 0.0) && (turbvar_i[1] >= 0.0);
-    good_j = good_j && (turbvar_j[0] >= 0.0) && (turbvar_j[1] >= 0.0);
+    good_i = good_i && (tke_i >= 0.0);
+    good_j = good_j && (tke_j >= 0.0);
   }
 
   /*--- Positive Roe sound speed ---*/
