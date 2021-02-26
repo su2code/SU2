@@ -1,31 +1,29 @@
 # Streamwise Periodicity testcases
 
-All Testcases use the incompressible solver implemented by Thomas Economon.
-For all Testcases the respective gmsh geo file has to be provided.
+This folder contains the additional Testcases for streamwise periodic flow.
+A Tutorial can be found on the SU2 website.
+For all Testcases a gmsh .geo file is provided which allows to recreate/modify the mesh.
 
-## `pipe_slice_3D`
+## `pipe_slice_3d`
 
-Overview: Hagen Poiseuille flow through a 1-primal-cell thick pipe slice in 3D.
+Hagen Poiseuille flow through a 1-primal-cell thick pipe slice in 3D.
 
-Analytical solution of the velocity magnitude for steady laminar pipe flow in a round pipe `v_mag (r) = -1/(4*mu) * (Delta p / Delta x) * (R**2 - r**2)` therefore a pressure drop Delta p is prescribed, heated walls
+Analytical solution of the velocity magnitude for steady laminar pipe flow in a round pipe `v_mag (r) = -1/(4*mu) * (Delta p / Delta x) * (R**2 - r**2)` therefore a pressure drop Delta p is prescribed.
 
-`Re = rho * v * L / mu = 1.0 * ? * 5e-3 / 1.8e-5` bei v -> averaged (mass or area weighted?) velocity the critical Re ~= 2300 (v = 0.6 for now) makes Re=167
+`Re = rho * v * L / mu = 1.0 * 0.6 * 5e-3 / 1.8e-5` makes Re=167, with the critical Reynolds number being Re~=2300.
 
-It would nice to have a Re ~= 1500 to have a better testcase (achieve that with v~5 or 6 i.e. scale Delta P by factor 10 from 0.001 to 0.01)
+This testcase is a regression test.
 
-##  `half_cylinder_2D`  
-half cylinder massflow prescribed heated cylinder - probably discontinued
+## `chtPinArray_2d`
 
-## 2D_pinArray_dp_hf
+Extension of the tutorial case to a CHT problem with 1 additional solid zone.
+A gradient validation between discrete and finite differences for this setup is described in the README of that folder.
 
-## 2D_pinArray_mf
+This gradient validation is also part of the regression tests.
 
-## 2D_pinArray_cht_dp_hf
+## `chtPinArray_3d`
 
-### Discrete Adjoint
+Extension of the `chtPinArray_2d` to the 3rd dimension with again one solid zone.
+The mesh provided is coarse to keep the filesize and computation time low, but using the gmsh .geo script much higher mesh resolutions can be created.
 
-## 3D_pinArray_mf_hf
-
-## 3D_pinArray_cht_dp_hf
-
-### Discrete Adjoint
+This primal simulation is part of the regression tests.
