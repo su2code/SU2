@@ -3119,8 +3119,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     bool good_i = true, good_j = true;
     bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
-    // bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
-    // bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
