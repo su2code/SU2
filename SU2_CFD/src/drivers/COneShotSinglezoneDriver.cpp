@@ -57,6 +57,9 @@ COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned shor
   flowoutput->PreprocessHistoryOutput(config, false);
   flowoutput->PreprocessVolumeOutput(config);
 
+  /*--- Initialize the members of the driver class. ---*/
+  OneShotIter=0;
+
   for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
     ConstrFunc.push_back(0.0);
     multiplier.push_back(config->GetInitialMultiplier(iConstr));
@@ -114,7 +117,6 @@ void COneShotSinglezoneDriver::Postprocess() {
 void COneShotSinglezoneDriver::RunOneShot(){
 
   su2double CombinedFunc=0.0;
-  unsigned long OneShotIter=0;
   bool isconverged=false;
 
   /// main loop for the optimization method
@@ -135,7 +137,7 @@ void COneShotSinglezoneDriver::RunOneShot(){
 
     /// check for convergence and update for next iteration
 
-    UpdateDesignVariable(gradient);
+    UpdateDesignVariable();
     if (isconverged) { break; }
     OneShotIter++;
   }
@@ -146,6 +148,11 @@ void COneShotSinglezoneDriver::PiggyBack() {
 
   // note: use inherited iteration count from the adjoint driver for now.
   nPiggyIter = nAdjoint_Iter;
+
+  // in the first and last loop we might want to do more iterations to be more accurate.
+  if (OneShotIter==0 || OneShotIter==(config->GetOneShotIter()-1)) {
+    nPiggyIter += config->GetAddInnerIter();
+  }
 
   /*--- Main loop for the Piggyback iteration ---*/
   for (auto PiggyIter = 0ul; PiggyIter < nPiggyIter; PiggyIter++) {
@@ -176,7 +183,11 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   if (iPiggyIter == nPiggyIter-1 || StopNext) {
     kind_recording = SOLUTION_AND_MESH;
   } else {
-    kind_recording = SOLUTION_VARIABLES;
+    if (config->GetOneShotMode()==PIGGYBACK) {
+      kind_recording = SOLUTION_VARIABLES;
+    } else {
+      kind_recording = SOLUTION_AND_MESH;
+    }
   }
 
   SetRecording(kind_recording);
@@ -332,7 +343,7 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& delta_design, C
 
   /*--- Volumetric grid deformation/transformations ---*/
   if (config->GetDesign_Variable(0) != FFD_SETTING) {
-    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, false);
+    grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, true);
   }
 
   config->SetKind_SU2(SU2_CFD);
@@ -342,20 +353,21 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& delta_design, C
 void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double> funcGrad, CConfig *config) {
 
   su2double length, maxLength=config->GetMaxOneShotStepsize();
+  vector<su2double> delta_design(funcGrad.size(), 0.0);
   bool isDescent=false;
 
-  /// Reduce to max length
+  /// Reduce to max length and change the sign (gradient descend!)
   length = L2Norm(funcGrad);
   if (length > maxLength) {
     for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-      funcGrad[iDV] = (maxLength/length)*funcGrad[iDV];
+      delta_design[iDV] = -(maxLength/length)*funcGrad[iDV];
     }
   }
 
   /// Store geometry and solution
 
   /// Deform the geometry
-  DeformGeometry(funcGrad, config);
+  DeformGeometry(delta_design, config);
 
   /// Update the function
 
@@ -366,7 +378,7 @@ void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double>
 
   /// Set return gradient
   for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-    gradient[iDV] = funcGrad[iDV];
+    gradient[iDV] = delta_design[iDV];
   }
 
 }
@@ -375,13 +387,17 @@ bool COneShotSinglezoneDriver::CheckDescent(){
   return true;
 }
 
-void COneShotSinglezoneDriver::UpdateDesignVariable(vector<su2double>& deltaP) {
+void COneShotSinglezoneDriver::UpdateDesignVariable() {
   for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-    design[iDV] += deltaP[iDV];
+    design[iDV] -= gradient[iDV];
   }
 }
 
 void COneShotSinglezoneDriver::ComputePreconditioner() {
+
+  /*--- get the sensitivities from the adjoint solver to work with ---*/
+  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
+  /*--- precondition gradient and extract thew result. ---*/
   solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
 }

@@ -2835,6 +2835,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: number of optimizations steps with design updates */
   addUnsignedLongOption("ONESHOT_ITER", OneShotIter, 999999);
 
+  /* DESCRIPTION: number additional Piggyback steps for first and last optimization iteration. */
+  addUnsignedLongOption("ADDITIONAL_INNER_ITER", AddInnerIter, 0);
+
   /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
   addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
 

@@ -51,6 +51,7 @@ class COneShotSinglezoneDriver : public CDiscAdjSinglezoneDriver {
 protected:
 
   unsigned long nPiggyIter;           /*!< \brief The number of coupled primal and adjoint iterations that are run on the PiggyBack solver.*/
+  unsigned long OneShotIter;          /*!< \brief Current iteration of the OneShot optimization loop.*/
   unsigned short nDV_Total;           /*!< \brief Total number of design variables used in optimization.*/
   bool StopNext;                      /*!< \brief Flag to indicate if the run should stop after the next iteration.*/
 
@@ -146,7 +147,7 @@ public:
   /*!
    * \brief Store values for the updated design variables.
    */
-  void UpdateDesignVariable(vector<su2double>& deltaP);
+  void UpdateDesignVariable();
 
   /*!
    * \brief Compute the inverse preconditioner matrix (BCheck^(-1)) for the multiplier update.

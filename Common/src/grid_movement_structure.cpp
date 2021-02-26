@@ -190,6 +190,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
 
+    ofstream VolDefIn;
+    VolDefIn.open ("VolDefRHS.txt", std::ofstream::out);
+    LinSysRes.printVec(VolDefIn);
+    VolDefIn.close();
+
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative && !config->GetSmoothGradient()) || ForwardProjectionDerivative) {
 
       Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
@@ -199,6 +204,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
     su2double Residual = System.GetResidual();
+
+    ofstream VolDefOut;
+    VolDefOut.open ("VolDefSOL.txt", std::ofstream::out);
+    LinSysSol.printVec(VolDefOut);
+    VolDefOut.close();
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/

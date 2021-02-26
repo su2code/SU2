@@ -1160,6 +1160,7 @@ private:
 
   unsigned short OneShotMode;           /*!< \brief Kind of One-Shot mode specified */
   unsigned long OneShotIter;            /*!< \brief The max number of design updates the optimizer makes. */
+  unsigned long AddInnerIter;           /*!< \brief Additional Piggyback steps for first and last optimization iteration. */
   unsigned short nConstr, nConstrHelp;  /*!< \brief Number of constraint function. */
   unsigned short *Kind_ConstrFunc;      /*!< \brief Kind of constraint function. */
   su2double *ConstrFuncTarget;          /*!< \brief Kind of constraint function. */
@@ -9550,6 +9551,12 @@ public:
    * \return number of steps
    */
   unsigned long GetOneShotIter(void) { return OneShotIter; }
+
+  /*!
+   * \brief Get the number of additional Piggyback steps for first and last optimization iteration.
+   * \return number of steps
+   */
+  unsigned long GetAddInnerIter(void) { return AddInnerIter; }
 
   /*!
    * \brief Get the number of constraints.
