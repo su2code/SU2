@@ -352,11 +352,13 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
     const su2double a_i = 0.5*(a_ij+fabs(a_ij));
     const su2double a_j = 0.5*(a_ij-fabs(a_ij));
 
-    const bool good_flux = (a_ij >= 0)? (a_i*primvar_i[nDim+2]*turbvar_i[0] <  nodes->GetSolution(iPoint,0))
-                                      : (a_j*primvar_j[nDim+2]*turbvar_j[0] > -nodes->GetSolution(jPoint,0));
+    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+      const bool good_flux = (a_ij >= 0)? (a_i*primvar_i[nDim+2]*turbvar_i[iVar] <  nodes->GetSolution(iPoint,iVar))
+                                        : (a_j*primvar_j[nDim+2]*turbvar_j[iVar] > -nodes->GetSolution(jPoint,iVar));
 
-    good_i = good_i && good_flux;
-    good_j = good_j && good_flux;
+      good_i = good_i && good_flux;
+      good_j = good_j && good_flux;
+    }
   }
 }
 
