@@ -3057,8 +3057,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                             config->GetDiscrete_Adjoint() || 
                             config->GetRestart());
 
-  // const auto nTurbVarGrad = tkeNeeded? 1 : 0;
-  const auto nTurbVarGrad = tkeNeeded? 2 : 0;
+  const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+  // const auto nTurbVarGrad = tkeNeeded? 2 : 0;
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();

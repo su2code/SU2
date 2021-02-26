@@ -147,8 +147,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     bool good_i = true, good_j = true;
     bool muscl = (config->GetMUSCL_Turb() && muscl_start);
-    // bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
-    // bool muscl = (config->GetMUSCL_Turb() && muscl_start) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
@@ -159,7 +157,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      solver[FLOW_SOL]->CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, nVar, good_i, good_j);
+      CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, 
+                             geometry->edge[iEdge]->GetNormal(), nVar, good_i, good_j);
 
       muscl = good_i || good_j;
 
@@ -320,6 +319,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
                                          const su2double     *primvar_j, 
                                          const su2double     *turbvar_i, 
                                          const su2double     *turbvar_j, 
+                                         const su2double     *normal, 
                                          const unsigned long nTurbVar,
                                          bool &good_i, 
                                          bool &good_j) {
@@ -331,13 +331,30 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
   good_i = good_i && (primvar_i[nDim+2] > 0.0);
   good_j = good_j && (primvar_j[nDim+2] > 0.0);
 
-  /*--- Positive turbulent variables ---*/
-
   if (!sa_neg) {
+
+    /*--- Positive turbulent variables ---*/
+
     for (auto iVar = 0; iVar < nTurbVar; iVar++) {
       good_i = good_i && (turbvar_i[iVar] >= 0.0);
       good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
+
+    /*--- Check if upwind flux exceeds solution, which  ---*/
+    /*--- can cause issues in regions of low turbulence ---*/
+    
+    su2double a_ij = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      a_ij += 0.5*(primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
+
+    const su2double a_i = 0.5*(a_ij+fabs(a_ij));
+    const su2double a_j = 0.5*(a_ij-fabs(a_ij));
+
+    const bool good_flux = (a_ij >= 0)? (a_i*primvar_i[nDim+2]*turbvar_i[0] >  nodes->GetSolution(iPoint,0))
+                                      : (a_j*primvar_j[nDim+2]*turbvar_j[0] < -nodes->GetSolution(jPoint,0));
+
+    good_i = good_i && good_flux;
+    good_j = good_j && good_flux;
   }
 }
 

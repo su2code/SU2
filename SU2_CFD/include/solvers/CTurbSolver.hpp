@@ -108,6 +108,7 @@ public:
                               const su2double *primvar_j, 
                               const su2double *turbvar_i, 
                               const su2double *turbvar_j,
+                              const su2double *normal,
                               const unsigned long nTurbVar,
                               bool &good_i, 
                               bool &good_j);
