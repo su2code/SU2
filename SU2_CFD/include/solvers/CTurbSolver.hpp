@@ -111,7 +111,9 @@ public:
                               const su2double *normal,
                               const unsigned long nTurbVar,
                               bool &good_i, 
-                              bool &good_j);
+                              bool &good_j,
+                              const unsigned long iPoint, 
+                              const unsigned long jPoint);
 
 private:
 

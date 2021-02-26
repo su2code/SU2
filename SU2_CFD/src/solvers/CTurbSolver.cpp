@@ -158,7 +158,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, 
-                             geometry->edge[iEdge]->GetNormal(), nVar, good_i, good_j);
+                             geometry->edge[iEdge]->GetNormal(), nVar, good_i, good_j, iPoint, jPoint);
 
       muscl = good_i || good_j;
 
@@ -322,7 +322,9 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
                                          const su2double     *normal, 
                                          const unsigned long nTurbVar,
                                          bool &good_i, 
-                                         bool &good_j) {
+                                         bool &good_j,
+                                         const unsigned long iPoint, 
+                                         const unsigned long jPoint) {
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sa_neg = (turbModel == SA_NEG);
 
@@ -342,7 +344,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
     /*--- Check if upwind flux exceeds solution, which  ---*/
     /*--- can cause issues in regions of low turbulence ---*/
-    
+
     su2double a_ij = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
       a_ij += 0.5*(primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
