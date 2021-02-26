@@ -43,7 +43,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
   nPrimVar          = nDim+9;
-  nPrimVarGrad      = nDim+4;
+  nPrimVarGrad      = nDim+3;//nDim+4;
   nSecondaryVar     = viscous? 8 : 2;
   nSecondaryVarGrad = 2;
 
