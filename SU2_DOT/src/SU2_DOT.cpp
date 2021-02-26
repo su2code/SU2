@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
   su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
 
   for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
-    /*--- Initialze to zero ---*/
+    /*--- Initialize to zero ---*/
     Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
   }
 
@@ -937,7 +937,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
 
-    /*--- Set the volume filename ---*/ // Note TobiKattmann: Why would I write volume output here as this should be the surface gradient only
+    /*--- Set the volume filename ---*/
 
     output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
 

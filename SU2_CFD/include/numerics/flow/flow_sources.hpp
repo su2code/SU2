@@ -41,9 +41,9 @@ protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
   su2double
-  Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
+  Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  Streamwise_Periodic_InletTemperature;   /*!< /brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 
   /*!
    * \brief Constructor of the class.

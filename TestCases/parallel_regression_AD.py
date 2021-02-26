@@ -323,7 +323,7 @@ def main():
     discadj_cht.tol       = 0.00001
     test_list.append(discadj_cht)
 
-    # 2D DA cht case 2 zones avg temp objective
+    # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
     da_sp_pinArray_cht_2d_dp_hf           = TestCase('da_sp_pinArray_cht_2d_dp_hf')
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"

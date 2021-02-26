@@ -7519,7 +7519,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
   /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
-  /*---         config container.                                                           ---*/
+  /*---         geometry container.                                                         ---*/
   /*-------------------------------------------------------------------------------------------*/
 
   for (int iRank = 0; iRank < size; iRank++) {
@@ -7533,7 +7533,6 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode[iRank*nDim + iDim];
     }
-    /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
   }
 
   /*--- Print the reference node to screen. ---*/

@@ -2257,7 +2257,7 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
 };
 
 /*!
- * \brief types of streamwise periodicity.
+ * \brief Types of streamwise periodicity.
  */
 enum ENUM_STREAMWISE_PERIODIC {
   NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */

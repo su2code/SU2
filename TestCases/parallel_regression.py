@@ -1254,17 +1254,17 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
-    # 2D CHT case with HF BC and
-    sp_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
-    sp_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
-    sp_pinArray_cht_2d_mf_hf.cfg_file  = "configMaster.cfg"
-    sp_pinArray_cht_2d_mf_hf.test_iter = 100
-    sp_pinArray_cht_2d_mf_hf.test_vals = [0.247022, -0.812199, -0.974877, -0.753315, 208.023676, 349.950000] #last 7 lines
-    sp_pinArray_cht_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
-    sp_pinArray_cht_2d_mf_hf.timeout   = 1600
-    sp_pinArray_cht_2d_mf_hf.tol       = 0.00001
-    sp_pinArray_cht_2d_mf_hf.multizone = True
-    test_list.append(sp_pinArray_cht_2d_mf_hf)
+    # 2D CHT case streamwise periodicity
+    sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
+    sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
+    sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247022, -0.812199, -0.974877, -0.753315, 208.023676, 349.950000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_cht_2d_dp_hf.timeout   = 1600
+    sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
+    sp_pinArray_cht_2d_dp_hf.multizone = True
+    test_list.append(sp_pinArray_cht_2d_dp_hf)
 
     # simple small 3D pin case massflow periodic with heatflux BC
     sp_pinArray_3d_cht_mf_hf_tp           = TestCase('sp_pinArray_3d_cht_mf_hf_tp')
@@ -1631,7 +1631,7 @@ def main():
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
 
-    # 2D FD case cht, pressure drop, heat obj function
+    # 2D FD streamwise periodic cht, avg temp obj func
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
     fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"

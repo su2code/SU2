@@ -996,8 +996,8 @@ private:
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
-  unsigned short Kind_Streamwise_Periodic;          /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
-  bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or oterwise outlet source term. */
+  unsigned short Kind_Streamwise_Periodic;          /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
+  bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
   su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
@@ -3095,7 +3095,7 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Outlet_TagBound(unsigned short val_marker) const { return Marker_Outlet[val_marker]; }
-  
+
   /*!
    * \brief Get the index of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
@@ -5179,7 +5179,7 @@ public:
   unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
 
   /*!
-   * \brief Get the output precision to be used in <ofstream>.precision(value).
+   * \brief Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output.
    * \return Output precision.
    */
   unsigned short GetOutput_Precision(void) const { return output_precision; }

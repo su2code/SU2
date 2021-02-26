@@ -29,7 +29,6 @@
 #include "../../../include/numerics/flow/flow_sources.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-
 CSourceBase_Flow::CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                                    CNumerics(val_nDim, val_nVar, config) {
   residual = new su2double [nVar]();
@@ -420,6 +419,7 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   /*--- Momentum contribution. Note that this form assumes we have
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
+
   for (iDim = 0; iDim < nDim; iDim++)
     residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
 
@@ -692,7 +692,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
 CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const CConfig *config) {
 
-  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  /* Value of prescribed pressure drop which results in an artificial body force vector. */
   const su2double delta_p = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
@@ -713,11 +713,10 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
-    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity
-          gradient is added. ---*/
+    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
 
-      /*--- Compute the scalar factor ---*/
+      /*--- Compute a scalar factor ---*/
       scalar_factor = Streamwise_Periodic_IntegratedHeatFlow / (Streamwise_Periodic_MassFlow * sqrt(norm2_translation) * Prandtl_Turb);
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
@@ -728,7 +727,6 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
   } // if energy
 
   return ResidualType<>(residual, jacobian, nullptr);
-
 }
 
 CSourceIncStreamwisePeriodic_Outlet::CSourceIncStreamwisePeriodic_Outlet(unsigned short val_nDim,
@@ -754,12 +752,11 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
 
   residual[nDim+1] -= abs(local_Massflow/Streamwise_Periodic_MassFlow) * factor;
 
-  /*--- Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual condtribution ---*/
+  /*--- Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual contribution ---*/
   const su2double delta_T = Streamwise_Periodic_InletTemperature - config->GetInc_Temperature_Init()/config->GetTemperature_Ref();
   residual[nDim+1] += 0.5 * abs(local_Massflow) * SpecificHeat_i * delta_T;
 
   return ResidualType<>(residual, jacobian, nullptr);
-
 }
 
 CSourceRadiation::CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :

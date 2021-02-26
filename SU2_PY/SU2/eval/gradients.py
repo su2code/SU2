@@ -767,7 +767,6 @@ def findiff( config, state=None ):
     else:
         step = 0.001 
 
-
     opt_names = []
     for i in range(config['NZONES']):
         for key in sorted(su2io.historyOutFields):  

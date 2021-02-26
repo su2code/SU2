@@ -107,7 +107,7 @@ class CPhysicalGeometry final : public CGeometry {
   vector<int> GlobalMarkerStorageDispl;
   vector<su2double> GlobalRoughness_Height;
 
-  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only. Size nDim.*/
+  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -468,12 +468,6 @@ public:
   void MatchPeriodic(CConfig *config, unsigned short val_periodic) override;
 
   /*!
-   * \brief For streamwise periodicity, find a unique reference node on the designated inlet.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FindUniqueNode_PeriodicBound(CConfig *config) final;
-
-  /*!
    * \brief Set boundary vertex structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
@@ -791,6 +785,12 @@ public:
    * \brief Set roughness values for markers in a global array.
    */
   void SetGlobalMarkerRoughness(const CConfig* config);
+
+  /*!
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindUniqueNode_PeriodicBound(CConfig *config) final;
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.
