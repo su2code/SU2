@@ -80,6 +80,9 @@ using su2enable_if = typename std::enable_if<condition,bool>::type;
 #define CODI_PRIMAL_INDEX_TAPE 0
 #endif
 
+#if defined(_OPENMP)
+using su2double = codi::RealReverseIndexParallel;
+#else
 #if CODI_INDEX_TAPE
 using su2double = codi::RealReverseIndex;
 #elif CODI_PRIMAL_TAPE
@@ -88,6 +91,7 @@ using su2double = codi::RealReversePrimal;
 using su2double = codi::RealReversePrimalIndex;
 #else
 using su2double = codi::RealReverse;
+#endif
 #endif
 
 #elif defined(CODI_FORWARD_TYPE) // forward mode AD
