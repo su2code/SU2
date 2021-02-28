@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 
 #include "../../include/grid_movement/CVolumetricMovement.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 CVolumetricMovement::CVolumetricMovement(void) : CGridMovement(), System(true) {
 
@@ -196,9 +197,15 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     else { UpdateGridCoord_Derivatives(geometry, config); }
     if (UpdateGeo) { UpdateDualGrid(geometry, config); }
 
-    /*--- Check for failed deformation (negative volumes). ---*/
+    if (!Derivative) {
+      /*--- Check for failed deformation (negative volumes). ---*/
 
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+      ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+
+      /*--- Calculate amount of nonconvex elements ---*/
+
+      ComputenNonconvexElements(geometry, Screen_Output);
+    }
 
     /*--- Set number of iterations in the mesh update. ---*/
 
@@ -211,7 +218,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     }
 
   }
-
 
 }
 
@@ -291,6 +297,127 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   if ((ElemCounter != 0) && (rank == MASTER_NODE) && (Screen_Output))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
+}
+
+void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Screen_Output) {
+  unsigned long iElem;
+  unsigned short iDim;
+  unsigned long nNonconvexElements = 0;
+
+  /*--- Load up each tetrahedron to check for convex properties. ---*/
+  if (nDim == 2){
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      su2double minCrossProduct = 1.e6, maxCrossProduct = -1.e6;
+
+      const auto nNodes = geometry->elem[iElem]->GetnNodes();
+
+      /*--- Get coordinates of corner points ---*/
+      unsigned short iNodes;
+      unsigned long PointCorners[8];
+      const su2double* CoordCorners[8];
+
+      for (iNodes = 0; iNodes < nNodes; iNodes++) {
+        PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
+        CoordCorners[iNodes] = geometry->nodes->GetCoord(PointCorners[iNodes]);
+      }
+
+      /*--- Determine whether element is convex ---*/
+      for (iNodes = 0; iNodes < nNodes; iNodes ++) {
+
+        /*--- Calculate minimum and maximum angle between edge vectors adjacent to each node ---*/
+        su2double edgeVector_i[3], edgeVector_j[3];
+
+        for (iDim = 0; iDim < nDim; iDim ++) {
+          if (iNodes == 0) {
+            edgeVector_i[iDim] = CoordCorners[nNodes-1][iDim] - CoordCorners[iNodes][iDim];
+          } else {
+            edgeVector_i[iDim] = CoordCorners[iNodes-1][iDim] - CoordCorners[iNodes][iDim];
+          }
+
+          if (iNodes == nNodes-1) {
+            edgeVector_j[iDim] = CoordCorners[0][iDim] - CoordCorners[iNodes][iDim];
+          } else {
+            edgeVector_j[iDim] = CoordCorners[iNodes+1][iDim] - CoordCorners[iNodes][iDim];
+          }
+        }
+
+        /*--- Calculate cross product of edge vectors ---*/
+        su2double crossProduct;
+        crossProduct = edgeVector_i[1]*edgeVector_j[0] - edgeVector_i[0]*edgeVector_j[1];
+
+        if (crossProduct < minCrossProduct) minCrossProduct = crossProduct;
+        if (crossProduct > maxCrossProduct) maxCrossProduct = crossProduct;
+      }
+
+      /*--- Element is nonconvex if cross product of at least one set of adjacent edges is negative ---*/
+      if (minCrossProduct < 0 && maxCrossProduct > 0){
+        nNonconvexElements++;
+      }
+    }
+  } else {
+
+    /*--- 3D elements ---*/
+    unsigned short iNode, iFace, nFaceNodes;
+
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++){
+      for (iFace = 0; iFace < geometry->elem[iElem]->GetnFaces(); iFace++){
+        nFaceNodes = geometry->elem[iElem]->GetnNodesFace(iFace);
+
+        su2double minCrossProductLength = 1.e6, maxCrossProductLength = -1.e6;
+        for (iNode = 0; iNode < nFaceNodes; iNode++) {
+          su2double crossProductLength = 0.0;
+
+          /*--- Get coords of node face_point_i and its adjacent nodes in the face ---*/
+          unsigned long face_point_i, face_point_j, face_point_k;
+
+          face_point_i = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode));
+
+          if (iNode == 0) {
+            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, nFaceNodes-1));
+            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode+1));
+          } else if (iNode == nFaceNodes-1) {
+            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode-1));
+            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, 0));
+          }
+
+          const auto Coords_i = geometry->nodes->GetCoord(face_point_i);
+          const auto Coords_j = geometry->nodes->GetCoord(face_point_j);
+          const auto Coords_k = geometry->nodes->GetCoord(face_point_k);
+
+          /*--- Get edge vectors from point k to i and point j to i ---*/
+          su2double edgeVector_i[3], edgeVector_j[3];
+          GeometryToolbox::Distance(nDim, Coords_k, Coords_i, edgeVector_i);
+          GeometryToolbox::Distance(nDim, Coords_j, Coords_i, edgeVector_j);
+
+          /*--- Calculate cross product of edge vectors and its length---*/
+          su2double crossProduct[3];
+          GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
+          crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
+
+          /*--- Check if length is minimum or maximum ---*/
+          if (crossProductLength < minCrossProductLength) {
+            minCrossProductLength = crossProductLength;
+          } else if (crossProductLength > maxCrossProductLength) {
+            maxCrossProductLength = crossProductLength;
+          }
+        }
+
+      /*--- If minimum cross product length is smaller than 0,
+      face (and therefore element) is not convex ---*/
+      if (minCrossProductLength < 0) {
+        nNonconvexElements++;
+        break;
+      }
+
+      }
+    }
+  }
+
+  unsigned long nNonconvexElements_Local = nNonconvexElements; nNonconvexElements = 0;
+  SU2_MPI::Allreduce(&nNonconvexElements_Local, &nNonconvexElements, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Set number of nonconvex elements in geometry ---*/
+  geometry->SetnNonconvexElements(nNonconvexElements);
 }
 
 
@@ -1515,8 +1642,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -1705,32 +1831,17 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, total_index;
-  su2double *Coord, *MinCoordValues, *MaxCoordValues, *Hold_GridFixed_Coord;
 
   if (config->GetHold_GridFixed()) {
 
-    MinCoordValues = new su2double [nDim];
-    MaxCoordValues = new su2double [nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-      MinCoordValues[iDim] = 0.0;
-      MaxCoordValues[iDim] = 0.0;
-    }
-
-    Hold_GridFixed_Coord = config->GetHold_GridFixed_Coord();
-
-    MinCoordValues[0] = Hold_GridFixed_Coord[0];
-    MinCoordValues[1] = Hold_GridFixed_Coord[1];
-    MinCoordValues[2] = Hold_GridFixed_Coord[2];
-    MaxCoordValues[0] = Hold_GridFixed_Coord[3];
-    MaxCoordValues[1] = Hold_GridFixed_Coord[4];
-    MaxCoordValues[2] = Hold_GridFixed_Coord[5];
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
 
     /*--- Set to zero displacements of all the points that are not going to be moved
      except the surfaces ---*/
 
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Coord = geometry->nodes->GetCoord(iPoint);
+      auto Coord = geometry->nodes->GetCoord(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) {
         if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
           total_index = iPoint*nDim + iDim;
@@ -1740,10 +1851,6 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
         }
       }
     }
-
-    delete [] MinCoordValues;
-    delete [] MaxCoordValues;
-
   }
 
   /*--- Don't move the volume grid outside the limits based

@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
-#include "../../../include/omp_structure.hpp"
+#include "../../../include/parallelization/omp_structure.hpp"
 
 CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) {
 

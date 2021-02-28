@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.7 "Blackbird"
+# \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -47,13 +47,12 @@ endif
 lib_sources = \
   ../src/fem/fem_cgns_elements.cpp \
   ../src/CConfig.cpp \
-  ../src/blas_structure.cpp \
+  ../src/linear_algebra/blas_structure.cpp \
   ../src/fem/fem_geometry_structure.cpp \
   ../src/fem/fem_integration_rules.cpp \
   ../src/fem/fem_standard_element.cpp \
   ../src/fem/fem_wall_distance.cpp \
   ../src/fem/fem_work_estimate_metis.cpp \
-  ../src/CMultiGridQueue.cpp \
   ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
   ../src/grid_movement/CGridMovement.cpp \
@@ -63,12 +62,13 @@ lib_sources = \
   ../src/grid_movement/CFreeFormDefBox.cpp \
   ../src/grid_movement/CVolumetricMovement.cpp \
   ../src/grid_movement/CSurfaceMovement.cpp \
-  ../src/mpi_structure.cpp \
+  ../include/parallelization/mpi_structure.cpp \
   ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \
   ../src/geometry/CPhysicalGeometry.cpp \
   ../src/geometry/CMultiGridGeometry.cpp \
+  ../src/geometry/CMultiGridQueue.cpp \
   ../src/geometry/CDummyGeometry.cpp \
   ../src/geometry/elements/CElement.cpp \
   ../src/geometry/elements/CTRIA1.cpp \
@@ -113,6 +113,7 @@ lib_sources = \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/C1DInterpolation.cpp \
   ../src/toolboxes/CSymmetricMatrix.cpp \
+  ../src/toolboxes/CSquareMatrixCM.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

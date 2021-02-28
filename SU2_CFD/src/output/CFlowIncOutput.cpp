@@ -2,7 +2,7 @@
  * \file output_flow_inc.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   turb_model = config->GetKind_Turb_Model();
   scalar_model = config->GetKind_Scalar_Model();
   heat = config->GetEnergy_Equation();
+
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -82,6 +83,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   /*--- Set the default convergence field --- */
 
   if (convFields.empty() ) convFields.emplace_back("RMS_PRESSURE");
+
 
 }
 
@@ -411,9 +413,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   /*--- Set the analyse surface history values --- */
-  
+
   SetAnalyzeSurface(solver, geometry, config, false);
-  
+
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
@@ -439,10 +441,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat) 
-    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
-  
-  switch(turb_model){
+  if (heat || weakly_coupled_heat)
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
+
+  switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
     AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
     AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
@@ -532,8 +534,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
-  
-  switch(turb_model){
+
+  switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
     AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
     AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation.");
@@ -556,7 +558,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("RES_Y_CO"             , "Residual_Y_CO"             , "RESIDUAL", "Residual of the Y_CO equation"             );
       AddVolumeOutput("RES_Y_NOX"            , "Residual_Y_NOx"            , "RESIDUAL", "Residual of the Y_NOx equation"            );
     break;
-
     case NO_SCALAR_MODEL:
       break;
   }
@@ -568,8 +569,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
   AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
-  
-  switch(turb_model){
+
+  switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
     AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy.");
     AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate.");
@@ -628,6 +629,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
   AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
+  // MPI-Rank
+  AddVolumeOutput("RANK", "Rank", "MPI", "Rank of the MPI-partition");
 }
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -636,8 +639,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Heat = nullptr;
   CVariable* Node_Turb = nullptr;
   CVariable* Node_Rad = nullptr;
-
   CVariable* Node_Scalar = NULL;
+
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
@@ -658,12 +661,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
-  if (nDim == 3){
+  if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 4));
-  } else {
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
-  }
+
+  if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   switch(config->GetKind_Turb_Model()){
@@ -842,6 +843,15 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT){
     SetVolumeOutputValue("TIMESTEP", iPoint, Node_Flow->GetDelta_Time(iPoint));
   }
+  // Mesh quality metrics
+  if (config->GetWrt_MeshQuality()) {
+    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
+  }
+
+  // MPI-Rank
+  SetVolumeOutputValue("RANK", iPoint, rank);
 }
 
 void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -859,13 +869,6 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 
     }
     SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
-  }
-
-  // Mesh quality metrics
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
 }

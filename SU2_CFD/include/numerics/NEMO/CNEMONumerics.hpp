@@ -2,7 +2,7 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,19 +43,21 @@ public:
   su2double a_j, P_j, h_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
+  su2double Gamma_i, Gamma_j;
 
   vector<su2double> hs;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
  
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
+  LAM_VISC_INDEX, EDDY_VISC_INDEX;
 
   CNEMOGas *fluidmodel;
 
@@ -63,6 +65,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of primitive grad. variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
@@ -107,7 +111,8 @@ public:
    * \param[in] val_eve - Virbational-Electronical Energy.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_diffusioncoeff - Disffusion Coefficient.
-   * \param[in] val_viscosity - Viscosity
+   * \param[in] val_lam_viscosity - Laminar Viscosity
+   * \param[in] val_eddy_viscosity - Eddy Viscosity
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    * \param[in] val_thermal_conductivity_ve - Thermal conductivity of Vibe-Elec modes.
    * \param[in] config - Definition of the particular problem.
@@ -117,7 +122,8 @@ public:
                           su2double *val_eve,
                           const su2double *val_normal,
                           su2double *val_diffusioncoeff,
-                          su2double val_viscosity,
+                          su2double val_lam_viscosity,
+                          su2double val_eddy_viscosity,
                           su2double val_therm_conductivity,
                           su2double val_therm_conductivity_ve,
                           const CConfig *config);
@@ -143,6 +149,7 @@ public:
                           su2double *val_Mean_Cvve,
                           su2double *val_diffusion_coeff,
                           su2double val_laminar_viscosity,
+                          su2double val_eddy_viscosity,
                           su2double val_thermal_conductivity,
                           su2double val_thermal_conductivity_ve,
                           su2double val_dist_ij, su2double *val_normal,
@@ -179,17 +186,50 @@ public:
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
   void GetPMatrix_inv(const su2double *U, const su2double *V, const su2double *val_dPdU,
-                     const su2double *val_normal, const su2double *l, const su2double *m,
-                     su2double **val_invp_tensor) const;
+                      const su2double *val_normal, const su2double *l, const su2double *m,
+                      su2double **val_invp_tensor) const;
 
+  
+  /*!
+   * \brief Set the pressure derivatives.
+   * \param[in] val_dPdU_i - pressure derivatives at i. 
+   * \param[in] val_dPdU_j - pressure derivatives at j.
+   */
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       final { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
-        
+   
+  /*!
+   * \brief Set the temperature derivatives.
+   * \param[in] val_dTdU_i - temperature derivatives at i. 
+   * \param[in] val_dTdU_j - temperature derivatives at j.
+   */      
   inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       final { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
   
+  /*!
+   * \brief Set the vib-el temperature derivatives.
+   * \param[in] val_dTvedU_i - t_ve derivatives at i. 
+   * \param[in] val_dTvedU_j - t_ve derivatives at j.
+   */
   inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) final { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
   
+  /*!
+   * \brief Set the vib-el energy.
+   * \param[in] val_Eve_i - vib-el energy at i. 
+   * \param[in] val_Eve_j - vib-el energy at j.
+   */
   inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          final {eve_i = val_Eve_i; eve_j = val_Eve_j; }
   
+  /*!
+   * \brief Set the Cvve.
+   * \param[in] val_Cvve_i - cvve at i. 
+   * \param[in] val_Cvve_j - cvve at j.
+   */
   inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       final {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
+
+  /*!
+   * \brief Set the ratio of specific heats.
+   * \param[in] val_Gamma_i - Gamma at i.
+   * \param[in] val_Gamma_j - Gamma at j.
+   */
+  inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
 
 };

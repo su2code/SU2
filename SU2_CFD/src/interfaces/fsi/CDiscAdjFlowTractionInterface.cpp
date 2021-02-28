@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,8 @@
  */
 
 #include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,

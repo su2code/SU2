@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,13 +27,15 @@
  */
 
 #include "../../../include/numerics/NEMO/NEMO_diffusion.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad,
-                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                          config) {
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar,
+                                                              val_nPrimVar, val_nPrimVarGrad,
+                                                              config) {
 
   /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
   PrimVar_i    = new su2double [nPrimVar];
@@ -89,10 +91,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   unsigned short iSpecies, iVar, iDim;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -101,12 +100,14 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
-                                Laminar_Viscosity_j);
-  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
-                                   Thermal_Conductivity_j);
-  Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
-                                      Thermal_Conductivity_ve_j);
+  Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
+                                          Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity              = 0.5*(Eddy_Viscosity_i +
+                                          Eddy_Viscosity_j);
+  Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
+                                          Thermal_Conductivity_j);
+  Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
+                                          Thermal_Conductivity_ve_j);
 
   /*--- Mean gradient approximation ---*/
   // Mass fraction
@@ -144,7 +145,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
 
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
-                     Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+                     Mean_Diffusion_Coeff, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
   
@@ -235,10 +236,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   su2double dist_ij_2;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -281,7 +279,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Mean_Eve[iSpecies] = 0.5*(eve_i[iSpecies] + eve_j[iSpecies]);
+    Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
@@ -291,11 +289,12 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                                           Diffusion_Coeff_j[iSpecies]);
   Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
                                           Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity              = 0.5*(Eddy_Viscosity_i +
+                                          Eddy_Viscosity_j);
   Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
                                           Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
                                           Thermal_Conductivity_ve_j);
-
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -312,6 +311,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
                      Normal, Mean_Diffusion_Coeff,
                      Mean_Laminar_Viscosity,
+                     Mean_Eddy_Viscosity,
                      Mean_Thermal_Conductivity,
                      Mean_Thermal_Conductivity_ve,
                      config);

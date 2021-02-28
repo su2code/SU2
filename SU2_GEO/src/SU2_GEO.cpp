@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -512,7 +512,7 @@ int main(int argc, char *argv[]) {
       if (tabTecplot) ObjFunc_file << "VARIABLES = //" << endl;
       
       if (config_container[ZONE_0]->GetGeo_Description() == FUSELAGE) {
-       	ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
+        ObjFunc_file << "\"FUSELAGE_VOLUME\",\"FUSELAGE_WETTED_AREA\",\"FUSELAGE_MIN_WIDTH\",\"FUSELAGE_MAX_WIDTH\",\"FUSELAGE_MIN_WATERLINE_WIDTH\",\"FUSELAGE_MAX_WATERLINE_WIDTH\",\"FUSELAGE_MIN_HEIGHT\",\"FUSELAGE_MAX_HEIGHT\",\"FUSELAGE_MAX_CURVATURE\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_AREA\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_LENGTH\",";
         for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"STATION"<< (iPlane+1) << "_WIDTH\",";
@@ -610,7 +610,7 @@ int main(int argc, char *argv[]) {
     }
     
     for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
-			   
+
       /*--- Free Form deformation based ---*/
       
       if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
@@ -1223,7 +1223,7 @@ int main(int argc, char *argv[]) {
       Gradient_file.close();
     
   }
-		
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
   

@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,10 +76,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-//  BC Transition Model variables
-  su2double vmag, rey, re_theta, re_theta_t, re_v;
-  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
-
   // Set the boolean here depending on whether the point is closest to a rough wall or not.
   roughwall = (roughness_i > 0.0);
 
@@ -99,16 +95,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
   Jacobian_i[0]   = 0.0;
 
   gamma_BC = 0.0;
-  vmag = 0.0;
-  tu   = config->GetTurbulenceIntensity_FreeStream();
-  rey  = config->GetReynolds();
-
-  if (nDim==2) {
-    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
-  }
-  else {
-    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
-  }
 
   /*--- Evaluate Omega ---*/
 
@@ -151,23 +137,23 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
     if (transition) {
 
-//    BC model constants
-      chi_1 = 0.002;
-      chi_2 = 5.0;
+      /*--- BC model constants (2020 revision). ---*/
+      const su2double chi_1 = 0.002;
+      const su2double chi_2 = 50.0;
 
-      nu_t = (TurbVar_i[0]*fv1); //S-A variable
-      nu_cr = chi_2/rey;
-      nu_BC = (nu_t)/(vmag*dist_i);
+      su2double tu = config->GetTurbulenceIntensity_FreeStream();
 
-      re_v   = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
-      re_theta = re_v/2.193;
-      re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
+      su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
+
+      su2double re_v = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
+      su2double re_theta = re_v/2.193;
+      su2double re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
       //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
 
-      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
-      term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
-      term_exponential = (term1 + term2);
-      gamma_BC = 1.0 - exp(-term_exponential);
+      su2double term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.));
+      su2double term_exponential = (term1 + term2);
+      su2double gamma_BC = 1.0 - exp(-term_exponential);
 
       Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
     }
@@ -919,65 +905,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
-{
-    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-  if (nDim == 3){
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
-    S_ij[2][2] = PrimVar_Grad_i[3][2];
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
-    S_ij[0][2] = 0.5 * (PrimVar_Grad_i[1][2] + PrimVar_Grad_i[3][0]);
-    S_ij[1][2] = 0.5 * (PrimVar_Grad_i[2][2] + PrimVar_Grad_i[3][1]);
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-  }
-  else {
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
-    S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
-    S_ij[0][2] = 0.0;
-    S_ij[1][2] = 0.0;
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-
-  }
-}
-
 void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  unsigned short iDim, jDim;
-  su2double **S_ij = new su2double* [3];
-  su2double divVel = 0;
-  su2double TWO3 = 2.0/3.0;
-
-
-
-  for (iDim = 0; iDim < 3; iDim++){
-    S_ij[iDim] = new su2double [3];
-  }
-
-  GetMeanRateOfStrainMatrix(S_ij);
-
-    /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
-
-  for (iDim = 0; iDim < 3; iDim++){
-    divVel += S_ij[iDim][iDim];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - Eddy_Viscosity_i / Density_i * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+  ComputeStressTensor(nDim, MeanReynoldsStress, PrimVar_Grad_i+1, Eddy_Viscosity_i, Density_i, turb_ke, true);
+  for(unsigned short iDim=0; iDim<3; iDim++){
+    for(unsigned short jDim=0; jDim<3; jDim++){
+      MeanReynoldsStress[iDim][jDim] /= (-Density_i);
     }
   }
-
-  for (iDim = 0; iDim < 3; iDim++)
-    delete [] S_ij[iDim];
-  delete [] S_ij;
 }
 
 void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){

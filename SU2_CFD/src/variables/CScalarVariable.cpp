@@ -67,8 +67,8 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
   
   if (config->GetAxisymmetric() && config->GetViscous()) {
-    AuxVar.resize(nPoint);
-    Grad_AuxVar.resize(nPoint,nDim);
+    AuxVar.resize(nPoint,nVar)=su2double(0.0); //nijso: nvar is correct? do we use this?
+    Grad_AuxVar.resize(nPoint,nVar,nDim);
   }
 
 }

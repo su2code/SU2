@@ -3,7 +3,7 @@
  * \brief Delaration of numerics classes for centered schemes,
  *        the implementation is in centered.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -253,6 +253,8 @@ private:
   energy,                          /*!< \brief computation with the energy equation. */
   flamelet_thermo_system;
 
+  su2double fix_factor;            /*!< \brief Fix factor for Jacobians. */
+
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -314,6 +316,8 @@ private:
   energy,                /*!< \brief computation with the energy equation. */
   flamelet_thermo_system;
 
+
+  su2double fix_factor;  /*!< \brief Fix factor for Jacobians. */
 
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */

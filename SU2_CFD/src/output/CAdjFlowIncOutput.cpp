@@ -2,7 +2,7 @@
  * \file output_adj_flow_inc.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -114,7 +114,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity z-component.
   AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", " Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   if (!config->GetFrozen_Visc_Disc() || !config->GetFrozen_Visc_Cont()){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -479,12 +479,12 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjHeat   = nullptr;
-  CVariable* Node_AdjTurb   = nullptr;
-  CVariable* Node_AdjRad    = nullptr;
+  CVariable* Node_AdjHeat = nullptr;
+  CVariable* Node_AdjTurb = nullptr;
+  CVariable* Node_AdjRad  = nullptr;
   CVariable* Node_AdjScalar = nullptr;
-  CPoint*    Node_Geo       = geometry->nodes;
-  
+  CPoint*    Node_Geo     = geometry->nodes;
+
   if (config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }

@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/roe.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
                                    bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
@@ -110,10 +111,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -517,10 +515,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 
@@ -752,10 +747,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-  Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
 

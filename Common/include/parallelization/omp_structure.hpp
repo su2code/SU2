@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "basic_types/datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)

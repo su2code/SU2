@@ -2,7 +2,7 @@
  * \file CAdjFlowIncOutput.hpp
  * \brief Headers of the adjoint incompressible flow output.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,6 @@ private:
   unsigned short rad_model;  /*!< \brief The kind of radiation model */
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
-
   unsigned short scalar_model; /*!< \brief The kind of scalar model*/ 
 public:
 

@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/integration/CSingleGridIntegration.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CSingleGridIntegration::CSingleGridIntegration() : CIntegration() { }

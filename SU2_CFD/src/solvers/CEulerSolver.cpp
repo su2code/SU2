@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2431,7 +2431,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
       Normal = geometry->edges->GetNormal(iEdge);
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -2487,7 +2487,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         if (!geometry->nodes->GetDomain(iPoint)) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         /*--- Mean Values ---*/
 
@@ -3040,13 +3040,17 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool implicit         = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const bool viscous          = config->GetViscous();
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
   const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                                (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool rans             = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -3108,6 +3112,34 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   if (axisymmetric) {
 
+    /*--- For viscous problems, we need an additional gradient. ---*/
+    if (viscous) {
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double xVelocity       = nodes->GetVelocity(iPoint,0);
+        su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
+
+        if (yCoord > EPS){
+          su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
+          nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
+          nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
+          nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
+        }
+      }
+
+      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+    }
+
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3120,6 +3152,27 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+      /*--- Set primitive variables for viscous terms and/or generalised source ---*/
+      if (!ideal_gas || viscous) numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
+
+      /*--- Set secondary variables for generalised source ---*/
+      if (!ideal_gas) numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+      if (viscous) {
+
+        /*--- Set gradient of primitive variables ---*/
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+
+        /*--- Set gradient of auxillary variables ---*/
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+
+        /*--- Set turbulence kinetic energy ---*/
+        if (rans){
+          CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+          numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
+        }
+      }
 
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -3265,9 +3318,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
       auto Normal = geometry->edges->GetNormal(iEdge);
-      su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
-      Area = sqrt(Area);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -3305,10 +3356,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Area += pow(Normal[iDim],2);
-      Area = sqrt(Area);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -3863,8 +3911,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Cp = Gas_Constant*Gamma / (Gamma-1.0);
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
-  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
@@ -3929,9 +3977,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Density = V_inlet[nDim+2];
             SoundSpeed = sqrt(Gamma*Pressure/Density);
 
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
+            Velocity2 = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Area += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_inlet[iDim+1];
               Velocity2 += Velocity[iDim]*Velocity[iDim];
               Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
@@ -3943,7 +3990,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             if (Vn < 0.0) { ReverseFlow = true; }
 
             Vel_Infty = sqrt (Vel_Infty2);
-            Area = sqrt (Area);
+            Area = GeometryToolbox::Norm(nDim, Vector);
             Mach = sqrt(Velocity2)/SoundSpeed;
             TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
             TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
@@ -3999,9 +4046,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Density = V_outlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
 
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            Velocity2 = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Area += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_outlet[iDim+1];
               Velocity2 += Velocity[iDim]*Velocity[iDim];
               Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
@@ -4009,7 +4055,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             }
 
             Vel_Infty = sqrt (Vel_Infty2);
-            Area = sqrt (Area);
+            Area = GeometryToolbox::Norm(nDim, Vector);
             Mach = sqrt(Velocity2)/SoundSpeed;
             TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
             TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
@@ -5073,9 +5119,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                 for (iDim = 0; iDim < nDim; iDim++) { Vector[iDim] = -Vector[iDim]; }
               }
 
-              Area = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) { Area += Vector[iDim]*Vector[iDim]; }
-              Area = sqrt (Area);
+              Area = GeometryToolbox::Norm(nDim, Vector);
 
               /*--- Use the inlet state to compute the Pressure and Temperature jumps ---*/
 
@@ -5741,10 +5785,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
          last modified 06-12-2005. First, compute the unit normal at the
          boundary nodes. ---*/
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -6009,9 +6050,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -7906,10 +7945,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -8200,10 +8236,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -8704,11 +8737,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -8892,11 +8921,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -9287,10 +9312,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 

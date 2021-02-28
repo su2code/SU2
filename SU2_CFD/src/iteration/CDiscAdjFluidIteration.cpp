@@ -2,7 +2,7 @@
  * \file CDiscAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,15 +34,15 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
                                         CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   StartTime = SU2_MPI::Wtime();
 
-  int Direct_Iter;
   unsigned long iPoint;
+  unsigned short TimeIter = config[val_iZone]->GetTimeIter();
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
-  unsigned short TimeIter =  config[val_iZone]->GetTimeIter();
-  bool dual_time_1st      = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd      = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool dual_time          = (dual_time_1st || dual_time_2nd);
-  bool heat               =  config[val_iZone]->GetWeakly_Coupled_Heat();
-  bool grid_IsMoving      =  config[val_iZone]->GetGrid_Movement();
+  int Direct_Iter;
+  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
+  bool grid_IsMoving = config[val_iZone]->GetGrid_Movement();
   bool scalar             = (config[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
   //  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
@@ -390,8 +390,9 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
                                      CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                      CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
                                      CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc =  config[iZone]->GetFrozen_Visc_Disc();
-  bool heat        =  config[iZone]->GetWeakly_Coupled_Heat();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
   bool scalar      = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
@@ -420,8 +421,8 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                                unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc        =  config[iZone]->GetFrozen_Visc_Disc();
-  bool heat               =  config[iZone]->GetWeakly_Coupled_Heat();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
   bool scalar             = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
@@ -454,8 +455,9 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  bool frozen_visc =  config[iZone]->GetFrozen_Visc_Disc();
-  bool heat        =  config[iZone]->GetWeakly_Coupled_Heat();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
   bool scalar      = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
   if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
@@ -501,7 +503,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  bool frozen_visc =  config[iZone]->GetFrozen_Visc_Disc();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+
   bool scalar      = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
 
@@ -531,8 +534,9 @@ void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geo
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              unsigned short kind_recording) {
-  bool frozen_visc =  config[iZone]->GetFrozen_Visc_Disc();
-  bool heat        =  config[iZone]->GetWeakly_Coupled_Heat();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
   bool scalar      = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
 
@@ -586,8 +590,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                             COutput* output, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc        =  config[iZone]->GetFrozen_Visc_Disc();
-  bool heat               =  config[iZone]->GetWeakly_Coupled_Heat();
+  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
   bool interface_boundary = (config[iZone]->GetnMarker_Fluid_Load() > 0);
   bool scalar             = (config[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 

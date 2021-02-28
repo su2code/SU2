@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../include/solvers/CDiscAdjSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(void) : CSolver () {
 
@@ -743,7 +744,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -809,7 +810,6 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
-        Area = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           /*--- retrieve the gradient calculated with AD -- */
           SensDim = nodes->GetSensitivity(iPoint,iDim);
@@ -817,10 +817,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
           /*--- calculate scalar product for projection onto the normal vector ---*/
           Prod += Normal[iDim]*SensDim;
 
-          Area += Normal[iDim]*Normal[iDim];
         }
 
-        Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
+
 
         /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
 
@@ -947,8 +947,9 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   }
 
   if (KindDirect_Solver== RUNTIME_SCALAR_SYS) {
-    //nijso: daniel, are you sure it is skipvars = 2*nDim+2 and not +=2*nDim+2"<<endl;
+    // x,y,u,v,p,t 
     skipVars = 2*nDim+2 ;
+    
     if (turbulent) {
       if (turb_SA) skipVars += 1;
       else if (turb_SST) skipVars += 2;

@@ -362,9 +362,10 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
   
   
   if ((!Restart) && ExtIter == 0) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE){
       cout << "Initializing passive scalar (initial condition)." << endl;
       cout << "initialization = " << nVar << " " << config->GetScalar_Init(0)<<endl;
+    }  
     su2double *scalar_init    = new su2double[nVar];
     CFluidModel *fluid_model_local;
 

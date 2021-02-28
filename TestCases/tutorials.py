@@ -3,11 +3,11 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.7 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,21 +29,21 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase    
+from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
-    
+
     ######################################
     ### RUN TUTORIAL CASES             ###
     ######################################
-     
+
     ### Compressible Flow
-     
+
     # Inviscid Bump
     tutorial_inv_bump            = TestCase('inviscid_bump_tutorial')
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
@@ -55,7 +55,7 @@ def main():
     tutorial_inv_bump.tol        = 0.00001
     tutorial_inv_bump.no_restart = True
     test_list.append(tutorial_inv_bump)
-    
+
     # Inviscid Wedge
     tutorial_inv_wedge            = TestCase('inviscid_wedge_tutorial')
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
@@ -67,7 +67,7 @@ def main():
     tutorial_inv_wedge.tol        = 0.00001
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
-    
+
     # Inviscid ONERA M6
     tutorial_inv_onera            = TestCase('inviscid_onera_tutorial')
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
@@ -79,7 +79,7 @@ def main():
     tutorial_inv_onera.tol        = 0.00001
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
-    
+
     # Laminar Cylinder
     tutorial_lam_cylinder            = TestCase('laminar_cylinder_tutorial')
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
@@ -103,7 +103,7 @@ def main():
     tutorial_lam_flatplate.tol        = 0.00001
     tutorial_lam_flatplate.no_restart = True
     test_list.append(tutorial_lam_flatplate)
-    
+
     # Turbulent Flat Plate
     tutorial_turb_flatplate            = TestCase('turbulent_flatplate_tutorial')
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_Flat_Plate"
@@ -115,13 +115,13 @@ def main():
     tutorial_turb_flatplate.tol        = 0.00001
     tutorial_turb_flatplate.no_restart = True
     test_list.append(tutorial_turb_flatplate)
-    
+
     # Transitional FlatPlate
     tutorial_trans_flatplate            = TestCase('transitional_flatplate_tutorial')
     tutorial_trans_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate"
     tutorial_trans_flatplate.cfg_file   = "transitional_BC_model_ConfigFile.cfg"
     tutorial_trans_flatplate.test_iter  = 0
-    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330906, 0.000000, 0.023952] #last 4 columns
+    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_trans_flatplate.timeout    = 1600
     tutorial_trans_flatplate.tol        = 0.00001
@@ -150,7 +150,7 @@ def main():
     tutorial_nicfd_nozzle.tol       = 0.00001
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
-    
+
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
@@ -164,8 +164,19 @@ def main():
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
+    # PROPELLER VARIBLE LOAD
+    propeller_var_load           = TestCase('propeller_variable_load')
+    propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
+    propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
+    propeller_var_load.test_iter = 20
+    propeller_var_load.test_vals = [-1.837780, -4.535082, -0.000315, 0.171887]
+    propeller_var_load.su2_exec  = "mpirun -np 2 SU2_CFD"
+    propeller_var_load.timeout   = 3200
+    propeller_var_load.tol       = 0.00001
+    test_list.append(propeller_var_load)
+
     ### Design
-    
+
     # Inviscid NACA 0012 Design
     tutorial_design_inv_naca0012            = TestCase('design_inv_naca0012')
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
@@ -202,10 +213,22 @@ def main():
     tutorial_design_multiobj.no_restart = True
     test_list.append(tutorial_design_multiobj)
 
+    # Multi Objective Design
+    testcase_su2_nastran            = TestCase('py_su2_nastran')
+    testcase_su2_nastran.cfg_dir    = "TestCases/py_su2_nastran"
+    testcase_su2_nastran.cfg_file   = "fsi.cfg"
+    testcase_su2_nastran.test_iter  = 4
+    testcase_su2_nastran.test_vals  = [0.006316, -0.114296, -2.522122, 0.000000] #last 4 columns
+    testcase_su2_nastran.su2_exec   = "mpirun -np 2 python3 install/bin/fsi_computation.py --parallel -f"
+    testcase_su2_nastran.timeout    = 1600
+    testcase_su2_nastran.tol        = 0.00001
+    testcase_su2_nastran.no_restart = True
+    test_list.append(testcase_su2_nastran)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
-    
+
     pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary

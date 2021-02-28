@@ -2,7 +2,7 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,11 +31,18 @@
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
+
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   source_energy.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
+
+  if (config->GetAxisymmetric()) {
+    nAuxVar = 1;
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
+  }
 }
 
 bool CIncNSVariable::SetVorticity_StrainMag() {
@@ -115,7 +122,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Use the fluid model to compute the new value of density. ---*/
   
   FluidModel->SetTDState_T(Temperature,scalar);
-  
+
   Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
   Temperature             = Solution(iPoint,nDim+1);
   check_temp              = SetTemperature(iPoint, Temperature);

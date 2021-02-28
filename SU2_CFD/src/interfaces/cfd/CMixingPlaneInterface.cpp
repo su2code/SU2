@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,8 @@
  */
 
 #include "../../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst){

@@ -2,7 +2,7 @@
  * \file CNSVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/variables/CNSVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,

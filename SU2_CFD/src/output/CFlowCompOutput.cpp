@@ -2,7 +2,7 @@
  * \file output_flow_comp.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -464,6 +464,9 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
   AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
+  // MPI-Rank
+  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -471,14 +474,14 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow   = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb   = nullptr;
+  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  CVariable* Node_Turb = nullptr;
   CVariable* Node_Scalar = nullptr;
-  
+
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
-  
+
   if (config->GetKind_Scalar_Model() != NONE){
     Node_Scalar = solver[SCALAR_SOL]->GetNodes();
   }
@@ -640,6 +643,9 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
+  // MPI-Rank
+  SetVolumeOutputValue("RANK", iPoint, rank);
+
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
   }
@@ -659,10 +665,10 @@ void CFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSol
 }
 
 void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
-  
-  CSolver* flow_solver   = solver[FLOW_SOL];
-  CSolver* turb_solver   = solver[TURB_SOL];
-  CSolver* mesh_solver   = solver[MESH_SOL];
+
+  CSolver* flow_solver = solver[FLOW_SOL];
+  CSolver* turb_solver = solver[TURB_SOL];
+  CSolver* mesh_solver = solver[MESH_SOL];
   CSolver* scalar_solver = solver[SCALAR_SOL];
 
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
@@ -729,7 +735,8 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
     }
-    
+
+
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));

@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
 #include "vector_expressions.hpp"
 
@@ -101,7 +101,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector() = default;
+  CSysVector() {}
 
   /*!
    * \brief Destructor

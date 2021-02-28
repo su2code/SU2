@@ -2,7 +2,7 @@
  * \file lax.hpp
  * \brief Declaration of numerics classes for Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,12 +69,7 @@ public:
 
   /*!
    * \brief Compute the flow residual using a Lax method.
-   * \param[out] val_resconv - Pointer to the convective residual.
-   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
-                         CConfig *config);
+  ResidualType<> ComputeResidual(const CConfig *config) final;
 };

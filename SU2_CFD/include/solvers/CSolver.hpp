@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -52,7 +52,7 @@
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
-#include "../../../Common/include/blas_structure.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
@@ -599,13 +599,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Add External to Solution vector.
@@ -1735,10 +1728,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Source_Residual(CGeometry     *geometry,
-                                      CSolver      **solver_container,
-                                      CNumerics    **numerics_container,
-                                      CConfig       *config,
+  inline virtual void Source_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics **numerics_container,
+                                      CConfig *config,
                                       unsigned short iMesh) { }
 
   /*!
@@ -3828,10 +3821,10 @@ public:
   /*!
    * \brief A virtual member. Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
-  inline virtual void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){ }
+  inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
 
   /*!
    * \brief A virtual member. Extract and set the derivative of objective function.

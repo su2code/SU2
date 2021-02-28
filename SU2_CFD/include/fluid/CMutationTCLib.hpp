@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,14 +38,19 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-  string GasModel;
+  vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
+  es,                                     /*!< \brief Species energies. */
+  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
+  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+
+  su2double Tref;                         /*!< \brief Reference temperature. */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CMutationTCLib(const CConfig* config);
+  CMutationTCLib(const CConfig* config, unsigned short val_nDim);
 
   /*!
    * \brief Destructor of the class.
@@ -66,34 +71,34 @@ public:
   vector<su2double>& GetSpeciesCvTraRot() final;
 
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
-  vector<su2double>& GetSpeciesCvVibEle() final;
+  vector<su2double>& ComputeSpeciesCvVibEle() final;
     
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
-  vector<su2double>& GetMixtureEnergies() final;
+  vector<su2double>& ComputeMixtureEnergies() final;
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
-  vector<su2double>& GetSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
   
   /*!
-   * \brief Get species net production rates.
+   * \brief Compute species net production rates.
    */
-  vector<su2double>& GetNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates() final;
 
   /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute vibrational energy source term.
    */
-  su2double GetEveSourceTerm() final;
+  su2double ComputeEveSourceTerm() final;
   
   /*!
-   * \brief Get species enthalpies.
+   * \brief Compute species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) final;
+  vector<su2double>& ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -105,30 +110,29 @@ public:
    */
   su2double GetViscosity() final;
 
-  
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
   vector<su2double>& GetThermalConductivities() final;
   
   /*!
-   * \brief Get translational and vibrational temperatures vector.
+   * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
    
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Get species molar mass.
    */
-  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU) final;
+  vector<su2double>& GetSpeciesMolarMass() final;
 
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Get reference temperature.
    */
-  void GetdTdU(su2double *V, su2double *val_dTdU) final;
+  vector<su2double>& GetRefTemperature() final;
 
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Get species formation enthalpy.
    */
-  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU) final;
+  vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };

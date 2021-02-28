@@ -2,7 +2,7 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #include "../../include/output/CFlowOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
@@ -118,7 +119,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 }
 
 void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConfig *config, bool output){
-  
+
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
@@ -131,16 +132,18 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   unsigned short nDim         = geometry->GetnDim();
   unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible              = config->GetKind_Regime() == COMPRESSIBLE;
-  bool incompressible            = config->GetKind_Regime() == INCOMPRESSIBLE;
-  bool flamelet_model            = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
-  bool energy                    = config->GetEnergy_Equation();
-  bool axisymmetric              = config->GetAxisymmetric();
+  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  bool energy         = config->GetEnergy_Equation();
+
+
+  bool axisymmetric               = config->GetAxisymmetric();
   unsigned short n_scalars       = config->GetNScalars();
-  unsigned short nMarker_Analyze = config->GetnMarker_Analyze();
-  
-  CSolver* flow_solver   = solver[FLOW_SOL];
+  unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
+
   CSolver* scalar_solver = solver[SCALAR_SOL];
+  CSolver* flow_solver = solver[FLOW_SOL];
   
   su2double  *Vector                    = new su2double[nDim];
   su2double  *Surface_MassFlow          = new su2double[nMarker];
@@ -527,10 +530,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
 
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
-    
+
     /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
     https://www.sciencedirect.com/science/article/pii/S0142727X16301412 ------*/
-    
+
     if (Area != 0.0) {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
@@ -736,7 +739,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
       if (flamelet_model) {
         su2double CO = config->GetSurface_CO(iMarker_Analyze);
         cout << setw(20) << "Y_CO (-): " << setw(15) << CO;
-
         cout << endl;
       }
 */      
@@ -762,8 +764,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   //for (int i=0;i<nMarker_Analyze;i++)
   //  delete [] Surface_Scalar_Local[i];
   //delete [] Surface_Scalar_Local;
-
-
   delete [] Surface_CO_Local;
   delete [] Surface_NOx_Local;
   
@@ -784,7 +784,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   //for(int i=0;i<nMarker_Analyze;i++)
   //  delete [] Surface_Scalar_Total[i];
   //delete [] Surface_Scalar_Total;
-
   delete [] Surface_CO_Total;
   delete [] Surface_NOx_Total;
 
@@ -839,33 +838,33 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Custom objective
   AddHistoryOutput("CUSTOM_OBJFUNC", "Custom_ObjFunc", ScreenOutputFormat::FIXED, "AERO_COEFF", "Custom objective function on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  /// END_GROUP  
-  
+  /// END_GROUP
+
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }
   /// DESCRIPTION: Drag coefficient
-  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",         ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift coefficient
-  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",         ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient
-  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis
-  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis
-  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis
-  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in x direction
-  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in y direction
-  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Force in z direction
-  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",        ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff",       ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF_SURF", Marker_Monitoring, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// DESCRIPTION: Angle of attack
@@ -891,7 +890,7 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
     SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
   SetHistoryOutputValue("CUSTOM_OBJFUNC", flow_solver->GetTotal_Custom_ObjFunc());
-  
+
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
@@ -933,36 +932,27 @@ void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
 
-  unsigned short iMarker, icommas, Boundary, iDim;
+  unsigned short iMarker, icommas, Boundary;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
-  char cstr[200];
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
-  surfCp_filename = "TargetCp";
-
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
-
-  strcpy (cstr, surfCp_filename.c_str());
+  surfCp_filename = config->GetUnsteady_FileName("TargetCp", (int)curTimeIter, ".dat");
 
   /*--- Read the surface pressure file ---*/
 
   string::size_type position;
 
-  Surface_file.open(cstr, ios::in);
+  Surface_file.open(surfCp_filename);
 
   if (!(Surface_file.fail())) {
 
     nPointLocal = geometry->GetnPoint();
-#ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nPointGlobal = nPointLocal;
-#endif
 
     Point2Vertex = new unsigned long[nPointGlobal][2];
     PointInDomain = new bool[nPointGlobal];
@@ -1041,10 +1031,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
           Cp = solver->GetCPressure(iMarker, iVertex);
           CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
 
-          Area = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
         }
@@ -1156,29 +1143,35 @@ void CFlowOutput::WriteMetaData(CConfig *config){
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
-  ofstream Breakdown_file;
 
-  bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool unsteady           = (config->GetTime_Marching() != NO);
-  bool viscous            = config->GetViscous();
-  bool dynamic_grid       = config->GetDynamic_Grid();
-  bool gravity            = config->GetGravityForce();
-  bool turbulent          = config->GetKind_Solver() == RANS;
-  bool fixed_cl           = config->GetFixed_CL_Mode();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  unsigned short Kind_Turb_Model = config->GetKind_Turb_Model();
-  unsigned short Ref_NonDim = config->GetRef_NonDim();
+  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool unsteady        = config->GetTime_Domain();
+  const bool viscous         = config->GetViscous();
+  const bool dynamic_grid    = config->GetDynamic_Grid();
+  const bool gravity         = config->GetGravityForce();
+  const bool turbulent       = config->GetKind_Solver() == RANS;
+  const bool fixed_cl        = config->GetFixed_CL_Mode();
+  const auto Kind_Solver     = config->GetKind_Solver();
+  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
+  const auto Ref_NonDim      = config->GetRef_NonDim();
 
-  unsigned short nDim =  geometry->GetnDim();
+  const auto nDim =  geometry->GetnDim();
+
+  auto fileName = config->GetBreakdown_FileName();
+  if (unsteady) {
+    const auto lastindex = fileName.find_last_of(".");
+    const auto ext = fileName.substr(lastindex, fileName.size());
+    fileName = fileName.substr(0, lastindex);
+    fileName = config->GetFilename(fileName, ext, curTimeIter);
+  }
 
   /*--- Output the mean flow solution using only the master node ---*/
 
   if ( rank == MASTER_NODE) {
 
-    cout << endl << "Writing the forces breakdown file ("<< config->GetBreakdown_FileName() << ")." << endl;
+    cout << endl << "Writing the forces breakdown file ("<< fileName << ")." << endl;
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
 
@@ -1213,11 +1206,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
     nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
     *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
-
-    /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-     the two lines below that use the dt variable. ---*/
-    //time_t now = time(0);
-    //string dt = ctime(&now); dt[24] = '.';
 
     /*--- Allocate memory for the coefficients being monitored ---*/
 
@@ -1494,17 +1482,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     }
 
-
     /*--- Write file name with extension ---*/
 
-    string filename = config->GetBreakdown_FileName();
-    strcpy (cstr, filename.data());
-
-    Breakdown_file.open(cstr, ios::out);
+    ofstream Breakdown_file;
+    Breakdown_file.open(fileName);
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.7 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.8 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -2970,8 +2955,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMy_Mnt;
     delete [] Surface_CMz_Mnt;
 
-    Breakdown_file.close();
-
   }
 
 }
@@ -2980,16 +2963,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-         (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
-        ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+2 == config->GetnTime_Iter())))){
+        ((Iter == 0) ||
+         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
+         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
+         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
       return true;
     }
   } else {
