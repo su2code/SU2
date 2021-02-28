@@ -104,6 +104,11 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+
+  # add opdi dependency
+  if get_option('enable-autodiff')
+    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+  endif
 endif
 
 if get_option('enable-tecio')
