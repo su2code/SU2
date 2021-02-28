@@ -115,28 +115,6 @@ def CFD(config):
     
     return
 
-def MSH(config):
-    """ run SU2_MSH
-        partitions set by config.NUMBER_PART
-        currently forced to run serially
-    """    
-    konfig = copy.deepcopy(config)
-    
-    tempname = 'config_MSH.cfg'
-    konfig.dump(tempname)
-    
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    processes = min([1,processes])    
-    
-    the_Command = 'SU2_MSH%s %s' % (quote, tempname)
-    the_Command = build_command( the_Command , processes )
-    run_command( the_Command )
-    
-    #os.remove(tempname)
-    
-    return
-
 def DEF(config):
     """ run SU2_DEF
         partitions set by config.NUMBER_PART

@@ -34,9 +34,6 @@ CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned sho
                                            CConfig *config): CNEMONumerics (val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config){
 
-
-  unsigned short iVar;
-
   /*--- Define useful constants ---*/
   Kp       = 0.25;
   sigma    = 1.0;
@@ -44,31 +41,10 @@ CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned sho
   /*--- Allocate data structures ---*/
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
-  dmLP   = new su2double [nVar];
-  dmRM   = new su2double [nVar];
-  dpLP   = new su2double [nVar];
-  dpRM   = new su2double [nVar];
-  daL    = new su2double [nVar];
-  daR    = new su2double [nVar];
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
-
-  /*--- Allocate arrays ---*/
-  Diff_U      = new su2double [nVar];
-  RoeU        = new su2double[nVar];
-  RoeV        = new su2double[nPrimVar];
-  RoedPdU     = new su2double [nVar];
-  RoeEve      = new su2double [nSpecies];
-  Lambda      = new su2double [nVar];
-  Epsilon     = new su2double [nVar];
-  P_Tensor    = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
-  }
 
   Flux   = new su2double[nVar];
 }
@@ -77,29 +53,11 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
 
   delete [] FcL;
   delete [] FcR;
-  delete [] dmLP;
-  delete [] dmRM;
-  delete [] dpLP;
-  delete [] dpRM;
   delete [] rhos_i;
   delete [] rhos_j;
   delete [] u_i;
   delete [] u_j;
-  unsigned short iVar;
 
-  delete [] Diff_U;
-  delete [] RoeU;
-  delete [] RoeV;
-  delete [] RoedPdU;
-  delete [] RoeEve;
-  delete [] Lambda;
-  delete [] Epsilon;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] P_Tensor[iVar];
-    delete [] invP_Tensor[iVar];
-  }
-  delete [] P_Tensor;
-  delete [] invP_Tensor;
   delete [] Flux;
 }
 
@@ -107,7 +65,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
 
   unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j,
-  e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
+  e_ve_i, e_ve_j, sq_veli, sq_velj;
 
   /*--- Face area ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -141,10 +99,10 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  e_ve_i = 0; e_ve_j = 0;
+  e_ve_i = 0.0; e_ve_j = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
-    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
+    e_ve_i += (rhos_i[iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (rhos_j[iSpecies]*eve_j[iSpecies])/rho_j;
   }
 
   /*--- Projected velocities ---*/

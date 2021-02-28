@@ -495,6 +495,7 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
   }
 
   delete nodes;
+  delete edgeNumerics;
 }
 
 template <class V, ENUM_REGIME R>
@@ -1287,7 +1288,12 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry, const CConfig *config) {
+void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
+                                                const CSolver* const* solvers,
+                                                const CConfig *config) {
+  if (!edgeNumerics) {
+    InstantiateEdgeNumerics(solvers, config);
+  }
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
@@ -2021,13 +2027,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0, dTn, dTven,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
-            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
-  su2double **Grad_PrimVar = nullptr, dTn, dTven;
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2165,12 +2169,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
       Density = nodes->GetDensity(iPoint);
 
-      if (nemo) {
-        thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
-        thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-      }
-
       Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++) {
         UnitNormal[iDim] = Normal[iDim] / Area;
@@ -2241,6 +2239,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
 
       } else {
+
+        const auto thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
+        const auto thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+        const auto Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
 
         dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {

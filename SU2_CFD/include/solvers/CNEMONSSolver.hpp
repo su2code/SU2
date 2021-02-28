@@ -38,7 +38,8 @@
  * \brief Main class for defining the NEMO Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 6.1
+ * \version 7.0.8
+ *
  */
 class CNEMONSSolver final : public CNEMOEulerSolver {
 private:

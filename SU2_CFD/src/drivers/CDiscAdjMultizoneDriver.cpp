@@ -564,11 +564,20 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  if (rank == MASTER_NODE) {
-    if(kind_recording != NONE && config_container[record_zone]->GetWrt_AD_Statistics()) {
-      AD::PrintStatistics();
+  if (kind_recording != NONE && driver_config->GetWrt_AD_Statistics()) {
+    if (rank == MASTER_NODE) AD::PrintStatistics();
+#ifdef CODI_REVERSE_TYPE
+    if (size > SINGLE_NODE) {
+      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      if (rank == MASTER_NODE) {
+        cout << "MPI\n";
+        cout << "-------------------------------------\n";
+        cout << "  Total memory used      :  " << totMem << " MB\n";
+        cout << "-------------------------------------\n" << endl;
+      }
     }
-    cout << "-------------------------------------------------------------------------\n" << endl;
+#endif
   }
 
   AD::StopRecording();
