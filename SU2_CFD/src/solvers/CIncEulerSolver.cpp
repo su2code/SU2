@@ -1016,9 +1016,6 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
-
 unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
@@ -1044,207 +1041,56 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 }
 
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                unsigned short iMesh, unsigned long Iteration) {
+                                   unsigned short iMesh, unsigned long Iteration) {
 
-  su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
-  Mean_BetaInc2, Lambda, Local_Delta_Time,
-  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
-  const su2double* Normal;
-
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
-
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
-
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetMax_Lambda_Inv(iPoint,0.0);
-
-  /*--- Loop interior edges ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Point identification, Normal vector and area ---*/
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    Normal = geometry->edges->GetNormal(iEdge);
-
-    Area = GeometryToolbox::Norm(nDim, Normal);
-
-    /*--- Mean Values ---*/
-
-    Mean_ProjVel    = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (nodes->GetBetaInc2(iPoint)      + nodes->GetBetaInc2(jPoint));
-    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-    /*--- Adjustment for grid movement ---*/
-
-    if (dynamic_grid) {
-      su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      ProjVel_i = 0.0; ProjVel_j = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-      }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+  /*--- Define an object to compute the speed of sound. ---*/
+  struct SoundSpeed {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
     }
 
-    /*--- Inviscid contribution ---*/
-
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
-
-  }
-
-  /*--- Loop boundary edges ---*/
-
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-
-      Mean_ProjVel    = nodes->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = nodes->GetBetaInc2(iPoint);
-      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-      /*--- Adjustment for grid movement ---*/
-
-      if (dynamic_grid) {
-        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
-      }
-
-      /*--- Inviscid contribution ---*/
-
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) {
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-      }
-
-    }
-    }
-  }
-
-  /*--- Local time-stepping: each element uses their own speed for steady state
-   simulations or for pseudo time steps in a dual time simulation. ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    Vol = geometry->nodes->GetVolume(iPoint);
-
-    if (Vol != 0.0) {
-      Local_Delta_Time  = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time    = min(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
-      if (Local_Delta_Time > config->GetMax_DeltaTime())
-        Local_Delta_Time = config->GetMax_DeltaTime();
-      nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-    }
-    else {
-      nodes->SetDelta_Time(iPoint,0.0);
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return sqrt(nodes.GetBetaInc2(iPoint));
     }
 
-  }
+  } soundSpeed;
 
-  /*--- Compute the max and the min dt (in parallel) ---*/
+  /*--- Define an object to compute the viscous eigenvalue. ---*/
+  struct LambdaVisc {
+    const bool energy;
 
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Min_Delta_Time = rbuf_time;
+    LambdaVisc(bool e) : energy(e) {}
 
-    sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Max_Delta_Time = rbuf_time;
-#endif
-  }
-
-  /*--- For time-accurate simulations use the minimum delta time of the whole mesh (global) ---*/
-
-  if (time_stepping) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_Time = rbuf_time;
-#endif
-    /*--- If the unsteady CFL is set to zero, it uses the defined
-     unsteady time step, otherwise it computes the time step based
-     on the unsteady CFL ---*/
-
-    if (config->GetUnst_CFL() == 0.0) {
-      Global_Delta_Time = config->GetDelta_UnstTime();
-    }
-    config->SetDelta_UnstTimeND(Global_Delta_Time);
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-
-      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-
-      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-      Min_Delta_Time = Global_Delta_Time;
-      Max_Delta_Time = Global_Delta_Time;
-
-    }
-  }
-
-  /*--- Recompute the unsteady time step for the dual time strategy
-   if the unsteady CFL is diferent from 0 ---*/
-
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-
-    Global_Delta_UnstTimeND = 1e30;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+    FORCEINLINE su2double lambda(su2double lamVisc, su2double eddyVisc, su2double rho, su2double k, su2double cv) const {
+      su2double Lambda_1 = (4.0/3.0)*(lamVisc + eddyVisc);
+      su2double Lambda_2 = 0.0;
+      if (energy) Lambda_2 = k / cv;
+      return (Lambda_1 + Lambda_2) / rho;
     }
 
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-  }
-
-  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-
-  if (dual_time)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-      }
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      su2double thermalCond = 0.5*(nodes.GetThermalConductivity(iPoint) + nodes.GetThermalConductivity(jPoint));
+      su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
+      su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
+      su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
+      su2double cv = 0.5*(nodes.GetSpecificHeatCv(iPoint) + nodes.GetSpecificHeatCv(jPoint));
+      return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
     }
+
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      su2double thermalCond = nodes.GetThermalConductivity(iPoint);
+      su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
+      su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
+      su2double density = nodes.GetDensity(iPoint);
+      su2double cv = nodes.GetSpecificHeatCv(iPoint);
+      return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
+    }
+
+  } lambdaVisc(config->GetEnergy_Equation());
+
+  /*--- Now instantiate the generic implementation with the two functors above. ---*/
+
+  SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
 
 }
 
@@ -1780,115 +1626,27 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config) {
 
-  su2double Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
-  Mean_BetaInc2, Lambda, ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
-  const su2double* Normal;
-
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
-
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    nodes->SetLambda(iPoint,0.0);
-  }
-
-  /*--- Loop interior edges ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Point identification, Normal vector and area ---*/
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    Normal = geometry->edges->GetNormal(iEdge);
-    Area = GeometryToolbox::Norm(nDim, Normal);
-
-    /*--- Mean Values ---*/
-
-    Mean_ProjVel    = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (nodes->GetBetaInc2(iPoint)      + nodes->GetBetaInc2(jPoint));
-    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-    /*--- Adjustment for grid movement ---*/
-
-    if (dynamic_grid) {
-      GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      ProjVel_i = 0.0; ProjVel_j =0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-      }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+  /*--- Define an object to compute the speed of sound. ---*/
+  struct SoundSpeed {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
     }
 
-    /*--- Inviscid contribution ---*/
-
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddLambda(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddLambda(jPoint,Lambda);
-
-  }
-
-  /*--- Loop boundary edges ---*/
-
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-
-      Mean_ProjVel    = nodes->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = nodes->GetBetaInc2(iPoint);
-      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-      /*--- Adjustment for grid movement ---*/
-
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
-      }
-
-      /*--- Inviscid contribution ---*/
-
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) {
-        nodes->AddLambda(iPoint,Lambda);
-      }
-
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return sqrt(nodes.GetBetaInc2(iPoint));
     }
-    }
-  }
 
-  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+  } soundSpeed;
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-  }
+  /*--- Instantiate generic implementation. ---*/
 
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, MAX_EIGENVALUE);
-  CompleteComms(geometry, config, MAX_EIGENVALUE);
+  SetMax_Eigenvalue_impl(soundSpeed, geometry, config);
 
 }
 
-void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
 
   unsigned long iPoint, jPoint, iEdge;
   su2double *Diff;
@@ -1947,190 +1705,62 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
 }
 
-void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config) {
 
-  unsigned long iEdge, iPoint, jPoint;
-  su2double Pressure_i = 0.0, Pressure_j = 0.0;
-  bool boundary_i, boundary_j;
-
-  /*--- Reset variables to store the undivided pressure ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
-  }
-
-  /*--- Evaluate the pressure sensor ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    /*--- Get the pressure, or density for incompressible solvers ---*/
-
-    Pressure_i = nodes->GetDensity(iPoint);
-    Pressure_j = nodes->GetDensity(jPoint);
-
-    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-    /*--- Both points inside the domain, or both on the boundary ---*/
-
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-
-      if (geometry->nodes->GetDomain(iPoint)) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-
-      if (geometry->nodes->GetDomain(jPoint)) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-
+  /*--- Define an object for the sensor variable, density. ---*/
+  struct SensVar {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return nodes.GetDensity(iPoint);
     }
+  } sensVar;
 
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->nodes->GetDomain(iPoint)) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->nodes->GetDomain(jPoint)) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-
-  }
-
-  /*--- Correct the sensor values across any periodic boundaries. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-  }
-
-  /*--- Set pressure switch for each point ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetSensor(iPoint,fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
-
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  /*--- Instantiate generic implementation. ---*/
+  SetCentered_Dissipation_Sensor_impl(sensVar, geometry, config);
 
 }
 
-void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                        CConfig *config, unsigned short iRKStep) {
+template<ENUM_TIME_INT IntegrationType>
+FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                                     CConfig *config, unsigned short iRKStep) {
+  struct Precond {
+    CIncEulerSolver* solver;
+    const su2double* const* matrix;
+    unsigned short nVar;
 
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
+    Precond(CIncEulerSolver* s, const su2double* const* m, unsigned short n) :
+      solver(s), matrix(m), nVar(n) {}
 
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetContinuous_Adjoint();
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Update the solution ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
-    Res_TruncError = nodes->GetResTruncError(iPoint);
-    Residual = LinSysRes.GetBlock(iPoint);
-
-    if (!adjoint) {
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        Res = 0.0;
-        for (jVar = 0; jVar < nVar; jVar ++ )
-          Res += Preconditioner[iVar][jVar]*(Residual[jVar] + Res_TruncError[jVar]);
-        nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
+    FORCEINLINE void compute(const CConfig* config, unsigned long iPoint) {
+      /// TODO: This is not thread-safe, this function needs to return by value.
+      solver->SetPreconditioner(config, iPoint);
     }
-  }
 
-  /*--- MPI solution ---*/
+    FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) {
+      su2double resPrec = 0.0;
+      for (unsigned short jVar = 0; jVar < nVar; ++jVar)
+        resPrec += matrix[iVar][jVar] * (res[jVar] + resTrunc[jVar]);
+      return resPrec;
+    }
+  } precond(this, Preconditioner, nVar);
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  Explicit_Iteration_impl<IntegrationType>(precond, geometry, solver_container, config, iRKStep);
+}
 
-  /*--- Compute the root mean square residual ---*/
+void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                           CConfig *config, unsigned short iRKStep) {
 
-  SetResidual_RMS(geometry, config);
+  Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
+}
 
-  /*--- For verification cases, compute the global error metrics. ---*/
+void CIncEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                             CConfig *config, unsigned short iRKStep) {
 
-  ComputeVerificationError(geometry, config);
-
+  Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
-
-  bool adjoint = config->GetContinuous_Adjoint();
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Update the solution ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
-
-
-    if (!adjoint) {
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        Res = 0.0;
-        for (jVar = 0; jVar < nVar; jVar ++ )
-          Res += Preconditioner[iVar][jVar]*(local_Residual[jVar] + local_Res_TruncError[jVar]);
-        nodes->AddSolution(iPoint,iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
-    }
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-  /*--- For verification cases, compute the global error metrics. ---*/
-
-  ComputeVerificationError(geometry, config);
-
+  Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -2322,7 +1952,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
+void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint) {
 
   unsigned short iDim, jDim;
 

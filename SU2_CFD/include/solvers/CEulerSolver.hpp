@@ -116,9 +116,6 @@ protected:
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
-  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
-  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
-
   /*--- Turbomachinery Solver Variables ---*/
 
   su2double ***AverageFlux = nullptr,
@@ -159,12 +156,6 @@ protected:
                      ***CkOutflow2 = nullptr;
 
   /*--- End of Turbomachinery Solver Variables ---*/
-
-  /*!
-   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
-   */
-  template<ENUM_TIME_INT IntegrationType>
-  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -239,7 +230,7 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+  void SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the undivided laplacian for the solution.
@@ -460,7 +451,6 @@ public:
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
                          su2double delta, su2double** preconditioner) const;
-  using CSolver::SetPreconditioner; /*--- Silence warning. ---*/
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
