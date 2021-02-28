@@ -56,6 +56,10 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv)
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   omp_set_num_threads(num_threads);
 
   /*--- MPI initialization, and buffer setting ---*/
@@ -172,6 +176,9 @@ int main(int argc, char *argv[]) {
 
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 

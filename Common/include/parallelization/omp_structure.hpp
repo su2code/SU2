@@ -51,6 +51,13 @@
 #define HAVE_OMP
 #include <omp.h>
 
+#if defined(CODI_REVERSE_TYPE)
+#define HAVE_OPDI
+#include "opdi/backend/ompt/omptBackend.hpp"
+#include "codi/externals/codiOpdiTool.hpp"
+#include "opdi.hpp"
+#endif
+
 /*--- The generic start of OpenMP constructs. ---*/
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
@@ -104,6 +111,11 @@ inline void omp_unset_lock(omp_lock_t*){}
 inline void omp_destroy_lock(omp_lock_t*){}
 
 #endif // end OpenMP detection
+
+/*--- Initialization and finalization ---*/
+
+void omp_initialize();
+void omp_finalize();
 
 /*--- Detect SIMD support (version 4+, after Jul 2013). ---*/
 #ifdef _OPENMP
