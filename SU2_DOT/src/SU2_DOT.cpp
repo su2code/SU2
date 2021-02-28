@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
   }
 
   ofstream Gradient_file;
-  Gradient_file.precision(config_container[ZONE_0]->GetOutput_Precision());
+  Gradient_file.precision(config->OptionIsSet("OUTPUT_PRECISION") ? config->GetOutput_Precision() : 6);
 
   /*--- For multizone computations the gradient contributions are summed up and written into one file. ---*/
   for (iZone = 0; iZone < nZone; iZone++){

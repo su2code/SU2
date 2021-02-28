@@ -114,8 +114,12 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   Delta_Time.resize(nPoint) = su2double(0.0);
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
-  Streamwise_Periodic_RecoveredPressure.resize(nPoint)    = su2double(0.0);
-  Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
+
+  if (config->GetKind_Streamwise_Periodic() != NONE) {
+    Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);
+    if (config->GetStreamwise_Periodic_Temperature())
+      Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
+  }
 
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);

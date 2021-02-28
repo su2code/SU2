@@ -790,7 +790,7 @@ public:
    * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
    * \param[in] config - Definition of the particular problem.
    */
-  void FindUniqueNode_PeriodicBound(CConfig *config) final;
+  void FindUniqueNode_PeriodicBound(const CConfig *config) final;
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.

@@ -1528,7 +1528,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }// for iPoint
 
     if(!streamwise_periodic_temperature && energy) {
-      CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+      CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
       second_numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow,
                                                      Streamwise_Periodic_InletTemperature);
 
@@ -1539,6 +1539,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {
 
+          SU2_OMP_FOR_STAT(omp_chunk_size)
           for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2904,7 +2905,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
           // One could add a CVariable method to return a pointer to the first Vel element to directly plug into GeomToolbox
           su2double Velocity[MAXNDIM] = {0.0};
-          for (auto iDim = 0; iDim < nDim; iDim++) { Velocity[iDim] = nodes->GetVelocity(iPoint, iDim); }
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) { Velocity[iDim] = nodes->GetVelocity(iPoint, iDim); }
           /*--- m_dot = dot_prod(n*v) * A * rho, with n beeing unit normal. ---*/
           MassFlow_Local += GeometryToolbox::DotProduct(nDim, AreaNormal, Velocity) * nodes->GetDensity(iPoint);
 
@@ -2982,8 +2983,9 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
       if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
 
-        /*--- Identify the boundary by string name ---*/
-        auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
+        /*--- Identify the boundary by string name and retrive heatflux from config ---*/
+        const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
+        const auto Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -2995,7 +2997,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
           auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
-          HeatFlow_Local += FaceArea * (-1.0) * config->GetWall_HeatFlux(Marker_StringTag)/config->GetHeat_Flux_Ref();;
+          HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
         } // loop Vertices
       } // loop Heatflux marker
     } // loop AllMarker

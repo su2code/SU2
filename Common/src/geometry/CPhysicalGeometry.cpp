@@ -7458,7 +7458,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   delete [] Buffer_Recv_Marker;
 }
 
-void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
+void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
@@ -7466,7 +7466,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
   /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
   /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
   /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
-  /*--- streamwise coordiante vector is perpendicular to that |--->|, the choice of the     ---*/
+  /*--- streamwise coordinate vector is perpendicular to that |--->|, the choice of the     ---*/
   /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
   /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
   /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/

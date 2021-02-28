@@ -62,7 +62,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-  const bool energy = config->GetEnergy_Equation();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -99,42 +98,49 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
-  if (config->GetKind_Streamwise_Periodic() != NONE) {
+  if (config->GetKind_Streamwise_Periodic() != NONE)
+    Compute_Streamwise_Periodic_Recovered_Values(config, geometry, iMesh);
+}
 
-    /*--- Define and initialize helping variables ---*/
-    su2double dot_product, Pressure_Recovered, Temperature_Recovered;
+void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
+                                                                const unsigned short iMesh) {
 
-    const su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
+  const bool energy = (config->GetEnergy_Equation() && config->GetStreamwise_Periodic_Temperature());
+  const auto InnerIter = config->GetInnerIter();
 
-    /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
-    const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
+  const su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
 
-    /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
-    const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
+  /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
+  const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
-    /*--- Compute recoverd pressure and temperature for all points ---*/
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+  /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
+  const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
 
-      /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
-      dot_product = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
+  /*--- Compute recoverd pressure and temperature for all points ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
-      Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
-      nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
+    /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
+    su2double dot_product = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
 
-      /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/
-      if (energy && InnerIter > 0) {
-        Temperature_Recovered  = nodes->GetSolution(iPoint, nDim+1);
-        Temperature_Recovered += Streamwise_Periodic_IntegratedHeatFlow / (Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
-        nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
-      }
+    /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
+    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - delta_p / norm2_translation * dot_product;
+    nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
+
+    /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/
+    if (energy && InnerIter > 0) {
+      su2double Temperature_Recovered = nodes->GetTemperature(iPoint);
+      Temperature_Recovered += Streamwise_Periodic_IntegratedHeatFlow / (Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
+      nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
     }
+  } // for iPoint
 
-    /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    GetStreamwise_Periodic_Properties(geometry, config, iMesh);
-  } // if streamwise periodic  
+  /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
+  SU2_OMP_MASTER
+  GetStreamwise_Periodic_Properties(geometry, config, iMesh);
+  SU2_OMP_BARRIER
 }
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
@@ -265,20 +271,20 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
 
       /*--- With streamwise periodic flow and heatflux walls an additional term is introduced in the boundary formulation ---*/
-        if (streamwise_periodic && streamwise_periodic_temperature) {
+      if (streamwise_periodic && streamwise_periodic_temperature) {
 
-          Cp = nodes->GetSpecificHeatCp(iPoint);
-          thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+        Cp = nodes->GetSpecificHeatCp(iPoint);
+        thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
-          /*--- Scalar factor of the residual contribution ---*/
-          const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-          scalar_factor = Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (Streamwise_Periodic_MassFlow * Cp * norm2_translation);
+        /*--- Scalar factor of the residual contribution ---*/
+        const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
+        scalar_factor = Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (Streamwise_Periodic_MassFlow * Cp * norm2_translation);
 
-          /*--- Dot product ---*/
-          dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
+        /*--- Dot product ---*/
+        dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
-          LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
-        } // if streamwise_periodic
+        LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
+      } // if streamwise_periodic
     }
     else { // ISOTHERMAL
 

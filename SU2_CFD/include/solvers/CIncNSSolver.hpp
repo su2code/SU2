@@ -65,6 +65,15 @@ class CIncNSSolver final : public CIncEulerSolver {
   void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                         CNumerics *numerics, CConfig *config) override;
 
+  /*!
+   * \brief Compute recovered pressure/temperature for streamwise periodic flow and store in CVariable.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
+                                                    const unsigned short iMesh);
+
 public:
   /*!
    * \brief Constructor of the class.
