@@ -879,6 +879,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry,
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   bool turbulent = ((config->GetKind_Solver() == RANS) ||
+                    (config->GetKind_Solver() == INC_RANS) ||
+                    (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
   
   unsigned short turbSkip = 0;

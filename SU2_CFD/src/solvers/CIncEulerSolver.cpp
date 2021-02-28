@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2245,7 +2245,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 }
 
-void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
+void CIncEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
 
   Total_ComboObj = EvaluateCommonObjFunc(*config);
 
