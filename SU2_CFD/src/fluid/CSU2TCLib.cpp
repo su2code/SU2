@@ -1248,7 +1248,7 @@ void CSU2TCLib::ThermalConductivitiesD(){
 
   
   ThermalConductivities[0] = Mu*Cptr/Pr_lam;
-  ThermalConductivities[1] = Mu*Cpve/Pr_lam;
+  ThermalConductivities[1] = 0; //  todo check me Mu*Cpve/Pr_lam;
 }
 
 
