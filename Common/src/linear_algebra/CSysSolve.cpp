@@ -831,6 +831,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
 
+    SU2_OMP_BARRIER
+
     AD::StopRecording();
 #endif
   }
@@ -924,16 +926,26 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     AD::StartRecording();
 
+    SU2_OMP_BARRIER
+
     AD::SetExtFuncOut(&LinSysSol[0], (int)LinSysSol.GetLocSize());
 
+    SU2_OMP_BARRIER
+
 #ifdef CODI_REVERSE_TYPE
-    AD::FuncHelper->addUserData(&LinSysRes);
-    AD::FuncHelper->addUserData(&LinSysSol);
-    AD::FuncHelper->addUserData(&Jacobian);
-    AD::FuncHelper->addUserData(geometry);
-    AD::FuncHelper->addUserData(config);
-    AD::FuncHelper->addUserData(this);
+    SU2_OMP_MASTER
+    {
+      AD::FuncHelper->addUserData(&LinSysRes);
+      AD::FuncHelper->addUserData(&LinSysSol);
+      AD::FuncHelper->addUserData(&Jacobian);
+      AD::FuncHelper->addUserData(geometry);
+      AD::FuncHelper->addUserData(config);
+      AD::FuncHelper->addUserData(this);
+    }
+    SU2_OMP_BARRIER
+
     AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
+    SU2_OMP_BARRIER
 #endif
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
@@ -953,7 +965,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         break;
     }
 
+    SU2_OMP_BARRIER
+
     AD::EndExtFunc();
+
+    SU2_OMP_BARRIER
   }
 
   return IterLinSol;
@@ -1055,7 +1071,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  SU2_OMP_MASTER
   Iterations = IterLinSol;
+
   return IterLinSol;
 
 }

@@ -477,7 +477,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
   const auto size = nnz*nVar*nEqn;
-  const auto chunk = roundUpDiv(size,omp_get_max_threads());
+  const auto chunk = roundUpDiv(size,omp_get_num_threads());
   const auto begin = chunk * omp_get_thread_num();
   const auto mySize = min(chunk, size-begin) * sizeof(ScalarType);
   memset(&matrix[begin], 0, mySize);
@@ -633,8 +633,6 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
                                                            CGeometry *geometry, const CConfig *config) const {
 
   /// TODO: The transpose product requires a different thread-parallel strategy.
-  SU2_OMP_MASTER
-  {
 
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
@@ -647,8 +645,13 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
   }
 #endif
+  SU2_OMP_BARRIER
 
-  prod = ScalarType(0.0); // set all entries of prod to zero
+  prod = ScalarType(0.0); // set all entries of prod to zero, note that this is designed to run in parallel
+  SU2_OMP_BARRIER // wait until it is done and make the memory view consistent
+
+  SU2_OMP_MASTER
+  {
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
     auto vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
     for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
