@@ -1588,8 +1588,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       const su2double a_ij = fabs(Mean_ProjVel);
       for (auto iVar = 0; iVar < nVar; iVar++)
-        Flux[iVar] += (Mean_ProjVel >= 0)?  a_ij*nodes->GetSolution(iPoint,iVar)
-                                         : -a_ij*nodes->GetSolution(jPoint,iVar);
+        Flux[iVar] += (Mean_ProjVel >= 0)? su2double( a_ij*nodes->GetSolution(iPoint,iVar))
+                                         : su2double(-a_ij*nodes->GetSolution(jPoint,iVar));
 
       /*--- Viscous contribution ---*/
 
