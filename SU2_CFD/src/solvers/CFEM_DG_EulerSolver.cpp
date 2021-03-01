@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,9 @@
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/fluid/CIdealGas.hpp"
+#include "../../include/fluid/CVanDerWaalsGas.hpp"
+#include "../../include/fluid/CPengRobinson.hpp"
 
 #define SIZE_ARR_NORM 8
 
@@ -35,20 +38,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Basic array initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
@@ -61,7 +64,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Total_CEff = 0.0;
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
-  blasFunctions = NULL;
+  blasFunctions = nullptr;
 
 }
 
@@ -69,20 +72,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
   /*--- Basic array initialization ---*/
 
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
-  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
-  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr;  CEff_Inv = nullptr;
+  CMx_Inv = nullptr; CMy_Inv = nullptr; CMz_Inv = nullptr;
+  CFx_Inv = nullptr; CFy_Inv = nullptr; CFz_Inv = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr; Surface_CFy_Inv = nullptr; Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr; Surface_CMy_Inv = nullptr; Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
-  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr; Surface_CFy = nullptr; Surface_CFz = nullptr;
+  Surface_CMx = nullptr; Surface_CMy = nullptr; Surface_CMz = nullptr;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -107,26 +110,26 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Total_CEff = 0.0;
 
   /*--- Initialize the pointer for performing the BLAS functionalities. ---*/
-  blasFunctions = NULL;
+  blasFunctions = nullptr;
 
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   /*--- Array initialization ---*/
-  FluidModel = NULL;
+  FluidModel = nullptr;
 
-  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL; CEff_Inv = NULL;
-  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
-  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
+  CD_Inv = nullptr; CL_Inv = nullptr; CSF_Inv = nullptr; CEff_Inv = nullptr;
+  CMx_Inv = nullptr;   CMy_Inv = nullptr;   CMz_Inv = nullptr;
+  CFx_Inv = nullptr;   CFy_Inv = nullptr;   CFz_Inv = nullptr;
 
-  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
+  Surface_CL_Inv = nullptr; Surface_CD_Inv = nullptr; Surface_CSF_Inv = nullptr; Surface_CEff_Inv = nullptr;
+  Surface_CFx_Inv = nullptr;   Surface_CFy_Inv = nullptr;   Surface_CFz_Inv = nullptr;
+  Surface_CMx_Inv = nullptr;   Surface_CMy_Inv = nullptr;   Surface_CMz_Inv = nullptr;
 
-  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
-  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
+  Surface_CL = nullptr; Surface_CD = nullptr; Surface_CSF = nullptr; Surface_CEff = nullptr;
+  Surface_CFx = nullptr;   Surface_CFy = nullptr;   Surface_CFz = nullptr;
+  Surface_CMx = nullptr;   Surface_CMy = nullptr;   Surface_CMz = nullptr;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -387,7 +390,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nDOFsGlobal = nDOFsLocOwned;
 #endif
@@ -730,40 +733,40 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
-  if(FluidModel    != NULL) delete FluidModel;
-  if(blasFunctions != NULL) delete blasFunctions;
+  delete FluidModel;
+  delete blasFunctions;
 
   /*--- Array deallocation ---*/
-  if (CD_Inv != NULL)           delete [] CD_Inv;
-  if (CL_Inv != NULL)           delete [] CL_Inv;
-  if (CSF_Inv != NULL)          delete [] CSF_Inv;
-  if (CMx_Inv != NULL)          delete [] CMx_Inv;
-  if (CMy_Inv != NULL)          delete [] CMy_Inv;
-  if (CMz_Inv != NULL)          delete [] CMz_Inv;
-  if (CFx_Inv != NULL)          delete [] CFx_Inv;
-  if (CFy_Inv != NULL)          delete [] CFy_Inv;
-  if (CFz_Inv != NULL)          delete [] CFz_Inv;
-  if (Surface_CL_Inv != NULL)   delete [] Surface_CL_Inv;
-  if (Surface_CD_Inv != NULL)   delete [] Surface_CD_Inv;
-  if (Surface_CSF_Inv != NULL)  delete [] Surface_CSF_Inv;
-  if (Surface_CEff_Inv != NULL) delete [] Surface_CEff_Inv;
-  if (Surface_CFx_Inv != NULL)  delete [] Surface_CFx_Inv;
-  if (Surface_CFy_Inv != NULL)  delete [] Surface_CFy_Inv;
-  if (Surface_CFz_Inv != NULL)  delete [] Surface_CFz_Inv;
-  if (Surface_CMx_Inv != NULL)  delete [] Surface_CMx_Inv;
-  if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
-  if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
-  if (Surface_CL != NULL)       delete [] Surface_CL;
-  if (Surface_CD != NULL)       delete [] Surface_CD;
-  if (Surface_CSF != NULL)      delete [] Surface_CSF;
-  if (Surface_CEff != NULL)     delete [] Surface_CEff;
-  if (Surface_CFx != NULL)      delete [] Surface_CFx;
-  if (Surface_CFy != NULL)      delete [] Surface_CFy;
-  if (Surface_CFz != NULL)      delete [] Surface_CFz;
-  if (Surface_CMx != NULL)      delete [] Surface_CMx;
-  if (Surface_CMy != NULL)      delete [] Surface_CMy;
-  if (Surface_CMz != NULL)      delete [] Surface_CMz;
-  if (CEff_Inv != NULL)         delete [] CEff_Inv;
+            delete [] CD_Inv;
+            delete [] CL_Inv;
+           delete [] CSF_Inv;
+           delete [] CMx_Inv;
+           delete [] CMy_Inv;
+           delete [] CMz_Inv;
+           delete [] CFx_Inv;
+           delete [] CFy_Inv;
+           delete [] CFz_Inv;
+    delete [] Surface_CL_Inv;
+    delete [] Surface_CD_Inv;
+   delete [] Surface_CSF_Inv;
+  delete [] Surface_CEff_Inv;
+   delete [] Surface_CFx_Inv;
+   delete [] Surface_CFy_Inv;
+   delete [] Surface_CFz_Inv;
+   delete [] Surface_CMx_Inv;
+   delete [] Surface_CMy_Inv;
+   delete [] Surface_CMz_Inv;
+        delete [] Surface_CL;
+        delete [] Surface_CD;
+       delete [] Surface_CSF;
+      delete [] Surface_CEff;
+       delete [] Surface_CFx;
+       delete [] Surface_CFy;
+       delete [] Surface_CFz;
+       delete [] Surface_CMx;
+       delete [] Surface_CMy;
+       delete [] Surface_CMz;
+          delete [] CEff_Inv;
 
 }
 
@@ -1315,7 +1318,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &nDOFsPerRank[1], 1,
-                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   nDOFsPerRank[1] = nDOFsLocOwned;
 #endif
@@ -1366,7 +1369,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Send the data using non-blocking sends to avoid deadlock. */
     int dest = ranksSend[i];
     SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /* Create a map of the receive rank to the index in ranksRecv. */
@@ -1380,7 +1383,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1390,7 +1393,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
        and determine the actual index of this rank in ranksRecv. */
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     map<int,int>::const_iterator MI = rankToIndRecvBuf.find(source);
     source = MI->second;
@@ -1412,7 +1415,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -1520,7 +1523,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Send the data using non-blocking sends to avoid deadlock. */
     int dest = ranksRecv[i];
     SU2_MPI::Isend(invSendBuf[i].data(), invSendBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &invSendReqs[i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &invSendReqs[i]);
   }
 
   /* Create a map of the inverse receive (i.e. the original send) rank
@@ -1536,7 +1539,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1546,7 +1549,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
        and determine the actual index of this rank in ranksSend. */
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     map<int,int>::const_iterator MI = rankToIndSendBuf.find(source);
     source = MI->second;
@@ -1573,7 +1576,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
   /*--- Sequential implementation. Just add the data of the halo DOFs
@@ -1715,7 +1718,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     const int ind  = MI->second;
 
     SU2_MPI::Isend(sendBuf[ind].data(), sendBuf[ind].size(), MPI_UNSIGNED_LONG,
-                   dest, dest+2, MPI_COMM_WORLD, &sendReqs[i]);
+                   dest, dest+2, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /* Loop over the ranks from which I receive data to be processed. The number
@@ -1727,7 +1730,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+2, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1739,15 +1742,14 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     sendReturnBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank+2, MPI_COMM_WORLD, &status);
+                  source, rank+2, SU2_MPI::GetComm(), &status);
 
     /* Loop over the data just received and fill the return send buffer
        with the color of the DOFs. */
     for(int j=0; j<sizeMess; ++j) {
       const unsigned long jj = recvBuf[j] - nDOFsPerRank[rank];
       if(jj >= nDOFsLocOwned) {
-        cout << "This DOF should be owned, but it is not. This should not happen." << endl;
-        exit(1);
+        SU2_MPI::Error("This DOF should be owned, but it is not. This should not happen.",CURRENT_FUNCTION);
       }
       sendReturnBuf[i][j] = colorLocalDOFs[jj];
     }
@@ -1755,7 +1757,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Send the return buffer back to the calling rank. Again use non-blocking
        sends to avoid deadlock. */
     SU2_MPI::Isend(sendReturnBuf[i].data(), sendReturnBuf[i].size(), MPI_INT,
-                   source, source+3, MPI_COMM_WORLD, &sendReturnReqs[i]);
+                   source, source+3, SU2_MPI::GetComm(), &sendReturnReqs[i]);
   }
 
   /* Complete the first round of non-blocking sends. */
@@ -1767,7 +1769,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
     /* Block until a message arrives and determine the source of the message
        and its index in the original send buffers. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+3, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     MI = rankCommToInd.find(source);
@@ -1777,7 +1779,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
        a blocking receive. */
     vector<int> recvBuf(sendBuf[ind].size());
     SU2_MPI::Recv(recvBuf.data(), recvBuf.size(), MPI_INT,
-                  source, rank+3, MPI_COMM_WORLD, &status);
+                  source, rank+3, SU2_MPI::GetComm(), &status);
 
     /* Loop over the data just received and add them to the map
        mapMatrixIndToColor .*/
@@ -1790,7 +1792,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -2430,7 +2432,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       }
 
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
     }
 
@@ -2670,7 +2672,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
 
    /* Get the rotation angles from config for this marker. */
    const unsigned short pInd = markersRotPer[i];
-   su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
+   auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(pInd));
 
     /*--- Determine the rotation matrix from the donor to the halo elements.
           This is the transpose of the rotation matrix from the halo to the
@@ -2735,11 +2737,11 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         for(unsigned short k=0; k<nTimeDOFs; ++k) {
           const unsigned long indS = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
-          memcpy(sendBuf+ii, commData+indS, nBytes);
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            sendBuf[ii+mm] = commData[indS+mm];
           ii += nItems;
         }
       }
@@ -2747,7 +2749,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       /* Send the data using non-blocking sends. */
       int dest = ranksSendMPI[timeLevel][i];
       int tag  = dest + timeLevel;
-      SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+      SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
 
@@ -2759,7 +2761,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       int tag    = rank + timeLevel;
       SU2_MPI::Irecv(commRecvBuf[timeLevel][i].data(),
                      commRecvBuf[timeLevel][i].size(),
-                     MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
   }
@@ -2821,11 +2823,11 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
       for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         for(unsigned short k=0; k<nTimeDOFs; ++k) {
           const unsigned long indR = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
-          memcpy(commData+indR, recvBuf+ii, nBytes);
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            commData[indR+mm] = recvBuf[ii+mm];
           ii += nItems;
         }
       }
@@ -2841,13 +2843,14 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
   for(unsigned long i=0; i<elementsSendSelfComm[timeLevel].size(); ++i) {
     const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
     const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
-    const unsigned long nBytes = volElem[elemS].nDOFsSol * nVar*sizeof(su2double);
+    const unsigned long nItems = volElem[elemS].nDOFsSol * nVar;
 
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
       const unsigned long indS = nVar*(volElem[elemS].offsetDOFsSolLocal + j*nDOFsLocTot);
       const unsigned long indR = nVar*(volElem[elemR].offsetDOFsSolLocal + j*nDOFsLocTot);
 
-      memcpy(commData+indR, commData+indS, nBytes);
+      for(unsigned long mm=0; mm<nItems; ++mm)
+        commData[indR+mm] = commData[indS+mm];
     }
   }
 
@@ -2982,17 +2985,17 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         const unsigned long indS = nVar*volElem[jj].offsetDOFsSolLocal;
-        memcpy(recvBuf+ii, resComm+indS, nBytes);
+        for(unsigned long mm=0; mm<nItems; ++mm)
+          recvBuf[ii+mm] = resComm[indS+mm];
         ii += nItems;
       }
 
       /* Send the data using non-blocking sends. */
       int dest = ranksRecvMPI[timeLevel][i];
       int tag  = dest + timeLevel + 20;
-      SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+      SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
 
@@ -3004,7 +3007,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       int tag    = rank + timeLevel + 20;
       SU2_MPI::Irecv(commSendBuf[timeLevel][i].data(),
                      commSendBuf[timeLevel][i].size(),
-                     MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                     MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
   }
@@ -3202,7 +3205,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
       unsigned long MyErrorCounter = ErrorCounter;
-      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
       if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
     }
@@ -3444,7 +3447,7 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
     nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
 
   /* Copy the solution into the working variables. */
-  Set_OldSolution(geometry);
+  Set_OldSolution();
 
   /* Allocate the memory for local part of the Jacobian. Note that passivedouble
      must be used for the Jacobian matrix. */
@@ -3574,14 +3577,16 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   }
 }
 
-void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_OldSolution() {
 
-  memcpy(VecWorkSolDOFs[0].data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
+  for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
+    VecWorkSolDOFs[0][i] = VecSolDOFs[i];
 }
 
-void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
+void CFEM_DG_EulerSolver::Set_NewSolution() {
 
-  memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
+  for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
+    VecSolDOFsNew[i] = VecSolDOFs[i];
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -3720,10 +3725,10 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 
@@ -3897,7 +3902,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                  in time to the given time integration point for the
                  given time level. */
               const unsigned short level = tasksList[i].timeLevel;
-              unsigned long nAdjElem = 0, *adjElem = NULL;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
               if(level < (nTimeLevels-1)) {
                 nAdjElem = ownedElemAdjLowTimeLevel[level+1].size();
                 adjElem  = ownedElemAdjLowTimeLevel[level+1].data();
@@ -3919,7 +3924,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                  in time to the given time integration point for the
                  given time level. */
               const unsigned short level = tasksList[i].timeLevel;
-              unsigned long nAdjElem = 0, *adjElem = NULL;
+              unsigned long nAdjElem = 0, *adjElem = nullptr;
               if(level < (nTimeLevels-1)) {
                 nAdjElem = haloElemAdjLowTimeLevel[level+1].size();
                 adjElem  = haloElemAdjLowTimeLevel[level+1].data();
@@ -4141,7 +4146,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(URef, TolSolADER.data(), nVar, MPI_DOUBLE, MPI_MAX,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 #else
   for(unsigned short i=0; i<nVar; ++i) TolSolADER[i] = URef[i];
 #endif
@@ -4230,12 +4235,12 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
     su2double *work    = solInt  + NPad*nDOFs;
 
     /* Initialize the predictor solution to the current solution. */
-    const su2double    *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-    const unsigned long nBytes = nVarNDOFs*sizeof(su2double);
+    const su2double *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
       su2double *solPredTimeInd = solPred + j*nVarNDOFs;
-      memcpy(solPredTimeInd, solCur, nBytes);
+      for(unsigned short mm=0; mm<nVarNDOFs; ++mm)
+        solPredTimeInd[mm] = solCur[mm];
     }
 
     /*-------------------------------------------------------------------------*/
@@ -4369,7 +4374,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
         /*--- integration points considered. Note the minus sign, because  ---*/
         /*--- the residual is put on the RHS of the equation. Also note    ---*/
         /*--- that the residuals are stored in such a way that a memcpy    ---*/
-        /*--- call is avoided when the multiplication takes place with the ---*/
+        /*--- is avoided when the multiplication takes place with the      ---*/
         /*--- iteration matrix (i.e. mass matrix) later on.                ---*/
         /*--------------------------------------------------------------------*/
 
@@ -4675,7 +4680,8 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                              + nVar*(j*nDOFsLocTot + volElem[l].offsetDOFsSolLocal);
       su2double *solPredTime = solPred + j*nVarNDOFs;
 
-      memcpy(solADERPred, solPredTime, nBytes);
+      for(unsigned short mm=0; mm<nVarNDOFs; ++mm)
+        solADERPred[mm] = solPredTime[mm];
     }
   }
 }
@@ -5759,7 +5765,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
-  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : nullptr;
 
   /*--- Get the physical time for MMS if necessary. ---*/
   su2double time = 0.0;
@@ -5773,9 +5779,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
   /* Determine the minimum padded size in the matrix multiplications, which
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
-
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -5826,7 +5829,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       /* Loop over the DOFs and copy the data. */
       const unsigned short llNVar = ll*nVar;
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(solDOFs+i*NPad+llNVar, solDOFsElem+i*nVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solDOFs[i*NPad+llNVar+mm] = solDOFsElem[i*nVar+mm];
     }
 
     /* Call the general function to carry out the matrix product to determine
@@ -6123,7 +6127,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
       /* Loop over the DOFs and copy the data. */
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(res+i*nVar, solDOFs+i*NPad+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          res[i*nVar+mm] = solDOFs[i*NPad+llNVar+mm];
     }
 
     /* Update the value of the counter l to the end index of the
@@ -6232,9 +6237,6 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Loop over the requested range of matching faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -6315,7 +6317,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
 
       /* Loop over the DOFs and copy the data for side 0. */
       for(unsigned short i=0; i<nDOFsFace0; ++i)
-        memcpy(resFace0+nVar*i, resSide0+NPad*i+nVar*ll, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resFace0[nVar*i+mm] = resSide0[NPad*i+nVar*ll+mm];
 
       /* If the number of DOFs on both sides is the same, then the residual
          of side 1 is obtained by simply negating the residual of side 0.
@@ -6327,10 +6330,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
       }
       else {
         for(unsigned short i=0; i<nDOFsFace1; ++i)
-          memcpy(resFace1+nVar*i, resSide1+NPad*i+nVar*ll, nBytes);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-        resFace1[i] = -resFace1[i];
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resFace1[nVar*i+mm] = -resSide1[NPad*i+nVar*ll+mm];
       }
     }
 
@@ -6354,9 +6355,6 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
-
-  /* Number of bytes to be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the left state in the integration points of  ---*/
@@ -6417,7 +6415,8 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                               + nVar*(DOFs[i] - offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6464,7 +6463,8 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                               + nVar*(DOFs[i] - offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6698,22 +6698,21 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array workArray as temporary storage. */
-      memcpy(workArray, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      for(unsigned short mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
+        workArray[mm] = res[mm];
+
       blasFunctions->gemm(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
                           volElem[l].invMassMatrix.data(), workArray, res, config);
     }
   }
 }
 
-void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
   vector<su2double> workArrayVec(sizeWorkArray, 0.0);
   su2double *workArray = workArrayVec.data();
-
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -6730,7 +6729,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin      = config->GetRefOriginMoment(0);
+  auto Origin                  = config->GetRefOriginMoment(0);
   const bool grid_movement     = config->GetGrid_Movement();
 
   /*--- Evaluate reference values for non-dimensionalization.
@@ -6752,7 +6751,8 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
       RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
+  AeroCoeffForceRef = 0.5 * RefDensity * RefArea * RefVel2;
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*-- Variables initialization ---*/
   Total_CD = 0.0; Total_CL = 0.0; Total_CSF = 0.0; Total_CEff = 0.0;
@@ -6849,7 +6849,8 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
             for(unsigned short i=0; i<nDOFs; ++i) {
               const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
               su2double       *sol    = workArray + NPad*i + llNVar;
-              memcpy(sol, solDOF, nBytes);
+              for(unsigned short mm=0; mm<nVar; ++mm)
+                sol[mm] = solDOF[mm];
             }
           }
 
@@ -7063,7 +7064,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -7261,7 +7262,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
     vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       if (rbufRes[iVar] != rbufRes[iVar])
@@ -7273,11 +7274,11 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The global maximum norms must be obtained. ---*/
     rbufRes.resize(nVar*size);
     SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
-                       nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+                       nVar, MPI_DOUBLE, SU2_MPI::GetComm());
 
     vector<unsigned long> rbufPoint(nVar*size);
     SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
-                       nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                       nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     vector<su2double> sbufCoor(nDim*nVar);
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
@@ -7287,7 +7288,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
     vector<su2double> rbufCoor(nDim*nVar*size);
     SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
-                       nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+                       nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       for(int proc=0; proc<size; ++proc)
@@ -7322,7 +7323,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetTimeIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetTimeIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetTimeIter()!= 0))
                       || (config->GetTimeIter() == 1));
   if( !write_heads ) return;
@@ -7515,7 +7516,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
 
   su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
   su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();
@@ -7720,7 +7721,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          pressure and temperature as well as the flow direction. */
       su2double P_Total   = config->GetRiemann_Var1(Marker_Tag);
       su2double T_Total   = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_Total /= config->GetPressure_Ref();
       T_Total /= config->GetTemperature_Ref();
@@ -7781,7 +7782,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          temperature as well as the three components of the Mach number. */
       su2double P_static = config->GetRiemann_Var1(Marker_Tag);
       su2double T_static = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Mach    = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Mach = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_static /= config->GetPressure_Ref();
       T_static /= config->GetTemperature_Ref();
@@ -7811,14 +7812,14 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
         UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
 
       /* Loop over the number of faces that are treated simultaneously. */
-      const unsigned long nBytes = nVar*sizeof(su2double);
       for(unsigned short l=0; l<nFaceSimul; ++l) {
         const unsigned short llNVar = l*nVar;
 
         /* Loop over the integration points and set the right state. */
         for(unsigned short i=0; i<nInt; ++i) {
           su2double *UR = solIntR + i*NPad + llNVar;
-          memcpy(UR, UCons, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            UR[mm] = UCons[mm];
         }
       }
 
@@ -7832,7 +7833,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          temperature as well as the three components of the Mach number. */
       su2double P_static   = config->GetRiemann_Var1(Marker_Tag);
       su2double Rho_static = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Mach      = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Mach            = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_static /= config->GetPressure_Ref();
       Rho_static /= config->GetDensity_Ref();
@@ -7862,14 +7863,14 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
         UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
 
       /* Loop over the number of faces that are treated simultaneously. */
-      const unsigned long nBytes = nVar*sizeof(su2double);
       for(unsigned short l=0; l<nFaceSimul; ++l) {
         const unsigned short llNVar = l*nVar;
 
         /* Loop over the integration points and set the right state. */
         for(unsigned short i=0; i<nInt; ++i) {
           su2double *UR = solIntR + i*NPad + llNVar;
-          memcpy(UR, UCons, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            UR[mm] = UCons[mm];
         }
       }
 
@@ -7882,7 +7883,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          flow direction. Retrieve the non-dimensional data. */
       su2double Density_e = config->GetRiemann_Var1(Marker_Tag);
       su2double VelMag_e  = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Flow_Dir       = config->GetRiemann_FlowDir(Marker_Tag);
 
       Density_e /= config->GetDensity_Ref();
       VelMag_e  /= config->GetVelocity_Ref();
@@ -8441,7 +8442,8 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     /* Set the right state in the integration points to the left state, i.e.
        no boundary condition is applied for a supersonic outlet. */
-    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
+    for(unsigned short mm=0; mm<NPad*nInt; ++mm)
+       solIntR[mm] = solIntL[mm];
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -8747,9 +8749,6 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Get the required information from the standard face, which is the
         same for all faces considered. ---*/
   const unsigned short ind     = surfElem[0].indStandardElement;
@@ -8815,7 +8814,8 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
 
     /* Loop over the DOFs and copy the data. */
     for(unsigned short i=0; i<nDOFs; ++i)
-      memcpy(resFace+nVar*i, solInt0+NPad*i+llNVar, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        resFace[nVar*i+mm] = solInt0[NPad*i+llNVar+mm];
   }
 }
 
@@ -8833,9 +8833,6 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
-
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Loop over the faces that are treated simultaneously. */
   for(unsigned short l=0; l<nFaceSimul; ++l) {
@@ -8859,7 +8856,8 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
 
       const su2double *solDOF = VecWorkSolDOFs[timeLevel].data() + nVar*(DOFs[i]-offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -9386,8 +9384,8 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
       delete [] Jacobian_i;
       delete [] Jacobian_j;
 
-      Jacobian_i = NULL;
-      Jacobian_j = NULL;
+      Jacobian_i = nullptr;
+      Jacobian_j = nullptr;
     }
   }
 }
@@ -9454,7 +9452,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
 #ifdef HAVE_MPI
   unsigned short sbuf_NotMatching = rbuf_NotMatching;
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   if (rbuf_NotMatching != 0)
@@ -9499,7 +9497,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long nBadDOFsLoc = nBadDOFs;
-    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
     if((rank == MASTER_NODE) && (nBadDOFs != 0))
@@ -9508,8 +9506,8 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }

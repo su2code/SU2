@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -78,6 +78,13 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+  /*!
+   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
+
 public:
 
   /*!
@@ -96,7 +103,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAdjEulerSolver(void);
+  ~CAdjEulerSolver(void) override;
 
   /*!
    * \brief A virtual member.
@@ -117,7 +124,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
@@ -224,19 +231,12 @@ public:
                        unsigned short iMesh) final;
 
   /*!
-   * \brief Compute the undivided laplacian for the adjoint solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
     return DonorAdjVar[val_marker][val_vertex];
   }
 
@@ -249,7 +249,7 @@ public:
   inline void SetDonorAdjVar(unsigned short val_marker,
                              unsigned long val_vertex,
                              unsigned short val_var,
-                             su2double val_value) final {
+                             su2double val_value) {
     DonorAdjVar[val_marker][val_vertex][val_var] = val_value;
   }
 
@@ -261,7 +261,7 @@ public:
    */
   inline su2double GetDonorAdjVar(unsigned short val_marker,
                                   unsigned long val_vertex,
-                                  unsigned short val_var) const final {
+                                  unsigned short val_var) const {
     return DonorAdjVar[val_marker][val_vertex][val_var];
   }
 

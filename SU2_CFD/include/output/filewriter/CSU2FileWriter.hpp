@@ -2,7 +2,7 @@
  * \file CSU2FileWriter.hpp
  * \brief Headers fo the CSV file writer class.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,11 +43,6 @@ public:
    * \param[in] valDataSorter - The parallel sorted data to write
    */
   CSU2FileWriter(string valFileName, CParallelDataSorter* valDataSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSU2FileWriter() override;
 
   /*!
    * \brief Write sorted data to file in SU2 ASCII file format

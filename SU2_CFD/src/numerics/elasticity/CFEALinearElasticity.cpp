@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.cpp
  * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,8 +56,6 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
@@ -234,19 +232,27 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 }
 
 
-void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
+su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
   unsigned short iNode, nNode;
   unsigned short iDim, bDim;
 
-  /*--- Auxiliary vector ---*/
-  su2double Strain[6], Stress[6];
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
+
+  /*--- Register pre-accumulation inputs ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
@@ -275,9 +281,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
       }
     }
 
-    for (iVar = 0; iVar < bDim; iVar++) {
-      Strain[iVar] = 0.0;
-    }
+    su2double Strain[DIM_STRAIN_3D] = {0.0};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -312,11 +316,13 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
     /*--- Compute the Stress Vector as D*epsilon ---*/
 
+    su2double Stress[DIM_STRAIN_3D] = {0.0};
+
     for (iVar = 0; iVar < bDim; iVar++) {
-      Stress[iVar] = 0.0;
       for (jVar = 0; jVar < bDim; jVar++) {
         Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
       }
+      avgStress[iVar] += Stress[iVar] / nGauss;
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
@@ -341,24 +347,33 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
   }
 
+  if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
+  auto elStress = VonMisesStress(nDim, avgStress);
+
+  /*--- We only differentiate w.r.t. an avg VM stress for the element as
+   * considering all nodal stresses would use too much memory. ---*/
+  AD::SetPreaccOut(elStress);
+  AD::EndPreacc();
+
+  return elStress;
 }
 
 
 CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
-                                       unsigned long val_nElem, CConfig *config) :
+                                       unsigned long val_nElem, const CConfig *config) :
                                        CFEALinearElasticity() {
-  DV_Val         = NULL;
-  FAux_Dead_Load = NULL;
-  Rho_s_i        = NULL;
-  Rho_s_DL_i     = NULL;
-  Nu_i           = NULL;
+  DV_Val         = nullptr;
+  FAux_Dead_Load = nullptr;
+  Rho_s_i        = nullptr;
+  Rho_s_DL_i     = nullptr;
+  Nu_i           = nullptr;
 
   nDim = val_nDim;
   nVar = val_nVar;
 
   unsigned long iVar;
 
-  E = config->GetDeform_ElasticityMod();
+  E = 1.0;
   Nu = config->GetDeform_PoissonRatio();
   Compute_Lame_Parameters();
 
@@ -366,14 +381,13 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
   case INVERSE_VOLUME:
   case SOLID_WALL_DISTANCE:
     element_based = true;
-    Nu = config->GetDeform_Coeff();
     break;
   case CONSTANT_STIFFNESS:
     element_based = false;
     break;
   }
 
-  E_i  = NULL;
+  E_i  = nullptr;
   if (element_based){
     E_i = new su2double[val_nElem];
     for (iVar = 0; iVar < val_nElem; iVar++){

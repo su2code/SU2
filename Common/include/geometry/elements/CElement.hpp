@@ -3,11 +3,11 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -449,9 +449,10 @@ public:
    * the latter are needed for compatibility with shape derivatives, there is no problem registering
    * because inactive variables are ignored.
    */
-  inline void SetPreaccIn_Coords(void) {
+  inline void SetPreaccIn_Coords(bool nonlinear = true) {
     AD::SetPreaccIn(RefCoord.data(), nNodes*nDim);
-    AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
+    if (nonlinear)
+      AD::SetPreaccIn(CurrentCoord.data(), nNodes*nDim);
   }
 
   /*!
@@ -460,6 +461,20 @@ public:
    */
   inline void SetPreaccOut_Kt_a(void) {
     AD::SetPreaccOut(Kt_a.data(), nNodes*nDim);
+  }
+
+  /*!
+   * \brief Register the mass matrix as a pre-accumulation output.
+   */
+  inline void SetPreaccOut_Mab(void) {
+    AD::SetPreaccOut(Mab.data(), nNodes*nNodes);
+  }
+
+  /*!
+   * \brief Register the dead load as a pre-accumulation output.
+   */
+  inline void SetPreaccOut_FDL_a(void) {
+    AD::SetPreaccOut(FDL_a.data(), nNodes*nDim);
   }
 
 };
@@ -471,6 +486,28 @@ public:
  */
 template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
+private:
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][2], su2double ad[][2]) {
+    ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
+    ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
+    /*--- Determinant of Jacobian ---*/
+    return ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
+  }
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][3], su2double ad[][3]) {
+    ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
+    ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
+    ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
+    ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
+    ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
+    ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
+    ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
+    ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
+    ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
+    /*--- Determinant of Jacobian ---*/
+    return Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
+  }
+
 protected:
   static_assert(NDIM==2 || NDIM==3, "ComputeGrad_impl expects 2D or 3D");
 
@@ -492,7 +529,6 @@ protected:
   void ComputeGrad_impl(void) {
 
     su2double Jacobian[NDIM][NDIM], ad[NDIM][NDIM];
-    su2double detJac, GradNi_Xj;
     unsigned short iNode, iDim, jDim, iGauss;
 
     /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
@@ -513,33 +549,9 @@ protected:
           for (jDim = 0; jDim < NDIM; jDim++)
             Jacobian[iDim][jDim] += Coord(iNode,jDim) * dNiXj[iGauss][iNode][iDim];
 
-      if (NDIM == 2) {
-        /*--- Adjoint to Jacobian ---*/
+      /*--- Adjoint to the Jacobian and determinant ---*/
 
-        ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
-        ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
-
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
-      }
-      else {
-        /*--- Adjoint to Jacobian ---*/
-
-        ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
-        ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
-        ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
-        ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
-        ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
-        ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
-        ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
-        ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
-        ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
-
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
-      }
+      auto detJac = JacobianAdjoint(Jacobian, ad);
 
       if (FRAME==REFERENCE)
         GaussPoint[iGauss].SetJ_X(detJac);
@@ -556,7 +568,7 @@ protected:
 
       for (iNode = 0; iNode < NNODE; iNode++) {
         for (iDim = 0; iDim < NDIM; iDim++) {
-          GradNi_Xj = 0.0;
+          su2double GradNi_Xj = 0.0;
           for (jDim = 0; jDim < NDIM; jDim++)
             GradNi_Xj += Jacobian[iDim][jDim] * dNiXj[iGauss][iNode][jDim];
 
@@ -626,6 +638,26 @@ public:
    * \brief Constructor of the class.
    */
   CQUAD4();
+
+  /*!
+   * \brief Shape functions (Ni) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctions(su2double Xi, su2double Eta, su2double* Ni) {
+    Ni[0] = 0.25*(1.0-Xi)*(1.0-Eta);
+    Ni[1] = 0.25*(1.0+Xi)*(1.0-Eta);
+    Ni[2] = 0.25*(1.0+Xi)*(1.0+Eta);
+    Ni[3] = 0.25*(1.0-Xi)*(1.0+Eta);
+  }
+
+  /*!
+   * \brief Shape function Jacobian (dNi) evaluated at point Xi,Eta.
+   */
+  inline static void ShapeFunctionJacobian(su2double Xi, su2double Eta, su2double dNi[][2]) {
+    dNi[0][0] = -0.25*(1.0-Eta);  dNi[0][1] = -0.25*(1.0-Xi);
+    dNi[1][0] =  0.25*(1.0-Eta);  dNi[1][1] = -0.25*(1.0+Xi);
+    dNi[2][0] =  0.25*(1.0+Eta);  dNi[2][1] =  0.25*(1.0+Xi);
+    dNi[3][0] = -0.25*(1.0+Eta);  dNi[3][1] =  0.25*(1.0-Xi);
+  }
 
   /*!
    * \brief Compute the value of the area of the element.
@@ -717,7 +749,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6,6,3> {
 private:

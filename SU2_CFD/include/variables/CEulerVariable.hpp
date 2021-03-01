@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,9 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 12;
+
 protected:
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType HB_Source;     /*!< \brief harmonic balance source term. */
@@ -44,15 +47,19 @@ protected:
 
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;                    /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  VectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
-  MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;        /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho) in compressible (Euler: 2, NS: 8) flows. */
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
+
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
 public:
   /*!
@@ -71,7 +78,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CEulerVariable() = default;
+  ~CEulerVariable() override = default;
 
   /*!
    * \brief Get the new solution of the problem (Classical RK4).
@@ -119,6 +126,7 @@ public:
    * \return Primitive variables limiter for the entire domain.
    */
   inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive(void) const {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -150,13 +158,15 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive(void) const { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction(void) const { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -222,10 +232,9 @@ public:
    * \param[in] soundspeed2 - Value of soundspeed^2.
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
-    su2double radical = soundspeed2;
-    if (radical < 0.0) return true;
+    if (soundspeed2 < 0.0) return true;
     else {
-      Primitive(iPoint,nDim+4) = sqrt(radical);
+      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
       return false;
     }
   }
@@ -245,7 +254,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel);
+  void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
   /*!
    * \brief Get the primitive variables for all points.
@@ -285,24 +294,29 @@ public:
   inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
 
   /*!
-   * \brief Get the primitive variables.
+   * \brief Get all the secondary variables.
+   */
+  inline const MatrixType& GetSecondary() const {return Secondary; }
+
+  /*!
+   * \brief Get the secondary variables.
    * \param[in] iVar - Index of the variable.
-   * \return Value of the primitive variable for the index <i>iVar</i>.
+   * \return Value of the secondary variable for the index <i>iVar</i>.
    */
   inline su2double GetSecondary(unsigned long iPoint, unsigned long iVar) const final {return Secondary(iPoint,iVar); }
 
   /*!
-   * \brief Set the value of the primitive variables.
+   * \brief Set the value of the secondary variables.
    * \param[in] iVar - Index of the variable.
    * \param[in] iVar - Index of the variable.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   * \return Set the value of the secondary variable for the index <i>iVar</i>.
    */
   inline void SetSecondary(unsigned long iPoint, unsigned long iVar, su2double val_secondary) final {Secondary(iPoint,iVar) = val_secondary; }
 
   /*!
-   * \brief Set the value of the primitive variables.
+   * \brief Set the value of the secondary variables.
    * \param[in] val_prim - Primitive variables.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   * \return Set the value of the secondary variable for the index <i>iVar</i>.
    */
   inline void SetSecondary(unsigned long iPoint, const su2double *val_secondary) final {
     for (unsigned long iVar = 0; iVar < nSecondaryVar; iVar++)
@@ -310,8 +324,8 @@ public:
   }
 
   /*!
-   * \brief Get the primitive variables of the problem.
-   * \return Pointer to the primitive variable vector.
+   * \brief Get the secondary variables of the problem.
+   * \return Pointer to the secondary variable vector.
    */
   inline su2double *GetSecondary(unsigned long iPoint) final { return Secondary[iPoint]; }
 
@@ -415,6 +429,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
@@ -458,6 +480,28 @@ public:
   inline void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGustDer) final {
     for (unsigned long iDim = 0; iDim < nDim+1; iDim++)
       WindGustDer(iPoint,iDim) = val_WindGustDer[iDim];
+  }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = GetDensity(iPoint) * val_vector[iDim];
   }
 
 };

@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.2 "Blackbird"
+# \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -45,25 +45,30 @@ noinst_LIBRARIES += libSU2_AD.a
 endif
 
 lib_sources = \
-  ../src/fem_cgns_elements.cpp \
+  ../src/fem/fem_cgns_elements.cpp \
   ../src/CConfig.cpp \
-  ../src/blas_structure.cpp \
-  ../src/fem_geometry_structure.cpp \
-  ../src/fem_integration_rules.cpp \
-  ../src/fem_standard_element.cpp \
-  ../src/fem_wall_distance.cpp \
-  ../src/fem_work_estimate_metis.cpp \
-  ../src/CMultiGridQueue.cpp \
-  ../src/geometry_structure_fem_part.cpp \
+  ../src/linear_algebra/blas_structure.cpp \
+  ../src/fem/fem_geometry_structure.cpp \
+  ../src/fem/fem_integration_rules.cpp \
+  ../src/fem/fem_standard_element.cpp \
+  ../src/fem/fem_wall_distance.cpp \
+  ../src/fem/fem_work_estimate_metis.cpp \
+  ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
-  ../src/grid_adaptation_structure.cpp \
-  ../src/grid_movement_structure.cpp \
-  ../src/mpi_structure.cpp \
-  ../src/ad_structure.cpp \
-  ../src/fem_gauss_jacobi_quadrature.cpp \
+  ../src/grid_movement/CGridMovement.cpp \
+  ../src/grid_movement/CFreeFormBlending.cpp \
+  ../src/grid_movement/CBSplineBlending.cpp \
+  ../src/grid_movement/CBezierBlending.cpp \
+  ../src/grid_movement/CFreeFormDefBox.cpp \
+  ../src/grid_movement/CVolumetricMovement.cpp \
+  ../src/grid_movement/CSurfaceMovement.cpp \
+  ../include/parallelization/mpi_structure.cpp \
+  ../src/basic_types/ad_structure.cpp \
+  ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \
   ../src/geometry/CPhysicalGeometry.cpp \
   ../src/geometry/CMultiGridGeometry.cpp \
+  ../src/geometry/CMultiGridQueue.cpp \
   ../src/geometry/CDummyGeometry.cpp \
   ../src/geometry/elements/CElement.cpp \
   ../src/geometry/elements/CTRIA1.cpp \
@@ -93,12 +98,22 @@ lib_sources = \
   ../src/geometry/primal_grid/CTetrahedron.cpp \
   ../src/geometry/primal_grid/CQuadrilateral.cpp \
   ../src/geometry/primal_grid/CVertexMPI.cpp \
-  ../src/interpolation_structure.cpp \
-  ../src/adt_structure.cpp \
+  ../src/interface_interpolation/CInterpolatorFactory.cpp \
+  ../src/interface_interpolation/CInterpolator.cpp \
+  ../src/interface_interpolation/CMirror.cpp \
+  ../src/interface_interpolation/CSlidingMesh.cpp \
+  ../src/interface_interpolation/CIsoparametric.cpp \
+  ../src/interface_interpolation/CNearestNeighbor.cpp \
+  ../src/interface_interpolation/CRadialBasisFunction.cpp \
+  ../src/adt/CADTBaseClass.cpp \
+  ../src/adt/CADTPointsOnlyClass.cpp \
+  ../src/adt/CADTElemClass.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/C1DInterpolation.cpp \
+  ../src/toolboxes/CSymmetricMatrix.cpp \
+  ../src/toolboxes/CSquareMatrixCM.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

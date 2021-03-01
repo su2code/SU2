@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,10 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
+#include "../fluid/CNEMOGas.hpp"
+#include "../../include/fluid/CMutationTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
 using namespace std;
 
@@ -60,10 +64,8 @@ protected:
   su2double
   **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
-  su2double
-  **tau,      /*!< \brief Viscous stress tensor. */
-  **delta,    /*!< \brief Identity matrix. */
-  **delta3;   /*!< \brief 3 row Identity matrix. */
+  su2double **tau;    /*!< \brief Viscous stress tensor. */
+  const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -75,6 +77,8 @@ protected:
   su2double
   Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
+  Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
@@ -176,8 +180,8 @@ protected:
   **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
   **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   su2double
-  *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -185,8 +189,9 @@ protected:
   unsigned short
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
+  const su2double
+  *Normal;       /*!< \brief Normal vector, its norm is the area of the face. */
   su2double
-  *Normal,       /*!< \brief Normal vector, its norm is the area of the face. */
   *UnitNormal,   /*!< \brief Unitary normal vector. */
   *UnitNormald;  /*!< \brief Derivative of unitary normal vector. */
   su2double
@@ -204,11 +209,12 @@ protected:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
+  su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
+  roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double *l, *m;
 
-  su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
-  su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
+  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
@@ -216,9 +222,7 @@ protected:
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
-  /* Supporting data structures for the eigenspace perturbation for UQ methodology */
-  su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
-  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
+  bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
 public:
   /*!
@@ -244,6 +248,8 @@ public:
      * allows discarding the Jacobians when they are not needed.
      */
     operator Vector_t() { return residual; }
+
+    su2double operator[] (unsigned long idx) const { return residual[idx]; }
   };
 
   /*!
@@ -263,17 +269,6 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CNumerics(void);
-
-  /*!
-   * \brief Compute the determinant of a 3 by 3 matrix.
-   * \param[in] val_matrix 3 by 3 matrix.
-   * \return Determinant of the matrix
-   */
-  inline static su2double Determinant_3x3(su2double A00, su2double A01, su2double A02,
-                                          su2double A10, su2double A11, su2double A12,
-                                          su2double A20, su2double A21, su2double A22) {
-    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
-  }
 
   /*!
    * \brief Set the time step.
@@ -449,6 +444,224 @@ public:
   }
 
   /*!
+   * \brief Compute the mean rate of strain matrix.
+   * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+   * \param[in] nDim - 2 or 3
+   * \param[out] rateofstrain - Rate of strain matrix
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
+   */
+  template<class Mat1, class Mat2>
+  FORCEINLINE static void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const Mat2& velgrad){
+
+    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+    if (nDim == 3) {
+      rateofstrain[0][0] = velgrad[0][0];
+      rateofstrain[1][1] = velgrad[1][1];
+      rateofstrain[2][2] = velgrad[2][2];
+      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+      rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
+      rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
+      rateofstrain[1][0] = rateofstrain[0][1];
+      rateofstrain[2][1] = rateofstrain[1][2];
+      rateofstrain[2][0] = rateofstrain[0][2];
+    }
+    else { // nDim==2
+      rateofstrain[0][0] = velgrad[0][0];
+      rateofstrain[1][1] = velgrad[1][1];
+      rateofstrain[2][2] = 0.0;
+      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+      rateofstrain[0][2] = 0.0;
+      rateofstrain[1][2] = 0.0;
+      rateofstrain[1][0] = rateofstrain[0][1];
+      rateofstrain[2][1] = rateofstrain[1][2];
+      rateofstrain[2][0] = rateofstrain[0][2];
+    }
+  }
+
+  /*!
+   * \brief Compute the stress tensor from the velocity gradients.
+   * \details To obtain the Reynolds stress tensor +(u_i' u_j')~, divide the result
+   * of this function by (-rho). The argument density is only used if turb_ke is not 0.
+   * To select the velocity gradient components from a primitive variable gradient PrimVar_Grad_i,
+   * write PrimVar_Grad_i+1.
+   * If <code>nDim==2</code>, we use the same formula but only only access the entries [0][0]..[1][1] of
+   * stress and velgrad. If <code>reynolds3x3</code> is true, the other non-diagonal entries of stress
+   * set to zero, and <code>stress[2][2]</code> to some value.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3
+   * \param[out] stress - Stress tensor
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] viscosity - Viscosity
+   * \param[in] density - Density
+   * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
+   */
+  template<class Mat1, class Mat2, class Scalar>
+  FORCEINLINE static void ComputeStressTensor(size_t nDim, Mat1& stress, const Mat2& velgrad,
+                                              Scalar viscosity, Scalar density=0.0,
+                                              Scalar turb_ke=0.0, bool reynolds3x3=false){
+    Scalar divVel = 0.0;
+    for (size_t iDim = 0; iDim < nDim; iDim++) {
+      divVel += velgrad[iDim][iDim];
+    }
+    Scalar pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
+
+    for (size_t iDim = 0; iDim < nDim; iDim++){
+      for (size_t jDim = 0; jDim < nDim; jDim++){
+        stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
+      }
+      stress[iDim][iDim] -= pTerm;
+    }
+
+    if(reynolds3x3 && nDim==2) { // fill the third row and column of Reynolds stress matrix
+      stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
+      stress[2][2] = -pTerm;
+    }
+  }
+
+  /*!
+   * \brief Add a correction using a Quadratic Constitutive Relation to the stress tensor.
+   *
+   * See: Spalart, P. R., "Strategies for Turbulence Modelling and Simulation",
+   * International Journal of Heat and Fluid Flow, Vol. 21, 2000, pp. 252-263
+   *
+   * \param[in] nDim: 2D or 3D.
+   * \param[in] gradvel: Velocity gradients.
+   * \param[in,out] tau: Shear stress tensor.
+   */
+  template <class Mat1, class Mat2>
+  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau) {
+    using Scalar = typename std::decay<decltype(gradvel[0][0])>::type;
+
+    const Scalar c_cr1 = 0.3;
+
+    /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+
+    Scalar factor = 0.0;
+    for (size_t iDim = 0; iDim < nDim; iDim++)
+      for (size_t jDim = 0; jDim < nDim; jDim++)
+        factor += gradvel[iDim][jDim] * gradvel[iDim][jDim];
+    factor = 1.0 / sqrt(max(factor,1E-10));
+
+    /*--- Adding the QCR contribution ---*/
+
+    Scalar tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
+
+    for (size_t iDim = 0; iDim < nDim; iDim++){
+      for (size_t jDim = 0; jDim < nDim; jDim++){
+        for (size_t kDim = 0; kDim < nDim; kDim++){
+          Scalar O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim]) * factor;
+          Scalar O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim]) * factor;
+          tauQCR[iDim][jDim] += O_ik * tau[jDim][kDim] + O_jk * tau[iDim][kDim];
+        }
+      }
+    }
+
+    for (size_t iDim = 0; iDim < nDim; iDim++)
+      for (size_t jDim = 0; jDim < nDim; jDim++)
+        tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
+  }
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] uq_eigval_comp - Component 1C 2C 3C.
+   * \param[in] uq_permute - Whether to swap order of eigen vectors.
+   * \param[in] uq_delta_b - Delta_b parameter.
+   * \param[in] uq_urlx - Relaxation factor.
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] density - Density.
+   * \param[in] viscosity - Eddy viscosity.
+   * \param[in] turb_ke: Turbulent kinetic energy.
+   * \param[out] MeanPerturbedRSM - Perturbed stress tensor.
+   */
+  template<class Mat1, class Mat2, class Scalar>
+  NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
+                                              su2double uq_urlx, const Mat1& velgrad, Scalar density,
+                                              Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
+    Scalar MeanReynoldsStress[3][3];
+    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
+    for (size_t iDim = 0; iDim < 3; iDim++)
+      for (size_t jDim = 0; jDim < 3; jDim++)
+        MeanReynoldsStress[iDim][jDim] /= -density;
+
+    /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+
+    Scalar A_ij[3][3];
+    for (size_t iDim = 0; iDim < 3; iDim++) {
+      for (size_t jDim = 0; jDim < 3; jDim++) {
+        A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke;
+      }
+      A_ij[iDim][iDim] -= 1.0/3.0;
+    }
+
+    /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+    Scalar work[3], Eig_Vec[3][3], Eig_Val[3];
+    CBlasStructure::EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3, work);
+
+    /* compute convex combination coefficients */
+    Scalar c1c = Eig_Val[2] - Eig_Val[1];
+    Scalar c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+    Scalar c3c = 3.0 * Eig_Val[0] + 1.0;
+
+    /* define barycentric traingle corner points */
+    Scalar Corners[3][2];
+    Corners[0][0] = 1.0;
+    Corners[0][1] = 0.0;
+    Corners[1][0] = 0.0;
+    Corners[1][1] = 0.0;
+    Corners[2][0] = 0.5;
+    Corners[2][1] = 0.866025;
+
+    /* define barycentric coordinates */
+    Scalar Barycentric_Coord[2];
+    Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+    Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+    /* component 1C, 2C, 3C, converted to index of the "corners" */
+    Scalar New_Coord[2];
+    New_Coord[0] = Corners[uq_eigval_comp-1][0];
+    New_Coord[1] = Corners[uq_eigval_comp-1][1];
+
+    /* calculate perturbed barycentric coordinates */
+    Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+    Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+    /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+    c3c = Barycentric_Coord[1] / Corners[2][1];
+    c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+    c2c = 1 - c1c - c3c;
+
+    /* build new anisotropy eigenvalues */
+    Eig_Val[0] = (c3c - 1) / 3.0;
+    Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+    Eig_Val[2] = c1c + Eig_Val[1];
+
+    /* permute eigenvectors if required */
+    if (uq_permute) {
+      for (size_t jDim = 0; jDim < 3; jDim++)
+        swap(Eig_Vec[0][jDim], Eig_Vec[2][jDim]);
+    }
+
+    CBlasStructure::EigenRecomposition(A_ij, Eig_Vec, Eig_Val, 3);
+
+    /* compute perturbed Reynolds stress matrix; using under-relaxation factor (uq_urlx)*/
+    for (size_t iDim = 0; iDim < 3; iDim++) {
+      for (size_t jDim = 0; jDim < 3; jDim++) {
+        auto delta_ij = (jDim==iDim)? 1.0 : 0.0;
+        MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (A_ij[iDim][jDim] + 1.0/3.0 * delta_ij);
+        MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+          uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      }
+    }
+  }
+
+  /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first Menter blending function at point i.
    * \param[in] val_F1_j - Value of the first Menter blending function at point j.
@@ -471,12 +684,13 @@ public:
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
-   * \param[in] val_auxvargrad_i - Gradient of the auxiliary variable at point i.
-   * \param[in] val_auxvargrad_j - Gradient of the auxiliary variable at point j.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
    */
-  inline void SetAuxVarGrad(su2double *val_auxvargrad_i, su2double *val_auxvargrad_j) {
-    AuxVar_Grad_i = val_auxvargrad_i;
-    AuxVar_Grad_j = val_auxvargrad_j;
+  inline void SetAuxVarGrad(su2double **val_auxvar_grad_i,
+                            su2double **val_auxvar_grad_j) {
+    AuxVar_Grad_i = val_auxvar_grad_i;
+    AuxVar_Grad_j = val_auxvar_grad_j;
   }
 
   /*!
@@ -511,6 +725,18 @@ public:
                                      su2double val_thermal_conductivity_j) {
     Thermal_Conductivity_i = val_thermal_conductivity_i;
     Thermal_Conductivity_j = val_thermal_conductivity_j;
+  }
+
+    /*!
+   * \brief Set the thermal conductivity (translational/rotational)
+   * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
+   * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  inline void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
+                                     su2double val_thermal_conductivity_ve_j) {
+    Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
+    Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
   }
 
   /*!
@@ -554,6 +780,16 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the value of the roughness from the nearest wall.
+   * \param[in] val_dist_i - Value of of the roughness of the nearest wall from point i
+   * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j
+   */
+  void SetRoughness(su2double val_roughness_i, su2double val_roughness_j) {
+    roughness_i = val_roughness_i;
+    roughness_j = val_roughness_j;
   }
 
   /*!
@@ -700,7 +936,7 @@ public:
    * \brief Set the value of the normal vector to the face between two points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
-  inline void SetNormal(su2double *val_normal) { Normal = val_normal; }
+  inline void SetNormal(const su2double *val_normal) { Normal = val_normal; }
 
   /*!
    * \brief Set the value of the volume of the control volume.
@@ -730,7 +966,7 @@ public:
    * \param[in] val_pressure - Value of the pressure.
    * \param[in] val_enthalpy - Value of the enthalpy.
    */
-  void GetInviscidFlux(su2double val_density, su2double *val_velocity, su2double val_pressure, su2double val_enthalpy);
+  void GetInviscidFlux(su2double val_density, const su2double *val_velocity, su2double val_pressure, su2double val_enthalpy);
 
   /*!
    * \brief Compute the projected inviscid flux vector.
@@ -741,9 +977,9 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Flux - Pointer to the projected flux.
    */
-  void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
-                           su2double *val_pressure, su2double *val_enthalpy,
-                           su2double *val_normal, su2double *val_Proj_Flux);
+  void GetInviscidProjFlux(const su2double *val_density, const su2double *val_velocity,
+                           const su2double *val_pressure, const su2double *val_enthalpy,
+                           const su2double *val_normal, su2double *val_Proj_Flux) const;
 
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -754,10 +990,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Flux - Pointer to the projected flux.
    */
-  void GetInviscidIncProjFlux(su2double *val_density, su2double *val_velocity,
-                                  su2double *val_pressure, su2double *val_betainc2,
-                                  su2double *val_enthalpy,
-                                  su2double *val_normal, su2double *val_Proj_Flux);
+  void GetInviscidIncProjFlux(const su2double *val_density, const su2double *val_velocity,
+                              const su2double *val_pressure, const su2double *val_betainc2,
+                              const su2double *val_enthalpy, const su2double *val_normal,
+                              su2double *val_Proj_Flux) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -767,9 +1003,9 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
-                          su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor);
+  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
+                          const su2double *val_normal, su2double val_scale,
+                          su2double **val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -780,8 +1016,8 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity,
-                             su2double *val_betainc2, su2double *val_normal,
+  void GetInviscidIncProjJac(const su2double *val_density, const su2double *val_velocity,
+                             const su2double *val_betainc2, const su2double *val_normal,
                              su2double val_scale,
                              su2double **val_Proj_Jac_tensor);
 
@@ -797,15 +1033,15 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidIncProjJac(su2double *val_density,
-                             su2double *val_velocity,
-                             su2double *val_betainc2,
-                             su2double *val_cp,
-                             su2double *val_temperature,
-                             su2double *val_dRhodT,
-                             su2double *val_normal,
+  void GetInviscidIncProjJac(const su2double *val_density,
+                             const su2double *val_velocity,
+                             const su2double *val_betainc2,
+                             const su2double *val_cp,
+                             const su2double *val_temperature,
+                             const su2double *val_dRhodT,
+                             const su2double *val_normal,
                              su2double val_scale,
-                             su2double **val_Proj_Jac_Tensor);
+                             su2double **val_Proj_Jac_Tensor) const;
 
   /*!
    * \brief Compute the low speed preconditioning matrix.
@@ -817,13 +1053,13 @@ public:
    * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
    * \param[out] val_Precon - Pointer to the preconditioning matrix.
    */
-  void GetPreconditioner(su2double *val_density,
-                         su2double *val_velocity,
-                         su2double *val_betainc2,
-                         su2double *val_cp,
-                         su2double *val_temperature,
-                         su2double *val_drhodt,
-                         su2double **val_Precon);
+  void GetPreconditioner(const su2double *val_density,
+                         const su2double *val_velocity,
+                         const su2double *val_betainc2,
+                         const su2double *val_cp,
+                         const su2double *val_temperature,
+                         const su2double *val_drhodt,
+                         su2double **val_Precon) const;
 
   /*!
    * \brief Compute the projection of the preconditioned inviscid Jacobian matrices.
@@ -833,11 +1069,11 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetPreconditionedProjJac(su2double *val_density,
-                                su2double *val_velocity,
-                                su2double *val_betainc2,
-                                su2double *val_normal,
-                                su2double **val_Proj_Jac_Tensor);
+  void GetPreconditionedProjJac(const su2double *val_density,
+                                const su2double *val_velocity,
+                                const su2double *val_betainc2,
+                                const su2double *val_normal,
+                                su2double **val_Proj_Jac_Tensor) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices for general fluid model.
@@ -847,10 +1083,10 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(su2double *val_velocity, su2double *val_enthalphy,
-                          su2double *val_chi, su2double *val_kappa,
-                          su2double *val_normal, su2double val_scale,
-                          su2double **val_Proj_Jac_tensor);
+  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_enthalphy,
+                          const su2double *val_chi, const su2double *val_kappa,
+                          const su2double *val_normal, su2double val_scale,
+                          su2double **val_Proj_Jac_tensor) const;
 
   /*!
    * \brief Mapping between primitives variables P and conservatives variables C.
@@ -858,9 +1094,9 @@ public:
    * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
    * \param[out] val_Jac_PC - Pointer to the Jacobian dPdC.
    */
-  void GetPrimitive2Conservative (su2double *val_Mean_PrimVar,
-                                  su2double *val_Mean_SecVar,
-                                  su2double **val_Jac_PC);
+  void GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
+                                  const su2double *val_Mean_SecVar,
+                                  su2double **val_Jac_PC) const;
 
   /*!
    * \overload
@@ -874,10 +1110,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity,
-                  su2double *val_soundspeed, su2double *val_enthalpy,
-                  su2double *val_chi, su2double *val_kappa,
-                  su2double *val_normal, su2double **val_p_tensor);
+  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
+                  const su2double *val_soundspeed, const su2double *val_enthalpy,
+                  const su2double *val_chi, const su2double *val_kappa,
+                  const su2double *val_normal, su2double **val_p_tensor) const;
 
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
@@ -888,9 +1124,9 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity,
-                  su2double *val_soundspeed, su2double *val_normal,
-                  su2double **val_p_tensor);
+  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
+                  const su2double *val_soundspeed, const su2double *val_normal,
+                  su2double **val_p_tensor) const;
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -902,8 +1138,8 @@ public:
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
   void GetinvRinvPe(su2double Beta2, su2double val_enthalpy, su2double val_soundspeed,
-                    su2double val_density, su2double* val_velocity,
-                    su2double** val_invR_invPe);
+                    su2double val_density, const su2double* val_velocity,
+                    su2double** val_invR_invPe) const;
 
   /*!
    * \brief Computation of the matrix R.
@@ -914,15 +1150,15 @@ public:
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
-                  su2double val_density, su2double* val_velocity,
-                  su2double** val_invR_invPe);
+                  su2double val_density, const su2double* val_velocity,
+                  su2double** val_invR_invPe) const;
   /*!
    * \brief Computation of the matrix R.
    * \param[in] val_soundspeed - value of the sound speed.
    * \param[in] val_density - value of the density.
    * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
    */
-  void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
+  void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) const;
 
   /*!
    * \brief Computation of the matrix R.
@@ -930,7 +1166,7 @@ public:
    * \param[in] val_density - value of the density.
    * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
    */
-  void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
+  void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) const;
 
   /*!
    * \brief Computation of the flow Residual Jacoboan Matrix for Non Reflecting BC.
@@ -939,7 +1175,7 @@ public:
    * \param[out] R_c - Residual Jacoboan Matrix
    * \param[out] R_c_inv- inverse of the Residual Jacoboan Matrix .
    */
-  void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel,
+  void ComputeResJacobianGiles(CFluidModel *FluidModel, su2double pressure, su2double density, const su2double *turboVel,
                                su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv);
 
   /*!
@@ -963,7 +1199,7 @@ public:
    * \param[in] prim_jump - pointer to the vector containing the primitive variable jump (drho, dV, dp).
    * \param[out] char_jump - pointer to the vector containing the characteristic variable jump.
    */
-  void GetCharJump(su2double val_soundspeed, su2double val_density, su2double *prim_jump, su2double *char_jump);
+  void GetCharJump(su2double val_soundspeed, su2double val_density, const su2double *prim_jump, su2double *char_jump) const;
 
   /*!
    * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
@@ -978,7 +1214,7 @@ public:
    * \param[out] val_absPeJac - Pointer to the Preconditioned Jacobian matrix.
    */
   void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat,
-                          su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
+                          su2double rB2a2, const su2double* val_Lambda, const su2double* val_normal, su2double** val_absPeJac) const;
 
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -989,10 +1225,10 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_density,
-                      su2double *val_velocity, su2double *val_soundspeed,
-                      su2double *val_chi, su2double *val_kappa,
-                      su2double *val_normal);
+  void GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val_density,
+                      const su2double *val_velocity, const su2double *val_soundspeed,
+                      const su2double *val_chi, const su2double *val_kappa,
+                      const su2double *val_normal) const;
 
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -1003,21 +1239,21 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
-                      su2double *val_soundspeed, su2double *val_normal,
-                      su2double **val_invp_tensor);
+  void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
+                      const su2double *val_soundspeed, const su2double *val_normal,
+                      su2double **val_invp_tensor) const;
 
   /*!
    * \brief Compute viscous residual and jacobian.
    */
   void GetAdjViscousFlux_Jac(su2double Pressure_i, su2double Pressure_j, su2double Density_i, su2double Density_j,
-                             su2double ViscDens_i, su2double ViscDens_j, su2double *Velocity_i, su2double *Velocity_j,
+                             su2double ViscDens_i, su2double ViscDens_j, const su2double *Velocity_i, const su2double *Velocity_j,
                              su2double sq_vel_i, su2double sq_vel_j,
-                             su2double XiDens_i, su2double XiDens_j, su2double **Mean_GradPhi, su2double *Mean_GradPsiE,
-                             su2double dPhiE_dn, su2double *Normal, su2double *Edge_Vector, su2double dist_ij_2, su2double *val_residual_i,
-                             su2double *val_residual_j,
-                             su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, su2double **val_Jacobian_ji,
-                             su2double **val_Jacobian_jj, bool implicit);
+                             su2double XiDens_i, su2double XiDens_j, su2double **Mean_GradPhi, const su2double *Mean_GradPsiE,
+                             su2double dPhiE_dn, const su2double *Normal, const su2double *Edge_Vector, su2double dist_ij_2,
+                             su2double *val_residual_i, su2double *val_residual_j,
+                             su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
+                             su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, bool implicit) const;
 
   /*!
    * \brief Computation of the projected inviscid lambda (eingenvalues).
@@ -1026,8 +1262,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_Lambda_Vector - Pointer to Lambda matrix.
    */
-  void GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val_soundspeed,
-                                 su2double *val_normal, su2double *val_Lambda_Vector);
+  void GetJacInviscidLambda_fabs(const su2double *val_velocity, su2double val_soundspeed,
+                                 const su2double *val_normal, su2double *val_Lambda_Vector) const;
 
   /*!
    * \brief Compute the numerical residual.
@@ -1091,6 +1327,18 @@ public:
 
   /*!
    * \overload
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeResidual(su2double *val_resconv, su2double *val_resvisc,
+                               su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                               CConfig *config) {}
+
+  /*!
+   * \overload
    * \param[in] config - Definition of the particular problem.
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
@@ -1110,6 +1358,27 @@ public:
                                               su2double **val_Jacobian_j, CConfig* config,
                                               su2double &gamma_sep) { }
 
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual ResidualType<> ComputeAxisymmetric(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
+   * \overload For numerics classes that store the residual/flux and Jacobians internally.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  inline virtual ResidualType<> ComputeVibRelaxation(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
+   * \brief Calculation of the chemistry source term
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] val_residual - residual of the source terms
+   * \param[out] val_Jacobian_i - Jacobian of the source terms
+   */
+  inline virtual ResidualType<> ComputeChemistry(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
   /*!
    * \brief Set intermittency for numerics (used in SA with LM transition model)
    */
@@ -1226,13 +1495,13 @@ public:
    * \brief A virtual member to compute the averaged nodal stresses
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Averaged_NodalStress(CElement *element_container, const CConfig* config) { }
+  inline virtual su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig* config) { return 0; }
 
   /*!
    * \brief Computes a basis of orthogonal vectors from a supplied vector
    * \param[in] config - Normal vector
    */
-  void CreateBasis(su2double *val_Normal);
+  void CreateBasis(const su2double *val_Normal);
 
   /*!
    * \brief Set the value of the Tauwall
@@ -1280,40 +1549,46 @@ public:
   inline void SetRadVarSource(const su2double *val_radvar_source) { RadVar_Source = val_radvar_source; }
 
   /*!
-   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
-   * \param[in] A_i: symmetric matrix to be decomposed
-   * \param[in] Eig_Vec: strores the eigenvectors
-   * \param[in] Eig_Val: stores the eigenvalues
-   * \param[in] n: order of matrix A_ij
+   * \brief Set the pressure derivatives.
+   * \param[in] val_dPdU_i - pressure derivatives at i.
+   * \param[in] val_dPdU_j - pressure derivatives at j.
    */
-  static void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+  virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { }
 
   /*!
-   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
-   * \param[in] A_ij: recomposed matrix
-   * \param[in] Eig_Vec: eigenvectors
-   * \param[in] Eig_Val: eigenvalues
-   * \param[in] n: order of matrix A_ij
+   * \brief Set the temperature derivatives.
+   * \param[in] val_dTdU_i - temperature derivatives at i.
+   * \param[in] val_dTdU_j - temperature derivatives at j.
    */
-  static void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+  virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }
 
   /*!
-   * \brief tred2
-   * \param[in] V: matrix that needs to be decomposed
-   * \param[in] d: holds eigenvalues
-   * \param[in] e: supplemental data structure
-   * \param[in] n: order of matrix V
+   * \brief Set the vib-el temperture derivatives.
+   * \param[in] val_dTvedU_i - t_ve derivatives at i.
+   * \param[in] val_dTvedU_j - t_ve derivatives at j.
    */
-  static void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
+  virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }
 
   /*!
-   * \brief tql2
-   * \param[in] V: matrix that will hold the eigenvectors
-   * \param[in] d: array that will hold the ordered eigenvalues
-   * \param[in] e: supplemental data structure
-   * \param[in] n: order of matrix V
+   * \brief Set the vib-elec energy.
+   * \param[in] val_Eve_i - vib-el energy at i.
+   * \param[in] val_Eve_j - vib-el energy at j.
    */
-  static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+  virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }
+
+  /*!
+   * \brief Set the vib-elec specific heat.
+   * \param[in] val_Cvve_i - Cvve at i.
+   * \param[in] val_Cvve_j - Cvve at j.
+   */
+  virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }
+
+  /*!
+   * \brief Set the ratio of specific heats.
+   * \param[in] val_Gamma_i - Gamma at i.
+   * \param[in] val_Gamma_j - Gamma at j.
+   */
+  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
 };
 

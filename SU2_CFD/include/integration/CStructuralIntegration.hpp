@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.hpp
  * \brief Declaration of class for numerical integration of structural problems.
  * \author R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,6 +50,14 @@ public:
   void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container,
                             CNumerics ******numerics_container, CConfig **config,
                             unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
+
+  /*!
+   * \brief Save the solution at different time steps, and reset certain fields for the next timestep.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Structural solver.
+   * \param[in] config - Definition of the problem.
+   */
+  void SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) override;
 
 private:
   /*!

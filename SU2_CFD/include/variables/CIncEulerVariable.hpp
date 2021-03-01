@@ -2,11 +2,11 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -36,14 +36,20 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 12;
+
 protected:
-  VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
-  MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
-  VectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  VectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
+  VectorType Velocity2;                     /*!< \brief Square of the velocity vector. */
+  MatrixType Primitive;                     /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
+  CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  MatrixType Limiter_Primitive;             /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
 public:
   /*!
@@ -62,19 +68,19 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CIncEulerVariable() = default;
+  ~CIncEulerVariable() override = default;
 
   /*!
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline VectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -148,7 +154,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -159,7 +165,7 @@ public:
   inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Reconstruction(iPoint,iVar,iDim);
   }
-  
+
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -170,7 +176,7 @@ public:
   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
-  
+
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
@@ -287,12 +293,6 @@ public:
   inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint,nDim+2); }
 
   /*!
-   * \brief Get the density of the flow from the previous iteration.
-   * \return Old value of the density of the flow.
-   */
-  inline su2double GetDensity_Old(unsigned long iPoint) const final { return Density_Old(iPoint); }
-
-  /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
@@ -327,6 +327,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
@@ -352,5 +360,27 @@ public:
    * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, nDim+8); }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
+  }
 
 };

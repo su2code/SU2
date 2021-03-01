@@ -2,7 +2,7 @@
  * \file CHexahedron.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,19 +49,9 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3,
              unsigned long val_point_4, unsigned long val_point_5,
              unsigned long val_point_6, unsigned long val_point_7) : CPrimalGrid() {
-  unsigned short iDim, iFace, iNeighbor_Elements;
+  unsigned short iNeighbor_Elements;
 
-  /*--- Allocate center-of-gravity coordinates ---*/
   nDim = 3;
-  Coord_CG = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord_CG[iDim] = 0.0;
-  Coord_FaceElems_CG = new su2double* [nFaces];
-  for (iFace = 0; iFace < nFaces; iFace++) {
-    Coord_FaceElems_CG[iFace] = new su2double [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Coord_FaceElems_CG[iFace][iDim] = 0.0;
-  }
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];
@@ -79,26 +69,9 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 
 }
 
-CHexahedron::~CHexahedron() {
-  unsigned short iFaces;
-
-  for (iFaces = 0; iFaces < nFaces; iFaces++)
-    if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
-  if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
-}
+CHexahedron::~CHexahedron() {}
 
 void CHexahedron::Change_Orientation(void) {
-  unsigned long Point_1, Point_3, Point_5, Point_7;
-
-  Point_1 = Nodes[1];
-  Point_3 = Nodes[3];
-  Point_5 = Nodes[5];
-  Point_7 = Nodes[7];
-  Nodes[1] = Point_3;
-  Nodes[3] = Point_1;
-  Nodes[5] = Point_7;
-  Nodes[7] = Point_5;
-
+  swap(Nodes[1], Nodes[3]);
+  swap(Nodes[5], Nodes[7]);
 }
-

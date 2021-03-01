@@ -1,8 +1,8 @@
 /*!
- * \file linear_solvers_structure.cpp
+ * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
- * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/option_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
@@ -37,15 +37,26 @@
 
 #include <limits>
 
-const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
+/*!
+ * \brief Epsilon used in CSysSolve depending on datatype to
+ * decide if the linear system is already solved.
+ */
+namespace {
+  template<class T>
+  constexpr T linSolEpsilon() { return numeric_limits<passivedouble>::epsilon(); }
+  template<>
+  constexpr float linSolEpsilon<float>() { return 1e-12; }
+}
 
 template<class ScalarType>
-CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) : cg_ready(false), bcg_ready(false),
-                                                                gmres_ready(false), smooth_ready(false) {
-  mesh_deform = mesh_deform_mode;
-  LinSysRes_ptr = nullptr;
-  LinSysSol_ptr = nullptr;
-  Residual = 0.0;
+CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) :
+  eps(linSolEpsilon<ScalarType>()),
+  mesh_deform(mesh_deform_mode),
+  cg_ready(false),
+  bcg_ready(false),
+  smooth_ready(false),
+  LinSysSol_ptr(nullptr),
+  LinSysRes_ptr(nullptr) {
 }
 
 template<class ScalarType>
@@ -87,23 +98,23 @@ void CSysSolve<ScalarType>::GenerateGivens(ScalarType & dx, ScalarType & dy, Sca
 }
 
 template<class ScalarType>
-void CSysSolve<ScalarType>::SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                                         const vector<ScalarType> & rhs, vector<ScalarType> & x) const {
+void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsbg,
+                                         const su2vector<ScalarType>& rhs, su2vector<ScalarType>& x) const {
   // initialize...
   for (int i = 0; i < n; i++)
     x[i] = rhs[i];
   // ... and backsolve
   for (int i = n-1; i >= 0; i--) {
-    x[i] /= Hsbg[i][i];
+    x[i] /= Hsbg(i,i);
     for (int j = i-1; j >= 0; j--) {
-      x[j] -= Hsbg[j][i]*x[i];
+      x[j] -= Hsbg(j,i)*x[i];
     }
   }
 }
 
 template<class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg,
-                                           vector<CSysVector<ScalarType> > & w) const {
+void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
+                                           vector<CSysVector<ScalarType> >& w) const {
 
   /*--- Parameter for reorthonormalization ---*/
 
@@ -127,28 +138,28 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & 
 
   for (int k = 0; k < i+1; k++) {
     ScalarType prod = w[i+1].dot(w[k]);
-    Hsbg[k][i] = prod;
-    w[i+1].Plus_AX(-prod, w[k]);
+    Hsbg(k,i) = prod;
+    w[i+1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod*prod > thr) {
       prod = w[i+1].dot(w[k]);
-      Hsbg[k][i] += prod;
-      w[i+1].Plus_AX(-prod, w[k]);
+      Hsbg(k,i) += prod;
+      w[i+1] -= prod * w[k];
     }
 
     /*--- Update the norm and check its size ---*/
 
-    nrm -= Hsbg[k][i]*Hsbg[k][i];
-    if (nrm < 0.0) nrm = 0.0;
+    nrm -= pow(Hsbg(k,i),2);
+    nrm = max<ScalarType>(nrm, 0.0);
     thr = nrm*reorth;
   }
 
   /*--- Test the resulting vector ---*/
 
   nrm = w[i+1].norm();
-  Hsbg[i+1][i] = nrm;
+  Hsbg(i+1,i) = nrm;
 
   /*--- Scale the resulting vector ---*/
 
@@ -189,7 +200,7 @@ void CSysSolve<ScalarType>::WriteWarning(ScalarType res_calc, ScalarType res_tru
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                   const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                  ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                  ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -206,8 +217,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
    *    do this since the working vectors are shared. ---*/
 
   if (!cg_ready) {
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -224,8 +235,12 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
-  mat_vec(x, A_x);
-  r = b; r -= A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -234,27 +249,27 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     norm_r = r.norm();
     norm0  = b.norm();
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+      if (master && !mesh_deform) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
-    if ((monitoring) && (master)) {
+    if (monitoring && master) {
       WriteHeader("CG", tol, norm_r);
       WriteHistory(i, norm_r/norm0);
     }
 
   }
 
-  ScalarType alpha, beta, r_dot_z, r_dot_z_old;
   precond(r, z);
   p = z;
-  r_dot_z = r.dot(z);
+  ScalarType r_dot_z = r.dot(z);
 
   /*---  Loop over all search directions ---*/
 
@@ -266,12 +281,12 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     /*--- Calculate step-length alpha ---*/
 
-    alpha = r_dot_z / A_x.dot(p);
+    ScalarType alpha = r_dot_z / A_x.dot(p);
 
     /*--- Update solution and residual: ---*/
 
-    x.Plus_AX(alpha, p);
-    r.Plus_AX(-alpha, A_x);
+    x += alpha * p;
+    r -= alpha * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -281,23 +296,22 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 10 == 0))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
         WriteHistory(i+1, norm_r/norm0);
 
     }
 
     precond(r, z);
 
-    /*--- Calculate Gram-Schmidt coefficient beta,
-     beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+    /*--- Calculate Gram-Schmidt coefficient, beta = (r_{i+1}, z_{i+1}) / (r_{i}, z_{i}) ---*/
 
-    r_dot_z_old = r_dot_z;
+    ScalarType beta = r_dot_z;
     r_dot_z = r.dot(z);
-    beta = r_dot_z / r_dot_z_old;
+    beta = r_dot_z / beta;
 
-    /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
+    /*--- Gram-Schmidt orthogonalization. ---*/
 
-    p.Equals_AX_Plus_BY(beta, p, 1.0, z);
+    p = beta*p + z;
 
   }
 
@@ -307,16 +321,17 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     if (master) WriteFinalResidual("CG", i, norm_r/norm0);
 
-    mat_vec(x, A_x);
-    r = b; r -= A_x;
-    ScalarType true_res = r.norm();
+    if (recomputeRes) {
+      mat_vec(x, A_x);
+      r = b - A_x;
+      ScalarType true_res = r.norm();
 
-    if (fabs(true_res - norm_r) > tol*10.0) {
-      if (master) {
-        WriteWarning(norm_r, true_res, tol);
+      if (fabs(true_res - norm_r) > tol*10.0) {
+        if (master) {
+          WriteWarning(norm_r, true_res, tol);
+        }
       }
     }
-
   }
 
   residual = norm_r/norm0;
@@ -327,7 +342,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
 
@@ -343,16 +358,15 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     SU2_MPI::Error("FGMRES subspace is too large.", CURRENT_FUNCTION);
   }
 
-  /*--- Allocate if not allocated yet
-   Note: elements in w and z are initialized to x to avoid creating
-   a temporary CSysVector object for the copy constructor ---*/
+  /*--- Allocate if not allocated yet ---*/
 
-  if (!gmres_ready) {
-    SU2_OMP_MASTER
-    {
-      W.resize(m+1, x);
-      Z.resize(m+1, x);
-      gmres_ready = true;
+  if (W.size() <= m) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      W.resize(m+1);
+      Z.resize(m+1);
+      for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+      for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
     }
     SU2_OMP_BARRIER
   }
@@ -361,11 +375,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    on its own thread, since calculations on these arrays are based on dot products
    (reduced across all threads and ranks) all threads do the same computations. ---*/
 
-  vector<ScalarType> g(m+1, 0.0);
-  vector<ScalarType> sn(m+1, 0.0);
-  vector<ScalarType> cs(m+1, 0.0);
-  vector<ScalarType> y(m, 0.0);
-  vector<vector<ScalarType> > H(m+1, vector<ScalarType>(m, 0.0));
+  su2vector<ScalarType> g(m+1), sn(m+1), cs(m+1), y(m);
+  g = ScalarType(0);
+  sn = ScalarType(0);
+  cs = ScalarType(0);
+  y = ScalarType(0);
+  su2matrix<ScalarType> H(m+1, m);
+  H = ScalarType(0);
 
   /*--- Calculate the norm of the rhs vector. ---*/
 
@@ -373,8 +389,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Calculate the initial residual (actually the negative residual) and compute its norm. ---*/
 
-  mat_vec(x, W[0]);
-  W[0] -= b;
+  if (!xIsZero) {
+    mat_vec(x, W[0]);
+    W[0] -= b;
+  }
+  else {
+    W[0] = -b;
+  }
 
   ScalarType beta = W[0].norm();
 
@@ -398,7 +419,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Set the norm to the initial residual value ---*/
 
-  norm0 = beta;
+  if (tol_type == LinearToleranceType::RELATIVE)
+    norm0 = beta;
 
   /*--- Output header information including initial residual ---*/
 
@@ -442,7 +464,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Output the relative residual if necessary ---*/
 
-    if ((((monitoring) && (master)) && ((i+1) % 10 == 0)) && (master))
+    if ((((monitoring) && (master)) && ((i+1) % monitorFreq == 0)) && (master))
       WriteHistory(i+1, beta/norm0);
   }
 
@@ -450,7 +472,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   SolveReduced(i, H, g, y);
   for (unsigned long k = 0; k < i; k++) {
-    x.Plus_AX(y[k], Z[k]);
+    x += y[k] * Z[k];
   }
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
@@ -459,16 +481,17 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     if (master) WriteFinalResidual("FGMRES", i, beta/norm0);
 
-    mat_vec(x, W[0]);
-    W[0] -= b;
-    ScalarType res = W[0].norm();
+    if (recomputeRes) {
+      mat_vec(x, W[0]);
+      W[0] -= b;
+      ScalarType res = W[0].norm();
 
-    if (fabs(res - beta) > tol*10) {
-      if (master) {
-        WriteWarning(beta, res, tol);
+      if (fabs(res - beta) > tol*10) {
+        if (master) {
+          WriteWarning(beta, res, tol);
+        }
       }
     }
-
   }
 
   residual = beta/norm0;
@@ -479,7 +502,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -495,8 +518,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Allocate if not allocated yet ---*/
 
   if (!bcg_ready) {
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -515,8 +538,12 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
 
-  mat_vec(x, A_x);
-  r = b; r -= A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -531,7 +558,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Set the norm to the initial initial residual value ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -544,7 +572,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
   /*--- Initialization ---*/
 
-  ScalarType alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
   p = ScalarType(0.0); v = ScalarType(0.0); r_0 = r;
 
   /*--- Loop over all search directions ---*/
@@ -561,13 +589,11 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     /*--- Compute beta ---*/
 
-    beta = (rho / rho_prime) * (alpha /omega);
+    ScalarType beta = (rho / rho_prime) * (alpha /omega);
 
-    /*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+    /*--- Update p ---*/
 
-    ScalarType beta_omega = -beta*omega;
-    p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
-    p += r;
+    p = beta * (p - omega*v) + r;
 
     /*--- Preconditioning step ---*/
 
@@ -579,28 +605,26 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     ScalarType r_0_v = r_0.dot(v);
     alpha = rho / r_0_v;
 
-    /*--- Update solution and residual: ---*/
+    /*--- Update solution and residual ---*/
 
-    /*--- x_{i-1/2} = x_{i-1} + alpha * z ---*/
-    x.Plus_AX(alpha, z);
-    /*--- r_{i-1/2} = r_{i-1} - alpha * v_{i} ---*/
-    r.Plus_AX(-alpha, v);
+    x += alpha * z;
+    r -= alpha * v;
 
     /*--- Preconditioning step ---*/
 
     precond(r, z);
     mat_vec(z, A_x);
 
-    /*--- Calculate step-length omega ---*/
+    /*--- Calculate step-length omega, avoid division by 0. ---*/
 
-    omega = A_x.dot(r) / A_x.squaredNorm();
+    omega = A_x.squaredNorm();
+    if (omega == ScalarType(0)) break;
+    omega = A_x.dot(r) / omega;
 
-    /*--- Update solution and residual: ---*/
+    /*--- Update solution and residual ---*/
 
-    /*--- x_{i} = x_{i-1/2} + omega * z ---*/
-    x.Plus_AX(omega, z);
-    /*--- r_{i} = r_{i-1/2} - omega * A * z ---*/
-    r.Plus_AX(-omega, A_x);
+    x += omega * z;
+    r -= omega * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -610,7 +634,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 10 == 0) && (master))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0) && (master))
         WriteHistory(i+1, norm_r/norm0);
 
     }
@@ -623,14 +647,15 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     if (master) WriteFinalResidual("BCGSTAB", i, norm_r/norm0);
 
-    mat_vec(x, A_x);
-    r = b; r -= A_x;
-    ScalarType true_res = r.norm();
+    if (recomputeRes) {
+      mat_vec(x, A_x);
+      r = b - A_x;
+      ScalarType true_res = r.norm();
 
-    if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
-      WriteWarning(norm_r, true_res, tol);
+      if ((fabs(true_res - norm_r) > tol*10.0) && (master)) {
+        WriteWarning(norm_r, true_res, tol);
+      }
     }
-
   }
 
   residual = norm_r/norm0;
@@ -640,14 +665,14 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                         const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, CConfig *config) const {
+                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
   /*--- Relaxation factor, see comments inside the loop over the smoothing iterations. ---*/
-  ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
+  const ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
   if (m < 1) {
     SU2_OMP_MASTER
@@ -658,8 +683,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
    product (A_x), for the latter two this is done only on the first call to the method. ---*/
 
   if (!smooth_ready) {
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
       auto nVar = b.GetNVar();
       auto nBlk = b.GetNBlk();
       auto nBlkDomain = b.GetNBlkDomain();
@@ -675,8 +700,12 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   /*--- Compute the initial residual and check if the system is already solved (if in COMM_FULL mode). ---*/
 
-  mat_vec(x, A_x);
-  r = b; r -= A_x;
+  if (!xIsZero) {
+    mat_vec(x, A_x);
+    r = b - A_x;
+  } else {
+    r = b;
+  }
 
   /*--- Only compute the residuals in full communication mode. ---*/
 
@@ -691,7 +720,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
     /*--- Set the norm to the initial initial residual value. ---*/
 
-    norm0 = norm_r;
+    if (tol_type == LinearToleranceType::RELATIVE)
+      norm0 = norm_r;
 
     /*--- Output header information including initial residual. ---*/
 
@@ -724,8 +754,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
      M^{-1}(b-A*x) which converges if ||I-w*M^{-1}*A|| < 1. Combining this method
      with a Gauss-Seidel preconditioner and w>1 is NOT equivalent to SOR. ---*/
 
-    x.Plus_AX(omega, z);
-    r.Plus_AX(-omega, A_x);
+    x += omega * z;
+    r -= omega * A_x;
 
     /*--- Only compute the residuals in full communication mode. ---*/
     /*--- Check if solution has converged, else output the relative residual if necessary. ---*/
@@ -733,7 +763,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     if (config->GetComm_Level() == COMM_FULL) {
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
-      if (((monitoring) && (master)) && ((i+1) % 5 == 0))
+      if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
         WriteHistory(i+1, norm_r/norm0);
     }
   }
@@ -746,70 +776,9 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   return i;
 }
 
-template<>
-void CSysSolve<su2double>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is the same the temporaties are not required ---*/
-  /*--- Set the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = &LinSysRes;
-    LinSysSol_ptr = &LinSysSol;
-  }
-  SU2_OMP_BARRIER
-}
-
-template<>
-void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is the same the temporaties are not required ---*/
-  /*--- Reset the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = nullptr;
-    LinSysSol_ptr = nullptr;
-  }
-  SU2_OMP_BARRIER
-}
-
-#ifdef CODI_REVERSE_TYPE
-template<>
-void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is different we need to copy data to the temporaries ---*/
-  /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
-  LinSysRes_tmp.PassiveCopy(LinSysRes);
-  LinSysSol_tmp.PassiveCopy(LinSysSol);
-
-  /*--- Set the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = &LinSysRes_tmp;
-    LinSysSol_ptr = &LinSysSol_tmp;
-  }
-  SU2_OMP_BARRIER
-}
-
-template<>
-void CSysSolve<passivedouble>::HandleTemporariesOut(CSysVector<su2double> & LinSysSol) {
-
-  /*--- When the type is different we need to copy data from the temporaries ---*/
-  /*--- Copy data, only the solution needs to be copied ---*/
-  LinSysSol.PassiveCopy(LinSysSol_tmp);
-
-  /*--- Reset the pointers ---*/
-  SU2_OMP_MASTER
-  {
-    LinSysRes_ptr = nullptr;
-    LinSysSol_ptr = nullptr;
-  }
-  SU2_OMP_BARRIER
-}
-#endif
-
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                           CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
+                                           CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
    meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
@@ -919,7 +888,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        if ( residual < SolverTol*norm0 ) break;
+        if ( residual <= SolverTol*norm0 ) break;
       }
       break;
     case SMOOTHER:
@@ -929,13 +898,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
   }
 
   SU2_OMP_MASTER
-  Residual = residual;
+  {
+    Residual = residual;
+    Iterations = IterLinSol;
+  }
 
   HandleTemporariesOut(LinSysSol);
 
@@ -988,8 +961,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
-#ifdef CODI_REVERSE_TYPE
+                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
@@ -1020,6 +992,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     ScreenOutput = config->GetDeform_Output();
   }
 
+  /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) RequiresTranspose = true;
+
   /*--- Set up preconditioner and matrix-vector product ---*/
 
   CPreconditioner<ScalarType>* precond  = nullptr;
@@ -1035,6 +1010,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, RequiresTranspose);
       break;
   }
+
+  /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
+  if (config->GetKind_SU2() == SU2_DOT) precond->Build();
 
   auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
 
@@ -1059,13 +1037,14 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         /*--- Enforce a hard limit on total number of iterations ---*/
         unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
         IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
-        if ( Residual < SolverTol*Norm0 ) break;
+        if ( Residual <= SolverTol*Norm0 ) break;
       }
       break;
     case PASTIX_LDLT : case PASTIX_LU:
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
+      Residual = 1e-20;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -1076,15 +1055,18 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  Iterations = IterLinSol;
   return IterLinSol;
-#else
-  return 0;
-#endif
+
 }
 
 /*--- Explicit instantiations ---*/
-template class CSysSolve<su2double>;
 
-#ifdef CODI_REVERSE_TYPE
+#ifdef CODI_FORWARD_TYPE
+template class CSysSolve<su2double>;
+#else
+template class CSysSolve<su2mixedfloat>;
+#ifdef USE_MIXED_PRECISION
 template class CSysSolve<passivedouble>;
+#endif
 #endif

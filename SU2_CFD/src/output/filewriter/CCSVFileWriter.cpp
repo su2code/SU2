@@ -2,7 +2,7 @@
  * \file CCSVFileWriter.cpp
  * \brief CSV Writer output class
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,7 @@ void CCSVFileWriter::Write_Data(){
   int iProcessor, nProcessor = size;
 
   unsigned long iPoint, index;
-  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = nullptr;
   unsigned long nLocalVertex_Surface = 0, MaxLocalVertex_Surface = 0;
 
   const vector<string> fieldNames = dataSorter->GetFieldNames();
@@ -71,19 +71,19 @@ void CCSVFileWriter::Write_Data(){
    to the master node with collective calls. ---*/
 
   SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1,
-                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nVertex,  1, MPI_UNSIGNED_LONG,
-                  MASTER_NODE, MPI_COMM_WORLD);
+                  MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
 
   su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
-  su2double *bufD_Recv = NULL;
+  su2double *bufD_Recv = nullptr;
 
   unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
-  unsigned long *bufL_Recv = NULL;
+  unsigned long *bufL_Recv = nullptr;
 
   /*--- Load send buffers with the local data on this rank. ---*/
 
@@ -113,10 +113,10 @@ void CCSVFileWriter::Write_Data(){
   /*--- Collective comms of the solution data and global IDs. ---*/
 
   SU2_MPI::Gather(bufD_Send, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE,
-                  bufD_Recv, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                  bufD_Recv, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
   SU2_MPI::Gather(bufL_Send, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG,
-                  bufL_Recv, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+                  bufL_Recv, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master rank alone writes the surface CSV file. ---*/
 

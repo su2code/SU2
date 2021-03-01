@@ -3,11 +3,11 @@
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement at the moving boundaries.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -29,7 +29,7 @@
 #pragma once
 
 #include "CMeshVariable.hpp"
-#include "../../../Common/include/toolboxes/CVertexMap.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
 
 class CMeshBoundVariable final : public CMeshVariable {
 private:
@@ -51,7 +51,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshBoundVariable() = default;
+  ~CMeshBoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").

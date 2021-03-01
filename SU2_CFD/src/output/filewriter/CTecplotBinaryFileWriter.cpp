@@ -2,7 +2,7 @@
  * \file CTecplotBinaryFileWriter.cpp
  * \brief Filewriter class for Tecplot binary format.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,11 +47,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   /*--- Set a timer for the binary file writing. ---*/
 
-#ifndef HAVE_MPI
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  startTime = MPI_Wtime();
-#endif
+  startTime = SU2_MPI::Wtime();
 
 #ifdef HAVE_TECIO
 
@@ -59,14 +55,13 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
-                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
+  unsigned long nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
                 nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
+
   unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
                 nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
                 nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
@@ -89,7 +84,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
   if (err) cout << "Error opening Tecplot file '" << fileName << "'" << endl;
 
 #ifdef HAVE_MPI
-  err = tecMPIInitialize(file_handle, MPI_COMM_WORLD, MASTER_NODE);
+  err = tecMPIInitialize(file_handle, SU2_MPI::GetComm(), MASTER_NODE);
   if (err) cout << "Error initializing Tecplot parallel output." << endl;
 #endif
 
@@ -138,6 +133,8 @@ void CTecplotBinaryFileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
+
+  unsigned long nParallel_Line = dataSorter->GetnElem(LINE);
 
   unsigned short iVar;
   NodePartitioner node_partitioner(num_nodes, size);
@@ -218,7 +215,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     for (size_t i = 0; i < num_halo_nodes; ++i)
       ++num_nodes_to_receive[neighbor_partitions[i] - 1];
     vector<int> num_nodes_to_send(size);
-    SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, MPI_COMM_WORLD);
+    SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, SU2_MPI::GetComm());
 
     /* Now send the global node numbers whose data we need,
        and receive the same from all other ranks.
@@ -241,7 +238,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     if (sorted_halo_nodes.empty()) sorted_halo_nodes.resize(1); /* Avoid crash. */
     SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
                        &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
-                       MPI_COMM_WORLD);
+                       SU2_MPI::GetComm());
 
     /* Now actually send and receive the data */
     vector<passivedouble> data_to_send(max(1, total_num_nodes_to_send * (int)fieldNames.size()));
@@ -264,7 +261,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     }
     CBaseMPIWrapper::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
                        &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
-                       MPI_COMM_WORLD);
+                       SU2_MPI::GetComm());
   }
   else {
     /* Zone will be gathered to and output by MASTER_NODE */
@@ -294,7 +291,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       vector<passivedouble> var_data;
       unsigned long nPoint = dataSorter->GetnPoints();
       vector<unsigned long> num_points(size);
-      SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, &num_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, &num_points[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
       for(int iRank = 0; iRank < size; ++iRank) {
         int64_t rank_num_points = num_points[iRank];
@@ -312,7 +309,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
           }
           else { /* Receive data from other rank. */
             var_data.resize(max((int64_t)1, (int64_t)fieldNames.size() * rank_num_points));
-            CBaseMPIWrapper::Recv(&var_data[0], fieldNames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            CBaseMPIWrapper::Recv(&var_data[0], fieldNames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
             for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
               err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
@@ -324,7 +321,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
     else { /* Send data to MASTER_NODE */
       unsigned long nPoint = dataSorter->GetnPoints();
 
-      SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&nPoint, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
       vector<passivedouble> var_data;
       size_t var_data_size = fieldNames.size() * dataSorter->GetnPoints();
@@ -334,7 +331,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
             var_data.push_back(dataSorter->GetData(iVar,i));
 
       if (var_data.size() > 0)
-        CBaseMPIWrapper::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, MPI_COMM_WORLD);
+        CBaseMPIWrapper::Send(&var_data[0], static_cast<int>(var_data.size()), MPI_DOUBLE, MASTER_NODE, rank, SU2_MPI::GetComm());
     }
   }
 
@@ -435,7 +432,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
       vector<unsigned long> connectivity_sizes(size);
       unsigned long unused = 0;
-      SU2_MPI::Gather(&unused, 1, MPI_UNSIGNED_LONG, &connectivity_sizes[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&unused, 1, MPI_UNSIGNED_LONG, &connectivity_sizes[0], 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       vector<int64_t> connectivity;
       for(int iRank = 0; iRank < size; ++iRank) {
         if (iRank == rank) {
@@ -466,7 +463,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
         } else { /* Receive node map and write out. */
           connectivity.resize(max((unsigned long)1, connectivity_sizes[iRank]));
-          SU2_MPI::Recv(&connectivity[0], connectivity_sizes[iRank], MPI_UNSIGNED_LONG, iRank, iRank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          SU2_MPI::Recv(&connectivity[0], connectivity_sizes[iRank], MPI_UNSIGNED_LONG, iRank, iRank, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
           err = tecZoneNodeMapWrite64(file_handle, zone, 0, 1, connectivity_sizes[iRank], &connectivity[0]);
           if (err) cout << rank << ": Error outputting Tecplot node values." << endl;
         }
@@ -477,7 +474,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
       unsigned long connectivity_size;
       connectivity_size = 2 * nParallel_Line + 4 * (nParallel_Tria + nParallel_Quad);
-      SU2_MPI::Gather(&connectivity_size, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(&connectivity_size, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
       vector<int64_t> connectivity;
       connectivity.reserve(connectivity_size);
       for (iElem = 0; err == 0 && iElem < nParallel_Line; iElem++) {
@@ -500,7 +497,7 @@ void CTecplotBinaryFileWriter::Write_Data(){
       }
 
       if (connectivity.empty()) connectivity.resize(1); /* Avoid crash */
-      SU2_MPI::Send(&connectivity[0], connectivity_size, MPI_UNSIGNED_LONG, MASTER_NODE, rank, MPI_COMM_WORLD);
+      SU2_MPI::Send(&connectivity[0], connectivity_size, MPI_UNSIGNED_LONG, MASTER_NODE, rank, SU2_MPI::GetComm());
     }
   }
 #else
@@ -588,11 +585,8 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   /*--- Compute and store the write time. ---*/
 
-#ifndef HAVE_MPI
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  stopTime = MPI_Wtime();
-#endif
+  stopTime = SU2_MPI::Wtime();
+
   usedTime = stopTime-startTime;
 
   fileSize = Determine_Filesize(fileName);

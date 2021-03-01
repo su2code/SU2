@@ -2,7 +2,7 @@
  * \file CFileWriter.cpp
  * \brief Filewriter base class.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,7 +66,7 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   
 #ifdef HAVE_MPI
 
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   MPI_Datatype filetype;
   
@@ -91,14 +91,14 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   disp      += totalSizeInBytes;
   fileSize  += sizeInBytes;
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
   return (ierr == MPI_SUCCESS);
 #else
 
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten;
   
@@ -107,7 +107,7 @@ bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBy
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   fileSize += bytesWritten;
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -120,7 +120,7 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   
 #ifdef HAVE_MPI
   
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   int ierr = MPI_SUCCESS;
   
@@ -135,14 +135,14 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   disp     += sizeInBytes;
   fileSize += sizeInBytes;
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
   return (ierr == MPI_SUCCESS);
 #else
   
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten = sizeInBytes;
   
@@ -150,7 +150,7 @@ bool CFileWriter::WriteMPIBinaryData(const void *data, unsigned long sizeInBytes
   
   bytesWritten = fwrite(data, sizeof(char), sizeInBytes, fhw);
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -164,7 +164,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
 #ifdef HAVE_MPI
 
-  startTime = MPI_Wtime();
+  startTime = SU2_MPI::Wtime();
   
   int ierr = MPI_SUCCESS;
   
@@ -180,7 +180,7 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   disp += str.size()*sizeof(char);
   fileSize += sizeof(char)*str.size();
   
-  stopTime = MPI_Wtime();
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -188,14 +188,14 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
   
 #else
   
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  startTime = SU2_MPI::Wtime();
   
   unsigned long bytesWritten;  
   bytesWritten = fwrite(str.c_str(), sizeof(char), str.size(), fhw);
   
   fileSize += bytesWritten;
   
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  stopTime = SU2_MPI::Wtime();
   
   usedTime += stopTime - startTime;
   
@@ -207,10 +207,8 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 
 bool CFileWriter::OpenMPIFile(){
   
-  int ierr;
-
 #ifdef HAVE_MPI
-  
+  int ierr;
   disp     = 0.0;
   
   /*--- All ranks open the file using MPI. Here, we try to open the file with
@@ -218,14 +216,14 @@ bool CFileWriter::OpenMPIFile(){
    to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fileName.c_str(), MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
                          MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                          MPI_INFO_NULL, &fhw);
   }
@@ -266,7 +264,7 @@ bool CFileWriter::CloseMPIFile(){
 
   su2double my_fileSize = fileSize;
   SU2_MPI::Allreduce(&my_fileSize, &fileSize, 1,
-                     MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Compute and store the bandwidth ---*/
 

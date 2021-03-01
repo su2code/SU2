@@ -35,10 +35,10 @@
 #include <numeric>
 #include <boost/bind.hpp>
 #include <boost/range/algorithm_ext/for_each.hpp>
-#include "../../../../Common/include/mpi_structure.hpp"
+//#include "../../../../Common/include/mpi_structure.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../../Common/include/CConfig.hpp"
-#include "../../fluid_model.hpp"
+#include "../../fluid/CFluidModel.hpp"
 
 using namespace std;
 

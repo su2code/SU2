@@ -2,7 +2,7 @@
  * \file CParallelDataSorter.hpp
  * \brief Headers fo the data sorter class.
  * \author T. Albring, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../../../Common/include/mpi_structure.hpp"
+#include "../../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 #include <array>
@@ -47,34 +47,34 @@ protected:
    * \brief The MPI size, aka the number of processors.
    */
   int size;
-  
+
   unsigned long nGlobalPointBeforeSort; //!< Global number of points without halos before sorting
   unsigned long nLocalPointsBeforeSort;   //!< Local number of points without halos before sorting on this proc
- 
-  int *Conn_Line_Par;              //!< Local connectivity of line elements 
-  int *Conn_Tria_Par;              //!< Local connectivity of triangle elements 
+
+  int *Conn_Line_Par;              //!< Local connectivity of line elements
+  int *Conn_Tria_Par;              //!< Local connectivity of triangle elements
   int *Conn_Quad_Par;              //!< Local connectivity of quad elements
-  int *Conn_Tetr_Par;              //!< Local connectivity of tetrahedral elements 
+  int *Conn_Tetr_Par;              //!< Local connectivity of tetrahedral elements
   int *Conn_Hexa_Par;              //!< Local connectivity of hexahedral elements
-  int *Conn_Pris_Par;              //!< Local connectivity of prism elements 
-  int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements 
+  int *Conn_Pris_Par;              //!< Local connectivity of prism elements
+  int *Conn_Pyra_Par;              //!< Local connectivity of pyramid elements
 
   array<unsigned long, N_ELEM_TYPES> nElemPerTypeGlobal;   //!< Global number of elements after sorting on this proc
   array<unsigned long, N_ELEM_TYPES> nElemPerType; //!< Local number of elements after sorting on this proc
-  
+
   /*!
    * \brief Map that stores the index for each GEO_TYPE type where to find information
    * in the element arrays.
    */
-  static const map<unsigned short, unsigned short> TypeMap; 
- 
-  unsigned long nPointsGlobal;   //!< Global number of points without halos 
+  static const map<unsigned short, unsigned short> TypeMap;
+
+  unsigned long nPointsGlobal;   //!< Global number of points without halos
   unsigned long nElemGlobal;    //!< Global number of elems without halos
   unsigned long nConnGlobal;    //!< Global size of the connectivity array
-  unsigned long nPoints;    //!< Local number of points 
+  unsigned long nPoints;    //!< Local number of points
   unsigned long nElem;     //!< Local number of elements
   unsigned long nConn;     //!< Local size of the connectivity array
-  
+
   CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
 
   unsigned short GlobalField_Counter;  //!< Number of output fields
@@ -176,16 +176,16 @@ public:
   unsigned long GetnElem(GEO_TYPE type) const {
     return nElemPerType[TypeMap.at(type)];
   }
-  
+
   /*!
-   * \brief Get the global number of elements of a specific type 
+   * \brief Get the global number of elements of a specific type
    * \input type - The type of element, ref GEO_TYPE
    * \return global number of elements of a specific type.
    */
   unsigned long GetnElemGlobal(GEO_TYPE type) const {
     return nElemPerTypeGlobal[TypeMap.at(type)];
   }
-  
+
   /*!
    * \brief Get the global number of elements
    * \return global number of elements.
@@ -193,7 +193,7 @@ public:
   unsigned long GetnElemGlobal() const {
     return nElemGlobal;
   }
-  
+
   /*!
    * \brief Get the global number entries of the connectivity array
    * \return global number of entries of the connectivity array
@@ -201,7 +201,7 @@ public:
   unsigned long GetnConnGlobal() const {
     return nConnGlobal;
   }
-  
+
   /*!
    * \brief Get the local number entries of the connectivity array
    * \return local number of entries of the connectivity array
@@ -209,7 +209,7 @@ public:
   unsigned long GetnConn() const {
     return nConn;
   }
-  
+
   /*!
    * \brief Get the cumulated number of elements
    * \input rank - the processor rank.
@@ -218,7 +218,7 @@ public:
   unsigned long GetnElemCumulative(unsigned short rank) const {
     return nElem_Cum[rank];
   }
-  
+
   /*!
    * \brief Get the cumulated number of entries of the connectivity array
    * \input rank - the processor rank.
@@ -336,7 +336,7 @@ public:
   unsigned short GetnDim() const {
     return nDim;
   }
-  
+
   /*!
    * \brief Set the total number of elements after sorting individual element types
    */

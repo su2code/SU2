@@ -2,7 +2,7 @@
  * \file CVertex.cpp
  * \brief Main classes for defining the vertices of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,118 +26,34 @@
  */
 
 #include "../../../include/geometry/dual_grid/CVertex.hpp"
+#include "../../../include/toolboxes/geometry_toolbox.hpp"
 
-CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(val_nDim) {
+using namespace GeometryToolbox;
 
-  unsigned short iDim;
-
-  /*--- Set periodic points to zero ---*/
-
-  PeriodicPoint[0] = -1; PeriodicPoint[1] = -1; PeriodicPoint[2] = -1;
-  PeriodicPoint[3] = -1; PeriodicPoint[4] = -1;
-
-  /*--- Identify the points at the perimeter of the actuatrod disk ---*/
-
-  ActDisk_Perimeter = false;
-
-  /*--- Pointers initialization ---*/
-
-  Nodes  = NULL;
-  Normal = NULL;
-
-  /*--- Allocate node, and face normal ---*/
-
-  Nodes  = new unsigned long[1];
-  Normal = new su2double [nDim];
-
-  /*--- Initializate the structure ---*/
-
+CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) :
+  CDualGrid(val_nDim) {
   Nodes[0] = val_point;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    Normal[iDim] = 0.0;
-
-  /*--- Set to zero the variation of the coordinates ---*/
-
-  VarCoord[0] = 0.0;
-  VarCoord[1] = 0.0;
-  VarCoord[2] = 0.0;
-
-  /*--- Set to NULL variation of the rotation  ---*/
-
-  VarRot = NULL;
-
-  /*--- Set to NULL donor arrays for interpolation ---*/
-
-  Donor_Points  = NULL;
-  Donor_Proc    = NULL;
-  Donor_Coeff   = NULL;
-  nDonor_Points = 1;
-
 }
 
-CVertex::~CVertex() {
+void CVertex::SetNodes_Coord(const su2double *coord_Edge_CG,
+                             const su2double *coord_FaceElem_CG,
+                             const su2double *coord_Elem_CG) {
 
-  if (Normal != NULL) delete[] Normal;
-  if (Nodes  != NULL) delete[] Nodes;
+  constexpr unsigned long nDim = 3;
+  su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, Dim_Normal[nDim];
 
-  /*---  donor arrays for interpolation ---*/
+  Distance(nDim, coord_Elem_CG, coord_Edge_CG, vec_a);
+  Distance(nDim, coord_FaceElem_CG, coord_Edge_CG, vec_b);
 
-  if (VarRot       != NULL) delete[] VarRot;
-  if (Donor_Coeff  != NULL) delete[] Donor_Coeff;
-  if (Donor_Proc   != NULL) delete[] Donor_Proc;
-  if (Donor_Points != NULL) delete[] Donor_Points;
+  CrossProduct(vec_a, vec_b, Dim_Normal);
 
+  for (auto iDim = 0ul; iDim < nDim; ++iDim)
+    Normal[iDim] += 0.5 * Dim_Normal[iDim];
 }
 
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
-
-  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0};
-  unsigned short iDim;
-
-  assert(nDim == 3);
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(val_coord_Edge_CG, nDim);
-  AD::SetPreaccIn(val_coord_Elem_CG, nDim);
-  AD::SetPreaccIn(val_coord_FaceElem_CG, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Edge_CG[iDim];
-    vec_b[iDim] = val_coord_FaceElem_CG[iDim]-val_coord_Edge_CG[iDim];
-  }
-
-  Normal[0] += 0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
-  Normal[1] -= 0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
-  Normal[2] += 0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
-
-  AD::SetPreaccOut(Normal, nDim);
-  AD::EndPreacc();
-
-}
-
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(val_coord_Elem_CG, nDim);
-  AD::SetPreaccIn(val_coord_Edge_CG, nDim);
-  AD::SetPreaccIn(Normal, nDim);
+void CVertex::SetNodes_Coord(const su2double *val_coord_Edge_CG,
+                             const su2double *val_coord_Elem_CG) {
 
   Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
-  Normal[1] -= (val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
-
-  AD::SetPreaccOut(Normal, nDim);
-  AD::EndPreacc();
-
-}
-
-void CVertex::Allocate_DonorInfo(void){
-
-  if( Donor_Points != NULL )  delete [] Donor_Points;
-  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
-  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;
-
-  Donor_Points = new unsigned long[nDonor_Points];
-  Donor_Proc   = new unsigned long[nDonor_Points];
-  Donor_Coeff  = new su2double[nDonor_Points];
+  Normal[1] -= val_coord_Elem_CG[0]-val_coord_Edge_CG[0];
 }

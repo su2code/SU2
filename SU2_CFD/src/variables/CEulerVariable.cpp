@@ -2,11 +2,11 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,19 +25,18 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CEulerVariable.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool viscous   = config->GetViscous();
-  bool windgust  = config->GetWind_Gust();
-  bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool viscous   = config->GetViscous();
+  const bool windgust  = config->GetWind_Gust();
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -60,19 +59,19 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     }
   }
 
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  /*--- Allocate undivided laplacian (centered) ---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
+      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  }
 
   /*--- Solution initialization ---*/
 
@@ -108,20 +107,28 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     WindGustDer.resize(nPoint,nDim+1);
   }
 
-  /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, mu, mut, k, Cp) ---*/
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nSecondaryVar) = su2double(0.0);
 
-  /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
-        We need P, and rho for running the adjoint problem ---*/
+  /*--- Compressible flow, gradients primitive variables (T, vx, vy, vz, P, rho, h) ---*/
 
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  if (config->GetMUSCL_Flow() || viscous) {
+    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (config->GetReconstructionGradientRequired() &&
+      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
-  
+
+  if (config->GetAxisymmetric()){
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+  }
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
@@ -138,11 +145,11 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
-  
+
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
-  
+
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

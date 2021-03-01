@@ -2,7 +2,7 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,18 +34,18 @@
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
 
   /*--- Basic array initialization ---*/
-  CD_Visc  = NULL; CL_Visc  = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
-  CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
+  CD_Visc  = nullptr; CL_Visc  = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr; CMy_Visc = nullptr; CMz_Visc = nullptr;
+  CFx_Visc = nullptr; CFy_Visc = nullptr; CFz_Visc = nullptr;
 
   /*--- Surface-based array initialization ---*/
-  Surface_CL_Visc  = NULL; Surface_CD_Visc  = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
-  MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc  = nullptr; Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc = nullptr; Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc = nullptr; Surface_CMz_Visc = nullptr;
+  MaxHeatFlux_Visc = nullptr; Heat_Visc = nullptr;
 
   /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
-  SGSModel     = NULL;
+  SGSModel     = nullptr;
   SGSModelUsed = false;
 }
 
@@ -53,14 +53,14 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
 
   /*--- Array initialization ---*/
-  CD_Visc = NULL;  CL_Visc = NULL;  CSF_Visc = NULL; CEff_Visc = NULL;
-  CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
-  CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
+  CD_Visc = nullptr;  CL_Visc = nullptr;  CSF_Visc = nullptr; CEff_Visc = nullptr;
+  CMx_Visc = nullptr; CMy_Visc = nullptr; CMz_Visc = nullptr;
+  CFx_Visc = nullptr; CFy_Visc = nullptr; CFz_Visc = nullptr;
 
-  Surface_CL_Visc  = NULL; Surface_CD_Visc = NULL;  Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
-  Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
-  Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
-  MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+  Surface_CL_Visc  = nullptr; Surface_CD_Visc = nullptr;  Surface_CSF_Visc = nullptr; Surface_CEff_Visc = nullptr;
+  Surface_CFx_Visc = nullptr; Surface_CFy_Visc = nullptr; Surface_CFz_Visc = nullptr;
+  Surface_CMx_Visc = nullptr; Surface_CMy_Visc = nullptr; Surface_CMz_Visc = nullptr;
+  MaxHeatFlux_Visc = nullptr; Heat_Visc = nullptr;
 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
@@ -118,7 +118,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
     switch( config->GetKind_SGS_Model() ) {
 
       case IMPLICIT_LES:
-        SGSModel     = NULL;
+        SGSModel     = nullptr;
         SGSModelUsed = false;
         break;
 
@@ -145,42 +145,42 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 
     /* No LES, so no SGS model needed.
        Set the pointer to NULL and the boolean to false. */
-    SGSModel     = NULL;
+    SGSModel     = nullptr;
     SGSModelUsed = false;
   }
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)      delete [] CSF_Visc;
-  if (CMx_Visc != NULL)      delete [] CMx_Visc;
-  if (CMy_Visc != NULL)      delete [] CMy_Visc;
-  if (CMz_Visc != NULL)      delete [] CMz_Visc;
-  if (CFx_Visc != NULL)      delete [] CFx_Visc;
-  if (CFy_Visc != NULL)      delete [] CFy_Visc;
-  if (CFz_Visc != NULL)      delete [] CFz_Visc;
-  if (CEff_Visc != NULL)     delete [] CEff_Visc;
+        delete [] CD_Visc;
+        delete [] CL_Visc;
+       delete [] CSF_Visc;
+       delete [] CMx_Visc;
+       delete [] CMy_Visc;
+       delete [] CMz_Visc;
+       delete [] CFx_Visc;
+       delete [] CFy_Visc;
+       delete [] CFz_Visc;
+      delete [] CEff_Visc;
 
-  if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL)  delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL) delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)  delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)  delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)  delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)  delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)  delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)  delete [] Surface_CMz_Visc;
+    delete [] Surface_CL_Visc;
+    delete [] Surface_CD_Visc;
+   delete [] Surface_CSF_Visc;
+  delete [] Surface_CEff_Visc;
+   delete [] Surface_CFx_Visc;
+   delete [] Surface_CFy_Visc;
+   delete [] Surface_CFz_Visc;
+   delete [] Surface_CMx_Visc;
+   delete [] Surface_CMy_Visc;
+   delete [] Surface_CMz_Visc;
 
-  if (Heat_Visc        != NULL)  delete [] Heat_Visc;
-  if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
+   delete [] Heat_Visc;
+   delete [] MaxHeatFlux_Visc;
 
-  if( SGSModel ) delete SGSModel;
+  delete SGSModel;
 }
 
-void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -193,9 +193,6 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /*--- is performed, but not when wall functions are used. Hence, this    ---*/
   /*--- function must be modified when wall functions are implemented.     ---*/
   /*--------------------------------------------------------------------------*/
-
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -212,33 +209,13 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-  const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin      = config->GetRefOriginMoment(0);
-  const bool grid_movement     = config->GetGrid_Movement();
+  auto Origin      = config->GetRefOriginMoment(0);
 
-/*--- Evaluate reference values for non-dimensionalization.
-        For dynamic meshes, use the motion Mach number as a reference value
-        for computing the force coefficients. Otherwise, use the freestream
-        values, which is the standard convention. ---*/
-  const su2double RefTemp     = Temperature_Inf;
-  const su2double RefDensity  = Density_Inf;
+  /*--- Evaluate reference values for non-dimensionalization. ---*/
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
 
-  su2double RefVel2;
-  if (grid_movement) {
-    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    const su2double Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim)
-      RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-
-  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Variables initialization ---*/
   AllBound_CD_Visc = 0.0;  AllBound_CL_Visc  = 0.0; AllBound_CSF_Visc = 0.0;
@@ -467,7 +444,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
               for(unsigned short i=0; i<nDOFsFace; ++i) {
                 const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
                 su2double       *sol    = solCopy + NPad*i + llNVar;
-                memcpy(sol, solDOF, nBytes);
+                for(unsigned short mm=0; mm<nVar; ++mm)
+                  sol[mm] = solDOF[mm];
               }
             }
 
@@ -485,7 +463,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
               for(unsigned short i=0; i<nDOFsElem; ++i) {
                 const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[lll].DOFsSolElement[i];
                 su2double       *sol    = solCopy + NPad*i + llNVar;
-                memcpy(sol, solDOF, nBytes);
+                for(unsigned short mm=0; mm<nVar; ++mm)
+                  sol[mm] = solDOF[mm];
               }
             }
 
@@ -851,7 +830,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -878,7 +857,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double localMax = AllBound_MaxHeatFlux_Visc;
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                       MPI_MAX, MPI_COMM_WORLD);
+                       MPI_MAX, SU2_MPI::GetComm());
   }
 #endif
 
@@ -947,9 +926,6 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   /* Determine the minimum padded size in the matrix multiplications, which
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
-
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
@@ -1020,7 +996,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             /* Loop over the DOFs and copy the data. */
             const unsigned short llNVar = ll*nVar;
             for(unsigned short i=0; i<nDOFs; ++i)
-              memcpy(solDOFs+i*NPad+llNVar, sol+i*nVar, nBytes);
+              for(unsigned short mm=0; mm<nVar; ++mm)
+                solDOFs[i*NPad+llNVar+mm] =  sol[i*nVar+mm];
           }
 
           /* Call the general function to carry out the matrix product to determine
@@ -1304,10 +1281,10 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 
@@ -3174,7 +3151,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
-  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : NULL;
+  const su2double *body_force_vector = body_force ? config->GetBody_Force_Vector() : nullptr;
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
@@ -3192,9 +3169,6 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   /* Determine the minimum padded size in the matrix multiplications, which
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
-
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -3249,7 +3223,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
       /* Loop over the DOFs and copy the data. */
       const unsigned short llNVar = ll*nVar;
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(solDOFs+i*NPad+llNVar, solDOFsElem+i*nVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solDOFs[i*NPad+llNVar+mm] = solDOFsElem[i*nVar+mm];
     }
 
     /* Call the general function to carry out the matrix product to determine
@@ -3735,7 +3710,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
       /* Loop over the DOFs and copy the data. */
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(res+i*nVar, solDOFs+i*NPad+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+           res[i*nVar+mm] = solDOFs[i*NPad+llNVar+mm];
     }
 
     /* Update the value of the counter l to the end index of the
@@ -3759,9 +3735,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
   /* Determine the minimum padded size in the matrix multiplications, which
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
-
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Loop over the requested range of matching faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
@@ -3864,7 +3837,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
         const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                                 + nVar*(DOFsElem[i] - offset);
         su2double       *sol    = solElem + NPad*i + llNVar;
-        memcpy(sol, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          sol[mm] = solDOF[mm];
       }
     }
 
@@ -3937,7 +3911,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
         const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                                 + nVar*(DOFsElem[i] - offset);
         su2double       *sol    = solElem + NPad*i + llNVar;
-        memcpy(sol, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          sol[mm] = solDOF[mm];
       }
     }
 
@@ -4052,7 +4027,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
       /* Loop over the DOFs and copy the data for side 0. */
       for(unsigned short i=0; i<nDOFsFace0; ++i)
-        memcpy(resFace0+nVar*i, resSide0+NPad*i+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resFace0[nVar*i+mm] = resSide0[NPad*i+llNVar+mm];
 
       /* If the number of DOFs on both sides is the same, then the residual
          of side 1 is obtained by simply negating the residual of side 0.
@@ -4064,10 +4040,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       }
       else {
         for(unsigned short i=0; i<nDOFsFace1; ++i)
-          memcpy(resFace1+nVar*i, resSide1+NPad*i+llNVar, nBytes);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-        resFace1[i] = -resFace1[i];
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resFace1[nVar*i+mm] = -resSide1[NPad*i+llNVar+mm];
       }
     }
 
@@ -4140,11 +4114,13 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
         /* Loop over the DOFs of the element and copy the data for side 0. */
         for(unsigned short i=0; i<nDOFsElem0; ++i)
-          memcpy(resElem0+nVar*i, solIntL+NPad*i+llNVar, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resElem0[nVar*i+mm] = solIntL[NPad*i+llNVar+mm];
 
         /* Loop over the DOFs of the element and copy the data for side 1. */
         for(unsigned short i=0; i<nDOFsElem1; ++i)
-          memcpy(resElem1+nVar*i, solIntR+NPad*i+llNVar, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resElem1[nVar*i+mm] = solIntR[NPad*i+llNVar+mm];
       }
     }
 
@@ -5058,7 +5034,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5130,7 +5106,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5145,9 +5121,6 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
-
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5230,7 +5203,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
       for(unsigned short i=0; i<nDOFsElem; ++i) {
         const su2double *solDOF = VecWorkSolDOFs[timeLevel].data()
                                 + nVar*(surfElem[ll].DOFsSolElement[i] - offset);
-        memcpy(solElem+NPad*i+llNVar, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solElem[NPad*i+llNVar+mm] = solDOF[mm];
       }
     }
 
@@ -5596,14 +5570,15 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     /* Set the right state in the integration points to the left state, i.e.
        no boundary condition is applied for a supersonic outlet. */
-    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
+    for(unsigned short mm=0; mm<(NPad*nInt); ++mm)
+      solIntR[mm] = solIntL[mm];
 
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5669,7 +5644,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -5735,7 +5710,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, NULL);
+                                    indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -6050,7 +6025,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work,
-                                    resFaces, indResFaces, NULL);
+                                    resFaces, indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -6141,7 +6116,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work,
-                                    resFaces, indResFaces, NULL);
+                                    resFaces, indResFaces, nullptr);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -6225,9 +6200,6 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
                                              su2double          *viscosityInt,
                                              su2double          *kOverCvInt) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Compute the gradients of the conservative variables in the  ---*/
   /*---         integration points of the faces.                            ---*/
@@ -6253,7 +6225,8 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
       const su2double *solDOF = VecWorkSolDOFs[timeLevel].data()
                               + nVar*(DOFsElem[i] - offset);
       su2double       *sol    = solElem + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6422,9 +6395,6 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Get the required information from the standard element, which is the
         same for all faces considered. ---*/
   const unsigned short ind          = surfElem[0].indStandardElement;
@@ -6522,7 +6492,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     /* Loop over the DOFs and copy the data. */
     for(unsigned short i=0; i<nDOFs; ++i)
-      memcpy(resFace+nVar*i, viscFluxes+NPad*i+llNVar, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        resFace[nVar*i+mm] = viscFluxes[NPad*i+llNVar+mm];
   }
 
   /*------------------------------------------------------------------------*/
@@ -6572,7 +6543,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
       /* Loop over the DOFs of the element and copy the data. */
       for(unsigned short i=0; i<nDOFsElem; ++i)
-        memcpy(resElem+nVar*i, fluxes+NPad*i+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resElem[nVar*i+mm] = fluxes[NPad*i+llNVar+mm];
     }
   }
 }

@@ -2,7 +2,7 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  *        document the public interface of this class hierarchy.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CFEAElasticity(void);
+  ~CFEAElasticity(void) override;
 
   /*!
    * \brief Set elasticity modulus and Poisson ratio.
@@ -174,7 +174,33 @@ public:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { };
+  inline su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { return 0; };
+
+  /*!
+   * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
+   */
+  template<class T>
+  static su2double VonMisesStress(unsigned short nDim, const T& stress) {
+    if (nDim == 2) {
+      su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
+
+      su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
+      su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
+      S1 += tauMax;
+      S2 -= tauMax;
+
+      return sqrt(S1*S1+S2*S2-2*S1*S2);
+    }
+    else {
+      su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
+      su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
+
+      return sqrt(0.5*(pow(Sxx - Syy, 2) +
+                       pow(Syy - Szz, 2) +
+                       pow(Szz - Sxx, 2) +
+                       6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+    }
+  }
 
 protected:
   /*!

@@ -2,7 +2,7 @@
  * \file C1DInterpolation.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,6 @@
 #include <cmath>
 #include <vector>
 #include<fstream>
-#include "../datatype_structure.hpp"
 #include "../option_structure.hpp"
 
 using namespace std;
@@ -85,11 +84,6 @@ public:
   }
 
   /*!
-   * \brief Destructor of the CAkimaInterpolation class.
-   */
-  ~CAkimaInterpolation(){}
-
-  /*!
    * \brief for setting the cofficients for the Akima spline.
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
@@ -118,11 +112,6 @@ public:
   CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
       SetSpline(X,Data);
   }
-
-  /*!
-   * \brief Destructor of the CInletInterpolation class.
-   */
-  ~CLinearInterpolation(){}
 
   /*!
    * \brief for setting the cofficients for Linear 'spline'.

@@ -2,7 +2,7 @@
  * \file CParallelDataSorter.cpp
  * \brief Datasorter base class.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,22 +48,22 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
 
   GlobalField_Counter = this->fieldNames.size();
 
-  Conn_Line_Par = NULL;
-  Conn_Hexa_Par = NULL;
-  Conn_Pris_Par = NULL;
-  Conn_Quad_Par = NULL;
-  Conn_Tetr_Par = NULL;
-  Conn_Tria_Par = NULL;
-  Conn_Pyra_Par = NULL;
+  Conn_Line_Par = nullptr;
+  Conn_Hexa_Par = nullptr;
+  Conn_Pris_Par = nullptr;
+  Conn_Quad_Par = nullptr;
+  Conn_Tetr_Par = nullptr;
+  Conn_Tria_Par = nullptr;
+  Conn_Pyra_Par = nullptr;
 
-  nPoint_Send  = NULL;
-  nPoint_Recv  = NULL;
-  Index        = NULL;
-  connSend     = NULL;
-  dataBuffer   = NULL;
-  passiveDoubleBuffer = NULL;
-  doubleBuffer = NULL;
-  idSend       = NULL;
+  nPoint_Send  = nullptr;
+  nPoint_Recv  = nullptr;
+  Index        = nullptr;
+  connSend     = nullptr;
+  dataBuffer   = nullptr;
+  passiveDoubleBuffer = nullptr;
+  doubleBuffer = nullptr;
+  idSend       = nullptr;
   nSends = 0;
   nRecvs = 0;
 
@@ -77,7 +77,7 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   nElemConn_Send = new int[size+1]();
   nElemConn_Cum = new int[size+1]();
   
-  linearPartitioner = NULL;
+  linearPartitioner = nullptr;
   
   nElemPerType.fill(0);
   nElemPerTypeGlobal.fill(0);
@@ -142,7 +142,7 @@ void CParallelDataSorter::SortOutputData() {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(doubleBuffer[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -158,7 +158,7 @@ void CParallelDataSorter::SortOutputData() {
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -174,7 +174,7 @@ void CParallelDataSorter::SortOutputData() {
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -190,7 +190,7 @@ void CParallelDataSorter::SortOutputData() {
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -262,7 +262,7 @@ void CParallelDataSorter::SortOutputData() {
   /*--- Reduce the total number of points we will write in the output files. ---*/
 
   SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Free temporary memory from communications ---*/
 
@@ -298,7 +298,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send coordinates. First check how many
    messages we will be sending and receiving. Here we also put
@@ -318,13 +318,13 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  connSend = NULL;
+  connSend = nullptr;
   connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
 
   /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough
    * to hold passivedoubles and su2doubles ---*/
   unsigned short maxSize = max(sizeof(passivedouble), sizeof(su2double));
-  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize];
+  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize] {};
 
   /*--- doubleBuffer and passiveDouble buffer use the same memory allocated above using the dataBuffer. ---*/
 
@@ -414,7 +414,7 @@ void CParallelDataSorter::SetTotalElements(){
   
   /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
-  SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   
   nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0); 
   nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
@@ -451,10 +451,10 @@ void CParallelDataSorter::SetTotalElements(){
   /*--- Communicate the local counts to all ranks for building offsets. ---*/
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   SU2_MPI::Alltoall(&(nElemConn_Send[1]), 1, MPI_INT,
-                    &(nElemConn_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElemConn_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Put the counters into cumulative storage format. ---*/
 

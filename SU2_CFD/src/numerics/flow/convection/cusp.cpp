@@ -2,7 +2,7 @@
  * \file cusp.cpp
  * \brief Implementation of the CUSP scheme.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/cusp.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -63,6 +64,8 @@ CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
 
 CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) {
 
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   unsigned short iDim, iVar;
   su2double Diff_U[5] = {0.0};
 
@@ -88,10 +91,7 @@ CNumerics::ResidualType<> CUpwCUSP_Flow::ComputeResidual(const CConfig* config) 
 
   /*-- Face area and unit normal ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;

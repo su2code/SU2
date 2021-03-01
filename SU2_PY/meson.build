@@ -13,7 +13,7 @@ install_data(['continuous_adjoint.py',
 	     'discrete_adjoint.py',
 	     'direct_differentiation.py',
 	     'fsi_computation.py',
-	     'SU2_CFD.py'], 
+	     'SU2_CFD.py'],
 	     install_dir: join_paths(get_option('bindir')))
 
 install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 'SU2/'))
@@ -21,7 +21,7 @@ install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 
 install_data(['SU2/eval/design.py',
     	      'SU2/eval/functions.py',
     	      'SU2/eval/gradients.py',
-    	      'SU2/eval/__init__.py'], 
+    	      'SU2/eval/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/eval'))
 
 install_data(['SU2/io/config.py',
@@ -32,21 +32,15 @@ install_data(['SU2/io/config.py',
               'SU2/io/state.py',
               'SU2/io/tools.py',
               'SU2/io/historyMap.py',
-              'SU2/io/__init__.py'], 
+              'SU2/io/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
-
-install_data(['SU2/mesh/adapt.py',
-              'SU2/mesh/tools.py',
-              'SU2/mesh/__init__.py'], 
-	      install_dir: join_paths(get_option('bindir'), 'SU2/mesh'))
 
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
-              'SU2/opt/__init__.py'], 
+              'SU2/opt/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
-install_data(['SU2/run/adaptation.py',
-              'SU2/run/adjoint.py',
+install_data(['SU2/run/adjoint.py',
               'SU2/run/deform.py',
               'SU2/run/direct.py',
               'SU2/run/interface.py',
@@ -70,14 +64,11 @@ install_data(['SU2/util/bunch.py',
               'SU2/util/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/util'))
 
-install_data(['FSI/__init__.py',
-              'FSI/FSIInterface.py',
-              'FSI/PitchPlungeAirfoilStructuralTester.py',
-              'FSI/io/__init__.py',
-              'FSI/io/FSI_config.py',
-              'FSI/util/__init__.py',
-              'FSI/util/switch.py'],
-	      install_dir: join_paths(get_option('bindir'), 'FSI'))
+install_data(['FSI_tools/__init__.py',
+              'FSI_tools/FSIInterface.py',
+              'FSI_tools/FSI_config.py'],
+	      install_dir: join_paths(get_option('bindir'), 'FSI_tools'))
 
-
-
+install_data(['SU2_Nastran/__init__.py',
+              'SU2_Nastran/pysu2_nastran.py'],
+        install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))

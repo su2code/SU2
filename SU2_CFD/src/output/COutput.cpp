@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -174,23 +174,16 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
 }
 
 COutput::~COutput(void) {
-
   delete convergenceTable;
   delete multiZoneHeaderTable;
   delete fileWritingTable;
   delete historyFileTable;
 
-  if (volumeDataSorter != nullptr)
-    delete volumeDataSorter;
-
+  delete volumeDataSorter;
   volumeDataSorter = nullptr;
 
-  if (surfaceDataSorter != nullptr)
-    delete surfaceDataSorter;
-
+  delete surfaceDataSorter;
   surfaceDataSorter = nullptr;
-
-
 }
 
 
@@ -341,7 +334,7 @@ void COutput::Load_Data(CGeometry *geometry, CConfig *config, CSolver** solver_c
 
 void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short format, string fileName){
 
-  CFileWriter *fileWriter = NULL;
+  CFileWriter *fileWriter = nullptr;
 
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
@@ -556,7 +549,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           /*--- Only sort if there is at least one processor that has this marker ---*/
 
           int globalMarkerSize = 0, localMarkerSize = marker.size();
-          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
           if (globalMarkerSize > 0){
 
@@ -715,11 +708,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
       break;
 
     default:
-      fileWriter = NULL;
+      fileWriter = nullptr;
       break;
   }
 
-  if (fileWriter != NULL){
+  if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
 
@@ -769,7 +762,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     volumeDataSorter->SortOutputData();
 
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
+    auto VolumeFiles = config->GetVolumeOutputFiles();
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -845,6 +838,11 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     const string &convField = convFields[iField_Conv];
     if (historyOutput_Map.count(convField) > 0){
       su2double monitor = historyOutput_Map.at(convField).value;
+
+      /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+        SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+      }
 
       /*--- Cauchy based convergence criteria ---*/
 
@@ -923,7 +921,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
   /*--- Convergence criteria ---*/
 
   sbuf_conv[0] = convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   /*-- Compute global convergence criteria in the master node --*/
 
@@ -933,7 +931,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     else sbuf_conv[0] = 0;
   }
 
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 
   if (sbuf_conv[0] == 1) { convergence = true; }
   else { convergence = false;  }
@@ -969,6 +967,11 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       if (historyOutput_Map.count(WndConv_Field) > 0){
         su2double monitor = historyOutput_Map[WndConv_Field].value;
 
+        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+        if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+        }
+
         /*--- Cauchy based convergence criteria ---*/
 
         if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
@@ -1003,11 +1006,6 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
           SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
         }
         TimeConvergence = fieldConverged && TimeConvergence;
-
-        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
-        if (monitor != monitor){
-          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
       }
     }
 
@@ -1403,7 +1401,7 @@ void COutput::CheckHistoryOutput(){
   }
 
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(convFields.empty()){
       cout << "Warning: No (valid) fields chosen for convergence monitoring. Convergence monitoring inactive."<<  endl;
     }
     else{
@@ -1435,7 +1433,7 @@ void COutput::CheckHistoryOutput(){
     wndConvFields.erase(std::find(wndConvFields.begin(), wndConvFields.end(), FieldsToRemove[iField_Conv]));
   }
   if (rank == MASTER_NODE){
-    if(wndConvFields.size() == 0){
+    if(wndConvFields.empty()){
       cout << "Warning: No (valid) fields chosen for time convergence monitoring. Time convergence monitoring inactive."<<  endl;
     }
     else{
@@ -1611,7 +1609,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->node[iPoint]->GetDomain()){
+          if(geometry->nodes->GetDomain(iPoint)){
 
             buildFieldIndexCache = fieldIndexCache.empty();
 
@@ -1994,7 +1992,9 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  if (config->GetTime_Domain()){
+    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  }
   else {
     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }
@@ -2021,6 +2021,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
+
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){
@@ -2038,13 +2039,10 @@ void COutput::LoadCommonHistoryData(CConfig *config){
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
   su2double StopTime, UsedTime;
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
 
-  UsedTime = (StopTime - config->Get_StartTime())/((curOuterIter + 1) * (curInnerIter+1));
+  StopTime = SU2_MPI::Wtime();
+
+  UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
   SetHistoryOutputValue("WALL_TIME", UsedTime);
 

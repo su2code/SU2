@@ -2,7 +2,7 @@
  * \file CTecplotFileWriter.cpp
  * \brief Filewriter class for Tecplot ASCII format.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,11 +55,7 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Set a timer for the file writing. ---*/
 
-#ifndef HAVE_MPI
-  startTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  startTime = MPI_Wtime();
-#endif
+  startTime = SU2_MPI::Wtime();
 
   /*--- Reduce the total number of each element. ---*/
 
@@ -122,7 +118,7 @@ void CTecplotFileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -146,7 +142,7 @@ void CTecplotFileWriter::Write_Data(){
 
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -208,7 +204,7 @@ void CTecplotFileWriter::Write_Data(){
     }
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -216,11 +212,8 @@ void CTecplotFileWriter::Write_Data(){
 
   /*--- Compute and store the write time. ---*/
 
-#ifndef HAVE_MPI
-  stopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  stopTime = MPI_Wtime();
-#endif
+  stopTime = SU2_MPI::Wtime();
+
   usedTime = stopTime-startTime;
 
   fileSize = Determine_Filesize(fileName);

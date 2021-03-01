@@ -2,11 +2,11 @@
  * \file CNSVariable.hpp
  * \brief Class for defining the variables of the compressible Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -39,8 +39,6 @@ class CNSVariable final : public CEulerVariable {
 private:
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
 
-  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -63,7 +61,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSVariable() = default;
+  ~CNSVariable() override = default;
 
   /*!
    * \brief Set the laminar viscosity.
@@ -83,11 +81,6 @@ public:
    * \brief Set the specific heat Cp.
    */
   inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
-
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
 
   /*!
    * \overload
@@ -125,18 +118,6 @@ public:
   inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,0) = temperature_wall;
   }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).
@@ -220,6 +201,7 @@ public:
    * \return Value of the Roe Dissipation.
    */
   inline su2double GetRoe_Dissipation(unsigned long iPoint) const override { return Roe_Dissipation(iPoint); }
+  inline const VectorType& GetRoe_Dissipation() const { return Roe_Dissipation; }
 
   /*!
    * \brief Set the Roe Dissipation Coefficient.

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../mpi_structure.hpp"
+#include "../../parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <vector>
@@ -49,9 +49,7 @@ protected:
   long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
   short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                             A -1 indicates no periodic transformation to the neighbor. */
-  su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
-  su2double **Coord_FaceElems_CG;  /*!< \brief Coordinates of the center-of-gravity of the face of the
-                                               elements. */
+  su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
   static unsigned short nDim;    /*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                                quadrilateral and edges. */
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -102,7 +100,7 @@ public:
    * \brief Make available the length scale of the element.
    * \return The length scale of the element.
    */
-  inline su2double GetLengthScale(void) { return LenScale; }
+  inline su2double GetLengthScale(void) const { return LenScale; }
 
   /*!
    * \brief Set the length scale of the element.
@@ -114,7 +112,7 @@ public:
    * \brief Make available the time level of the element.
    * \return The time level of the element.
    */
-  inline unsigned short GetTimeLevel(void) { return TimeLevel; }
+  inline unsigned short GetTimeLevel(void) const { return TimeLevel; }
 
   /*!
    * \brief Set the time level of the element.
@@ -170,14 +168,23 @@ public:
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
-  void SetCoord_CG(su2double **val_coord);
+  template<class T>
+  inline su2double* SetCoord_CG(const T& val_coord) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Coord_CG[iDim] = 0.0;
+      for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
+        Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
+    }
+    return Coord_CG;
+  }
 
   /*!
    * \brief Get the center of gravity of an element (including edges).
    * \param[in] val_dim - Coordinate of the center of gravity.
    * \return Coordinates of the center of gravity.
    */
-  inline su2double GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+  inline su2double GetCG(unsigned short val_dim) const { return Coord_CG[val_dim]; }
+  inline const su2double* GetCG() const { return Coord_CG; }
 
   /*!
    * \brief Set the center of gravity of an element (including edges).
@@ -190,15 +197,7 @@ public:
    * \param[in] val_dim - Coordinate of the center of gravity.
    * \return Coordinates of the center of gravity.
    */
-  inline su2double GetVolume(void) { return Volume; }
-
-  /*!
-   * \brief Get the CG of a face of an element.
-   * \param[in] val_face - Local index of the face.
-   * \param[in] val_dim - Coordinate of the center of gravity.
-   * \return Coordinates of the center of gravity.
-   */
-  inline su2double GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
+  inline su2double GetVolume(void) const { return Volume; }
 
   /*!
    * \brief Get all the neighbors of an element.
@@ -216,7 +215,7 @@ public:
    * \brief Get if an element must be divided in the adaptation stage.
    * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
    */
-  inline bool GetDivide (void) { return Divide; }
+  inline bool GetDivide (void) const { return Divide; }
 
   /*!
   * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
@@ -240,13 +239,13 @@ public:
   * \brief A virtual member.
   * \return The color of the element in the partitioning.
   */
-  inline virtual unsigned long GetColor(void) { return -1; }
+  inline virtual unsigned long GetColor(void) { return std::numeric_limits<unsigned long>::max(); }
 
   /*!
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex(void) { return GlobalIndex; }
+  inline unsigned long GetGlobalIndex(void) const { return GlobalIndex; }
 
   /*!
    * \brief Set the global index for an element in a parallel computation.
@@ -431,14 +430,14 @@ public:
    * \brief Virtual function to make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline  virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
+  inline virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
 
   /*!
    * \brief Virtual function to make available the pointer to the vector for the donor elements
             for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline virtual unsigned long *GetDonorsWallFunctions(void) {return NULL;}
+  inline virtual unsigned long *GetDonorsWallFunctions(void) {return nullptr;}
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.

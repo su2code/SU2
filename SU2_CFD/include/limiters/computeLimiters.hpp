@@ -2,7 +2,7 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ void computeLimiters(ENUM_LIMITER LimiterKind,
                      PERIODIC_QUANTITIES kindPeriodicComm1,
                      PERIODIC_QUANTITIES kindPeriodicComm2,
                      CGeometry& geometry,
-                     CConfig& config,
+                     const CConfig& config,
                      size_t varBegin,
                      size_t varEnd,
                      const FieldType& field,
@@ -50,11 +50,17 @@ void computeLimiters(ENUM_LIMITER LimiterKind,
                      FieldType& fieldMax,
                      FieldType& limiter)
 {
-#define INSTANTIATE(KIND) \
-computeLimiters_impl<FieldType, GradientType, KIND>(solver, kindMpiComm, \
-  kindPeriodicComm1, kindPeriodicComm2, geometry, config, varBegin, \
-  varEnd, field, gradient, fieldMin, fieldMax, limiter)
+  if (geometry.GetnDim() != 2 && geometry.GetnDim() != 3)
+    SU2_MPI::Error("Too many dimensions to compute limiters.", CURRENT_FUNCTION);
 
+#define INSTANTIATE(KIND)\
+if (geometry.GetnDim() == 2) {\
+  computeLimiters_impl<2,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
+                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+} else {\
+  computeLimiters_impl<3,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
+                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+}
   switch (LimiterKind) {
     case NO_LIMITER:
     {

@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,6 @@ class CMultiGridGeometry final : public CGeometry {
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;
@@ -53,11 +52,6 @@ public:
    * \param[in] iZone - Current zone in the mesh.
    */
   CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultiGridGeometry(void);
 
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
