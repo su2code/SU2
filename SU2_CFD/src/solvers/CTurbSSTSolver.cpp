@@ -1551,7 +1551,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (auto iVar = 0; iVar < nTurbVar; iVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
       Flux[iVar] = 0.0;
 
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
@@ -1587,7 +1587,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       /*--- can cause issues in regions of low turbulence ---*/
 
       const su2double a_ij = fabs(Mean_ProjVel);
-      for (auto iVar = 0; iVar < nTurbVar; iVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
         Flux[iVar] += (Mean_ProjVel >= 0)?  a_ij*primvar_i[nDim+2]*turbvar_i[iVar]
                                          : -a_ij*primvar_j[nDim+2]*turbvar_j[iVar];
 
@@ -1613,7 +1613,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
-    for (auto iVar = 0; iVar < nTurbVar; iVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
       if (Flux[iVar] > nodes->GetSolution(iPoint,iVar))
         nodes->SetNon_Physical(iPoint,false);
 
