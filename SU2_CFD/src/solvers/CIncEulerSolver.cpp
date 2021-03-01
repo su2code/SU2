@@ -1496,8 +1496,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 
   if (streamwise_periodic) {
-    numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow,
-                                            Streamwise_Periodic_InletTemperature);
+    numerics->SetStreamwisePeriodicValues(Streamwise_Periodic_PressureDrop, Streamwise_Periodic_MassFlow,
+                                          Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1529,8 +1529,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if(!streamwise_periodic_temperature && energy) {
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
-      second_numerics->SetStreamwise_Periodic_Values(Streamwise_Periodic_MassFlow, Streamwise_Periodic_IntegratedHeatFlow,
-                                                     Streamwise_Periodic_InletTemperature);
+      second_numerics->SetStreamwisePeriodicValues(Streamwise_Periodic_PressureDrop, Streamwise_Periodic_MassFlow,
+                                                   Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
 
       /*--- This bit acts as a boundary condition rather than a source term. But logically it fits better here. ---*/
       for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1539,30 +1539,29 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) {
 
-          SU2_OMP_FOR_STAT(omp_chunk_size)
-          for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+          for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
 
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            if (geometry->nodes->GetDomain(iPoint)) {
+            if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-              /*--- Load the primitive variables ---*/
-              second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+            /*--- Load the primitive variables ---*/
+            second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
-              /*--- Set incompressible density ---*/
-              second_numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
+            /*--- Set incompressible density ---*/
+            second_numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
 
-              /*--- Set the specific heat ---*/
-              second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
+            /*--- Set the specific heat ---*/
+            second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
 
-              /*--- Set the area normal ---*/
-              second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
+            /*--- Set the area normal ---*/
+            second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
 
-              /*--- Compute the streamwise periodic source residual and add to the total ---*/
-              auto residual = second_numerics->ComputeResidual(config);
-              LinSysRes.AddBlock(iPoint, residual);
+            /*--- Compute the streamwise periodic source residual and add to the total ---*/
+            auto residual = second_numerics->ComputeResidual(config);
+            LinSysRes.AddBlock(iPoint, residual);
 
-            }// if domain
           }// for iVertex
         }// if periodic inlet boundary
       }// for iMarker
@@ -2879,7 +2878,11 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
   /*---    boundary terms of the energy equation. Area and the avg-density are used for the       ---*/
   /*---    Pressure-Drop update in case of a prescribed massflow.                                 ---*/
   /*-------------------------------------------------------------------------------------------------*/
-  
+
+  const auto nZone = geometry->GetnZone();
+  const auto InnerIter = config->GetInnerIter();
+  const auto OuterIter = config->GetOuterIter();
+
   su2double Area_Local            = 0.0,
             MassFlow_Local        = 0.0,
             Average_Density_Local = 0.0,
@@ -2931,9 +2934,15 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
   Average_Density_Global /= Area_Global;
   Temperature_Global /= Area_Global;
 
-  /*--- Set solver variable ---*/
-  Streamwise_Periodic_InletTemperature = Temperature_Global;
+  /*--- Set solver variables ---*/
   Streamwise_Periodic_MassFlow = MassFlow_Global;
+  Streamwise_Periodic_InletTemperature = Temperature_Global;
+
+  /*--- As deltaP changes with prescribed massflow the const config value should only be used once. ---*/
+  if((nZone==1 && InnerIter==0) ||
+     (nZone>1  && OuterIter==0 && InnerIter==0)) {
+    Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
+  }
 
   if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
     /*------------------------------------------------------------------------------------------------*/
@@ -2942,7 +2951,6 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     /*------------------------------------------------------------------------------------------------*/
 
     /*--- Load/define all necessary variables ---*/
-    const su2double Pressure_Drop  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
     const su2double TargetMassFlow = config->GetStreamwise_Periodic_TargetMassFlow() / (config->GetDensity_Ref() * config->GetVelocity_Ref());
     const su2double damping_factor = config->GetInc_Outlet_Damping();
     su2double Pressure_Drop_new, ddP;
@@ -2951,7 +2959,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
 
     /*--- Store updated pressure difference ---*/
-    Pressure_Drop_new = Pressure_Drop + damping_factor*ddP;
+    Pressure_Drop_new = Streamwise_Periodic_PressureDrop + damping_factor*ddP;
     /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times 
           (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts 
           it gets called 2x before the restart files are read such that the current massflow is 
@@ -2960,14 +2968,13 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
           iteration does not get a pressure-update but the continuing simulation would have an update here. This can be 
           fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at 
           best ---*/
-    auto nZone = geometry->GetnZone();
-    auto InnerIter = config->GetInnerIter();
-    auto OuterIter = config->GetOuterIter();
-    if((nZone==1 && InnerIter > 0) ||
-       (nZone>1  && OuterIter > 0))
-      config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
+    if((nZone==1 && InnerIter>0) ||
+       (nZone>1  && OuterIter>0)) {
+      Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
+    }
 
   } // if massflow
+
 
   if (config->GetEnergy_Equation()) {
     /*---------------------------------------------------------------------------------------------*/

@@ -108,8 +108,6 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   const bool energy = (config->GetEnergy_Equation() && config->GetStreamwise_Periodic_Temperature());
   const auto InnerIter = config->GetInnerIter();
 
-  const su2double delta_p  = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
-
   /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
   const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
@@ -126,7 +124,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
       dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
 
     /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
-    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - delta_p / norm2_translation * dot_product;
+    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - Streamwise_Periodic_PressureDrop / norm2_translation * dot_product;
     nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
 
     /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/

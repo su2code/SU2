@@ -343,7 +343,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", flow_solver->GetStreamwise_Periodic_MassFlow());
-    SetHistoryOutputValue("STREAMWISE_DP", config->GetStreamwise_Periodic_PressureDrop());
+    SetHistoryOutputValue("STREAMWISE_DP", flow_solver->GetStreamwise_Periodic_PressureDrop());
     SetHistoryOutputValue("STREAMWISE_HEAT", flow_solver->GetStreamwise_Periodic_IntegratedHeatFlow());
   }
 

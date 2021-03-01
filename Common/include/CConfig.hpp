@@ -5766,12 +5766,6 @@ public:
    * \return Delta Pressure for body force computation.
    */
   su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
-  
-  /*!
-   * \brief Set the value of the pressure delta from which body force vector is computed.
-   * \param[in] delta_p - pressure difference between in- and outlet.
-   */
-  void SetStreamwise_Periodic_PressureDrop(su2double delta_p) { Streamwise_Periodic_PressureDrop = delta_p; }
 
   /*!
    * \brief Get the value of the massflow from which body force vector is computed.

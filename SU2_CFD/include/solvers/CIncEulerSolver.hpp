@@ -39,10 +39,10 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
-  su2double
-  Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
-  Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -399,6 +399,12 @@ public:
    * \brief The incompressible Euler and NS solvers support MPI+OpenMP.
    */
   inline bool GetHasHybridParallel() const final { return true; }
+
+  /*!
+   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
+   * \return The streamwise periodic donor/outlet massflow.
+   */
+  su2double GetStreamwise_Periodic_PressureDrop() const { return Streamwise_Periodic_PressureDrop; }
 
   /*!
    * \brief Get the massflow of the streamwise periodic donor/outlet boundary.

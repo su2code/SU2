@@ -1610,9 +1610,10 @@ public:
    * \param[in] integratedHeat - integrated heatflow over heatflux boundaries [W].
    * \param[in] inletTemp - massflow averaged periodic inlet temperature [K].
    */
-  virtual inline void SetStreamwise_Periodic_Values(const su2double massflow,
-                                                    const su2double integratedHeat,
-                                                    const su2double inletTemp) { }
+  virtual void SetStreamwisePeriodicValues(const su2double pressureDrop, const su2double massflow,
+                                           const su2double integratedHeat, const su2double inletTemp) {
+
+  }
 };
 
 /*!

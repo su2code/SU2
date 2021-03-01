@@ -4415,6 +4415,12 @@ public:
    * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
    * \return The streamwise periodic donor/outlet massflow.
    */
+  virtual su2double GetStreamwise_Periodic_PressureDrop() const { return 0.0; }
+
+  /*!
+   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
+   * \return The streamwise periodic donor/outlet massflow.
+   */
   virtual su2double GetStreamwise_Periodic_MassFlow() const { return 0.0; }
 
   /*!

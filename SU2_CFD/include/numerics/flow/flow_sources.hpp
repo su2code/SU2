@@ -40,10 +40,7 @@ class CSourceBase_Flow : public CNumerics {
 protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
-  su2double
-  Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
-  Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  struct StreamwisePeriodicValues SPvals;
 
   /*!
    * \brief Constructor of the class.
@@ -65,10 +62,11 @@ public:
    * \param[in] integratedHeat - integrated heatflow over heatflux boundaries [W].
    * \param[in] inletTemp - massflow averaged periodic inlet temperature [K].
    */
-  void SetStreamwise_Periodic_Values(const su2double massflow, const su2double integratedHeat, const su2double inletTemp) {
-    Streamwise_Periodic_MassFlow = massflow;
-    Streamwise_Periodic_IntegratedHeatFlow = integratedHeat;
-    Streamwise_Periodic_InletTemperature = inletTemp;
+  void SetStreamwisePeriodicValues(const su2double pressureDrop, const su2double massflow, const su2double integratedHeat, const su2double inletTemp) {
+    SPvals.Streamwise_Periodic_PressureDrop = pressureDrop;
+    SPvals.Streamwise_Periodic_MassFlow = massflow;
+    SPvals.Streamwise_Periodic_IntegratedHeatFlow = integratedHeat;
+    SPvals.Streamwise_Periodic_InletTemperature = inletTemp;
   }
 
 };

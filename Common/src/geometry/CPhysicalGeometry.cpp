@@ -7473,10 +7473,12 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
   /*-------------------------------------------------------------------------------------------*/
 
   /*--- Initialize/Allocate variables. ---*/
-  su2double min_norm = 0.0;
+  su2double min_norm = numeric_limits<su2double>::max();
 
-  vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
-                    Buffer_Recv_RefNode(static_cast<size_t>(size)*nDim);
+  /*--- Communicate Coordinates plus the minimum distance, therefor the nDim+1 ---*/
+  vector<su2double> Buffer_Send_RefNode(nDim+1, numeric_limits<su2double>::max());
+  su2activematrix Buffer_Recv_RefNode(size,nDim+1);
+  unsigned long iPointMin;
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
@@ -7496,14 +7498,13 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
 
           auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-          /*--- Get the squared norm of the current point. ---*/
+          /*--- Get the squared norm of the current point. sqrt is a monotonic function in [0,R+) so for comparison we dont need Norm. ---*/
           auto norm = GeometryToolbox::SquaredNorm(nDim, nodes->GetCoord(iPoint));
 
-          /*--- Check if new unique reference node is found. ---*/
-          if (norm < min_norm || iVertex == 0) {
+          /*--- Check if new unique reference node is found and store Point ID. ---*/
+          if (norm < min_norm) {
             min_norm = norm;
-            for (unsigned short iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPoint,iDim);
+            iPointMin = iPoint;
           }
           /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
         }
@@ -7512,9 +7513,14 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
     } // periodic conditional
   } // marker loop
 
+  /*--- Copy the Coordinates and norm into send buffer. ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin,iDim);
+  Buffer_Send_RefNode[nDim] = min_norm;
+
   /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
-  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE,
-                     Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim+1, MPI_DOUBLE,
+                     Buffer_Recv_RefNode.data(), nDim+1, MPI_DOUBLE, SU2_MPI::GetComm());
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
@@ -7522,16 +7528,17 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
   /*---         geometry container.                                                         ---*/
   /*-------------------------------------------------------------------------------------------*/
 
+  min_norm = numeric_limits<su2double>::max();
+
   for (int iRank = 0; iRank < size; iRank++) {
 
-    /*--- Get the norm of the current Point. ---*/
-    auto norm = GeometryToolbox::SquaredNorm(nDim, &Buffer_Recv_RefNode[static_cast<size_t>(iRank)*nDim]);
+    auto norm = Buffer_Recv_RefNode(iRank,nDim);
 
     /*--- Check if new unique reference node is found. ---*/
-    if (norm < min_norm || iRank == 0) {
+    if (norm < min_norm) {
       min_norm = norm;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode[iRank*nDim + iDim];
+        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode(iRank,iDim);
     }
   }
 
