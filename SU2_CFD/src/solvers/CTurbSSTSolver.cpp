@@ -1531,6 +1531,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double Primitive_i[MAXNVARFLOW] = {0.0}, TurbVar_i[MAXNVAR] = {0.0};
   su2double Primitive_j[MAXNVARFLOW] = {0.0}, TurbVar_j[MAXNVAR] = {0.0};
 
+  su2double Flux[MAXNVAR] = {0.0};
+
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
@@ -1549,7 +1551,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    bool good_node = true;
+    for (auto iVar = 0; iVar < nTurbVar; iVar++)
+      Flux[iVar] = 0.0;
 
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
@@ -1584,11 +1587,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       /*--- can cause issues in regions of low turbulence ---*/
 
       const su2double a_ij = fabs(Mean_ProjVel);
-      for (auto iVar = 0; iVar < nTurbVar; iVar++) {
-        const bool good_flux = (Mean_ProjVel >= 0)? (a_ij*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
-                                                  : (a_ij*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
-
-      good_node = good_node && good_flux;
+      for (auto iVar = 0; iVar < nTurbVar; iVar++)
+        Flux[iVar] += (Mean_ProjVel >= 0)?  a_ij*primvar_i[nDim+2]*turbvar_i[iVar]
+                                         : -a_ij*primvar_j[nDim+2]*turbvar_j[iVar];
 
       /*--- Viscous contribution ---*/
 
@@ -1612,7 +1613,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
-    nodes->SetNon_Physical(iPoint,good_node);
+    for (auto iVar = 0; iVar < nTurbVar; iVar++)
+      if (Flux[iVar] > nodes->GetSolution(iPoint,iVar))
+        nodes->SetNon_Physical(iPoint,false);
 
   }
 
