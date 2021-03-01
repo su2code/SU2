@@ -125,6 +125,8 @@ class CFVMFlowSolverBase : public CSolver {
   AeroCoeffsArray SurfaceCoeff; /*!< \brief Totals for each monitoring surface. */
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
+  su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
+
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
@@ -1558,6 +1560,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the efficiency coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CEff() const final { return TotalCoeff.CEff; }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
