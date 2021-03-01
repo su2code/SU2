@@ -880,7 +880,7 @@ private:
   su2double Knowles_B,                  /*!< \brief Knowles material model constant B. */
   Knowles_N;                            /*!< \brief Knowles material model constant N. */
   bool DE_Effects;                      /*!< Application of DE effects to FE analysis */
-  bool RefGeom;                         /*!< Read a reference geometry for optimization purposes. */
+  bool RefGeom, RefGeomSurf;            /*!< Read a reference geometry for optimization purposes. */
   unsigned long refNodeID;              /*!< \brief Global ID for the reference node (optimization). */
   string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
@@ -2138,10 +2138,14 @@ public:
   su2double GetRefNode_Penalty(void) const { return RefNode_Penalty; }
 
   /*!
-    * \brief Decide whether it's necessary to read a reference geometry.
-    * \return <code>TRUE</code> if it's necessary to read a reference geometry, <code>FALSE</code> otherwise.
-    */
+   * \brief Decide whether it's necessary to read a reference geometry.
+   */
   bool GetRefGeom(void) const { return RefGeom; }
+
+  /*!
+   * \brief Consider only the surface of the reference geometry.
+   */
+  bool GetRefGeomSurf(void) const { return RefGeomSurf; }
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.

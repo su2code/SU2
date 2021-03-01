@@ -2986,19 +2986,25 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
   {
   su2double obj_fun_local = 0.0;
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  if (!config->GetRefGeomSurf()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      obj_fun_local += SquaredDistance(nVar, nodes->GetReference_Geometry(iPoint), nodes->GetSolution(iPoint));
+    }
+  }
+  else {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY) ||
+          (config->GetMarker_All_KindBC(iMarker) == LOAD_DIR_BOUNDARY) ||
+          (config->GetMarker_All_KindBC(iMarker) == FLOWLOAD_BOUNDARY)) {
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); ++iVertex) {
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Retrieve the value of the reference geometry ---*/
-      su2double reference_geometry = nodes->GetReference_Geometry(iPoint,iVar);
-
-      /*--- Retrieve the value of the current solution ---*/
-      su2double current_solution = nodes->GetSolution(iPoint,iVar);
-
-      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      obj_fun_local += pow(current_solution - reference_geometry, 2);
+          if (geometry->nodes->GetDomain(iPoint))
+            obj_fun_local += SquaredDistance(nVar, nodes->GetReference_Geometry(iPoint), nodes->GetSolution(iPoint));
+        }
+      }
     }
   }
   atomicAdd(obj_fun_local, objective_function);
