@@ -12,7 +12,7 @@
  *       e.g. SU2_OMP_PARALLEL. Exotic pragmas of limited portability should be
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
- * \author P. Gomes
+ * \author P. Gomes, J. Blühdorn
  * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../basic_types/datatype_structure.hpp"
+#include "../code_config.hpp"
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)
@@ -46,13 +46,10 @@
 #define PRAGMIZE(X) _Pragma(#X)
 #endif
 
-/*--- Detect compilation with OpenMP support. ---*/
-#if defined(_OPENMP)
-#define HAVE_OMP
+#if defined(HAVE_OMP)
 #include <omp.h>
 
-#if defined(CODI_REVERSE_TYPE)
-#define HAVE_OPDI
+#if defined(HAVE_OPDI)
 #include "opdi/backend/ompt/omptBackend.hpp"
 #include "codi/externals/codiOpdiTool.hpp"
 #include "opdi.hpp"

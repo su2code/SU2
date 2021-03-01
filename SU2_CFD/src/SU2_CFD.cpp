@@ -73,6 +73,11 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
+  /*--- AD initialization ---*/
+#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+  AD::getGlobalTape().initialize();
+#endif
+
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);
 
@@ -172,6 +177,11 @@ int main(int argc, char *argv[]) {
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
+#endif
+
+  /*--- Finalize AD, if necessary. ---*/
+#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+  AD::getGlobalTape().finalize();
 #endif
 
   /*--- Finalize MPI parallelization. ---*/

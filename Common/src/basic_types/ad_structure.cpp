@@ -37,9 +37,8 @@ namespace AD {
   std::vector<su2double::GradientData> localInputValues;
   std::vector<su2double*> localOutputValues;
 
-  su2double::TapeType& globalTape = su2double::getGlobalTape();
-  su2double::TapeType::Position StartPosition, EndPosition;
-  std::vector<su2double::TapeType::Position> TapePositions;
+  TapePosition StartPosition, EndPosition;
+  std::vector<TapePosition> TapePositions;
 
   bool PreaccActive = false;
   bool PreaccEnabled = true;

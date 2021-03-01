@@ -1,7 +1,7 @@
 /*!
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
- * \author T. Albring
+ * \author T. Albring, J. Blühdorn
  * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "datatype_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 
 /*!
  * \namespace AD
@@ -278,19 +279,23 @@ namespace AD{
 
   extern int adjointVectorPosition;
 
-  /*--- Reference to the tape ---*/
-
-  extern su2double::TapeType& globalTape;
-
   extern bool Status;
 
   extern bool PreaccActive;
 
   extern bool PreaccEnabled;
 
-  extern su2double::TapeType::Position StartPosition, EndPosition;
+#ifdef HAVE_OPDI
+  using CoDiTapePosition = su2double::TapeType::Position;
+  using OpDiState = void*;
+  using TapePosition = std::pair<CoDiTapePosition, OpDiState>;
+#else
+  using TapePosition = su2double::TapeType::Position;
+#endif
 
-  extern std::vector<su2double::TapeType::Position> TapePositions;
+  extern TapePosition StartPosition, EndPosition;
+
+  extern std::vector<TapePosition> TapePositions;
 
   extern std::vector<su2double::GradientData> localInputValues;
 
@@ -298,42 +303,68 @@ namespace AD{
 
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;
 
+  /*--- Reference to the tape. ---*/
+
+  FORCEINLINE su2double::TapeType& getGlobalTape() {
+    return su2double::getGlobalTape();
+  }
+
   FORCEINLINE void RegisterInput(su2double &data, bool push_index = true) {
-    AD::globalTape.registerInput(data);
+    AD::getGlobalTape().registerInput(data);
     if (push_index) {
       inputValues.push_back(data.getGradientData());
     }
   }
 
-  FORCEINLINE void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
+  FORCEINLINE void RegisterOutput(su2double& data) {AD::getGlobalTape().registerOutput(data);}
 
   FORCEINLINE void ResetInput(su2double &data) {data.getGradientData() = su2double::GradientData();}
 
-  FORCEINLINE void StartRecording() {AD::globalTape.setActive();}
+  FORCEINLINE void StartRecording() {AD::getGlobalTape().setActive();}
 
-  FORCEINLINE void StopRecording() {AD::globalTape.setPassive();}
+  FORCEINLINE void StopRecording() {AD::getGlobalTape().setPassive();}
 
-  FORCEINLINE bool TapeActive() { return AD::globalTape.isActive(); }
+  FORCEINLINE bool TapeActive() { return AD::getGlobalTape().isActive(); }
 
-  FORCEINLINE void PrintStatistics() {AD::globalTape.printStatistics();}
+  FORCEINLINE void PrintStatistics() {AD::getGlobalTape().printStatistics();}
 
-  FORCEINLINE void ClearAdjoints() {AD::globalTape.clearAdjoints(); }
+  FORCEINLINE void ClearAdjoints() {AD::getGlobalTape().clearAdjoints(); }
 
-  FORCEINLINE void ComputeAdjoint() {AD::globalTape.evaluate(); adjointVectorPosition = 0;}
+  FORCEINLINE void ComputeAdjoint() {
+  #if defined(HAVE_OPDI)
+    opdi::logic->prepareEvaluate();
+  #endif
+    AD::getGlobalTape().evaluate();
+    adjointVectorPosition = 0;
+  }
 
   FORCEINLINE void ComputeAdjoint(unsigned short enter, unsigned short leave) {
-    AD::globalTape.evaluate(TapePositions[enter], TapePositions[leave]);
+  #if defined(HAVE_OPDI)
+    opdi::logic->recoverState(TapePositions[enter].second);
+    opdi::logic->prepareEvaluate();
+    AD::getGlobalTape().evaluate(TapePositions[enter].first, TapePositions[leave].first);
+  #else
+    AD::getGlobalTape().evaluate(TapePositions[enter], TapePositions[leave]);
+  #endif
     if (leave == 0)
       adjointVectorPosition = 0;
   }
 
   FORCEINLINE void Reset() {
-    globalTape.reset();
+    AD::getGlobalTape().reset();
+  #if defined(HAVE_OPDI)
+    opdi::logic->reset();
+  #endif
     if (inputValues.size() != 0) {
       adjointVectorPosition = 0;
       inputValues.clear();
     }
     if (TapePositions.size() != 0) {
+    #if defined(HAVE_OPDI)
+      for (TapePosition& pos : TapePositions) {
+        opdi::logic->freeState(pos.second);
+      }
+    #endif
       TapePositions.clear();
     }
   }
@@ -343,11 +374,11 @@ namespace AD{
   }
 
   FORCEINLINE void SetDerivative(int index, const double val) {
-    AD::globalTape.setGradient(index, val);
+    AD::getGlobalTape().setGradient(index, val);
   }
 
   FORCEINLINE double GetDerivative(int index) {
-    return AD::globalTape.getGradient(index);
+    return AD::getGlobalTape().getGradient(index);
   }
 
   /*--- Base case for parameter pack expansion. ---*/
@@ -397,7 +428,7 @@ namespace AD{
   }
 
   FORCEINLINE void StartPreacc() {
-    if (globalTape.isActive() && PreaccEnabled) {
+    if (AD::getGlobalTape().isActive() && PreaccEnabled) {
       PreaccHelper.start();
       PreaccActive = true;
     }
@@ -438,7 +469,11 @@ namespace AD{
   }
 
   FORCEINLINE void Push_TapePosition() {
-    TapePositions.push_back(AD::globalTape.getPosition());
+  #if defined(HAVE_OPDI)
+    TapePositions.push_back({AD::getGlobalTape().getPosition(), opdi::logic->exportState()});
+  #else
+    TapePositions.push_back(AD::getGlobalTape().getPosition());
+  #endif
   }
 
   FORCEINLINE void EndPreacc(){
@@ -448,56 +483,77 @@ namespace AD{
   }
 
   FORCEINLINE void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
-    FuncHelper = new ExtFuncHelper(true);
-    if (!storePrimalInput){
-      FuncHelper->disableInputPrimalStore();
-    }
-    if (!storePrimalOutput){
-      FuncHelper->disableOutputPrimalStore();
+    SU2_OMP_MASTER
+    {
+      FuncHelper = new ExtFuncHelper(true);
+      if (!storePrimalInput){
+        FuncHelper->disableInputPrimalStore();
+      }
+      if (!storePrimalOutput){
+        FuncHelper->disableOutputPrimalStore();
+      }
     }
   }
 
   FORCEINLINE void SetExtFuncIn(const su2double &data) {
-    FuncHelper->addInput(data);
+    SU2_OMP_MASTER
+    {
+      FuncHelper->addInput(data);
+    }
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncIn(const T& data, const int size) {
-    for (int i = 0; i < size; i++) {
-      FuncHelper->addInput(data[i]);
+    SU2_OMP_MASTER
+    {
+      for (int i = 0; i < size; i++) {
+        FuncHelper->addInput(data[i]);
+      }
     }
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncIn(const T& data, const int size_x, const int size_y) {
-    for (int i = 0; i < size_x; i++) {
-      for (int j = 0; j < size_y; j++) {
-        FuncHelper->addInput(data[i][j]);
+    SU2_OMP_MASTER
+    {
+      for (int i = 0; i < size_x; i++) {
+        for (int j = 0; j < size_y; j++) {
+          FuncHelper->addInput(data[i][j]);
+        }
       }
     }
   }
 
   FORCEINLINE void SetExtFuncOut(su2double& data) {
-    if (globalTape.isActive()) {
-      FuncHelper->addOutput(data);
+    SU2_OMP_MASTER
+    {
+      if (AD::getGlobalTape().isActive()) {
+        FuncHelper->addOutput(data);
+      }
     }
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncOut(T&& data, const int size) {
-    for (int i = 0; i < size; i++) {
-      if (globalTape.isActive()) {
-        FuncHelper->addOutput(data[i]);
+    SU2_OMP_MASTER
+    {
+      for (int i = 0; i < size; i++) {
+        if (AD::getGlobalTape().isActive()) {
+          FuncHelper->addOutput(data[i]);
+        }
       }
     }
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncOut(T&& data, const int size_x, const int size_y) {
-    for (int i = 0; i < size_x; i++) {
-      for (int j = 0; j < size_y; j++) {
-        if (globalTape.isActive()) {
-          FuncHelper->addOutput(data[i][j]);
+    SU2_OMP_MASTER
+    {
+      for (int i = 0; i < size_x; i++) {
+        for (int j = 0; j < size_y; j++) {
+          if (AD::getGlobalTape().isActive()) {
+            FuncHelper->addOutput(data[i][j]);
+          }
         }
       }
     }
@@ -508,10 +564,15 @@ namespace AD{
     checkpoint->clear();
   }
 
-  FORCEINLINE void EndExtFunc() { delete FuncHelper; }
+  FORCEINLINE void EndExtFunc() {
+    SU2_OMP_MASTER
+    {
+      delete FuncHelper;
+    }
+  }
 
   FORCEINLINE bool BeginPassive() {
-    if(AD::globalTape.isActive()) {
+    if(AD::getGlobalTape().isActive()) {
       StopRecording();
       return true;
     }

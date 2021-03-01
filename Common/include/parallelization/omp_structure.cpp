@@ -1,7 +1,7 @@
 /*!
  * \file omp_structure.cpp
  * \brief Source file counterpart for omp_structure.hpp.
- * \note Contains OpDiLib logic and includes the OpDiLib source file.
+ * \note Contains OpDiLib initialization, finalization and includes the OpDiLib source file.
  * \author J. Blühdorn
  * \version 7.1.0 "Blackbird"
  *

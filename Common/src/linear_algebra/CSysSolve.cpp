@@ -825,7 +825,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
-    TapeActive = AD::globalTape.isActive();
+    TapeActive = AD::getGlobalTape().isActive();
 
     AD::StartExtFunc(false, false);
 
