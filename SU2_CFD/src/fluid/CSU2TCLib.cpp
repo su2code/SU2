@@ -1221,7 +1221,6 @@ void CSU2TCLib::ViscosityD(){
 
   /*--- Calculate mixture laminar viscosity ---*/
   Mu = Mu_ref * T_nd * sqrt(T_nd) * ((T_ref + S_ref) / (T + S_ref));
-
 }
 
 void CSU2TCLib::ThermalConductivitiesD(){
@@ -1233,7 +1232,7 @@ void CSU2TCLib::ThermalConductivitiesD(){
   su2double rho = 0.0;
   for (unsigned short ii=0; ii<nSpecies; ii++)
   {
-    mass += rhos[ii]*MolarMass[ii]
+    mass += rhos[ii]*MolarMass[ii];
     rho  += rhos[ii];
   } 
 
@@ -1243,9 +1242,9 @@ void CSU2TCLib::ThermalConductivitiesD(){
 
   su2double scl  = Cvve/Cvtr;
    
-  su2double Cptr = Cvtr + R;
+  su2double Cptr = Cvtr + Ru/mass;
   su2double Cpve = scl*Cptr;
-
+  
   
   ThermalConductivities[0] = Mu*Cptr/Pr_lam;
   ThermalConductivities[1] = 0; //  todo check me Mu*Cpve/Pr_lam;
