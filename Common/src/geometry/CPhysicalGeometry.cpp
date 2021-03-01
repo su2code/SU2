@@ -7478,7 +7478,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
   /*--- Communicate Coordinates plus the minimum distance, therefor the nDim+1 ---*/
   vector<su2double> Buffer_Send_RefNode(nDim+1, numeric_limits<su2double>::max());
   su2activematrix Buffer_Recv_RefNode(size,nDim+1);
-  unsigned long iPointMin;
+  unsigned long iPointMin = 0; // Initialisaton, otherwise 'may be uninitialized` warning'
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
