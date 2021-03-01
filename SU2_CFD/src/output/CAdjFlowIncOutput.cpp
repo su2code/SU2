@@ -423,7 +423,7 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Grid velocity
-  if (config->GetGrid_Movement()){
+  if (config->GetDynamic_Grid()){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -614,4 +614,3 @@ bool CAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
 //  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
 
 }
-
