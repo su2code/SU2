@@ -2462,15 +2462,21 @@ public:
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
-   * \brief Retrieve the value of the discreteness objective function
+   * \brief Retrieve the value of the discreteness objective function.
    */
   inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
 
   /*!
    * \brief A virtual member.
-   * \return Value of the objective function for the structural compliance.
+   * \return Value of the compliance objective function.
    */
   inline virtual su2double GetTotal_OFCompliance() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the stress penalty objective function.
+   */
+  inline virtual su2double GetTotal_OFStressPenalty() const { return 0; }
 
   /*!
    * \brief A virtual member.
