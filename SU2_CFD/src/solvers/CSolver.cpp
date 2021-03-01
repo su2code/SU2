@@ -1398,9 +1398,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                with a subtraction before communicating, so now just add. ---*/
 
               for (iVar = 0; iVar < nVar; iVar++)
-                Diff[iVar] = bufDRecv[buf_offset+iVar];
-
-              base_nodes->AddUnd_Lapl(iPoint,Diff);
+                base_nodes->AddUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
 
               break;
 
@@ -2550,6 +2548,50 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 
   computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, solution, 0, nVar, gradient, rmatrix);
+}
+
+void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
+
+  /*--- Loop domain points. ---*/
+
+  SU2_OMP_FOR_DYN(256)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+
+    /*--- Initialize. ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      base_nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+
+    /*--- Loop over the neighbors of point i. ---*/
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
+      bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
+
+      /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        su2double delta = base_nodes->GetSolution(jPoint,iVar)-base_nodes->GetSolution(iPoint,iVar);
+        base_nodes->AddUnd_Lapl(iPoint, iVar, delta);
+      }
+    }
+  }
+
+  /*--- Correct the Laplacian across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+
 }
 
 void CSolver::Add_External_To_Solution() {

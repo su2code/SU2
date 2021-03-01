@@ -240,6 +240,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline void SetFreeStream_Solution(const CConfig *config) override {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);

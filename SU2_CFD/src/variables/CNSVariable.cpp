@@ -44,59 +44,6 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
-bool CNSVariable::SetVorticity_StrainMag() {
-
-  SU2_OMP_FOR_STAT(256)
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-    /*--- Vorticity ---*/
-
-    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
-
-    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
-
-    if (nDim == 3) {
-      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
-      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
-    }
-
-    /*--- Strain Magnitude ---*/
-
-    AD::StartPreacc();
-    AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
-
-    StrainMag(iPoint) = 0.0;
-
-    /*--- Add diagonal part ---*/
-
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
-    }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
-    }
-
-    /*--- Add off diagonals ---*/
-
-    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
-
-    if (nDim == 3) {
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
-    }
-
-    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-
-    AD::SetPreaccOut(StrainMag(iPoint));
-    AD::EndPreacc();
-  }
-  return false;
-}
-
 void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
                                          su2double val_delta,
                                          su2double val_const_DES){
