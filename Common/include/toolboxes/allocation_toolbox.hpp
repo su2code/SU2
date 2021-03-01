@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #endif
 
+#include <cstring>
+
 #include <cassert>
 
 namespace MemoryAllocation
@@ -78,6 +80,7 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept
 #else
   ptr = ::aligned_alloc(alignment, size);
 #endif
+  memset(ptr, 0, size);
   return static_cast<T*>(ptr);
 }
 
