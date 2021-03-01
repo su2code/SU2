@@ -285,7 +285,7 @@ class Solver:
     self.markers = {}
     self.refsystems = []
     self.ImposedMotionToSet = True
-    self.ImposedMotionFunction = []
+    self.ImposedMotionFunction = {}
 
     print("\n")
     print(" Reading the mesh ".center(80,"-"))
@@ -765,10 +765,11 @@ class Solver:
 
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
-      for imode in self.Config["IMPOSED_MODES"].keys():
-        if self.ImposedMotionToSet:
-          self.ImposedMotionFunction.append(ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode]))
+      if self.ImposedMotionToSet:
+          for imode in self.Config["IMPOSED_MODES"].keys():
+            self.ImposedMotionFunction[imode] = ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode])
           self.ImposedMotionToSet = False
+      for imode in self.Config["IMPOSED_MODES"].keys():
         self.q[imode] = self.ImposedMotionFunction[imode].GetDispl(time)
         self.qdot[imode] = self.ImposedMotionFunction[imode].GetVel(time)
         self.qddot[imode] = self.ImposedMotionFunction[imode].GetAcc(time)
