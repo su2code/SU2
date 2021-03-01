@@ -145,7 +145,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = true, good_j = true;
+    bool good_i = nodes->GetNonPhysical(iPoint), good_j = nodes->GetNonPhysical(jPoint);
     bool muscl = (config->GetMUSCL_Turb() && muscl_start);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -345,17 +345,17 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
     /*--- Check if upwind flux exceeds solution, which  ---*/
     /*--- can cause issues in regions of low turbulence ---*/
 
-    su2double a_ij = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      a_ij += (primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
+    // su2double a_ij = 0.0;
+    // for (auto iDim = 0; iDim < nDim; iDim++)
+    //   a_ij += (primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
 
-    const su2double fabs_a = fabs(a_ij);
-    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
-      const bool good_flux = (a_ij >= 0)? (fabs_a*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
-                                        : (fabs_a*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
+    // const su2double fabs_a = fabs(a_ij);
+    // for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+    //   const bool good_flux = (a_ij >= 0)? (fabs_a*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
+    //                                     : (fabs_a*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
 
-      good_i = good_i && good_flux;
-      good_j = good_j && good_flux;
+    //   good_i = good_i && good_flux;
+    //   good_j = good_j && good_flux;
     }
   }
 }

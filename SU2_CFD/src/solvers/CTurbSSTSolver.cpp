@@ -298,8 +298,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- BCM: Reset non-physical ---*/
                             
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   nodes->SetNon_Physical(iPoint, false);
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    nodes->SetNon_Physical(iPoint, false);
   
   SetPrimitive_Variables(solver);
   
@@ -1549,6 +1549,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     /*--- Loop over the neighbors of point i. ---*/
 
+    bool good_node = true;
+
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
       const auto jPoint = node_i->GetPoint(iNeigh);
@@ -1578,6 +1580,16 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
+      /*--- Check if upwind flux exceeds solution, which  ---*/
+      /*--- can cause issues in regions of low turbulence ---*/
+
+      const su2double a_ij = fabs(Mean_ProjVel);
+      for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+        const bool good_flux = (Mean_ProjVel >= 0)? (a_ij*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
+                                                  : (a_ij*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
+
+      good_node = good_node && good_flux;
+
       /*--- Viscous contribution ---*/
 
       const su2double F1_i = nodes->GetF1blending(iPoint);
@@ -1599,6 +1611,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
+
+    nodes->SetNon_Physical(iPoint,good_node);
 
   }
 
