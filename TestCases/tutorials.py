@@ -213,18 +213,6 @@ def main():
     tutorial_design_multiobj.no_restart = True
     test_list.append(tutorial_design_multiobj)
 
-    # Multi Objective Design
-    testcase_su2_nastran            = TestCase('py_su2_nastran')
-    testcase_su2_nastran.cfg_dir    = "TestCases/py_su2_nastran"
-    testcase_su2_nastran.cfg_file   = "fsi.cfg"
-    testcase_su2_nastran.test_iter  = 4
-    testcase_su2_nastran.test_vals  = [0.006316, -0.114296, -2.522122, 0.000000] #last 4 columns
-    testcase_su2_nastran.su2_exec   = "mpirun -np 2 python3 install/bin/fsi_computation.py --parallel -f"
-    testcase_su2_nastran.timeout    = 1600
-    testcase_su2_nastran.tol        = 0.00001
-    testcase_su2_nastran.no_restart = True
-    test_list.append(testcase_su2_nastran)
-
     ######################################
     ### RUN TESTS                      ###
     ######################################
