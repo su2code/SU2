@@ -1588,8 +1588,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       const su2double a_ij = fabs(Mean_ProjVel);
       for (auto iVar = 0; iVar < nVar; iVar++)
-        Flux[iVar] += (Mean_ProjVel >= 0)?  a_ij*primvar_i[nDim+2]*turbvar_i[iVar]
-                                         : -a_ij*primvar_j[nDim+2]*turbvar_j[iVar];
+        Flux[iVar] += (Mean_ProjVel >= 0)?  a_ij*nodes->GetSolution(iPoint,iVar)
+                                         : -a_ij*nodes->GetSolution(jPoint,iVar);
 
       /*--- Viscous contribution ---*/
 
@@ -1615,7 +1615,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       if (Flux[iVar] > nodes->GetSolution(iPoint,iVar))
-        nodes->SetNon_Physical(iPoint,false);
+        nodes->SetNon_Physical(iPoint,true);
 
   }
 

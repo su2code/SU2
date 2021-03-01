@@ -356,7 +356,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
     //   good_i = good_i && good_flux;
     //   good_j = good_j && good_flux;
-    }
+    // }
   }
 }
 
