@@ -59,6 +59,8 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
   Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
 
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+
   /*!
    * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
@@ -802,6 +804,194 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief Generic implementation of implicit Euler iteration with an optional preconditioner applied to the diagonal.
+   * \param[in] compute_ur - Whether to use automatic under-relaxation for the update.
+   * \tparam DiagonalPrecond - A function object implementing:
+   *         - active: A boolean variable to determine if the preconditioner should be used.
+   *         - (config, iPoint, delta): Compute and return a matrix type compatible with the Jacobian matrix,
+   *           where "delta" is V/dt.
+   */
+  template<class DiagonalPrecond>
+  void ImplicitEuler_Iteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry,
+                                    CSolver **solver_container, CConfig *config, bool compute_ur) {
+
+    const bool adjoint = config->GetContinuous_Adjoint();
+
+    /*--- Set shared residual variables to 0 and declare
+     *    local ones for current thread to work on. ---*/
+
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    SU2_OMP_BARRIER
+
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    /*--- Build implicit system ---*/
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Read the residual ---*/
+
+      su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+      /*--- Read the volume ---*/
+
+      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+      /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+
+      if (nodes->GetDelta_Time(iPoint) != 0.0) {
+
+        su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+        if (preconditioner.active) {
+          Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
+        }
+        else {
+          Jacobian.AddVal2Diag(iPoint, Delta);
+        }
+      }
+      else {
+        Jacobian.SetVal2Diag(iPoint, 1.0);
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          LinSysRes(iPoint,iVar) = 0.0;
+          local_Res_TruncError[iVar] = 0.0;
+        }
+      }
+
+      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+        LinSysSol[total_index] = 0.0;
+
+        su2double Res = fabs(LinSysRes[total_index]);
+        resRMS[iVar] += Res*Res;
+        if (Res > resMax[iVar]) {
+          resMax[iVar] = Res;
+          idxMax[iVar] = iPoint;
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+        }
+      }
+    }
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AddRes_RMS(iVar, resRMS[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+    }
+
+    /*--- Initialize residual and solution at the ghost points ---*/
+
+    SU2_OMP(sections nowait)
+    {
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysRes.SetBlock_Zero(iPoint);
+
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysSol.SetBlock_Zero(iPoint);
+    }
+
+    /*--- Solve or smooth the linear system. ---*/
+
+    auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+    SU2_OMP_MASTER
+    {
+      SetIterLinSolver(iter);
+      SetResLinSolver(System.GetResidual());
+    }
+    SU2_OMP_BARRIER
+
+    if (compute_ur) ComputeUnderRelaxationFactor(solver_container, config);
+
+    /*--- Update solution (system written in terms of increments) ---*/
+
+    if (!adjoint) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+        }
+      }
+    }
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    SU2_OMP_MASTER
+    {
+      /*--- Compute the root mean square residual ---*/
+
+      SetResidual_RMS(geometry, config);
+
+      /*--- For verification cases, compute the global error metrics. ---*/
+
+      ComputeVerificationError(geometry, config);
+    }
+    SU2_OMP_BARRIER
+
+  }
+
+  /*!
+   * \brief Evaluate the vorticity and strain rate magnitude.
+   */
+  inline void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+
+    SU2_OMP_MASTER {
+      StrainMag_Max = 0.0;
+      Omega_Max = 0.0;
+    }
+    SU2_OMP_BARRIER
+
+    nodes->SetVorticity_StrainMag();
+
+    /*--- Min and Max are not really differentiable ---*/
+    const bool wasActive = AD::BeginPassive();
+
+    su2double strainMax = 0.0, omegaMax = 0.0;
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
+      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
+    }
+    SU2_OMP_CRITICAL {
+      StrainMag_Max = max(StrainMag_Max, strainMax);
+      Omega_Max = max(Omega_Max, omegaMax);
+    }
+
+    if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
+      SU2_OMP_BARRIER
+      SU2_OMP_MASTER
+      {
+        su2double MyOmega_Max = Omega_Max;
+        su2double MyStrainMag_Max = StrainMag_Max;
+
+        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      }
+      SU2_OMP_BARRIER
+    }
+
+    AD::EndPassive(wasActive);
+  }
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
@@ -838,6 +1028,18 @@ class CFVMFlowSolverBase : public CSolver {
    * Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver** solver, const CConfig* config) final;
+
+  /*!
+   * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Set a uniform inlet profile

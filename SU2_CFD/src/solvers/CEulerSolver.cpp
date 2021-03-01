@@ -2201,7 +2201,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   SU2_OMP_BARRIER
 
   SU2_OMP_ATOMIC
-  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
+  ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     SU2_OMP_BARRIER
@@ -2306,7 +2306,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   }
 }
 
-unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -3105,159 +3105,28 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  const bool adjoint = config->GetContinuous_Adjoint();
-  const bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
-  const bool low_mach_prec = config->Low_Mach_Preconditioning();
+  struct LowMachPrec {
+    const CEulerSolver* solver;
+    const bool active;
+    su2activematrix matrix;
 
-  /*--- Local matrix for preconditioning. ---*/
-  su2double** LowMachPrec = nullptr;
-  if (roe_turkel || low_mach_prec) {
-    LowMachPrec = new su2double* [nVar];
-    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
-      LowMachPrec[iVar] = new su2double [nVar];
-  }
-
-  /*--- Set shared residual variables to 0 and declare
-   *    local ones for current thread to work on. ---*/
-
-  SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
-
-  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
-  unsigned long idxMax[MAXNVAR] = {0};
-
-  /*--- Build implicit system ---*/
-
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Read the residual ---*/
-
-    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-
-    su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
-      su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
-
-      if (roe_turkel || low_mach_prec) {
-        SetPreconditioner(config, iPoint, Delta, LowMachPrec);
-        Jacobian.AddBlock2Diag(iPoint, LowMachPrec);
-      }
-      else {
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
-    }
-    else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes(iPoint,iVar) = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
-      }
+    LowMachPrec(const CEulerSolver* s, bool a, unsigned short nVar) : solver(s), active(a) {
+      if (active) matrix.resize(nVar,nVar);
     }
 
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      unsigned long total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-
-      su2double Res = fabs(LinSysRes[total_index]);
-      resRMS[iVar] += Res*Res;
-      if (Res > resMax[iVar]) {
-        resMax[iVar] = Res;
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-      }
+    FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
+      solver->SetPreconditioner(config, iPoint, delta, matrix);
+      return matrix;
     }
-  }
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
 
-  /*--- Initialize residual and solution at the ghost points ---*/
+  } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == TURKEL), nVar);
 
-  SU2_OMP(sections nowait)
-  {
-    SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
-
-    SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysSol.SetBlock_Zero(iPoint);
-  }
-
-  /*--- Free local preconditioner. ---*/
-  if (LowMachPrec) {
-    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
-      delete [] LowMachPrec[iVar];
-    delete [] LowMachPrec;
-  }
-
-  /*--- Solve or smooth the linear system. ---*/
-
-  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SU2_OMP_MASTER
-  {
-    SetIterLinSolver(iter);
-    SetResLinSolver(System.GetResidual());
-  }
-  SU2_OMP_BARRIER
-
-
-  ComputeUnderRelaxationFactor(solver_container, config);
-
-  /*--- Update solution (system written in terms of increments) ---*/
-
-  if (!adjoint) {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-      }
-    }
-  }
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  SU2_OMP_MASTER
-  {
-    /*--- Compute the root mean square residual ---*/
-
-    SetResidual_RMS(geometry, config);
-
-    /*--- For verification cases, compute the global error metrics. ---*/
-
-    ComputeVerificationError(geometry, config);
-  }
-  SU2_OMP_BARRIER
+  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, true);
 
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
-                                     su2double delta, su2double** preconditioner) const {
+                                     su2double delta, su2activematrix& preconditioner) const {
 
   unsigned short iDim, jDim, iVar, jVar;
   su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
@@ -9328,182 +9197,6 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   }
 }
 
-void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
-
-  /*--- Local variables ---*/
-
-  unsigned short iVar, iMarker, iDim, iNeigh;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-
-  const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
-  su2double Volume_nM1, Volume_nP1, TimeStep;
-  const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Residual_GCL;
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-
-  /*--- Store the physical time step ---*/
-
-  TimeStep = config->GetDelta_UnstTimeND();
-
-  /*--- Compute the dual time-stepping source term for static meshes ---*/
-
-  if (!dynamic_grid) {
-
-    /*--- Loop over all nodes (excluding halos) ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
-
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n   = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
-
-      /*--- CV volume at time n+1. As we are on a static mesh, the volume
-       of the CV will remained fixed for all time steps. ---*/
-
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-
-      /*--- Compute the dual time-stepping source term based on the chosen
-       time discretization scheme (1st- or 2nd-order).---*/
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        if (first_order)
-          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-        if (second_order)
-          LinSysRes(iPoint,iVar) += ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
-                                     +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
-      }
-
-      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
-      if (implicit) {
-        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
-        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
-      }
-    }
-
-  }
-
-  else {
-
-    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
-     dynamically deforming), the Geometric Conservation Law (GCL) should be
-     satisfied in conjunction with the ALE formulation of the governing
-     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
-     a uniform free-stream should be preserved through a moving grid. First,
-     we will loop over the edges and boundaries to compute the GCL component
-     of the dual time source term that depends on grid velocities. ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-
-      GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      U_time_n = nodes->GetSolution_time_n(iPoint);
-
-      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-
-        iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-        Normal = geometry->edges->GetNormal(iEdge);
-
-        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-        GridVel_j = geometry->nodes->GetGridVel(jPoint);
-
-        /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
-
-        Residual_GCL = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-
-        for (iVar = 0; iVar < nVar; iVar++)
-          LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
-      }
-    }
-
-    /*--- Loop over the boundary edges ---*/
-
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
-          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-          /*--- Get the index for node i plus the boundary face normal ---*/
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-          /*--- Grid velocities stored at boundary node i ---*/
-
-          GridVel_i = geometry->nodes->GetGridVel(iPoint);
-
-          /*--- Compute the GCL term by dotting the grid velocity with the face
-           normal. The normal is negated to match the boundary convention. ---*/
-
-          Residual_GCL = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
-
-          /*--- Compute the GCL component of the source term for node i ---*/
-
-          U_time_n = nodes->GetSolution_time_n(iPoint);
-          for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
-        }
-      }
-    }
-
-    /*--- Loop over all nodes (excluding halos) to compute the remainder
-     of the dual time-stepping source term. ---*/
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
-
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n   = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
-
-      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
-       grids, the volumes will change. On rigidly transforming grids, the
-       volumes will remain constant. ---*/
-
-      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-
-      /*--- Compute the dual time-stepping source residual. Due to the
-       introduction of the GCL term above, the remainder of the source residual
-       due to the time discretization has a new form.---*/
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        if (first_order)
-          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (second_order)
-          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-                                     + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
-      }
-
-      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
-      if (implicit) {
-        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
-        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
-      }
-    }
-  }
-
-}
-
 void CEulerSolver::PrintVerificationError(const CConfig *config) const {
 
   if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
@@ -9751,7 +9444,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
 }
 
-void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
+void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;

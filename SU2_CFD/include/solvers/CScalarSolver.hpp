@@ -247,7 +247,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) override {
+  inline void SetFreeStream_Solution(const CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         nodes->SetSolution(iPoint, iVar, Scalar_Inf[iVar]);

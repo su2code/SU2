@@ -1076,77 +1076,12 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
 void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar;
-  unsigned long iPoint, total_index, IterLinSol = 0;
-  su2double Delta, *local_Res_TruncError, Vol;
+  struct DummyPrec {
+    const bool active = false;
+    FORCEINLINE su2double** operator() (const CConfig*, unsigned long, su2double) const { return nullptr; }
+  } precond;
 
-  /*--- Set maximum residual to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Build implicit system ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Read the residual ---*/
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-    Vol = geometry-> nodes->GetVolume(iPoint);
-
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-      Delta = Vol / nodes->GetDelta_Time(iPoint);
-      Jacobian.AddVal2Diag(iPoint, Delta);
-    }
-    else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
-      }
-    }
-
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry-> nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-    }
-  }
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-  }
-
-  /*--- Solve or smooth the linear system ---*/
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-  /*--- The the number of iterations of the linear solver ---*/
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Update solution (system written in terms of increments) ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      nodes->AddSolution(iPoint,iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-    }
-  }
-
-  /*--- MPI solution ---*/
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
+  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -2604,69 +2539,6 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 //  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 //
 //}
-
-void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
-                                            CSolver **solution_container,
-                                            CConfig *config,
-                                            unsigned short iRKStep,
-                                            unsigned short iMesh,
-                                            unsigned short RunTime_EqSystem) {
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
-
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool dynamic_grid = config->GetGrid_Movement();
-
-  /*--- loop over points ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Solution at time n-1, n and n+1 ---*/
-    U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-    U_time_n   = nodes->GetSolution_time_n(iPoint);
-    U_time_nP1 = nodes->GetSolution(iPoint);
-
-    /*--- Volume at time n-1 and n ---*/
-    if (dynamic_grid) {
-      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
-      Volume_n = geometry->nodes->GetVolume_n(iPoint);
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-    }
-    else {
-      Volume_nM1 = geometry->nodes->GetVolume(iPoint);
-      Volume_n = geometry->nodes->GetVolume(iPoint);
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-    }
-
-    /*--- Time Step ---*/
-    TimeStep = config->GetDelta_UnstTimeND();
-
-    /*--- Compute Residual ---*/
-    for(iVar = 0; iVar < nVar; iVar++) {
-      if (config->GetTime_Marching() == DT_STEPPING_1ST)
-        Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
-        Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
-                           +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
-    }
-
-    /*--- Add Residual ---*/
-    LinSysRes.AddBlock(iPoint, Residual);
-
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-
-        if (config->GetTime_Marching() == DT_STEPPING_1ST)
-          Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-        if (config->GetTime_Marching() == DT_STEPPING_2ND)
-          Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-      }
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    }
-  }
-}
 
 void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
