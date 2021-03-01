@@ -4412,28 +4412,11 @@ public:
   inline virtual bool GetHasHybridParallel() const { return false; }
 
   /*!
-   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
-   * \return The streamwise periodic donor/outlet massflow.
+   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
    */
-  virtual su2double GetStreamwise_Periodic_PressureDrop() const { return 0.0; }
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { StreamwisePeriodicValues SPvals; return SPvals; }
 
-  /*!
-   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
-   * \return The streamwise periodic donor/outlet massflow.
-   */
-  virtual su2double GetStreamwise_Periodic_MassFlow() const { return 0.0; }
-
-  /*!
-   * \brief Get the net sum of the heatflow into the domain.
-   * \return The net sum of the heatflow into the domain.
-   */
-  virtual su2double GetStreamwise_Periodic_IntegratedHeatFlow() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the area avg periodic inlet Temperature.
-   * \return Temperature value.
-   */
-  virtual su2double GetStreamwise_Periodic_InletTemperature(void) const { return 0.0; }
 
 protected:
   /*!

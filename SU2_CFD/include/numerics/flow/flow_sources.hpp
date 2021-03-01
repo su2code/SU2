@@ -58,16 +58,9 @@ public:
 
   /*!
    * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
-   * \param[in] massflow - massflow through periodic marker [kg/s].
-   * \param[in] integratedHeat - integrated heatflow over heatflux boundaries [W].
-   * \param[in] inletTemp - massflow averaged periodic inlet temperature [K].
+   * \param[in] SolverSPvals - Struct holding the values.
    */
-  void SetStreamwisePeriodicValues(const su2double pressureDrop, const su2double massflow, const su2double integratedHeat, const su2double inletTemp) {
-    SPvals.Streamwise_Periodic_PressureDrop = pressureDrop;
-    SPvals.Streamwise_Periodic_MassFlow = massflow;
-    SPvals.Streamwise_Periodic_IntegratedHeatFlow = integratedHeat;
-    SPvals.Streamwise_Periodic_InletTemperature = inletTemp;
-  }
+  void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) final { SPvals = SolverSPvals; }
 
 };
 

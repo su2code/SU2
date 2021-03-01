@@ -39,10 +39,7 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
-  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
-  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+  StreamwisePeriodicValues SPvals;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -401,27 +398,8 @@ public:
   inline bool GetHasHybridParallel() const final { return true; }
 
   /*!
-   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
-   * \return The streamwise periodic donor/outlet massflow.
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
    */
-  su2double GetStreamwise_Periodic_PressureDrop() const { return Streamwise_Periodic_PressureDrop; }
-
-  /*!
-   * \brief Get the massflow of the streamwise periodic donor/outlet boundary.
-   * \return The streamwise periodic donor/outlet massflow.
-   */
-  su2double GetStreamwise_Periodic_MassFlow() const { return Streamwise_Periodic_MassFlow; }
-
-  /*!
-   * \brief Get the net sum of the heatflow into the domain.
-   * \return The net sum of the heatflow into the domain.
-   */
-  su2double GetStreamwise_Periodic_IntegratedHeatFlow() const { return Streamwise_Periodic_IntegratedHeatFlow; }
-
-  /*!
-   * \brief Get the value of the area avg periodic inlet Temperature.
-   * \return Temperature value.
-   */
-  su2double GetStreamwise_Periodic_InletTemperature(void) const { return Streamwise_Periodic_InletTemperature; }
-
+  StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
 };

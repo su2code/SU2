@@ -124,13 +124,15 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
       dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
 
     /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
-    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - Streamwise_Periodic_PressureDrop / norm2_translation * dot_product;
+    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - SPvals.Streamwise_Periodic_PressureDrop / 
+                                         norm2_translation * dot_product;
     nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
 
     /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/
     if (energy && InnerIter > 0) {
       su2double Temperature_Recovered = nodes->GetTemperature(iPoint);
-      Temperature_Recovered += Streamwise_Periodic_IntegratedHeatFlow / (Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
+      Temperature_Recovered += SPvals.Streamwise_Periodic_IntegratedHeatFlow / 
+                              (SPvals.Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
       nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
     }
   } // for iPoint
@@ -276,7 +278,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
         /*--- Scalar factor of the residual contribution ---*/
         const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-        scalar_factor = Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (Streamwise_Periodic_MassFlow * Cp * norm2_translation);
+        scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (SPvals.Streamwise_Periodic_MassFlow * Cp * norm2_translation);
 
         /*--- Dot product ---*/
         dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);

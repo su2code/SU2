@@ -1496,8 +1496,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 
   if (streamwise_periodic) {
-    numerics->SetStreamwisePeriodicValues(Streamwise_Periodic_PressureDrop, Streamwise_Periodic_MassFlow,
-                                          Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
+
+    /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
+    numerics->SetStreamwisePeriodicValues(SPvals);
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1529,8 +1530,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if(!streamwise_periodic_temperature && energy) {
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
-      second_numerics->SetStreamwisePeriodicValues(Streamwise_Periodic_PressureDrop, Streamwise_Periodic_MassFlow,
-                                                   Streamwise_Periodic_IntegratedHeatFlow, Streamwise_Periodic_InletTemperature);
+
+      /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
+      second_numerics->SetStreamwisePeriodicValues(SPvals);
 
       /*--- This bit acts as a boundary condition rather than a source term. But logically it fits better here. ---*/
       for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -2916,7 +2918,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
           Average_Density_Local += FaceArea * nodes->GetDensity(iPoint);
 
-          /*--- Due to periodicty temperature are euqual one the inlet(1) and outlet(2) ---*/
+          /*--- Due to periodicty, temperatures are equal one the inlet(1) and outlet(2) ---*/
           Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
 
         } // if domain
@@ -2935,13 +2937,13 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
   Temperature_Global /= Area_Global;
 
   /*--- Set solver variables ---*/
-  Streamwise_Periodic_MassFlow = MassFlow_Global;
-  Streamwise_Periodic_InletTemperature = Temperature_Global;
+  SPvals.Streamwise_Periodic_MassFlow = MassFlow_Global;
+  SPvals.Streamwise_Periodic_InletTemperature = Temperature_Global;
 
   /*--- As deltaP changes with prescribed massflow the const config value should only be used once. ---*/
   if((nZone==1 && InnerIter==0) ||
      (nZone>1  && OuterIter==0 && InnerIter==0)) {
-    Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
+    SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
   }
 
   if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
@@ -2959,7 +2961,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     ddP = 0.5 / ( Average_Density_Global * pow(Area_Global, 2)) * (pow(TargetMassFlow, 2) - pow(MassFlow_Global, 2));
 
     /*--- Store updated pressure difference ---*/
-    Pressure_Drop_new = Streamwise_Periodic_PressureDrop + damping_factor*ddP;
+    Pressure_Drop_new = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
     /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times 
           (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts 
           it gets called 2x before the restart files are read such that the current massflow is 
@@ -2970,7 +2972,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
           best ---*/
     if((nZone==1 && InnerIter>0) ||
        (nZone>1  && OuterIter>0)) {
-      Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
+      SPvals.Streamwise_Periodic_PressureDrop = Pressure_Drop_new;
     }
 
   } // if massflow
@@ -3013,7 +3015,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
     SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Set the solver variable Integrated Heatflux ---*/
-    Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
+    SPvals.Streamwise_Periodic_IntegratedHeatFlow = HeatFlow_Global;
   } // if energy
 }
 
