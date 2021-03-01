@@ -301,6 +301,11 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   bool element_based = dir_solver->IsElementBased() && nonlinear;
 
+  SU2_OMP_PARALLEL
+  {
+
+  int thread = omp_get_thread_num();
+
   for (unsigned short iProp = 0; iProp < config[iZone]->GetnElasticityMod(); iProp++) {
     su2double E = adj_solver->GetVal_Young(iProp);
     su2double nu = adj_solver->GetVal_Poisson(iProp);
@@ -309,33 +314,33 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
     /*--- Add dependencies for E and Nu ---*/
 
-    structural_numerics[FEA_TERM]->SetMaterial_Properties(iProp, E, nu);
+    structural_numerics[FEA_TERM + thread*MAX_TERMS]->SetMaterial_Properties(iProp, E, nu);
 
     /*--- Add dependencies for Rho and Rho_DL ---*/
 
-    structural_numerics[FEA_TERM]->SetMaterial_Density(iProp, rho, rhoDL);
+    structural_numerics[FEA_TERM + thread*MAX_TERMS]->SetMaterial_Density(iProp, rho, rhoDL);
 
     /*--- Add dependencies for element-based simulations. ---*/
 
     if (element_based) {
       /*--- Neo Hookean Compressible ---*/
-      structural_numerics[MAT_NHCOMP]->SetMaterial_Properties(iProp, E, nu);
-      structural_numerics[MAT_NHCOMP]->SetMaterial_Density(iProp, rho, rhoDL);
+      structural_numerics[MAT_NHCOMP + thread*MAX_TERMS]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_NHCOMP + thread*MAX_TERMS]->SetMaterial_Density(iProp, rho, rhoDL);
 
       /*--- Ideal DE ---*/
-      structural_numerics[MAT_IDEALDE]->SetMaterial_Properties(iProp, E, nu);
-      structural_numerics[MAT_IDEALDE]->SetMaterial_Density(iProp, rho, rhoDL);
+      structural_numerics[MAT_IDEALDE + thread*MAX_TERMS]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_IDEALDE + thread*MAX_TERMS]->SetMaterial_Density(iProp, rho, rhoDL);
 
       /*--- Knowles ---*/
-      structural_numerics[MAT_KNOWLES]->SetMaterial_Properties(iProp, E, nu);
-      structural_numerics[MAT_KNOWLES]->SetMaterial_Density(iProp, rho, rhoDL);
+      structural_numerics[MAT_KNOWLES + thread*MAX_TERMS]->SetMaterial_Properties(iProp, E, nu);
+      structural_numerics[MAT_KNOWLES + thread*MAX_TERMS]->SetMaterial_Density(iProp, rho, rhoDL);
     }
   }
 
   if (de_effects) {
     for (unsigned short iEField = 0; iEField < adj_solver->GetnEField(); iEField++) {
-      structural_numerics[FEA_TERM]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
-      structural_numerics[DE_TERM]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
+      structural_numerics[FEA_TERM + thread*MAX_TERMS]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
+      structural_numerics[DE_TERM + thread*MAX_TERMS]->Set_ElectricField(iEField, adj_solver->GetVal_EField(iEField));
     }
   }
 
@@ -351,18 +356,20 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
       for (unsigned short iDV = 0; iDV < adj_solver->GetnDVFEA(); iDV++) {
         su2double dvfea = adj_solver->GetVal_DVFEA(iDV);
 
-        structural_numerics[FEA_TERM]->Set_DV_Val(iDV, dvfea);
+        structural_numerics[FEA_TERM + thread*MAX_TERMS]->Set_DV_Val(iDV, dvfea);
 
-        if (de_effects) structural_numerics[DE_TERM]->Set_DV_Val(iDV, dvfea);
+        if (de_effects) structural_numerics[DE_TERM + thread*MAX_TERMS]->Set_DV_Val(iDV, dvfea);
 
         if (element_based) {
-          structural_numerics[MAT_NHCOMP]->Set_DV_Val(iDV, dvfea);
-          structural_numerics[MAT_IDEALDE]->Set_DV_Val(iDV, dvfea);
-          structural_numerics[MAT_KNOWLES]->Set_DV_Val(iDV, dvfea);
+          structural_numerics[MAT_NHCOMP + thread*MAX_TERMS]->Set_DV_Val(iDV, dvfea);
+          structural_numerics[MAT_IDEALDE + thread*MAX_TERMS]->Set_DV_Val(iDV, dvfea);
+          structural_numerics[MAT_KNOWLES + thread*MAX_TERMS]->Set_DV_Val(iDV, dvfea);
         }
       }
       break;
   }
+
+  } // end SU2_OMP_PARALLEL
 
   /*--- MPI dependencies. ---*/
 
