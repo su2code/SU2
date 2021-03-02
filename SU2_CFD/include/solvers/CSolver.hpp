@@ -4415,7 +4415,7 @@ public:
    * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
    * \return Struct holding 4 su2doubles.
    */
-  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { StreamwisePeriodicValues SPvals; return SPvals; }
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
 
 protected:

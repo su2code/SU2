@@ -720,7 +720,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow / (SPvals.Streamwise_Periodic_MassFlow * sqrt(norm2_translation) * Prandtl_Turb);
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
-      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[nDim+5]);
+      dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, AuxVar_Grad_i[0]);
 
       residual[nDim+1] -= Volume * scalar_factor * dot_product;
     } // if turbulent

@@ -105,7 +105,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nDim = geometry->GetnDim();
 
   /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
-  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+6;
+  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -1263,6 +1263,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
+  const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = config->GetKind_Streamwise_Periodic();
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
@@ -1382,7 +1383,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         if (yCoord > EPS)
           AuxVar = Total_Viscosity*yVelocity/yCoord;
 
-        /*--- Set the auxilairy variable for this node. ---*/
+        /*--- Set the auxiliary variable for this node. ---*/
 
         nodes->SetAuxVar(iPoint, 0, AuxVar);
 
@@ -1497,6 +1498,25 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   if (streamwise_periodic) {
 
+    /*--- For turbulent streamwise periodic problems w/ energy eq, we need an additional gradient of Eddy viscosity. ---*/
+    if (streamwise_periodic_temperature && turbulent) {
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
+        nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
+      }
+
+      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+    } // if turbulent
+
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
     numerics->SetStreamwisePeriodicValues(SPvals);
 
@@ -1513,11 +1533,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- If viscous, we need gradients for extra terms. ---*/
-      if (viscous) {
-        /*--- Gradient of the primitive variables ---*/
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
-      }
+      /*--- Load the aux variable gradient that we already computed. ---*/
+      if(streamwise_periodic_temperature && turbulent)
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
       /*--- Compute the streamwise periodic source residual and add to the total ---*/
       auto residual = numerics->ComputeResidual(config);
@@ -1526,9 +1544,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-    }// for iPoint
+    } // for iPoint
 
     if(!streamwise_periodic_temperature && energy) {
+
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
       /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
@@ -2908,11 +2927,8 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(const CGeometry      *ge
 
           auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
-          // One could add a CVariable method to return a pointer to the first Vel element to directly plug into GeomToolbox
-          su2double Velocity[MAXNDIM] = {0.0};
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) { Velocity[iDim] = nodes->GetVelocity(iPoint, iDim); }
           /*--- m_dot = dot_prod(n*v) * A * rho, with n beeing unit normal. ---*/
-          MassFlow_Local += GeometryToolbox::DotProduct(nDim, AreaNormal, Velocity) * nodes->GetDensity(iPoint);
+          MassFlow_Local += nodes->GetProjVel(iPoint, AreaNormal) * nodes->GetDensity(iPoint);
 
           Area_Local += FaceArea;
 

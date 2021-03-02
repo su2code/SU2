@@ -39,7 +39,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   /*--- Allocate and initialize the primitive variables and gradients.
         Make sure to align the sizes with the constructor of CIncEulerSolver ---*/
 
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+6;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
 
   /*--- Allocate residual structures ---*/
 
