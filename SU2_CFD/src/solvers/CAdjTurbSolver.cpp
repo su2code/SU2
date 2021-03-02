@@ -161,7 +161,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 #ifndef HAVE_MPI
     rbuf_NotMatching = sbuf_NotMatching;
 #else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (rbuf_NotMatching != 0) {
         SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +

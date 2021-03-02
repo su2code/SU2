@@ -368,7 +368,14 @@ void CConfig::addEnumListOption(const string name, unsigned short & input_size, 
 void CConfig::addDoubleArrayOption(const string name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionDoubleArray(name, size, option_field);
+  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addUShortArrayOption(const string name, const int size, unsigned short* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1305,14 +1312,14 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FLAMELET_THERMO_SYSTEM", kind_flamelet_thermo_system, flamelet_thermo_system_map, ADIABATIC);
 
   /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
-  su2double flame_offset[]={0.0,0.0,0.0};
+  flame_offset[0]=0.0;flame_offset[1]=0.0;flame_offset[2]=0.0;
   addDoubleArrayOption("FLAME_OFFSET", 3,flame_offset);
 
   /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
   
   /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
-  su2double flame_normal[]={1.0, 0.0, 0.0};
+  flame_normal[0] = 1.0; flame_normal[1]=0.0; flame_normal[2]=0.0;
   addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
   
   addDoubleOption("BURNT_THICKNESS", burnt_thickness, 1);
@@ -1643,6 +1650,13 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
+
+  /* DESCRIPTION: Use a Newton-Krylov method. */
+  addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
+  /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
@@ -3209,13 +3223,6 @@ void CConfig::SetnZone(){
 
   }
 
-  /*--- Temporary fix until Multizone Disc. Adj. solver is ready ---- */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-
-    nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
-
-  }
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -3668,11 +3675,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
-    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
-  }
-
-  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
+  if (nKind_SurfaceMovement != nMarker_Moving) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
@@ -4258,9 +4261,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Check if the byte alignment of the matrix multiplications is a
      multiple of 64. */
   if( byteAlignmentMatMul%64 ) {
-    if(rank == MASTER_NODE)
-      cout << "ALIGNED_BYTES_MATMUL must be a multiple of 64." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("ALIGNED_BYTES_MATMUL must be a multiple of 64.", CURRENT_FUNCTION);
   }
 
   /* Determine the value of sizeMatMulPadding, which is the matrix size in
@@ -4461,7 +4462,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
@@ -5069,10 +5070,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-#endif
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /*--- Compute the total number of markers in the config file ---*/
 
@@ -5721,7 +5719,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
         case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
     }
@@ -7370,21 +7367,18 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
-
-  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-          Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
-          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
-          Marker_All_KindBC[iMarker] == EULER_WALL);
-}
-
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
+}
+
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
+
+  return GetViscous_Wall(iMarker) ||
+         Marker_All_KindBC[iMarker] == EULER_WALL;
 }
 
 void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
@@ -7776,6 +7770,7 @@ CConfig::~CConfig(void) {
   delete[] MG_CorrecSmooth;
          delete[] PlaneTag;
               delete[] CFL;
+   delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
@@ -8064,7 +8059,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_SCALAR_SYS:    return SCALAR_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJSCALAR_SYS: return ADJSCALAR_SOL; //nijso: this was commented? TODO
@@ -8468,7 +8462,6 @@ bool CConfig::GetVolumetric_Movement() const {
 
   if (GetSurface_Movement(AEROELASTIC) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
-      GetSurface_Movement(FLUID_STRUCTURE) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;
@@ -9382,8 +9375,8 @@ void CConfig::SetProfilingCSV(void) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 #endif
 
   /*--- Each rank has the same stack trace, so the they have the same
@@ -9467,11 +9460,11 @@ void CConfig::SetProfilingCSV(void) {
   }
 
 #ifdef HAVE_MPI
-  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 #else
   memcpy(n_calls_red, n_calls, map_size*sizeof(int));
   memcpy(l_tot_red,   l_tot,   map_size*sizeof(double));
@@ -9605,8 +9598,8 @@ void CConfig::GEMMProfilingCSV(void) {
   /* Parallel executable. The profiling data must be sent to the master node.
      First determine the rank and size. */
   int size;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /* Check for the master node. */
   if(rank == MASTER_NODE) {
@@ -9617,7 +9610,7 @@ void CConfig::GEMMProfilingCSV(void) {
       /* Block until a message from this processor arrives. Determine
          the number of entries in the receive buffers. */
       SU2_MPI::Status status;
-      SU2_MPI::Probe(proc, 0, MPI_COMM_WORLD, &status);
+      SU2_MPI::Probe(proc, 0, SU2_MPI::GetComm(), &status);
 
       int nEntries;
       SU2_MPI::Get_count(&status, MPI_LONG, &nEntries);
@@ -9631,15 +9624,15 @@ void CConfig::GEMMProfilingCSV(void) {
       vector<long>   recvBufMNK(3*nEntries);
 
       SU2_MPI::Recv(recvBufNCalls.data(), recvBufNCalls.size(),
-                    MPI_LONG, proc, 0, MPI_COMM_WORLD, &status);
+                    MPI_LONG, proc, 0, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufTotTime.data(), recvBufTotTime.size(),
-                    MPI_DOUBLE, proc, 1, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 1, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMinTime.data(), recvBufMinTime.size(),
-                    MPI_DOUBLE, proc, 2, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 2, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMaxTime.data(), recvBufMaxTime.size(),
-                    MPI_DOUBLE, proc, 3, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 3, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMNK.data(), recvBufMNK.size(),
-                    MPI_LONG, proc, 4, MPI_COMM_WORLD, &status);
+                    MPI_LONG, proc, 4, SU2_MPI::GetComm(), &status);
 
       /* Loop over the number of entries. */
       for(int i=0; i<nEntries; ++i) {
@@ -9688,15 +9681,15 @@ void CConfig::GEMMProfilingCSV(void) {
 
     /* Send the data to the master node using blocking sends. */
     SU2_MPI::Send(GEMM_Profile_NCalls.data(), GEMM_Profile_NCalls.size(),
-                  MPI_LONG, MASTER_NODE, 0, MPI_COMM_WORLD);
+                  MPI_LONG, MASTER_NODE, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_TotTime.data(), GEMM_Profile_TotTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 1, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_MinTime.data(), GEMM_Profile_MinTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 2, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 2, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_MaxTime.data(), GEMM_Profile_MaxTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 3, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 3, SU2_MPI::GetComm());
     SU2_MPI::Send(sendBufMNK.data(), sendBufMNK.size(),
-                  MPI_LONG, MASTER_NODE, 4, MPI_COMM_WORLD);
+                  MPI_LONG, MASTER_NODE, 4, SU2_MPI::GetComm());
   }
 
 #endif

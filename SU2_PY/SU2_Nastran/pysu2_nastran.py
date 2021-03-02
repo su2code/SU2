@@ -29,76 +29,83 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, shutil, copy
+import os
+import shutil
+import copy
 import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
 from math import *
-from FSI_tools.switch import switch
 
 # ----------------------------------------------------------------------
 #  Config class
 # ----------------------------------------------------------------------
 
-class ImposedMotionFunction:
+class ImposedMotionClass:
 
-    def __init__(self,time0,tipo,parameters):
-        self.time0 = time0
-        self.tipo = tipo
-        for case in switch(self.tipo):
-            if case("SINUSOIDAL"):
-                self.bias = parameters[0]
-                self.amplitude = parameters[1]
-                self.frequency = parameters[2]
-                break
-            if case("BLENDED_STEP"):
-                self.kmax = parameters[0]
-                self.vinf = parameters[1]
-                self.lref = parameters[2]
-                self.amplitude = parameters[3]
-                self.tmax = 2*pi/self.kmax*self.lref/self.vinf
-                self.omega0 = 1/2*self.kmax
-                break
-            if case():
-                raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
-                break
+  def __init__(self,time0,typeOfMotion,parameters,mode):
+
+    self.time0 = time0
+    self.typeOfMotion = typeOfMotion
+    self.mode = mode
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      self.bias = parameters["BIAS"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.frequency = parameters["FREQUENCY"]
+      self.timeStart = parameters["TIME_0"]
+
+    elif self.typeOfMotion == "BLENDED_STEP":
+      self.kmax = parameters["K_MAX"]
+      self.vinf = parameters["V_INF"]
+      self.lref = parameters["L_REF"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.timeStart = parameters["TIME_0"]
+      self.tmax = 2*pi/self.kmax*self.lref/self.vinf
+      self.omega0 = 1/2*self.kmax
+
+    else:
+      raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
 
 
-    def GetDispl(self,time):
-        time = time - self.time0
-        for case in switch(self.tipo):
-            if case("SINUSOIDAL"):
-                return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
-                break
-            if case("BLENDED_STEP"):
-                if time < self.tmax:
-                    return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
-                return self.amplitude
-                break
+  def GetDispl(self,time):
+    time = time - self.time0 - self.timeStart
+    if self.typeOfMotion == "SINUSOIDAL":
+      return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
-    def GetVel(self,time):
-        time = time - self.time0
-        for case in switch(self.tipo):
-            if case("SINUSOIDAL"):
-                return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
-                break
-            if case("BLENDED_STEP"):
-                if time < self.tmax:
-                    return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
-                return 0.0
-                break
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
+      return self.amplitude
 
-    def GetAcc(self,time):
-        time = time - self.time0
-        for case in switch(self.tipo):
-            if case("SINUSOIDAL"):
-                return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
-                break
-            if case("BLENDED_STEP"):
-                if time < self.tmax:
-                    return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
-                return 0.0
-                break
+
+  def GetVel(self,time):
+    time = time - self.time0 - self.timeStart
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
+
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
+      return 0.0
+
+  def GetAcc(self,time):
+    time = time - self.time0 - self.timeStart
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
+
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
+      return 0.0
 
 
 class RefSystem:
@@ -285,7 +292,7 @@ class Solver:
     self.markers = {}
     self.refsystems = []
     self.ImposedMotionToSet = True
-    self.ImposedMotionFunction = {}
+    self.ImposedMotionFunction = []
 
     print("\n")
     print(" Reading the mesh ".center(80,"-"))
@@ -335,39 +342,37 @@ class Solver:
         this_param = line[0].strip()
         this_value = line[1].strip()
 
-        for case in switch(this_param):
-          #integer values
-          if case("NMODES")		: pass
-          if case("RESTART_ITER") :
-            self.Config[this_param] = int(this_value)
-            break
+        #integer values
+        if (this_param == "NMODES") or \
+           (this_param == "RESTART_ITER"):
+          self.Config[this_param] = int(this_value)
 
-          #float values
-          if case("DELTA_T")			: pass
-          if case("MODAL_DAMPING")      : pass
-          if case("RHO")	      		:
-            self.Config[this_param] = float(this_value)
-            break
 
-          #string values
-          if case("TIME_MARCHING")	: pass
-          if case("MESH_FILE")			: pass
-          if case("PUNCH_FILE")        : pass
-          if case("RESTART_SOL")       : pass
-          if case("MOVING_MARKER")		:
-            self.Config[this_param] = this_value
-            break
+        #float values
+        elif (this_param == "DELTA_T") or \
+             (this_param == "MODAL_DAMPING") or \
+             (this_param == "RHO"):
+          self.Config[this_param] = float(this_value)
 
-          #lists values
-          if case("INITIAL_MODES"): pass
-          if case("IMPOSED_MODES"): pass
-          if case("IMPOSED_PARAMETERS"):
-            self.Config[this_param] = eval(this_value)
-            break
 
-          if case():
-            raise Exception('{} is an invalid option !'.format(this_param))
-            break
+        #string values
+        elif (this_param == "TIME_MARCHING") or \
+             (this_param == "MESH_FILE") or \
+             (this_param == "PUNCH_FILE") or \
+             (this_param == "RESTART_SOL") or \
+             (this_param == "MOVING_MARKER"):
+          self.Config[this_param] = this_value
+
+
+        #lists values
+        elif (this_param == "INITIAL_MODES") or \
+             (this_param == "IMPOSED_MODES") or \
+             (this_param == "IMPOSED_PARAMETERS"):
+          self.Config[this_param] = eval(this_value)
+
+
+        else:
+          raise Exception('{} is an invalid option !'.format(this_param))
 
 
 
@@ -731,14 +736,17 @@ class Solver:
     This method integrates in time the solution.
     """
 
+    self.__reset(self.q)
+    self.__reset(self.qdot)
+    self.__reset(self.qddot)
+    self.__reset(self.a)
+
     if not self.ImposedMotion:
       eps = 1e-6
 
       self.__SetLoads()
 
       # Prediction step
-      self.__reset(self.qddot)
-      self.__reset(self.a)
 
       self.a += (self.alpha_f)/(1-self.alpha_m)*self.qddot_n
       self.a -= (self.alpha_m)/(1-self.alpha_m)*self.a_n
@@ -766,14 +774,20 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       if self.ImposedMotionToSet:
-          for imode in self.Config["IMPOSED_MODES"].keys():
-            self.ImposedMotionFunction[imode] = ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode])
-          self.ImposedMotionToSet = False
-      for imode in self.Config["IMPOSED_MODES"].keys():
-        self.q[imode] = self.ImposedMotionFunction[imode].GetDispl(time)
-        self.qdot[imode] = self.ImposedMotionFunction[imode].GetVel(time)
-        self.qddot[imode] = self.ImposedMotionFunction[imode].GetAcc(time)
-        self.a = np.copy(self.qddot)
+        iImposedFunc = 0
+        for imode in self.Config["IMPOSED_MODES"].keys():
+          for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
+            typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
+            parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
+            self.ImposedMotionFunction.append(ImposedMotionClass(time, typeOfMotion, parameters, imode))
+            iImposedFunc += 1
+        self.ImposedMotionToSet = False
+      for iImposedFunc in range(len(self.ImposedMotionFunction)):
+        imode = self.ImposedMotionFunction[iImposedFunc].mode
+        self.q[imode] += self.ImposedMotionFunction[iImposedFunc].GetDispl(time)
+        self.qdot[imode] += self.ImposedMotionFunction[iImposedFunc].GetVel(time)
+        self.qddot[imode] += self.ImposedMotionFunction[iImposedFunc].GetAcc(time)
+      self.a = np.copy(self.qddot)
 
 
   def __SetLoads(self):
@@ -954,11 +968,11 @@ class Solver:
 
     return self.markers[markerID][iVertex]
 
-  def getInterfaceNodePos(self, markerID, iVertex):
+  def getInterfaceNodePosInit(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return Coord
+    Coord0 = self.node[iPoint].GetCoord0()
+    return Coord0
 
   def getInterfaceNodeDisp(self, markerID, iVertex):
 

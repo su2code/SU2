@@ -210,6 +210,18 @@ def main():
     propeller.test_vals = [-3.389576, -8.409529, 0.000048, 0.056329]
     test_list.append(propeller)
 
+    #######################################
+    ### Axisymmetric Compressible RANS  ###
+    #######################################
+    
+    # Axisymmetric air nozzle (transonic)
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 10
+    axi_rans_air_nozzle.test_vals = [-12.094937, -6.622043, -8.814412, -2.393288]
+    test_list.append(axi_rans_air_nozzle)
+
     #################################
     ## Compressible RANS Restart  ###
     #################################
@@ -307,7 +319,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.971283, -4.911145, -0.000201, 0.121631]
+    inc_nozzle.test_vals = [-5.973103, -4.911802, -0.000195, 0.121643]
     inc_nozzle.new_output = True
     test_list.append(inc_nozzle)
 
@@ -329,7 +341,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-4.436657, 0.507847, 0.000000, 0.000000]
+    inc_buoyancy.test_vals = [-4.432484, 0.507522, 0.000000, 0.000000]
     inc_buoyancy.new_output  = True
     test_list.append(inc_buoyancy)
 
@@ -338,7 +350,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.108218, -2.158606, 0.019142, 1.902461]
+    inc_poly_cylinder.test_vals = [-7.849071, -2.092548, 0.029423, 1.922053]
     inc_poly_cylinder.new_output  = True
     test_list.append(inc_poly_cylinder)
 
@@ -347,7 +359,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.450879, -3.083720, -0.020699, -0.168420]
+    inc_lam_bend.test_vals = [-3.438863, -3.102176, -0.017532, -0.193429]
     test_list.append(inc_lam_bend)
 
     ############################
@@ -368,7 +380,7 @@ def main():
     inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
     inc_turb_naca0012_sst_sust.test_iter = 20
-    inc_turb_naca0012_sst_sust.test_vals = [-7.276273, 0.145895, 0.000021, 0.312004]
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276424, 0.145861, 0.000003, 0.312011]
     test_list.append(inc_turb_naca0012_sst_sust)
 
     ######################################
@@ -436,7 +448,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-3.007635, -6.879789, 1.445300, 0.419281]
+    unst_inc_turb_naca0015_sa.test_vals = [-3.008629, -6.888974, 1.435193, 0.433537]
     unst_inc_turb_naca0015_sa.unsteady  = True
     test_list.append(unst_inc_turb_naca0015_sa)
 
@@ -478,7 +490,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280316, 0.379651, 72.212090, 1.277440]
+    Jones_tc.test_vals = [-5.279930, 0.379651, 72.212090, 1.277440]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -596,7 +608,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.766116, -2.206522] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.800461, -2.115195] #last 3 columns
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
@@ -676,7 +688,7 @@ def main():
     mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
     mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
     mms_fvm_inc_euler.test_iter = 20
-    mms_fvm_inc_euler.test_vals = [-9.128345, -9.441741, 0.000000, 0.000000]
+    mms_fvm_inc_euler.test_vals = [-9.128033, -9.441406, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_euler)
 
     # FVM, incompressible, laminar N-S

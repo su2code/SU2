@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "./parallelization/mpi_structure.hpp"
+#include "parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -422,6 +422,9 @@ private:
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
+  bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
+  array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
+  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -681,7 +684,7 @@ private:
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
   nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
-  nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
@@ -691,7 +694,7 @@ private:
   *Marker_Plotting,                   /*!< \brief Markers to plot. */
   *Marker_Analyze,                    /*!< \brief Markers to analyze. */
   *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
-  *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
@@ -1058,10 +1061,10 @@ private:
   su2double *ffd_bounds;
   bool enable_remeshing;
   bool use_weak_scalar_bc;
-  su2double *flame_offset;
+  su2double flame_offset[3];
   su2double flame_thickness;
   su2double burnt_thickness;
-  su2double *flame_normal;
+  su2double flame_normal[3];
 
   array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
@@ -1235,6 +1238,8 @@ private:
   void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
 
   void addDoubleArrayOption(const string name, const int size, su2double* option_field);
+
+  void addUShortArrayOption(const string name, const int size, unsigned short* option_field);
 
   void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field);
 
@@ -4120,6 +4125,21 @@ public:
    * \brief Get whether to use vectorized numerics (if available).
    */
   bool GetUseVectorization(void) const { return UseVectorization; }
+
+  /*!
+   * \brief Get whether to use a Newton-Krylov method.
+   */
+  bool GetNewtonKrylov(void) const { return NewtonKrylov; }
+
+  /*!
+   * \brief Get Newton-Krylov integer parameters.
+   */
+  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+
+  /*!
+   * \brief Get Newton-Krylov floating-point parameters.
+   */
+  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.

@@ -639,10 +639,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       }
     }
 
-    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Extract the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
 
@@ -651,7 +651,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_EField[iVar] = AD::GetDerivative(AD_Idx_EField[iVar]);
         else             Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     if (fea_dv) {
@@ -659,7 +659,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_DV[iVar] = AD::GetDerivative(AD_Idx_DV_Val[iVar]);
         else             Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     /*--- Extract the flow traction sensitivities ---*/
