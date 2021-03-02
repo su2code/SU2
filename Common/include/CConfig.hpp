@@ -414,7 +414,11 @@ private:
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
 
-  unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
+  unsigned short nQuasiNewtonSamples;   /*!< \brief Number of samples used in quasi-Newton solution methods. */
+  unsigned short nNewtonBasisSamples;   /*!< \brief Number of samples used to form the subspace for Newton methods. */
+  unsigned short KrylovCriterionPause;  /*!< \brief Number of iterations before the Krylov criterion is applied. */
+  su2double KrylovCriterionValue;       /*!< \brief Krylov criterion value for construction of slow/unstable basis. */
+
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
@@ -3964,6 +3968,21 @@ public:
    * \brief Get the number of samples used in quasi-Newton methods.
    */
   unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
+
+  /*!
+   * \brief Get the number of samples used in (subspace) Newton methods.
+   */
+  unsigned short GetnNewtonBasisSamples(void) const { return nNewtonBasisSamples; }
+
+  /*!
+   * \brief Get the number of iterations before the Krylov criterion is applied.
+   */
+  unsigned short GetKrylovCriterionWait(void) const { return KrylovCriterionPause; }
+
+  /*!
+   * \brief Get the Krylov criterion value.
+   */
+  su2double GetKrylovCriterionValue(void) const { return KrylovCriterionValue;}
 
   /*!
    * \brief Get whether to use vectorized numerics (if available).

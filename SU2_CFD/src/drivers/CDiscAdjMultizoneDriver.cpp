@@ -161,6 +161,13 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned long wrt_sol_freq = 99999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
+  vector<CNewtonUpdateOnSubspace<passivedouble> > fixPtSubspaceCorrector(nZone);
+
+  // TODO: put this into some structure, or move it to CNewtonUpdateOnSubspace
+  vector<su2matrix<int> > InputIndices(nZone);
+  vector<su2matrix<int> > OutputIndices(nZone);
+  vector<unsigned short> nNewtonBasisSamples(nZone);
+  unsigned short NewtonUpdateWaitIterations;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -175,13 +182,24 @@ void CDiscAdjMultizoneDriver::Run() {
 
     Set_BGSSolution_k_To_Solution(iZone);
 
-    /*--- Prepare quasi-Newton drivers. ---*/
+    /*--- Prepare quasi-Newton or (subspace) Newton drivers. ---*/
 
     if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       fixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
                                    geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
                                    GetTotalNumberOfVariables(iZone, true),
                                    geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+    }
+    else if (config_container[iZone]->GetnNewtonBasisSamples()) {
+      nNewtonBasisSamples[iZone] = config_container[iZone]->GetnNewtonBasisSamples();
+      fixPtSubspaceCorrector[iZone].resize(2,
+                                           nNewtonBasisSamples[iZone],
+                                           geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
+                                           GetTotalNumberOfVariables(iZone, true),
+                                           geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+      // TODO: check size because of halos
+      InputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
+      OutputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
     }
   }
 
@@ -257,7 +275,10 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
-    /*-- Start loop over zones. ---*/
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if(nNewtonBasisSamples[iZone])
+        GetAllIndices(0, true, InputIndices[iZone], OutputIndices[iZone]);
+    }
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -279,6 +300,10 @@ void CDiscAdjMultizoneDriver::Run() {
         fixPtCorrector[iZone].reset();
         if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, fixPtCorrector[iZone]);
       }
+
+      // TODO: we might want to keep basis vectors across outer loops (especially when solution updates become small)?
+//        fixPtSubspaceCorrector[iZone].reset();
+      NewtonUpdateWaitIterations = 0;
 
       for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
@@ -314,6 +339,25 @@ void CDiscAdjMultizoneDriver::Run() {
           GetAllSolutions(iZone, true, fixPtCorrector[iZone].FPresult());
           fixPtCorrector[iZone].compute();
           if(iInnerIter) SetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+        }
+
+        if (nNewtonBasisSamples[iZone]) {
+
+          /*--- Construction and use of (unstable, slow) subspace:
+           *    (1) checkBasis: check for large eigenvalues to eventually append new basis vector
+           *    (2) computeSubspaceJacobian: eventually (re-)build the projected subspace Jacobian using the existing tape
+           *    (3) compute: Newton correction for the slow/unstable part (in each iteration)
+           * ---*/
+
+          GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+          if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
+            if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
+              fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
+              NewtonUpdateWaitIterations = 0;
+            }
+          }
+          fixPtSubspaceCorrector[iZone].compute();
+          if(iInnerIter) SetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
         }
 
         /*--- This is done explicitly here for multizone cases, only in inner iterations and not when

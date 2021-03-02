@@ -1577,6 +1577,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
   addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
+  /* DESCRIPTION: Number of samples used to form the subspace for Newton methods. */
+  addUnsignedShortOption("NEWTON_NUM_BASIS_SAMPLES", nNewtonBasisSamples, 0);
+  /* DESCRIPTION: Number of iterations before the Krylov criterion is applied. */
+  addUnsignedShortOption("NEWTON_KRYLOV_CRITERION_PAUSE", KrylovCriterionPause, 100);
+  /* DESCRIPTION:  Krylov criterion value for construction of slow/unstable basis. */
+  addDoubleOption("NEWTON_KRYLOV_CRITERION_VALUE", KrylovCriterionValue, 1000.0);
+
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
 

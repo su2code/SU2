@@ -200,6 +200,8 @@ public:
     return base_nodes;
   }
 
+  inline virtual CSolver* GetDirectSolver() { return nullptr; }
+
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
    * \param[in] config - Definition of the particular problem.

@@ -450,6 +450,18 @@ public:
   inline const MatrixType& GetSolution(void) const { return Solution; }
 
   /*!
+   * \brief Get the entire input indices of the solution of the problem (AD).
+   * \return Reference to the input index matrix.
+   */
+  inline const su2matrix<int>& GetInputIndices(void) const { return AD_InputIndex; }
+
+  /*!
+   * \brief Get the entire output indices of the solution of the problem (AD).
+   * \return Reference to the output index matrix.
+   */
+  inline const su2matrix<int>& GetOutputIndices(void) const { return AD_OutputIndex; }
+
+  /*!
    * \brief Get the solution of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.

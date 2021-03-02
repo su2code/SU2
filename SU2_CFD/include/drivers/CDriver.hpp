@@ -897,6 +897,28 @@ public:
     }
   }
 
+  /*!
+   * \brief Get the indices of all solution variables (adjoint) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[out] input_indices - Input indices of the solution variables.
+   * \param[out] output_indices - Output indices of the solution variables.
+   */
+  void GetAllIndices(unsigned short iZone, bool adjoint, su2matrix<int>& input_indices, su2matrix<int>& output_indices) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      CSolver* direct_solver = solver->GetDirectSolver();
+      if (direct_solver == nullptr) {cout << "direct solver is null pointer" << endl;}
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          input_indices(iPoint,offset+iVar) = direct_solver->GetNodes()->GetInputIndices()(iPoint,iVar);
+          output_indices(iPoint,offset+iVar) = direct_solver->GetNodes()->GetOutputIndices()(iPoint,iVar);
+        }
+      offset += solver->GetnVar();
+    }
+  }
 };
 
 /*!

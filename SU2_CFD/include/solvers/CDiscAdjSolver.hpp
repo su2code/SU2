@@ -90,6 +90,8 @@ public:
    */
   ~CDiscAdjSolver(void) override;
 
+   inline CSolver* GetDirectSolver() override { return direct_solver; }
+
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
