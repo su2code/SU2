@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -114,6 +114,9 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  /*--- LinSysSol will always be init to 0. ---*/
+  System.SetxIsZero(true);
+
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
   auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
@@ -197,17 +200,13 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   Alloc2D(nMarker, nVertex, UTau);
 
-  //CSkinFriction.resize(nMarker);
-  //for (iMarker = 0; iMarker < nMarker; iMarker++)
-  //  CSkinFriction[iMarker].resize(nDim, nVertex[iMarker]) = su2double(0.0);
-
   /*--- wall eddy viscosity in all the markers ---*/
 
   Alloc2D(nMarker, nVertex, EddyViscWall);
 
   /*--- Skin friction in all the markers ---*/
 
-  Alloc3D(nMarker,nVertex,nDim,CSkinFriction);
+  Alloc3D(nMarker, nVertex, nDim, CSkinFriction);
   
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -555,7 +554,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -588,6 +587,30 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, nullptr, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, nullptr, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -1666,7 +1689,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2402,8 +2425,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = Density_Inf, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
+            GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2437,6 +2460,7 @@ RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
   }
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
+  const su2double factorFric = config->GetRefArea() * factor;
 
   /*--- Variables initialization ---*/
 
@@ -2547,7 +2571,7 @@ RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
         if (!wallfunctions) 
-          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+          CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);

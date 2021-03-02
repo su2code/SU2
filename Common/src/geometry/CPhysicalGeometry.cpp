@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -4318,7 +4318,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      if (checkTetra(iElem,0,1,2,3) < 0.0) {
+      if (checkTetra(iElem,0,1,2,3)) {
         elem[iElem]->Change_Orientation();
         tet_flip++;
       }
@@ -7456,6 +7456,99 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   delete [] Buffer_Recv_GlobalIndex;
   delete [] Buffer_Recv_Vertex;
   delete [] Buffer_Recv_Marker;
+}
+
+void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
+  /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
+  /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
+  /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
+  /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
+  /*--- streamwise coordinate vector is perpendicular to that |--->|, the choice of the     ---*/
+  /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
+  /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
+  /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  /*--- Initialize/Allocate variables. ---*/
+  su2double min_norm = numeric_limits<su2double>::max();
+
+  /*--- Communicate Coordinates plus the minimum distance, therefor the nDim+1 ---*/
+  vector<su2double> Buffer_Send_RefNode(nDim+1, numeric_limits<su2double>::max());
+  su2activematrix Buffer_Recv_RefNode(size,nDim+1);
+  unsigned long iPointMin = 0; // Initialisaton, otherwise 'may be uninitialized` warning'
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
+  /*---         each process has the local ref-nodes from every process. Most processes     ---*/
+  /*---         won't have a boundary with the streamwise periodic 'inlet' marker,          ---*/
+  /*---         therefore the default value of the send value is set super high.            ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
+      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if (iPeriodic == 1) {
+
+        for (auto iVertex = 0ul; iVertex < GetnVertex(iMarker); iVertex++) {
+
+          auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Get the squared norm of the current point. sqrt is a monotonic function in [0,R+) so for comparison we dont need Norm. ---*/
+          auto norm = GeometryToolbox::SquaredNorm(nDim, nodes->GetCoord(iPoint));
+
+          /*--- Check if new unique reference node is found and store Point ID. ---*/
+          if (norm < min_norm) {
+            min_norm = norm;
+            iPointMin = iPoint;
+          }
+          /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+        }
+        break; // Actually no more than one streamwise periodic marker pair is allowed
+      } // receiver conditional
+    } // periodic conditional
+  } // marker loop
+
+  /*--- Copy the Coordinates and norm into send buffer. ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin,iDim);
+  Buffer_Send_RefNode[nDim] = min_norm;
+
+  /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
+  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim+1, MPI_DOUBLE,
+                     Buffer_Recv_RefNode.data(), nDim+1, MPI_DOUBLE, SU2_MPI::GetComm());
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
+  /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
+  /*---         geometry container.                                                         ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  min_norm = numeric_limits<su2double>::max();
+
+  for (int iRank = 0; iRank < size; iRank++) {
+
+    auto norm = Buffer_Recv_RefNode(iRank,nDim);
+
+    /*--- Check if new unique reference node is found. ---*/
+    if (norm < min_norm) {
+      min_norm = norm;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode(iRank,iDim);
+    }
+  }
+
+  /*--- Print the reference node to screen. ---*/
+  if (rank == MASTER_NODE) {
+    cout << "Streamwise Periodic Reference Node: [";
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      cout <<  " " << Streamwise_Periodic_RefNode[iDim];
+    cout << " ]" << endl;
+  }
 
 }
 

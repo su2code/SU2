@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -321,8 +321,19 @@ def main():
     discadj_cht.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001
-    test_list.append(discadj_cht)		
-	  
+    test_list.append(discadj_cht)
+
+    # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
+    da_sp_pinArray_cht_2d_dp_hf           = TestCase('da_sp_pinArray_cht_2d_dp_hf')
+    da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
+    da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.793283, -4.065832, -4.137121] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
+    da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
+    da_sp_pinArray_cht_2d_dp_hf.multizone = True
+    test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
     ######################################
     ### RUN TESTS                      ###
