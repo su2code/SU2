@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "../code_config.hpp"
 
 #if defined(_MSC_VER)
