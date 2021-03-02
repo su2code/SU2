@@ -41,6 +41,8 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 
+#include <chrono>
+
 COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
     CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator), StopNext(false) {
 
@@ -119,6 +121,11 @@ void COneShotSinglezoneDriver::RunOneShot(){
   su2double CombinedFunc=0.0;
   bool isconverged=false;
 
+  /// prepare the output
+  if (rank==MASTER_NODE) {
+    WriteOneShotHistoryHeader();
+  }
+
   /// main loop for the optimization method
   while (OneShotIter<config->GetOneShotIter()) {
 
@@ -135,16 +142,27 @@ void COneShotSinglezoneDriver::RunOneShot(){
     /// do a linesearch and design update
     Linesearch(CombinedFunc, gradient, config);
 
-    /// check for convergence and update for next iteration
-
+    /// update for next iteration
     UpdateDesignVariable();
+
+    if (rank==MASTER_NODE) {
+      WriteOneShotHistory(CombinedFunc, gradient);
+    }
+
+    /// check for convergence
     if (isconverged) { break; }
     OneShotIter++;
   }
 
+  /// after the loop finishes store the final design
+  OutputDesign("finaldesign.txt");
+
 }
 
 void COneShotSinglezoneDriver::PiggyBack() {
+
+  // Record start time
+  auto start = std::chrono::high_resolution_clock::now();
 
   // note: use inherited iteration count from the adjoint driver for now.
   nPiggyIter = nAdjoint_Iter;
@@ -173,6 +191,11 @@ void COneShotSinglezoneDriver::PiggyBack() {
 
   }
 
+  // Record end time
+  auto finish = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = finish - start;
+  std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+
 }
 
 void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
@@ -183,12 +206,10 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   if (iPiggyIter == nPiggyIter-1 || StopNext) {
     kind_recording = SOLUTION_AND_MESH;
   } else {
-    if (config->GetOneShotMode()==PIGGYBACK) {
-      kind_recording = SOLUTION_VARIABLES;
-    } else {
-      kind_recording = SOLUTION_AND_MESH;
-    }
+    kind_recording = SOLUTION_VARIABLES;
   }
+
+  /*--- Store the computational graph of one direct iteration. ---*/
 
   SetRecording(kind_recording);
 
@@ -231,6 +252,12 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+  /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
+   * are removed for future runs. */
+
+  if (iPiggyIter == nPiggyIter-1 || StopNext) {
+    SetRecording(NONE);
+  }
 
   AD::ClearAdjoints();
 
@@ -400,6 +427,40 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
   /*--- precondition gradient and extract thew result. ---*/
   solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
+}
+
+void COneShotSinglezoneDriver::WriteOneShotHistoryHeader() {
+
+  std::ofstream outfile;
+  outfile.open("historyoneshot.txt", std::ios_base::out); // overwrite earlier history
+  outfile << "function value; " << "function gradient; " << endl;
+  outfile.close();
+
+}
+
+void COneShotSinglezoneDriver::WriteOneShotHistory(su2double &funcValue, vector<su2double> &funcGrad) {
+
+  std::ofstream outfile;
+  outfile.open("historyoneshot.txt", std::ios_base::app); // append instead of overwrite
+  outfile << funcValue << "; ";
+  for (auto iDV = 0; iDV < funcGrad.size(); iDV++) {
+    outfile << funcGrad[iDV] << ", ";
+  }
+  outfile << endl;
+  outfile.close();
+
+}
+
+void COneShotSinglezoneDriver::OutputDesign(string out_file) {
+  unsigned iDV;
+  if (rank == MASTER_NODE) {
+    ofstream dsgout (out_file);
+    dsgout.precision(17);
+    for (iDV = 0; iDV < design.size(); iDV++) {
+      dsgout << design[iDV] << ",";
+    }
+    dsgout.close();
+  }
 }
 
 su2double COneShotSinglezoneDriver::L2Norm(vector<su2double>& vector) {

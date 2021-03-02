@@ -155,6 +155,21 @@ public:
   void ComputePreconditioner();
 
   /*!
+   * \brief Prepare the history output.
+   */
+  void WriteOneShotHistoryHeader();
+
+  /*!
+   * \brief Write information about the OneShot optimization process to the history file.
+   */
+  void WriteOneShotHistory(su2double& funcValue, vector<su2double>& funcGrad);
+
+  /*!
+   * \brief Output the current design.
+   */
+  void OutputDesign(string out_file);
+
+  /*!
    * \brief Small helper function to compute the norm of a std::vector
    */
   su2double L2Norm(vector<su2double>& vector);
