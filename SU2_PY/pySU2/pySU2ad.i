@@ -46,6 +46,7 @@ threads="1"
 %}
 
 // ----------- USED MODULES ------------
+%import "../../Common/include/code_config.hpp"
 %import "../../Common/include/basic_types/datatype_structure.hpp"
 %import "../../Common/include/parallelization/mpi_structure.hpp"
 %include "std_string.i"
