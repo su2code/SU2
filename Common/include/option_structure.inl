@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -334,26 +334,21 @@ public:
   }
 };
 
-class COptionDoubleArray : public COptionBase {
-  su2double * & field; // Reference to the feildname
-  string name; // identifier for the option
-  const int size;
-  su2double * def;
-  su2double * vals;
-  su2double * default_value;
+template<class Type>
+class COptionArray : public COptionBase {
+  string name; // Identifier for the option
+  const int size; // Number of elements
+  Type* field; // Reference to the field
 
 public:
-  COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-    this->default_value = default_value;
-    def  = nullptr;
-    vals = nullptr;
+  COptionArray(string option_field_name, const int list_size, Type* option_field) :
+    name(option_field_name),
+    size(list_size),
+    field(option_field) {
   }
 
-  ~COptionDoubleArray() override {
-     delete [] def;
-     delete [] vals;
-  };
+  ~COptionArray() override {};
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
@@ -371,27 +366,16 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
-      su2double val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "su2double array", this->name);
+      if (!(is >> field[i])) {
+        return badValue(option_value, " array", this->name);
       }
-      vals[i] = val;
     }
-    this->field = vals;
     return "";
   }
 
-  void SetDefault() override {
-    def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
-    this->field = def;
-  }
+  void SetDefault() override {}
 };
 
 class COptionDoubleList : public COptionBase {

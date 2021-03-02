@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,19 +41,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double* [M];
-    for(unsigned long i = 0; i < M; ++i)
-      X[i] = new su2double [N[i]] ();
-  };
-
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  Alloc2D(nMarker, nVertex, Buffet_Sensor);
-  Buffet_Metric = new su2double[nMarker];
-  Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
+  Buffet_Sensor.resize(nMarker);
+  for (unsigned long i = 0; i< nMarker; ++i) Buffet_Sensor[i].resize(nVertex[i], 0.0);
+  Buffet_Metric.resize(nMarker, 0.0);
+  Surface_Buffet_Metric.resize(config->GetnMarker_Monitoring(), 0.0);
 
   /*--- Read farfield conditions from config ---*/
 
@@ -71,22 +64,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     default:
       /*--- Already done upstream. ---*/
       break;
-  }
-
-}
-
-CNSSolver::~CNSSolver(void) {
-
-  unsigned short iMarker;
-
-  delete [] Buffet_Metric;
-  delete [] Surface_Buffet_Metric;
-
-  if (Buffet_Sensor != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      delete [] Buffet_Sensor[iMarker];
-    }
-    delete [] Buffet_Sensor;
   }
 
 }
@@ -148,46 +125,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Limiter(geometry, config);
   }
 
-  /*--- Evaluate the vorticity and strain rate magnitude ---*/
-
-  SU2_OMP_MASTER
-  {
-    StrainMag_Max = 0.0;
-    Omega_Max = 0.0;
-  }
-  SU2_OMP_BARRIER
-
-  nodes->SetVorticity_StrainMag();
-
-  /*--- Min and Max are not really differentiable ---*/
-  const bool wasActive = AD::BeginPassive();
-
-  su2double strainMax = 0.0, omegaMax = 0.0;
-
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
-    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
-  }
-  SU2_OMP_CRITICAL {
-    StrainMag_Max = max(StrainMag_Max, strainMax);
-    Omega_Max = max(Omega_Max, omegaMax);
-  }
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      su2double MyOmega_Max = Omega_Max;
-      su2double MyStrainMag_Max = StrainMag_Max;
-
-      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    }
-    SU2_OMP_BARRIER
-  }
-
-  AD::EndPassive(wasActive);
+  ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -197,7 +135,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
-unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -240,79 +178,17 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config) {
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
-                         (config->GetKind_Turb_Model() == SST_SUST);
-
-  CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
-
-  /*--- Points, coordinates and normal vector in edge ---*/
-
-  auto iPoint = geometry->edges->GetNode(iEdge,0);
-  auto jPoint = geometry->edges->GetNode(iEdge,1);
-
-  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                     geometry->nodes->GetCoord(jPoint));
-
-  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-  /*--- Primitive and secondary variables. ---*/
-
-  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                         nodes->GetPrimitive(jPoint));
-
-  numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                         nodes->GetSecondary(jPoint));
-
-  /*--- Gradients. ---*/
-
-  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                               nodes->GetGradient_Primitive(jPoint));
-
-  /*--- Turbulent kinetic energy. ---*/
-
-  if (tkeNeeded)
-    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
-                                   turbNodes->GetSolution(jPoint,0));
-
-  /*--- Wall shear stress values (wall functions) ---*/
-
-  numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(iPoint));
-
-  /*--- Compute and update residual ---*/
-
-  auto residual = numerics->ComputeResidual(config);
-
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
-  }
-  else {
-    LinSysRes.SubtractBlock(iPoint, residual);
-    LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-  }
-
+  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
 
   unsigned long iVertex;
-  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
+  unsigned short iMarker, iMarker_Monitoring;
   const su2double* Vel_FS = Velocity_Inf;
-  su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
-  su2double k = config->GetBuffet_k(), lam = config->GetBuffet_lambda();
-  string Marker_Tag, Monitoring_Tag;
+  const su2double k = config->GetBuffet_k(), lam = config->GetBuffet_lambda(), Sref = config->GetRefArea();
 
-  for (iDim = 0; iDim < nDim; iDim++){
-    VelMag_FS += Vel_FS[iDim]*Vel_FS[iDim];
-  }
-  VelMag_FS = sqrt(VelMag_FS);
+  const su2double VelMag_FS = GeometryToolbox::Norm(nDim, Vel_FS);
 
   /*-- Variables initialization ---*/
 
@@ -328,10 +204,9 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
     Buffet_Metric[iMarker] = 0.0;
 
-    Boundary   = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
+    if (config->GetViscous_Wall(iMarker)) {
 
       /*--- Loop over the vertices to compute the buffet sensor ---*/
 
@@ -339,13 +214,8 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
-        SkinFrictionMag = 0.0;
-        SkinFrictionDot = 0.0;
-        for(iDim = 0; iDim < nDim; iDim++){
-          SkinFrictionMag += pow(CSkinFriction[iMarker][iDim][iVertex], 2);
-          SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
-        }
-        SkinFrictionMag = sqrt(SkinFrictionMag);
+        const su2double SkinFrictionMag = GeometryToolbox::Norm(nDim, CSkinFriction[iMarker][iVertex]);
+        su2double SkinFrictionDot = GeometryToolbox::DotProduct(nDim, CSkinFriction[iMarker][iVertex], Vel_FS);
 
         /*--- Normalize the dot product ---*/
 
@@ -357,10 +227,10 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
         /*--- Integrate buffet sensor ---*/
 
-        if(Monitoring == YES){
+        if (Monitoring == YES){
 
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = GeometryToolbox::Norm(nDim, Normal);
+          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
@@ -368,16 +238,17 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
       }
 
-      if(Monitoring == YES){
+      if (Monitoring == YES){
 
         Total_Buffet_Metric += Buffet_Metric[iMarker];
 
         /*--- Per surface buffet metric ---*/
 
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if (Marker_Tag == Monitoring_Tag) Surface_Buffet_Metric[iMarker_Monitoring] = Buffet_Metric[iMarker];
+          auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag)
+            Surface_Buffet_Metric[iMarker_Monitoring] = Buffet_Metric[iMarker];
         }
 
       }
@@ -386,26 +257,15 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
   }
 
-#ifdef HAVE_MPI
-
   /*--- Add buffet metric information using all the nodes ---*/
 
   su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
-  SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Add the buffet metric on the surfaces using all the nodes ---*/
 
-  su2double *MySurface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
-  }
-
-  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  delete [] MySurface_Buffet_Metric;
-
-#endif
+  auto local_copy = Surface_Buffet_Metric;
+  SU2_MPI::Allreduce(local_copy.data(), Surface_Buffet_Metric.data(), local_copy.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 }
 
@@ -877,7 +737,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
-void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;

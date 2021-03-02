@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,13 +39,13 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization ---*/
 
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();

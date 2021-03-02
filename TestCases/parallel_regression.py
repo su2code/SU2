@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -59,7 +59,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864] 
+    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864]
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -303,6 +303,17 @@ def main():
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
 
+    # ONERA M6 Wing - Newton-Krylov
+    turb_oneram6_nk           = TestCase('turb_oneram6_nk')
+    turb_oneram6_nk.cfg_dir   = "rans/oneram6"
+    turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
+    turb_oneram6_nk.test_iter = 20
+    turb_oneram6_nk.test_vals = [-4.892257, -4.514011, -11.432312, 0.221025, 0.045570, 2, -0.899459, 3.1384e+01]
+    turb_oneram6_nk.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turb_oneram6_nk.timeout   = 600
+    turb_oneram6_nk.tol       = 0.0001
+    test_list.append(turb_oneram6_nk)
+
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
@@ -346,6 +357,21 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+
+    #######################################
+    ### Axisymmetric Compressible RANS  ###
+    #######################################
+    
+    # Axisymmetric air nozzle (transonic)
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 10
+    axi_rans_air_nozzle.test_vals = [ -12.096569, -6.625843, -8.807541, -2.393279]
+    axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
+    axi_rans_air_nozzle.timeout   = 1600
+    axi_rans_air_nozzle.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle)
 
     #################################
     ## Compressible RANS Restart  ###
@@ -420,7 +446,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-7.796386, -2.062578, 0.013001, 1.913804]
+    inc_poly_cylinder.test_vals = [-7.791831, -2.062292, 0.013040, 1.913997]
     inc_poly_cylinder.su2_exec  = "parallel_computation.py -f"
     inc_poly_cylinder.timeout   = 1600
     inc_poly_cylinder.tol       = 0.00001
@@ -436,6 +462,17 @@ def main():
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
     test_list.append(inc_lam_bend)
+
+    # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
+    sp_pipeSlice_3d_dp_hf_tp           = TestCase('sp_pipeSlice_3d_dp_hf_tp')
+    sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
+    sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
+    sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
+    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -8.694310, -0.000023] #last 4 lines
+    sp_pipeSlice_3d_dp_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pipeSlice_3d_dp_hf_tp.timeout   = 1600
+    sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
+    test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     ############################
     ### Incompressible RANS  ###
@@ -559,7 +596,7 @@ def main():
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
-    schubauer_klebanoff_transition.test_vals    = [-7.994740, -14.268326, 0.000046, 0.007987]
+    schubauer_klebanoff_transition.test_vals    = [-7.994740, -14.268433, 0.000046, 0.007987]
     schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -910,7 +947,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280323, 0.379652, 72.211410, 1.277509]
+    Jones_tc.test_vals = [-5.279937, 0.379652, 72.211410, 1.277508]
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.new_output = False
@@ -934,7 +971,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933208, 5.379977, 73.357930, 0.925863]
+    axial_stage2D.test_vals = [-1.933143, 5.379977, 73.357940, 0.925863]
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.new_output = False
@@ -987,7 +1024,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.398053, 0.352779, 0.405462]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.397970, 0.352779, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1064,7 +1101,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000,  -1.766116, -2.206522] #last 4 columns
+    slinc_steady.test_vals = [19.000000, -1.803326, -2.097400] #last 4 columns
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
@@ -1217,6 +1254,30 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
+    # 2D CHT case streamwise periodicity
+    sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
+    sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
+    sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247022, -0.812199, -0.974877, -0.753315, 208.023676, 349.950000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_cht_2d_dp_hf.timeout   = 1600
+    sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
+    sp_pinArray_cht_2d_dp_hf.multizone = True
+    test_list.append(sp_pinArray_cht_2d_dp_hf)
+
+    # simple small 3D pin case massflow periodic with heatflux BC
+    sp_pinArray_3d_cht_mf_hf_tp           = TestCase('sp_pinArray_3d_cht_mf_hf_tp')
+    sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
+    sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
+    sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451732, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
+    sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
+    sp_pinArray_3d_cht_mf_hf_tp.multizone = True
+    test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
+
     ##########################
     ###   Python wrapper   ###
     ##########################
@@ -1298,7 +1359,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.614165, 2.242641, -0.038307, 0.173866]
+    pywrapper_rigidMotion.test_vals     = [-1.551335, 2.295594, 0.350036, 0.093081]
     pywrapper_rigidMotion.su2_exec      = "mpirun -np 2 python launch_flatPlate_rigidMotion.py --parallel -f"
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001
@@ -1569,6 +1630,20 @@ def main():
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
+
+    # 2D FD streamwise periodic cht, avg temp obj func
+    fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"
+    fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
+    fd_sp_pinArray_cht_2d_dp_hf.su2_exec       = "finite_differences.py -z 2 -n 2 -f"
+    fd_sp_pinArray_cht_2d_dp_hf.timeout        = 1600
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf.test_file      = "FINDIFF/of_grad_findiff.csv"
+    fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
+
+    pass_list.append(fd_sp_pinArray_cht_2d_dp_hf.run_filediff())
+    test_list.append(fd_sp_pinArray_cht_2d_dp_hf)
 
 
     # Tests summary

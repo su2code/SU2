@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,6 +115,8 @@ class CFluidIteration : public CIteration {
                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                    unsigned short val_iInst) override;
 
+ private:
+
   /*!
    * \brief Imposes a gust via the grid velocities.
    * \author S. Padron
@@ -146,4 +148,11 @@ class CFluidIteration : public CIteration {
    * \return Boolean indicating weather calculation should be stopped
    */
   bool MonitorFixed_CL(COutput* output, CGeometry* geometry, CSolver** solver, CConfig* config);
+
+  /*!
+   * \brief Store old aeroelastic solutions
+   * \param[in,out] config - Definition of the particular problem.
+   */
+  void SetDualTime_Aeroelastic(CConfig* config) const;
+
 };
