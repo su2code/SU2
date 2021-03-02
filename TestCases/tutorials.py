@@ -42,6 +42,30 @@ def main():
     ### RUN TUTORIAL CASES             ###
     ######################################
 
+    ### Incompressible Flow
+
+    # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
+    sp_pinArray_2d_mf_hf           = TestCase('sp_pinArray_2d_mf_hf')
+    sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
+    sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
+    sp_pinArray_2d_mf_hf.test_iter = 25
+    sp_pinArray_2d_mf_hf.test_vals = [-4.600340, 1.470386, -0.778623, 266.569743] #last 4 lines
+    sp_pinArray_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_mf_hf.timeout   = 1600
+    sp_pinArray_2d_mf_hf.tol       = 0.00001
+    test_list.append(sp_pinArray_2d_mf_hf)
+
+    # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
+    sp_pinArray_2d_dp_hf_tp           = TestCase('sp_pinArray_2d_dp_hf_tp')
+    sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
+    sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
+    sp_pinArray_2d_dp_hf_tp.test_iter = 25
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.667133, 1.395801, -0.709306, 208.023676] #last 4 lines
+    sp_pinArray_2d_dp_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_dp_hf_tp.timeout   = 1600
+    sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
+    test_list.append(sp_pinArray_2d_dp_hf_tp)
+
     ### Compressible Flow
 
     # Inviscid Bump
@@ -150,7 +174,6 @@ def main():
     tutorial_nicfd_nozzle.tol       = 0.00001
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
-
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')

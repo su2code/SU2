@@ -39,6 +39,7 @@
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+  StreamwisePeriodicValues SPvals;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -385,4 +386,9 @@ public:
    */
   inline bool GetHasHybridParallel() const final { return true; }
 
+  /*!
+   * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
+   */
+  StreamwisePeriodicValues GetStreamwisePeriodicValues() const final { return SPvals; }
 };

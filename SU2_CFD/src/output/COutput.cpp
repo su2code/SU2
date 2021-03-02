@@ -1228,7 +1228,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
   historyFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   historyFileTable->SetPrintHeaderTopLine(false);
   historyFileTable->SetPrintHeaderBottomLine(false);
-  historyFileTable->SetPrecision(10);
+  historyFileTable->SetPrecision(config->GetOutput_Precision());
 
   /*--- Add the header to the history file. ---*/
 

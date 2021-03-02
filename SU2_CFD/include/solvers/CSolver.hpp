@@ -4411,6 +4411,13 @@ public:
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
 
+  /*!
+   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
+   */
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
+
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.

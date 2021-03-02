@@ -283,26 +283,24 @@ int main(int argc, char *argv[]) {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
+  /*--- Initialize structure to store the gradient ---*/
+  su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+
+  for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
+    /*--- Initialize to zero ---*/
+    Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
+  }
+
+  ofstream Gradient_file;
+  Gradient_file.precision(config->OptionIsSet("OUTPUT_PRECISION") ? config->GetOutput_Precision() : 6);
+
+  /*--- For multizone computations the gradient contributions are summed up and written into one file. ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
         (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
 
-      /*--- Initialize structure to store the gradient ---*/
-
-      su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
-
-      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++) {
-        Gradient[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)] ();
-      }
-
       if (rank == MASTER_NODE)
         cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
-
-      /*--- Write the gradient in a external file ---*/
-
-      ofstream Gradient_file;
-      if (rank == MASTER_NODE)
-        Gradient_file.open(config_container[iZone]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
       /*--- Definition of the Class for surface deformation ---*/
 
@@ -320,16 +318,22 @@ int main(int argc, char *argv[]) {
       else
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
 
-      /*--- Print gradients to screen and file ---*/
-
-      OutputGradient(Gradient, config_container[iZone], Gradient_file);
-
-      for (auto iDV = 0u; iDV  < config_container[iZone]->GetnDV(); iDV++){
-        delete [] Gradient[iDV];
-      }
-      delete [] Gradient;
     }
+  } // for iZone
+
+  /*--- Write the gradient to a file ---*/
+
+  if (rank == MASTER_NODE)
+    Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
+
+  /*--- Print gradients to screen and writes to file ---*/
+
+  OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
+
+  for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+    delete [] Gradient[iDV];
   }
+  delete [] Gradient;
 
   delete config;
   config = nullptr;
@@ -933,7 +937,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
 
     output->SetSurface_Filename(config[iZone]->GetSurfSens_FileName());
 
-    /*--- Set the surface filename ---*/
+    /*--- Set the volume filename ---*/
 
     output->SetVolume_Filename(config[iZone]->GetVolSens_FileName());
 

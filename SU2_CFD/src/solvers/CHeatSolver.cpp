@@ -1544,7 +1544,11 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Solve or smooth the linear system ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  /*--- Store the the number of iterations of the linear solver ---*/
   SetIterLinSolver(iter);
+
+  /*--- Store the value of the residual. ---*/
   SetResLinSolver(System.GetResidual());
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
