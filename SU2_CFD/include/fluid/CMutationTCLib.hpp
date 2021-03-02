@@ -45,8 +45,7 @@ private:
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
-  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
-  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+  omega_vec;                              /*!< \brief Dummy vector for vibrational energy source term. */
 
   su2double Tref;                         /*!< \brief Reference temperature. */
 
