@@ -65,6 +65,33 @@ class CIncNSSolver final : public CIncEulerSolver {
   void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                         CNumerics *numerics, CConfig *config) override;
 
+
+/*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry,
+                     CSolver** solver_container,
+                     const CConfig* config) ;
+
+
+  /*!
+   * \brief computes nu-tilde.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetNuTilde_WF(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics,
+                                    CConfig *config,
+                                    unsigned short val_marker) ;
+
+
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -142,14 +169,5 @@ public:
                                   unsigned short val_marker) override;
 
 
-  /*!
-   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTauWall_WF(CGeometry *geometry,
-                     CSolver** solver_container,
-                     CConfig* config) override;
-
+  
 };

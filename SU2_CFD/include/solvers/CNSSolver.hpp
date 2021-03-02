@@ -37,11 +37,11 @@
  */
 class CNSSolver final : public CEulerSolver {
 private:
-  su2double
-  *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
-  *Buffet_Metric = nullptr,         /*!< \brief Integrated separation sensor for each boundary. */
-  **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
-  Total_Buffet_Metric = 0.0;        /*!< \brief Integrated separation sensor for all the boundaries. */
+
+  vector<su2double> Surface_Buffet_Metric;  /*!< \brief Integrated separation sensor for each monitoring surface. */
+  vector<su2double> Buffet_Metric;          /*!< \brief Integrated separation sensor for each boundary. */
+  vector<vector<su2double> > Buffet_Sensor; /*!< \brief Separation sensor for each boundary and vertex. */
+  su2double Total_Buffet_Metric = 0.0;      /*!< \brief Integrated separation sensor for all the boundaries. */
 
   /*!
    * \brief A virtual member.
@@ -114,7 +114,18 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
-
+  /*!
+   * \brief computes nu-tilde.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetNuTilde_WF(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics,
+                                    CConfig *config,
+                                    unsigned short val_marker) ;
 public:
   /*!
    * \brief Constructor of the class.
@@ -131,7 +142,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void) override;
+  ~CNSSolver() = default;
 
   /*!
    * \brief Provide the buffet metric.

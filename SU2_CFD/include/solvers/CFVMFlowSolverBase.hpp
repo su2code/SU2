@@ -137,36 +137,33 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
   su2double Total_MaxHeat = 0.0;        /*!< \brief Maximum heat flux on all boundaries. */
   su2double AllBound_CNearFieldOF_Inv = 0.0; /*!< \brief Near-Field press coeff (inviscid) for all the boundaries. */
-  su2double* CNearFieldOF_Inv = nullptr;     /*!< \brief Near field pressure (inviscid) for each boundary. */
-  su2double* Surface_HF_Visc = nullptr;      /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  su2double* Surface_MaxHF_Visc = nullptr;   /*!< \brief Maximum heat flux for each monitored surface. */
-  su2double* HF_Visc = nullptr;              /*!< \brief Heat load (viscous contribution) for each boundary. */
-  su2double* MaxHF_Visc = nullptr;           /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  su2double AllBound_HF_Visc = 0.0;          /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  su2double AllBound_MaxHF_Visc = 0.0;       /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  vector<su2double> CNearFieldOF_Inv;    /*!< \brief Near field pressure (inviscid) for each boundary. */
+  vector<su2double> Surface_HF_Visc;     /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  vector<su2double> Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
+  vector<su2double> HF_Visc;             /*!< \brief Heat load (viscous contribution) for each boundary. */
+  vector<su2double> MaxHF_Visc;          /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  su2double AllBound_HF_Visc = 0.0;      /*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  su2double AllBound_MaxHF_Visc = 0.0;   /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
 
-  su2double** Inlet_Ptotal = nullptr;      /*!< \brief Value of the Total P. */
-  su2double** Inlet_Ttotal = nullptr;      /*!< \brief Value of the Total T. */
-  su2double*** Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
-  su2double** HeatFlux = nullptr;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  su2double** HeatFluxTarget = nullptr;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  su2double*** CharacPrimVar = nullptr;    /*!< \brief Value of the characteristic variables at each boundary. */
-  su2double*** CSkinFriction = nullptr;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
-  su2double** WallShearStress = nullptr;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
-  su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
-  su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
-  su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-
-  //su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
-  //su2double** UTau = nullptr;              /*!< \brief UTau for each boundary and vertex. */
-  //su2double** EddyViscWall = nullptr;      /*!< \brief Wall Eddy Viscosity for each boundary and vertex. */
-vector<vector<su2double> > YPlus;
-vector<vector<su2double> > UTau;
-vector<vector<su2double> > EddyViscWall;
-  
+  vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
+  vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
+  vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
+  vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
+  vector<su2activematrix> CSkinFriction;        /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  vector<vector<su2double> > WallShearStress;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
+  vector<su2activematrix> HeatConjugateVar;     /*!< \brief CHT variables for each boundary and vertex. */
+  vector<vector<su2double> > CPressure;         /*!< \brief Pressure coefficient for each boundary and vertex. */
+  vector<vector<su2double> > CPressureTarget;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  vector<vector<su2double> > YPlus;             /*!< \brief Yplus for each boundary and vertex. */
+  vector<vector<su2double> > UTau;              /*!< \brief UTau for each boundary and vertex. */
+  vector<vector<su2double> > EddyViscWall;      /*!< \brief Eddy viscosuty at the wall for each boundary and vertex. */
 
 
-  bool space_centered;       /*!< \brief True if space centered scheeme used. */
+ 
+
+  bool space_centered;       /*!< \brief True if space centered scheme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
   bool least_squares;        /*!< \brief True if computing gradients by least squares. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
@@ -174,8 +171,8 @@ vector<vector<su2double> > EddyViscWall;
 
   /*--- Sliding meshes variables ---*/
 
-  su2double**** SlidingState = nullptr;
-  int** SlidingStateNodes = nullptr;
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -188,7 +185,7 @@ vector<vector<su2double> > EddyViscWall;
   static constexpr bool ReducerStrategy = false;
 #endif
 
-  /*--- Edge fluxes, for OpenMP parallelization off difficult-to-color grids.
+  /*--- Edge fluxes, for OpenMP parallelization of difficult-to-color grids.
    * We first store the fluxes and then compute the sum for each cell.
    * This strategy is thread-safe but lower performance than writting to both
    * end points of each edge, so we only use it when necessary, i.e. when the
@@ -2201,7 +2198,7 @@ vector<vector<su2double> > EddyViscWall;
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double* GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double* GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) final {
     return CharacPrimVar[val_marker][val_vertex];
   }
 
@@ -2259,8 +2256,6 @@ vector<vector<su2double> > EddyViscWall;
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -2278,8 +2273,6 @@ vector<vector<su2double> > EddyViscWall;
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -2299,8 +2292,6 @@ vector<vector<su2double> > EddyViscWall;
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else

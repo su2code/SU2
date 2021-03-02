@@ -41,19 +41,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double* [M];
-    for(unsigned long i = 0; i < M; ++i)
-      X[i] = new su2double [N[i]] ();
-  };
-
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  Alloc2D(nMarker, nVertex, Buffet_Sensor);
-  Buffet_Metric = new su2double[nMarker];
-  Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
+  Buffet_Sensor.resize(nMarker);
+  for (unsigned long i = 0; i< nMarker; ++i) Buffet_Sensor[i].resize(nVertex[i], 0.0);
+  Buffet_Metric.resize(nMarker, 0.0);
+  Surface_Buffet_Metric.resize(config->GetnMarker_Monitoring(), 0.0);
 
   /*--- Read farfield conditions from config ---*/
 
@@ -71,22 +64,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     default:
       /*--- Already done upstream. ---*/
       break;
-  }
-
-}
-
-CNSSolver::~CNSSolver(void) {
-
-  unsigned short iMarker;
-
-  delete [] Buffet_Metric;
-  delete [] Surface_Buffet_Metric;
-
-  if (Buffet_Sensor != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      delete [] Buffet_Sensor[iMarker];
-    }
-    delete [] Buffet_Sensor;
   }
 
 }
@@ -290,8 +267,6 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
   }
 
-#ifdef HAVE_MPI
-
   /*--- Add buffet metric information using all the nodes ---*/
 
   su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
@@ -299,17 +274,8 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
   /*--- Add the buffet metric on the surfaces using all the nodes ---*/
 
-  su2double *MySurface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
-  }
-
-  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  delete [] MySurface_Buffet_Metric;
-
-#endif
+  auto local_copy = Surface_Buffet_Metric;
+  SU2_MPI::Allreduce(local_copy.data(), Surface_Buffet_Metric.data(), local_copy.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 }
 
@@ -771,45 +737,70 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CConfig *config, unsigned short val_marker) {
-
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+/*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
+   At this moment, the wall function is only available for adiabatic flows.
+   ---*/
+  su2double RefDensity,RefVel2; 
+  if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+    RefDensity = Density_Inf;
+    RefVel2 = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) 
+      RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
+  } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
+    RefDensity = config->GetInc_Density_Ref();
+    RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
+  }
 
+  unsigned long int notConvergedCounter=0;
+  su2double grad_diff;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  su2double Eddy_Visc,Y_Plus,U_Tau;
 
-  constexpr unsigned short max_iter = 10;
-  const su2double tol = 1e-6;
-  const su2double relax = 0.25;
+  constexpr unsigned short max_iter = 50;
+  const su2double tol = 1e-12; // 1e-10 is too large
+  const su2double relax = 0.5;
 
   /*--- Compute the recovery factor ---*/
-  // Double-check: laminar or turbulent Pr for this?
+  // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = 0.4;
+  const su2double kappa = 0.41; // put model constants in config file
   const su2double B = 5.5;
+
+  //bool converged = true;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (!config->GetViscous_Wall(iMarker)) continue;
 
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+
     /*--- Identify the boundary by string name ---*/
 
     const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-    /*--- Get the specified wall heat flux from config ---*/
+    /*--- Jump to another BC if it is not wall function ---*/
 
-    // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+    if (config->GetWallFunction_Treatment(Marker_Tag) != STANDARD_WALL_FUNCTION)
+      continue;
+
+    /*--- Get the specified wall heat flux from config ---*/
+      // note that we can get the heat flux from the temperature gradient
+    su2double q_w = config->GetWall_HeatFlux(Marker_Tag);
+      // heat flux from temperature: q_w = h*(T_wall - T_fluid)
 
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -845,12 +836,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double Vel[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+
       su2double P_Normal = nodes->GetPressure(Point_Normal);
       su2double T_Normal = nodes->GetTemperature(Point_Normal);
 
       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
-      su2double VelNormal = GeometryToolbox::DotProduct(nDim, Vel, UnitNormal);
+      su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
 
       su2double VelTang[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
@@ -877,8 +869,12 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Extrapolate the pressure from the interior & compute the
        wall density using the equation of state ---*/
 
+      /*--- compressible formulation ---*/
       su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+      su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
+      su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
+
 
       /*--- Compute the shear stress at the wall in the regular fashion
        by using the stress tensor on the surface ---*/
@@ -900,32 +896,40 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       for (auto iDim = 0u; iDim < nDim; iDim++)
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
-      su2double Tau_Wall = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+      su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+
 
       /*--- Calculate the quantities from boundary layer theory and
        iteratively solve for a new wall shear stress. Use the current wall
        shear stress as a starting guess for the wall function. ---*/
 
-      su2double Tau_Wall_Old = Tau_Wall;
-      unsigned short counter = 0;
-      su2double diff = 1.0;
+      unsigned long counter = 0; su2double diff = 1.0;
+      U_Tau = sqrt(WallShearStress/Density_Wall);
+      Y_Plus = 0.0; // to avoid warning
 
-      while (diff > tol) {
+      su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
+
+      /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
+
+      if (Y_Plus_Start < 5.0) {
+        continue;
+      }
+
+      while (fabs(diff) > tol) {
 
         /*--- Friction velocity and u+ ---*/
 
-        su2double U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
         su2double U_Plus = VelTangMod/U_Tau;
 
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
+        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
 
-        su2double Gam  = Recovery*pow(U_Tau,2)/(2.0*Cp*T_Wall);
-        su2double Beta = 0.0; // For adiabatic flows only
+        su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+            /*--- nijso: heated wall needs validation testcase! ---*/
+        su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
         su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
         su2double Phi  = asin(-1.0*Beta/Q);
 
-        /*--- Y+ defined by White & Christoph (compressibility and heat transfer)
-         negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
+            /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
         su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
@@ -933,32 +937,71 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
          outer velocity form of White & Christoph above. ---*/
 
         su2double kUp = kappa*U_Plus;
-        su2double Y_Plus = U_Plus + Y_Plus_White - exp(-1.0*kappa*B) * (1.0 + kUp*(1.0 + 0.5*kUp + pow(kUp,2)/6.0));
+            su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
-        /*--- Calculate an updated value for the wall shear stress using the y+ value,
-         the definition of y+, and the definition of the friction velocity. ---*/
+        su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+ 
+        Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                             (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                             - Lam_Visc_Normal/Lam_Visc_Wall);
+        Eddy_Visc = max(1.0e-6, Eddy_Visc);
 
-        Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+        /* --- Define function for Newton method to zero --- */
 
-        /*--- Difference between the old and new Tau. Update old value. ---*/
+        diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-        diff = fabs(Tau_Wall-Tau_Wall_Old);
-        Tau_Wall_Old += relax * (Tau_Wall-Tau_Wall_Old);
+        /* --- Gradient of function defined above --- */
+
+        grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+
+        /* --- Newton Step --- */
+
+        U_Tau = U_Tau - relax*(diff / grad_diff);
 
         counter++;
+            
+    
         if (counter > max_iter) {
-          cout << "WARNING: Tau_Wall evaluation has not converged in CNSSolver.cpp" << endl;
-          cout << Tau_Wall_Old << " " << Tau_Wall << " " << diff << endl;
-          break;
+          notConvergedCounter++;
+          //cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
+          //cout << "diff = " << endl;
+          // do not break, use some safe values for convergence
+          //break;
+          Y_Plus = 30.0;
+          Eddy_Visc = 1.0;
+          U_Tau = 1.0;
         }
+
       }
+
+       /*--- Calculate an updated value for the wall shear stress
+        using the y+ value, the definition of y+, and the definition of
+        the friction velocity. ---*/
+          
+      YPlus[iMarker][iVertex] = Y_Plus;
+      EddyViscWall[iMarker][iVertex] = Eddy_Visc;
+      UTau[iMarker][iVertex] = U_Tau;
+
+      // wall model value
+      su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        CSkinFriction[iMarker][iVertex][iDim] = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }
-
+    }
   }
+
+ if (notConvergedCounter>0) {
+    cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
+  }
+
 
 }

@@ -42,6 +42,25 @@ private:
   kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
   omega_Inf;             /*!< \brief Free-stream specific dissipation. */
 
+
+
+/*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetNuTilde_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CNumerics *conv_numerics,
+                     CNumerics *visc_numerics,
+                     CConfig *config,
+                     unsigned short val_marker);
+
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -59,7 +78,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void) override;
+  ~CTurbSSTSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -295,19 +314,5 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
 
-  /*!
-   * \brief Compute nu tilde from the wall functions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void SetNuTilde_WF(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CNumerics *conv_numerics,
-                     CNumerics *visc_numerics,
-                     CConfig *config,
-                     unsigned short val_marker) override;
+  
 };

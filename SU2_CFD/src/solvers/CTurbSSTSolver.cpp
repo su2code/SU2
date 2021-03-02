@@ -159,33 +159,25 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker;
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
 
-  SlidingState       = new su2double*** [nMarker]();
-  SlidingStateNodes  = new int*         [nMarker]();
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)]();
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)]();
-
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1]();
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
     due to arbitrary number of turbulence variables ---*/
 
-  Inlet_TurbVars = new su2double**[nMarker];
+  Inlet_TurbVars.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-      Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-      Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-      Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+    Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
+      Inlet_TurbVars[iMarker](iVertex,0) = kine_Inf;
+      Inlet_TurbVars[iMarker](iVertex,1) = omega_Inf;
     }
   }
 
@@ -206,36 +198,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "K-W SST";
-
-}
-
-CTurbSSTSolver::~CTurbSSTSolver(void) {
-
-  unsigned long iMarker, iVertex;
-  unsigned short iVar;
-
-  if ( SlidingState != nullptr ) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != nullptr ) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != nullptr ){
-            for (iVar = 0; iVar < nPrimVar+1; iVar++)
-              delete [] SlidingState[iMarker][iVertex][iVar];
-            delete [] SlidingState[iMarker][iVertex];
-          }
-        delete [] SlidingState[iMarker];
-      }
-    }
-    delete [] SlidingState;
-  }
-
-  if ( SlidingStateNodes != nullptr ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-        if (SlidingStateNodes[iMarker] != nullptr)
-            delete [] SlidingStateNodes[iMarker];
-    }
-    delete [] SlidingStateNodes;
-  }
 
 }
 
@@ -323,6 +285,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
+  bool axisymmetric = config->GetAxisymmetric();
+
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
@@ -372,6 +336,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint),0.0);
 
+    if (axisymmetric){
+      /*--- Set y coordinate ---*/
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
@@ -397,23 +366,30 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
   if (WallType == ROUGH ) rough_wall = true;
 
+
+
+  /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
+
+  if (config->GetWall_Functions()) {
+
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+      SU2_OMP_MASTER
+      SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+      SU2_OMP_BARRIER
+    }
+    return;
+  }
+
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-
-    /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
-
-    if (config->GetWall_Functions()) {
-      SU2_OMP_MASTER
-      SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-      SU2_OMP_BARRIER
-      return;
-    }
-
-
+  
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
@@ -514,9 +490,7 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
 
-    // sst model 
-    su2double solution[2];
-      
+     
     su2double omega1,omega0,y_plus,y,k_new,omega_new;
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);
     su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
@@ -540,12 +514,13 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
     k += 0.5*(k_new - k);       
     omega += 0.5*(omega_new - omega);       
 
-    su2double Sol[nVar];
-    //for (iVar = 0; iVar < nVar; iVar++)
-    Sol[0] = k;
-    Sol[1] = omega;
+    su2double solution[nVar];
+    solution[0] = k;
+    solution[1] = omega;
 
-    nodes->SetSolution_Old(iPoint_Neighbor,Sol);
+    nodes->SetSolution_Old(iPoint_Neighbor,solution);
+    nodes->SetSolution(iPoint,solution);
+
     LinSysRes.SetBlock_Zero(iPoint_Neighbor);
 
     /*--- includes 1 in the diagonal ---*/

@@ -75,16 +75,8 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CTurbSolver::~CTurbSolver(void) {
 
-  if (Inlet_TurbVars != nullptr) {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_TurbVars[iMarker] != nullptr) {
-        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          delete [] Inlet_TurbVars[iMarker][iVertex];
-        }
-        delete [] Inlet_TurbVars[iMarker];
-      }
-    }
-    delete [] Inlet_TurbVars;
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;

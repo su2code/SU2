@@ -936,7 +936,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
 
 }
 
-void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::Compute_MassMatrix(const CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
@@ -1021,7 +1021,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
 }
 
-void CFEASolver::Compute_MassRes(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::Compute_MassRes(const CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
@@ -2183,7 +2183,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
 }
 
-void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
@@ -2267,7 +2267,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CNumerics **nume
 
 }
 
-void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Update(const CGeometry *geometry, const CConfig *config) {
 
   const bool dynamic = (config->GetTime_Domain());
 
@@ -2314,7 +2314,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
   } // end SU2_OMP_PARALLEL
 }
 
-void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
+void CFEASolver::ImplicitNewmark_Relaxation(const CGeometry *geometry, const CConfig *config) {
 
   const bool dynamic = (config->GetTime_Domain());
 
@@ -2362,7 +2362,7 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
 }
 
 
-void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
@@ -2470,7 +2470,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CNumerics **num
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateDisp(const CGeometry *geometry, const CConfig *config) {
 
   /*--- Update displacement components of the solution. ---*/
 
@@ -2481,7 +2481,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *confi
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateSolution(const CGeometry *geometry, const CConfig *config) {
 
   const su2double alpha_f = config->Get_Int_Coeffs(2);
   const su2double alpha_m = config->Get_Int_Coeffs(3);
@@ -2535,7 +2535,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *c
 
 }
 
-void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) {
+void CFEASolver::GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const CConfig *config) {
 
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
   nodes->Set_SurfaceLoad_Res_n();
