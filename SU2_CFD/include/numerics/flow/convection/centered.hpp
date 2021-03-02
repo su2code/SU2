@@ -60,8 +60,7 @@ private:
   bool implicit,                   /*!< \brief Implicit calculation. */
   dynamic_grid,                    /*!< \brief Modification for grid movement. */
   variable_density,                /*!< \brief Variable density incompressible flows. */
-  energy,                          /*!< \brief computation with the energy equation. */
-  flamelet_thermo_system;
+  energy;                          /*!< \brief computation with the energy equation. */
 
   su2double fix_factor;            /*!< \brief Fix factor for Jacobians. */
 
@@ -123,9 +122,7 @@ private:
   bool implicit,         /*!< \brief Implicit calculation. */
   dynamic_grid,          /*!< \brief Modification for grid movement. */
   variable_density,      /*!< \brief Variable density incompressible flows. */
-  energy,                /*!< \brief computation with the energy equation. */
-  flamelet_thermo_system;
-
+  energy;                /*!< \brief computation with the energy equation. */
 
   su2double fix_factor;  /*!< \brief Fix factor for Jacobians. */
 

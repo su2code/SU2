@@ -557,7 +557,6 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
 
   energy                 = config->GetEnergy_Equation();
-  flamelet_thermo_system = config->GetKind_FlameletThermoSystem();
 
 }
 
@@ -658,7 +657,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   }
 
-  if (!energy || flamelet_thermo_system == ADIABATIC) {
+  if (!energy) {
     Proj_Flux_Tensor[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

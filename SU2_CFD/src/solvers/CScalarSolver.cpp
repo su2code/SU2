@@ -209,7 +209,7 @@ void CScalarSolver::Upwind_Residual(CGeometry       *geometry,
     }
     
     /*--- Add and subtract residual ---*/
-    //FIXME dan: trying out pedros method
+    //FIXME dan: trying out new method
     auto residual = numerics->ComputeResidual(config);
     LinSysRes.AddBlock(iPoint, residual);
     LinSysRes.SubtractBlock(jPoint, residual);

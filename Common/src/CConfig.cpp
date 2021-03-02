@@ -1291,29 +1291,33 @@ void CConfig::SetConfig_Options() {
   addBoolOption("USE_WEAK_SCALAR_BC", use_weak_scalar_bc, false);
 
   /*!\brief SCALAR_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
-  // FIXME daniel: this looks dirty (dont use scalar_init to set defaults for clipping_max!)
   addDoubleListOption("SCALAR_CLIPPING_MAX", nScalar_Clipping_Max, Scalar_Clipping_Max);
   
   /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
- 
   addDoubleListOption("SCALAR_CLIPPING_MIN", nScalar_Clipping_Min, Scalar_Clipping_Min);
 
-  su2double default_ffd_bounds[] = {0.0, 0.0, 0.0,    1.0, 1.0, 1.0};
-  addDoubleArrayOption("FFD_BOUNDS", 6, ffd_bounds, default_ffd_bounds);
-
-  /*!\brief FLAMELET__THERMO_SYSTEM \n DESCRIPTION: Thermodynamic system for flamelet model */
-  addEnumOption("FLAMELET_THERMO_SYSTEM", kind_flamelet_thermo_system, flamelet_thermo_system_map, ADIABATIC);
+  ffd_bounds[0] = 0.0;
+  ffd_bounds[1] = 0.0;
+  ffd_bounds[2] = 0.0;
+  ffd_bounds[3] = 1.0;
+  ffd_bounds[4] = 1.0;
+  ffd_bounds[5] = 1.0;
+  addDoubleArrayOption("FFD_BOUNDS", 6, ffd_bounds);
 
   /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
-  su2double default_flame_offset[]={0.0,0.0,0.0};
-  addDoubleArrayOption("FLAME_OFFSET", 3,flame_offset, default_flame_offset);
+  flame_offset[0] = 0.0;
+  flame_offset[1] = 0.0;
+  flame_offset[2] = 0.0;
+  addDoubleArrayOption("FLAME_OFFSET", 3,flame_offset);
 
   /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
   
   /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
-  su2double default_flame_normal[]={1.0, 0.0, 0.0};
-  addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal, default_flame_normal);
+  flame_normal[0] = 1.0;
+  flame_normal[1] = 0.0;
+  flame_normal[2] = 0.0;
+  addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
   
   addDoubleOption("BURNT_THICKNESS", burnt_thickness, 1);
 
@@ -5153,12 +5157,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Surface_IDC_Mach           = new su2double [nMarker_Analyze] ();
   Surface_IDR                = new su2double [nMarker_Analyze] ();
   Surface_CO                 = new su2double [nMarker_Analyze] ();
-  Surface_NOx                 = new su2double [nMarker_Analyze] ();
-
-
-
-
-
+  Surface_NOx                = new su2double [nMarker_Analyze] ();
 
   //Surface_Scalar = new su2double*[nMarker_Analyze] ();
   //for (int i_scalar=0; i_scalar < nMarker_Analyze; ++i_scalar)
@@ -6093,7 +6092,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
         case SURFACE_CO:                 cout << "Y_CO objective function." << endl; break;
-        case SURFACE_NOX:                 cout << "Y_NO objective function." << endl; break;
+        case SURFACE_NOX:                cout << "Y_NOx objective function." << endl; break;
         case SURFACE_TEMP:               cout << "Temperature objective function." << endl; break;
       }
     }

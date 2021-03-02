@@ -3059,7 +3059,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]->GetFluidProblem()) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        for (iInst = 0; iInst < nInst[iZone]; iInst++){
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
           if (config_container[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL)
             solver_container[iZone][iInst][MESH_0][SCALAR_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);

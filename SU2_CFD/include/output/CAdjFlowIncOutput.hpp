@@ -37,12 +37,12 @@
 class CAdjFlowIncOutput final: public COutput {
 private:
 
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
-  unsigned short rad_model;  /*!< \brief The kind of radiation model */
-  bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
-  bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
-
+  unsigned short turb_model;   /*!< \brief The kind of turbulence model*/
+  unsigned short rad_model;    /*!< \brief The kind of radiation model */
+  bool heat;                   /*!< \brief Boolean indicating whether have a heat problem*/
+  bool weakly_coupled_heat;    /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
   unsigned short scalar_model; /*!< \brief The kind of scalar model*/ 
+
 public:
 
 

@@ -478,7 +478,6 @@ private:
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
   Kind_DensityModel,               /*!< \brief Kind of the density model for incompressible flows. */
   Kind_DiffusivityModel,      /*!< \brief Kind of the mass diffusivity model*/
-  kind_flamelet_thermo_system,
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,           /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,           /*!< \brief Kind of the dynamic mesh movement. */
@@ -1050,13 +1049,13 @@ private:
   su2double *Scalar_Clipping_Min;             /*!< \brief Minimum value of clipping for scalar transport. */
   unsigned short nScalar_Clipping_Max,nScalar_Clipping_Min; /* nijso: this should be the same as nScalar (or nVar for the scalar)*/
   unsigned short nScalar_Init;
-  su2double *ffd_bounds;
   bool enable_remeshing;
   bool use_weak_scalar_bc;
-  su2double *flame_offset;
   su2double flame_thickness;
   su2double burnt_thickness;
-  su2double *flame_normal;
+  su2double ffd_bounds[6];
+  su2double flame_offset[3];
+  su2double flame_normal[3];
 
   array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
@@ -2026,7 +2025,6 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
-
   
   /*!
    * \brief Get the flag for activating scalar transport clipping
@@ -2166,7 +2164,7 @@ public:
    */
   bool GetPrestretch(void) const { return Prestretch; }
 
-  /**
+  /*!
    * \brief Get the file name of the look up table
    * \return File name of the look up table 
    */
@@ -3727,12 +3725,6 @@ public:
    */
   unsigned short GetKind_DensityModel(void) const { return Kind_DensityModel; }
 
-  /*!
-   * \brief Option to define the thermodynamic system for flamelet model calculations.
-   * \return Flamelet thermodynamics system we are using.
-   */
-  unsigned short GetKind_FlameletThermoSystem(void) const { return kind_flamelet_thermo_system; }
-  
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
    * \return Flag for energy equation

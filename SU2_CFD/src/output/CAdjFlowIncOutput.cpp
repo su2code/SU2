@@ -145,7 +145,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
       // DESCRIPTION: Root-mean square residual of the adjoint CO mass fraction.
       AddHistoryOutput("RMS_ADJ_CO",                "rms[A_CO]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint CO.", HistoryFieldType::RESIDUAL);
       // DESCRIPTION: Root-mean square residual of the adjoint NOx mass fraction.
-      AddHistoryOutput("RMS_ADJ_NOX",                "rms[A_NOX]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint NOx.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_ADJ_NOX",               "rms[A_NOX]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint NOx.", HistoryFieldType::RESIDUAL);
       break;
     case NO_SCALAR_MODEL:
       break;

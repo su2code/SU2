@@ -33,11 +33,9 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density       = (config->GetKind_DensityModel() == VARIABLE);
   energy                 = config->GetEnergy_Equation();
-  flamelet_thermo_system = config->GetKind_FlameletThermoSystem();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-
 
   Flux         = new su2double[nVar];
   Diff_V       = new su2double[nVar];
@@ -267,7 +265,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     }
   }
 
-  if (!energy || flamelet_thermo_system == ADIABATIC) {
+  if (!energy) {
     Flux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

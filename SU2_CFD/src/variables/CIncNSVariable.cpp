@@ -35,7 +35,6 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
-  source_energy.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
 
   if (config->GetAxisymmetric()) {
@@ -45,7 +44,7 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   }
 }
 
-bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar) {
 
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;

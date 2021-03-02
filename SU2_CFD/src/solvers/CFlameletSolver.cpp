@@ -621,6 +621,27 @@ void CFlameletSolver::Source_Residual(CGeometry       *geometry,
       Residual[i_scalar] = next_source * Volume;
     }
 
+
+
+//  /*--- Implicit part for production term (to do). ---*/
+//     for (int i_var = 0; i_var < nVar; i_var++) {
+//       for (int j_var = 0; j_var < nVar; j_var++) {
+//         Jacobian_i[i_var][j_var] = 0.0;
+//       }
+//     }
+//     Jacobian_i[0][0] = Volume*fluid_model_local->GetdSourcePVdPV();
+    
+    
+//     /*--- Add Residual ---*/
+    
+//     LinSysRes.SubtractBlock(iPoint, Residual);
+    
+//     /*--- Implicit part ---*/
+    
+//     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+
+
     first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 
     auto residual = first_numerics->ComputeResidual(config);
@@ -922,7 +943,7 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
         nodes->SetSolution(iPoint, I_ENTHALPY, enth_wall);
         nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);
 
-        LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
+        LinSysRes(iPoint, I_ENTHALPY) = 0.0;
 
         nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTHALPY);
 

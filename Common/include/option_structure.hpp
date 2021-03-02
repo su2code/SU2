@@ -600,20 +600,7 @@ MakePair("GUPTA-YOS", GUPTAYOS)
 };
 
 /*!
- * \brief Types of flamelet models
- */
-enum ENUM_FLAMELET_THERMO_SYSTEM {
-	ADIABATIC = 0,
-  HEAT_LOSS = 1,
-};
-
-static const MapType<string, ENUM_FLAMELET_THERMO_SYSTEM> flamelet_thermo_system_map = {
-  MakePair("ADIABATIC", ADIABATIC)
-  MakePair("HEAT_LOSS", HEAT_LOSS)
-};
-
-/*!
- * \brief types of density models
+ * \brief Types of density models
  */
 enum ENUM_DENSITYMODEL {
   CONSTANT = 0,

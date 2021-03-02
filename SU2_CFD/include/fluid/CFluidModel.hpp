@@ -69,7 +69,6 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  su2double source_energy{0.0};
   su2double mass_diffusivity{0.0};
 
   unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
@@ -126,11 +125,7 @@ class CFluidModel {
    */
   su2double GetCv() const { return Cv; }
 
-  virtual su2double GetSourceEnergy() { return 37; }
-
-  //virtual su2double GetMassDiffusivity() { return 37; }
-
-    /*!
+  /*!
    * \brief Get the source term of the transported scalar
    */
   virtual inline su2double GetSourceScalar(int){ return 37; }

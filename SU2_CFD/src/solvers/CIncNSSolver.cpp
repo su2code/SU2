@@ -108,7 +108,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = NULL;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = nullptr;
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool scalar_model = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
@@ -135,7 +135,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
     /*--- Incompressible flow, primitive variables --- */
 
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 

@@ -1382,12 +1382,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
+  //inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel) { return true; }
+  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar = nullptr) { return true; }
   
   /*!
    * \brief A virtual member.
@@ -2564,24 +2564,13 @@ public:
 
   inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
   inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
-  //inline virtual void SetSourceScalarRescaled(unsigned long iPoint, su2double val_source_scalar_rescaled, unsigned short val_ivar)  { }
-
 
   inline virtual su2double GetSourceScalar(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
   inline virtual su2double GetLookupScalar(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
-
   
   inline virtual su2double *GetSourceScalar(unsigned long iPoint) { return nullptr; }
   inline virtual su2double *GetLookupScalar(unsigned long iPoint) { return nullptr; }
 
-
-
-
-  
-  inline virtual void SetSourceEnergy(unsigned long iPoint, su2double val_source_energy) { }
-
-  inline virtual su2double GetSourceEnergy(unsigned long iPoint) { return 0.0; }
-  
   /*!
    * \brief Virtual member: Set the Radiative source term at the node
    * \return value of the radiative source term
