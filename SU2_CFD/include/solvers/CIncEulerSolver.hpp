@@ -119,17 +119,6 @@ protected:
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
-  /*!
-   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
-   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  void GetStreamwise_Periodic_Properties(const CGeometry *geometry,
-                                         CConfig *config,
-                                         const unsigned short iMesh);
-
 public:
   /*!
    * \brief Constructor of the class.

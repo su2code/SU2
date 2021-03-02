@@ -66,6 +66,17 @@ class CIncNSSolver final : public CIncEulerSolver {
                         CNumerics *numerics, CConfig *config) override;
 
   /*!
+   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
+   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void GetStreamwise_Periodic_Properties(const CGeometry *geometry,
+                                         CConfig *config,
+                                         const unsigned short iMesh);
+
+  /*!
    * \brief Compute recovered pressure/temperature for streamwise periodic flow and store in CVariable.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

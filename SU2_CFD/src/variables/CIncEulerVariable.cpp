@@ -91,7 +91,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
 
-  /*--- Incompressible flow, gradients primitive variables nDim+6, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu) ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
 
   if (config->GetMUSCL_Flow() || viscous) {
     Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
