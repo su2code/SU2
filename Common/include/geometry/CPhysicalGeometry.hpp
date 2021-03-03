@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -106,6 +106,8 @@ class CPhysicalGeometry final : public CGeometry {
 
   vector<int> GlobalMarkerStorageDispl;
   vector<su2double> GlobalRoughness_Height;
+
+  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -784,4 +786,15 @@ public:
    */
   void SetGlobalMarkerRoughness(const CConfig* config);
 
+  /*!
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindUniqueNode_PeriodicBound(const CConfig *config) final;
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline const su2double* GetStreamwise_Periodic_RefNode(void) const final { return Streamwise_Periodic_RefNode;}
 };
