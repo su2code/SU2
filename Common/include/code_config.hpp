@@ -61,7 +61,7 @@ template<bool condition>
 using su2enable_if = typename std::enable_if<condition,bool>::type;
 
 /*--- Detect compilation with OpenMP. ---*/
-#if defined(_OPENMP)
+#if defined(_OPENMP) && (!defined(CODI_REVERSE_TYPE) || _OPENMP >= 201811)
 #define HAVE_OMP
 #endif
 
