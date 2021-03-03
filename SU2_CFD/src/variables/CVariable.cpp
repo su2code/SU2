@@ -2,7 +2,7 @@
  * \file CVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,8 +109,6 @@ void CVariable::Restore_BGSSolution_k() {
   assert(Solution.size() == Solution_BGS_k.size());
   parallelCopy(Solution_BGS_k.size(), Solution_BGS_k.data(), Solution.data());
 }
-
-void CVariable::SetUnd_LaplZero() { parallelSet(Undivided_Laplacian.size(), 0.0, Undivided_Laplacian.data()); }
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 

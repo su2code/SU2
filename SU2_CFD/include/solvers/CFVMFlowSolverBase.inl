@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -84,8 +84,8 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iDim, iVar, iMarker;
-  unsigned long iPoint, iVertex;
+  unsigned short iVar;
+  unsigned long iMarker;
 
   /*--- Define some auxiliar vector related with the residual ---*/
 
@@ -114,21 +114,21 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  /*--- LinSysSol will always be init to 0. ---*/
+  System.SetxIsZero(true);
+
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double*[M];
-    for (unsigned long i = 0; i < M; ++i) X[i] = new su2double[N[i]]();
+  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+    X.resize(M);
+    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double**[M];
-    for (unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double*[N[i]];
-      for (unsigned long j = 0; j < N[i]; ++j) X[i][j] = new su2double[P]();
-    }
+  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+    X.resize(M);
+    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
@@ -164,28 +164,25 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Heat flux coefficients. ---*/
 
-  HF_Visc = new su2double[nMarker];
-  MaxHF_Visc = new su2double[nMarker];
+  HF_Visc.resize(nMarker,0.0);
+  MaxHF_Visc.resize(nMarker,0.0);
 
-  Surface_HF_Visc = new su2double[config.GetnMarker_Monitoring()];
-  Surface_MaxHF_Visc = new su2double[config.GetnMarker_Monitoring()];
+  Surface_HF_Visc.resize(config.GetnMarker_Monitoring());
+  Surface_MaxHF_Visc.resize(config.GetnMarker_Monitoring());
 
   /*--- Supersonic coefficients ---*/
 
-  CNearFieldOF_Inv = new su2double[nMarker];
+  CNearFieldOF_Inv.resize(nMarker,0.0);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  SlidingState = new su2double***[nMarker]();
-  SlidingStateNodes = new int*[nMarker]();
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-      SlidingState[iMarker] = new su2double**[nVertex[iMarker]]();
-      SlidingStateNodes[iMarker] = new int[nVertex[iMarker]]();
-
-      for (iPoint = 0; iPoint < nVertex[iMarker]; iPoint++)
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar + 1]();
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
 
@@ -200,13 +197,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Skin friction in all the markers ---*/
 
-  CSkinFriction = new su2double**[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      CSkinFriction[iMarker][iDim] = new su2double[nVertex[iMarker]]();
-    }
-  }
+  Alloc3D(nMarker, nVertex, nDim, CSkinFriction);
 
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -216,20 +207,23 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
 
-  HeatConjugateVar = new su2double**[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double*[nVertex[iMarker]];
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      HeatConjugateVar[iMarker][iVertex] = new su2double[nHeatConjugateVar]();
-      HeatConjugateVar[iMarker][iVertex][0] = config.GetTemperature_FreeStreamND();
-    }
-  }
+  Alloc3D(nMarker, nVertex, nHeatConjugateVar, HeatConjugateVar);
+  for (auto& x : HeatConjugateVar) x = config.GetTemperature_FreeStreamND();
 
-  /*--- Only initialize when there is a Marker_Fluid_Load defined
-   *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
-  if ((config.GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)) {
-    Alloc3D(nMarker, nVertex, nDim, VertexTraction);
-    if (config.GetDiscrete_Adjoint()) Alloc3D(nMarker, nVertex, nDim, VertexTractionAdjoint);
+  if (MGLevel == MESH_0) {
+    VertexTraction.resize(nMarker);
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (config.GetSolid_Wall(iMarker))
+        VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
+    }
+
+    if (config.GetDiscrete_Adjoint()) {
+      VertexTractionAdjoint.resize(nMarker);
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        if (config.GetSolid_Wall(iMarker))
+          VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
+      }
+    }
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
@@ -347,10 +341,10 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   /*--- If the reducer strategy is not being forced (by EDGE_COLORING_GROUP_SIZE=0) print some messages. ---*/
   if (config.GetEdgeColoringGroupSize() != 1 << 30) {
     su2double minEff = 1.0;
-    SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
     int tmp = ReducerStrategy, numRanksUsingReducer = 0;
-    SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&tmp, &numRanksUsingReducer, 1, MPI_INT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
     if (minEff < COLORING_EFF_THRESH) {
       cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
@@ -376,122 +370,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
-  unsigned short iMarker, iVar, iDim;
-  unsigned long iVertex;
 
-  delete[] CNearFieldOF_Inv;
-  delete[] HF_Visc;
-  delete[] MaxHF_Visc;
-  delete[] Surface_HF_Visc;
-  delete[] Surface_MaxHF_Visc;
-
-  if (SlidingState != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (SlidingState[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if (SlidingState[iMarker][iVertex] != nullptr) {
-            for (iVar = 0; iVar < nPrimVar + 1; iVar++) delete[] SlidingState[iMarker][iVertex][iVar];
-            delete[] SlidingState[iMarker][iVertex];
-          }
-        delete[] SlidingState[iMarker];
-      }
-    }
-    delete[] SlidingState;
-  }
-
-  if (SlidingStateNodes != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (SlidingStateNodes[iMarker] != nullptr) delete[] SlidingStateNodes[iMarker];
-    }
-    delete[] SlidingStateNodes;
-  }
-
-  if (CPressure != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) delete[] CPressure[iMarker];
-    delete[] CPressure;
-  }
-
-  if (CPressureTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) delete[] CPressureTarget[iMarker];
-    delete[] CPressureTarget;
-  }
-
-  if (CharacPrimVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) delete[] CharacPrimVar[iMarker][iVertex];
-      delete[] CharacPrimVar[iMarker];
-    }
-    delete[] CharacPrimVar;
-  }
-
-  if (Inlet_Ttotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ttotal[iMarker] != nullptr) delete[] Inlet_Ttotal[iMarker];
-    delete[] Inlet_Ttotal;
-  }
-
-  if (Inlet_Ptotal != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      if (Inlet_Ptotal[iMarker] != nullptr) delete[] Inlet_Ptotal[iMarker];
-    delete[] Inlet_Ptotal;
-  }
-
-  if (Inlet_FlowDir != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_FlowDir[iMarker] != nullptr) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) delete[] Inlet_FlowDir[iMarker][iVertex];
-        delete[] Inlet_FlowDir[iMarker];
-      }
-    }
-    delete[] Inlet_FlowDir;
-  }
-
-  if (HeatFlux != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] HeatFlux[iMarker];
-    }
-    delete[] HeatFlux;
-  }
-
-  if (HeatFluxTarget != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] HeatFluxTarget[iMarker];
-    }
-    delete[] HeatFluxTarget;
-  }
-
-  if (YPlus != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] YPlus[iMarker];
-    }
-    delete[] YPlus;
-  }
-
-  if (CSkinFriction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        delete[] CSkinFriction[iMarker][iDim];
-      }
-      delete[] CSkinFriction[iMarker];
-    }
-    delete[] CSkinFriction;
-  }
-
-  if (WallShearStress != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete[] WallShearStress[iMarker];
-    }
-    delete[] WallShearStress;
-  }
-
-  if (HeatConjugateVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete[] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete[] HeatConjugateVar[iMarker];
-    }
-    delete[] HeatConjugateVar;
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;
@@ -539,6 +420,65 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 
   computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
                   nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                                     CNumerics *numerics, CConfig *config) {
+
+  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
+                         (config->GetKind_Turb_Model() == SST_SUST);
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+  /*--- Points, coordinates and normal vector in edge ---*/
+
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
+
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
+
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+  /*--- Primitive and secondary variables. ---*/
+
+  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                         nodes->GetPrimitive(jPoint));
+
+  numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                         nodes->GetSecondary(jPoint));
+
+  /*--- Gradients. ---*/
+
+  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                               nodes->GetGradient_Primitive(jPoint));
+
+  /*--- Turbulent kinetic energy. ---*/
+
+  if (tkeNeeded)
+    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
+                                   turbNodes->GetSolution(jPoint,0));
+
+  /*--- Compute and update residual ---*/
+
+  auto residual = numerics->ComputeResidual(config);
+
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual);
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
+
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+  }
+
 }
 
 template <class V, ENUM_REGIME R>
@@ -599,7 +539,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -632,6 +572,30 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, nullptr, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, nullptr, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -757,6 +721,283 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
     }
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config,
+                                                int iter, bool update_geo, su2double* SolutionRestart,
+                                                unsigned short nVar_Restart) {
+
+  /*--- Restart the solution from file information ---*/
+
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double Area_Children, Area_Parent;
+  const su2double* Solution_Fine = nullptr;
+  const passivedouble* Coord = nullptr;
+  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
+  bool steady_restart = config->GetSteadyRestart();
+  bool turbulent = (config->GetKind_Turb_Model() != NONE);
+
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER {
+
+  if (nVar_Restart == 0) nVar_Restart = nVar;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Store the number of variables for the turbulence model
+   (that could appear in the restart file before the grid velocities). ---*/
+  unsigned short turbVars = 0;
+  if (turbulent){
+    if ((turb_model == SST) || (turb_model == SST_SUST)) turbVars = 2;
+    else turbVars = 1;
+  }
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  unsigned long counter = 0, iPoint_Global = 0;
+  for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+
+      if (SolutionRestart == nullptr) {
+        for (iVar = 0; iVar < nVar_Restart; iVar++)
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+      }
+      else {
+        /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+        for (iVar = 0; iVar < nVar_Restart; iVar++)
+          SolutionRestart[iVar] = Restart_Data[index+iVar];
+        nodes->SetSolution(iPoint_Local, SolutionRestart);
+      }
+
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+
+      if (dynamic_grid && update_geo) {
+
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+
+        /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        Coord = &Restart_Data[index];
+
+        su2double GridVel[MAXNDIM] = {0.0};
+        if (!steady_restart) {
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index += skipVars + nVar_Restart + turbVars;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
+        }
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+          geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
+        }
+      }
+
+      /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
+       grid coordinates for each node (but not the grid velocities, as there are none). ---*/
+
+      if (static_fsi && update_geo) {
+       /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        Coord = &Restart_Data[index];
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+        }
+      }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+
+  /*--- Update the geometry for flows on deforming meshes ---*/
+
+  if ((dynamic_grid || static_fsi) && update_geo) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+    if (dynamic_grid) {
+      geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+      geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+    }
+
+    /*--- Recompute the edges and dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      if (dynamic_grid) {
+        geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      }
+      geometry[iMesh]->SetMaxLength(config);
+    }
+  }
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We also call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
+   *    after it loads its variables (they are needed to compute flow primitives). ---*/
+  if (!turbulent) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+    }
+
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
+    if (!turbulent) {
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+
+  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy. ---*/
+  if (dual_time && config->GetGrid_Movement() && !config->GetDeform_Mesh() &&
+      (config->GetKind_GridMovement() != RIGID_MOTION)) {
+    Restart_OldGeometry(geometry[MESH_0], config);
+  }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
+                                           CConfig *config, int iter, bool update_geo) {
+  LoadRestart_impl(geometry, solver, config, iter, update_geo);
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                                                   CConfig *config, unsigned long TimeIter) {
+
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == DT_STEPPING_2ND));
+
+  /*--- Start OpenMP parallel region. ---*/
+
+  SU2_OMP_PARALLEL {
+
+  unsigned long iPoint;
+  unsigned short iMesh;
+
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution) && (TimeIter == 0) && !restart) {
+
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+      /*--- Loop over all grid points. ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
+        VerificationSolution->GetInitialCondition(coor, solDOF);
+      }
+    }
+  }
+
+  /*--- The value of the solution for the first iteration of the dual time ---*/
+
+  if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))) {
+    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
+  }
+
+  } // end SU2_OMP_PARALLEL
+
 }
 
 template <class V, ENUM_REGIME R>
@@ -1180,7 +1421,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               /*--- Set the normal vector and the coordinates ---*/
 
               visc_numerics->SetNormal(Normal);
-              visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+              su2double Coord_Reflected[MAXNDIM];
+              GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                                        geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+              visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
               /*--- Primitive variables, and gradient ---*/
 
@@ -1430,7 +1674,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1573,7 +1817,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     }
   }
 
-  factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  AeroCoeffForceRef = 0.5 * RefDensity * RefArea * RefVel2;
+  factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Reference pressure is always the far-field value. ---*/
 
@@ -1776,7 +2021,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     auto Allreduce = [](su2double x) {
       su2double tmp = x;
       x = 0.0;
-      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       return x;
     };
     AllBoundInvCoeff.CD = Allreduce(AllBoundInvCoeff.CD);
@@ -1813,7 +2058,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     su2double* buffer = new su2double[nMarkerMon];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
-      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       for (int i = 0; i < size; ++i) x[i] = buffer[i];
     };
 
@@ -1879,57 +2124,18 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometry, const CConfig* config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double factor, RefVel2 = 0.0, RefTemp, RefDensity = 0.0, Mach2Vel, Mach_Motion, MassFlow, Density;
+  su2double MassFlow, Density;
   const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
   su2double AxiFactor;
 
   su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
-  su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
-  su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
   bool axisymmetric = config->GetAxisymmetric();
 
-  /// TODO: Move these ifs to specialized functions.
-
-  if (FlowRegime == COMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dynamic meshes, use the motion Mach number as a reference value
-     for computing the force coefficients. Otherwise, use the freestream values,
-     which is the standard convention. ---*/
-
-    RefTemp = Temperature_Inf;
-    RefDensity = Density_Inf;
-    if (dynamic_grid) {
-      Mach2Vel = sqrt(Gamma * Gas_Constant * RefTemp);
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
-    } else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    }
-  }
-
-  if (FlowRegime == INCOMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dimensional or non-dim based on initial values, use
-     the far-field state (inf). For a custom non-dim based
-     on user-provided reference values, use the ref values
-     to compute the forces. ---*/
-
-    if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-      RefDensity = Density_Inf;
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-      RefDensity = config->GetInc_Density_Ref();
-      RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-    }
-  }
-
-  factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*-- Variables initialization ---*/
 
@@ -2097,7 +2303,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
     auto Allreduce = [](su2double x) {
       su2double tmp = x;
       x = 0.0;
-      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       return x;
     };
 
@@ -2134,7 +2340,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
     su2double* buffer = new su2double[nMarkerMon];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
-      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       for (int i = 0; i < size; ++i) x[i] = buffer[i];
     };
 
@@ -2204,8 +2410,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
+            GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2214,7 +2420,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
-  su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   su2double Gas_Constant = config->GetGas_ConstantND();
@@ -2235,44 +2440,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     VEL_INDEX     = nSpecies+2;
   }
 
-  /// TODO: Move these ifs to specialized functions.
-
-  if (FlowRegime == COMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dynamic meshes, use the motion Mach number as a reference value
-     for computing the force coefficients. Otherwise, use the freestream values,
-     which is the standard convention. ---*/
-
-    RefTemp = Temperature_Inf;
-    RefDensity = Density_Inf;
-    if (dynamic_grid) {
-      Mach2Vel = sqrt(Gamma * Gas_Constant * RefTemp);
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
-    } else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    }
-  }
-
-  if (FlowRegime == INCOMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dimensional or non-dim based on initial values, use
-     the far-field state (inf). For a custom non-dim based
-     on user-provided reference values, use the ref values
-     to compute the forces. ---*/
-
-    if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-      RefDensity = Density_Inf;
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-      RefDensity = config->GetInc_Density_Ref();
-      RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-    }
-  }
-
-  const su2double factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
+  const su2double factorFric = config->GetRefArea() * factor;
 
   /*--- Variables initialization ---*/
 
@@ -2376,7 +2545,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
@@ -2392,8 +2561,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
-
-
 
       /// TODO: Move these ifs to specialized functions.
       if (!nemo){
@@ -2561,7 +2728,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     auto Allreduce = [](su2double x) {
       su2double tmp = x;
       x = 0.0;
-      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       return x;
     };
     AllBoundViscCoeff.CD = Allreduce(AllBoundViscCoeff.CD);
@@ -2600,7 +2767,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     su2double* buffer = new su2double[nMarkerMon];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
-      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       for (int i = 0; i < size; ++i) x[i] = buffer[i];
     };
 
@@ -2620,8 +2787,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CMy);
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CMz);
 
-    Allreduce_inplace(nMarkerMon, Surface_HF_Visc);
-    Allreduce_inplace(nMarkerMon, Surface_MaxHF_Visc);
+    Allreduce_inplace(nMarkerMon, Surface_HF_Visc.data());
+    Allreduce_inplace(nMarkerMon, Surface_MaxHF_Visc.data());
 
     delete[] buffer;
   }

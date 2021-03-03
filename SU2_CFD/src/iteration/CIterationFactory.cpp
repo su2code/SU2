@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -112,7 +112,7 @@ CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, cons
       iteration = new CDiscAdjHeatIteration(config);
       break;
 
-    case NO_SOLVER: case FLUID_STRUCTURE_INTERACTION: case TEMPLATE_SOLVER: case MULTIPHYSICS:
+    case NO_SOLVER: case TEMPLATE_SOLVER: case MULTIPHYSICS:
       SU2_MPI::Error("No iteration found for specified solver.", CURRENT_FUNCTION);
       break;
   }

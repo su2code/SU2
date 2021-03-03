@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.1.0 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v7.1.1 \"Blackbird\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);

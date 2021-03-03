@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,46 +37,44 @@
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
 protected:
+  using BaseClass = CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
+
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
-  su2double
-  AllBound_CEquivArea_Inv = 0.0, /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  *CEquivArea_Mnt = nullptr,     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CEquivArea_Inv = nullptr;     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  su2double AllBound_CEquivArea_Inv=0.0; /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
+  vector<su2double> CEquivArea_Mnt;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  vector<su2double> CEquivArea_Inv;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 
+  vector<su2double> Inflow_MassFlow;     /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Exhaust_MassFlow;    /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Inflow_Pressure;     /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Inflow_Mach;         /*!< \brief Fan face mach number for each boundary. */
+  vector<su2double> Inflow_Area;         /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Area;        /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Pressure;    /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Exhaust_Temperature; /*!< \brief Fan face mach number for each boundary. */
   su2double
-  *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach = nullptr,        /*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area = nullptr,        /*!< \brief Boundary total area. */
-  *Exhaust_Area = nullptr,       /*!< \brief Boundary total area. */
-  *Exhaust_Pressure = nullptr,   /*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature = nullptr,/*!< \brief Fan face mach number for each boundary. */
   Inflow_MassFlow_Total = 0.0,   /*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total = 0.0,  /*!< \brief Mass flow rate for each boundary. */
   Inflow_Pressure_Total = 0.0,   /*!< \brief Fan face pressure for each boundary. */
   Inflow_Mach_Total = 0.0,       /*!< \brief Fan face mach number for each boundary. */
   InverseDesign = 0.0;           /*!< \brief Inverse design functional for each boundary. */
-  unsigned long
-  **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
-  su2double
-  ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
-  **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT = nullptr;    /*!< \brief Value of the Delta T. */
+  vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
+  vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
+  vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
   ActDisk_R;         /*!< \brief Value of the actuator disk Radius. */
   su2activematrix
   ActDisk_C,         /*!< \brief Value of the actuator disk Center. */
   ActDisk_Axis;      /*!< \brief Value of the actuator disk Axis. */
-  su2double
-  **ActDisk_Fa,        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
-  **ActDisk_Fx,        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fy,        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fz;        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -349,20 +347,6 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \note The convective residual methods include a call to this for each edge,
-   *       this allows convective and viscous loops to be "fused".
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config) { }
-  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
@@ -811,14 +795,18 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Provide the mass flow rate.
@@ -1070,20 +1058,6 @@ public:
    * \param config - Definition of the particular problem.
    */
   void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) final;
-
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -1627,7 +1601,7 @@ public:
   void PrintVerificationError(const CConfig* config) const final;
 
   /*!
-   * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
+   * \brief The Euler and NS solvers support MPI+OpenMP.
    */
   inline bool GetHasHybridParallel() const final { return true; }
 
