@@ -293,6 +293,18 @@ public:
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
 
   /*!
+   * \brief Collects Turbomachinery Performance data from the solvers and prints the data in tabular format on screen.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   */
+  void SetTurboPerformance_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
+
+  /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

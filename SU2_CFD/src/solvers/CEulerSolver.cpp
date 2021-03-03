@@ -10200,6 +10200,5 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
     auto performances = TurbomachineryPerformance->GetBladesPerformances();
-    //SetStagePerformance();performances.at(0).at(0)->GetEntropyGen();
   }
 }

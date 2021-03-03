@@ -125,7 +125,7 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
   auto relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute performance ---*/
-  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()) / abs(InletState.GetEntropy() + 1);
+  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()); // / abs(InletState.GetEntropy() + 1);
   EulerianWork = InletState.GetTotalEnthalpy() - OutletState.GetTotalEnthalpy();
   TotalPressureLoss = (InletState.GetTotalRelPressure() - OutletState.GetTotalRelPressure()) /
                       (InletState.GetTotalRelPressure() - OutletState.GetPressure());
@@ -151,7 +151,7 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(CConfig *const config, CG
       auto radiusIn = geometry->GetTurboRadiusIn(iBladeRow, iSpan);
       auto radiusOut = geometry->GetTurboRadiusOut(iBladeRow, iSpan);
       auto bladePerformance = make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut);;
+                                                                    radiusOut);
       bladeSpanPerformances.push_back(bladePerformance);
     }
     BladesPerformances.push_back(bladeSpanPerformances);
@@ -175,3 +175,9 @@ void CTurbomachineryPerformance::ComputePerSpan(shared_ptr <CTurbomachineryBlade
                                                 const CTurbomachineryCombinedPrimitiveStates &spanPrimitives) {
   spanPerformances->ComputePerformance(spanPrimitives);
 }
+
+// CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(){
+
+// }
+
+// CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}

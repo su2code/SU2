@@ -231,6 +231,13 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                               config[val_iZone]->GetInnerIter());
   }
 
+  /*--- Turbomachinery Performance Summary Screen Output ---*/
+  if (config[ZONE_0]->GetBoolTurbomachinery()){
+    output->SetTurboPerformance_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
+                              config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+                              config[val_iZone]->GetInnerIter());
+  }
+
   /*--- If convergence was reached --*/
   StopCalc = output->GetConvergence();
 

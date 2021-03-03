@@ -198,16 +198,17 @@ class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
 
 };
-// class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
-//    protected: 
-//       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
-//    public:
-//       CTurbomachineryStagePerformance();
-//       ~CTurbomachineryStagePerformance();
-//       virtual void ComputePerformance(CFluidModel* fluidModel, su2double tangVel);
-//       su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
-//       su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
-// };
+
+class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
+   protected: 
+      su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
+   public:
+      CTurbomachineryStagePerformance();
+      ~CTurbomachineryStagePerformance();
+      virtual void ComputePerformance(CFluidModel* fluidModel, su2double tangVel);
+      su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
+      su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
+};
 
 // class CTurbineStagePerformance : CTurbomachineryStagePerformance {
 
@@ -237,7 +238,7 @@ class CTurbomachineryPerformance {
 
   static void ComputePerSpan(shared_ptr <CTurbomachineryBladePerformance> const spanPerformances,
                              const CTurbomachineryCombinedPrimitiveStates &spanPrimitives);
-  // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
+  vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
   // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
   public:
   CTurbomachineryPerformance(CConfig *const config, CGeometry *const geometry, CFluidModel *const fluidModel);
