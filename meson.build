@@ -162,6 +162,7 @@ endif
 if get_option('enable-eigen')
   eigen_dep = [declare_dependency(include_directories: '/usr/include/eigen3')]
   su2_deps += eigen_dep
+  su2_cpp_args += '-DHAVE_EIGEN'
 endif
 
 extra_deps = get_option('extra-deps').split(',')

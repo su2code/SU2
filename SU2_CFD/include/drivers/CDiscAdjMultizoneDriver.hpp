@@ -28,20 +28,16 @@
 #pragma once
 #include "CMultizoneDriver.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+
+#ifdef HAVE_EIGEN
+#include "../../../Common/include/toolboxes/CNewtonUpdateOnSubspace.hpp"
+#else
+#include "../../../Common/include/toolboxes/CNewtonUpdateOnSubspaceDummy.hpp"
+#endif
+
 #include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
-
-//#ifdef HAVE_EIGEN
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/QR>
-typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
-typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
-//#include <Eigen/LU>
-//#include <Eigen/SVD>
-//typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
-//#endif
 
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 

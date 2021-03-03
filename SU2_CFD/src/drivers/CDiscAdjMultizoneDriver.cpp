@@ -228,6 +228,10 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned long wrt_sol_freq = 99999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
 
+  InputIndices.resize(nZone);
+  OutputIndices.resize(nZone);
+  nNewtonBasisSamples.resize(nZone);
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
@@ -258,18 +262,15 @@ void CDiscAdjMultizoneDriver::Run() {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
     }
     else if (config_container[iZone]->GetnNewtonBasisSamples()) {
-      InputIndices.resize(nZone);
-      OutputIndices.resize(nZone);
-      nNewtonBasisSamples.resize(nZone);
       nNewtonBasisSamples[iZone] = config_container[iZone]->GetnNewtonBasisSamples();
+      // TODO: check size because of halos
+      InputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
+      OutputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
       fixPtSubspaceCorrector[iZone].resize(2,
                                            nNewtonBasisSamples[iZone],
                                            geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
                                            GetTotalNumberOfVariables(iZone, true),
                                            geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
-      // TODO: check size because of halos
-      InputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
-      OutputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
     }
   }
 

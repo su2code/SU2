@@ -3187,6 +3187,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+#ifdef HAVE_EIGEN
+#else
+  if (nNewtonBasisSamples > 0) {
+    SU2_MPI::Error(string(" SU2 built without Eigen support. \n") +
+                   string(" To use Newton correction, build SU2 accordingly."),
+                   CURRENT_FUNCTION);
+  }
+#endif
+
   /*--- STL_BINARY output not implelemted yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
     if (VolumeOutputFiles[iVolumeFile] == STL_BINARY){
