@@ -379,14 +379,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
   if (config->GetWall_Functions()) {
-
-    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-      SU2_OMP_MASTER
-      SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-      SU2_OMP_BARRIER
-    }
+    SU2_OMP_MASTER
+    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    SU2_OMP_BARRIER
     return;
   }
 
