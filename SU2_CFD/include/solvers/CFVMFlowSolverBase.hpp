@@ -160,9 +160,6 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > UTau;              /*!< \brief UTau for each boundary and vertex. */
   vector<vector<su2double> > EddyViscWall;      /*!< \brief Eddy viscosuty at the wall for each boundary and vertex. */
 
-
- 
-
   bool space_centered;       /*!< \brief True if space centered scheme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
   bool least_squares;        /*!< \brief True if computing gradients by least squares. */
