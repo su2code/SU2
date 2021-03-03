@@ -2583,8 +2583,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       if (!wallfunctions)  
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
-
-
       /*--- Compute total and maximum heat flux on the wall ---*/
 
       /// TODO: Move these ifs to specialized functions.
