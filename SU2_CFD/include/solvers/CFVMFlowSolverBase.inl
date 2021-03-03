@@ -2487,7 +2487,6 @@ RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        //Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
