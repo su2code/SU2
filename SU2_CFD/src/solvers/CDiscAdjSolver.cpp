@@ -866,8 +866,9 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   }
 
   if (KindDirect_Solver== RUNTIME_SCALAR_SYS) {
-    //nijso: daniel, are you sure it is skipvars = 2*nDim+2 and not +=2*nDim+2"<<endl;
+    // x,y,u,v,p,t 
     skipVars = 2*nDim+2 ;
+    
     if (turbulent) {
       if (turb_SA) skipVars += 1;
       else if (turb_SST) skipVars += 2;

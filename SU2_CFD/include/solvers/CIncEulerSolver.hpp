@@ -238,9 +238,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  inline void Evaluate_ObjFunc(const CConfig *config) final {
-    Total_ComboObj = EvaluateCommonObjFunc(*config);
-  }
+  void Evaluate_ObjFunc(const CConfig *config) override;
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.
@@ -325,14 +323,18 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

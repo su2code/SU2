@@ -37,7 +37,7 @@
 
 #include "../../include/numerics/scalar.hpp"
 
-CUpwScalar::CUpwScalar(unsigned short val_nDim,
+CUpwtransportedScalar::CUpwtransportedScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
@@ -56,7 +56,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   }
 }
 
-CUpwScalar::~CUpwScalar(void) {
+CUpwtransportedScalar::~CUpwtransportedScalar(void) {
 
   delete [] Flux;
   if (Jacobian_i != nullptr) {
@@ -69,7 +69,7 @@ CUpwScalar::~CUpwScalar(void) {
   }
 }
 
-CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
+CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -118,19 +118,19 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
 }
 
-CUpwScalar_General::CUpwScalar_General(unsigned short val_nDim,
+CUpwtransportedScalar_General::CUpwtransportedScalar_General(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        CConfig *config)
-: CUpwScalar(val_nDim, val_nVar, config) { }
+: CUpwtransportedScalar(val_nDim, val_nVar, config) { }
 
-CUpwScalar_General::~CUpwScalar_General(void) { }
+CUpwtransportedScalar_General::~CUpwtransportedScalar_General(void) { }
 
-void CUpwScalar_General::ExtraADPreaccIn() {
+void CUpwtransportedScalar_General::ExtraADPreaccIn() {
   AD::SetPreaccIn(scalar_i, nVar);  AD::SetPreaccIn(scalar_j, nVar);
   AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
 }
 
-void CUpwScalar_General::FinishResidualCalc(su2double *val_residual,
+void CUpwtransportedScalar_General::FinishResidualCalc(su2double *val_residual,
                                             su2double **val_Jacobian_i,
                                             su2double **val_Jacobian_j,
                                             CConfig *config) {
@@ -155,7 +155,7 @@ void CUpwScalar_General::FinishResidualCalc(su2double *val_residual,
   
 }
 
-void CUpwScalar_General::FinishResidualCalc(const CConfig* config) {
+void CUpwtransportedScalar_General::FinishResidualCalc(const CConfig* config) {
 
   unsigned short iVar, jVar;
 
@@ -179,7 +179,7 @@ void CUpwScalar_General::FinishResidualCalc(const CConfig* config) {
 
 }
 
-CAvgGradScalar::CAvgGradScalar(unsigned short val_nDim,
+CAvgGradtransportedScalar::CAvgGradtransportedScalar(unsigned short val_nDim,
                                unsigned short val_nVar,
                                bool correct_grad,
                                CConfig *config)
@@ -200,7 +200,7 @@ CAvgGradScalar::CAvgGradScalar(unsigned short val_nDim,
   
 }
 
-CAvgGradScalar::~CAvgGradScalar(void) {
+CAvgGradtransportedScalar::~CAvgGradtransportedScalar(void) {
   
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradScalarVar_Normal;
@@ -212,7 +212,7 @@ CAvgGradScalar::~CAvgGradScalar(void) {
   
 }
 
-void CAvgGradScalar::ComputeResidual(su2double *val_residual,
+void CAvgGradtransportedScalar::ComputeResidual(su2double *val_residual,
                                      su2double **Jacobian_i,
                                      su2double **Jacobian_j,
                                      CConfig *config) {
@@ -281,24 +281,24 @@ void CAvgGradScalar::ComputeResidual(su2double *val_residual,
   
 }
 
-CAvgGradScalar_General::CAvgGradScalar_General(unsigned short val_nDim,
+CAvgGradtransportedScalar_General::CAvgGradtransportedScalar_General(unsigned short val_nDim,
                                                unsigned short val_nVar, bool correct_grad,
                                                CConfig *config)
-: CAvgGradScalar(val_nDim, val_nVar, correct_grad, config) {
+: CAvgGradtransportedScalar(val_nDim, val_nVar, correct_grad, config) {
   
   Mean_Diffusivity = new su2double[nVar];
   
 }
 
-CAvgGradScalar_General::~CAvgGradScalar_General(void) {
+CAvgGradtransportedScalar_General::~CAvgGradtransportedScalar_General(void) {
   
   if (Mean_Diffusivity != NULL) delete [] Mean_Diffusivity;
   
 }
 
-void CAvgGradScalar_General::ExtraADPreaccIn() { }
+void CAvgGradtransportedScalar_General::ExtraADPreaccIn() { }
 
-void CAvgGradScalar_General::FinishResidualCalc(su2double *val_residual,
+void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residual,
                                                 su2double **Jacobian_i,
                                                 su2double **Jacobian_j,
                                                 CConfig *config) {

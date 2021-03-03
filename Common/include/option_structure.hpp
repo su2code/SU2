@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 13;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -235,7 +235,7 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 };
 
 /*!
- * \brief different solver types for the multizone environment component
+ * \brief Different solver types for multizone problems
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
@@ -439,7 +439,6 @@ static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
@@ -546,7 +545,7 @@ enum ENUM_FLUIDMODEL {
   INC_IDEAL_GAS_POLY   = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ            = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
-  FLAMELET_FLUID_MODEL = 9  /*!< \brief Flamelet model */
+  FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -557,8 +556,8 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLAMELET_FLUID_MODEL", FLAMELET_FLUID_MODEL)
+  MakePair("SU2_NONEQ", SU2_NONEQ)
 };
 
 /*!
@@ -2317,7 +2316,7 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
     I_SRC_TOT_CO,
     I_SRC_TOT_NOX,
   };
-
+#undef MakePair
 /* END_CONFIG_ENUMS */
 
 class COptionBase {

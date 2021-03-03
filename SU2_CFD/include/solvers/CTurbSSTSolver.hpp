@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void) override;
+  ~CTurbSSTSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

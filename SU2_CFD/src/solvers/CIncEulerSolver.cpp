@@ -259,6 +259,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Depending on the density model chosen, select a fluid model. ---*/
 
+  su2double *dummy_scalar;
+  unsigned short n_scalars;
   CFluidModel* auxFluidModel = nullptr;
 
   su2double *dummy_scalar;
@@ -478,6 +480,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
         /// TODO: Why is this outside?
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
+
+           
+      case FLAMELET_FLUID_MODEL:
+        fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
+        delete[] dummy_scalar;
+        break;
     }
 
     if (viscous) {
@@ -513,6 +522,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       fluidModel->SetLaminarViscosityModel(config);
       fluidModel->SetThermalConductivityModel(config);
 
+      fluidModel->SetLaminarViscosityModel(config);
+      fluidModel->SetThermalConductivityModel(config);
+      fluidModel->SetMassDiffusivityModel(config);
     }
 
   }
@@ -1635,7 +1647,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
-void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   struct IncPrec {
     const CIncEulerSolver* solver;
@@ -1651,8 +1663,12 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   } precond(this, nVar);
 
-  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
+  PrepareImplicitIteration_impl(precond, geometry, config);
+}
 
+void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  CompleteImplicitIteration_impl<false>(geometry, config);
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
@@ -2439,8 +2455,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
                                      +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
 
-      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
-
       if (implicit) {
         su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
@@ -2484,7 +2498,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         su2double Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)

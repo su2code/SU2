@@ -178,6 +178,7 @@ su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CIntegrationFactory.cpp',
                       'integration/CSingleGridIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
+                      'integration/CNewtonIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
                       'integration/CFEM_DG_Integration.cpp',
                       ])

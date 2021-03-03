@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "./parallelization/mpi_structure.hpp"
+#include "parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -422,6 +422,9 @@ private:
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
+  bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
+  array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
+  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -1229,6 +1232,8 @@ private:
   void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
 
   void addDoubleArrayOption(const string name, const int size, su2double* option_field);
+
+  void addUShortArrayOption(const string name, const int size, unsigned short* option_field);
 
   void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field);
 
@@ -4109,6 +4114,21 @@ public:
   bool GetUseVectorization(void) const { return UseVectorization; }
 
   /*!
+   * \brief Get whether to use a Newton-Krylov method.
+   */
+  bool GetNewtonKrylov(void) const { return NewtonKrylov; }
+
+  /*!
+   * \brief Get Newton-Krylov integer parameters.
+   */
+  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+
+  /*!
+   * \brief Get Newton-Krylov floating-point parameters.
+   */
+  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4285,6 +4305,7 @@ public:
    * \return Kind of the scalar transport model.
    */
   unsigned short GetKind_Scalar_Model(void) const { return Kind_Scalar_Model; };
+  
   
   /*!
    * \brief Get the kind of time integration method.

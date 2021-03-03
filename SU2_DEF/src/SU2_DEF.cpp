@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization ---*/
 
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else

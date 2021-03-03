@@ -66,7 +66,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf <<endl;
     }
-    
+
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.667;
     nReactions  = 0;
@@ -78,9 +78,9 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Characteristic vibrational temperatures
     CharVibTemp[0] = 0.0;
 
-    Enthalpy_Formation[0] = 0.0;    
+    Enthalpy_Formation[0] = 0.0;
     Ref_Temperature[0] = 0.0;
-    nElStates[0] = 7;                 
+    nElStates[0] = 7;
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       maxEl = max(maxEl, nElStates[iSpecies]);
@@ -90,16 +90,16 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
 
     /*--- AR: Blottner coefficients. ---*/
-    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01; 
-    
+    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01;
+
     /*--- AR: 7 states ---*/
     CharElTemp(0,0) = 0.000000000000000E+00;
     CharElTemp(0,1) = 1.611135736988230E+05;
     CharElTemp(0,2) = 1.625833076870950E+05;
     CharElTemp(0,3) = 1.636126382960720E+05;
     CharElTemp(0,4) = 1.642329518358000E+05;
-    CharElTemp(0,5) = 1.649426852542080E+05;   
-    CharElTemp(0,6) = 1.653517702884570E+05; 
+    CharElTemp(0,5) = 1.649426852542080E+05;
+    CharElTemp(0,6) = 1.653517702884570E+05;
     ElDegeneracy(0,0) = 1;
     ElDegeneracy(0,1) = 9;
     ElDegeneracy(0,2) = 21;
@@ -252,7 +252,7 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     Omega11(0,1,0) = -8.3493693E-03;  Omega11(0,1,1) = 1.7808911E-01;   Omega11(0,1,2) = -1.4466155E+00;  Omega11(0,1,3) = 1.9324210E+03;
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
- 
+
   } else if (gas_model == "AIR-5"){
 
     /*--- Check for errors in the initialization ---*/
@@ -1085,7 +1085,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 
     if (nSpecies==1) DiffusionCoeff[0] = 0;
     else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
-  }    
+  }
 }
 
 void CSU2TCLib::ViscosityWBE(){
@@ -1189,26 +1189,26 @@ void CSU2TCLib::DiffusionCoeffGY(){
       jSpecies = nSpecies-1;
       Mj       = MolarMass[jSpecies];
       gam_j    = rhos[iSpecies] / (Density*Mj);
-      
+
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega00(iSpecies,jSpecies,1)*log(Tve)
           + Omega00(iSpecies,jSpecies,2));
-      
+
       /*--- Calculate "delta1_ij" ---*/
       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
     }
-    
+
     /*--- Assign species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
   if (ionization) {
     iSpecies = nSpecies-1;
-    
+
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
-    
+
     /*--- Calculate molar concentration ---*/
     Mi      = MolarMass[iSpecies];
     gam_i   = rhos[iSpecies] / (Density*Mi);
@@ -1217,16 +1217,16 @@ void CSU2TCLib::DiffusionCoeffGY(){
       if (iSpecies != jSpecies) {
         Mj    = MolarMass[jSpecies];
         gam_j = rhos[iSpecies] / (Density*Mj);
-        
+
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
         Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
             * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
             + Omega00(iSpecies,jSpecies,1)*log(Tve)
             + Omega00(iSpecies,jSpecies,2));
-        
+
         /*--- Calculate "delta1_ij" ---*/
         d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-        
+
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
         D_ij = kb*Tve/(Pressure*d1_ij);
         denom += gam_j/D_ij;
@@ -1307,8 +1307,7 @@ void CSU2TCLib::ThermalConductivitiesGY(){
   kb   = BOLTZMANN_CONSTANT;
 
   if (ionization) {
-    cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
-    exit(1);
+    SU2_MPI::Error("NEEDS REVISION w/ IONIZATION",CURRENT_FUNCTION);
   }
 
   /*--- Mixture vibrational-electronic specific heat ---*/
@@ -1444,7 +1443,7 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 0.52455; RxnConstantTable(4,1) = 2.4715;  RxnConstantTable(4,2) = 1.7342;  RxnConstantTable(4,3) = -6.55534;  RxnConstantTable(4,4) = 0.030209;
     RxnConstantTable(5,0) = 0.50989; RxnConstantTable(5,1) = 2.4773;  RxnConstantTable(5,2) = 1.7132;  RxnConstantTable(5,3) = -6.5441;   RxnConstantTable(5,4) = 0.029591;
 
-  } else if (gas_model == "N2"){ 
+  } else if (gas_model == "N2"){
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
@@ -1517,7 +1516,7 @@ void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
       RxnConstantTable(5,0) = -0.002428; RxnConstantTable(5,1) = -1.7415; RxnConstantTable(5,2) = -1.2331;   RxnConstantTable(5,3) = -0.95365;  RxnConstantTable(5,4) = -0.04585;
     }
 
-  } else if (gas_model == "AIR-7"){  
+  } else if (gas_model == "AIR-7"){
 
     if (iReaction <= 6) {
 

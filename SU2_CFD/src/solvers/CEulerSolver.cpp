@@ -175,21 +175,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double* [M];
-    for(unsigned long i = 0; i < M; ++i)
-      X[i] = new su2double [N[i]] ();
+  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+    X.resize(M);
+    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i], 0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double** [M];
-    for(unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double* [N[i]];
-      for(unsigned long j = 0; j < N[i]; ++j)
-        X[i][j] = new su2double [P] ();
-    }
+  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+    X.resize(M);
+    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
 
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
@@ -199,10 +194,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
-  }
+  DonorGlobalIndex.resize(nMarker);
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    DonorGlobalIndex[iMarker].resize(nVertex[iMarker],0);
 
   /*--- Actuator Disk Radius allocation ---*/
   ActDisk_R.resize(nMarker);
@@ -229,19 +223,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Supersonic coefficients ---*/
 
-  CEquivArea_Inv = new su2double[nMarker];
+  CEquivArea_Inv.resize(nMarker);
 
   /*--- Engine simulation ---*/
 
-  Inflow_MassFlow = new su2double[nMarker];
-  Inflow_Pressure = new su2double[nMarker];
-  Inflow_Mach = new su2double[nMarker];
-  Inflow_Area = new su2double[nMarker];
+  Inflow_MassFlow.resize(nMarker);
+  Inflow_Pressure.resize(nMarker);
+  Inflow_Mach.resize(nMarker);
+  Inflow_Area.resize(nMarker);
 
-  Exhaust_Temperature = new su2double[nMarker];
-  Exhaust_MassFlow = new su2double[nMarker];
-  Exhaust_Pressure = new su2double[nMarker];
-  Exhaust_Area = new su2double[nMarker];
+  Exhaust_Temperature.resize(nMarker);
+  Exhaust_MassFlow.resize(nMarker);
+  Exhaust_Pressure.resize(nMarker);
+  Exhaust_Area.resize(nMarker);
 
   /*--- Read farfield conditions from config ---*/
 
@@ -357,73 +351,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
 CEulerSolver::~CEulerSolver(void) {
 
-  unsigned short iMarker, iSpan;
-  unsigned long iVertex;
+  unsigned short iSpan;
+  unsigned long iMarker;
 
   /*--- Array deallocation ---*/
-
-  delete [] CEquivArea_Inv;
-
-  delete [] Inflow_MassFlow;
-  delete [] Exhaust_MassFlow;
-  delete [] Exhaust_Area;
-  delete [] Inflow_Pressure;
-  delete [] Inflow_Mach;
-  delete [] Inflow_Area;
-
-  delete [] Exhaust_Pressure;
-  delete [] Exhaust_Temperature;
-
-  if (DonorPrimVar != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] DonorPrimVar[iMarker][iVertex];
-      delete [] DonorPrimVar[iMarker];
-    }
-    delete [] DonorPrimVar;
-  }
-
-  if (DonorGlobalIndex != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] DonorGlobalIndex[iMarker];
-    delete [] DonorGlobalIndex;
-  }
-
-  if (ActDisk_Fa != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fa[iMarker];
-    delete [] ActDisk_Fa;
-  }
-
-  if (ActDisk_Fx != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fx[iMarker];
-    delete [] ActDisk_Fx;
-  }
-
-  if (ActDisk_Fy != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fy[iMarker];
-    delete [] ActDisk_Fy;
-  }
-
-  if (ActDisk_Fz != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fz[iMarker];
-    delete [] ActDisk_Fz;
-  }
-
-  if (ActDisk_DeltaP != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_DeltaP[iMarker];
-    delete [] ActDisk_DeltaP;
-  }
-
-  if (ActDisk_DeltaT != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_DeltaT[iMarker];
-    delete [] ActDisk_DeltaT;
-  }
 
   for(auto& model : FluidModel) delete model;
 
@@ -816,7 +747,6 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       }
     }
   }
-
 
 }
 
@@ -3031,7 +2961,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
-void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   struct LowMachPrec {
     const CEulerSolver* solver;
@@ -3049,8 +2979,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == TURKEL), nVar);
 
-  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, true);
+  PrepareImplicitIteration_impl(precond, geometry, config);
+}
 
+void CEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  CompleteImplicitIteration_impl<true>(geometry, config);
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,

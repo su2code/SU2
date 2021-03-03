@@ -43,7 +43,7 @@
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
-class CUpwScalar : public CNumerics {
+class CUpwtransportedScalar : public CNumerics {
 protected:
   su2double
   q_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
@@ -74,12 +74,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CUpwtransportedScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar(void);
+  ~CUpwtransportedScalar(void);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -91,12 +91,12 @@ public:
 };
 
 /*!
- * \class CUpwScalar_General
+ * \class CUpwtransportedScalar_General
  * \brief Class for a general scalar upwind solver for an arbitrary number of scalar transport eqns.
  * \ingroup ConvDiscr
  * \author T. Economon
  */
-class CUpwScalar_General : public CUpwScalar {
+class CUpwtransportedScalar_General : public CUpwtransportedScalar {
 private:
 
   /*!
@@ -128,23 +128,23 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar_General(unsigned short val_nDim,
+  CUpwtransportedScalar_General(unsigned short val_nDim,
                      unsigned short val_nVar,
                      CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar_General(void);
+  ~CUpwtransportedScalar_General(void);
 };
 
 /*!
- * \class CAvgGradScalar
+ * \class CAvgGradtransportedScalar
  * \brief Template class for computing viscous residual of scalar values
  * \ingroup ViscDiscr
  * \author C. Pederson, T. Economon
  */
-class CAvgGradScalar : public CNumerics {
+class CAvgGradtransportedScalar : public CNumerics {
 private:
 
   /*!
@@ -184,13 +184,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradScalar(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGradtransportedScalar(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_gradient, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradScalar(void);
+  ~CAvgGradtransportedScalar(void);
 
   /*!
    * \brief Compute the viscous residual using an average of gradients without correction.
@@ -204,12 +204,12 @@ public:
 };
 
   /*!
- * \class CAvgGradScalar_General
+ * \class CAvgGradtransportedScalar_General
  * \brief Class for computing viscous term using average of gradients for a passive scalar.
  * \ingroup ViscDiscr
  * \author T. Economon
  */
-class CAvgGradScalar_General : public CAvgGradScalar {
+class CAvgGradtransportedScalar_General : public CAvgGradtransportedScalar {
 protected:
   su2double *Mean_Diffusivity;   /*!< \brief Average of mass diffusivities at cell face */
 
@@ -238,13 +238,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradScalar_General(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGradtransportedScalar_General(unsigned short val_nDim, unsigned short val_nVar,
                          bool correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradScalar_General(void);
+  ~CAvgGradtransportedScalar_General(void);
 };
 
 

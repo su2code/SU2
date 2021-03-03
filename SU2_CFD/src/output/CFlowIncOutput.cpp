@@ -36,6 +36,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   turb_model = config->GetKind_Turb_Model();
   scalar_model = config->GetKind_Scalar_Model();
   heat = config->GetEnergy_Equation();
+
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -82,6 +83,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   /*--- Set the default convergence field --- */
 
   if (convFields.empty() ) convFields.emplace_back("RMS_PRESSURE");
+
 
 }
 
@@ -411,9 +413,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   /*--- Set the analyse surface history values --- */
-  
+
   SetAnalyzeSurface(solver, geometry, config, false);
-  
+
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
@@ -439,10 +441,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat) 
-    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
-  
-  switch(turb_model){
+  if (heat || weakly_coupled_heat)
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
+
+  switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
     AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
     AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
@@ -532,8 +534,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
-  
-  switch(turb_model){
+
+  switch(config->GetKind_Turb_Model()){
   case SST: case SST_SUST:
     AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
     AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation.");
@@ -641,8 +643,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Heat = nullptr;
   CVariable* Node_Turb = nullptr;
   CVariable* Node_Rad = nullptr;
-
   CVariable* Node_Scalar = NULL;
+
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }

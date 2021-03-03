@@ -334,19 +334,20 @@ public:
   }
 };
 
-class COptionDoubleArray : public COptionBase {
+template<class Type>
+class COptionArray : public COptionBase {
   string name; // Identifier for the option
   const int size; // Number of elements
-  su2double* field; // Reference to the fieldname
+  Type* field; // Reference to the field
 
 public:
-  COptionDoubleArray(string option_field_name, const int list_size, su2double* option_field) :
+  COptionArray(string option_field_name, const int list_size, Type* option_field) :
     name(option_field_name),
     size(list_size),
     field(option_field) {
   }
 
-  ~COptionDoubleArray() override {};
+  ~COptionArray() override {};
 
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
@@ -368,7 +369,7 @@ public:
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
-        return badValue(option_value, "su2double array", this->name);
+        return badValue(option_value, " array", this->name);
       }
     }
     return "";

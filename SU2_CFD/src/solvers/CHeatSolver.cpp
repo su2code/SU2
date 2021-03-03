@@ -312,15 +312,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
-#endif
-
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
 
@@ -376,25 +370,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
-#endif
-  if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(SU2_MPI::GetComm());
-    MPI_Abort(SU2_MPI::GetComm(),1);
-    MPI_Finalize();
-#endif
+  if (iPoint_Global_Local != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer

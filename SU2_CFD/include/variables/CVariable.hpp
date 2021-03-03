@@ -452,6 +452,7 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
+  inline const MatrixType& Get_External() const { return External; }
 
   /*!
    * \brief Get the solution at time n.

@@ -2011,7 +2011,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-    resetCFL = linRes > 1.0;
+    resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
     canIncrease = linRes < linTol;
 
@@ -2391,7 +2391,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
       const su2double* GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
       /*--- Determine whether to consider the normal outward or inward. ---*/
-      su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+      su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
       su2double Flux = 0.0;
       for (auto iDim = 0u; iDim < nDim; iDim++)
@@ -3674,8 +3674,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     }
 
   unsigned int nVar_Scalar = 0;
-  bool scalartransport=(config->GetKind_FluidModel()==FLAMELET_FLUID_MODEL);
-  if (scalartransport) {
+  bool is_scalar_model=(config->GetKind_FluidModel()==FLAMELET_FLUID_MODEL);
+  if (is_scalar_model) {
     nVar_Scalar = config->GetNScalars();
   }
 

@@ -1541,16 +1541,29 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CConfig *config) { }
+  inline virtual void PrepareImplicitIteration(CGeometry *geometry,
+                                               CSolver **solver_container,
+                                               CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
+  inline virtual void CompleteImplicitIteration(CGeometry *geometry,
+                                                CSolver **solver_container,
+                                                CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -1715,10 +1728,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Source_Residual(CGeometry     *geometry,
-                                      CSolver      **solver_container,
-                                      CNumerics    **numerics_container,
-                                      CConfig       *config,
+  inline virtual void Source_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics **numerics_container,
+                                      CConfig *config,
                                       unsigned short iMesh) { }
 
   /*!
@@ -2999,7 +3012,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return nullptr; }
+                                             unsigned long val_vertex) { return nullptr; }
 
   /*!
    * \brief A virtual member

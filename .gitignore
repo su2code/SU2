@@ -94,3 +94,6 @@ build/
 
 # ninja binary (build system)
 ninja
+
+# vscode config files
+.vscode/*

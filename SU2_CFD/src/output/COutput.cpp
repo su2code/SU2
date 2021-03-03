@@ -454,12 +454,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     case PARAVIEW_XML:
 
       if (fileName.empty()){
-          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
         if (!config->GetWrt_Sol_Overwrite()){ 
           fileName.append(inner_iter_ss.str());
         }
       }
-        
+
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
@@ -588,7 +588,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     case PARAVIEW:
 
       if (fileName.empty()){
-          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
         if (!config->GetWrt_Sol_Overwrite()){ 
           fileName.append(inner_iter_ss.str());
         }
@@ -610,7 +610,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
     case SURFACE_PARAVIEW:
 
       if (fileName.empty()){
-          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
         if (!config->GetWrt_Sol_Overwrite()){ 
           fileName.append(inner_iter_ss.str());
         }
@@ -932,34 +932,9 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
 
   /*--- Apply the same convergence criteria to all the processors ---*/
 
-#ifdef HAVE_MPI
-
-  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
-  /*--- Convergence criteria ---*/
-
-  sbuf_conv[0] = convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-
-  /*-- Compute global convergence criteria in the master node --*/
-
-  sbuf_conv[0] = 0;
-  if (rank == MASTER_NODE) {
-    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-    else sbuf_conv[0] = 0;
-  }
-
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
-
-  if (sbuf_conv[0] == 1) { convergence = true; }
-  else { convergence = false;  }
-
-  delete [] sbuf_conv;
-  delete [] rbuf_conv;
-
-#endif
+  unsigned short local = convergence, global = 0;
+  SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  convergence = global > 0;
 
   return convergence;
 }
@@ -1169,48 +1144,48 @@ void COutput::SetScreen_Output(CConfig *config) {
 
 void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
-    noWriting = !wrt;
+  noWriting = !wrt;
 
-    /*--- Set the common output fields ---*/
+  /*--- Set the common output fields ---*/
 
-    SetCommonHistoryFields(config);
+  SetCommonHistoryFields(config);
 
-    /*--- Set the History output fields using a virtual function call to the child implementation ---*/
+  /*--- Set the History output fields using a virtual function call to the child implementation ---*/
 
-    SetHistoryOutputFields(config);
+  SetHistoryOutputFields(config);
 
-    /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
+  /*--- Postprocess the history fields. Creates new fields based on the ones set in the child classes ---*/
 
-    Postprocess_HistoryFields(config);
+  Postprocess_HistoryFields(config);
 
-    /*--- We use a fixed size of the file output summary table ---*/
+  /*--- We use a fixed size of the file output summary table ---*/
 
-    int total_width = 72;
-    fileWritingTable->AddColumn("File Writing Summary", (total_width)/2-1);
-    fileWritingTable->AddColumn("Filename", total_width/2-1);
-    fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+  int total_width = 72;
+  fileWritingTable->AddColumn("File Writing Summary", (total_width)/2-1);
+  fileWritingTable->AddColumn("Filename", total_width/2-1);
+  fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::LEFT);
 
-    /*--- Check for consistency and remove fields that are requested but not available --- */
+  /*--- Check for consistency and remove fields that are requested but not available --- */
 
-    CheckHistoryOutput();
+  CheckHistoryOutput();
 
-    if (rank == MASTER_NODE && !noWriting){
+  if (rank == MASTER_NODE && !noWriting){
 
-      /*--- Open history file and print the header ---*/
-      if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
-        PrepareHistoryFile(config);
+    /*--- Open history file and print the header ---*/
+    if (!config->GetMultizone_Problem() || config->GetWrt_ZoneHist())
+      PrepareHistoryFile(config);
 
-      total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
+    total_width = nRequestedScreenFields*fieldWidth + (nRequestedScreenFields-1);
 
-      /*--- Set the multizone screen header ---*/
+    /*--- Set the multizone screen header ---*/
 
-      if (config->GetMultizone_Problem()){
-        multiZoneHeaderTable->AddColumn(multiZoneHeaderString, total_width);
-        multiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
-        multiZoneHeaderTable->SetPrintHeaderBottomLine(false);
-      }
-
+    if (config->GetMultizone_Problem()){
+      multiZoneHeaderTable->AddColumn(multiZoneHeaderString, total_width);
+      multiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+      multiZoneHeaderTable->SetPrintHeaderBottomLine(false);
     }
+
+  }
 
 }
 

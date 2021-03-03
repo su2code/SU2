@@ -479,12 +479,12 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjHeat   = nullptr;
-  CVariable* Node_AdjTurb   = nullptr;
-  CVariable* Node_AdjRad    = nullptr;
+  CVariable* Node_AdjHeat = nullptr;
+  CVariable* Node_AdjTurb = nullptr;
+  CVariable* Node_AdjRad  = nullptr;
   CVariable* Node_AdjScalar = nullptr;
-  CPoint*    Node_Geo       = geometry->nodes;
-  
+  CPoint*    Node_Geo     = geometry->nodes;
+
   if (config->GetKind_Turb_Model() != NONE && !config->GetFrozen_Visc_Disc()){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }

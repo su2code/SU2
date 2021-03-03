@@ -164,7 +164,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   /*--- Get the specified wall heat flux or temperature from config ---*/
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0;
-
+  // nijso: do we need to modify heatflux bc for combustion model?
   if (kind_boundary == HEAT_FLUX)
     Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
   else if (kind_boundary == ISOTHERMAL)

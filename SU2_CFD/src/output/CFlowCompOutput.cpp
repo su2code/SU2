@@ -476,14 +476,14 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow   = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb   = nullptr;
+  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  CVariable* Node_Turb = nullptr;
   CVariable* Node_Scalar = nullptr;
-  
+
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
-  
+
   if (config->GetKind_Scalar_Model() != NONE){
     Node_Scalar = solver[SCALAR_SOL]->GetNodes();
   }
@@ -671,10 +671,10 @@ void CFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSol
 }
 
 void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
-  
-  CSolver* flow_solver   = solver[FLOW_SOL];
-  CSolver* turb_solver   = solver[TURB_SOL];
-  CSolver* mesh_solver   = solver[MESH_SOL];
+
+  CSolver* flow_solver = solver[FLOW_SOL];
+  CSolver* turb_solver = solver[TURB_SOL];
+  CSolver* mesh_solver = solver[MESH_SOL];
   CSolver* scalar_solver = solver[SCALAR_SOL];
 
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
@@ -741,7 +741,8 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
     }
-    
+
+
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));

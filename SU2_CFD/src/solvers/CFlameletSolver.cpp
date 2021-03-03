@@ -56,10 +56,8 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   
   bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
-
   bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
-
 
   /*--- Dimension of the problem --> passive scalar will only ever
    have a single equation. Other child classes of CScalarSolver
@@ -166,7 +164,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   
   Density_Inf   = config->GetDensity_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
-  
+
   /*--- Set up fluid model for the diffusivity ---*/
   
   su2double Diffusivity_Ref = 1.0;
@@ -275,12 +273,12 @@ CFlameletSolver::~CFlameletSolver(void) {
 }
 
 void CFlameletSolver::Preprocessing(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CConfig *config,
-                                            unsigned short iMesh,
-                                            unsigned short iRKStep,
-                                            unsigned short RunTime_EqSystem,
-                                            bool Output) {
+                                         CSolver **solver_container,
+                                         CConfig *config,
+                                         unsigned short iMesh,
+                                         unsigned short iRKStep,
+                                         unsigned short RunTime_EqSystem,
+                                         bool Output) {
   
   unsigned long ErrorCounter = 0;
   unsigned long InnerIter = config->GetInnerIter();
@@ -310,23 +308,23 @@ void CFlameletSolver::Preprocessing(CGeometry *geometry,
 }
 
 void CFlameletSolver::Postprocessing(CGeometry *geometry,
-                                             CSolver **solver_container,
-                                             CConfig *config,
-                                             unsigned short iMesh) { }
+                                          CSolver **solver_container,
+                                          CConfig *config,
+                                          unsigned short iMesh) { }
 
 unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container,
-                                                              CConfig *config,
-                                                              bool Output) {
+                                                           CConfig *config,
+                                                           bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
   su2double Density, Temperature, lam_visc = 0.0, eddy_visc = 0.0, Cp;
   unsigned short turb_model = config->GetKind_Turb_Model();
   unsigned long n_not_in_domain = 0;
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- Retrieve the density, temperature, Cp, and laminar viscosity. ---*/
-    
+
     Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
     Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
@@ -345,18 +343,16 @@ unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container
 
     n_not_in_domain += fluid_model_local->SetTDState_T(Temperature,scalars);
 
-    for(int i_scalar=0; i_scalar < config->GetNScalars(); ++i_scalar){
+    for(int i_scalar = 0; i_scalar < config->GetNScalars(); ++i_scalar){
       nodes->SetDiffusivity(iPoint, fluid_model_local->GetMassDiffusivity(), i_scalar);
     }
 
     
-
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
   }
-
   SetNTableMisses(n_not_in_domain);
 
   return ErrorCounter;
@@ -364,23 +360,24 @@ unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container
 }
 
 void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
-                                                  CSolver ***solver_container,
-                                                  CConfig *config,
-                                                  unsigned long ExtIter) {
+                                               CSolver ***solver_container,
+                                               CConfig *config,
+                                               unsigned long ExtIter) {
   su2double *coords;
   bool Restart   = (config->GetRestart() || config->GetRestart_Flow());
   
   
   if ((!Restart) && ExtIter == 0) {
-    if (rank == MASTER_NODE)
+    if (rank == MASTER_NODE){
       cout << "Initializing progress variable and temperature (initial condition)." << endl;
+   }
 
-    su2double *scalar_init  = new su2double[nVar];
+    su2double *scalar_init = new su2double[nVar];
     su2double *flame_offset = config->GetFlameOffset();
     su2double *flame_normal = config->GetFlameNormal();
 
     su2double prog_unburnt    = 0.0;
-    su2double prog_burnt      = 0.2; // 2.09379237374982e-01;
+    su2double prog_burnt;
     su2double flame_thickness = config->GetFlameThickness();
     su2double burnt_thickness = config->GetBurntThickness();
     su2double flamenorm       = sqrt( flame_normal[0]*flame_normal[0]
@@ -403,7 +400,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
     string name_enth = config->GetScalarName(I_ENTHALPY);
     string name_prog = config->GetScalarName(I_PROG_VAR);
     
-
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
@@ -467,7 +463,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
       solver_container[i_mesh][FLOW_SOL]->Preprocessing( geometry[i_mesh], solver_container[i_mesh], config, i_mesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       
     }
-
     delete[] scalar_init;
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0))
@@ -494,7 +489,6 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
   
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -529,7 +523,7 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
      that multiplies the time derivative during time integration. ---*/
     
     if (implicit) {
-      
+      // nijso: do we need to wipe the entire jacobian for preconditioning?
       for (int i_var = 0; i_var < nVar; i_var++) {
         for (int j_var = 0; j_var < nVar; j_var++) {
           Jacobian_i[i_var][j_var] = 0.0;
@@ -558,11 +552,11 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CFlameletSolver::Source_Residual(CGeometry       *geometry,
-                                      CSolver        **solver_container,
-                                      CNumerics      **numerics_container,
-                                      CConfig         *config,
-                                      unsigned short   iMesh) {
+void CFlameletSolver::Source_Residual(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics **numerics_container,
+                                      CConfig *config,
+                                      unsigned short iMesh) {
   
   unsigned short iVar;
   unsigned long iPoint;
@@ -719,16 +713,23 @@ void CFlameletSolver::Source_Residual(CGeometry       *geometry,
     }
   }
 
+
   delete[] scalars;
   delete[] sources;
   
 }
+
+
+
+
+
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config,
                                unsigned short val_marker) {
 
+ 
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, total_index, not_used;
   su2double *Coords;
