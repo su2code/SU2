@@ -5079,7 +5079,8 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
                     jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                        nSpan++;
+                      const auto jPoint = vertex[jMarker][jVertex]->GetNode();
+                      nSpan += nodes->GetDomain(jPoint);
                     }
                   }
                 }
