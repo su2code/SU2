@@ -184,6 +184,4 @@ public:
                                   CConfig *config,
                                   unsigned short val_marker) override;
 
-
-  
 };
