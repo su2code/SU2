@@ -46,8 +46,8 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
   Has_Deformation.resize(nZone) = false;
 
-
   FixPtCorrector.resize(nZone);
+  fixPtSubspaceCorrector.resize(nZone);
   LinSolver.resize(nZone);
   AdjRHS.resize(nZone);
   AdjSol.resize(nZone);
@@ -227,13 +227,6 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 99999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
-  vector<CNewtonUpdateOnSubspace<passivedouble> > fixPtSubspaceCorrector(nZone);
-
-  // TODO: put this into some structure, or move it to CNewtonUpdateOnSubspace
-  vector<su2matrix<int> > InputIndices(nZone);
-  vector<su2matrix<int> > OutputIndices(nZone);
-  vector<unsigned short> nNewtonBasisSamples(nZone);
-  unsigned short NewtonUpdateWaitIterations;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -265,6 +258,9 @@ void CDiscAdjMultizoneDriver::Run() {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
     }
     else if (config_container[iZone]->GetnNewtonBasisSamples()) {
+      InputIndices.resize(nZone);
+      OutputIndices.resize(nZone);
+      nNewtonBasisSamples.resize(nZone);
       nNewtonBasisSamples[iZone] = config_container[iZone]->GetnNewtonBasisSamples();
       fixPtSubspaceCorrector[iZone].resize(2,
                                            nNewtonBasisSamples[iZone],

@@ -117,8 +117,14 @@ protected:
               for jZone, we need to store all terms to have BGS-type updates with relaxation. */
   vector<vector<vector<su2passivematrix> > > Cross_Terms;
 
-  /*!< \brief Fixed-Point corrector that can be applied to inner iterations. */
+  /*!< \brief Fixed-Point correctors that can be applied to inner iterations. */
   vector<CQuasiNewtonInvLeastSquares<passivedouble> > FixPtCorrector;
+  vector<CNewtonUpdateOnSubspace<passivedouble> > fixPtSubspaceCorrector;
+  // TODO: put this into some structure, or move it to CNewtonUpdateOnSubspace
+  vector<su2matrix<int> > InputIndices;
+  vector<su2matrix<int> > OutputIndices;
+  vector<unsigned short> nNewtonBasisSamples;
+  unsigned short NewtonUpdateWaitIterations;
 
   /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton). */
   static constexpr unsigned long KrylovMinIters = 3;
