@@ -131,7 +131,6 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
 
-  
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
   Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
