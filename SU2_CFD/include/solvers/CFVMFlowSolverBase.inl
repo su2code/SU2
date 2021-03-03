@@ -2499,7 +2499,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
     /* --- check if wall functions are used --- */
    
-    wallfunctions = (config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION);
+    const bool wallfunctions = (config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION);
 
     /*--- Loop over the vertices to compute the forces ---*/
 
