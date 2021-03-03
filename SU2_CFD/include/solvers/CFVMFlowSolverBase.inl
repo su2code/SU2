@@ -2446,9 +2446,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool nemo = config->GetNEMOProblem();
   bool wallfunctions=false;
 
-RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
-  
-
   /*--- Get the locations of the primitive variables for NEMO ---*/
   if (nemo) {
     unsigned short nSpecies = config->GetnSpecies();
