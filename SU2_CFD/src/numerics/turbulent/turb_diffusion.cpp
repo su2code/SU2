@@ -74,7 +74,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Volume_i);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
