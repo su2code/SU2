@@ -394,10 +394,8 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
       /*--- Compute residual ---*/
-      Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
-                                      Wall_HeatFlux*Area;
-      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
-                                      Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim]   = Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim+1] = Wall_HeatFlux*Area;
       /*--- Apply viscous residual to the linear system ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
@@ -691,7 +689,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -777,7 +775,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
 
-     // LinSysRes.SubtractBlock(iPoint, Res_Visc);
+   //   LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
 
       for (unsigned short i = 0; i < nSpecies; i++) {
