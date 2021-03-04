@@ -187,7 +187,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Placing Symmetry Plane BC last, so we only require to double
   the residuals to use a ghost nodes approach. --- */
-  
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
       if (KindBC == SYMMETRY_PLANE && config->GetNEMOProblem()) solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);

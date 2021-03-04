@@ -38,6 +38,8 @@
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/variables/CNEMOEulerVariable.hpp"
 
 using namespace std;
 
@@ -1590,7 +1592,14 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
+  virtual inline void SetPoint(unsigned long Point_i, unsigned long Point_j)       { }
+
+  virtual inline void SetGeometry(CGeometry *geometry)                             { }
+
+  virtual inline void SetSolution(CNEMOEulerVariable *solution)                    { }
+
 };
+
 
 /*!
  * /brief Alias for a "do nothing" source term class
