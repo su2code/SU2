@@ -1,7 +1,7 @@
 /*!
- * \file ausmplusup2.hpp
+ * \file ausmplusm.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+UP2.
- * \author W. Maier, A. Sachedeva, C. Garbacz.
+ * \author F. Morgado, W. Maier, A. Sachedeva, C. Garbacz.
  * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,10 +30,10 @@
 #include "../CNEMONumerics.hpp"
 
 /*!
- * \class CUpwAUSMPLUSUP2_NEMO
- * \brief Class for solving an approximate Riemann AUSM+ -up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
+ * \class CUpwAUSMPLUSM_NEMO
+ * \brief Class for solving an approximate Riemann AUSM+ M, Two-Temperature Model. https://doi.org/10.1016/j.apm.2019.09.005
  * \ingroup ConvDiscr
- * \author W. Maier, A. Sachedeva, C. Garbacz
+ * \author F. Morgado, W. Maier, A. Sachedeva, C. Garbacz
  */
 class CUpwAUSMPLUSM_NEMO : public CNEMONumerics {
 private:
@@ -47,16 +47,9 @@ private:
   su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
 
-  /*--- Roe Only ---*/
-  su2double *Diff_U;
-  su2double *RoeU, *RoeV, *RoeEve;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double RoeSoundSpeed;
-  su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  su2double R;
-  su2double *RoedPdU;
+  su2double f, f0, g, h_k, P_k, Point_aux;
+  su2double sqVi, sqVj, gam, Hnorm, gtl_i, gtl_j, atl, aij;
+
 
 public:
 
@@ -74,7 +67,7 @@ public:
   ~CUpwAUSMPLUSM_NEMO(void);
 
   /*!
-   * \brief Compute the AUSM+ -up flux between two nodes i and j.
+   * \brief Compute the AUSM+M flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    */
   ResidualType<> ComputeResidual(const CConfig* config) final;

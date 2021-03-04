@@ -1,7 +1,7 @@
 /*!
- * \file ausmplusup2.cpp
- * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
- * \author W. Maier, A. Sachedeva, C. Garbacz
+ * \file ausmplusm.cpp
+ * \brief Implementations of the AUSM-family of schemes - AUSM+M.
+ * \author F. Morgado, W. Maier, A. Sachedeva, C. Garbacz
  * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -36,10 +36,6 @@ CUpwAUSMPLUSM_NEMO::CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short v
 
   unsigned short iVar;
 
-  /*--- Define useful constants ---*/
-  Kp       = 0.25;
-  sigma    = 1.0;
-
   /*--- Allocate data structures ---*/
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
@@ -54,20 +50,6 @@ CUpwAUSMPLUSM_NEMO::CUpwAUSMPLUSM_NEMO(unsigned short val_nDim, unsigned short v
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
 
-  /*--- Allocate arrays ---*/
-  Diff_U      = new su2double [nVar];
-  RoeU        = new su2double[nVar];
-  RoeV        = new su2double[nPrimVar];
-  RoedPdU     = new su2double [nVar];
-  RoeEve      = new su2double [nSpecies];
-  Lambda      = new su2double [nVar];
-  Epsilon     = new su2double [nVar];
-  P_Tensor    = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
-  }
 
   Flux   = new su2double[nVar];
 }
@@ -86,19 +68,6 @@ CUpwAUSMPLUSM_NEMO::~CUpwAUSMPLUSM_NEMO(void) {
   delete [] u_j;
   unsigned short iVar;
 
-  delete [] Diff_U;
-  delete [] RoeU;
-  delete [] RoeV;
-  delete [] RoedPdU;
-  delete [] RoeEve;
-  delete [] Lambda;
-  delete [] Epsilon;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] P_Tensor[iVar];
-    delete [] invP_Tensor[iVar];
-  }
-  delete [] P_Tensor;
-  delete [] invP_Tensor;
   delete [] Flux;
 }
 
@@ -156,8 +125,6 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig *con
     ProjVel_j += u_j[iDim]*UnitNormal[iDim];
   }
 
-  su2double sqVi, sqVj, gam,Hnorm,gtl_i,gtl_j,atl,aij;
-
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
@@ -188,7 +155,6 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig *con
                             ((gtl_j+1.0)/(gtl_j)*rho_i - (gtl_i+1.0)/(gtl_i)*rho_j)));
   } */
 
-
   if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
   else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
 
@@ -209,23 +175,18 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig *con
 
   /*--- Pressure diffusion term ---*/
 
-
-  su2double f,g,h_k,P_k,Point_aux;
-
   h_k=1.0;
 
-  if (jPoint!=-1){
-      for (auto Point_aux : nemo_geometry->nodes->GetPoints(jPoint)) {
-         P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(jPoint,P_INDEX);
-         h_k = min(h_k,P_k);
-         h_k = min(h_k,1/P_k);
-      }
+  for (auto Point_aux : nemo_geometry->nodes->GetPoints(jPoint)) {
+    P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(jPoint,P_INDEX);
+    h_k = min(h_k,P_k);
+    h_k = min(h_k,1/P_k);
   }
 
   for (auto Point_aux : nemo_geometry->nodes->GetPoints(iPoint)) {
-         P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(iPoint,P_INDEX);
-         h_k = min(h_k,P_k);
-         h_k = min(h_k,1/P_k);
+    P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(iPoint,P_INDEX);
+    h_k = min(h_k,P_k);
+    h_k = min(h_k,1/P_k);
   }
 
   g=0.5*(1+cos(PI_NUMBER*h_k));
@@ -248,10 +209,9 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig *con
   else                 pRM = 0.5*(mR-fabs(mR))/mR;
 
 
-  su2double f0;
   f0=min(1.0,max(f,Minf*Minf));
 
-  // This is an alternative formulation already used by AUSMPLUSUP2 (Only multiplied by f0)
+  // This is an alternative formulation already used by AUSMPLUSUP2 (But multiplied by f0)
   pFi = f0*sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(rho_j+rho_i)*aF;
  // pFi = f0*(pLP+pRM-1.0)*0.5*(P_i+P_j);
 
