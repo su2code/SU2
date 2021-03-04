@@ -27,20 +27,19 @@
 
 #include "../../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
-CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(){
+CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() {
   Density = Pressure = TangVelocity = 0.0;
 }
-CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(su2double density, su2double pressure, su2double *velocity, unsigned short nDim, su2double tangVel) : 
-                              Density(density), Pressure(pressure), TangVelocity(tangVel){
+CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(su2double density,
+                                                             su2double pressure, 
+                                                             su2double *velocity, 
+                                                             unsigned short nDim,
+                                                             su2double tangVel) : Density(density), Pressure(pressure), TangVelocity(tangVel) {
   Velocity.assign(velocity, velocity + nDim );
 }
 
-CTurbomachineryPrimitiveState::~CTurbomachineryPrimitiveState(){}
-
 CTurbomachineryCombinedPrimitiveStates::CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState& inletPrimitiveState, 
                                         const CTurbomachineryPrimitiveState&  outletPrimitiveState) : InletPrimitiveState(inletPrimitiveState), OutletPrimitiveState(outletPrimitiveState){}
-
-CTurbomachineryCombinedPrimitiveStates::~CTurbomachineryCombinedPrimitiveStates(){}
 
 CTurbomachineryState::CTurbomachineryState(){
   Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
@@ -57,10 +56,7 @@ CTurbomachineryState::CTurbomachineryState(unsigned short nDim, su2double area, 
   Radius = radius;
 }
 
-CTurbomachineryState::~CTurbomachineryState(){}
-
-
-void CTurbomachineryState::ComputeState(CFluidModel *const fluidModel, const CTurbomachineryPrimitiveState &primitiveState) {
+void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState &primitiveState) {
 
   /*--- Assign new primitive values ---*/
   Density = primitiveState.GetDensity();
@@ -70,16 +66,16 @@ void CTurbomachineryState::ComputeState(CFluidModel *const fluidModel, const CTu
   auto tangVel = primitiveState.GetTangVelocity();
 
   /*--- Compute static TD quantities ---*/
-  fluidModel->SetTDState_Prho(Pressure, Density);
-  Entropy = fluidModel->GetEntropy();
-  Enthalpy = fluidModel->GetStaticEnergy() + Pressure / Density;
-  su2double soundSpeed = fluidModel->GetSoundSpeed();
+  fluidModel.SetTDState_Prho(Pressure, Density);
+  Entropy = fluidModel.GetEntropy();
+  Enthalpy = fluidModel.GetStaticEnergy() + Pressure / Density;
+  su2double soundSpeed = fluidModel.GetSoundSpeed();
 
   /*--- Compute total TD quantities ---*/
   TotalEnthalpy = Enthalpy + 0.5 * GetVelocityValue() * GetVelocityValue();
-  fluidModel->SetTDState_hs(TotalEnthalpy, Entropy);
-  TotalPressure = fluidModel->GetPressure();
-  TotalTemperature = fluidModel->GetTemperature();
+  fluidModel.SetTDState_hs(TotalEnthalpy, Entropy);
+  TotalPressure = fluidModel.GetPressure();
+  TotalTemperature = fluidModel.GetTemperature();
 
   /*--- Compute absolute kinematic quantities---*/
   MassFlow = Density * Velocity[0] * Area;
@@ -98,19 +94,28 @@ void CTurbomachineryState::ComputeState(CFluidModel *const fluidModel, const CTu
 
   /*--- Compute total relative TD quantities ---*/
   Rothalpy = Enthalpy + 0.5 * relVel2 - 0.5 * tangVel2;
-  fluidModel->SetTDState_hs(Rothalpy, Entropy);
-  TotalRelPressure = fluidModel->GetPressure();
+  fluidModel.SetTDState_hs(Rothalpy, Entropy);
+  TotalRelPressure = fluidModel.GetPressure();
 
 }
 
-CTurbomachineryBladePerformance::CTurbomachineryBladePerformance(CFluidModel* const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut) : FluidModel(fluidModel){
+CTurbomachineryBladePerformance::CTurbomachineryBladePerformance(CFluidModel& fluidModel,
+                                                                 unsigned short nDim,
+                                                                 su2double areaIn,
+                                                                 su2double radiusIn,
+                                                                 su2double areaOut,
+                                                                 su2double radiusOut) : FluidModel(fluidModel) {
    InletState               = CTurbomachineryState(nDim, areaIn, radiusIn);
    OutletState              = CTurbomachineryState(nDim, areaOut,radiusOut);
 }
 
-CTurbomachineryBladePerformance::~CTurbomachineryBladePerformance(){}
 
-CTurbineBladePerformance::CTurbineBladePerformance(CFluidModel* const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn, su2double areaOut, su2double radiusOut) : CTurbomachineryBladePerformance(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut){}
+CTurbineBladePerformance::CTurbineBladePerformance(CFluidModel& fluidModel,
+                                                  unsigned short nDim,
+                                                  su2double areaIn,
+                                                  su2double radiusIn,
+                                                  su2double areaOut,
+                                                  su2double radiusOut) : CTurbomachineryBladePerformance(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut){}
 
 void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {
 
@@ -119,8 +124,8 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
   OutletState.ComputeState(FluidModel, primitives.GetOutletPrimitiveState());
 
   /*--- Compute isentropic Outflow quantities ---*/
-  FluidModel->SetTDState_Ps(OutletState.GetPressure(), InletState.GetEntropy());
-  auto enthalpyOutIs = FluidModel->GetStaticEnergy() + OutletState.GetPressure() / FluidModel->GetDensity();
+  FluidModel.SetTDState_Ps(OutletState.GetPressure(), InletState.GetEntropy());
+  auto enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
   auto tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
   auto relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
@@ -132,24 +137,24 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
   KineticEnergyLoss = 2 * (OutletState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
 }
 
-CTurbineBladePerformance::~CTurbineBladePerformance() {}
 // CCompressorBladePerformance::CCompressorBladePerformance(unsigned short nDim, su2double area, su2double radius) : CTurbomachineryBladePerformance(nDim, area, radius){}
 
-CTurbomachineryPerformance::CTurbomachineryPerformance(CConfig *const config, CGeometry *const geometry,
-                                                       CFluidModel *const fluidModel) {
-  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
-  unsigned short nDim = geometry->GetnDim();
+CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
+                                                       const CGeometry& geometry,
+                                                       CFluidModel& fluidModel) {
+  unsigned short nBladesRow = config.GetnMarker_Turbomachinery();
+  unsigned short nDim = geometry.GetnDim();
   unsigned short nStages = SU2_TYPE::Int(nBladesRow / 2);
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector <shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    auto nSpan = config->GetnSpan_iZones(iBladeRow);
+    auto nSpan = config.GetnSpan_iZones(iBladeRow);
     for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
 
-      auto areaIn = geometry->GetSpanAreaIn(iBladeRow, iSpan);
-      auto areaOut = geometry->GetSpanAreaOut(iBladeRow, iSpan);
-      auto radiusIn = geometry->GetTurboRadiusIn(iBladeRow, iSpan);
-      auto radiusOut = geometry->GetTurboRadiusOut(iBladeRow, iSpan);
+      auto areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
+      auto areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
+      auto radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
+      auto radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
       auto bladePerformance = make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
                                                                     radiusOut);
       bladeSpanPerformances.push_back(bladePerformance);
@@ -157,8 +162,6 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(CConfig *const config, CG
     BladesPerformances.push_back(bladeSpanPerformances);
   }
 }
-
-CTurbomachineryPerformance::~CTurbomachineryPerformance() {}
 
 void CTurbomachineryPerformance::ComputeTurbomachineryPerformance(
   vector <vector<CTurbomachineryCombinedPrimitiveStates>> const bladesPrimitives) {
