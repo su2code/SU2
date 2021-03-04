@@ -69,6 +69,7 @@ COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned shor
 
   for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
     gradient.push_back(0.0);
+    delta_design.push_back(0.0);
     design.push_back(0.0);
   }
 
@@ -129,6 +130,14 @@ void COneShotSinglezoneDriver::RunOneShot(){
   /// main loop for the optimization method
   while (OneShotIter<config->GetOneShotIter()) {
 
+    /// reset the convergence flags and reset the recording before running piggyback again
+    StopCalc=false;
+    StopNext=false;
+
+    /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
+     * are removed for future runs. */
+    SetRecording(NONE);
+
     /// call to Piggyback
     PiggyBack();
 
@@ -146,7 +155,7 @@ void COneShotSinglezoneDriver::RunOneShot(){
     UpdateDesignVariable();
 
     if (rank==MASTER_NODE) {
-      WriteOneShotHistory(CombinedFunc, gradient);
+      WriteOneShotHistory(CombinedFunc);
     }
 
     /// check for convergence
@@ -252,12 +261,6 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-  /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
-   * are removed for future runs. */
-
-  if (iPiggyIter == nPiggyIter-1 || StopNext) {
-    SetRecording(NONE);
-  }
 
   AD::ClearAdjoints();
 
@@ -350,7 +353,7 @@ void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
 
 }
 
-void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& delta_design, CConfig *config) {
+void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& deltaVector, CConfig *config) {
 
   config->SetKind_SU2(SU2_DEF);
 
@@ -360,7 +363,7 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& delta_design, C
   for (iDV = 0; iDV < config->GetnDV_Total(); iDV++) {
     nDV_Value =  config->GetnDV_Value(iDV);
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      config->SetDV_Value(iDV,iDV_Value, delta_design[iDVtotal]);
+      config->SetDV_Value(iDV,iDV_Value, deltaVector[iDVtotal]);
       iDVtotal++;
     }
   }
@@ -380,7 +383,6 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& delta_design, C
 void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double> funcGrad, CConfig *config) {
 
   su2double length, maxLength=config->GetMaxOneShotStepsize();
-  vector<su2double> delta_design(funcGrad.size(), 0.0);
   bool isDescent=false;
 
   /// Reduce to max length and change the sign (gradient descend!)
@@ -401,13 +403,6 @@ void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double>
   /// Check descend
   isDescent = CheckDescent();
 
-  /// Reset geometry and solution
-
-  /// Set return gradient
-  for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-    gradient[iDV] = delta_design[iDV];
-  }
-
 }
 
 bool COneShotSinglezoneDriver::CheckDescent(){
@@ -416,7 +411,7 @@ bool COneShotSinglezoneDriver::CheckDescent(){
 
 void COneShotSinglezoneDriver::UpdateDesignVariable() {
   for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-    design[iDV] -= gradient[iDV];
+    design[iDV] += delta_design[iDV];
   }
 }
 
@@ -433,18 +428,33 @@ void COneShotSinglezoneDriver::WriteOneShotHistoryHeader() {
 
   std::ofstream outfile;
   outfile.open("historyoneshot.txt", std::ios_base::out); // overwrite earlier history
-  outfile << "function value; " << "function gradient; " << endl;
+  outfile << "function value; " << "function gradient; " << "current design; "  << "delta design; " << "constraint value" << endl;
   outfile.close();
 
 }
 
-void COneShotSinglezoneDriver::WriteOneShotHistory(su2double &funcValue, vector<su2double> &funcGrad) {
+void COneShotSinglezoneDriver::WriteOneShotHistory(su2double &funcValue) {
 
   std::ofstream outfile;
   outfile.open("historyoneshot.txt", std::ios_base::app); // append instead of overwrite
+  outfile.precision(15);
+  outfile << std::scientific;
+
   outfile << funcValue << "; ";
-  for (auto iDV = 0; iDV < funcGrad.size(); iDV++) {
-    outfile << funcGrad[iDV] << ", ";
+  for (auto iDV = 0; iDV < gradient.size(); iDV++) {
+    outfile << gradient[iDV] << ", ";
+  }
+  outfile << funcValue << "; ";
+  for (auto iDV = 0; iDV < design.size(); iDV++) {
+    outfile << design[iDV] << ", ";
+  }
+  outfile << funcValue << "; ";
+  for (auto iDV = 0; iDV < delta_design.size(); iDV++) {
+    outfile << delta_design[iDV] << ", ";
+  }
+  outfile << funcValue << "; ";
+  for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
+    outfile << ConstrFunc[iConstr] << ", ";
   }
   outfile << endl;
   outfile.close();

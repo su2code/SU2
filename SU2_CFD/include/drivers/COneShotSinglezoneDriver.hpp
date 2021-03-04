@@ -61,6 +61,7 @@ protected:
   vector<su2double> multiplier;       /*!< \brief Lagrange multipliers for constraint functions.*/
 
   vector<su2double> design;           /*!< \brief Current Design for the OneShot optimization.*/
+  vector<su2double> delta_design;     /*!< \brief Change in design in the current optimization step.*/
   vector<su2double> gradient;         /*!< \brief Gradient for OneShot optimization.*/
 
 public:
@@ -132,7 +133,7 @@ public:
    * \brief Performs a surface deformation and volumetric deformation (sets kind to SU2_DEF) for a design update.
    * \param[in] config - config class.
    */
-  void DeformGeometry(vector<su2double>& delta_design,  CConfig *config);
+  void DeformGeometry(vector<su2double>& deltaVector,  CConfig *config);
 
   /*!
    * \brief Compute the search direction using the preconditioned gradient.
@@ -162,7 +163,7 @@ public:
   /*!
    * \brief Write information about the OneShot optimization process to the history file.
    */
-  void WriteOneShotHistory(su2double& funcValue, vector<su2double>& funcGrad);
+  void WriteOneShotHistory(su2double& funcValue);
 
   /*!
    * \brief Output the current design.
