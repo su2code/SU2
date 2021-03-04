@@ -5042,11 +5042,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   short PeriodicBoundary;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
 
-#ifdef HAVE_MPI
   unsigned short iSize;
   int nSpan_max;
   su2double MyMin, MyMax;
-#endif
 
   nSpan = 0;
   nSpan_loc = 0;
@@ -5093,10 +5091,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
-#ifdef HAVE_MPI
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
-#endif
 
       /*--- initialize the vector that will contain the disordered values span-wise ---*/
       nSpanWiseSections[marker_flag -1] = nSpan;
@@ -5164,7 +5160,6 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- Gather the span-wise values on all the processor ---*/
 
-#ifdef HAVE_MPI
       vector<su2double> MyTotValueSpan(nSpan_max*size, -1001.0);
       vector<su2double> MyValueSpan(nSpan_max, -1001.0);
       vector<int> My_nSpan_loc(size);
@@ -5184,7 +5179,6 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
         }
       }
       if (jSpan != nSpan) SU2_MPI::Error("Panic!",CURRENT_FUNCTION);
-#endif
 
       /*--- Terrible stuff to do but so is this entire bloody function goodness me... ---*/
       SpanWiseValue[marker_flag -1] = valueSpan;
@@ -5263,12 +5257,10 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
         }
       }
       /*--- compute global minimum and maximum value on span-wise ---*/
-#ifdef HAVE_MPI
       MyMin= min;  min = 0;
       MyMax= max;  max = 0;
       SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-#endif
 
       /*--- compute height value for each spanwise section---*/
       delta = (max - min)/(nSpanWiseSections[marker_flag-1] -1);
