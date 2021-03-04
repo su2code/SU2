@@ -617,36 +617,36 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
 
 
-//  /*--- Implicit part for production term (to do). ---*/
-//     for (int i_var = 0; i_var < nVar; i_var++) {
-//       for (int j_var = 0; j_var < nVar; j_var++) {
-//         Jacobian_i[i_var][j_var] = 0.0;
-//       }
-//     }
-//     Jacobian_i[0][0] = Volume*fluid_model_local->GetdSourcePVdPV();
+ /*--- Implicit part for production term (to do). ---*/
+    for (int i_var = 0; i_var < nVar; i_var++) {
+      for (int j_var = 0; j_var < nVar; j_var++) {
+        Jacobian_i[i_var][j_var] = 0.0;
+      }
+    }
+    Jacobian_i[0][0] = Volume*fluid_model_local->GetdSourcePVdPV();
     
     
-//     /*--- Add Residual ---*/
-    
-//     LinSysRes.SubtractBlock(iPoint, Residual);
-    
-//     /*--- Implicit part ---*/
-    
-//     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
-
-
-    first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
-
-    auto residual = first_numerics->ComputeResidual(config);
-
     /*--- Add Residual ---*/
     
-    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
     
     /*--- Implicit part ---*/
     
-    if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+
+
+    // first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+
+    // auto residual = first_numerics->ComputeResidual(config);
+
+    // /*--- Add Residual ---*/
+    
+    // LinSysRes.SubtractBlock(iPoint, residual);
+    
+    // /*--- Implicit part ---*/
+    
+    // if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     
   }
   
