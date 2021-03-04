@@ -59,7 +59,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics, config, iMesh);
       break;
     case FINITE_ELEMENT:
-      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+      SU2_MPI::Error("Computation of FEM convective flux in non-FEM integration attempted.", CURRENT_FUNCTION);
       break;
   }
 
