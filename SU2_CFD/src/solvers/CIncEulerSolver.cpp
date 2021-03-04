@@ -512,9 +512,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       fluidModel->SetLaminarViscosityModel(config);
       fluidModel->SetThermalConductivityModel(config);
-
-      fluidModel->SetLaminarViscosityModel(config);
-      fluidModel->SetThermalConductivityModel(config);
       fluidModel->SetMassDiffusivityModel(config);
     }
 
@@ -1275,14 +1272,14 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   unsigned short iVar;
   unsigned long iPoint;
 
-  const bool implicit                  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool rotating_frame            = config->GetRotating_Frame();
-  const bool axisymmetric              = config->GetAxisymmetric();
-  const bool body_force                = config->GetBody_Force();
-  const bool boussinesq                = (config->GetKind_DensityModel() == BOUSSINESQ);
-  const bool viscous                   = config->GetViscous();
-  const bool radiation                 = config->AddRadiation();
-  const bool vol_heat                  = config->GetHeatSource();
+  const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool rotating_frame = config->GetRotating_Frame();
+  const bool axisymmetric   = config->GetAxisymmetric();
+  const bool body_force     = config->GetBody_Force();
+  const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
+  const bool viscous        = config->GetViscous();
+  const bool radiation      = config->AddRadiation();
+  const bool vol_heat       = config->GetHeatSource();
 
   if (body_force) {
 
@@ -1712,6 +1709,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
+  bool flame            = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -1746,7 +1744,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
-    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    if (energy && !flame) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -1762,7 +1760,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -1780,7 +1778,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
-    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    if (energy && !flame) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
     else        Preconditioner[nDim+1][0] = 0.0;
 
 
@@ -1797,7 +1795,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][nDim+1] = 0.0;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
     else        Preconditioner[nDim+1][nDim+1] = 0.0;
 
   }
@@ -2446,6 +2444,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
                                      +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
 
+      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
+
       if (implicit) {
         su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
@@ -2773,8 +2773,11 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
           cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
-
+           su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+           cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
+           cout << "target mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot_Target << endl;
+           su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+           cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
         }
       }
 
