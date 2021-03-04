@@ -2387,6 +2387,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
+  bool flame        = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  const short flagEnergy = !energy || flame; 
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2395,6 +2397,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     U[ndim+1] = Density*Cp*V[ndim+1];
   };
 
+  cout << "nijso: setresidual" << endl;
+ 
   /*--- Store the physical time step ---*/
 
   TimeStep = config->GetDelta_UnstTimeND();
@@ -2436,7 +2440,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
 
-      for (iVar = 0; iVar < nVar-!energy; iVar++) {
+      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (second_order)
@@ -2452,7 +2456,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy) delta *= Cp;
+        if (energy && !flame) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2495,7 +2499,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-        for (iVar = 0; iVar < nVar-!energy; iVar++)
+        for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
@@ -2532,7 +2536,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Cp = nodes->GetSpecificHeatCp(iPoint);
           V2U(Density, Cp, V_time_n, U_time_n);
 
-          for (iVar = 0; iVar < nVar-!energy; iVar++)
+          for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
       }
@@ -2575,7 +2579,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      for (iVar = 0; iVar < nVar-!energy; iVar++) {
+      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (second_order)
@@ -2591,7 +2595,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy) delta *= Cp;
+        if (energy && !flame) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
