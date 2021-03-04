@@ -1615,7 +1615,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     }
 
     if(!node_i->GetPhysicalBoundary()) {
-      const su2double delta = Flux[iVar]/(nodes->GetMax_Lambda_Inv(iPoint)+nodes->GetMax_Lambda_Visc(iPoint));
+      const su2double delta = 1.0/(nodes->GetMax_Lambda_Inv(iPoint)+nodes->GetMax_Lambda_Visc(iPoint));
       for (auto iVar = 0; iVar < nVar; iVar++)
         if (Flux[iVar]*delta > nodes->GetSolution(iPoint,iVar))
           nodes->SetNon_Physical(iPoint,true);
