@@ -43,7 +43,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   /*--- Define transport model ---*/
   if(Kind_TransCoeffModel == WILKE)
-    transport_model = "Chapmann-Enskog_LDLT";
+    transport_model = "Wilke";
   else if (Kind_TransCoeffModel == GUPTAYOS)
     transport_model = "Gupta-Yos";
 
@@ -187,8 +187,6 @@ vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& val_rh
 
   T   = temperatures[0];
   Tve = temperatures[1];
-
-//  std::cout<<energies[0]<<" "<<T<<std::endl;
 
   return temperatures;
 }

@@ -1927,14 +1927,12 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
 
-
             case AUSMPLUSM:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
                 numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
               }
               break;
-
 
             case MSW:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {

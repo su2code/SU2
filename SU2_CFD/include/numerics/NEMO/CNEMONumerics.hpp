@@ -64,7 +64,7 @@ public:
 
   CNEMOGas *fluidmodel;
   CGeometry *nemo_geometry;
-  CNEMOEulerVariable *nemo_variable;
+  CNEMOEulerVariable *nemo_solution;
 
   /*!
    * \brief Constructor of the class.
@@ -237,10 +237,23 @@ public:
    */
   inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
 
-  inline void SetGeometry(CGeometry *geometry)                             {nemo_geometry = geometry; }
+  /*!
+   * \brief Set the points id.
+   * \param[in] Point_i - Point id at i.
+   * \param[in] Point_j - Point id at j.
+   */
+  inline void SetPoint(unsigned long Point_i, unsigned long Point_j)      final {iPoint = Point_i; jPoint=Point_j; }
 
-  inline void SetPoint(unsigned long Point_i, unsigned long Point_j)       {iPoint = Point_i; jPoint=Point_j;}
+  /*!
+   * \brief Set the geometry variable.
+   * \param[in] geometry - geometry of the simulation.
+   */
+  inline void SetNEMOGeometry(CGeometry *geometry)                            final {nemo_geometry = geometry; }
 
-  inline void SetSolution(CNEMOEulerVariable *solution)                    {nemo_variable = solution;}
+  /*!
+   * \brief Set the solution variable.
+   * \param[in] solution - solution of the simulation.
+   */
+  inline void SetNEMOSolution(CNEMOEulerVariable *solution)                   final {nemo_solution = solution; }
 
 };

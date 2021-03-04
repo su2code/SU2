@@ -187,7 +187,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
-  //Ref_Temperature    = GetRefTemperature();
+  Ref_Temperature    = GetRefTemperature();
 
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
@@ -242,12 +242,6 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
                                rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
 
-/*for (iSpecies = 0; iSpecies < 6; iSpecies++)
-  cout<<val_dPdU[iSpecies]<<" ";
-cout<<endl; */
-
-//-1.16053e+07 1.78602e+06 -1153.13 6.11171e-09 0.400003 -0.400003
-
 }
 
 void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
@@ -266,7 +260,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
- // Ref_Temperature    = GetRefTemperature();
+  Ref_Temperature    = GetRefTemperature();
 
   /*--- Calculate supporting quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++)

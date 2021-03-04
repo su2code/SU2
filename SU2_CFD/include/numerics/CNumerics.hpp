@@ -1592,11 +1592,25 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
+  /*!
+   * \brief Set the points id.
+   * \param[in] Point_i - Point id at i.
+   * \param[in] Point_j - Point id at j.
+   */
   virtual inline void SetPoint(unsigned long Point_i, unsigned long Point_j)       { }
 
-  virtual inline void SetGeometry(CGeometry *geometry)                             { }
+  /*!
+   * \brief Set the geometry variable.
+   * \param[in] geometry - geometry of the simulation.
+   */
+  virtual inline void SetNEMOGeometry(CGeometry *geometry)                             { }
 
-  virtual inline void SetSolution(CNEMOEulerVariable *solution)                    { }
+  /*!
+   * \brief Set the solution variable.
+   * \param[in] solution - solution of the simulation.
+   */
+  // CHANGE THIS ?, Trying to only use CNEMONUMERICS
+  virtual inline void SetNEMOSolution(CNEMOEulerVariable *solution)                    { }
 
 };
 
