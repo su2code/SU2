@@ -263,8 +263,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   unsigned short n_scalars;
   CFluidModel* auxFluidModel = nullptr;
 
-  su2double *dummy_scalar;
-  unsigned short n_scalars;
   switch (config->GetKind_FluidModel()) {
 
     case CONSTANT_DENSITY:
@@ -454,12 +452,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     switch (config->GetKind_FluidModel()) {
       
-      case FLAMELET_FLUID_MODEL:
-        fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
-        fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
-        delete[] dummy_scalar;
-        break;
-
       case CONSTANT_DENSITY:
         fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
         break;
@@ -481,7 +473,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         /// TODO: Why is this outside?
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
 
-           
       case FLAMELET_FLUID_MODEL:
         fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
         fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
