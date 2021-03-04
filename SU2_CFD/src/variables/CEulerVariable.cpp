@@ -72,8 +72,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(1.0);
   Limiter.resize(nPoint,nVar) = su2double(1.0);
   if (config->GetUse_Accurate_Kappa_Jacobians()) {
-    LimiterDerivativeDelta.resize(nPoint,nPrimVarGrad) = su2double(1.0);
-    LimiterDerivativeGrad.resize(nPoint,nPrimVarGrad) = su2double(1.0);
+    LimiterDerivativeDelta.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    LimiterDerivativeGrad.resize(nPoint,nPrimVarGrad) = su2double(0.0);
   }
 
   Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
