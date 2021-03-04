@@ -216,14 +216,14 @@ CNumerics::ResidualType<> CUpwAUSMPLUSM_NEMO::ComputeResidual(const CConfig *con
 
   if (jPoint!=-1){
       for (auto Point_aux : nemo_geometry->nodes->GetPoints(jPoint)) {
-         P_k = nemo_variable->GetPrimitive(Point_aux,P_INDEX)/nemo_variable->GetPrimitive(jPoint,P_INDEX);
+         P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(jPoint,P_INDEX);
          h_k = min(h_k,P_k);
          h_k = min(h_k,1/P_k);
       }
   }
 
   for (auto Point_aux : nemo_geometry->nodes->GetPoints(iPoint)) {
-         P_k = nemo_variable->GetPrimitive(Point_aux,P_INDEX)/nemo_variable->GetPrimitive(iPoint,P_INDEX);
+         P_k = nemo_solution->GetPrimitive(Point_aux,P_INDEX)/nemo_solution->GetPrimitive(iPoint,P_INDEX);
          h_k = min(h_k,P_k);
          h_k = min(h_k,1/P_k);
   }

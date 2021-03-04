@@ -2055,7 +2055,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
-  conv_numerics->SetNEMoGeometry(geometry);
+  conv_numerics->SetNEMOGeometry(geometry);
   conv_numerics->SetNEMOSolution(nodes);
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
