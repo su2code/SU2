@@ -1158,7 +1158,7 @@ private:
   monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-  
+
   bool interpolate_solution;                /*!< \brief Flag for solution interpolation */
   string Interpolated_Restart_FileName;     /*!< \brief Name of interpolated restart file. */
 
@@ -1321,7 +1321,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);  
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
 
   /*!
    * \brief Destructor of the class.
@@ -3631,7 +3631,7 @@ public:
    */
   bool GetAUSMMethod(void) const {
     switch (Kind_Upwind_Flow) {
-      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS:
+      case AUSM : case AUSMPLUSUP: case AUSMPLUSUP2: case AUSMPWPLUS: case AUSMPLUSM:
         return true;
       default:
         return false;
