@@ -3350,9 +3350,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
     }
 
-    good_i = good_i && (V_ij*Project_Grad_i >= 0.0);
-    good_j = good_j && (V_ij*Project_Grad_j >= 0.0);
-
     /*--- Edge-based limiters ---*/
 
     if (limNeeded) {
@@ -3414,9 +3411,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
         Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
       }
-
-      good_i = good_i && (T_ij*Project_Grad_i >= 0.0);
-      good_j = good_j && (T_ij*Project_Grad_j >= 0.0);
 
       /*--- Edge-based limiters ---*/
 
