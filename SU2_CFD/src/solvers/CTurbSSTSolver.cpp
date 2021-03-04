@@ -319,7 +319,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
     }
   }
 
-  if (limiter_flow || limiter_turb) SetPrimitive_Limiter(geometry, config);
+  if (limiter_turb) SetPrimitive_Limiter(geometry, config);
   
   /*--- Compute eddy viscosity ---*/
 
