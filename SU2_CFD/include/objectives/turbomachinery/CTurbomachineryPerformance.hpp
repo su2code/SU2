@@ -157,9 +157,9 @@ class CTurbomachineryBladePerformance {
 
   virtual void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {};
 
-  CTurbomachineryState GetInletState() const { return InletState; }
+  const CTurbomachineryState& GetInletState() { return InletState; }
 
-  CTurbomachineryState GetOutletState() const { return OutletState; }
+  const CTurbomachineryState& GetOutletState()  { return OutletState; }
 
   su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 
