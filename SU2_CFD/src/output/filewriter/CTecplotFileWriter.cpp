@@ -2,7 +2,7 @@
  * \file CTecplotFileWriter.cpp
  * \brief Filewriter class for Tecplot ASCII format.
  * \author T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,7 +118,7 @@ void CTecplotFileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -142,7 +142,7 @@ void CTecplotFileWriter::Write_Data(){
 
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -204,7 +204,7 @@ void CTecplotFileWriter::Write_Data(){
     }
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 

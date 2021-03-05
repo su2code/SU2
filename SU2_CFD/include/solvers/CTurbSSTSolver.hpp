@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void) override;
+  ~CTurbSSTSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -239,7 +239,8 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) override {
+  inline void SetFreeStream_Solution(const CConfig *config) override {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);

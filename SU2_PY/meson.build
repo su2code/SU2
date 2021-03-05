@@ -66,10 +66,9 @@ install_data(['SU2/util/bunch.py',
 
 install_data(['FSI_tools/__init__.py',
               'FSI_tools/FSIInterface.py',
-              'FSI_tools/FSI_config.py',
-              'FSI_tools/switch.py'],
+              'FSI_tools/FSI_config.py'],
 	      install_dir: join_paths(get_option('bindir'), 'FSI_tools'))
 
 install_data(['SU2_Nastran/__init__.py',
-              'SU2_Nastran/pysu2_nastran.py',],
+              'SU2_Nastran/pysu2_nastran.py'],
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))

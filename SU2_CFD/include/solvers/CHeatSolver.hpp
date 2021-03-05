@@ -2,7 +2,7 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CHeatSolver final : public CSolver {
 protected:
@@ -112,13 +112,6 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Compute the undivided laplacian for the solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.

@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,29 +52,16 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
       break;
   }
 
-  /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
-  /* V = [Y1, ... , Yn, T, Tve, ... ] */
-  primitives_aux = new su2double[nPrimVar];
-
-}
-
-CNEMONSSolver::~CNEMONSSolver(void) {
-
-  if (primitives_aux != nullptr) delete [] primitives_aux;
-
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint       = config->GetContinuous_Adjoint();
-  bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool muscl              = config->GetMUSCL_Flow();
-  bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const bool muscl      = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center     = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
 
   /*--- Common preprocessing steps (implemented by CNEMOEulerSolver) ---*/
 
@@ -82,7 +69,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
-  if ((muscl && !center) && (iMesh == MESH_0)) {
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
         SetPrimitive_Gradient_GG(geometry, config, true); break;
@@ -102,10 +89,9 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
-   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  /*--- Compute the limiters ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 
@@ -136,8 +122,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     su2double MyOmega_Max = Omega_Max;
     //su2double MyStrainMag_Max = StrainMag_Max;
-    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   }
 }
@@ -154,10 +140,10 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   /*--- Modify species density to mass concentration ---*/
   for ( iPoint = 0; iPoint < nPoint; iPoint++){
-    for( iVar = 0; iVar < nPrimVar; iVar++) {
+    su2double primitives_aux[MAXNVAR] = {0.0};
+    for( iVar = 0; iVar < nPrimVar; iVar++)
       primitives_aux[iVar] = nodes->GetPrimitive(iPoint, iVar);
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for ( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       primitives_aux[RHOS_INDEX+iSpecies] = primitives_aux[RHOS_INDEX+iSpecies]/primitives_aux[RHO_INDEX];
     for( iVar = 0; iVar < nPrimVar; iVar++)
       nodes->SetPrimitive_Aux(iPoint, iVar, primitives_aux[iVar] );
@@ -541,8 +527,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       }
 
       if (catalytic) {
-        cout << "NEED TO IMPLEMENT CATALYTIC BOUNDARIES IN HEATFLUX!!!" << endl;
-        exit(1);
+        SU2_MPI::Error("NEED TO IMPLEMENT CATALYTIC BOUNDARIES IN HEATFLUX!!!",CURRENT_FUNCTION);
       }
       else {
 
@@ -678,8 +663,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   bool ionization = config->GetIonization();
 
   if (ionization) {
-    cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
-    exit(1);
+    SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
   }
 
   /*--- Extract required indices ---*/
@@ -986,36 +970,33 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned short val_marker) {
 
-
-  unsigned short iDim, jDim, iVar, iSpecies;
+  unsigned short iDim, iVar, iSpecies;
   unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Mass = 0.0;
   su2double Ti, Tvei, Tj, Tvej;
   su2double Twall, Tslip, Tslip_ve, dij;
   su2double Pi;
-  su2double Area, *Normal, UnitNormal[3];
-  su2double *Coord_i, *Coord_j;
+  su2double Area, UnitNormal[MAXNDIM];
   su2double C, alpha_V, alpha_T;
 
   su2double TMAC, TAC;
   su2double Viscosity, Eddy_Visc, Lambda;
   su2double Density, GasConstant;
 
-  su2double **Grad_PrimVar;
-  su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
+  const su2double* const* Grad_PrimVar;
+  su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0}, Vector_Tangent_HF[MAXNDIM] = {0.0};
   su2double dTn, dTven;
   su2double rhoCvtr, rhoCvve;
 
-  su2double TauElem[3], TauTangent[3];
-  su2double Tau[3][3];
+  su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
+  su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
   su2double TauNormal;
 
   bool ionization = config->GetIonization();
 
   if (ionization) {
-    cout << "BC_SMOLUCHOWSKI_MAXWELL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
-    exit(1);
+    SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION", CURRENT_FUNCTION);
   }
 
   /*--- Define 'proportional control' constant ---*/
@@ -1045,7 +1026,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Compute dual-grid area and boundary normal ---*/
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
@@ -1055,13 +1036,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Compute distance between wall & normal neighbor ---*/
-      Coord_i = geometry->nodes->GetCoord(iPoint);
-      Coord_j = geometry->nodes->GetCoord(jPoint);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
-      dij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dij += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
-      dij = sqrt(dij);
+      dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
       /*--- Calculate Pressure ---*/
       Pi   = nodes->GetPressure(iPoint);
@@ -1087,7 +1065,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Gamma     = nodes->GetGamma(iPoint);
 
       /*--- Incorporate turbulence effects ---*/
-      auto&      Ms = FluidModel->GetSpeciesMolarMass();
+      const auto& Ms = FluidModel->GetSpeciesMolarMass();
       su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double  tmp1, scl, Cptr;
       su2double *Vi = nodes->GetPrimitive(iPoint);
@@ -1110,11 +1088,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
-      dTn = 0.0; dTven = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-        dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
-      }
+      dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
+      dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
 
       /*--- Calculate molecular mean free path ---*/
       Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
@@ -1140,19 +1115,14 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         Res_Visc[iVar] = 0.0;
 
       CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        TauElem[iDim] = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
-          TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-      }
+      for (iDim = 0; iDim < nDim; iDim++)
+        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
 
       /*--- Compute wall shear stress (using the stress tensor) ---*/
-      TauNormal = 0.0;
+      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
+
       for (iDim = 0; iDim < nDim; iDim++)
-        TauNormal += TauElem[iDim] * UnitNormal[iDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-      }
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)
