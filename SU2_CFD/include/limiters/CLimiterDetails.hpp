@@ -79,11 +79,13 @@ namespace LimiterHelpers
   {
     su2double dpsi = 0.0;
     switch(kindLimiter) {
-      case NO_LIMITER
+      case NO_LIMITER:
+      {
         dpsi = (0.5-1.5*kappa)*(proj*delta >= 0);
         break;
-
+      }
       case VAN_ALBADA_EDGE:
+      {
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
         const su2double eps = sign*epsilon();
         const su2double R = delta / (proj + eps);
@@ -94,6 +96,7 @@ namespace LimiterHelpers
              / pow(pow(delta,2.) + b * pow(y,2.),2.) * proj * (R >= 0);
 
         break;
+      }
       default:
         break;
     }
@@ -104,10 +107,12 @@ namespace LimiterHelpers
     su2double dpsi = 0.0;
     switch(kindLimiter) {
       case NO_LIMITER:
+      {
         dpsi =  0.5*(1.0-kappa)*(proj*delta >= 0);
         break;
-
+      }
       case VAN_ALBADA_EDGE:
+      {
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
         const su2double eps = sign*epsilon();
         const su2double R = delta / (proj + eps);
@@ -119,6 +124,7 @@ namespace LimiterHelpers
              / pow(pow(delta,2.) + b * pow(y,2.),2.) * proj * (R >= 0);
 
         break;
+      }
       default:
         break;
     }

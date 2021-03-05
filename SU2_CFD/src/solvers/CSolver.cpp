@@ -3186,38 +3186,38 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
                                                 : config->GetKind_Gradient_Method();
   switch (kindGrad) {
     case GREEN_GAUSS:
-      {
-        const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-        const auto iEdge = geometry->FindEdge(iPoint, jPoint);
-        const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
-        break;
-      }
+    {
+      const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+      const auto iEdge = geometry->FindEdge(iPoint, jPoint);
+      const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
+      break;
+    }
     case LEAST_SQUARES:
     case WEIGHTED_LEAST_SQUARES:
-      {
-        su2double weight = 1.0;
-        su2double dist_ij[3] = {0.0};
+    {
+      su2double weight = 1.0;
+      su2double dist_ij[3] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+      
+      if (kindGrad == WEIGHTED_LEAST_SQUARES) {
+        weight = 0.0;
         for (auto iDim = 0; iDim < nDim; iDim++)
-          dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
-        
-        if (kindGrad == WEIGHTED_LEAST_SQUARES) {
-          weight = 0.0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            weight += pow(dist_ij[iDim],2); 
-          weight = pow(weight, 0.5*config->GetWeighted_Least_Squares_Coeff());
-        }
-        weight = 1.0/weight;
-        const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
-                                        : solver->GetNodes()->GetSmatrix(iPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          gradWeight[iDim] = 0.0;
-          for (auto jDim = 0; jDim < nDim; jDim++)
-            gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
-        }
-        break;
+          weight += pow(dist_ij[iDim],2); 
+        weight = pow(weight, 0.5*config->GetWeighted_Least_Squares_Coeff());
       }
+      weight = 1.0/weight;
+      const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
+                                      : solver->GetNodes()->GetSmatrix(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        gradWeight[iDim] = 0.0;
+        for (auto jDim = 0; jDim < nDim; jDim++)
+          gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
+      }
+      break;
+    }
   }
 
 }
