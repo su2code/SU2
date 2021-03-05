@@ -126,7 +126,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   }
 
   if (tkeNeeded) {
-    const su2double GradPrimVar_Edge = GeometryToolbox::DotProduct(nDim,MeanGradTurbVar,Edge_Vector);
+    const su2double GradTurbVar_Edge = GeometryToolbox::DotProduct(nDim,MeanGradTurbVar,Edge_Vector);
     const su2double Delta = turb_ke_j - turb_ke_i;
     for (auto iDim = 0; iDim < nDim; iDim++)
       Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;

@@ -537,8 +537,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    Jacobian_i[1][0] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradom);
-    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradk);
+    Jacobian_i[1][0] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
+    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -553,11 +553,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
-    Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradom)*sign_grad_i;
-    Jacobian_j[1][0] += factor/r_j*GeometryToolbox::DotProduct(gradWeight,gradom);
+    Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradom)*sign_grad_i;
+    Jacobian_j[1][0] += factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
 
-    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradk)*sign_grad_i;
-    Jacobian_j[1][1] = factor/r_j*GeometryToolbox::DotProduct(gradWeight,gradk);
+    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk)*sign_grad_i;
+    Jacobian_j[1][1] = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
     
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
@@ -620,7 +620,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
           for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
-        const su2double VelMod = GeometryToolbox::SquaredNorm(nDim,Vel[iDim]);
+        const su2double VelMod = GeometryToolbox::SquaredNorm(nDim,Vel);
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
         
         solver[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);

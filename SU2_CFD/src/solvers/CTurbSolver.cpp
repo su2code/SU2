@@ -28,6 +28,7 @@
 
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 
@@ -539,7 +540,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     for (auto iVar = 0; iVar < nVar; iVar++)
-      Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim]);
+      Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight);
 
   }// physical boundary
 
@@ -557,8 +558,8 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim])*sign_grad_i;
-      Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim])*ratio_k;
+      Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*sign_grad_i;
+      Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*ratio_k;
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
