@@ -3351,7 +3351,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     /*--- Edge-based limiters ---*/
 
     if (limFlowNeeded) {
-      switch(kindLimFlow) {
+      switch(kindFlowLim) {
         case VAN_ALBADA_EDGE:
           Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i,Delta,Kappa_Flow);
           Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j,Delta,Kappa_Flow);
@@ -3373,10 +3373,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     }
 
     if (config->GetUse_Accurate_Kappa_Jacobians()) {
-      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Flow,kindLimFlow);
-      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Flow,kindLimFlow);
-      const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Flow,kindLimFlow);
-      const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Flow,kindLimFlow);
+      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Flow,kindFlowLim);
+      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Flow,kindFlowLim);
+      const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Flow,kindFlowLim);
+      const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Flow,kindFlowLim);
 
       flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
       flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
@@ -3408,7 +3408,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       /*--- Edge-based limiters ---*/
 
       if (limTurbNeeded) {
-        switch(kindLimTurb) {
+        switch(kindTurbLim) {
           case VAN_ALBADA_EDGE:
             Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i,Delta,Kappa_Turb);
             Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j,Delta,Kappa_Turb);
@@ -3430,10 +3430,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       }
 
       if (config->GetUse_Accurate_Kappa_Jacobians()) {
-        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Turb,kindLimTurb);
-        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Turb,kindLimTurb);
-        const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Turb,kindLimTurb);
-        const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Turb,kindLimTurb);
+        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Turb,kindTurbLim);
+        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Turb,kindTurbLim);
+        const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Turb,kindTurbLim);
+        const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Turb,kindTurbLim);
 
         turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
         turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
