@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <cmath>
+
 namespace GeometryToolbox {
 
 /*! \return ||a-b||^2 */

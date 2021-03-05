@@ -633,49 +633,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         Lam_Visc_Normal = solver[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
       }
       else {
-      
-        // const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
-        // distance = geometry->node[donorPoint]->GetWall_Distance();
+        distance = geometry->node[donorPoint]->GetWall_Distance();
         
-        // Density_Normal  = flowNodes->GetDensity(donorPoint);
-        // Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
-
-        const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        su2double Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
-        for (auto iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
-
-        unsigned short nDonors = 0;
-        for (auto iNode = 0; iNode < node_i->GetnPoint(); iNode++) {
-          const unsigned long donorPoint = node_i->GetPoint(iNode);
-          if(!geometry->node[donorPoint]->GetSolidBoundary())
-            nDonors++;
-        }
-      
-
-        distance = 0.0;
-        Density_Normal = 0.0;
-        Lam_Visc_Normal = 0.0;
-        su2double suminvdist = 0.0;
-        for (auto iNode = 0; iNode < node_i->GetnPoint(); iNode++) {
-          const unsigned long donorPoint = node_i->GetPoint(iNode);
-          const auto node_donor = geometry->node[donorPoint];
-          if(!node_donor->GetSolidBoundary()) {
-            su2double dist = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++)
-              dist += pow((node_donor->GetCoord(iDim)-node_i->GetCoord(iDim))
-                         *(1.-UnitNormal[iDim]),2);
-            dist = (nDonors > 1) ? su2double(sqrt(dist)+eps) : su2double(1.0);
-            suminvdist += 1./dist;
-
-            Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
-            Lam_Visc_Normal += flowNodes->GetLaminarViscosity(donorPoint)/dist;
-            distance        += geometry->node[donorPoint]->GetWall_Distance()/dist;
-          }
-        }
-        Density_Normal  /= suminvdist;
-        Lam_Visc_Normal /= suminvdist;
-        distance        /= suminvdist;
+        Density_Normal  = flowNodes->GetDensity(donorPoint);
+        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
 
       }
       
@@ -709,17 +672,12 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, C
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *Normal;
   const su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
-  su2double Vn_Infty = 0., Velocity2 = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
-  su2double Kine_Infty, Omega_Infty;
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  Normal = new su2double[nDim];
-
-  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto node_i = geometry->node[iPoint];
@@ -744,13 +702,14 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (auto iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
       
       /*--- Set primitive state based on flow direction ---*/
       
-      Vn_Infty = 0;
+      su2double Vn_Infty = 0;
       for (auto iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
 
       if (Vn_Infty > 0.0) {
@@ -760,12 +719,12 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       }
       else {
         /*--- Inflow conditions ---*/
-        Velocity2 = 0.0;
+        su2double Velocity2 = 0.0;
         for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
         const su2double Rho_Infty = V_infty[nDim+2];
         const su2double muT_Infty = V_infty[nDim+6];
-        Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
-        Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
+        const su2double Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
+        const su2double Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
         Primitive_j[0] = Kine_Infty;
         Primitive_j[1] = Omega_Infty;
@@ -838,26 +797,20 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
     }
   }
 
-  delete [] Normal;
-
 }
 
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
-  su2double *V_inlet, *V_domain, *Normal;
-
-  Normal = new su2double[nDim];
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -865,16 +818,17 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
 
       /*--- Allocate the value at the inlet ---*/
 
-      V_inlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_inlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -951,25 +905,17 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
 
   }
 
-  /*--- Free locally allocated memory ---*/
-
-  delete [] Normal;
-
 }
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim;
-  su2double *V_outlet, *V_domain, *Normal;
-
-  Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -977,11 +923,11 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
 
       /*--- Allocate the value at the outlet ---*/
 
-      V_outlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      auto V_outlet = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto V_domain = solver[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
@@ -1001,9 +947,9 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
 
       /*--- Set Normal (negate for outward convention) ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
+      su2double Normal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
       conv_numerics->SetNormal(Normal);
 
       if (dynamic_grid)

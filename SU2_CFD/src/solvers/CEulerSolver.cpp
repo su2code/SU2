@@ -7908,10 +7908,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
          last modified 06-12-2005. First, compute the unit normal at the
          boundary nodes. ---*/
 
-      Area = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (auto iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 

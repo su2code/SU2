@@ -29,6 +29,7 @@
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CNSSolver::CNSSolver(void) : CEulerSolver() { }
 
@@ -879,9 +880,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
         if(Monitoring == YES){
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
@@ -977,7 +976,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
-  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
@@ -990,14 +989,12 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       /*--- Compute dual-grid area and boundary normal ---*/
 
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
