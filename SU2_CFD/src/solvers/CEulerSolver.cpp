@@ -3970,7 +3970,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    su2double factor = 0.5*ConductivityOnR*sign*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
+    su2double factor = sign*0.5*ConductivityOnR*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] = factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
@@ -4009,7 +4009,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
-    su2double factor = 0.5*ConductivityOnR*sign*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
+    su2double factor = sign*0.5*ConductivityOnR*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] = factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i)*sign_grad_i;

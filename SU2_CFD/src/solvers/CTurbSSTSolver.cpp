@@ -554,10 +554,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
     Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradom)*sign_grad_i;
-    Jacobian_j[1][0] += factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
+    Jacobian_j[1][0]  = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
 
-    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk)*sign_grad_i;
-    Jacobian_j[1][1] = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
+    Jacobian_i[1][1] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk)*sign_grad_i;
+    Jacobian_j[1][1]  = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
     
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
