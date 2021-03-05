@@ -2,24 +2,14 @@
  * \file CFlameletSolver.cpp
  * \brief Main subroutines for the flamelet model solver.
  * \author D. Mayer, T. Economon
- * \version 6.2.0 "Falcon"
+ * \version 7.1.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,10 +44,10 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf;
   
-  bool turbulent = ((config->GetKind_Solver() == RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+  const bool turbulent = ((config->GetKind_Solver() == RANS) ||
+                         (config->GetKind_Solver() == DISC_ADJ_RANS));
+  const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
 
   /*--- Dimension of the problem --> passive scalar will only ever
    have a single equation. Other child classes of CScalarSolver
@@ -90,7 +80,6 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
   Res_Conv     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv    [iVar] = 0.0;
   Res_Visc     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc    [iVar] = 0.0;
-  
   
   /*--- Define some structures for locating max residuals ---*/
   
@@ -280,17 +269,16 @@ void CFlameletSolver::Preprocessing(CGeometry *geometry,
                                          unsigned short RunTime_EqSystem,
                                          bool Output) {
   
-  unsigned long ErrorCounter = 0;
   unsigned long InnerIter = config->GetInnerIter();
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                           (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool limiter_scalar   = ((config->GetKind_SlopeLimit_Scalar() != NO_LIMITER) &&
-                           (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool disc_adjoint       = config->GetDiscrete_Adjoint();
+  bool limiter_flow       = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                            (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_scalar     = ((config->GetKind_SlopeLimit_Scalar() != NO_LIMITER) &&
+                            (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   
   /*--- Set the primitive variables ---*/
   
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  unsigned long ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
   
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -347,7 +335,6 @@ unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container
       nodes->SetDiffusivity(iPoint, fluid_model_local->GetMassDiffusivity(), i_scalar);
     }
 
-    
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
@@ -384,8 +371,9 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
                                      +flame_normal[1]*flame_normal[1]
                                      +flame_normal[2]*flame_normal[2]);
 
-    su2double temp_inlet = 300.;
-    su2double prog_inlet = 0.0;
+   
+    su2double temp_inlet = config->GetInc_Temperature_Init(); // should do reverse lookup of enthalpy
+    su2double prog_inlet = config->GetScalar_Init(I_PROG_VAR); 
 
     su2double enth_inlet;
     su2double point_loc;

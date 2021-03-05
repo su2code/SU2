@@ -33,6 +33,7 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
   implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density       = (config->GetKind_DensityModel() == VARIABLE);
   energy                 = config->GetEnergy_Equation();
+  flame                  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -265,7 +266,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     }
   }
 
-  if (!energy) {
+  if (!energy || flame) {
     Flux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

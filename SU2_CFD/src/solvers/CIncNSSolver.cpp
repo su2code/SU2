@@ -155,7 +155,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
                                    unsigned short val_marker, unsigned short kind_boundary) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool energy = config->GetEnergy_Equation();
+  const bool energy   = config->GetEnergy_Equation();
+  const bool flame    = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Identify the boundary by string name ---*/
 
@@ -217,7 +218,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
     }
 
-    if (!energy) continue;
+    if (!energy || flame) continue;
 
     if (kind_boundary == HEAT_FLUX) {
 

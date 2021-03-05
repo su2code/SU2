@@ -244,6 +244,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy                 = config->GetEnergy_Equation();
   viscous                = config->GetViscous();
+  flame                  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
 }
 
@@ -343,7 +344,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
   }
 
-  if (!energy) {
+  if (!energy || flame) {
     residual[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -380,7 +381,7 @@ CNumerics::ResidualType<> CSourceBodyForce::ComputeResidual(const CConfig* confi
   for (iDim = 0; iDim < nDim; iDim++)
     residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
 
-  /*--- Energy contribution ---*/
+  /*--- Body Force contribution ---*/
 
   residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)

@@ -1098,6 +1098,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool energy     = config->GetEnergy_Equation();
+  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1177,7 +1179,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation()) {
+      if (energy && !flame) {
         bool neg_temperature_i = (Primitive_i[nDim+1] < 0.0);
         bool neg_temperature_j = (Primitive_j[nDim+1] < 0.0);
 
@@ -1280,6 +1282,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
+  const bool flame          = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   if (body_force) {
 
@@ -1540,7 +1543,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
     }
   }
-
 }
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -1703,22 +1705,23 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   unsigned short iDim, jDim, iVar, jVar;
 
-  su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
-  su2double  Velocity[MAXNDIM] = {0.0};
+  //su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+  //su2double  Velocity[MAXNDIM] = {0.0};
 
-  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool energy           = config->GetEnergy_Equation();
-  bool flame            = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  const bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool energy           = config->GetEnergy_Equation();
+  const bool flame            = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Access the primitive variables at this node. ---*/
 
-  Density     = nodes->GetDensity(iPoint);
-  BetaInc2    = nodes->GetBetaInc2(iPoint);
-  Cp          = nodes->GetSpecificHeatCp(iPoint);
-  oneOverCp   = 1.0/Cp;
-  Temperature = nodes->GetTemperature(iPoint);
+  su2double Density     = nodes->GetDensity(iPoint);
+  su2double BetaInc2    = nodes->GetBetaInc2(iPoint);
+  su2double Cp          = nodes->GetSpecificHeatCp(iPoint);
+  su2double oneOverCp   = 1.0/Cp;
+  su2double Temperature = nodes->GetTemperature(iPoint);
 
+  su2double  Velocity[MAXNDIM] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
@@ -1726,6 +1729,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
+  su2double dRhodT;
   if (variable_density) {
     dRhodT = -Density/Temperature;
   } else {
@@ -2383,12 +2387,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
   su2double Density, Cp;
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool first_order  = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool energy = config->GetEnergy_Equation();
-  bool flame        = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
-  const short flagEnergy = !energy || flame; 
+  const bool energy       = config->GetEnergy_Equation();
+  const bool flame        = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+  const short flagEnergy  = (!energy || flame); 
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2397,7 +2401,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     U[ndim+1] = Density*Cp*V[ndim+1];
   };
 
-  cout << "nijso: setresidual" << endl;
  
   /*--- Store the physical time step ---*/
 

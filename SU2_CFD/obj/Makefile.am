@@ -114,6 +114,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
+  ../src/numerics/flamelet/scalar_convection.cpp \
+  ../src/numerics/flamelet/scalar_diffusion.cpp \
+  ../src/numerics/flamelet/scalar_sources.cpp \
   ../src/numerics_direct_scalar.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
