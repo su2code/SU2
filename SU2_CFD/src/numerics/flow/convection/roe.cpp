@@ -151,11 +151,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   const su2double R = sqrt(fabs(Density_j/Density_i));
   const su2double inv_R_Plus_One = 1.0/(R + 1.0);
   RoeDensity = R*Density_i;
-  RoeSqVel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
-    RoeSqVel += RoeVelocity[iDim]*RoeVelocity[iDim];
-  }
+  for (auto iDim = 0; iDim < nDim; iDim++) RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
+  RoeSqVel = GeometryToolbox::SquaredNorm(nDim,RoeVelocity);
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
   RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
   RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);

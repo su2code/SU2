@@ -682,14 +682,11 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
   const su2double conductivity_over_Rd = cpoR*heat_flux_factor*proj_vector_ij/dist_ij_2;
 
-  const su2double p_i = V_i[nDim+1], rho_i = V_i[nDim+2], phi_i = Gamma_Minus_One/rho_i,
-                  p_j = V_j[nDim+1], rho_j = V_j[nDim+2], phi_j = Gamma_Minus_One/rho_j;
+  const su2double p_i = V_i[nDim+1], rho_i = V_i[nDim+2], phi_i = Gamma_Minus_One/rho_i;
+  const su2double p_j = V_j[nDim+1], rho_j = V_j[nDim+2], phi_j = Gamma_Minus_One/rho_j;
 
-  su2double sqvel_i = 0.0, sqvel_j = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    sqvel_i += V_i[iDim+1]*V_i[iDim+1];
-    sqvel_j += V_j[iDim+1]*V_j[iDim+1];
-  }
+  const su2double sqvel_i = GeometryToolbox::SquaredNorm(nDim,V_i+1); 
+  const su2double sqvel_j = GeometryToolbox::SquaredNorm(nDim,V_j+1);
 
   heat_flux_jac_i[0] = -conductivity_over_Rd * (-p_i/pow(rho_i,2) + 0.5*sqvel_i*phi_i);
   heat_flux_jac_j[0] =  conductivity_over_Rd * (-p_j/pow(rho_j,2) + 0.5*sqvel_j*phi_j);

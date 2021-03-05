@@ -3474,13 +3474,11 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
   const su2double R_Plus_One = R+1.;
 
-  su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    const su2double RoeVelocity = (R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One;
-    RoeSqVel += pow(RoeVelocity, 2);
-    SqVel_i += pow(primvar_i[iDim+1],2);
-    SqVel_j += pow(primvar_j[iDim+1],2);
-  }
+  su2double RoeSqVel = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++) RoeSqVel += pow((R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One,2.0);
+    
+  const su2double SqVel_i = GeometryToolbox::SquaredNorm(nDim,primvar_i);
+  const su2double SqVel_j = GeometryToolbox::SquaredNorm(nDim,primvar_j);
   
   const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
   const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;
@@ -3544,12 +3542,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
             dVk_dUk[MAXNVARTOT][MAXNVAR] = {0.0};
 
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
-  su2double vel_l[MAXNDIM] = {0.0}, sq_vel_l = 0.0,
-            vel_r[MAXNDIM] = {0.0}, sq_vel_r = 0.0;
+  su2double vel_l[MAXNDIM] = {0.0}, vel_r[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    vel_l[iDim] = primvar_l[iDim+1]; sq_vel_l += pow(vel_l[iDim], 2.0);
-    vel_r[iDim] = primvar_r[iDim+1]; sq_vel_r += pow(vel_r[iDim], 2.0);
+    vel_l[iDim] = primvar_l[iDim+1];
+    vel_r[iDim] = primvar_r[iDim+1];
   }
+  const su2double sq_vel_l = GeometryToolbox::SquaredNorm(nDim,vel_l);
+  const su2double sq_vel_r = GeometryToolbox::SquaredNorm(nDim,vel_r);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -3613,11 +3612,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double inv_rho_i = 1.0/primvar_i[nDim+2];
   su2double vel_i[MAXNDIM] = {0.0};
-  su2double sq_vel_i = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    vel_i[iDim] = primvar_i[iDim+1];
-    sq_vel_i += pow(vel_i[iDim],2);
-  }
+  for (auto iDim = 0; iDim < nDim; iDim++) vel_i[iDim] = primvar_i[iDim+1];
+  const su2double sq_vel_i = GeometryToolbox::SquaredNorm(nDim,vel_i);
 
   dVi_dUi[0][0] = 1.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -3687,11 +3683,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto primvar_k = nodes->GetPrimitive(kPoint);
 
     const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
-    su2double sq_vel_k = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      vel_k[iDim] = primvar_k[iDim+1];
-      sq_vel_k += pow(vel_k[iDim],2);
-    }
+    for (auto iDim = 0; iDim < nDim; iDim++) vel_k[iDim] = primvar_k[iDim+1];
+    const su2double sq_vel_k = GeometryToolbox::SquaredNorm(nDim,vel_k);
 
     dVk_dUk[0][0] = 1.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
