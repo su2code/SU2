@@ -5733,7 +5733,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
         
         if (nmarker_ipoint == 1) {
           //--- Compute unit normal.
-          Area = GeometryToolbox::Norm(nDim, SumNormal);
+          su2double Area = GeometryToolbox::Norm(nDim, SumNormal);
 
           su2double UnitNormal[MAXNDIM] = {0.0};
           for (auto iDim = 0; iDim < nDim; iDim++)

@@ -802,8 +802,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iVar, iDim;
-
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -837,7 +835,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
         Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
@@ -910,8 +908,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iVar, iDim;
-
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -939,7 +935,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
        Primitive_i --> TurbVar_internal,
        Primitive_j --> TurbVar_outlet ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
         Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
         Primitive_j[iVar] = nodes->GetPrimitive(iPoint,iVar);
       }
@@ -1004,9 +1000,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
 
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete[] Normal;
 
 }
 
