@@ -60,6 +60,8 @@ using namespace std;
 
 class CSolver {
 protected:
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
