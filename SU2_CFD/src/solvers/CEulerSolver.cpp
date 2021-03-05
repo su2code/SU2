@@ -7293,7 +7293,7 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
     su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
 
-    for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (auto iDim = 0u; iDim < nDim; iDim++)
@@ -7305,7 +7305,7 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
 
-    for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
       for (auto iDim = 0u; iDim < nDim; iDim++)

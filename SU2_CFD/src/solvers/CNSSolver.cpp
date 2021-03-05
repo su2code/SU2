@@ -1093,7 +1093,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
           for (auto iDim = 0u; iDim < nDim; iDim++)
             GridVel2 += GridVel[iDim]*GridVel[iDim];
           for (auto iVar = 0u; iVar < nVar; iVar++)
-            for (auto jVar = 0; jVar < nVar; jVar++)
+            for (auto jVar = 0u; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
           for (auto jDim = 0; jDim < nDim; jDim++)
@@ -1107,7 +1107,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
           for (auto iVar = 0u; iVar < nVar; iVar++)
-            for (auto jVar = 0; jVar < nVar; jVar++)
+            for (auto jVar = 0u; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
 
           /*--- Compute closest normal neighbor ---*/

@@ -163,7 +163,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Flux[iVar] = 0.0;
       if (implicit){
-        for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+        for (auto jVar = 0u; jVar < nPrimVarTot; jVar++) {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;
         }
@@ -307,10 +307,10 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Standard Roe "dissipation" ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+    for (auto jVar = 0u; jVar < nPrimVarTot; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
+      for (auto kVar = 0u; kVar < nPrimVarTot; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/
@@ -373,7 +373,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   /*--- Update residual ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++)
-    for (auto kVar = 0; kVar < nVar; kVar++)
+    for (auto kVar = 0u; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
 
   if (!implicit) return;
@@ -383,10 +383,10 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (auto kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0u; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
@@ -444,7 +444,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   /*--- Update residual ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++)
-    for (auto kVar = 0; kVar < nVar; kVar++)
+    for (auto kVar = 0u; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
 
   if (!implicit) return;
@@ -454,10 +454,10 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (auto kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0u; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
@@ -661,7 +661,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   }
 
   for (auto iVar = 0u; iVar < nVar; iVar ++) {
-    for (auto jVar = 0; jVar < nVar; jVar ++) {
+    for (auto jVar = 0u; jVar < nVar; jVar ++) {
       Matrix[iVar][jVar] = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
         Matrix[iVar][jVar]  += absPeJac[iVar][kVar]*R_Tensor[kVar][jVar];
@@ -669,7 +669,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   }
 
   for (auto iVar = 0u; iVar < nVar; iVar ++) {
-    for (auto jVar = 0; jVar < nVar; jVar ++) {
+    for (auto jVar = 0u; jVar < nVar; jVar ++) {
       Art_Visc[iVar][jVar] = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
         Art_Visc[iVar][jVar]  += invRinvPe[iVar][kVar]*Matrix[kVar][jVar];
@@ -679,7 +679,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   /*--- Roe's Flux approximation ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Flux[iVar] -= 0.5*Art_Visc[iVar][jVar]*Diff_U[jVar];
       if (implicit) {
         Jacobian_i[iVar][jVar] += 0.5*Art_Visc[iVar][jVar];
@@ -837,7 +837,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
   if (RoeSoundSpeed2 <= 0.0) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Flux[iVar] = 0.0;
-      for (auto jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][iVar] = 0.0;
       Jacobian_j[iVar][iVar] = 0.0;
       }
@@ -938,7 +938,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
     /*--- Roe's Flux approximation ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Flux[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-      for (auto jVar = 0; jVar < nVar; jVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
         Flux[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
     }
 
@@ -973,7 +973,7 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
     /*--- Roe's Flux approximation ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Flux[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-      for (auto jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         Proj_ModJac_Tensor_ij = 0.0;
 
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/

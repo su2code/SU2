@@ -523,7 +523,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }
@@ -1050,7 +1050,7 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
   }
 
   for (auto iVar = 0u; iVar < nVar; iVar++)
-    for (auto jVar = 0; jVar < nVar; jVar++)
+    for (auto jVar = 0u; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
 }

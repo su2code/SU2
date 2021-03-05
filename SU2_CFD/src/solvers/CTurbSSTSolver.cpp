@@ -582,7 +582,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
-  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto node_i = geometry->node[iPoint];
 
@@ -1533,7 +1533,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
 
