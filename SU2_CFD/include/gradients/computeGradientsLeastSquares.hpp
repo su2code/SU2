@@ -27,6 +27,7 @@
  */
 
 #include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 /*!
@@ -121,10 +122,8 @@ void computeGradientsLeastSquares(CSolver* solver,
 
       if (weighted)
       {
-        weight = 0.0;
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          weight += dist_ij[iDim] * dist_ij[iDim];
-        weight = pow(weight, 0.5*config.GetWeighted_Least_Squares_Coeff());
+        weight = GeometryToolbox::Norm(nDim, dist_ij);
+        weight = pow(weight, config->GetWeighted_Least_Squares_Coeff());
       }
 
       /*--- Sumations for entries of upper triangular matrix R. ---*/

@@ -3203,18 +3203,19 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
         dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
       
       if (kindGrad == WEIGHTED_LEAST_SQUARES) {
-        weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          weight += pow(dist_ij[iDim],2); 
-        weight = pow(weight, 0.5*config->GetWeighted_Least_Squares_Coeff());
+        weight = GeometryToolbox::Norm(nDim, dist_ij);
+        weight = pow(weight, config->GetWeighted_Least_Squares_Coeff());
       }
-      weight = 1.0/weight;
-      const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
-                                      : solver->GetNodes()->GetSmatrix(iPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        gradWeight[iDim] = 0.0;
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
+
+      if (weight > 0) {
+        weight = 1.0/weight;
+        const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
+                                        : solver->GetNodes()->GetSmatrix(iPoint);
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          gradWeight[iDim] = 0.0;
+          for (auto jDim = 0; jDim < nDim; jDim++)
+            gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
+        }
       }
       break;
     }
