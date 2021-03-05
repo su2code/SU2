@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/turbulent/turb_diffusion.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
                                  unsigned short val_nVar,
