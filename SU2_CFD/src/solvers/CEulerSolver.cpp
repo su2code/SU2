@@ -3310,8 +3310,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto InnerIter     = config->GetInnerIter();
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool turb          = (turb_model != NONE) && (nTurbVarGrad > 0);
-  const auto kindFlowLim   = config->GetKind_SlopeLimit_Flow()
-  const auto kindTurbLim   = config->GetKind_SlopeLimit_Turb()
+  const auto kindFlowLim   = config->GetKind_SlopeLimit_Flow();
+  const auto kindTurbLim   = config->GetKind_SlopeLimit_Turb();
   const bool limFlowNeeded = (kindFlowLim != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limTurbNeeded = (kindTurbLim != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
