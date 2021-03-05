@@ -404,14 +404,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    if (limiter) {
-      dVl_dVi[iVar] = 1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
-      dVr_dVi[iVar] =     - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
-    }
-    else {
-      dVl_dVi[iVar] = 1.0 - 0.5*Kappa_Turb*good_i;
-      dVr_dVi[iVar] =       0.5*Kappa_Turb*good_j;
-    }
+    dVl_dVi[iVar] = 1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
+    dVr_dVi[iVar] =     - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
   }
 
   /*--- dU/d{k,o,r,v}, evaluated at face ---*/
@@ -455,11 +449,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double Psi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    if (limiter) {
-      Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-    }
-    else
-      Psi[iVar] = 0.5*(1.0-Kappa_Turb)*good_i;
+    Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/

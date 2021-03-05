@@ -70,11 +70,54 @@ namespace LimiterHelpers
 
   inline su2double kappaFunction(su2double proj, su2double delta, su2double kappa)
   {
-    // const su2double sign = 1.0 - 2.0*(proj < 0.0);
-    // const su2double R = delta / (proj + sign*epsilon());
     const su2double psi = 0.5*((1.0-kappa)*proj + (1.0+kappa)*delta);
 
     return psi * (proj*delta >= 0);
+  }
+
+  inline su2double derivativeDelta(su2double proj, su2double delta, su2double kappa, unsigned short kindLimiter)
+  {
+    switch(kindLimiter) {
+      case NONE:
+        return -1.5*(1.0-kappa)*(proj*delta >= 0);
+
+      case VAN_ALBADA_EDGE:
+        const su2double sign = 1.0 - 2.0*(proj < 0.0);
+        const su2double eps = sign*epsilon();
+        const su2double R = delta / (proj + eps);
+        const su2double b = (1.0 + kappa)/(1.0 - kappa);
+        const su2double y = proj+eps;
+
+        const su2double dpsi = b * y * (b * pow(y,2.) + delta * (2. * y - delta))
+                             / pow(pow(delta,2.) + b * pow(y,2.),2.);
+
+        return dpsi * proj * (R >= 0);
+      default:
+        return 0.0;
+    }
+  }
+
+  inline su2double derivativeProj(su2double proj, su2double delta, su2double kappa, unsigned short kindLimiter)
+  {
+    switch(kindLimiter) {
+      case NONE:
+        return -0.5*(1.0+kappa)*(proj*delta >= 0);
+
+      case VAN_ALBADA_EDGE:
+        const su2double sign = 1.0 - 2.0*(proj < 0.0);
+        const su2double eps = sign*epsilon();
+        const su2double R = delta / (proj + eps);
+        const su2double beta = (1.0 + kappa)/(1.0 - kappa);
+        const su2double b = (1.0 + kappa)/(1.0 - kappa);
+        const su2double y = proj+eps;
+
+        const su2double dpsi = -b * delta * (b * pow(y,2.) + delta * (2. * y - delta))
+                             / pow(pow(delta,2.) + b * pow(y,2.),2.);
+
+        return dpsi * proj * (R >= 0);
+      default:
+        return 0.0;
+    }
   }
 
   inline su2double venkatFunction(su2double proj, su2double delta, su2double eps2)
@@ -91,35 +134,6 @@ namespace LimiterHelpers
     const su2double psi = R*(R + beta)/(pow(R, 2.0) + beta);
 
     return psi * (R >= 0);
-  }
-
-  inline su2double vanAlbadaDerivativeDelta(su2double proj, su2double delta, su2double kappa)
-  {
-    const su2double sign = 1.0 - 2.0*(proj < 0.0);
-    const su2double eps = sign*epsilon();
-    const su2double R = delta / (proj + eps);
-    const su2double b = (1.0 + kappa)/(1.0 - kappa);
-    const su2double y = proj+eps;
-
-    const su2double dpsi = b * y * (b * pow(y,2.) + delta * (2. * y - delta))
-                         / pow(pow(delta,2.) + b * pow(y,2.),2.);
-
-    return dpsi * proj * (R >= 0);
-  }
-
-  inline su2double vanAlbadaDerivativeProj(su2double proj, su2double delta, su2double kappa)
-  {
-    const su2double sign = 1.0 - 2.0*(proj < 0.0);
-    const su2double eps = sign*epsilon();
-    const su2double R = delta / (proj + eps);
-    const su2double beta = (1.0 + kappa)/(1.0 - kappa);
-    const su2double b = (1.0 + kappa)/(1.0 - kappa);
-    const su2double y = proj+eps;
-
-    const su2double dpsi = -b * delta * (b * pow(y,2.) + delta * (2. * y - delta))
-                         / pow(pow(delta,2.) + b * pow(y,2.),2.);
-
-    return dpsi * proj * (R >= 0);
   }
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
