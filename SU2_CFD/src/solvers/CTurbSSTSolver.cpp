@@ -1475,9 +1475,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      Flux[iVar] = 0.0;
-
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
       const auto jPoint = node_i->GetPoint(iNeigh);
