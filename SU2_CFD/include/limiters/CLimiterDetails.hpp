@@ -77,9 +77,11 @@ namespace LimiterHelpers
 
   inline su2double derivativeDelta(su2double proj, su2double delta, su2double kappa, unsigned short kindLimiter)
   {
+    su2double dpsi = 0.0;
     switch(kindLimiter) {
       case NONE:
-        return (0.5-1.5*kappa)*(proj*delta >= 0);
+        dpsi = (0.5-1.5*kappa)*(proj*delta >= 0);
+        break;
 
       case VAN_ALBADA_EDGE:
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
@@ -88,20 +90,22 @@ namespace LimiterHelpers
         const su2double b = (1.0 + kappa)/(1.0 - kappa);
         const su2double y = proj+eps;
 
-        const su2double dpsi = b * y * (b * pow(y,2.) + delta * (2. * y - delta))
-                             / pow(pow(delta,2.) + b * pow(y,2.),2.);
+        dpsi = b * y * (b * pow(y,2.) + delta * (2. * y - delta))
+             / pow(pow(delta,2.) + b * pow(y,2.),2.) * proj * (R >= 0);
 
-        return dpsi * proj * (R >= 0);
+        break;
       default:
-        return 0.0;
+        break;
     }
   }
 
   inline su2double derivativeProj(su2double proj, su2double delta, su2double kappa, unsigned short kindLimiter)
   {
+    su2double dpsi = 0.0;
     switch(kindLimiter) {
       case NONE:
-        return 0.5*(1.0-kappa)*(proj*delta >= 0);
+        dpsi =  0.5*(1.0-kappa)*(proj*delta >= 0);
+        break;
 
       case VAN_ALBADA_EDGE:
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
@@ -111,13 +115,14 @@ namespace LimiterHelpers
         const su2double b = (1.0 + kappa)/(1.0 - kappa);
         const su2double y = proj+eps;
 
-        const su2double dpsi = -b * delta * (b * pow(y,2.) + delta * (2. * y - delta))
-                             / pow(pow(delta,2.) + b * pow(y,2.),2.);
+        dpsi = -b * delta * (b * pow(y,2.) + delta * (2. * y - delta))
+             / pow(pow(delta,2.) + b * pow(y,2.),2.) * proj * (R >= 0);
 
-        return dpsi * proj * (R >= 0);
+        break;
       default:
-        return 0.0;
+        break;
     }
+    return dpsi;
   }
 
   inline su2double venkatFunction(su2double proj, su2double delta, su2double eps2)
