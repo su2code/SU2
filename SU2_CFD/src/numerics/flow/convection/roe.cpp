@@ -183,12 +183,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
-  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
-    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-  }
+  ProjVelocity   = GeometryToolbox::DotProduct(nDim,RoeVelocity,UnitNormal); 
+  ProjVelocity_i = GeometryToolbox::DotProduct(nDim,Velocity_i,UnitNormal); 
+  ProjVelocity_j = GeometryToolbox::DotProduct(nDim,Velocity_j,UnitNormal);
 
   su2double ProjGridVel = 0.0;
   if (dynamic_grid) {

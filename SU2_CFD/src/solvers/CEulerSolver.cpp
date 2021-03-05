@@ -3338,43 +3338,43 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
 
-    const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
-    const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
+    const auto Grad_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
+    const auto Grad_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
 
-    const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+    const su2double Delta = 0.5*(V_j[iVar] - V_i[iVar]);
 
-    const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i,Vector_ij) - V_ij;
-    const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j,Vector_ij) - V_ij;
+    const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
+    const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
 
     /*--- Edge-based limiters ---*/
 
     if (limNeeded) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
-          Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa_Flow);
-          Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+          Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i, Delta, Kappa_Flow);
+          Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j, Delta, Kappa_Flow);
           break;
         case PIPERNO:
-          Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-          Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+          Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i, Delta);
+          Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j, Delta);
           break;
       }
-      primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Lim_Flow_i[iVar];
-      primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Lim_Flow_j[iVar];
+      primvar_i[iVar] = V_i[iVar] + Proj_i*Lim_Flow_i[iVar];
+      primvar_j[iVar] = V_j[iVar] - Proj_j*Lim_Flow_j[iVar];
     }
 
     /*--- Unlimited kappa scheme ---*/
 
     else {
-      primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
-      primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+      primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Proj_i, Delta, Kappa_Flow);
+      primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Proj_j, Delta, Kappa_Flow);
     }
 
     if (config->GetUse_Accurate_Kappa_Jacobians()) {
-      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
 
       flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
       flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
@@ -3395,43 +3395,43 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
 
-      const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
-      const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
+      const auto Grad_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
+      const auto Grad_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
 
-      const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
+      const su2double Delta = 0.5*(T_j[iVar] - T_i[iVar]);
 
-      const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i,Vector_ij) - T_ij;
-      const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j,Vector_ij) - T_ij;
+      const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
+      const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
 
       /*--- Edge-based limiters ---*/
 
       if (limTurbNeeded) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
-            Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
-            Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+            Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i, Delta, Kappa_Turb);
+            Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j, Delta, Kappa_Turb);
             break;
           case PIPERNO:
-            Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-            Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+            Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i, Delta);
+            Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j, Delta);
             break;
         }
-        turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Lim_Turb_i[iVar];
-        turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Lim_Turb_j[iVar];
+        turbvar_i[iVar] = T_i[iVar] + Proj_i*Lim_Turb_i[iVar];
+        turbvar_j[iVar] = T_j[iVar] - Proj_j*Lim_Turb_j[iVar];
       }
 
       /*--- Unlimited kappa scheme ---*/
 
       else {
-        turbvar_i[iVar] = T_i[iVar] + LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
-        turbvar_j[iVar] = T_j[iVar] - LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+        turbvar_i[iVar] = T_i[iVar] + LimiterHelpers::kappaFunction(Proj_i, Delta, Kappa_Turb);
+        turbvar_j[iVar] = T_j[iVar] - LimiterHelpers::kappaFunction(Proj_j, Delta, Kappa_Turb);
       }
 
       if (config->GetUse_Accurate_Kappa_Jacobians()) {
-        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
 
         turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
         turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
@@ -3476,7 +3476,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
 
   su2double RoeSqVel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) RoeSqVel += pow((R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One,2.0);
-    
+
   const su2double SqVel_i = GeometryToolbox::SquaredNorm(nDim,primvar_i);
   const su2double SqVel_j = GeometryToolbox::SquaredNorm(nDim,primvar_j);
   
