@@ -39,7 +39,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar] ();
     Jacobian_j[iVar] = new su2double [nVar] ();
   }
@@ -48,7 +48,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
 CUpwScalar::~CUpwScalar(void) {
 
   delete [] Flux;
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
   }
@@ -70,7 +70,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   /*--- Primitive variables ---*/
 
   Proj_i = Proj_j = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
     Velocity_j[iDim] = V_j[iDim+1];
 
@@ -83,14 +83,14 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   a_ij = 0.0;
   if (dynamic_grid) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
       su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
       a_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
   else {
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
   }
 

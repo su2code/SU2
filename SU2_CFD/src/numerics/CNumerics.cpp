@@ -169,21 +169,21 @@ CNumerics::~CNumerics(void) {
   if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
   if (Flux_Tensor!= NULL) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
   if (tau != NULL) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       delete [] tau[iDim];
     }
     delete [] tau;
   }
 
   if (delta != NULL) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       delete [] delta[iDim];
     }
     delete [] delta;
@@ -197,7 +197,7 @@ CNumerics::~CNumerics(void) {
   if (m != NULL) delete [] m;
 
   if (using_uq) {
-    for (auto iDim = 0; iDim < 3; iDim++){
+    for (auto iDim = 0u; iDim < 3; iDim++){
       delete [] MeanReynoldsStress[iDim];
       delete [] MeanPerturbedRSM[iDim];
       delete [] A_ij[iDim];
@@ -340,7 +340,7 @@ void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const
   const bool wasActive = AD::BeginPassive();
 
   su2double sq_vel = 0.0, proj_vel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     sq_vel   += v[iDim]*v[iDim];
     proj_vel += v[iDim]*n[iDim];
   }
@@ -350,11 +350,11 @@ void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const
   const su2double a2 = Gamma_Minus_One;
 
   J[0][0] = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     J[0][iDim+1] = scale*n[iDim];
   J[0][nDim+1] = 0.0;
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     J[iDim+1][0] = scale*(n[iDim]*phi - v[iDim]*proj_vel);
     for (auto jDim = 0; jDim < nDim; jDim++)
       J[iDim+1][jDim+1] = scale*(n[jDim]*v[iDim]-a2*n[iDim]*v[jDim]);
@@ -363,13 +363,13 @@ void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const
   }
 
   J[nDim+1][0] = scale*proj_vel*(phi-a1);
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     J[nDim+1][iDim+1] = scale*(n[iDim]*a1-a2*v[iDim]*proj_vel);
   J[nDim+1][nDim+1] = scale*Gamma*proj_vel;
 
   if (tkeNeeded) {
     J[0][nDim+2] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       J[iDim+1][nDim+2] = -scale*a2*n[iDim];
     J[nDim+1][nDim+2] = -scale*a2*proj_vel;
   }
@@ -549,7 +549,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   const su2double alpha = 0.5/c2;
     
   su2double q2 = 0.0, theta = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     q2    += pow(v[iDim],2);
     theta += v[iDim]*n[iDim];
   }
@@ -715,7 +715,7 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   const su2double beta  = Gamma_Minus_One*alpha;
 
   su2double phi2 = 0.0, theta = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     phi2  += pow(v[iDim],2);
     theta += v[iDim]*n[iDim];
   }
@@ -1347,7 +1347,7 @@ void CNumerics::GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val
     su2double *val_normal, su2double *val_Lambda_Vector) {
   su2double ProjVelocity = 0;
 
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     ProjVelocity += val_velocity[iDim]*val_normal[iDim];
 
   if (nDim == 3) {

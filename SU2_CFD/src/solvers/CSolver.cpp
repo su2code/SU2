@@ -3190,7 +3190,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
       const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
       const auto iEdge = geometry->FindEdge(iPoint, jPoint);
       const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
       break;
     }
@@ -3199,7 +3199,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
     {
       su2double weight = 1.0;
       su2double dist_ij[3] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
       
       if (kindGrad == WEIGHTED_LEAST_SQUARES) {
@@ -3211,7 +3211,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
         weight = 1.0/weight;
         const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
                                         : solver->GetNodes()->GetSmatrix(iPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           gradWeight[iDim] = weight*GeometryToolbox::DotProduct(nDim,Smat[iDim],dist_ij);
       }
       break;
@@ -3222,7 +3222,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
 
 void CSolver::SetSurfaceGradWeights_GG(su2double *gradWeight, const CGeometry *geometry, const CConfig *config, 
                                        const unsigned long iPoint) {
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     gradWeight[iDim] = 0.0;
 
   const su2double factor = -1.0/geometry->node[iPoint]->GetVolume();
@@ -3230,7 +3230,7 @@ void CSolver::SetSurfaceGradWeights_GG(su2double *gradWeight, const CGeometry *g
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           gradWeight[iDim] += factor*geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
       }// iVertex
     }// not send-receive
@@ -3267,13 +3267,13 @@ void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config, unsigned short
 }
 
 void CSolver::Add_External_To_Solution() {
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
 }
 
 void CSolver::Add_Solution_To_External() {
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 }
@@ -3289,8 +3289,8 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 
   passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
 
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       passivedouble
       new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
       delta = alpha * (new_val - cross_term(iPoint,iVar));
@@ -4767,7 +4767,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             index = iRow*nColumns;
 
             dist = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++)
+            for (auto iDim = 0u; iDim < nDim; iDim++)
             dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
             dist = sqrt(dist);
 
@@ -4984,7 +4984,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   Velocity2_Real = 0.0;
   Velocity2_ND   = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
     Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
   }
@@ -5576,7 +5576,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   su2double Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
   
   su2double **Grad_Symm = new su2double*[nVar];
-  for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     Grad_Symm[iVar] = new su2double[nDim];
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5623,22 +5623,22 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
           }// switch
           
           //--- Get gradients of the solution of boundary cell.
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iVar = 0u; iVar < nVar; iVar++)
+            for (auto iDim = 0u; iDim < nDim; iDim++)
               Grad_Symm[iVar][iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
           
           //--- Reflect the gradients for all scalars including the momentum components.
           //--- The gradients of the primal and adjoint momentum components are set later with the
           //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
-          for (auto iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
             if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS) || (Kind_Solver == RUNTIME_ADJTURB_SYS)) {
               //--- Compute projected part of the gradient in a dot product.
               su2double ProjGradient = 0.0;
-              for (auto iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 ProjGradient += Grad_Symm[iVar][iDim]*UnitNormal[iDim];
               
               //--- Set normal part of the gradient to zero.
-              for (auto iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 Grad_Symm[iVar][iDim] = Grad_Symm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
               
             }// if density, energy, or turbulent
@@ -5648,10 +5648,10 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- Compute gradients of normal and tangential momentum:
             //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
             //--- grad(rv*t) = grad(rv_x) t_x + grad(rv_y) t_y (+ grad(rv_z) t_z)
-            for (auto iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+            for (auto iVar = 0u; iVar < nDim; iVar++) { // counts gradient components
               GradNormVel[iVar] = 0.0;
               GradTangVel[iVar] = 0.0;
-              for (auto iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+              for (auto iDim = 0u; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
                 GradNormVel[iVar] += Grad_Symm[iDim+1][iVar] * UnitNormal[iDim];
                 GradTangVel[iVar] += Grad_Symm[iDim+1][iVar] * Tangential[iDim];
               }
@@ -5663,12 +5663,12 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- grad(rv*t)_s = grad(rv*t) - {grad([rv*t])*n}n
             su2double ProjNormMomGrad = 0.0;
             su2double ProjTangMomGrad = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
               ProjNormMomGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([rv*n])*t
               ProjTangMomGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([rv*t])*n
             }
 
-            for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
               GradNormVel[iDim] = GradNormVel[iDim] - ProjNormMomGrad * Tangential[iDim];
               GradTangVel[iDim] = GradTangVel[iDim] - ProjTangMomGrad * UnitNormal[iDim];
             }
@@ -5677,15 +5677,15 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- grad(rv_x)_s = grad(rv*n)_s n_x + grad(rv*t)_s t_x
             //--- grad(rv_y)_s = grad(rv*n)_s n_y + grad(rv*t)_s t_y
             //--- ( grad(rv_z)_s = grad(rv*n)_s n_z + grad(rv*t)_s t_z ) ---*/
-            for (auto iVar = 0; iVar < nDim; iVar++) // loops over the momentum component gradients
-              for (auto iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
+            for (auto iVar = 0u; iVar < nDim; iVar++) // loops over the momentum component gradients
+              for (auto iDim = 0u; iDim < nDim; iDim++) // loops over the entries of the above
                 Grad_Symm[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
             
           }// if flow
           
           //--- Set gradients of the solution of boundary cell.
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iVar = 0u; iVar < nVar; iVar++)
+            for (auto iDim = 0u; iDim < nDim; iDim++)
                base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, Grad_Symm[iVar][iDim]);
           
         }// if domain
@@ -5699,7 +5699,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   
   //--- Free locally allocated memory
   
-  for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     delete [] Grad_Symm[iVar];
   delete [] Grad_Symm;
 }
@@ -5715,7 +5715,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
         
         //--- Reset sum(grad_dot_n)
         su2double SumNormal[MAXNDIM] = {0.0};
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
           SumNormal[iDim] = 0.;
         }
         for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5724,7 +5724,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
             if (iVertex > -1) {
               nmarker_ipoint++;
               const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-              for (auto iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
+              for (auto iDim = 0u; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
             }// if iVertex
           }// if Heat_Flux
         }// iMarker
@@ -5734,13 +5734,13 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
           su2double Area = GeometryToolbox::Norm(nDim, SumNormal);
 
           su2double UnitNormal[MAXNDIM] = {0.0};
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             UnitNormal[iDim] = SumNormal[iDim]/Area;
           
           //--- Dot gradient with normal.
           if (Kind_Solver == RUNTIME_FLOW_SYS) {
             for (auto iVar = 1; iVar < nDim+1; iVar++) {
-              for (auto iDim = 0; iDim < nDim; iDim++) {
+              for (auto iDim = 0u; iDim < nDim; iDim++) {
                 const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
                 const su2double grad_dot_n = grad * UnitNormal[iDim];
                 base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
@@ -5748,7 +5748,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
             }
           }// if flow
           else if (Kind_Solver == RUNTIME_TURB_SYS) {
-            for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
               const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
               const su2double grad_dot_n = grad * UnitNormal[iDim];
               base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
@@ -5774,7 +5774,7 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
         for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
-            for (auto iVar = 0; iVar < nVar; iVar++) {
+            for (auto iVar = 0u; iVar < nVar; iVar++) {
               for (auto iMet = 0; iMet < nMet; iMet++) {
                 
               }// iVar
@@ -5808,12 +5808,12 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
           su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
-          for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+          for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = node_i->GetPoint(iNeigh);
             auto node_j = geometry->node[jPoint];
             if(!node_j->GetSolidBoundary()) {
               su2double dist = 0.0;
-              for (auto iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 dist += pow(node_j->GetCoord(iDim)-node_i->GetCoord(iDim),2);
               dist = sqrt(dist);
               suminvdist += 1./dist;
@@ -5849,12 +5849,12 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, METRIC);
   CompleteComms(geometry, config, METRIC);
 
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
     if (geometry->node[iPoint]->GetSolidBoundary()) {
       //--- Correct if any of the neighbors belong to the volume
       unsigned short counter = 0;
-      for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         if(!geometry->node[jPoint]->GetSolidBoundary()) {
           //--- Reset metric if first volume node detected
@@ -6463,13 +6463,13 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
 
-  for(auto iDim = 0; iDim < nDim; ++iDim){
+  for (auto iDim = 0u; iDim < nDim; ++iDim){
     A[iDim]      = new su2double[nDim];
     EigVec[iDim] = new su2double[nDim];
   }
 
   //--- set tolerance and obtain global scaling
-  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6492,7 +6492,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 #endif
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6505,11 +6505,11 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
-    for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
     for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
-    for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -6548,7 +6548,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 
-  for(auto iDim = 0; iDim < nDim; ++iDim){
+  for (auto iDim = 0u; iDim < nDim; ++iDim){
     delete [] A[iDim];
     delete [] EigVec[iDim];
   }
@@ -6577,13 +6577,13 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
 
-  for(auto iDim = 0; iDim < nDim; ++iDim){
+  for (auto iDim = 0u; iDim < nDim; ++iDim){
     A[iDim]      = new su2double[nDim];
     EigVec[iDim] = new su2double[nDim];
   }
 
   //--- set tolerance and obtain global scaling
-  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6610,7 +6610,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 #endif
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6627,11 +6627,11 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
-    for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
     for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
-    for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -6674,7 +6674,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 
-  for(auto iDim = 0; iDim < nDim; ++iDim){
+  for (auto iDim = 0u; iDim < nDim; ++iDim){
     delete [] A[iDim];
     delete [] EigVec[iDim];
   }

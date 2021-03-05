@@ -45,7 +45,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   Jacobian_j = new su2double* [nVar];
   jacobianWeights_i = new su2double* [nVar];
   jacobianWeights_j = new su2double* [nVar];
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar] ();
     Jacobian_j[iVar] = new su2double [nVar] ();
     jacobianWeights_i[iVar] = new su2double [nDim] ();
@@ -59,7 +59,7 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
   delete [] Flux;
   
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
     delete [] jacobianWeights_i[iVar];
@@ -96,13 +96,13 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Density_j = V_j[nDim+2]; Laminar_Viscosity_j = V_j[nDim+5]; Eddy_Viscosity_j = V_j[nDim+6];
   }
   
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Flux[iVar] = 0.0;
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       jacobianWeights_i[iVar][iDim] = 0.0;
       jacobianWeights_j[iVar][iDim] = 0.0;
     }
@@ -111,7 +111,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   /*--- Compute vector going from iPoint to jPoint ---*/
 
   dist_ij_2 = 0; proj_vector_ij = 0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
@@ -123,7 +123,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     proj_vector_ij = 1.0;
 
   /*--- Mean gradient approximation ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Normal)
                                       + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Normal));
     if (correct_gradient)
@@ -149,7 +149,7 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   
   /*--- Add contributions of nodal gradients ---*/
  
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     const su2double weight = 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim]);
     for (auto iVar= 0; iVar < nVar; iVar++) {
       jacobianWeights_i[iVar][iDim] = -weight*Jacobian_i[iVar][iVar];      
@@ -319,7 +319,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     const su2double factor_i = dmudT_i/(Density_i*Cv);
     const su2double factor_j = dmudT_j/(Density_j*Cv);
     
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       Jacobian_i[iVar][0] -= 0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
       Jacobian_j[iVar][0] -= 0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
     }

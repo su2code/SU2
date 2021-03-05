@@ -821,7 +821,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   /*--- Production ---*/
 
   su2double diverg = 0.;
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
     
   const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
@@ -841,7 +841,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     StrainMag2 = PerturbedStrainMag*PerturbedStrainMag;
   }
   else {
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       for (auto jDim = 0; jDim < nDim; jDim++)
         StrainMag2 += (PrimVar_Grad_i[iDim+1][jDim] + PrimVar_Grad_i[jDim+1][iDim]
                     -  TWO3*diverg*(iDim == jDim)) * PrimVar_Grad_i[iDim+1][jDim];
@@ -932,7 +932,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
     if (Residual[1] > 1e10) {
       su2double dKdOmega = 0;
-      for (auto iDim = 0; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+      for (auto iDim = 0u; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
       cout << "CDkw= "  << CDkw << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
     }
   }

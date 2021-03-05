@@ -299,11 +299,11 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
@@ -338,7 +338,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
     /*--- Positive turbulent variables ---*/
 
-    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+    for (auto iVar = 0u; iVar < nTurbVar; iVar++) {
       good_i = good_i && (turbvar_i[iVar] >= 0.0);
       good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
@@ -347,11 +347,11 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
     /*--- can cause issues in regions of low turbulence ---*/
 
     // su2double a_ij = 0.0;
-    // for (auto iDim = 0; iDim < nDim; iDim++)
+    // for (auto iDim = 0u; iDim < nDim; iDim++)
     //   a_ij += (primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
 
     // const su2double fabs_a = fabs(a_ij);
-    // for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+    // for (auto iVar = 0u; iVar < nTurbVar; iVar++) {
     //   const bool good_flux = (a_ij >= 0)? (fabs_a*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
     //                                     : (fabs_a*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
 
@@ -404,7 +404,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- Store reconstruction weights ---*/
 
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     dVl_dVi[iVar] = 1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
     dVr_dVi[iVar] =     - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
   }
@@ -416,7 +416,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- dF/d{k,o,r,v}, evaluated at face ---*/
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       dFl_dVl[iVar][jVar] = sign*dFl_dUl[iVar][jVar]*dUl_dVl;
       dFr_dVr[iVar][jVar] = sign*dFr_dUr[iVar][jVar]*dUr_dVr;
@@ -428,7 +428,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const auto primvar_i = flowNodes->GetPrimitive(iPoint);
   const su2double dVi_dUi = 1.0/primvar_i[nDim+2];
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = (dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
                               + dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi;
@@ -443,13 +443,13 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
   su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
    /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
   su2double Psi[MAXNVAR] = {0.0};
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
   }
 
@@ -460,17 +460,17 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
   }
 
   /*--- Neighbor node terms ---*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     /*--- d{k,o,r,v}/dU, evaluated at neighbor node ---*/
 
@@ -482,10 +482,10 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
     const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
         Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
@@ -520,7 +520,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
@@ -539,7 +539,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight);
 
   }// physical boundary
@@ -551,13 +551,13 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
   /*---         is already weighted by 0.5.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
     const su2double ratio_k = nodesFlo->GetDensity(iPoint)/nodesFlo->GetDensity(kPoint);
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*sign_grad_i;
       Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*ratio_k;
     }
@@ -685,7 +685,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -700,12 +700,12 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   /*--- Set residual to 0 if turbulent variables are calculated with wall functions ---*/
 
   if (wall_functions) {
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       const auto node_i = geometry->node[iPoint];
       if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
 
         LinSysRes.SetBlock_Zero(iPoint);
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
           const unsigned long total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
@@ -714,7 +714,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   }
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the volume ---*/
 
@@ -729,7 +729,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
@@ -745,7 +745,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   }
 
   SU2_OMP_CRITICAL
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
@@ -783,8 +783,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
     /*--- Update the turbulent solution. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++)
-      for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
 
   }
@@ -832,10 +832,10 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
   if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       su2double localUnderRelaxation = 1.0;
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
          turbulence variables can change over a nonlinear iteration. */

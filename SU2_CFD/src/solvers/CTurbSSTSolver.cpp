@@ -298,7 +298,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- BCM: Reset non-physical ---*/
                             
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
     nodes->SetNon_Physical(iPoint, false);
   
   SetPrimitive_Variables(solver);
@@ -331,8 +331,8 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-    for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
 
 }
@@ -547,7 +547,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
     const su2double r_j  = flowNodes->GetDensity(jPoint);
     
@@ -578,7 +578,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
   su2double distance, Density_Wall = 0.0, Lam_Visc_Wall = 0.0;
   su2double Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[MAXNDIM] = {0.0};
-  su2double UnitNormal[MAXNDIM] = {0.0};
   const su2double beta_1 = constants[4];
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
@@ -606,9 +605,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         Kine_Normal    = 0.;
         Lam_Visc_Normal = 0.;
 
-        for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
+        for (auto iDim = 0u; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
-        for (auto iNode = 0; iNode < nDonors; iNode++) {
+        for (auto iNode = 0u; iNode < nDonors; iNode++) {
           const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
           const su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
@@ -616,7 +615,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
           Energy_Normal  += donorCoeff*flowNodes->GetEnergy(donorPoint);
           Kine_Normal    += donorCoeff*nodes->GetPrimitive(donorPoint, 0);
 
-          for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
+          for (auto iDim = 0u; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
         const su2double VelMod = GeometryToolbox::SquaredNorm(nDim,Vel);
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
@@ -645,7 +644,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         const unsigned long total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
@@ -690,7 +689,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      for (auto iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      for (auto iVar = 0u; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -710,7 +709,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       else {
         /*--- Inflow conditions ---*/
         su2double Velocity2 = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+        for (auto iDim = 0u; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
         const su2double Rho_Infty = V_infty[nDim+2];
         const su2double muT_Infty = V_infty[nDim+6];
         const su2double Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
@@ -825,7 +824,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
 
-      for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
@@ -925,7 +924,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
        Primitive_i --> TurbVar_internal,
        Primitive_j --> TurbVar_outlet ---*/
 
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
         Primitive_j[iVar] = nodes->GetPrimitive(iPoint,iVar);
       }
@@ -1462,7 +1461,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     auto node_i = geometry->node[iPoint];
 
@@ -1475,14 +1474,14 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
       const auto jPoint = node_i->GetPoint(iNeigh);
       const auto node_j = geometry->node[jPoint];
 
       const auto iEdge = node_i->GetEdge(iNeigh);
       Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
 
@@ -1495,7 +1494,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         const su2double *GridVel_i = node_i->GetGridVel();
         const su2double *GridVel_j = node_j->GetGridVel();
 
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -1547,7 +1546,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
         /*--- Mean Values ---*/
 
@@ -1559,7 +1558,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         if (dynamic_grid) {
           const su2double *GridVel = node_i->GetGridVel();
 
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
         }
 
@@ -1594,7 +1593,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     su2double minDt = 1e30, maxDt = 0.0;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1653,7 +1652,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   /*--- Set K and Omega at the first point of the wall ---*/
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     const auto node_i = geometry->node[iPoint];
 
@@ -1665,7 +1664,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       su2double U_Tau = 0.;
       su2double T_Wall = 0.;
       const unsigned short nDonors = node_i->GetWall_nNode();
-      for (auto iNode = 0; iNode < nDonors; iNode++) {
+      for (auto iNode = 0u; iNode < nDonors; iNode++) {
         const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
@@ -1680,7 +1679,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       const su2double Phi  = asin(-1.0*Beta/Q);
 
       VelMod = 0.;
-      for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      for (auto iDim = 0u; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       VelMod = sqrt(VelMod);
 
       const su2double Up  = VelMod/U_Tau;
@@ -1720,7 +1719,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       // LinSysRes.SetBlock_Zero(iPoint);
 
       // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      // for (auto iVar = 0; iVar < nVar; iVar++) {
+      // for (auto iVar = 0u; iVar < nVar; iVar++) {
       //   const unsigned long total_index = iPoint*nVar+iVar;
       //   Jacobian.DeleteValsRowi(total_index);
       // }
@@ -1739,7 +1738,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   /*--- Set K and Omega at the first point of the wall ---*/
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     const auto node_i = geometry->node[iPoint];
 
@@ -1750,7 +1749,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
       const unsigned short nDonors = node_i->GetWall_nNode();
-      for (auto iNode = 0; iNode < nDonors; iNode++) {
+      for (auto iNode = 0u; iNode < nDonors; iNode++) {
         const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
@@ -1758,7 +1757,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       }
 
       VelMod = 0.;
-      for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      for (auto iDim = 0u; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       VelMod = sqrt(VelMod);
 
       const su2double distance = node_i->GetWall_Distance();

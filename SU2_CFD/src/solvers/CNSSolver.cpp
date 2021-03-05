@@ -125,7 +125,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
   if (config->GetWall_Functions()) {
     unsigned long counter = 0;
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
         nodes->SetWallMap(iPoint,counter);
         counter++;
@@ -240,7 +240,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
       ResetCFLAdapt();
       const su2double CFL_Flow = config->GetCFL(iMesh);
       const su2double CFL_Turb = max(CFL_Flow*config->GetCFLRedCoeff_Turb(), config->GetCFL_AdaptParam(2));
-      for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         nodes->SetLocalCFL(iPoint, CFL_Flow);
         solver[TURB_SOL]->GetNodes()->SetLocalCFL(iPoint, CFL_Turb);
       }
@@ -266,7 +266,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver, CConfig *confi
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
@@ -998,7 +998,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         Res_Conv[iVar] = 0.0;
         Res_Visc[iVar] = 0.0;
       }
@@ -1008,9 +1008,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       if (dynamic_grid) {
         GridVel = geometry->node[iPoint]->GetGridVel();
-        for (auto iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
+        for (auto iDim = 0u; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
-        for (auto iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       }
 
       /*--- Impose the value of the velocity as a strong boundary
@@ -1019,7 +1019,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       nodes->SetVelocity_Old(iPoint,Vector);
 
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
@@ -1039,7 +1039,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
         /*--- Get the grid velocity at the current boundary node ---*/
 
         su2double ProjGridVel = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
 
         /*--- Retrieve other primitive quantities and viscosities ---*/
@@ -1050,7 +1050,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
         const su2double eddy_viscosity    = nodes->GetEddyViscosity(iPoint);
         const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
           for (auto jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint,iDim+1, jDim);
           }
@@ -1062,7 +1062,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
         /*--- Compute the viscous stress tensor ---*/
 
-        for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
           for (auto jDim = 0; jDim < nDim; jDim++) {
             tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) -
                               TWO3*total_viscosity*div_vel*delta[iDim][jDim];
@@ -1090,9 +1090,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
           /*--- Jacobian contribution related to the pressure term ---*/
 
           su2double GridVel2 = 0.0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             GridVel2 += GridVel[iDim]*GridVel[iDim];
-          for (auto iVar = 0; iVar < nVar; iVar++)
+          for (auto iVar = 0u; iVar < nVar; iVar++)
             for (auto jVar = 0; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
@@ -1106,7 +1106,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
-          for (auto iVar = 0; iVar < nVar; iVar++)
+          for (auto iVar = 0u; iVar < nVar; iVar++)
             for (auto jVar = 0; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
 
@@ -1120,12 +1120,12 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
           const auto Coord_j = geometry->node[Point_Normal]->GetCoord();
 
           su2double dist_ij = 0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
           dist_ij = sqrt(dist_ij);
 
           su2double theta2 = 0.0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             theta2 += UnitNormal[iDim]*UnitNormal[iDim];
 
           const su2double factor = total_viscosity*Area/(Density*dist_ij);
@@ -1487,7 +1487,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
 
@@ -1905,7 +1905,7 @@ void CNSSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
             const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
-            for (auto iNode = 0; iNode < nDonors; iNode++) {
+            for (auto iNode = 0u; iNode < nDonors; iNode++) {
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
@@ -2220,7 +2220,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
             const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
-            for (auto iNode = 0; iNode < nDonors; iNode++) {
+            for (auto iNode = 0u; iNode < nDonors; iNode++) {
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               

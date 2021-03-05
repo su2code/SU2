@@ -293,7 +293,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
       globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, node) - 1;
       localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
 
-      for (auto iVar = 0; iVar < 3; iVar++){
+      for (auto iVar = 0u; iVar < 3; iVar++){
         if (dataSorter->FindProcessor(globalNodeNumber) == rank) {
           buffSendCoords[index] = dataSorter->GetData(iVar, localNodeNumber);
         } else {

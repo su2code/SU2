@@ -49,14 +49,14 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   Mean_PrimVar = new su2double [nPrimVar] ();
 
   Mean_GradPrimVar = new su2double* [nPrimVar];
-  for (auto iVar = 0; iVar < nPrimVar; iVar++)
+  for (auto iVar = 0u; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim] ();
 
   Mean_GradTurbVar = new su2double [nDim] ();
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     tau_jacobian_i[iDim] = new su2double [nVar] ();
     tau_jacobian_j[iDim] = new su2double [nVar] ();
   }
@@ -66,7 +66,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar] ();
     Jacobian_j[iVar] = new su2double [nVar] ();
   }
@@ -78,7 +78,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   delete [] Mean_PrimVar;
 
   if (Mean_GradPrimVar != nullptr) {
-    for (auto iVar = 0; iVar < nPrimVar; iVar++)
+    for (auto iVar = 0u; iVar < nPrimVar; iVar++)
       delete [] Mean_GradPrimVar[iVar];
     delete [] Mean_GradPrimVar;
   }
@@ -88,13 +88,13 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   }
 
   if (tau_jacobian_i != nullptr) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       delete [] tau_jacobian_i[iDim];
     }
     delete [] tau_jacobian_i;
   }
   if (tau_jacobian_j != nullptr) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       delete [] tau_jacobian_j[iDim];
     }
     delete [] tau_jacobian_j;
@@ -104,7 +104,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   delete [] heat_flux_jac_j;
 
   if (Jacobian_i != nullptr) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
     }
@@ -118,17 +118,17 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_i,
                                     const su2double* val_PrimVar_j,
                                     const unsigned short val_nPrimVar) {
-  for (auto iVar = 0; iVar < val_nPrimVar; iVar++) {
+  for (auto iVar = 0u; iVar < val_nPrimVar; iVar++) {
     const su2double GradPrimVar_Edge = GeometryToolbox::DotProduct(nDim,GradPrimVar[iVar],Edge_Vector);
     const su2double Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
   }
 
   if (tkeNeeded) {
     const su2double GradTurbVar_Edge = GeometryToolbox::DotProduct(nDim,Mean_GradTurbVar,Edge_Vector);
     const su2double Delta = turb_ke_j - turb_ke_i;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
   }
 }
@@ -196,11 +196,11 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
   /*--- First, compute wall shear stress as the magnitude of the wall-tangential
    component of the shear stress tensor---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) 
+  for (auto iDim = 0u; iDim < nDim; iDim++) 
     TauElem[iDim] = GeometryToolbox::DotProduct(nDim,tau[iDim],UnitNormal);
 
   TauNormal = GeometryToolbox::DotProduct(nDim,TauElem,UnitNormal);
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
   WallShearStress = GeometryToolbox::Norm(nDim,TauTangent);
@@ -388,7 +388,7 @@ void CAvgGrad_Base::SetTauJacobian() {
   const su2double xi_i = WF_Factor*Viscosity/(Density_i*dist_ij_2);
   const su2double xi_j = WF_Factor*Viscosity/(Density_j*dist_ij_2);
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++) {
       // Jacobian w.r.t. momentum
       tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
@@ -421,7 +421,7 @@ void CAvgGrad_Base::SetIncTauJacobian(const su2double val_laminar_viscosity,
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
   const su2double xi = total_viscosity/val_dist_ij;
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     tau_jacobian_i[iDim][0] = 0;
     for (auto jDim = 0; jDim < nDim; jDim++) {
       tau_jacobian_i[iDim][jDim+1] = -xi*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
@@ -435,7 +435,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 
   /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Flux_Tensor[0][iDim]      = 0.0;
     Flux_Tensor[nVar-1][iDim] = heat_flux_vector[iDim] + tke_flux_vector[iDim];
     for (auto jDim = 0; jDim < nDim; jDim++) {
@@ -444,9 +444,9 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     }
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
 
@@ -460,8 +460,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
   /*--- Jacobians wrt density and momentum ---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    for (auto iVar = 0; iVar < nVar-1; iVar++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iVar = 0u; iVar < nVar-1; iVar++) {
       Jacobian_i[iDim+1][iVar] = tau_jacobian_i[iDim][iVar];
       Jacobian_j[iDim+1][iVar] = tau_jacobian_j[iDim][iVar];
     }
@@ -471,7 +471,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
 
   su2double contraction_i = 0, contraction_j = 0;
   su2double proj_flux_vel_i = 0, proj_flux_vel_j = 0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     proj_flux_vel_i += val_Proj_Visc_Flux[iDim+1]*V_i[iDim+1];
     proj_flux_vel_j += val_Proj_Visc_Flux[iDim+1]*V_j[iDim+1];
 
@@ -487,12 +487,12 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
   Jacobian_i[nVar-1][0] = contraction_i - factor_i*proj_flux_vel_i;
   Jacobian_j[nVar-1][0] = contraction_j - factor_j*proj_flux_vel_j;
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Jacobian_i[nVar-1][iDim+1] += factor_i*val_Proj_Visc_Flux[iDim+1];
     Jacobian_j[nVar-1][iDim+1] += factor_j*val_Proj_Visc_Flux[iDim+1];
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Jacobian_i[nVar-1][iVar] += heat_flux_jac_i[iVar];
     Jacobian_j[nVar-1][iVar] += heat_flux_jac_j[iVar];
   }
@@ -521,7 +521,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
   }
     
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
@@ -531,7 +531,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     heat_flux_jac_i[iVar] = 0.0;
     heat_flux_jac_j[iVar] = 0.0;
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       tau_jacobian_i[iDim][iVar] = 0.0;
       tau_jacobian_j[iDim][iVar] = 0.0;
     }
@@ -541,13 +541,13 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   PrimVar_i = V_i;
   PrimVar_j = V_j;
 
-  for (auto iVar = 0; iVar < nPrimVar; iVar++) {
+  for (auto iVar = 0u; iVar < nPrimVar; iVar++) {
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
 
@@ -555,7 +555,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
@@ -574,14 +574,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Mean gradient approximation ---*/
 
-  for (auto iVar = 0; iVar < nDim+1; iVar++) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iVar = 0u; iVar < nDim+1; iVar++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }
   }
 
   if (tkeNeeded) {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
     }
   }
@@ -652,7 +652,7 @@ void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
   }
 }
@@ -667,7 +667,7 @@ void CAvgGrad_Flow::SetTKEFluxVector(const su2double* val_gradturbvar,
 
   /*--- Gradient of TKE ---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     tke_flux_vector[iDim] = viscosity*val_gradturbvar[iDim];
   }
 }
@@ -690,7 +690,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   heat_flux_jac_i[0] = -conductivity_over_Rd * (-p_i/pow(rho_i,2) + 0.5*sqvel_i*phi_i);
   heat_flux_jac_j[0] =  conductivity_over_Rd * (-p_j/pow(rho_j,2) + 0.5*sqvel_j*phi_j);
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     heat_flux_jac_i[iDim+1] = -conductivity_over_Rd * (-phi_i*V_i[iDim+1]);
     heat_flux_jac_j[iDim+1] =  conductivity_over_Rd * (-phi_j*V_j[iDim+1]);
   }
@@ -722,11 +722,11 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   const su2double Sref = config->GetMu_SND();
 
   su2double div_vel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
   su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     proj_stress[iDim] = -TWO3*div_vel*Normal[iDim];
     for (auto jDim = 0; jDim < nDim; jDim++)
       proj_stress[iDim] += WF_Factor*(Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim])*Normal[jDim];
@@ -736,7 +736,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   }
   
   su2double v2_i = 0., v2_j = 0.;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     v2_i += V_i[iDim+1]*V_i[iDim+1];
     v2_j += V_j[iDim+1]*V_j[iDim+1];
   }
@@ -754,7 +754,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   const su2double factor_i = 0.5*dmudT_i/(r_i*Cv);
   const su2double factor_j = 0.5*dmudT_j/(r_j*Cv);
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++) {
       Jacobian_i[iDim+1][jDim+1] -= factor_i*V_i[jDim+1]*proj_stress[iDim];
       Jacobian_j[iDim+1][jDim+1] -= factor_j*V_j[jDim+1]*proj_stress[iDim];
@@ -789,11 +789,11 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     const su2double heat_flux_factor = Cp/Prandtl_Turb;
 
     su2double div_vel = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
     su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       proj_stress[iDim] = -TWO3*div_vel*Normal[iDim];
       for (auto jDim = 0; jDim < nDim; jDim++)
         proj_stress[iDim] += WF_Factor*(Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim])*Normal[jDim];
@@ -808,7 +808,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     const su2double factor_i = 0.5*turb_ke_i/zeta_i;
     const su2double factor_j = 0.5*turb_ke_j/zeta_j;
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       Jacobian_i[iDim+1][0] += factor_i*proj_stress[iDim];
       Jacobian_j[iDim+1][0] += factor_j*proj_stress[iDim];
     }
@@ -982,9 +982,9 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
 
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
 
@@ -1049,7 +1049,7 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
 
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     for (auto jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
@@ -1070,7 +1070,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradpri
   const su2double heat_flux_factor = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
   }
 }
@@ -1087,7 +1087,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
   //order of secondary:dTdrho_e, dTde_rho
 
   su2double sqvel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
   }
 

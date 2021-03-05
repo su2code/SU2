@@ -13266,11 +13266,11 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   /*--- First store neighbors of wall nodes ---*/
-  for (auto iPoint=0; iPoint<GetnPointDomain(); ++iPoint) {
+  for (auto iPoint=0ul; iPoint<GetnPointDomain(); ++iPoint) {
     if (!node[iPoint]->GetSolidBoundary()) {
       for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
         if(config->GetViscous_Wall(iMarker)) {
-          for (auto iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+          for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); ++iNode) {
             const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
             const long jVertex = node[jPoint]->GetVertex(iMarker);
             if (jVertex != -1) {
@@ -13286,9 +13286,9 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
 
   /*--- Next store neighbors of neighbors ---*/
   vector<unsigned long> secondWallNeighbors;
-  for (auto iPoint=0; iPoint<GetnPointDomain(); ++iPoint) {
+  for (auto iPoint=0ul; iPoint<GetnPointDomain(); ++iPoint) {
     if ((!node[iPoint]->GetSolidBoundary())  && (!node[iPoint]->GetBool_Wall_Neighbor())) {
-      for (auto iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
+      for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
         if (node[jPoint]->GetBool_Wall_Neighbor()) {
           secondWallNeighbors.push_back(iPoint);
@@ -13299,7 +13299,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
     }// iPoint !SolidBoundary && !WallNeighbor
   }
 
-  for (auto iNode = 0; iNode < secondWallNeighbors.size(); iNode++)
+  for (auto iNode = 0u; iNode < secondWallNeighbors.size(); iNode++)
     node[secondWallNeighbors[iNode]]->SetBool_Wall_Neighbor(true);
 
   vector<unsigned long>().swap(secondWallNeighbors);

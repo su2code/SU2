@@ -2537,7 +2537,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
 
   /*--- BCM: Reset non-physical ---*/
 
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+  // for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
   //   nodes->SetNon_Physical(iPoint, false);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
@@ -2667,7 +2667,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver, CConfig *co
   unsigned long nonPhysicalPoints = 0;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint ++) {
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
@@ -2713,7 +2713,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const auto node_i = geometry->node[iPoint];
 
@@ -2729,7 +2729,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
 
       const auto jPoint = node_i->GetPoint(iNeigh);
@@ -2737,7 +2737,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       const auto iEdge = node_i->GetEdge(iNeigh);
       Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
 
@@ -2750,7 +2750,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         const su2double *GridVel_i = node_i->GetGridVel();
         const su2double *GridVel_j = node_j->GetGridVel();
 
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -2795,7 +2795,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
         /*--- Mean Values ---*/
 
@@ -2807,7 +2807,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         if (dynamic_grid) {
           const su2double *GridVel = node_i->GetGridVel();
 
-          for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
         }
 
@@ -2839,7 +2839,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     su2double minDt = 1e30, maxDt = 0.0;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       Vol = geometry->node[iPoint]->GetVolume();
 
@@ -2904,7 +2904,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
       nodes->SetDelta_Time(iPoint, Global_Delta_Time);
     }
@@ -2919,7 +2919,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     su2double glbDtND = 1e30;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
     }
     SU2_OMP_CRITICAL
@@ -2940,7 +2940,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
   if (dual_time && !implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
       nodes->SetDelta_Time(iPoint, Local_Delta_Time);
     }
@@ -3091,7 +3091,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     if (roe_turkel) {
       su2double sqvel = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim ++)
+      for (auto iDim = 0u; iDim < nDim; iDim ++)
         sqvel += pow(config->GetVelocity_FreeStream()[iDim], 2);
       numerics->SetVelocity2_Inf(sqvel);
     }
@@ -3268,11 +3268,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
@@ -3321,7 +3321,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
   su2double Vector_ij[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
   }
 
@@ -3330,7 +3330,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto& Lim_Flow_i = flowNodes->GetLimiter_Primitive(iPoint);
   const auto& Lim_Flow_j = flowNodes->GetLimiter_Primitive(jPoint);
 
-  for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
+  for (auto iVar = 0u; iVar < nFlowVarGrad; iVar++) {
 
     const auto Grad_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
     const auto Grad_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
@@ -3387,7 +3387,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     const auto& Lim_Turb_i = turbNodes->GetLimiter(iPoint);
     const auto& Lim_Turb_j = turbNodes->GetLimiter(jPoint);
 
-    for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
+    for (auto iVar = 0u; iVar < nTurbVarGrad; iVar++) {
 
       const auto Grad_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
       const auto Grad_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
@@ -3469,7 +3469,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double R_Plus_One = R+1.;
 
   su2double RoeSqVel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) RoeSqVel += pow((R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One,2.0);
+  for (auto iDim = 0u; iDim < nDim; iDim++) RoeSqVel += pow((R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One,2.0);
 
   const su2double SqVel_i = GeometryToolbox::SquaredNorm(nDim,primvar_i);
   const su2double SqVel_j = GeometryToolbox::SquaredNorm(nDim,primvar_j);
@@ -3511,9 +3511,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool tkeNeeded   = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
-  const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
-  const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
-
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
@@ -3534,7 +3531,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
   su2double vel_l[MAXNDIM] = {0.0}, vel_r[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     vel_l[iDim] = primvar_l[iDim+1];
     vel_r[iDim] = primvar_r[iDim+1];
   }
@@ -3563,7 +3560,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   dUl_dVl[0][0] = dUr_dVr[0][0] = 1.0;
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     dUl_dVl[iDim+1][0] = vel_l[iDim];
     dUr_dVr[iDim+1][0] = vel_r[iDim];
 
@@ -3588,7 +3585,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
         dFl_dVl[iVar][jVar] += sign*dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
@@ -3603,11 +3600,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double inv_rho_i = 1.0/primvar_i[nDim+2];
   su2double vel_i[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++) vel_i[iDim] = primvar_i[iDim+1];
+  for (auto iDim = 0u; iDim < nDim; iDim++) vel_i[iDim] = primvar_i[iDim+1];
   const su2double sq_vel_i = GeometryToolbox::SquaredNorm(nDim,vel_i);
 
   dVi_dUi[0][0] = 1.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     dVi_dUi[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
     dVi_dUi[iDim+1][iDim+1] = inv_rho_i;
     dVi_dUi[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
@@ -3617,7 +3614,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   if (tkeNeeded)
     dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
@@ -3634,7 +3631,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
   su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0}, vel_k[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
@@ -3655,10 +3652,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+    for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
           Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
@@ -3666,7 +3663,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Neighbor node terms ---*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
 
@@ -3674,11 +3671,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto primvar_k = nodes->GetPrimitive(kPoint);
 
     const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
-    for (auto iDim = 0; iDim < nDim; iDim++) vel_k[iDim] = primvar_k[iDim+1];
+    for (auto iDim = 0u; iDim < nDim; iDim++) vel_k[iDim] = primvar_k[iDim+1];
     const su2double sq_vel_k = GeometryToolbox::SquaredNorm(nDim,vel_k);
 
     dVk_dUk[0][0] = 1.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
       dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
       dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
@@ -3691,10 +3688,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
     const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+    for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
@@ -3724,7 +3721,7 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
   const bool wasActive = AD::BeginPassive();
 
   su2double EdgVec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 
   /*--- Get norm of projection and distance vectors ---*/
@@ -3738,7 +3735,7 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
   /*--- Get vector to be multiplied by Jacobian weights ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
   StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
@@ -3778,11 +3775,11 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   
 
   su2double Mean_Velocity[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     Mean_Velocity[iDim] = 0.5*(nodes->GetVelocity(iPoint,iDim)+nodes->GetVelocity(jPoint,iDim));
 
   /*--- Reset first row and last column of Jacobian now so we don't need to later ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     Jacobian_i[0][iVar] = Jacobian_i[iVar][nVar-1] = 0.0;
     Jacobian_j[0][iVar] = Jacobian_j[iVar][nVar-1] = 0.0;
   }
@@ -3804,7 +3801,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     const su2double factor = 0.5*sign;
-    for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       for (auto jDim = 0; jDim < nDim; jDim++)
         Jacobian_i[iDim+1][jDim+1] = factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
@@ -3812,7 +3809,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
 
     /*--- Now get density and energy Jacobians for iPoint ---*/
     Jacobian_i[nVar-1][0] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       Jacobian_i[iDim+1][0] = Jacobian_i[nVar-1][iDim+1] = 0.0;
       for (auto jDim = 0; jDim < nDim; jDim++) {
         /*--- Momentum flux Jacobian wrt density ---*/
@@ -3836,7 +3833,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     const auto kPoint = node_i->GetPoint(iNeigh);
 
@@ -3850,7 +3847,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     const su2double diagTerm = GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0; jDim < nDim; jDim++) {
         Jacobian_i[iDim+1][jDim+1] = factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
@@ -3863,7 +3860,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
 
     /*--- Now get density and energy Jacobians for kPoint ---*/
     Jacobian_i[nVar-1][0] = Jacobian_j[nVar-1][0] = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       Jacobian_i[iDim+1][0] = Jacobian_i[nVar-1][iDim+1] = 0.0;
       Jacobian_j[iDim+1][0] = Jacobian_j[nVar-1][iDim+1] = 0.0;
       for (auto jDim = 0; jDim < nDim; jDim++) {
@@ -3935,7 +3932,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
   }
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
-  for (auto iVar = 0; iVar < nVar-1; iVar++) {
+  for (auto iVar = 0u; iVar < nVar-1; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
@@ -3982,7 +3979,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
       
     const auto kPoint = node_i->GetPoint(iNeigh);
 
@@ -4033,7 +4030,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   su2double pressure = primitive[nDim+1];
 
   su2double velocity2 = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0u; iDim < nDim; iDim++)
     velocity2 += pow(primitive[iDim+1], 2);
 
   fluidModel->SetTDState_Prho(pressure, density);
@@ -4302,20 +4299,20 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     /*--- Set eigenvalues to zero. ---*/
     nodes->SetLambda(iPoint,0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
     {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       auto Normal = geometry->edge[iEdge]->GetNormal();
       su2double Area = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
+      for (auto iDim = 0u; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
 
       /*--- Mean Values ---*/
@@ -4329,7 +4326,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
         const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
         const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
 
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -4355,7 +4352,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       su2double Area = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
 
@@ -4368,7 +4365,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       if (dynamic_grid) {
         auto GridVel = geometry->node[iPoint]->GetGridVel();
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
       }
 
@@ -4409,20 +4406,20 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
 
     const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
     const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     iPoint_UndLapl[iPoint] = 0.0;
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
     {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -4432,7 +4429,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 
       /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 
-      for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
@@ -4465,7 +4462,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
     /*--- Set final pressure switch for each point ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
 
@@ -4486,14 +4483,14 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
 
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
     auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
 
-    for (auto iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+    for (auto iNeigh = 0u; iNeigh <= nNeigh; iNeigh++) {
 
       auto jPoint = iPoint;
       if (iNeigh < nNeigh) jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -4509,7 +4506,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
       const su2double* Vorticity = nodes->GetVorticity(jPoint);
       su2double Omega = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         Omega += pow(Vorticity[iDim], 2);
       }
       Omega = sqrt(Omega);
@@ -5222,7 +5219,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -5235,7 +5232,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
   /*--- Update the solution and residuals ---*/
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
     su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
@@ -5244,7 +5241,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
     const su2double* Residual = LinSysRes.GetBlock(iPoint);
 
     if (!adjoint) {
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
 
         su2double Res = Residual[iVar] + Res_TruncError[iVar];
 
@@ -5290,7 +5287,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
   if (!adjoint) {
     /*--- Reduce residual information over all threads in this rank. ---*/
     SU2_OMP_CRITICAL
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
       AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
     }
@@ -5351,7 +5348,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -5364,7 +5361,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Build implicit system ---*/
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the residual ---*/
 
@@ -5390,7 +5387,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
@@ -5398,7 +5395,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
@@ -5413,7 +5410,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
   SU2_OMP_CRITICAL
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
@@ -5454,8 +5451,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   if (!adjoint) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
       }
     }
@@ -5493,10 +5490,10 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   const su2double allowableRatio = 0.2;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     su2double localUnderRelaxation = 1.0;
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
@@ -7188,7 +7185,7 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
   /*--- Check that the norm of the flow unit vector is actually 1 ---*/
 
   su2double norm = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     norm += pow(val_inlet[FlowDir_position + iDim], 2);
   }
   norm = sqrt(norm);
@@ -7216,7 +7213,7 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
 
   Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
   Inlet_Ptotal[iMarker][iVertex] = val_inlet[P_position];
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
     Inlet_FlowDir[iMarker][iVertex][iDim] =  val_inlet[FlowDir_position + iDim];
   }
 
@@ -7299,7 +7296,7 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
 
@@ -7311,7 +7308,7 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
     }
   }
@@ -7824,7 +7821,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (auto iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
@@ -7840,7 +7837,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
          boundary nodes. ---*/
 
       Area = GeometryToolbox::Norm(nDim, Normal);
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Store primitive variables (density, velocities, velocity squared,
@@ -7851,7 +7848,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density_Bound = V_domain[nDim+2];
       Vel2_Bound = 0.0; Vn_Bound = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         Vel_Bound[iDim] = V_domain[iDim+1];
         Vel2_Bound     += Vel_Bound[iDim]*Vel_Bound[iDim];
         Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
@@ -7866,7 +7863,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density_Infty = GetDensity_Inf();
       Vel2_Infty = 0.0; Vn_Infty = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         Vel_Infty[iDim] = GetVelocity_Inf(iDim);
         Vel2_Infty     += Vel_Infty[iDim]*Vel_Infty[iDim];
         Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
@@ -7880,7 +7877,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       Qn_Infty = Vn_Infty;
       if (dynamic_grid) {
         GridVel = node_i->GetGridVel();
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
       }
 
@@ -7931,12 +7928,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
         Entropy = Entropy_Bound;
       } else  {
         /*--- Inflow conditions ---*/
-        for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
         Entropy = Entropy_Infty;
       }
@@ -7945,7 +7942,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
       Velocity2 = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
@@ -7965,7 +7962,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Store new primitive state for computing the flux. ---*/
 
       V_infty[0] = Pressure/(Gas_Constant*Density);
-      for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         V_infty[iDim+1] = Velocity[iDim];
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
@@ -12265,13 +12262,13 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
       if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
       /*--- Reset the global error measures to zero. ---*/
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         VerificationSolution->SetError_RMS(iVar, 0.0);
         VerificationSolution->SetError_Max(iVar, 0.0, 0);
       }
 
       /*--- Loop over all owned points. ---*/
-      for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = geometry->node[iPoint]->GetCoord();
@@ -12282,7 +12279,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
         VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
 
         /* Increment the global error measures */
-        for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
           VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
           VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
                                              geometry->node[iPoint]->GetGlobalIndex(),
@@ -13677,7 +13674,7 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
     }
 
     velsq = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       velsq += vel[iDim]*vel[iDim];
     }
     f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
