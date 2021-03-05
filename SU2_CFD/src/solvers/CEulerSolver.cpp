@@ -3420,18 +3420,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           case VAN_ALBADA_EDGE:
             Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
             Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
-
-            if (config->GetUse_Accurate_Kappa_Jacobians()) {
-              const su2double dDelta_i = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_i, T_ij, Kappa_Turb);
-              const su2double dDelta_j = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_j, T_ij, Kappa_Turb);
-              const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
-              const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
-
-              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
-              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
-              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
-              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
-            }
             break;
           case PIPERNO:
             Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
