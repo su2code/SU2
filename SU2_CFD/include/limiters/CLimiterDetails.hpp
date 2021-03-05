@@ -79,7 +79,7 @@ namespace LimiterHelpers
   {
     switch(kindLimiter) {
       case NONE:
-        return -1.5*(1.0-kappa)*(proj*delta >= 0);
+        return (0.5-1.5*kappa)*(proj*delta >= 0);
 
       case VAN_ALBADA_EDGE:
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
@@ -101,7 +101,7 @@ namespace LimiterHelpers
   {
     switch(kindLimiter) {
       case NONE:
-        return -0.5*(1.0+kappa)*(proj*delta >= 0);
+        return 0.5*(1.0-kappa)*(proj*delta >= 0);
 
       case VAN_ALBADA_EDGE:
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
