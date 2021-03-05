@@ -123,23 +123,16 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   /*--- Mean gradient approximation ---*/
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Proj_Mean_GradTurbVar_Normal = 0.0;
-    Proj_Mean_GradTurbVar_Edge   = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      su2double Mean_GradTurbVar = 0.5*(TurbVar_Grad_i[iVar][iDim] +
-                                        TurbVar_Grad_j[iVar][iDim]);
+    Proj_Mean_GradTurbVar_Normal = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Normal)
+                                      + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Normal));
+    if (correct_gradient)
+      Proj_Mean_GradTurbVar_Edge = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Edge_Vector)
+                                      + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Edge_Vector));
 
-      Proj_Mean_GradTurbVar_Normal += Mean_GradTurbVar * Normal[iDim];
-
-      if (correct_gradient)
-        Proj_Mean_GradTurbVar_Edge += Mean_GradTurbVar * Edge_Vector[iDim];
-    }
     Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal;
-    
-    if (correct_gradient) {
+    if (correct_gradient)
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
-    }
   }
 
   FinishResidualCalc(config);

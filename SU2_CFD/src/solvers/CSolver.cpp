@@ -3211,11 +3211,8 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
         weight = 1.0/weight;
         const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
                                         : solver->GetNodes()->GetSmatrix(iPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          gradWeight[iDim] = 0.0;
-          for (auto jDim = 0; jDim < nDim; jDim++)
-            gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
-        }
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          gradWeight[iDim] = weight*GeometryToolbox::DotProduct(nDim,Smat[iDim],dist_ij);
       }
       break;
     }

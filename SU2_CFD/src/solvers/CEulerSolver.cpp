@@ -3343,13 +3343,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-    su2double Project_Grad_i = -V_ij;
-    su2double Project_Grad_j = -V_ij;
-
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
-      Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
-    }
+    const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i,Vector_ij) - V_ij;
+    const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j,Vector_ij) - V_ij;
 
     /*--- Edge-based limiters ---*/
 
@@ -3405,13 +3400,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
-      su2double Project_Grad_i = -T_ij;
-      su2double Project_Grad_j = -T_ij;
-
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
-        Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
-      }
+      const su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim,Gradient_i,Vector_ij) - T_ij;
+      const su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim,Gradient_j,Vector_ij) - T_ij;
 
       /*--- Edge-based limiters ---*/
 
@@ -3677,13 +3667,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    su2double gradWeightDotDist = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
-    }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -3720,13 +3706,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
-    su2double gradWeightDotDist = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
-    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -3765,18 +3747,15 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
 
   su2double ProjVec = 0.0, Dist2 = (iPoint == jPoint)? 1.0 : 0.0;
   if (iPoint != jPoint) {
-    for (auto iDim = 0; iDim < nDim; iDim++){
-      ProjVec += Normal[iDim]*EdgVec[iDim];
-      Dist2   += EdgVec[iDim]*EdgVec[iDim];
-    }
+    ProjVec = GeometryToolbox::DotProduct(nDim,Normal,EdgVec);
+    Dist2   = GeometryToolbox::SquaredNorm(nDim,EdgVec);
   }
 
   /*--- Get vector to be multiplied by Jacobian weights ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++){
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
-  }
 
   StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
   HeatFluxJacobian(solver, geometry, config, iPoint, jPoint, Vec);
@@ -3837,9 +3816,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     /*--- Get projection to be multiplied by divergence terms ---*/
-    su2double diagTerm = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      diagTerm += Vec[iDim]*gradWeight[iDim];
+    const su2double diagTerm = GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     const su2double factor = 0.5*sign;
@@ -3886,9 +3863,7 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
     /*--- Get projection to be multiplied by divergence terms ---*/
-    su2double diagTerm = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      diagTerm += Vec[iDim]*gradWeight[iDim];
+    const su2double diagTerm = GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -3995,11 +3970,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    su2double factor = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      factor += gradWeight[iDim]*Vec[iDim];
-
-    factor *= 0.5*ConductivityOnR*sign;
+    const su2double factor = 0.5*ConductivityOnR*sign*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] = factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
@@ -4038,11 +4009,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
-    su2double factor = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      factor += gradWeight[iDim]*Vec[iDim];
-
-    factor *= 0.5*sign*ConductivityOnR;
+    const su2double factor = 0.5*ConductivityOnR*sign*GeometryToolbox::DotProduct(nDim,gradWeight,Vec);
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] = factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i)*sign_grad_i;

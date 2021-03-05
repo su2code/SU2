@@ -458,13 +458,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    su2double gradWeightDotDist = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
-    }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -484,13 +480,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
-    su2double gradWeightDotDist = 0.0;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
-    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -547,8 +539,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     for (auto iVar = 0; iVar < nVar; iVar++)
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
+      Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim]);
 
   }// physical boundary
 
@@ -566,11 +557,8 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_j[iVar][iVar] = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
-        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*ratio_k;
-      }
+      Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim])*sign_grad_i;
+      Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight[iDim])*ratio_k;
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);

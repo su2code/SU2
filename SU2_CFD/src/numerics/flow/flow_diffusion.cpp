@@ -119,25 +119,17 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_j,
                                     const unsigned short val_nPrimVar) {
   for (auto iVar = 0; iVar < val_nPrimVar; iVar++) {
-    su2double GradPrimVar_Edge = 0.0, 
-              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
-    }
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    const su2double GradPrimVar_Edge = GeometryToolbox::DotProduct(nDim,GradPrimVar[iVar],Edge_Vector);
+    const su2double Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
+    for (auto iDim = 0; iDim < nDim; iDim++)
       GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
-    }
   }
 
   if (tkeNeeded) {
-    su2double GradTurbVar_Edge = 0.0, 
-              Delta = turb_ke_j - turb_ke_i;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      GradTurbVar_Edge += Mean_GradTurbVar[iDim]*Edge_Vector[iDim];
-    }
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    const su2double GradPrimVar_Edge = GeometryToolbox::DotProduct(nDim,MeanGradTurbVar,Edge_Vector);
+    const su2double Delta = turb_ke_j - turb_ke_i;
+    for (auto iDim = 0; iDim < nDim; iDim++)
       Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
-    }
   }
 }
 
@@ -204,23 +196,14 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
   /*--- First, compute wall shear stress as the magnitude of the wall-tangential
    component of the shear stress tensor---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    TauElem[iDim] = 0.0;
-    for (auto jDim = 0; jDim < nDim; jDim++)
-      TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
-  }
+  for (auto iDim = 0; iDim < nDim; iDim++) 
+    TauElem[iDim] = GeometryToolbox::DotProduct(nDim,tau[iDim],UnitNormal);
 
-  TauNormal = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
+  TauNormal = GeometryToolbox::DotProduct(nDim,TauElem,UnitNormal);
   for (auto iDim = 0; iDim < nDim; iDim++)
     TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
-  WallShearStress = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    WallShearStress += TauTangent[iDim]*TauTangent[iDim];
-  WallShearStress = sqrt(WallShearStress);
+  WallShearStress = GeometryToolbox::Norm(nDim,TauTangent);
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    to the computed representation of the shear stress ---*/

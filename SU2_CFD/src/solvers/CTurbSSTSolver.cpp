@@ -537,10 +537,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[1][0] += factor/r_i*gradWeight[iDim]*gradom[iDim];
-      Jacobian_i[1][1] += factor/r_i*gradWeight[iDim]*gradk[iDim];
-    }
+    Jacobian_i[1][0] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradom);
+    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradk);
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -553,17 +551,13 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
     const su2double r_j  = flowNodes->GetDensity(jPoint);
     
-    Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
-
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[1][0] += factor/r_i*gradWeight[iDim]*gradom[iDim]*sign_grad_i;
-      Jacobian_j[1][0] += factor/r_j*gradWeight[iDim]*gradom[iDim];
+    Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradom)*sign_grad_i;
+    Jacobian_j[1][0] += factor/r_j*GeometryToolbox::DotProduct(gradWeight,gradom);
 
-      Jacobian_i[1][1] += factor/r_i*gradWeight[iDim]*gradk[iDim]*sign_grad_i;
-      Jacobian_j[1][1] += factor/r_j*gradWeight[iDim]*gradk[iDim];
-    }// iDim
+    Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(gradWeight,gradk)*sign_grad_i;
+    Jacobian_j[1][1] = factor/r_j*GeometryToolbox::DotProduct(gradWeight,gradk);
     
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
@@ -626,7 +620,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
           for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
-        for (auto iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
+        const su2double VelMod = GeometryToolbox::SquaredNorm(nDim,Vel[iDim]);
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
         
         solver[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
@@ -709,9 +703,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       
       /*--- Set primitive state based on flow direction ---*/
       
-      su2double Vn_Infty = 0;
-      for (auto iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
-
+      const su2double Vn_Infty = GeometryToolbox::DotProduct(nDim,Vel_Infty,Normal);
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/
         Primitive_j[0] = Primitive_i[0];
