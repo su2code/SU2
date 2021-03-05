@@ -2192,9 +2192,16 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
   stringstream TurboInOutTable, TurboPerfTable;
+  
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE){
+    // auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
+    // for (auto &v1 : BladePerformance.at(0).at(0).){
+    //   for (auto &v2 : v1){
+    //     cout << v2-> << endl;
+    //   }
+    // }
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
     TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
@@ -2204,7 +2211,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     TurboInOut.PrintHeader();
     // TODO: Error is assessing boundary state values.
-    //TurboInOut << "Entropy" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState()<<0.0;
+    // TurboInOut << "Entropy" << BladePerformance.at(0).at(0)->GetInletState()<<0.0;
     // TurboInOut << "TotEnthalpy" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetTotalEnthalpy()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetTotalEnthalpy();
     // TurboInOut << "TotPressure" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetTotalPressure()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetTotalPressure();
     // TurboInOut << "Mass Flow" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
