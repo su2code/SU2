@@ -2196,12 +2196,8 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE){
-    // auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
-    // for (auto &v1 : BladePerformance.at(0).at(0).){
-    //   for (auto &v2 : v1){
-    //     cout << v2-> << endl;
-    //   }
-    // }
+    auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
+
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
     TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
@@ -2210,14 +2206,14 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.AddColumn("Outlet", 25);
     TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     TurboInOut.PrintHeader();
-    // std::cout << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetDensity() << endl;
+
     // TODO: Error is assessing boundary state values.
-    // TurboInOut << "Entropy" << BladePerformance.at(0).at(0)->GetInletState()<<0.0;
-    // TurboInOut << "TotEnthalpy" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetTotalEnthalpy()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetTotalEnthalpy();
-    // TurboInOut << "TotPressure" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetTotalPressure()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetTotalPressure();
-    // TurboInOut << "Mass Flow" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
-    // TurboInOut << "Mach No." << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMachValue()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMachValue();
-    // TurboInOut << "Flow Angle" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetAbsFlowAngle()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetAbsFlowAngle();
+    TurboInOut << "Entropy"     << BladePerformance.at(0).at(0)->GetInletState().GetEntropy()       << BladePerformance.at(0).at(0)->GetOutletState().GetEntropy();
+    TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(0)->GetInletState().GetTotalEnthalpy() << BladePerformance.at(0).at(0)->GetOutletState().GetTotalEnthalpy();
+    TurboInOut << "TotPressure" << BladePerformance.at(0).at(0)->GetInletState().GetTotalPressure() << BladePerformance.at(0).at(0)->GetOutletState().GetTotalPressure();
+    TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(0)->GetInletState().GetMassFlow()      << BladePerformance.at(0).at(0)->GetOutletState().GetMassFlow();
+    TurboInOut << "Mach No."    << BladePerformance.at(0).at(0)->GetInletState().GetMachValue()     << BladePerformance.at(0).at(0)->GetOutletState().GetMachValue();
+    TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(0)->GetInletState().GetAbsFlowAngle()  << BladePerformance.at(0).at(0)->GetOutletState().GetAbsFlowAngle();
     TurboInOut.PrintFooter();
     cout<<TurboInOutTable.str();
 
