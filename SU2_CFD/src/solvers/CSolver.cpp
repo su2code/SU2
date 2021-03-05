@@ -42,6 +42,7 @@
 #include "../../../Common/include/toolboxes/MMS/CRinglebSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CUserDefinedSolution.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/C1DInterpolation.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
@@ -5573,37 +5574,25 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
 }
 
 void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iDim, iMarker;
-  unsigned long iVertex;
   
-  su2double Area,
-            *Normal     = new su2double[nDim],
-            *UnitNormal = new su2double[nDim],
-            *Tangential  = new su2double[nDim],
-            *GradNormVel = new su2double[nDim],
-            *GradTangVel = new su2double[nDim];
+  su2double Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
   
   su2double **Grad_Symm = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Grad_Symm[iVar] = new su2double[nDim];
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++)
-            Normal[iDim] = -Normal[iDim];
+          const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-          //--- Compute unit normal.
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt (Area);
+          su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-          for (iDim = 0; iDim < nDim; iDim++)
+          su2double UnitNormal[MAXNDIM] = {0.0};
+          for (auto iDim = 0u; iDim < nDim; iDim++)
             UnitNormal[iDim] = -Normal[iDim]/Area;
           
           //--- Compute unit tangent.
@@ -5636,22 +5625,22 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
           }// switch
           
           //--- Get gradients of the solution of boundary cell.
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto iDim = 0; iDim < nDim; iDim++)
               Grad_Symm[iVar][iDim] = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
           
           //--- Reflect the gradients for all scalars including the momentum components.
           //--- The gradients of the primal and adjoint momentum components are set later with the
           //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
-          for (iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0; iVar < nVar; iVar++) {
             if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS) || (Kind_Solver == RUNTIME_ADJTURB_SYS)) {
               //--- Compute projected part of the gradient in a dot product.
               su2double ProjGradient = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0; iDim < nDim; iDim++)
                 ProjGradient += Grad_Symm[iVar][iDim]*UnitNormal[iDim];
               
               //--- Set normal part of the gradient to zero.
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0; iDim < nDim; iDim++)
                 Grad_Symm[iVar][iDim] = Grad_Symm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
               
             }// if density, energy, or turbulent
@@ -5661,10 +5650,10 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- Compute gradients of normal and tangential momentum:
             //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
             //--- grad(rv*t) = grad(rv_x) t_x + grad(rv_y) t_y (+ grad(rv_z) t_z)
-            for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+            for (auto iVar = 0; iVar < nDim; iVar++) { // counts gradient components
               GradNormVel[iVar] = 0.0;
               GradTangVel[iVar] = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+              for (auto iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
                 GradNormVel[iVar] += Grad_Symm[iDim+1][iVar] * UnitNormal[iDim];
                 GradTangVel[iVar] += Grad_Symm[iDim+1][iVar] * Tangential[iDim];
               }
@@ -5676,12 +5665,12 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- grad(rv*t)_s = grad(rv*t) - {grad([rv*t])*n}n
             su2double ProjNormMomGrad = 0.0;
             su2double ProjTangMomGrad = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto Dim = 0; iDim < nDim; iDim++) {
               ProjNormMomGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([rv*n])*t
               ProjTangMomGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([rv*t])*n
             }
 
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0; iDim < nDim; iDim++) {
               GradNormVel[iDim] = GradNormVel[iDim] - ProjNormMomGrad * Tangential[iDim];
               GradTangVel[iDim] = GradTangVel[iDim] - ProjTangMomGrad * UnitNormal[iDim];
             }
@@ -5690,15 +5679,15 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- grad(rv_x)_s = grad(rv*n)_s n_x + grad(rv*t)_s t_x
             //--- grad(rv_y)_s = grad(rv*n)_s n_y + grad(rv*t)_s t_y
             //--- ( grad(rv_z)_s = grad(rv*n)_s n_z + grad(rv*t)_s t_z ) ---*/
-            for (iVar = 0; iVar < nDim; iVar++) // loops over the momentum component gradients
-              for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
+            for (auto iVar = 0; iVar < nDim; iVar++) // loops over the momentum component gradients
+              for (auto iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
                 Grad_Symm[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
             
           }// if flow
           
           //--- Set gradients of the solution of boundary cell.
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto iDim = 0; iDim < nDim; iDim++)
                base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, Grad_Symm[iVar][iDim]);
           
         }// if domain
@@ -5711,11 +5700,6 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   CompleteComms(geometry, config, ANISO_GRADIENT);
   
   //--- Free locally allocated memory
-  delete [] Normal;
-  delete [] UnitNormal;
-  delete [] Tangential;
-  delete [] GradNormVel;
-  delete [] GradTangVel;
   
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Grad_Symm[iVar];
