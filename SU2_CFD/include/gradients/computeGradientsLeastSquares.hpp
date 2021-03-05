@@ -123,7 +123,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       if (weighted)
       {
         weight = GeometryToolbox::Norm(nDim, dist_ij);
-        weight = pow(weight, config->GetWeighted_Least_Squares_Coeff());
+        weight = pow(weight, config.GetWeighted_Least_Squares_Coeff());
       }
 
       /*--- Sumations for entries of upper triangular matrix R. ---*/
