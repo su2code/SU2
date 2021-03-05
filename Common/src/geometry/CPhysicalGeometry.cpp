@@ -531,152 +531,152 @@ CPhysicalGeometry::CPhysicalGeometry(vector<vector<passivedouble> > const &PoiAd
   
   /*--- Get rank and size. ---*/
 
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();  
+//   size = SU2_MPI::GetSize();
+//   rank = SU2_MPI::GetRank();  
   
-  /*--- Initialize several class data members for later. ---*/
+//   /*--- Initialize several class data members for later. ---*/
 
-  Local_to_Global_Point = NULL;
-  Local_to_Global_Marker = NULL;
-  Global_to_Local_Marker = NULL;
+//   Local_to_Global_Point = NULL;
+//   Local_to_Global_Marker = NULL;
+//   Global_to_Local_Marker = NULL;
   
-  /*--- Arrays for defining the linear partitioning. ---*/
+//   /*--- Arrays for defining the linear partitioning. ---*/
 
-  beg_node = NULL;
-  end_node = NULL;
+//   beg_node = NULL;
+//   end_node = NULL;
 
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
+//   nPointLinear     = NULL;
+//   nPointCumulative = NULL;
 
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  adjacency = NULL;
-  xadj      = NULL;
-#endif
-#endif
+// #ifdef HAVE_MPI
+// #ifdef HAVE_PARMETIS
+//   adjacency = NULL;
+//   xadj      = NULL;
+// #endif
+// #endif
 
-  /*--- Arrays for defining the turbomachinery structure ---*/
+//   /*--- Arrays for defining the turbomachinery structure ---*/
 
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
+//   nSpanWiseSections       = NULL;
+//   nSpanSectionsByMarker   = NULL;
+//   SpanWiseValue           = NULL;
+//   nVertexSpan             = NULL;
+//   nTotVertexSpan          = NULL;
+//   turbovertex             = NULL;
+//   AverageTurboNormal      = NULL;
+//   AverageNormal           = NULL;
+//   AverageGridVel          = NULL;
+//   AverageTangGridVel      = NULL;
+//   SpanArea                = NULL;
+//   TurboRadius             = NULL;
+//   MaxAngularCoord         = NULL;
+//   MinAngularCoord         = NULL;
+//   MinRelAngularCoord      = NULL;
   
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
+//   TangGridVelIn           = NULL;
+//   SpanAreaIn              = NULL;
+//   TurboRadiusIn           = NULL;
+//   TangGridVelOut          = NULL;
+//   SpanAreaOut             = NULL;
+//   TurboRadiusOut          = NULL;
 
-  /*--- Initialize counters for the points/elements local to a rank. ---*/
+//   /*--- Initialize counters for the points/elements local to a rank. ---*/
 
-  nLocal_Point         = 0;
-  nLocal_PointDomain   = 0;
-  nLocal_PointGhost    = 0;
-  nLocal_PointPeriodic = 0;
-  nLocal_Line          = 0;
-  nLocal_BoundTria     = 0;
-  nLocal_BoundQuad     = 0;
-  nLocal_Tria          = 0;
-  nLocal_Quad          = 0;
-  nLocal_Tetr          = 0;
-  nLocal_Hexa          = 0;
-  nLocal_Pris          = 0;
-  nLocal_Pyra          = 0;
+//   nLocal_Point         = 0;
+//   nLocal_PointDomain   = 0;
+//   nLocal_PointGhost    = 0;
+//   nLocal_PointPeriodic = 0;
+//   nLocal_Line          = 0;
+//   nLocal_BoundTria     = 0;
+//   nLocal_BoundQuad     = 0;
+//   nLocal_Tria          = 0;
+//   nLocal_Quad          = 0;
+//   nLocal_Tetr          = 0;
+//   nLocal_Hexa          = 0;
+//   nLocal_Pris          = 0;
+//   nLocal_Pyra          = 0;
 
-  Local_Coords = NULL;
-  Local_Points = NULL;
-  Local_Colors = NULL;
+//   Local_Coords = NULL;
+//   Local_Points = NULL;
+//   Local_Colors = NULL;
 
-  /*--- Arrays for holding the element connectivity. ---*/
+//   /*--- Arrays for holding the element connectivity. ---*/
 
-  Conn_Line      = NULL;
-  Conn_BoundTria = NULL;
-  Conn_BoundQuad = NULL;
+//   Conn_Line      = NULL;
+//   Conn_BoundTria = NULL;
+//   Conn_BoundQuad = NULL;
 
-  Conn_Line_Linear      = NULL;
-  Conn_BoundTria_Linear = NULL;
-  Conn_BoundQuad_Linear = NULL;
+//   Conn_Line_Linear      = NULL;
+//   Conn_BoundTria_Linear = NULL;
+//   Conn_BoundQuad_Linear = NULL;
 
-  Conn_Tria = NULL;
-  Conn_Quad = NULL;
-  Conn_Tetr = NULL;
-  Conn_Hexa = NULL;
-  Conn_Pris = NULL;
-  Conn_Pyra = NULL;
+//   Conn_Tria = NULL;
+//   Conn_Quad = NULL;
+//   Conn_Tetr = NULL;
+//   Conn_Hexa = NULL;
+//   Conn_Pris = NULL;
+//   Conn_Pyra = NULL;
 
-  /*--- Arrays for holding the element IDs. ---*/
+//   /*--- Arrays for holding the element IDs. ---*/
 
-  ID_Line             = NULL;
-  ID_BoundTria        = NULL;
-  ID_BoundQuad        = NULL;
-  ID_Line_Linear      = NULL;
-  ID_BoundTria_Linear = NULL;
-  ID_BoundQuad_Linear = NULL;
+//   ID_Line             = NULL;
+//   ID_BoundTria        = NULL;
+//   ID_BoundQuad        = NULL;
+//   ID_Line_Linear      = NULL;
+//   ID_BoundTria_Linear = NULL;
+//   ID_BoundQuad_Linear = NULL;
 
-  ID_Tria = NULL;
-  ID_Quad = NULL;
-  ID_Tetr = NULL;
-  ID_Hexa = NULL;
-  ID_Pris = NULL;
-  ID_Pyra = NULL;
+//   ID_Tria = NULL;
+//   ID_Quad = NULL;
+//   ID_Tetr = NULL;
+//   ID_Hexa = NULL;
+//   ID_Pris = NULL;
+//   ID_Pyra = NULL;
 
-  Elem_ID_Line             = NULL;
-  Elem_ID_BoundTria        = NULL;
-  Elem_ID_BoundQuad        = NULL;
-  Elem_ID_Line_Linear      = NULL;
-  Elem_ID_BoundTria_Linear = NULL;
-  Elem_ID_BoundQuad_Linear = NULL;
+//   Elem_ID_Line             = NULL;
+//   Elem_ID_BoundTria        = NULL;
+//   Elem_ID_BoundQuad        = NULL;
+//   Elem_ID_Line_Linear      = NULL;
+//   Elem_ID_BoundTria_Linear = NULL;
+//   Elem_ID_BoundQuad_Linear = NULL;
 
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  unsigned short iDim, iMarker, iNodes;
-  unsigned long iPoint, iElem_Bound;
-  su2double *NewCoord;
-  nZone = val_nZone;
-  ofstream boundary_file;
-  string Grid_Marker;
+//   string text_line, Marker_Tag;
+//   ifstream mesh_file;
+//   unsigned short iDim, iMarker, iNodes;
+//   unsigned long iPoint, iElem_Bound;
+//   su2double *NewCoord;
+//   nZone = val_nZone;
+//   ofstream boundary_file;
+//   string Grid_Marker;
 
-  nDim  = val_nDim;
-  nZone = val_nZone;
+//   nDim  = val_nDim;
+//   nZone = val_nZone;
 
-  /*--- Determine whether or not a FEM discretization is used ---*/
+//   /*--- Determine whether or not a FEM discretization is used ---*/
 
-  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
-                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-                           (config->GetKind_Solver() == FEM_RANS)           ||
-                           (config->GetKind_Solver() == FEM_LES)            ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+//   const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
+//                            (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+//                            (config->GetKind_Solver() == FEM_RANS)           ||
+//                            (config->GetKind_Solver() == FEM_LES)            ||
+//                            (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+//                            (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+//                            (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
-  /*--- Initialize counters for local/global points & elements ---*/
+//   /*--- Initialize counters for local/global points & elements ---*/
   
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------ Load Adapted Grid File Information -------------------" << endl;
+//   if (rank == MASTER_NODE)
+//     cout << endl <<"------------------ Load Adapted Grid File Information -------------------" << endl;
 
-  if (fem_solver){
+//   if (fem_solver){
 
-  }
-  else{
-    LoadAdaptedMeshParallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config);
-  }
+//   }
+//   else{
+//     LoadAdaptedMeshParallel_FVM(PoiAdap, EdgAdap, TriAdap, TetAdap, config);
+//   }
 
-  /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
+//   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
   
-  assert((nDim == 2) || (nDim == 3));
+//   assert((nDim == 2) || (nDim == 3));
   
 }
 
@@ -4843,271 +4843,271 @@ void CPhysicalGeometry::LoadAdaptedMeshParallel_FVM(vector<vector<passivedouble>
                                                        vector<vector<unsigned long> > const &TriAdap, vector<vector<unsigned long> > const &TetAdap,
                                                        CConfig* config) {
 
-  string Marker_Tag;
-  unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long VTK_Type, iMarker, iChar;
-  unsigned long iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, iElem = 0;
-  unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
-  unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
-  unsigned long i;
-  long local_index;
-  vector<unsigned long>::iterator it;
-  char cstr[200];
-  su2double AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
+//   string Marker_Tag;
+//   unsigned short nMarker_Max = config->GetnMarker_Max();
+//   unsigned long VTK_Type, iMarker, iChar;
+//   unsigned long iCount = 0;
+//   unsigned long iElem_Bound = 0, iPoint = 0, iElem = 0;
+//   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
+//   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
+//   vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
+//   unsigned long i;
+//   long local_index;
+//   vector<unsigned long>::iterator it;
+//   char cstr[200];
+//   su2double AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
   
-  /*--- Initialize some additional counters for the parallel partitioning ---*/
+//   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
-  unsigned long element_count = 0;
-  unsigned long boundary_marker_count = 0;
-  unsigned long node_count = 0;
-  unsigned long local_element_count = 0;
+//   unsigned long element_count = 0;
+//   unsigned long boundary_marker_count = 0;
+//   unsigned long node_count = 0;
+//   unsigned long local_element_count = 0;
 
-  Global_nPoint  = 0; Global_nPointDomain   = 0;
-  Global_nElem   = 0; Global_nElemDomain    = 0;
-  nelem_edge     = 0; Global_nelem_edge     = 0;
-  nelem_triangle = 0; Global_nelem_triangle = 0;
-  nelem_quad     = 0; Global_nelem_quad     = 0;
-  nelem_tetra    = 0; Global_nelem_tetra    = 0;
-  nelem_hexa     = 0; Global_nelem_hexa     = 0;
-  nelem_prism    = 0; Global_nelem_prism    = 0;
-  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+//   Global_nPoint  = 0; Global_nPointDomain   = 0;
+//   Global_nElem   = 0; Global_nElemDomain    = 0;
+//   nelem_edge     = 0; Global_nelem_edge     = 0;
+//   nelem_triangle = 0; Global_nelem_triangle = 0;
+//   nelem_quad     = 0; Global_nelem_quad     = 0;
+//   nelem_tetra    = 0; Global_nelem_tetra    = 0;
+//   nelem_hexa     = 0; Global_nelem_hexa     = 0;
+//   nelem_prism    = 0; Global_nelem_prism    = 0;
+//   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
 
-  /*--- Initialize AoA and AoS offsets (TODO: don't hardcode to 0.) ---*/
-  AoA_Offset = 0.;
-  AoS_Offset = 0.;
-  AoA_Current = config->GetAoA();
-  AoS_Current = config->GetAoS();
+//   /*--- Initialize AoA and AoS offsets (TODO: don't hardcode to 0.) ---*/
+//   AoA_Offset = 0.;
+//   AoS_Offset = 0.;
+//   AoA_Current = config->GetAoA();
+//   AoS_Current = config->GetAoS();
 
-  /*--- Get numbers of points and elements (for now only edgs, tris, tets) ---*/
-  nPoint       = PoiAdap.size();
-  nPointDomain = nPoint;
+//   /*--- Get numbers of points and elements (for now only edgs, tris, tets) ---*/
+//   nPoint       = PoiAdap.size();
+//   nPointDomain = nPoint;
 
-  if(nDim == 2){
-    nelem_edge_bound = EdgAdap.size();
-    nelem_triangle   = TriAdap.size();
-    nelem_tetra      = 0;
-    nElem            = nelem_triangle;
-  }
-  else{
-    nelem_edge_bound     = 0;
-    nelem_triangle_bound = TriAdap.size();
-    nelem_tetra          = TetAdap.size();
-    nElem                = nelem_tetra;
-  }
+//   if(nDim == 2){
+//     nelem_edge_bound = EdgAdap.size();
+//     nelem_triangle   = TriAdap.size();
+//     nelem_tetra      = 0;
+//     nElem            = nelem_triangle;
+//   }
+//   else{
+//     nelem_edge_bound     = 0;
+//     nelem_triangle_bound = TriAdap.size();
+//     nelem_tetra          = TetAdap.size();
+//     nElem                = nelem_tetra;
+//   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nPoint = nPoint;
-  Global_nPointDomain = nPointDomain;
-  Global_nElem = nElem;
-#endif
+// #ifdef HAVE_MPI
+//   SU2_MPI::Allreduce(&nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+// #else
+//   Global_nPoint = nPoint;
+//   Global_nPointDomain = nPointDomain;
+//   Global_nElem = nElem;
+// #endif
 
-  /*--- Compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
+//   /*--- Compute the number of points that will be on each processor.
+//    This is a linear partitioning with the addition of a simple load
+//    balancing for any remainder points. ---*/
       
-  PrepareOffsets(Global_nPoint);
+//   PrepareOffsets(Global_nPoint);
 
-  /*--- Store the local nodes in the geometry structure ---*/
-  node = new CPoint*[nPoint];
-  for(iPoint = 0; iPoint < nPoint; iPoint++) {
-    GlobalIndex = beg_node[rank]+iPoint;
-    if(nDim == 2) node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], GlobalIndex, config);
-    else node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], PoiAdap[iPoint][2], GlobalIndex, config);
+//   /*--- Store the local nodes in the geometry structure ---*/
+//   node = new CPoint*[nPoint];
+//   for(iPoint = 0; iPoint < nPoint; iPoint++) {
+//     GlobalIndex = beg_node[rank]+iPoint;
+//     if(nDim == 2) node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], GlobalIndex, config);
+//     else node[iPoint] = new CPoint(PoiAdap[iPoint][0], PoiAdap[iPoint][1], PoiAdap[iPoint][2], GlobalIndex, config);
 
-    /*--- Free memory ---*/
-    // vector<passivedouble>().swap(PoiAdap[iPoint]);
-  }
+//     /*--- Free memory ---*/
+//     // vector<passivedouble>().swap(PoiAdap[iPoint]);
+//   }
 
-  /*--- Reset the global to local element mapping. ---*/
+//   /*--- Reset the global to local element mapping. ---*/
   
-  Global_to_Local_Elem.clear();
+//   Global_to_Local_Elem.clear();
 
-  /*--- Store the elements in the geometry structure. Here we assume
-   that an initial partitioning performed in the python wrapper has
-   assigned elements to processors that own at least one of its nodes.
-   Note that the last 2 values for each element are the marker and
-   global index. ---*/
-  elem = new CPrimalGrid*[nElem];
-  local_element_count = 0;
-  /*--- 2D ---*/
-  if(nDim == 2) {
-    for(iElem = 0; iElem < nelem_triangle; iElem++){
-      Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
-      elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
-                                                TriAdap[iElem][1],
-                                                TriAdap[iElem][2], 2);
-      local_element_count++;
+//   /*--- Store the elements in the geometry structure. Here we assume
+//    that an initial partitioning performed in the python wrapper has
+//    assigned elements to processors that own at least one of its nodes.
+//    Note that the last 2 values for each element are the marker and
+//    global index. ---*/
+//   elem = new CPrimalGrid*[nElem];
+//   local_element_count = 0;
+//   /*--- 2D ---*/
+//   if(nDim == 2) {
+//     for(iElem = 0; iElem < nelem_triangle; iElem++){
+//       Global_to_Local_Elem[TriAdap[iElem][4]] = local_element_count;
+//       elem[local_element_count] = new CTriangle(TriAdap[iElem][0],
+//                                                 TriAdap[iElem][1],
+//                                                 TriAdap[iElem][2], 2);
+//       local_element_count++;
 
-      /*--- Free memory ---*/
-      // vector<unsigned long>().swap(TriAdap[iElem]);
+//       /*--- Free memory ---*/
+//       // vector<unsigned long>().swap(TriAdap[iElem]);
 
 
-    }
-  }
-  /*--- 3D ---*/
-  else {
-    for(iElem = 0; iElem < nelem_tetra; iElem++){
-      Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
-      elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
-                                                   TetAdap[iElem][1],
-                                                   TetAdap[iElem][2],
-                                                   TetAdap[iElem][3]);
-      local_element_count++;
+//     }
+//   }
+//   /*--- 3D ---*/
+//   else {
+//     for(iElem = 0; iElem < nelem_tetra; iElem++){
+//       Global_to_Local_Elem[TetAdap[iElem][5]] = local_element_count;
+//       elem[local_element_count] = new CTetrahedron(TetAdap[iElem][0],
+//                                                    TetAdap[iElem][1],
+//                                                    TetAdap[iElem][2],
+//                                                    TetAdap[iElem][3]);
+//       local_element_count++;
 
-      /*--- Free memory ---*/
-      // vector<unsigned long>().swap(TetAdap[iElem]);
-    }
-  }
+//       /*--- Free memory ---*/
+//       // vector<unsigned long>().swap(TetAdap[iElem]);
+//     }
+//   }
 
-  /*--- Reduce the global counts of all element types. ---*/
-#ifdef HAVE_MPI
-  unsigned long Local_nElemTri     = nelem_triangle;
-  unsigned long Local_nElemQuad    = nelem_quad;
-  unsigned long Local_nElemTet     = nelem_tetra;
-  unsigned long Local_nElemHex     = nelem_hexa;
-  unsigned long Local_nElemPrism   = nelem_prism;
-  unsigned long Local_nElemPyramid = nelem_pyramid;
-  SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Global_nelem_triangle = nelem_triangle;
-  Global_nelem_quad     = nelem_quad;
-  Global_nelem_tetra    = nelem_tetra;
-  Global_nelem_hexa     = nelem_hexa;
-  Global_nelem_prism    = nelem_prism;
-  Global_nelem_pyramid  = nelem_pyramid;
-#endif
+//   /*--- Reduce the global counts of all element types. ---*/
+// #ifdef HAVE_MPI
+//   unsigned long Local_nElemTri     = nelem_triangle;
+//   unsigned long Local_nElemQuad    = nelem_quad;
+//   unsigned long Local_nElemTet     = nelem_tetra;
+//   unsigned long Local_nElemHex     = nelem_hexa;
+//   unsigned long Local_nElemPrism   = nelem_prism;
+//   unsigned long Local_nElemPyramid = nelem_pyramid;
+//   SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//   SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
+//                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+// #else
+//   Global_nelem_triangle = nelem_triangle;
+//   Global_nelem_quad     = nelem_quad;
+//   Global_nelem_tetra    = nelem_tetra;
+//   Global_nelem_hexa     = nelem_hexa;
+//   Global_nelem_prism    = nelem_prism;
+//   Global_nelem_pyramid  = nelem_pyramid;
+// #endif
 
-  /*--- The master node takes care of loading all markers and
-   surface elements. This information is later put into linear
-   partitions to make its redistribution easier after we call 
-   ParMETIS. ---*/
+//   /*--- The master node takes care of loading all markers and
+//    surface elements. This information is later put into linear
+//    partitions to make its redistribution easier after we call 
+//    ParMETIS. ---*/
   
-  if (rank == MASTER_NODE) {
+//   if (rank == MASTER_NODE) {
         
-    /*--- Store the number of markers and print to the screen. ---*/
+//     /*--- Store the number of markers and print to the screen. ---*/
     
-    nMarker = config->GetnMarker_All();
-    cout << nMarker << " surface markers." << endl;
+//     nMarker = config->GetnMarker_All();
+//     cout << nMarker << " surface markers." << endl;
     
-    /*--- Create the data structure for boundary elements. ---*/
+//     /*--- Create the data structure for boundary elements. ---*/
     
-    bound         = new CPrimalGrid**[nMarker];
-    nElem_Bound   = new unsigned long [nMarker];
-    Tag_to_Marker = new string [config->GetnMarker_Max()];
+//     bound         = new CPrimalGrid**[nMarker];
+//     nElem_Bound   = new unsigned long [nMarker];
+//     Tag_to_Marker = new string [config->GetnMarker_Max()];
 
-    unsigned long* jElem_Bound = new unsigned long [nMarker];
+//     unsigned long* jElem_Bound = new unsigned long [nMarker];
 
-    for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
-      nElem_Bound[iMarker] = 0;
-    }
+//     for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
+//       nElem_Bound[iMarker] = 0;
+//     }
 
-    /*--- Loop over elements and store. ---*/
+//     /*--- Loop over elements and store. ---*/
 
-    if(nDim == 2) {
+//     if(nDim == 2) {
 
-      for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
-        /*---Note that the last  value for each surface element is 
-         the marker, and that the ref we stored for AMG was jMarker+2. ---*/
-        nElem_Bound[EdgAdap[iElem][2]-2]++;
-      }
+//       for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
+//         /*---Note that the last  value for each surface element is 
+//          the marker, and that the ref we stored for AMG was jMarker+2. ---*/
+//         nElem_Bound[EdgAdap[iElem][2]-2]++;
+//       }
 
-      for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
-        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
-        jElem_Bound[iMarker] = 0;
-      }
+//       for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
+//         bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+//         jElem_Bound[iMarker] = 0;
+//       }
 
-      for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
-        int iMarker = EdgAdap[iElem][2]-2;
-        int jElem = jElem_Bound[iMarker];
-        bound[iMarker][jElem] = new CLine(EdgAdap[iElem][0],
-                                          EdgAdap[iElem][1],2);
-        jElem_Bound[iMarker]++;
+//       for(iElem = 0; iElem < nelem_edge_bound; ++iElem) {
+//         int iMarker = EdgAdap[iElem][2]-2;
+//         int jElem = jElem_Bound[iMarker];
+//         bound[iMarker][jElem] = new CLine(EdgAdap[iElem][0],
+//                                           EdgAdap[iElem][1],2);
+//         jElem_Bound[iMarker]++;
 
-        /*--- Free memory ---*/
-        // vector<unsigned long>().swap(EdgAdap[iElem]);
-      }
-    }
+//         /*--- Free memory ---*/
+//         // vector<unsigned long>().swap(EdgAdap[iElem]);
+//       }
+//     }
 
-    else {
-      for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
-        /*---Note that the last  value for each surface element is 
-         the marker, and that the ref we stored for AMG was jMarker+2. ---*/
-        nElem_Bound[TriAdap[iElem][3]-2]++;
-      }
+//     else {
+//       for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
+//         /*---Note that the last  value for each surface element is 
+//          the marker, and that the ref we stored for AMG was jMarker+2. ---*/
+//         nElem_Bound[TriAdap[iElem][3]-2]++;
+//       }
 
-      for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
-        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
-        jElem_Bound[iMarker] = 0;
-      }
+//       for(int iMarker = 0; iMarker < nMarker; ++iMarker) {
+//         bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+//         jElem_Bound[iMarker] = 0;
+//       }
 
-      for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
-        int iMarker = TriAdap[iElem][3]-2;
-        int jElem = jElem_Bound[iMarker];
-        bound[iMarker][jElem] = new CTriangle(TriAdap[iElem][0],
-                                              TriAdap[iElem][1],
-                                              TriAdap[iElem][2],3);
-        jElem_Bound[iMarker]++;
+//       for(iElem = 0; iElem < nelem_triangle_bound; ++iElem) {
+//         int iMarker = TriAdap[iElem][3]-2;
+//         int jElem = jElem_Bound[iMarker];
+//         bound[iMarker][jElem] = new CTriangle(TriAdap[iElem][0],
+//                                               TriAdap[iElem][1],
+//                                               TriAdap[iElem][2],3);
+//         jElem_Bound[iMarker]++;
 
-        /*--- Free memory ---*/
-        // vector<unsigned long>().swap(TriAdap[iElem]);
-      }
-    }
+//         /*--- Free memory ---*/
+//         // vector<unsigned long>().swap(TriAdap[iElem]);
+//       }
+//     }
 
-    delete [] jElem_Bound;
+//     delete [] jElem_Bound;
     
-    /*--- Update config file lists in order to store the boundary
-     information for this marker in the correct place. ---*/
+//     /*--- Update config file lists in order to store the boundary
+//      information for this marker in the correct place. ---*/
     
-    for (int iMarker = 0; iMarker < nMarker; iMarker++) {
+//     for (int iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      Tag_to_Marker[iMarker] = Marker_Tag;
-      config->SetMarker_All_TagBound(iMarker, Marker_Tag);
-      config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
-      config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
-      config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
-      config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
-      config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-      config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
-      config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
-      config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
-      config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-      config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
-      config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-      config->SetMarker_All_SendRecv(iMarker, NONE);
-      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
-      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
-      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+//       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+//       Tag_to_Marker[iMarker] = Marker_Tag;
+//       config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+//       config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+//       config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+//       config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+//       config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+//       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+//       config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+//       config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+//       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+//       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+//       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
+//       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+//       config->SetMarker_All_SendRecv(iMarker, NONE);
+//       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+//       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+//       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       
-    }
-  }
+//     }
+//   }
 
-  /*--- Free memory ---*/
-  // vector<vector<passivedouble> >().swap(PoiAdap);
-  // vector<vector<unsigned long> >().swap(EdgAdap);
-  // vector<vector<unsigned long> >().swap(TriAdap);
-  // vector<vector<unsigned long> >().swap(TetAdap);
+//   /*--- Free memory ---*/
+//   // vector<vector<passivedouble> >().swap(PoiAdap);
+//   // vector<vector<unsigned long> >().swap(EdgAdap);
+//   // vector<vector<unsigned long> >().swap(TriAdap);
+//   // vector<vector<unsigned long> >().swap(TetAdap);
 
-  /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
+//   /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
   
-  PrepareAdjacency(config);
+//   PrepareAdjacency(config);
   
 }
 

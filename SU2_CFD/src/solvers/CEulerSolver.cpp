@@ -2687,7 +2687,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
@@ -2710,13 +2709,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
-
-  /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
-  su2double Primitive_i[MAXNVAR] = {0.0}, tke_i = 0.0;
-  su2double Primitive_j[MAXNVAR] = {0.0}, tke_j = 0.0;
-
-  CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
 
@@ -3054,7 +3046,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
-  const bool muscl_start = ((config->GetInnerIter() >= config->GetMUSCL_Start_Iter()) || 
+  const bool muscl_start = ((InnerIter >= config->GetMUSCL_Start_Iter()) || 
                             config->GetDiscrete_Adjoint() || 
                             config->GetRestart());
 
@@ -3517,10 +3509,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 
-  const auto InnerIter   = config->GetInnerIter();
   const bool tkeNeeded   = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
   const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
@@ -5502,7 +5491,6 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
    system for this nonlinear iteration. */
 
   const su2double allowableRatio = 0.2;
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {

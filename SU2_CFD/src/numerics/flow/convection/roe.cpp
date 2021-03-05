@@ -333,8 +333,6 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- L2Roe: a low dissipation version of Roe's approximate Riemann solver for low Mach numbers. IJNMF 2015 ---*/
 
-  unsigned short iVar, jVar, kVar, iDim;
-
   /*--- Clamped Mach number ---*/
 
   su2double M_i = 0.0, M_j = 0.0;
@@ -375,7 +373,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   /*--- Update residual ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++)
-    for (kVar = 0; kVar < nVar; kVar++)
+    for (auto kVar = 0; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
 
   if (!implicit) return;
@@ -388,7 +386,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     for (auto jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
@@ -405,8 +403,6 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
                                       su2double **val_Jacobian_j, const CConfig* config) {
 
   /*--- Rieper, A low-Mach number fix for Roe's approximate Riemman Solver, JCP 2011 ---*/
-
-  unsigned short iVar, jVar, kVar, iDim;
 
   /*--- Clamped Mach number ---*/
 
@@ -448,7 +444,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   /*--- Update residual ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++)
-    for (kVar = 0; kVar < nVar; kVar++)
+    for (auto kVar = 0; kVar < nVar; kVar++)
       val_residual[iVar] -= (1.0-kappa)*Lambda[kVar]*delta_wave[kVar]*P_Tensor[iVar][kVar]*Area;
 
   if (!implicit) return;
@@ -461,7 +457,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
     for (auto jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;

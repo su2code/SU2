@@ -673,7 +673,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const bool disc_adjoint   = config->GetDiscrete_Adjoint();

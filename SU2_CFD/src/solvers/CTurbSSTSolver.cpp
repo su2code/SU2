@@ -580,7 +580,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
   su2double Vel[MAXNDIM] = {0.0};
   su2double UnitNormal[MAXNDIM] = {0.0};
   const su2double beta_1 = constants[4];
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
@@ -1458,12 +1457,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
 
-  /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
-  su2double Primitive_i[MAXNVARFLOW] = {0.0}, TurbVar_i[MAXNVAR] = {0.0};
-  su2double Primitive_j[MAXNVARFLOW] = {0.0}, TurbVar_j[MAXNVAR] = {0.0};
-
-  su2double Flux[MAXNVAR] = {0.0};
-
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
@@ -1514,14 +1507,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-      /*--- Check if upwind flux exceeds solution, which  ---*/
-      /*--- can cause issues in regions of low turbulence ---*/
-
-      // const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-      // for (auto iVar = 0; iVar < nVar; iVar++)
-      //   Flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*Mean_ProjVel*nodes->GetSolution(iPoint,iVar)
-      //                                         : sign*Mean_ProjVel*nodes->GetSolution(jPoint,iVar);
-
       /*--- Viscous contribution ---*/
 
       const su2double F1_i = nodes->GetF1blending(iPoint);
@@ -1543,14 +1528,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
-
-    // if(!node_i->GetPhysicalBoundary()) {
-    //   const su2double delta = 1.0/(nodes->GetMax_Lambda_Inv(iPoint)+nodes->GetMax_Lambda_Visc(iPoint));
-    //   for (auto iVar = 0; iVar < nVar; iVar++)
-    //     if (Flux[iVar]*delta > nodes->GetSolution(iPoint,iVar))
-    //       nodes->SetNon_Physical(iPoint,true);
-    // }
-
   }
 
   /*--- Loop boundary edges ---*/
@@ -1842,12 +1819,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
   const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
   
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
-
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], k, omega,
-            mu, mut, lam, lamt,
-            R, cv, cp, g, Pr, Prt,
+            mu, mut,
+            R, cp, g, Pr, Prt,
             walldist;
 
   r = varFlo->GetDensity(iPoint);
@@ -1863,11 +1838,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
   cp   = (g/(g-1.))*R;
-  cv   = cp/g;
   Pr   = config->GetPrandtl_Lam();
   Prt  = config->GetPrandtl_Turb();
-  lam  = cp*mu/Pr;
-  lamt = cp*mut/Prt;
   
   walldist = geometry->node[iPoint]->GetWall_Distance();
 

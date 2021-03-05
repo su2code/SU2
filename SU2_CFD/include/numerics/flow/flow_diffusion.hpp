@@ -44,8 +44,10 @@
 class CAvgGrad_Base : public CNumerics {
 protected:
   const unsigned short nPrimVar;          /*!< \brief The size of the primitive variable array used in the numerics class. */
-  const bool correct_gradient = false;    /*!< \brief Apply a correction to the gradient term */
   const bool implicit = false;            /*!< \brief Implicit calculus. */
+  const bool correct_gradient = false;    /*!< \brief Apply a correction to the gradient term */
+  const bool exact_jacobian = false;
+  
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
   tke_flux_vector[MAXNDIM] = {0.0},       /*!< \brief Flux of total energy due to turbulent diffusion */
@@ -73,7 +75,6 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
   
-  const bool exact_jacobian = false;
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double sigma_k_i = 0.0, sigma_k_j = 0.0;
   su2double F1_i, F1_j;

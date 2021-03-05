@@ -117,7 +117,6 @@ namespace LimiterHelpers
         const su2double sign = 1.0 - 2.0*(proj < 0.0);
         const su2double eps = sign*epsilon();
         const su2double R = delta / (proj + eps);
-        const su2double beta = (1.0 + kappa)/(1.0 - kappa);
         const su2double b = (1.0 + kappa)/(1.0 - kappa);
         const su2double y = proj+eps;
 

@@ -960,7 +960,6 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *Normal, Area, UnitNormal[3] = {0.0};
   su2double *GridVel;
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
