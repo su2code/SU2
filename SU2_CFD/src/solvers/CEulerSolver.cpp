@@ -3310,8 +3310,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto InnerIter     = config->GetInnerIter();
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool turb          = (turb_model != NONE) && (nTurbVarGrad > 0);
-  const bool limNeeded     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limTurbNeeded = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const auto kindFlowLim   = config->GetKind_SlopeLimit_Flow()
+  const auto kindTurbLim   = config->GetKind_SlopeLimit_Turb()
+  const bool limFlowNeeded = (kindFlowLim != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limTurbNeeded = (kindTurbLim != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
   const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
@@ -3348,15 +3350,15 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     /*--- Edge-based limiters ---*/
 
-    if (limNeeded) {
-      switch(config->GetKind_SlopeLimit_Flow()) {
+    if (limFlowNeeded) {
+      switch(kindLimFlow) {
         case VAN_ALBADA_EDGE:
-          Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i, Delta, Kappa_Flow);
-          Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j, Delta, Kappa_Flow);
+          Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i,Delta,Kappa_Flow);
+          Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j,Delta,Kappa_Flow);
           break;
         case PIPERNO:
-          Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i, Delta);
-          Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j, Delta);
+          Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i,Delta);
+          Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j,Delta);
           break;
       }
       primvar_i[iVar] = V_i[iVar] + Proj_i*Lim_Flow_i[iVar];
@@ -3366,15 +3368,15 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     /*--- Unlimited kappa scheme ---*/
 
     else {
-      primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Proj_i, Delta, Kappa_Flow);
-      primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Proj_j, Delta, Kappa_Flow);
+      primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Proj_i,Delta,Kappa_Flow);
+      primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Proj_j,Delta,Kappa_Flow);
     }
 
     if (config->GetUse_Accurate_Kappa_Jacobians()) {
-      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
-      const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j, Delta, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Flow,kindLimFlow);
+      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Flow,kindLimFlow);
+      const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Flow,kindLimFlow);
+      const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Flow,kindLimFlow);
 
       flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
       flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
@@ -3406,14 +3408,14 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       /*--- Edge-based limiters ---*/
 
       if (limTurbNeeded) {
-        switch(config->GetKind_SlopeLimit_Turb()) {
+        switch(kindLimTurb) {
           case VAN_ALBADA_EDGE:
-            Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i, Delta, Kappa_Turb);
-            Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j, Delta, Kappa_Turb);
+            Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_i,Delta,Kappa_Turb);
+            Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Proj_j,Delta,Kappa_Turb);
             break;
           case PIPERNO:
-            Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i, Delta);
-            Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j, Delta);
+            Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Proj_i,Delta);
+            Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Proj_j,Delta);
             break;
         }
         turbvar_i[iVar] = T_i[iVar] + Proj_i*Lim_Turb_i[iVar];
@@ -3423,15 +3425,15 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       /*--- Unlimited kappa scheme ---*/
 
       else {
-        turbvar_i[iVar] = T_i[iVar] + LimiterHelpers::kappaFunction(Proj_i, Delta, Kappa_Turb);
-        turbvar_j[iVar] = T_j[iVar] - LimiterHelpers::kappaFunction(Proj_j, Delta, Kappa_Turb);
+        turbvar_i[iVar] = T_i[iVar] + LimiterHelpers::kappaFunction(Proj_i,Delta,Kappa_Turb);
+        turbvar_j[iVar] = T_j[iVar] - LimiterHelpers::kappaFunction(Proj_j,Delta,Kappa_Turb);
       }
 
       if (config->GetUse_Accurate_Kappa_Jacobians()) {
-        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
-        const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j, Delta, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Proj_i,Delta,Kappa_Turb,kindLimTurb);
+        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Proj_j,Delta,Kappa_Turb,kindLimTurb);
+        const su2double dProj_i  = LimiterHelpers::derivativeProj(Proj_i,Delta,Kappa_Turb,kindLimTurb);
+        const su2double dProj_j  = LimiterHelpers::derivativeProj(Proj_j,Delta,Kappa_Turb,kindLimTurb);
 
         turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
         turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
