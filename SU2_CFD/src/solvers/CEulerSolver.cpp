@@ -3376,10 +3376,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     }
 
     if (config->GetUse_Accurate_Kappa_Jacobians()) {
-      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, V_ij, Kappa_Flow);
-      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, V_ij, Kappa_Flow);
-      const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
-      const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
+      const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
+      const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, V_ij, Kappa_Flow, config->GetKind_SlopeLimit_Turb());
 
       flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
       flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
@@ -3438,10 +3438,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       }
 
       if (config->GetUse_Accurate_Kappa_Jacobians()) {
-        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, T_ij, Kappa_Turb);
-        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, T_ij, Kappa_Turb);
-        const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
-        const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
+        const su2double dDelta_i = LimiterHelpers::derivativeDelta(Project_Grad_i, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dDelta_j = LimiterHelpers::derivativeDelta(Project_Grad_j, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dProj_i  = LimiterHelpers::derivativeProj(Project_Grad_i, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
+        const su2double dProj_j  = LimiterHelpers::derivativeProj(Project_Grad_j, T_ij, Kappa_Turb, config->GetKind_SlopeLimit_Turb());
 
         turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
         turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));

@@ -79,7 +79,7 @@ namespace LimiterHelpers
   {
     su2double dpsi = 0.0;
     switch(kindLimiter) {
-      case NONE:
+      case NO_LIMITER
         dpsi = (0.5-1.5*kappa)*(proj*delta >= 0);
         break;
 
@@ -103,7 +103,7 @@ namespace LimiterHelpers
   {
     su2double dpsi = 0.0;
     switch(kindLimiter) {
-      case NONE:
+      case NO_LIMITER:
         dpsi =  0.5*(1.0-kappa)*(proj*delta >= 0);
         break;
 
