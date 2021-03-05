@@ -81,7 +81,7 @@ CTurbSolver::~CTurbSolver(void) {
   if (Inlet_TurbVars != nullptr) {
     for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
       if (Inlet_TurbVars[iMarker] != nullptr) {
-        for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
         }
         delete [] Inlet_TurbVars[iMarker];
@@ -417,7 +417,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- dF/d{k,o,r,v}, evaluated at face ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       dFl_dVl[iVar][jVar] = sign*dFl_dUl[iVar][jVar]*dUl_dVl;
       dFr_dVr[iVar][jVar] = sign*dFr_dUr[iVar][jVar]*dUr_dVr;
     }
@@ -429,7 +429,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double dVi_dUi = 1.0/primvar_i[nDim+2];
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = (dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
                               + dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi;
     }
@@ -464,7 +464,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
     for (auto iVar = 0u; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
   }
 
@@ -486,7 +486,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      for (auto jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
         Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
       }
@@ -521,7 +521,7 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }

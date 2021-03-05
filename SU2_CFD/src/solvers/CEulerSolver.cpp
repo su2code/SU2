@@ -2782,7 +2782,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
 
@@ -3586,8 +3586,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
-      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+    for (auto jVar = 0u; jVar < nPrimVarTot; jVar++) {
+      for (auto kVar = 0u; kVar < nPrimVarTot; kVar++) {
         dFl_dVl[iVar][jVar] += sign*dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
         dFr_dVr[iVar][jVar] += sign*dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
       }
@@ -3615,9 +3615,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
-      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+      for (auto kVar = 0u; kVar < nPrimVarTot; kVar++) {
         Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
                                  + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
       }
@@ -3656,8 +3656,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
     for (auto iVar = 0u; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
+        for (auto kVar = 0u; kVar < nPrimVarTot; kVar++)
           Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
 
@@ -3692,9 +3692,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      for (auto jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = 0.0;
-        for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+        for (auto kVar = 0u; kVar < nPrimVarTot; kVar++) {
           Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
           Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
         }
@@ -3933,7 +3933,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
   for (auto iVar = 0u; iVar < nVar-1; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }
@@ -4345,7 +4345,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
 
@@ -5493,7 +5493,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     su2double localUnderRelaxation = 1.0;
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
@@ -7803,7 +7803,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto node_i = geometry->node[iPoint];
 
