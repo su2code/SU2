@@ -100,6 +100,7 @@ namespace LimiterHelpers
       default:
         break;
     }
+    return dpsi;
   }
 
   inline su2double derivativeProj(su2double proj, su2double delta, su2double kappa, unsigned short kindLimiter)
