@@ -5587,7 +5587,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
           
-          const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
