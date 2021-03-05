@@ -2210,6 +2210,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.AddColumn("Outlet", 25);
     TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     TurboInOut.PrintHeader();
+    // std::cout << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetDensity() << endl;
     // TODO: Error is assessing boundary state values.
     // TurboInOut << "Entropy" << BladePerformance.at(0).at(0)->GetInletState()<<0.0;
     // TurboInOut << "TotEnthalpy" << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetTotalEnthalpy()<<solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetTotalEnthalpy();

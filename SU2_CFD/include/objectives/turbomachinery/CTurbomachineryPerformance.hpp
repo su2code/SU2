@@ -49,10 +49,11 @@ class CTurbomachineryPrimitiveState {
   public:
   CTurbomachineryPrimitiveState();
 
-  CTurbomachineryPrimitiveState(su2double density, su2double pressure, su2double *velocity, unsigned short nDim,
+  CTurbomachineryPrimitiveState(su2double density,
+                                su2double pressure,
+                                su2double *velocity,
+                                unsigned short nDim,
                                 su2double tangVel);
-
-  ~CTurbomachineryPrimitiveState();
 
   su2double GetDensity() const { return Density; }
 
@@ -69,12 +70,9 @@ class CTurbomachineryCombinedPrimitiveStates {
   CTurbomachineryPrimitiveState InletPrimitiveState;
   CTurbomachineryPrimitiveState OutletPrimitiveState;
   public:
-  CTurbomachineryCombinedPrimitiveStates();
 
   CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState &inletPrimitiveState,
                                          const CTurbomachineryPrimitiveState &outletPrimitiveState);
-
-  ~CTurbomachineryCombinedPrimitiveStates();
 
   CTurbomachineryPrimitiveState GetInletPrimitiveState() const { return InletPrimitiveState; }
 
@@ -94,9 +92,7 @@ class CTurbomachineryState {
 
   CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
 
-  ~CTurbomachineryState();
-
-  void ComputeState(CFluidModel *const fluidModel, const CTurbomachineryPrimitiveState &primitiveState);
+  void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState &primitiveState);
 
   su2double GetDensity() const { return Density; }
 
@@ -108,7 +104,7 @@ class CTurbomachineryState {
 
   su2double GetTemperature() const { return Temperature; }
 
-  su2double GetTotalTemerature() const { return TotalTemperature; }
+  su2double GetTotalTemperature() const { return TotalTemperature; }
 
   su2double GetTotalPressure() const { return TotalPressure; }
 
@@ -149,19 +145,21 @@ class CTurbomachineryBladePerformance {
   CTurbomachineryState InletState;
   CTurbomachineryState OutletState;
   su2double KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
-  CFluidModel *FluidModel;
+  CFluidModel &FluidModel;
 
   public:
-  CTurbomachineryBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn,
-                                  su2double radiusIn, su2double areaOut, su2double radiusOut);
-
-  virtual ~CTurbomachineryBladePerformance();
+  CTurbomachineryBladePerformance(CFluidModel& fluidModel,
+                                  unsigned short nDim,
+                                  su2double areaIn,
+                                  su2double radiusIn,
+                                  su2double areaOut,
+                                  su2double radiusOut);
 
   virtual void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {};
 
-  CTurbomachineryState GetInletState() const { return InletState; }
+  const CTurbomachineryState& GetInletState() { return InletState; }
 
-  CTurbomachineryState GetOutletState() const { return OutletState; }
+  const CTurbomachineryState& GetOutletState()  { return OutletState; }
 
   su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 
@@ -178,10 +176,12 @@ class CTurbomachineryBladePerformance {
 class CTurbineBladePerformance : public CTurbomachineryBladePerformance {
 
   public:
-  CTurbineBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                           su2double areaOut, su2double radiusOut);
-
-  ~CTurbineBladePerformance();
+  CTurbineBladePerformance(CFluidModel& fluidModel,
+                           unsigned short nDim,
+                           su2double areaIn,
+                           su2double radiusIn,
+                           su2double areaOut,
+                           su2double radiusOut);
 
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
 
@@ -190,10 +190,12 @@ class CTurbineBladePerformance : public CTurbomachineryBladePerformance {
 class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
 
   public:
-  CCompressorBladePerformance(CFluidModel *const fluidModel, unsigned short nDim, su2double areaIn, su2double radiusIn,
-                              su2double areaOut, su2double radiusOut);
-
-  ~CCompressorBladePerformance();
+  CCompressorBladePerformance(CFluidModel& fluidModel,
+                              unsigned short nDim,
+                              su2double areaIn,
+                              su2double radiusIn,
+                              su2double areaOut,
+                              su2double radiusOut);
 
   void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
 
@@ -205,7 +207,7 @@ class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
    public:
       CTurbomachineryStagePerformance();
       ~CTurbomachineryStagePerformance();
-      virtual void ComputePerformance(CFluidModel* fluidModel, su2double tangVel);
+      virtual void ComputePerformance(CFluidModel& fluidModel, su2double tangVel);
       su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
       su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
 };
@@ -241,9 +243,7 @@ class CTurbomachineryPerformance {
   vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
   // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
   public:
-  CTurbomachineryPerformance(CConfig *const config, CGeometry *const geometry, CFluidModel *const fluidModel);
-
-  ~CTurbomachineryPerformance();
+  CTurbomachineryPerformance(const CConfig& config, const CGeometry& geometry, CFluidModel& fluidModel);
 
   vector <vector<shared_ptr < CTurbomachineryBladePerformance>>>
 

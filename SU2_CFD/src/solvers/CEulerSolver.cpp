@@ -621,7 +621,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
 }
 
 void CEulerSolver::InitTurboPerformance(CGeometry *geometry, CConfig *config){
-  TurbomachineryPerformance = std::make_shared<CTurbomachineryPerformance>(config, geometry, GetFluidModel());
+  TurbomachineryPerformance = std::make_shared<CTurbomachineryPerformance>(*config, *geometry, *GetFluidModel());
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
