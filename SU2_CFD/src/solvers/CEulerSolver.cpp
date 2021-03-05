@@ -29,6 +29,7 @@
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"

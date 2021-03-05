@@ -5578,7 +5578,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   su2double Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
   
   su2double **Grad_Symm = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0; iVar < nVar; iVar++)
     Grad_Symm[iVar] = new su2double[nDim];
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5665,7 +5665,7 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
             //--- grad(rv*t)_s = grad(rv*t) - {grad([rv*t])*n}n
             su2double ProjNormMomGrad = 0.0;
             su2double ProjTangMomGrad = 0.0;
-            for (auto Dim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0; iDim < nDim; iDim++) {
               ProjNormMomGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([rv*n])*t
               ProjTangMomGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([rv*t])*n
             }
@@ -5701,57 +5701,48 @@ void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, CConfig *config, uns
   
   //--- Free locally allocated memory
   
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0; iVar < nVar; iVar++)
     delete [] Grad_Symm[iVar];
   delete [] Grad_Symm;
 }
 
 void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iDim, iMarker;
-  unsigned long iPoint;
-  long iVertex;
   
-  su2double Area,
-            *Normal     = new su2double[nDim],
-            *UnitNormal = new su2double[nDim],
-            *SumNormal  = new su2double[nDim];
-  
-  unsigned short nmarker_ipoint;
+  unsigned short nmarker_ipoint = 0;
   
   if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_TURB_SYS)) {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       if (geometry->node[iPoint]->GetSolidBoundary()) {
         nmarker_ipoint = 0;
         
         //--- Reset sum(grad_dot_n)
-        for (iDim = 0; iDim < nDim; iDim++) {
+        su2double SumNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           SumNormal[iDim] = 0.;
         }
-        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
           if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-            iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+            const auto iVertex = geometry->node[iPoint]->GetVertex(iMarker);
             if (iVertex > -1) {
               nmarker_ipoint++;
-              geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-              for (iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
+              const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              for (auto iDim = 0; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
             }// if iVertex
           }// if Heat_Flux
         }// iMarker
         
         if (nmarker_ipoint == 1) {
           //--- Compute unit normal.
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += SumNormal[iDim]*SumNormal[iDim];
-          Area = sqrt (Area);
+          Area = GeometryToolbox::Norm(nDim, SumNormal);
 
-          for (iDim = 0; iDim < nDim; iDim++)
+          su2double UnitNormal[MAXNDIM] = {0.0};
+          for (auto iDim = 0; iDim < nDim; iDim++)
             UnitNormal[iDim] = SumNormal[iDim]/Area;
           
           //--- Dot gradient with normal.
           if (Kind_Solver == RUNTIME_FLOW_SYS) {
-            for (iVar = 1; iVar < nDim+1; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iVar = 1; iVar < nDim+1; iVar++) {
+              for (auto iDim = 0; iDim < nDim; iDim++) {
                 const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, iVar, iDim);
                 const su2double grad_dot_n = grad * UnitNormal[iDim];
                 base_nodes->SetGradient_Adaptation(iPoint, iVar, iDim, grad_dot_n);
@@ -5759,7 +5750,7 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
             }
           }// if flow
           else if (Kind_Solver == RUNTIME_TURB_SYS) {
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0; iDim < nDim; iDim++) {
               const su2double grad = base_nodes->GetGradient_Adaptation(iPoint, 0, iDim);
               const su2double grad_dot_n = grad * UnitNormal[iDim];
               base_nodes->SetGradient_Adaptation(iPoint, 0, iDim, grad_dot_n);
@@ -5773,27 +5764,20 @@ void CSolver::CorrectWallGradient(CGeometry *geometry, CConfig *config, unsigned
   //--- communicate the gradient values via MPI
   InitiateComms(geometry, config, ANISO_GRADIENT);
   CompleteComms(geometry, config, ANISO_GRADIENT);
-  
-  //--- Free locally allocated memory
-  delete [] Normal;
-  delete [] UnitNormal;
-  delete [] SumNormal;
 }
 
 void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iMet, iMarker;
-  unsigned short nMet = 3*(nDim-1);
-  unsigned long iVertex;
+  const unsigned short nMet = 3*(nDim-1);
 
   //--- Eliminate Hessians of normal velocity at symmetry plane
   if (Kind_Solver == RUNTIME_FLOW_SYS) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iMet = 0; iMet < nMet; iMet++) {
+            for (auto iVar = 0; iVar < nVar; iVar++) {
+              for (auto iMet = 0; iMet < nMet; iMet++) {
                 
               }// iVar
             }// iMet
@@ -5810,7 +5794,7 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   constexpr size_t MAXNMET = 30;
-  unsigned short nMet = 3*(nDim-1);
+  const unsigned short nMet = 3*(nDim-1);
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
