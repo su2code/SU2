@@ -429,8 +429,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      su2double residual = relax*(Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar));
-      nodes->AddSolution(iPoint, iVar, residual);
+      su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
+      nodes->AddSolution(iPoint, iVar, relax*residual);
 
       residual *= isdomain;
       AddRes_RMS(iVar,pow(residual,2));
