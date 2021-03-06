@@ -4127,7 +4127,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     SU2_MPI::Error(string("Restart file does not seem to be a CSV file.\n") + error_string, CURRENT_FUNCTION);
   }
 
-  for (auto iField = 0; iField < fields.size(); iField++){
+  for (auto iField = 0u; iField < fields.size(); iField++){
     PrintingToolbox::trim(fields[iField]);
   }
 
@@ -5299,7 +5299,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     if (i == 0) {
       commType = COMM_TYPE_UNSIGNED_LONG;
       countPerElem = 1;
-      unsigned long *ProcCounter = new su2double[size];
+      unsigned long *ProcCounter = new unsigned long[size];
       for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
 
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6003,7 +6003,6 @@ void CSolver::ComputeMetric(CSolver   **solver,
 
   bool visc = (config->GetViscous());
   bool turb = (config->GetKind_Turb_Model() != NONE);
-  bool cjst = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (config->GetKind_Centered_Flow() == JST);
 
   //--- Vector to store weights from various error contributions
   unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();

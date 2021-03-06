@@ -960,7 +960,7 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *GridVel;
+  su2double *GridVel = nullptr;
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -2134,7 +2134,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   su2double **grad_primvar, tau[3][3];
 
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
-  su2double T_Normal, P_Normal, Lam_Visc_Normal;
+  su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta, grad_diff;
@@ -2238,7 +2238,6 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
             P_Normal = GetFluidModel()->GetPressure();
             T_Normal = GetFluidModel()->GetTemperature();
-            Lam_Visc_Normal = GetFluidModel()->GetLaminarViscosity();
 
             /*--- Compute the wall-parallel velocity at the exchange location ---*/
 
@@ -2261,7 +2260,6 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
             P_Normal = nodes->GetPressure(Point_Normal);
             T_Normal = nodes->GetTemperature(Point_Normal);
-            Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
 
             /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
