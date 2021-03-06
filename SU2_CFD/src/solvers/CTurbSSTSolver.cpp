@@ -572,7 +572,7 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNum
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double distance, Density_Wall = 0.0, Lam_Visc_Wall = 0.0;
+  su2double distance, Density_Wall = 0.0;
   su2double Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[MAXNDIM] = {0.0};
   const su2double beta_1 = constants[4];
@@ -631,7 +631,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       }
       
       Density_Wall = flowNodes->GetDensity(iPoint);
-      Lam_Visc_Wall = flowNodes->GetLaminarViscosity(iPoint);
       
       Solution[0] = 0.0;
       Solution[1] = 60.0*Density_Wall*Lam_Visc_Normal/(Density_Normal*beta_1*distance*distance);
@@ -1445,7 +1444,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   SU2_OMP_BARRIER
 
   const su2double *Normal = nullptr;
-  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
+  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -1721,7 +1720,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
 
 void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
   
-  su2double Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
+  su2double Eddy_Visc = 0.0, VelMod = 0.0;
   
   const su2double kappa = 0.41;
   const su2double B = 5.0;

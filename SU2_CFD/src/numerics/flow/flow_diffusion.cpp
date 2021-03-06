@@ -574,7 +574,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Mean gradient approximation ---*/
 
-  for (auto iVar = 0u; iVar < (unsigned short)nDim+1; iVar++) {
+  for (auto iVar = 0u; iVar < (unsigned short)(nDim+1); iVar++) {
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }

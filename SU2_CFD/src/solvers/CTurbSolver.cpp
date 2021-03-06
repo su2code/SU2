@@ -381,8 +381,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
                                                 : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);
-
-  const auto InnerIter = config->GetInnerIter();
     
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 

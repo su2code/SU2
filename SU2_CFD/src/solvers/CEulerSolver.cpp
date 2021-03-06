@@ -3929,7 +3929,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
   }
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
-  for (auto iVar = 0u; iVar < (unsigned short)nVar-1; iVar++) {
+  for (auto iVar = 0u; iVar < (unsigned short)(nVar-1); iVar++) {
     for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;

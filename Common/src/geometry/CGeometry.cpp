@@ -1554,8 +1554,7 @@ bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point)
 }
 
 void CGeometry::SetEdges(void) {
-  unsigned long iPoint, jPoint;
-  long iEdge;
+  unsigned long iPoint, jPoint, iEdge;
   unsigned short jNode, iNode;
   long TestEdge = 0;
   

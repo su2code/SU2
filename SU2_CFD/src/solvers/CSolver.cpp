@@ -5291,7 +5291,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
   /*--- Local variables ---*/
 
   int iMessage, iProc, offset, nElem, count, source, dest, tag;
-  unsigned short commType;
+  unsigned short commType = COMM_TYPE_UNSIGNED_LONG;
 
   for (auto i = 0; i < 3; i++) {
 
@@ -5299,7 +5299,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     if (i == 0) {
       commType = COMM_TYPE_UNSIGNED_LONG;
       countPerElem = 1;
-      unsigned long ProcCounter[size];
+      unsigned long *ProcCounter = new su2double[size];
       for (iProc = 0; iProc < size; iProc++) ProcCounter[iProc] = 0;
 
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5313,6 +5313,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           }
         }
       }
+      delete [] ProcCounter;
     }
 
     /*--- Markers ---*/
@@ -5503,7 +5504,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           const unsigned long ElemID = bufLSend[offset];
           const unsigned short MarkerID = bufSSend[offset];
           if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
-              (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
+              (geometry->node[iPoint]->GetWall_Element() == (long) ElemID)) {
             const unsigned short nNodeElem = geometry->node[iPoint]->GetWall_nNode();
             for (auto kNode = 0; kNode < nNodeElem; kNode++) {
               flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
