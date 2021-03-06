@@ -2380,7 +2380,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                           Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 11.) - 
                           Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
                           (1. / (kappa * U_Tau_Rei)) + (F_Log - F_Rei) *
-                          (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
+                          (4. * pow(Y_Plus / 27., 4.) / U_Tau_Rei) * 
                           pow(1. / (cosh(pow(Y_Plus / 27., 4.))), 2.);
 
               if (grad_diff != grad_diff) {

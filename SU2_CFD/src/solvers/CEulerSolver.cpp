@@ -2685,7 +2685,6 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver, CConfig *co
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
-  const auto turb_model    = config->GetKind_Turb_Model();
   const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);

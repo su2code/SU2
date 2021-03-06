@@ -1427,10 +1427,6 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
-  const auto turb_model    = config->GetKind_Turb_Model();
-  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-
   const su2double K_v = 0.25;
   const su2double sigma_k1  = constants[0];
   const su2double sigma_k2  = constants[1];
