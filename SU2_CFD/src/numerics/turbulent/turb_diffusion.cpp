@@ -98,7 +98,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Flux[iVar] = 0.0;
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }

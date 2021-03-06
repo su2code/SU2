@@ -2686,7 +2686,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
                                 unsigned short iMesh, unsigned long Iteration) {
 
   const auto turb_model    = config->GetKind_Turb_Model();
-  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
@@ -2707,7 +2706,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   SU2_OMP_BARRIER
 
   const su2double *Normal = nullptr;
-  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
+  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
 
   /*--- Loop domain points. ---*/
@@ -3445,7 +3444,6 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
                                           bool &good_i, 
                                           bool &good_j) {
   const unsigned short turbModel = config->GetKind_Turb_Model();
-  const bool turb = (turbModel != NONE) && (turbModel != SA_NEG);
   const bool tkeNeeded = (turbModel == SST) || (turbModel == SST_SUST);
 
   /*--- Positive density ---*/
@@ -3932,7 +3930,7 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
   }
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
-  for (auto iVar = 0u; iVar < nVar-1; iVar++) {
+  for (auto iVar = 0u; iVar < (unsigned short)nVar-1; iVar++) {
     for (auto jVar = 0u; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
@@ -7786,7 +7784,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
-  su2double Kine_Infty = 0., Omega_Infty = 0.;
+  su2double Kine_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
@@ -7813,10 +7811,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (node_i->GetDomain()) {
-
-      /*--- Index of the closest interior node ---*/
-
-      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -12566,260 +12560,259 @@ void CEulerSolver::SortAdaptedSolution(CGeometry **geometry, CSolver ***solver, 
    This is a linear partitioning with the addition of a simple load
    balancing for any remainder points. ---*/
   
-  unsigned long* beg_node = new unsigned long[size];
-  unsigned long* end_node = new unsigned long[size];
+  // unsigned long* beg_node = new unsigned long[size];
+  // unsigned long* end_node = new unsigned long[size];
   
-  unsigned long*  nPointLinear     = new unsigned long[size];
-  unsigned long*  nPointCumulative = new unsigned long[size+1];
+  // unsigned long*  nPointLinear     = new unsigned long[size];
+  // unsigned long*  nPointCumulative = new unsigned long[size+1];
   
-  unsigned long npoint_global = geometry[MESH_0]->GetGlobal_nPointDomain();
-  unsigned long quotient = npoint_global/size;
-  int remainder = int(npoint_global%size);
-  for (int ii = 0; ii < size; ii++) {
-    nPointLinear[ii] = quotient + int(ii < remainder);
-  }
+  // unsigned long npoint_global = geometry[MESH_0]->GetGlobal_nPointDomain();
+  // unsigned long quotient = npoint_global/size;
+  // int remainder = int(npoint_global%size);
+  // for (int ii = 0; ii < size; ii++) {
+  //   nPointLinear[ii] = quotient + int(ii < remainder);
+  // }
   
-  /*--- Store the local number of nodes on each proc in the linear
-   partitioning, the beginning/end index, and the linear partitioning
-   within an array in cumulative storage format. ---*/
+  // /*--- Store the local number of nodes on each proc in the linear
+  //  partitioning, the beginning/end index, and the linear partitioning
+  //  within an array in cumulative storage format. ---*/
   
-  beg_node[0] = 0;
-  end_node[0] = beg_node[0] + nPointLinear[0];
-  nPointCumulative[0] = 0;
-  for (int iProc = 1; iProc < size; iProc++) {
-    beg_node[iProc] = end_node[iProc-1];
-    end_node[iProc] = beg_node[iProc] + nPointLinear[iProc];
-    nPointCumulative[iProc] = nPointCumulative[iProc-1] + nPointLinear[iProc-1];
-  }
-  nPointCumulative[size] = npoint_global;
+  // beg_node[0] = 0;
+  // end_node[0] = beg_node[0] + nPointLinear[0];
+  // nPointCumulative[0] = 0;
+  // for (int iProc = 1; iProc < size; iProc++) {
+  //   beg_node[iProc] = end_node[iProc-1];
+  //   end_node[iProc] = beg_node[iProc] + nPointLinear[iProc];
+  //   nPointCumulative[iProc] = nPointCumulative[iProc-1] + nPointLinear[iProc-1];
+  // }
+  // nPointCumulative[size] = npoint_global;
 
-  /*--- Loop over all points and determine which processor to send
-   the solution to. ---*/
+  // /*--- Loop over all points and determine which processor to send
+  //  the solution to. ---*/
 
-  unsigned long iProcessor;
-  unsigned long iNode, jNode, iPoint, Local_Index, Global_Index;
+  // unsigned long iPoint, Local_Index, Global_Index;
 
-  SU2_MPI::Request *solSendReq = NULL, *idSendReq = NULL;
-  SU2_MPI::Request *solRecvReq = NULL, *idRecvReq = NULL;
-  int iProc, iSend, iRecv, iSol, iVar, myStart, myFinal;
+  // SU2_MPI::Request *solSendReq = NULL, *idSendReq = NULL;
+  // SU2_MPI::Request *solRecvReq = NULL, *idRecvReq = NULL;
+  // int iProc, iSend, iRecv, iSol, iVar, myStart, myFinal;
 
-  int *nSol_Send = new int[size+1]; nSol_Send[0] = 0;
-  int *nSol_Recv = new int[size+1]; nSol_Recv[0] = 0;
+  // int *nSol_Send = new int[size+1]; nSol_Send[0] = 0;
+  // int *nSol_Recv = new int[size+1]; nSol_Recv[0] = 0;
 
-  for(iProc = 0; iProc < size; ++iProc) {
-    nSol_Send[iProc] = 0; nSol_Recv[iProc] = 0;
-  }
-  nSol_Send[size] = 0; nSol_Recv[size] = 0;
+  // for(iProc = 0; iProc < size; ++iProc) {
+  //   nSol_Send[iProc] = 0; nSol_Recv[iProc] = 0;
+  // }
+  // nSol_Send[size] = 0; nSol_Recv[size] = 0;
 
-  for(iSol = 0; iSol < SolAdap.size(); ++iSol) {
-    Global_Index = iSol + beg_node[rank];
-    for(iProc = 0; iProc < size; ++iProc) {
-      if(Global_Index >= beg_node[iProc] && Global_Index < end_node[iProc]) {
-        nSol_Send[iProc+1]++;
-      }
-    }
-  }
+  // for(iSol = 0; iSol < SolAdap.size(); ++iSol) {
+  //   Global_Index = iSol + beg_node[rank];
+  //   for(iProc = 0; iProc < size; ++iProc) {
+  //     if(Global_Index >= beg_node[iProc] && Global_Index < end_node[iProc]) {
+  //       nSol_Send[iProc+1]++;
+  //     }
+  //   }
+  // }
 
-  /*--- Communicate the number of sols to be sent/recv'd amongst
-   all processors. After this communication, each proc knows how
-   many sols it will receive from each other processor. ---*/
+  // /*--- Communicate the number of sols to be sent/recv'd amongst
+  //  all processors. After this communication, each proc knows how
+  //  many sols it will receive from each other processor. ---*/
 
-  SU2_MPI::Alltoall(&(nSol_Send[1]), 1, MPI_INT,
-                    &(nSol_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  // SU2_MPI::Alltoall(&(nSol_Send[1]), 1, MPI_INT,
+  //                   &(nSol_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 
-  /*--- Prepare to send connectivities. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
+  // /*--- Prepare to send connectivities. First check how many
+  //  messages we will be sending and receiving. Here we also put
+  //  the counters into cumulative storage format to make the
+  //  communications simpler. ---*/
 
-  int nSends = 0, nRecvs = 0;
+  // int nSends = 0, nRecvs = 0;
 
-  for (iProc = 0; iProc < size; iProc++) {
-    if ((iProc != rank) && (nSol_Send[iProc+1] > 0)) nSends++;
-    if ((iProc != rank) && (nSol_Recv[iProc+1] > 0)) nRecvs++;
+  // for (iProc = 0; iProc < size; iProc++) {
+  //   if ((iProc != rank) && (nSol_Send[iProc+1] > 0)) nSends++;
+  //   if ((iProc != rank) && (nSol_Recv[iProc+1] > 0)) nRecvs++;
 
-    nSol_Send[iProc+1] += nSol_Send[iProc];
-    nSol_Recv[iProc+1] += nSol_Recv[iProc];
-  }
+  //   nSol_Send[iProc+1] += nSol_Send[iProc];
+  //   nSol_Recv[iProc+1] += nSol_Recv[iProc];
+  // }
 
-  /*--- Allocate memory to hold the sols that we are sending. ---*/
+  // /*--- Allocate memory to hold the sols that we are sending. ---*/
 
-  su2double *solSend = NULL;
-  solSend = new su2double[nVar*nSol_Send[size]];
-  for (iSend = 0; iSend < nVar*nSol_Send[size]; iSend++)
-    solSend[iSend] = 0;
+  // su2double *solSend = NULL;
+  // solSend = new su2double[nVar*nSol_Send[size]];
+  // for (iSend = 0; iSend < nVar*nSol_Send[size]; iSend++)
+  //   solSend[iSend] = 0;
 
-  unsigned long *idSend = NULL;
-  idSend = new unsigned long[nSol_Send[size]];
-  for (iSend = 0; iSend < nSol_Send[size]; iSend++)
-    idSend[iSend] = 0;
+  // unsigned long *idSend = NULL;
+  // idSend = new unsigned long[nSol_Send[size]];
+  // for (iSend = 0; iSend < nSol_Send[size]; iSend++)
+  //   idSend[iSend] = 0;
 
-  /*--- Create an index variable to keep track of our index
-   position as we load up the send buffer. ---*/
+  // /*--- Create an index variable to keep track of our index
+  //  position as we load up the send buffer. ---*/
 
-  unsigned long *index = new unsigned long[size];
-  for (iProc = 0; iProc < size; iProc++)
-    index[iProc] = nVar*nSol_Send[iProc];
+  // unsigned long *index = new unsigned long[size];
+  // for (iProc = 0; iProc < size; iProc++)
+  //   index[iProc] = nVar*nSol_Send[iProc];
 
-  unsigned long *idIndex = new unsigned long[size];
-  for (iProc = 0; iProc < size; iProc++)
-    idIndex[iProc] = nSol_Send[iProc];
+  // unsigned long *idIndex = new unsigned long[size];
+  // for (iProc = 0; iProc < size; iProc++)
+  //   idIndex[iProc] = nSol_Send[iProc];
 
-  /*--- Now store sols that we are sending. --*/
+  // /*--- Now store sols that we are sending. --*/
 
-  for(iSol = 0; iSol < SolAdap.size(); ++iSol) {
-    Global_Index = iSol + beg_node[rank];
-    for(iProc = 0; iProc < size; ++iProc) {
-      if(Global_Index >= beg_node[iProc] && Global_Index < end_node[iProc]) {
-        unsigned long mm = idIndex[iProc];
-        unsigned long nn = index[iProc];
-        for (iVar = 0; iVar < nVar; iVar++) {
-          solSend[nn] = SolAdap[iSol][iVar]; nn++;
-        }
-        idSend[mm] = Global_Index;
+  // for(iSol = 0; iSol < SolAdap.size(); ++iSol) {
+  //   Global_Index = iSol + beg_node[rank];
+  //   for(iProc = 0; iProc < size; ++iProc) {
+  //     if(Global_Index >= beg_node[iProc] && Global_Index < end_node[iProc]) {
+  //       unsigned long mm = idIndex[iProc];
+  //       unsigned long nn = index[iProc];
+  //       for (iVar = 0; iVar < nVar; iVar++) {
+  //         solSend[nn] = SolAdap[iSol][iVar]; nn++;
+  //       }
+  //       idSend[mm] = Global_Index;
         
-        /*--- Increment the index by the message length ---*/
+  //       /*--- Increment the index by the message length ---*/
 
-        idIndex[iProc]++;
-        index[iProc] += nVar;
+  //       idIndex[iProc]++;
+  //       index[iProc] += nVar;
 
-      }
-    }
-    // vector<passivedouble>().swap(SolAdap[iSol]);
-  }
-  // vector<vector<passivedouble> >().swap(SolAdap);
+  //     }
+  //   }
+  //   // vector<passivedouble>().swap(SolAdap[iSol]);
+  // }
+  // // vector<vector<passivedouble> >().swap(SolAdap);
 
-  /*--- Allocate the memory that we need for receiving the
-   values and then cue up the non-blocking receives. Note that
-   we do not include our own rank in the communications. We will
-   directly copy our own data later. ---*/
+  // /*--- Allocate the memory that we need for receiving the
+  //  values and then cue up the non-blocking receives. Note that
+  //  we do not include our own rank in the communications. We will
+  //  directly copy our own data later. ---*/
 
-  su2double *solRecv = NULL;
-  solRecv = new su2double[nVar*nSol_Recv[size]];
-  for (iRecv = 0; iRecv < nVar*nSol_Recv[size]; iRecv++)
-    solRecv[iRecv] = 0;
+  // su2double *solRecv = NULL;
+  // solRecv = new su2double[nVar*nSol_Recv[size]];
+  // for (iRecv = 0; iRecv < nVar*nSol_Recv[size]; iRecv++)
+  //   solRecv[iRecv] = 0;
 
-  unsigned long *idRecv = NULL;
-  idRecv = new unsigned long[nSol_Recv[size]];
-  for (iRecv = 0; iRecv < nSol_Recv[size]; iRecv++)
-    idRecv[iRecv] = 0;
+  // unsigned long *idRecv = NULL;
+  // idRecv = new unsigned long[nSol_Recv[size]];
+  // for (iRecv = 0; iRecv < nSol_Recv[size]; iRecv++)
+  //   idRecv[iRecv] = 0;
 
-  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  // /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  if (nSends > 0) {
-    solSendReq = new SU2_MPI::Request[nSends];
-    idSendReq  = new SU2_MPI::Request[nSends];
-  }
-  if (nRecvs > 0) {
-    solRecvReq = new SU2_MPI::Request[nRecvs];
-    idRecvReq  = new SU2_MPI::Request[nRecvs];
-  }
+  // if (nSends > 0) {
+  //   solSendReq = new SU2_MPI::Request[nSends];
+  //   idSendReq  = new SU2_MPI::Request[nSends];
+  // }
+  // if (nRecvs > 0) {
+  //   solRecvReq = new SU2_MPI::Request[nRecvs];
+  //   idRecvReq  = new SU2_MPI::Request[nRecvs];
+  // }
 
-  /*--- Launch the non-blocking sends and receives. ---*/
+  // /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateCommsAll(solSend, nSol_Send, solSendReq,
-                   solRecv, nSol_Recv, solRecvReq,
-                   nVar, COMM_TYPE_DOUBLE);
+  // InitiateCommsAll(solSend, nSol_Send, solSendReq,
+  //                  solRecv, nSol_Recv, solRecvReq,
+  //                  nVar, COMM_TYPE_DOUBLE);
 
-  InitiateCommsAll(idSend, nSol_Send, idSendReq,
-                   idRecv, nSol_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+  // InitiateCommsAll(idSend, nSol_Send, idSendReq,
+  //                  idRecv, nSol_Recv, idRecvReq,
+  //                  1, COMM_TYPE_UNSIGNED_LONG);
 
-  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  // /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
-  iRecv   = nVar*nSol_Recv[rank];
-  myStart = nVar*nSol_Send[rank];
-  myFinal = nVar*nSol_Send[rank+1];
-  for (iSend = myStart; iSend < myFinal; iSend++) {
-    solRecv[iRecv] = solSend[iSend];
-    iRecv++;
-  }
+  // iRecv   = nVar*nSol_Recv[rank];
+  // myStart = nVar*nSol_Send[rank];
+  // myFinal = nVar*nSol_Send[rank+1];
+  // for (iSend = myStart; iSend < myFinal; iSend++) {
+  //   solRecv[iRecv] = solSend[iSend];
+  //   iRecv++;
+  // }
 
-  iRecv   = nSol_Recv[rank];
-  myStart = nSol_Send[rank];
-  myFinal = nSol_Send[rank+1];
-  for (iSend = myStart; iSend < myFinal; iSend++) {
-    idRecv[iRecv] = idSend[iSend];
-    iRecv++;
-  }
+  // iRecv   = nSol_Recv[rank];
+  // myStart = nSol_Send[rank];
+  // myFinal = nSol_Send[rank+1];
+  // for (iSend = myStart; iSend < myFinal; iSend++) {
+  //   idRecv[iRecv] = idSend[iSend];
+  //   iRecv++;
+  // }
 
-  /*--- Complete the non-blocking communications. ---*/
+  // /*--- Complete the non-blocking communications. ---*/
 
-  CompleteCommsAll(nSends, solSendReq, nRecvs, solRecvReq);
-  CompleteCommsAll(nSends,  idSendReq, nRecvs,  idRecvReq);
+  // CompleteCommsAll(nSends, solSendReq, nRecvs, solRecvReq);
+  // CompleteCommsAll(nSends,  idSendReq, nRecvs,  idRecvReq);
 
-  /*--- Prepare a mapping for local to global element index. ---*/
+  // /*--- Prepare a mapping for local to global element index. ---*/
 
-  map<unsigned long, unsigned long> Global2Local;
+  // map<unsigned long, unsigned long> Global2Local;
 
-  for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); ++iPoint) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
+  // for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); ++iPoint) {
+  //   Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  // }
 
-  /*--- Store the solution for this rank in the proper structure. ---*/
+  // /*--- Store the solution for this rank in the proper structure. ---*/
 
-  su2double *Sol = new su2double[nVar];
-  for (iRecv = 0; iRecv < nSol_Recv[size]; ++iRecv) {
-    Local_Index = Global2Local[idRecv[iRecv]];
-    for (iVar = 0; iVar < nVar; ++iVar) Sol[iVar] = solRecv[nVar*iRecv+iVar];
+  // su2double *Sol = new su2double[nVar];
+  // for (iRecv = 0; iRecv < nSol_Recv[size]; ++iRecv) {
+  //   Local_Index = Global2Local[idRecv[iRecv]];
+  //   for (iVar = 0; iVar < nVar; ++iVar) Sol[iVar] = solRecv[nVar*iRecv+iVar];
 
-    nodes->SetSolution(Local_Index, Sol);
-  }
+  //   nodes->SetSolution(Local_Index, Sol);
+  // }
 
-  /*--- Free temporary memory from communications ---*/
+  // /*--- Free temporary memory from communications ---*/
 
-  Global2Local.clear();
+  // Global2Local.clear();
 
-  if (solSendReq != NULL) delete [] solSendReq;
-  if (idSendReq  != NULL) delete [] idSendReq;
+  // if (solSendReq != NULL) delete [] solSendReq;
+  // if (idSendReq  != NULL) delete [] idSendReq;
 
-  if (solRecvReq != NULL) delete [] solRecvReq;
-  if (idRecvReq  != NULL) delete [] idRecvReq;
+  // if (solRecvReq != NULL) delete [] solRecvReq;
+  // if (idRecvReq  != NULL) delete [] idRecvReq;
 
-  delete [] solSend;
-  delete [] solRecv;
-  delete [] idSend;
-  delete [] idRecv;
-  delete [] nSol_Recv;
-  delete [] nSol_Send;
-  delete [] Sol;
+  // delete [] solSend;
+  // delete [] solRecv;
+  // delete [] idSend;
+  // delete [] idRecv;
+  // delete [] nSol_Recv;
+  // delete [] nSol_Send;
+  // delete [] Sol;
 
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine
-   on the fine level in order to have all necessary quantities updated,
-   especially if this is a turbulent simulation (eddy viscosity). ---*/
+  // /*--- Communicate the loaded solution on the fine grid before we transfer
+  //  it down to the coarse levels. We alo call the preprocessing routine
+  //  on the fine level in order to have all necessary quantities updated,
+  //  especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  // solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  // solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  // solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
-  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  // /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
-  unsigned short iMesh, iMeshFine;
-  unsigned long iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
+  // unsigned short iMesh;
+  // unsigned long iChildren, Point_Fine;
+  // su2double Area_Children, Area_Parent, *Solution_Fine;
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
+  // for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+  //   for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+  //     Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+  //     for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+  //     for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+  //       Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+  //       Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+  //       Solution_Fine = solver[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
+  //       for (iVar = 0; iVar < nVar; iVar++) {
+  //         Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+  //       }
+  //     }
+  //     solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
+  //   }
     
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+  //   solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+  //   solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  }
+  //   solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  // }
 
 }
 

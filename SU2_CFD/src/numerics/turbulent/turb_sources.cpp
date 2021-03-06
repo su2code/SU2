@@ -842,7 +842,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   }
   else {
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      for (auto jDim = 0; jDim < nDim; jDim++)
+      for (auto jDim = 0u; jDim < nDim; jDim++)
         StrainMag2 += (PrimVar_Grad_i[iDim+1][jDim] + PrimVar_Grad_i[jDim+1][iDim]
                     -  TWO3*diverg*(iDim == jDim)) * PrimVar_Grad_i[iDim+1][jDim];
   }

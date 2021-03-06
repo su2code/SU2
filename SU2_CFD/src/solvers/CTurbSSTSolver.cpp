@@ -289,9 +289,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh) {
 
-  const bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                            (!config->GetEdgeLimiter_Flow()) &&
-                            (config->GetInnerIter() <= config->GetLimiterIter());
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
@@ -506,8 +503,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
   
   const su2double F1 = nodes->GetF1blending(iPoint);
-  const su2double F2 = nodes->GetF2blending(iPoint);
-  const su2double a1 = constants[7];
+  // const su2double F2 = nodes->GetF2blending(iPoint);
+  // const su2double a1 = constants[7];
 
   const su2double r_i  = flowNodes->GetDensity(iPoint);
   const su2double om_i = nodes->GetPrimitive(iPoint,1);
@@ -1432,10 +1429,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool muscl         = (config->GetMUSCL_Turb() && (iMesh == MESH_0));
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-  const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == DT_STEPPING_2ND);
+
   const su2double K_v = 0.25;
   const su2double sigma_k1  = constants[0];
   const su2double sigma_k2  = constants[1];
@@ -1818,7 +1813,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- First-order terms (error due to viscosity)
   su2double r, u[3], k, omega,
             mu, mut,
-            R, cp, g, Pr, Prt,
+            R, cp, g, Prt,
             walldist;
 
   r = varFlo->GetDensity(iPoint);
@@ -1834,7 +1829,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
   cp   = (g/(g-1.))*R;
-  Pr   = config->GetPrandtl_Lam();
   Prt  = config->GetPrandtl_Turb();
   
   walldist = geometry->node[iPoint]->GetWall_Distance();

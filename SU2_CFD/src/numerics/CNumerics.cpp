@@ -555,8 +555,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   }
   q2 *= 0.5;
 
-  const su2double five3k = FIVE3*(*k);
-  const su2double two3k  = TWO3*(*k);
+  // const su2double five3k = FIVE3*(*k);
+  // const su2double two3k  = TWO3*(*k);
   const su2double h = c2/Gamma_Minus_One + q2 + (*k);
 
   if (nDim == 2) {

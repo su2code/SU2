@@ -44,7 +44,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex = new unsigned long[nMarker];
-  for (auto iMarker = 0; iMarker < nMarker; iMarker++)
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -79,7 +79,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 CTurbSolver::~CTurbSolver(void) {
 
   if (Inlet_TurbVars != nullptr) {
-    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
       if (Inlet_TurbVars[iMarker] != nullptr) {
         for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
@@ -96,7 +96,6 @@ CTurbSolver::~CTurbSolver(void) {
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const bool muscl_start = ((config->GetInnerIter() >= config->GetMUSCL_Start_Iter()) || 
@@ -384,10 +383,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const bool gg = (kindRecon == GREEN_GAUSS);
 
   const auto InnerIter = config->GetInnerIter();
-  const bool limiter   = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  
-  const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
-  
+    
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
@@ -825,8 +821,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   const su2double allowableRatio = sa_model? 0.99 : 0.5;
 

@@ -2469,19 +2469,19 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
-  unsigned short nMGLevels          = config->GetnMGLevels();
+  // unsigned short nMGLevels          = config->GetnMGLevels();
 
   const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
 
-  su2double CFLMaxRed = 1.0;
-  switch(RunTime_EqSystem) {
-    case RUNTIME_TURB_SYS:
-      CFLMaxRed = config->GetCFLMaxRedCoeff_Turb();
-      nMGLevels = 0;
-      break;
-    default:
-      break;
-  }
+  // su2double CFLMaxRed = 1.0;
+  // switch(RunTime_EqSystem) {
+  //   case RUNTIME_TURB_SYS:
+  //     CFLMaxRed = config->GetCFLMaxRedCoeff_Turb();
+  //     nMGLevels = 0;
+  //     break;
+  //   default:
+  //     break;
+  // }
 
   static bool reduceCFL, resetCFL, canIncrease;
 
@@ -5798,7 +5798,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 
     if (config->GetSolid_Wall(iMarker)) {
 
-      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         auto node_i = geometry->node[iPoint];

@@ -210,11 +210,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     su2double Wave_i = ProjVelocity_i;
     su2double Wave_j = ProjVelocity_j;
-    if (iVar == (nVar-2)) {
+    if (iVar == (unsigned short)(nVar-2)) {
       Wave_i += SoundSpeed_i;
       Wave_j += SoundSpeed_j;
     }
-    if (iVar == (nVar-1)) {
+    if (iVar == (unsigned short)(nVar-1)) {
       Wave_i -= SoundSpeed_i;
       Wave_j -= SoundSpeed_j;
     }
