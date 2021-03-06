@@ -1443,8 +1443,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   }
   SU2_OMP_BARRIER
 
-  const su2double *Normal = nullptr;
-  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
+  su2double Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -1459,7 +1458,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    const auto Vol = geometry->node[iPoint]->GetVolume();
     if (Vol == 0.0) continue;
 
     /*--- Loop over the neighbors of point i. ---*/
@@ -1470,8 +1469,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       const auto node_j = geometry->node[jPoint];
 
       const auto iEdge = node_i->GetEdge(iNeigh);
-      Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      const auto Normal = geometry->edge[iEdge]->GetNormal();
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -1532,11 +1531,11 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
         if (!node_i->GetDomain()) continue;
 
-        Vol = node_i->GetVolume();
+        const auto Vol = node_i->GetVolume();
         if (Vol == 0.0) continue;
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (auto iDim = 0u; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
         /*--- Mean Values ---*/
 
@@ -1585,7 +1584,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      Vol = geometry->node[iPoint]->GetVolume();
+      const auto Vol = geometry->node[iPoint]->GetVolume();
 
       if (Vol != 0.0) {
 

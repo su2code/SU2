@@ -990,7 +990,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       su2double UnitNormal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
