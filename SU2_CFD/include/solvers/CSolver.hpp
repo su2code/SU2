@@ -313,7 +313,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Move the mesh in time
