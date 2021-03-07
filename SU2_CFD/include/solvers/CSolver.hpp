@@ -87,17 +87,20 @@ protected:
   su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
-  su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
-  *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
-  *Residual,                /*!< \brief Auxiliary nVar vector. */
+  vector<su2double> Residual_RMS;      /*!< \brief Vector with the mean residual for each variable. */
+  vector<su2double> Residual_Max;      /*!< \brief Vector with the maximal residual for each variable. */
+  vector<su2double> Residual_BGS;      /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
+  vector<su2double> Residual_Max_BGS;  /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
+  vector<unsigned long> Point_Max;     /*!< \brief Vector with the maximal residual for each variable. */
+  vector<unsigned long> Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+
+  /*--- Variables that need to go. ---*/
+
+  su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
   *Residual_i,              /*!< \brief Auxiliary nVar vector for storing the residual at point i. */
   *Residual_j;              /*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-  su2double *Residual_BGS,  /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
-  *Residual_Max_BGS;        /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
-  unsigned long *Point_Max;        /*!< \brief Vector with the maximal residual for each variable. */
-  unsigned long *Point_Max_BGS;    /*!< \brief Vector with the maximal residual for each variable. */
-  su2double **Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
-  su2double **Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2double *Solution,    /*!< \brief Auxiliary nVar vector. */
   *Solution_i,            /*!< \brief Auxiliary nVar vector for storing the solution at point i. */
   *Solution_j;            /*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -117,16 +120,19 @@ protected:
   **Jacobian_ij,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
+
+  /*--- End variables that need to go. ---*/
+
+  su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
-  unsigned long nMarker,            /*!< \brief Total number of markers using the grid information. */
-  *nVertex;                         /*!< \brief Store nVertex at each marker for deallocation */
+  unsigned long nMarker;            /*!< \brief Total number of markers using the grid information. */
+  vector<unsigned long> nVertex;    /*!< \brief Store nVertex at each marker for deallocation */
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
@@ -295,13 +301,13 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_RMS(CGeometry *geometry, CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_BGS(CGeometry *geometry, CConfig *config);
+  void SetResidual_BGS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
@@ -551,7 +557,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
+  inline const su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -565,7 +571,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
+  inline const su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
 
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.

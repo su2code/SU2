@@ -34,7 +34,7 @@
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-  unsigned short iVar, iDim, nLineLets;
+  unsigned short iVar, nLineLets;
   unsigned long iPoint, index;
   su2double tu_Inf, dull_val, rey;
   ifstream restart_file;
@@ -62,18 +62,15 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (iMesh == MESH_0) {
 
     /*--- Define some auxillary vectors related to the residual ---*/
-    Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-    Residual_i   = new su2double[nVar]; Residual_j   = new su2double[nVar];
-    Residual_Max = new su2double[nVar];
+    Residual     = new su2double[nVar];
+    Residual_i   = new su2double[nVar];
+    Residual_j   = new su2double[nVar];
 
     /*--- Define some structures for locating max residuals ---*/
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-    }
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Define some auxiliar vector related with the solution ---*/
     Solution   = new su2double[nVar];

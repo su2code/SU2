@@ -32,7 +32,7 @@ CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  unsigned short iDim, iVar, nLineLets;
+  unsigned short nLineLets;
 
   adjoint = true;
 
@@ -58,14 +58,14 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  Residual   = new su2double [nVar]; Residual_RMS = new su2double[nVar];
-  Residual_i = new su2double [nVar]; Residual_j = new su2double [nVar];
-  Residual_Max = new su2double [nVar]; Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
+
+  Residual   = new su2double [nVar];
+  Residual_i = new su2double [nVar];
+  Residual_j = new su2double [nVar];
 
   Solution   = new su2double [nVar];
   Solution_i = new su2double [nVar];

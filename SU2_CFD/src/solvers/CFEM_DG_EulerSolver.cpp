@@ -275,15 +275,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
-  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
-  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,1.e-35);
+  Residual_Max.resize(nVar,1.e-35);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Non-dimensional coefficients ---*/
   CD_Inv   = new su2double[nMarker];
@@ -7262,7 +7257,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
     vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Residual_RMS.data(), rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       if (rbufRes[iVar] != rbufRes[iVar])
@@ -7273,11 +7268,11 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
     /*--- The global maximum norms must be obtained. ---*/
     rbufRes.resize(nVar*size);
-    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
+    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbufRes.data(),
                        nVar, MPI_DOUBLE, SU2_MPI::GetComm());
 
     vector<unsigned long> rbufPoint(nVar*size);
-    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
                        nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     vector<su2double> sbufCoor(nDim*nVar);

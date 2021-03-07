@@ -36,7 +36,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config) {
 
-  unsigned short iVar, nLineLets;
+  unsigned short nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -66,16 +66,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Define some auxiliar vector related with the residual ---*/
 
-    Residual_RMS = new su2double[nVar]();
-    Residual_Max = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max = new unsigned long[nVar]();
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim]();
-    }
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
@@ -103,16 +97,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
-      Residual_BGS      = new su2double[nVar]();
-      Residual_Max_BGS  = new su2double[nVar]();
-
-      /*--- Define some structures for locating max residuals ---*/
-
-      Point_Max_BGS       = new unsigned long[nVar]();
-      Point_Max_Coord_BGS = new su2double*[nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Point_Max_Coord_BGS[iVar] = new su2double[nDim] ();
-      }
+      Residual_BGS.resize(nVar,0.0);
+      Residual_Max_BGS.resize(nVar,0.0);
+      Point_Max_BGS.resize(nVar,0);
+      Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
     }
 
   }

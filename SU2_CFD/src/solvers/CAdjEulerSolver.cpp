@@ -39,8 +39,6 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   Sens_Press = nullptr;
   Sens_Temp = nullptr;
   Sens_BPress = nullptr;
-  iPoint_UndLapl = nullptr;
-  jPoint_UndLapl = nullptr;
   Jacobian_Axisymmetric = nullptr;
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
@@ -83,8 +81,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Sens_Press = nullptr;
   Sens_Temp = nullptr;
   Sens_BPress = nullptr;
-  iPoint_UndLapl = nullptr;
-  jPoint_UndLapl = nullptr;
   Jacobian_Axisymmetric = nullptr;
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
@@ -108,16 +104,13 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   nVarGrad = nVar;
 
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
+
   /*--- Define some auxiliary vectors related to the residual ---*/
   Residual = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-  Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
   Residual_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
   Residual_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
   Res_Conv_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
@@ -141,8 +134,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double [nPoint];
-    jPoint_UndLapl = new su2double [nPoint];
+    iPoint_UndLapl.resize(nPoint);
+    jPoint_UndLapl.resize(nPoint);
   }
 
   /*--- Define some auxiliary vectors related to the geometry ---*/

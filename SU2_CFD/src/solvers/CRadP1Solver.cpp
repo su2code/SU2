@@ -35,7 +35,7 @@ CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   unsigned short direct_diff = config->GetDirectDiff();
   bool multizone = config->GetMultizone_Problem();
 
@@ -48,20 +48,17 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   nVarGrad = nVar;
 
-  Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-  Solution = new su2double[nVar]; Residual_Max = new su2double[nVar];
+  Residual = new su2double[nVar];
+  Solution = new su2double[nVar];
 
   Res_Visc = new su2double[nVar];
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -106,19 +103,12 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   SetTemperature_Inf(Temperature_Inf);
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  /*--- Initialize the BGS residuals. ---*/
   if (multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
