@@ -196,6 +196,18 @@ public:
   {                                                                     \
     assert(i>=0 && i<M);                                                \
     return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  Scalar_t& operator[] (const Index_t i) noexcept                       \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  const Scalar_t& operator[] (const Index_t i) const noexcept           \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
   }
 
   MATRIX_ACCESSORS(StaticRows,StaticCols)
