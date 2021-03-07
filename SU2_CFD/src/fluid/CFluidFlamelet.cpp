@@ -79,11 +79,20 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   source_scalar[I_CO]       = table_sources[I_SRC_TOT_CO];
   source_scalar[I_NOX]      = table_sources[I_SRC_TOT_NOX];
 
+
+  /*--- we clip at a small positive value --- */
+  if (table_sources[I_SRC_TOT_PROG_VAR]<1.0e-6){
+  // cout << "source term < 0!! (c,h)= "<<prog<<", "<<enth << endl;
+  /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
+    source_scalar[I_PROG_VAR] = 0.0;
+  }
+
   /* calculate derivatives for jacobian preconditioner*/
   su2double delta_pv = 1e-6;
   
   delete [] table_sources;
 
+  /*--- not used at the moment ---*/ 
   return exit_code;
 }
 

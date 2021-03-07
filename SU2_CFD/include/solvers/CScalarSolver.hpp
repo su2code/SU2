@@ -1,25 +1,15 @@
 /*!
  * \file CScalarSolver.hpp
- * \brief Declaration and inlines of the scalar transport solver base class.
- * \author T. Economon
- * \version 6.2.0 "Falcon"
+ * \brief Main subroutines for the  transported scalar model.
+ * \author D. Mayer, T. Economon
+ * \version 7.1.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,6 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CScalarVariable.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
  * \class CScalarSolver
@@ -52,16 +43,17 @@ protected:
   *FlowPrimVar_j,                /*!< \brief Store the flow solution at point j. */
   *lowerlimit,                   /*!< \brief contains lower limits for turbulence variables. */
   *upperlimit;                   /*!< \brief contains upper limits for turbulence variables. */
-  su2double*** Inlet_ScalarVars; /*!< \brief Scalar variables at inlet profiles */
+  vector<su2activematrix> Inlet_ScalarVars;  /*!< \brief scalar variables at inlet profiles */
+
+ /* Sliding mesh variables */
+  
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
+
   unsigned long nMarker,         /*!< \brief Total number of markers using the grid information. */
   *nVertex;                      /*!< \brief Store nVertex at each marker for deallocation */
   unsigned short Inlet_Position; /*!< \brief Column index for scalar variables in inlet files. */
   su2double *Scalar_Inf;         /*!< \brief Array of far-field values for the scalar variables. */
-  
-  /* Sliding mesh variables */
-  
-  su2double ****SlidingState;
-  int **SlidingStateNodes;
   
   CScalarVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
   
@@ -69,7 +61,11 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
-  
+
+private:
+
+
+
 public:
   
   /*!
@@ -120,7 +116,23 @@ public:
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
   
-  
+  /*!
+   * \brief Prepare an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+
   /*!
    * \brief Update the solution using an implicit scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -200,7 +212,9 @@ public:
    */
   void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                    CNumerics *numerics, CConfig *config) override;
-  
+
+
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.

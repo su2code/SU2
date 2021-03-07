@@ -29,11 +29,7 @@
 #include "../../include/variables/CFlameletVariable.hpp"
 #include "../../include/fluid/CFluidFlamelet.hpp"
 
-CFlameletSolver::CFlameletSolver(void) : CScalarSolver() {
-  
-  Inlet_ScalarVars = NULL;
-  
-}
+CFlameletSolver::CFlameletSolver(void) : CScalarSolver() {}
 
 CFlameletSolver::CFlameletSolver(CGeometry *geometry,
                                  CConfig *config,
@@ -41,6 +37,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
 : CScalarSolver(geometry, config) {
   
   unsigned short iVar, iDim, nLineLets;
+  unsigned long local_table_misses=0,global_table_misses=0;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf;
   
@@ -183,51 +180,40 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   
   /*--- Initialize quantities for SlidingMesh Interface ---*/
   
-  unsigned long iMarker;
-  
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
-    
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-      
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-      
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-        
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-      
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
+
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
+
   
   /*-- Allocation of inlets has to happen in derived classes
    (not CScalarSolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
-  
+  /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+
+  Inlet_ScalarVars.resize(nMarker);
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++){
+    Inlet_ScalarVars[iMarker].resize(nVertex[iMarker],nVar);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        Inlet_ScalarVars[iMarker](iVertex,iVar) = Scalar_Inf[iVar];
+      }
+    }
+  }
+
+
   Inlet_Position = nDim*2+2;
   if (turbulent) {
     if (turb_SA) Inlet_Position += 1;
     else if (turb_SST) Inlet_Position += 2;
   }
   
-  Inlet_ScalarVars = new su2double**[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_ScalarVars[iMarker] = new su2double*[nVertex[iMarker]];
-    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-      Inlet_ScalarVars[iMarker][iVertex] = new su2double[nVar];
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        Inlet_ScalarVars[iMarker][iVertex][0] = Scalar_Inf[iVar];
-    }
-  }
   
 }
 
@@ -235,29 +221,6 @@ CFlameletSolver::~CFlameletSolver(void) {
   
   unsigned long iMarker, iVertex;
   unsigned short iVar;
-  
-  if ( SlidingState != NULL ) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
-            for (iVar = 0; iVar < nPrimVar+1; iVar++)
-              delete [] SlidingState[iMarker][iVertex][iVar];
-            delete [] SlidingState[iMarker][iVertex];
-          }
-        delete [] SlidingState[iMarker];
-      }
-    }
-    delete [] SlidingState;
-  }
-  
-  if ( SlidingStateNodes != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if (SlidingStateNodes[iMarker] != NULL)
-        delete [] SlidingStateNodes[iMarker];
-    }
-    delete [] SlidingStateNodes;
-  }
   
 }
 
@@ -307,7 +270,7 @@ unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container
   unsigned long iPoint, ErrorCounter = 0;
   su2double Density, Temperature, lam_visc = 0.0, eddy_visc = 0.0, Cp;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  unsigned long n_not_in_domain = 0;
+  unsigned long n_not_in_domain = 0,global_table_misses=0;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -340,8 +303,19 @@ unsigned long CFlameletSolver::SetPrimitive_Variables(CSolver **solver_container
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
   }
-  SetNTableMisses(n_not_in_domain);
+  //SetNTableMisses(n_not_in_domain);
+/*--- Warning message about table misses ---*/
 
+  if (config->GetComm_Level() == COMM_FULL) {
+
+    SU2_MPI::Reduce(&n_not_in_domain, &global_table_misses, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (rank == MASTER_NODE) {
+      //if  (global_table_misses > 0) cout << "Warning: number of misses: " << global_table_misses << endl;
+      SetNTableMisses(global_table_misses);
+
+    } 
+  }
   return ErrorCounter;
   
 }
@@ -374,6 +348,10 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
    
     su2double temp_inlet = config->GetInc_Temperature_Init(); // should do reverse lookup of enthalpy
     su2double prog_inlet = config->GetScalar_Init(I_PROG_VAR); 
+    if (rank == MASTER_NODE){
+      cout << "initial condition: T = "<<temp_inlet << endl; 
+      cout << "initial condition: pv = "<<prog_inlet << endl; 
+    }
 
     su2double enth_inlet;
     su2double point_loc;
@@ -392,7 +370,10 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
-      prog_burnt = fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
+      /*--- now, we take a burnt value slightly below the maximum value ---*/
+
+      prog_burnt = 0.95*fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
+      //prog_burnt = fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
 
       for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
         
@@ -425,10 +406,8 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
         n_not_iterated         += fluid_model_local->GetEnthFromTemp(&enth_inlet, prog_inlet,temp_inlet);
         scalar_init[I_ENTHALPY] = enth_inlet;
-
         n_not_in_domain        += fluid_model_local->GetLookUpTable()->LookUp_ProgEnth(look_up_tags, look_up_data, scalar_init[I_PROG_VAR], scalar_init[I_ENTHALPY],name_prog,name_enth);
 
-        // nijso: 
         // skip progress variable and enthalpy
         // we can make an init based on the lookup table. 
         for(int i_scalar = 0; i_scalar < config->GetNScalars(); ++i_scalar){
@@ -436,8 +415,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
             scalar_init[i_scalar] = config->GetScalar_Init(i_scalar);
         }
 
-        
-        
         solver_container[i_mesh][SCALAR_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
 
       }
@@ -561,7 +538,6 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
   su2double delta_source_prog_lut;
   su2double delta_source_energy_lut;
   
-  su2double  temperature_dummy = 73;
   su2double* scalars   = new su2double[n_scalars];
   su2double* sources   = new su2double[n_scalars];
 
@@ -603,8 +579,6 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
       Residual[i_scalar] = next_source * Volume;
     }
 
-
-
  /*--- Implicit part for production term (to do). ---*/
     for (int i_var = 0; i_var < nVar; i_var++) {
       for (int j_var = 0; j_var < nVar; j_var++) {
@@ -613,7 +587,6 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     }
     Jacobian_i[0][0] = Volume*fluid_model_local->GetdSourcePVdPV();
     
-    
     /*--- Add Residual ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -621,8 +594,6 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     /*--- Implicit part ---*/
     
     if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
-
 
     // first_numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
 

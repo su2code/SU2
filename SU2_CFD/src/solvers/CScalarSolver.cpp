@@ -1,25 +1,15 @@
 /*!
- * \file solution_direct_scalar.cpp
- * \brief Main subroutines for solving scalar transport equations.
- * \author T. Economon
- * \version 6.1.0 "Falcon"
+ * \file CScalarSolver.cpp
+ * \brief Main subroutines for the  transported scalar model.
+ * \author D. Mayer, T. Economon
+ * \version 7.1.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +35,6 @@ CScalarSolver::CScalarSolver(void) : CSolver() {
   upperlimit       = NULL;
   nVertex          = NULL;
   nMarker          = 0;
-  Inlet_ScalarVars = NULL;
   Scalar_Inf       = NULL;
   
   /*--- The turbulence models are always solved implicitly, so set the
@@ -62,7 +51,6 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   lowerlimit       = NULL;
   upperlimit       = NULL;
   nMarker          = config->GetnMarker_All();
-  Inlet_ScalarVars = NULL;
   Scalar_Inf       = NULL;
   
   /*--- Store the number of vertices on each marker for deallocation later ---*/
@@ -80,24 +68,16 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CScalarSolver::~CScalarSolver(void) {
   
-  if (Inlet_ScalarVars != NULL) {
-    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_ScalarVars[iMarker] != NULL) {
-        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          delete [] Inlet_ScalarVars[iMarker][iVertex];
-        }
-        delete [] Inlet_ScalarVars[iMarker];
-      }
-    }
-    delete [] Inlet_ScalarVars;
-  }
-
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL)    delete [] lowerlimit;
   if (upperlimit != NULL)    delete [] upperlimit;
   if (nVertex != NULL)       delete [] nVertex;
   if (Scalar_Inf != NULL)    delete [] Scalar_Inf;
+
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
+  }
 
 }
 
@@ -298,6 +278,24 @@ void CScalarSolver::Viscous_Residual(CGeometry      *geometry,
   
 }
 
+void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
+
+  /*--- Set shared residual variables to 0 and declare
+   *    local ones for current thread to work on. ---*/
+
+  SU2_OMP_MASTER
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  SU2_OMP_BARRIER
+
+
+}
+
+void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+}
+
 void CScalarSolver::ImplicitEuler_Iteration(CGeometry  *geometry,
                                             CSolver   **solver_container,
                                             CConfig    *config) {
@@ -310,20 +308,21 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry  *geometry,
   su2double *scalar_clipping_min = config->GetScalar_Clipping_Min();
   su2double *scalar_clipping_max = config->GetScalar_Clipping_Max();
 
- 
-
   bool adjoint = ( config->GetContinuous_Adjoint() ||
                   (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc()));
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
   if (incompressible) SetPreconditioner(geometry, solver_container, config);
 
+
+  PrepareImplicitIteration(geometry, solver_container, config);
+
   /*--- Set maximum residual to zero ---*/
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  //for (iVar = 0; iVar < nVar; iVar++) {
+  //  SetRes_RMS(iVar, 0.0);
+  //  SetRes_Max(iVar, 0.0, 0);
+  //}
   
   /*--- Build implicit system ---*/
   
@@ -601,7 +600,7 @@ void CScalarSolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       Inlet_ScalarVars[iMarker][iVertex][iVar] = Scalar_Inf[iVar];
   }
-  
+
 }
 
 

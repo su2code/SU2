@@ -1,25 +1,15 @@
 /*!
- * \file solution_direct_scalar.cpp
- * \brief Main subroutines for solving scalar transport equations.
+ * \file CPassiveScalarSolver.cpp
+ * \brief Main subroutines for solving transported scalar class
  * \author T. Economon, N. Beishuizen
- * \version 6.2.0 "Falcon"
+ * \version 7.1.0 "Blackbird"
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,12 +27,10 @@
 
 #include "../../include/solvers/CPassiveScalarSolver.hpp"
 #include "../../include/variables/CPassiveScalarVariable.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CPassiveScalarSolver::CPassiveScalarSolver(void) : CScalarSolver() {
-  
-  Inlet_ScalarVars = NULL;
-  
-}
+CPassiveScalarSolver::CPassiveScalarSolver(void) : CScalarSolver() {}
 
 CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
                                            CConfig *config,
@@ -190,32 +178,17 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   /*--- Initialize quantities for SlidingMesh Interface ---*/
   
-  unsigned long iMarker;
-  
-  SlidingState       = new su2double*** [nMarker];
-  SlidingStateNodes  = new int*         [nMarker];
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-    
-    SlidingState[iMarker]      = NULL;
-    SlidingStateNodes[iMarker] = NULL;
-    
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-      
-      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
-      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
-      
-      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
-        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
-        
-        SlidingStateNodes[iMarker][iPoint] = 0;
-        for (iVar = 0; iVar < nPrimVar+1; iVar++)
-          SlidingState[iMarker][iPoint][iVar] = NULL;
-      }
-      
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
+
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
-  
+
+
   /*-- Allocation of inlets has to happen in derived classes
    (not CScalarSolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
@@ -225,14 +198,20 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
     if (turb_SA) Inlet_Position += 1;
     else if (turb_SST) Inlet_Position += 2;
   }
-  
-  Inlet_ScalarVars = new su2double**[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inlet_ScalarVars[iMarker] = new su2double*[nVertex[iMarker]];
-    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-      Inlet_ScalarVars[iMarker][iVertex] = new su2double[nVar];
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        Inlet_ScalarVars[iMarker][iVertex][0] = Scalar_Inf[iVar];
+
+ /*-- Allocation of inlets has to happen in derived classes
+   (not CScalarSolver), due to arbitrary number of scalar variables.
+   First, we also set the column index for any inlet profiles. ---*/
+  /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
+
+  Inlet_ScalarVars.resize(nMarker);
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++){
+    Inlet_ScalarVars[iMarker].resize(nVertex[iMarker],nVar);
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        Inlet_ScalarVars[iMarker](iVertex,iVar) = Scalar_Inf[iVar];
+      }
     }
   }
   
@@ -242,29 +221,6 @@ CPassiveScalarSolver::~CPassiveScalarSolver(void) {
   
   unsigned long iMarker, iVertex;
   unsigned short iVar;
-  
-  if ( SlidingState != NULL ) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if ( SlidingState[iMarker] != NULL ) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-          if ( SlidingState[iMarker][iVertex] != NULL ){
-            for (iVar = 0; iVar < nPrimVar+1; iVar++)
-              delete [] SlidingState[iMarker][iVertex][iVar];
-            delete [] SlidingState[iMarker][iVertex];
-          }
-        delete [] SlidingState[iMarker];
-      }
-    }
-    delete [] SlidingState;
-  }
-  
-  if ( SlidingStateNodes != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if (SlidingStateNodes[iMarker] != NULL)
-        delete [] SlidingStateNodes[iMarker];
-    }
-    delete [] SlidingStateNodes;
-  }
   
   if (FluidModel != NULL) delete FluidModel;
 

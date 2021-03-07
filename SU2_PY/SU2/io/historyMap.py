@@ -820,6 +820,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                       'GROUP': 'RMS_RES',
                       'HEADER': 'rms[A_P]',
                       'TYPE': 'RESIDUAL'},
+ 'RMS_ADJ_PASSIVE_SCALAR': {'DESCRIPTION': 'Root-mean square residual of '
+                                              'the adjoint passive scalar.',
+                               'GROUP': 'RMS_RES',
+                               'HEADER': 'rms[A_c]',
+                               'TYPE': 'RESIDUAL'},
  'RMS_ADJ_PROGRESS_VARIABLE': {'DESCRIPTION': 'Root-mean square residual of '
                                               'the adjoint progress variable.',
                                'GROUP': 'RMS_RES',

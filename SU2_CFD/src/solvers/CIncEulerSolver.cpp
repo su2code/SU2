@@ -454,10 +454,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       
       case CONSTANT_DENSITY:
         fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case INC_IDEAL_GAS_POLY:
@@ -469,9 +471,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
           fluidModel->SetCpModel(config);
         }
-        break;
-        /// TODO: Why is this outside?
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
 
       case FLAMELET_FLUID_MODEL:
         fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);

@@ -846,7 +846,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
   // nijso: daniel, we have to add progvar here?
-  cout << "nijso: check restart for correct reading of data !!!!!!!!" << endl; 
 
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
