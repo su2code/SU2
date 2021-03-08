@@ -137,7 +137,42 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
   KineticEnergyLoss = 2 * (OutletState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
 }
 
-// CCompressorBladePerformance::CCompressorBladePerformance(unsigned short nDim, su2double area, su2double radius) : CTurbomachineryBladePerformance(nDim, area, radius){}
+CCompressorBladePerformance::CCompressorBladePerformance(CFluidModel& fluidModel,
+                                                        unsigned short nDim,
+                                                        su2double areaIn,
+                                                        su2double radiusIn,
+                                                        su2double areaOut,
+                                                        su2double radiusOut) : CTurbomachineryBladePerformance(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut){}
+
+void CCompressorBladePerformance::ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {
+  /*--- Compute Inlet and Outlet state ---*/
+  InletState.ComputeState(FluidModel, primitives.GetInletPrimitiveState());
+  OutletState.ComputeState(FluidModel, primitives.GetOutletPrimitiveState());
+
+  /*--- Compute isentropic Outflow quantities ---*/
+  FluidModel.SetTDState_Ps(OutletState.GetPressure(), InletState.GetEntropy());
+  auto enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
+  auto tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
+  auto relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+
+  /*--- Compute performance ---*/
+  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()); // / abs(InletState.GetEntropy() + 1);
+  EulerianWork = InletState.GetTotalEnthalpy() - OutletState.GetTotalEnthalpy();
+  TotalPressureLoss = (InletState.GetTotalRelPressure() - OutletState.GetTotalRelPressure()) /
+                      (InletState.GetTotalRelPressure() - OutletState.GetPressure());
+  KineticEnergyLoss = 2 * (OutletState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
+}
+
+CPropellorBladePerformance::CPropellorBladePerformance(CFluidModel& fluidModel,
+                                                        unsigned short nDim,
+                                                        su2double areaIn,
+                                                        su2double radiusIn,
+                                                        su2double areaOut,
+                                                        su2double radiusOut) : CTurbomachineryBladePerformance(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut){}
+
+void CPropellorBladePerformance::ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) {
+
+}
 
 CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
                                                        const CGeometry& geometry,
@@ -155,9 +190,36 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
       auto areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
       auto radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
       auto radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
-      auto bladePerformance = make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut);
-      bladeSpanPerformances.push_back(bladePerformance);
+
+      // TODO: I have a feeling this should not be in such a for loop, to be discussed with Salvo (Nitish)
+      SU2_OMP_PARALLEL
+      {
+        const int thread = omp_get_thread_num();
+
+      /* Switch between the Turbomachinery Performance Kind */
+      switch (config.GetKind_TurboMachinery(1)) {
+        
+      case TURBINE:
+        bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                    radiusOut));
+        break;
+
+      case COMPRESSOR:
+        bladeSpanPerformances.push_back(make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                    radiusOut));
+        break;
+
+      case PROPELLOR:
+        bladeSpanPerformances.push_back(make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                    radiusOut));
+        break;
+
+      default:
+        bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                    radiusOut));
+        break;
+      }
+    }
     }
     BladesPerformances.push_back(bladeSpanPerformances);
   }

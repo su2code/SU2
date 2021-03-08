@@ -2195,7 +2195,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
-  if(curInnerIter%10 == 0 && rank == MASTER_NODE){
+  if(curInnerIter%10 == 0 && rank == MASTER_NODE && false){
     auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
 
     /*-- Table for Turbomachinery Performance Values --*/
@@ -2208,12 +2208,12 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.PrintHeader();
 
     // TODO: Error is assessing boundary state values.
-    TurboInOut << "Entropy"     << BladePerformance.at(0).at(0)->GetInletState().GetEntropy()       << BladePerformance.at(0).at(0)->GetOutletState().GetEntropy();
-    TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(0)->GetInletState().GetTotalEnthalpy() << BladePerformance.at(0).at(0)->GetOutletState().GetTotalEnthalpy();
-    TurboInOut << "TotPressure" << BladePerformance.at(0).at(0)->GetInletState().GetTotalPressure() << BladePerformance.at(0).at(0)->GetOutletState().GetTotalPressure();
-    TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(0)->GetInletState().GetMassFlow()      << BladePerformance.at(0).at(0)->GetOutletState().GetMassFlow();
-    TurboInOut << "Mach No."    << BladePerformance.at(0).at(0)->GetInletState().GetMachValue()     << BladePerformance.at(0).at(0)->GetOutletState().GetMachValue();
-    TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(0)->GetInletState().GetAbsFlowAngle()  << BladePerformance.at(0).at(0)->GetOutletState().GetAbsFlowAngle();
+    TurboInOut << "Entropy"     << BladePerformance.at(0).at(0)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(0)->GetOutletState().GetEntropy();
+    TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(0)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(0).at(0)->GetOutletState().GetTotalEnthalpy();
+    TurboInOut << "TotPressure" << BladePerformance.at(0).at(0)->GetInletState().GetTotalPressure()               << BladePerformance.at(0).at(0)->GetOutletState().GetTotalPressure();
+    TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(0)->GetInletState().GetMassFlow()                    << BladePerformance.at(0).at(0)->GetOutletState().GetMassFlow();
+    TurboInOut << "Mach No."    << BladePerformance.at(0).at(0)->GetInletState().GetMachValue()                   << BladePerformance.at(0).at(0)->GetOutletState().GetMachValue();
+    TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(0)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(0).at(0)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
     TurboInOut.PrintFooter();
     cout<<TurboInOutTable.str();
 

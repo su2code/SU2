@@ -201,6 +201,20 @@ class CCompressorBladePerformance : public CTurbomachineryBladePerformance {
 
 };
 
+class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
+
+  public:
+  CPropellorBladePerformance(CFluidModel& fluidModel,
+                              unsigned short nDim,
+                              su2double areaIn,
+                              su2double radiusIn,
+                              su2double areaOut,
+                              su2double radiusOut);
+
+  void ComputePerformance(const CTurbomachineryCombinedPrimitiveStates &primitives) override;
+
+};
+
 class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
    protected: 
       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;

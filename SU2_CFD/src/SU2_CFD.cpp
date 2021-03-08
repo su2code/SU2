@@ -142,9 +142,10 @@ int main(int argc, char *argv[]) {
 
     /*--- Turbomachinery problem. ---*/
     //TODO: this is a temporary change
-    driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
-    //driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-
+    if (multizone)
+      driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
+    else
+      driver = new CSinglezoneDriver(config_file_name, nZone, MPICommunicator);
   }
   else {
 

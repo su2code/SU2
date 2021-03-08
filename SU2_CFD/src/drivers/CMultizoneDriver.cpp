@@ -617,6 +617,12 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       targetSolver = FEA_SOL;
       break;
     }
+    case MIXING_PLANE:
+    {
+      donorSolver  = FLOW_SOL;
+      targetSolver = FLOW_SOL;
+      break;
+    }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:

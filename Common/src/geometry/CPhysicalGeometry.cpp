@@ -5123,7 +5123,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                     jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      switch (config->GetKind_TurboMachinery(val_iZone * 2)){
                       case CENTRIFUGAL:
                         valueSpan[nSpan_loc] = coord[2];
                         break;
@@ -5256,7 +5256,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                     jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
+                      switch (config->GetKind_TurboMachinery(val_iZone * 2)){
                       case CENTRIFUGAL: case CENTRIPETAL:
                         if (coord[2] < min) min = coord[2];
                         if (coord[2] > max) max = coord[2];
@@ -5434,7 +5434,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 jSpan = std::numeric_limits<unsigned short>::max();
                 coord = nodes->GetCoord(iPoint);
 
-                switch (config->GetKind_TurboMachinery(val_iZone)){
+                switch (config->GetKind_TurboMachinery(val_iZone * 2)){
                 case CENTRIFUGAL: case CENTRIPETAL:
                   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
                     if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
@@ -5535,7 +5535,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 jSpan = std::numeric_limits<unsigned short>::max();
 
                 coord = nodes->GetCoord(iPoint);
-                switch (config->GetKind_TurboMachinery(val_iZone)){
+                switch (config->GetKind_TurboMachinery(val_iZone * 2)){
                 case CENTRIFUGAL: case CENTRIPETAL:
                   for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
                     if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
@@ -5627,7 +5627,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 /*--- find nodes at minimum pitch among all nodes---*/
                 if (coord[1]<min){
                   min = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone * 2) == AXIAL){
                     MinAngularCoord[iMarker][iSpan] = coord[1];
                   }
                   else{
@@ -5641,7 +5641,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 if (coord[1]<minInt){
                   if(nodes->GetDomain(iPoint)){
                     minInt = coord[1];
-                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone * 2) == AXIAL){
                       minIntAngPitch[iSpan] = coord[1];
                     }
                     else{
@@ -5654,7 +5654,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 if (coord[1]>max){
                   if(nodes->GetDomain(iPoint)){
                     max =coord[1];
-                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                    if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone * 2) == AXIAL){
                       MaxAngularCoord[iMarker][iSpan] = coord[1];
                     }
                     else{
@@ -5674,7 +5674,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                 checkAssign[iSpan][kSpanVertex] = true;
                 coord = nodes->GetCoord(ordered[iSpan][iSpanVertex]);
                 target = coord[1];
-                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL){
+                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone * 2) == AXIAL){
                    angPitch[iSpan][iSpanVertex]=coord[1];
                 }
                 else{
@@ -5696,7 +5696,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
                   turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
-                  switch (config->GetKind_TurboMachinery(val_iZone)){
+                  switch (config->GetKind_TurboMachinery(val_iZone * 2)){
                   case CENTRIFUGAL:
                     Normal2 = 0.0;
                     for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
@@ -6051,7 +6051,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
         myfile.width(20); myfile << radius;
-        if (nDim ==2 && config->GetKind_TurboMachinery(val_iZone)){
+        if (nDim ==2 && config->GetKind_TurboMachinery(val_iZone * 2)){
           myfile.width(20); myfile << angCoord_loc[iSpan][iSpanVertex];
           myfile.width(20); myfile << deltaAngCoord_loc[iSpan][iSpanVertex];
         }
@@ -6119,7 +6119,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig *config, unsigned short val_iZ
               iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
               coord  = nodes->GetCoord(iPoint);
               /*--- compute appropriate turbo normal ---*/
-              switch (config->GetKind_TurboMachinery(val_iZone)){
+              switch (config->GetKind_TurboMachinery(val_iZone * 2)){
               case CENTRIFUGAL:
                 Normal2 = 0.0;
                 for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
@@ -6363,7 +6363,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
               for (iDim = 0; iDim < nDim; iDim++){
                 AverageGridVel[iMarker][iSpan][iDim]   =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
               }
-              switch (config->GetKind_TurboMachinery(val_iZone)){
+              switch (config->GetKind_TurboMachinery(val_iZone * 2)){
               case CENTRIFUGAL:case CENTRIPETAL:
                 if (marker_flag == INFLOW ){
                   AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
@@ -6619,7 +6619,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
     if (iSpan == nSpanWiseSections) {
       config->SetFreeStreamTurboNormal(turboNormal);
-      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2){
+      if (config->GetKind_TurboMachinery(config->GetiZone() * 2) == AXIAL && nDim == 2){
         nBlades = 1/Pitch;
       }
       else{
