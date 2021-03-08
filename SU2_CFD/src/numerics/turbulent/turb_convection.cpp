@@ -60,23 +60,16 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
+  AD::SetPreaccIn(TurbVar_i, nVar);  
+  AD::SetPreaccIn(TurbVar_j, nVar);
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim); 
+    AD::SetPreaccIn(GridVel_j, nDim);
   }
 
   ExtraADPreaccIn();
 
   /*--- Primitive variables ---*/
-
-  Proj_i = Proj_j = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];
-    Velocity_j[iDim] = V_j[iDim+1];
-
-    Proj_i += Velocity_i[iDim]*Normal[iDim];
-    Proj_j += Velocity_j[iDim]*Normal[iDim];
-  }
 
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];

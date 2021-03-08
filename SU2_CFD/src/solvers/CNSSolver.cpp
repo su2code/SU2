@@ -2390,7 +2390,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
               /* --- Newton Step --- */
 
-              const su2double sign = 1.0 - 2.0*(grad_diff <  0);
+              const su2double sign = (grad_diff > 0.0)? 1.0 : -1.0;
               U_Tau_Rei = U_Tau_Rei - diff / (grad_diff + sign*eps);
 
               counter++;
@@ -2450,7 +2450,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
               /* --- Newton Step --- */
 
-              const su2double sign = 1.0 - 2.0*(grad_diff <  0);
+              const su2double sign = (grad_diff > 0.0)? 1.0 : -1.0;
               U_Tau_Spa = U_Tau_Spa - diff / (grad_diff + sign*eps);
 
               counter++;

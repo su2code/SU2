@@ -75,10 +75,10 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
-  AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j, nVar);
+  AD::SetPreaccIn(Coord_i, nDim); 
+  AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(TurbVar_j, nVar); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   ExtraADPreaccIn();
 
   if (incompressible) {
@@ -124,16 +124,14 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   /*--- Mean gradient approximation ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Proj_Mean_GradTurbVar_Normal = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Normal)
-                                      + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Normal));
-    if (correct_gradient)
+    Proj_Mean_GradTurbVar[iVar] = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Normal)
+                                     + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Normal));      
+    if (correct_gradient) {
       Proj_Mean_GradTurbVar_Edge = 0.5*(GeometryToolbox::DotProduct(nDim,TurbVar_Grad_i[iVar],Edge_Vector)
                                       + GeometryToolbox::DotProduct(nDim,TurbVar_Grad_j[iVar],Edge_Vector));
-
-    Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal;
-    if (correct_gradient)
       Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
+    }
   }
 
   FinishResidualCalc(config);
@@ -269,10 +267,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double proj_on_rho_i = proj_vector_ij/Density_i;
   const su2double proj_on_rho_j = proj_vector_ij/Density_j;
       
-  Jacobian_i[0][0] = -proj_on_rho_i*diff_kine;
-  Jacobian_i[1][1] = -proj_on_rho_i*diff_omega;
-  Jacobian_j[0][0] =  proj_on_rho_j*diff_kine;
-  Jacobian_j[1][1] =  proj_on_rho_j*diff_omega;
+  Jacobian_i[0][0] = -proj_on_rho_i*diff_kine; Jacobian_i[1][1] = -proj_on_rho_i*diff_omega;
+  Jacobian_j[0][0] =  proj_on_rho_j*diff_kine; Jacobian_j[1][1] =  proj_on_rho_j*diff_omega;
 
   if (exact_jacobian) CorrectJacobian(config);
   if (!correct_gradient) {

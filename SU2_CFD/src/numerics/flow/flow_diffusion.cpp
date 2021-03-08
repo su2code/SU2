@@ -508,17 +508,16 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
 CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
-  AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
-  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
-  AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(Coord_i, nDim); 
+  AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(turb_ke_i);
+  AD::SetPreaccIn(V_j, nDim+7); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim); AD::SetPreaccIn(TauWall_i);
+  AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim); AD::SetPreaccIn(TauWall_j);
   if (tkeNeeded) {
-    AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
-    AD::SetPreaccIn(TurbVar_Grad_j[0], nDim);
-    AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
+    AD::SetPreaccIn(TurbVar_Grad_i[0], nDim); AD::SetPreaccIn(F1_i);
+    AD::SetPreaccIn(TurbVar_Grad_j[0], nDim); AD::SetPreaccIn(F1_j);
   }
     
   for (auto iVar = 0u; iVar < nVar; iVar++) {

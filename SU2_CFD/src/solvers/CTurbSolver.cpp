@@ -384,8 +384,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = -1.0 + 2.0*(gg);
+  const su2double sign  = (iPoint < jPoint)? 1.0 : -1.0;
+  const su2double sign_grad_i = gg? 1.0 : -1.0;
 
   su2double dFl_dVl[MAXNVAR][MAXNVAR] = {0.0},
             dFr_dVr[MAXNVAR][MAXNVAR] = {0.0};
@@ -511,8 +511,8 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
 
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = -1.0 + 2.0*(gg);
+  const su2double sign  = (iPoint < jPoint)? 1.0 : -1.0;
+  const su2double sign_grad_i = gg? 1.0 : -1.0;
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     for (auto jVar = 0u; jVar < nVar; jVar++) {

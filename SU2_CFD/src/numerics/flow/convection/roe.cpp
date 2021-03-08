@@ -100,16 +100,17 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3); 
   AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(turb_ke_i);
+  AD::SetPreaccIn(V_j, nDim+3); AD::SetPreaccIn(turb_ke_j);
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim); 
+    AD::SetPreaccIn(GridVel_j, nDim);
   }
   if (roe_low_dissipation){
-    AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
-    AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
+    AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Dissipation_i);
+    AD::SetPreaccIn(Sensor_j); AD::SetPreaccIn(Dissipation_j);
   }
-  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
@@ -131,12 +132,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
 
-  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    Energy_i += 0.5*pow(Velocity_i[iDim],2);
-    Energy_j += 0.5*pow(Velocity_j[iDim],2);
-  }
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i+0.5*GeometryToolbox::SquaredNorm(nDim,Velocity_i);
+  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j+0.5*GeometryToolbox::SquaredNorm(nDim,Velocity_j);
 
   Enthalpy_i = Energy_i + Pressure_i/Density_i;
   Enthalpy_j = Energy_j + Pressure_j/Density_j;

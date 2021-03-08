@@ -500,7 +500,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  const su2double sign_grad_i = -1.0 + 2.0*(gg);
+  const su2double sign_grad_i = gg? 1.0 : -1.0;
   
   const su2double F1 = nodes->GetF1blending(iPoint);
   // const su2double F2 = nodes->GetF2blending(iPoint);

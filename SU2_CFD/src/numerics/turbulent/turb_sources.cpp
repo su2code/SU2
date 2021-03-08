@@ -786,8 +786,8 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(TurbVar_i, nVar);
   AD::SetPreaccIn(Volume);
+  AD::SetPreaccIn(TurbVar_i, nVar);
   AD::SetPreaccIn(F1_i); 
   AD::SetPreaccIn(F2_i); 
   AD::SetPreaccIn(CDkw);
