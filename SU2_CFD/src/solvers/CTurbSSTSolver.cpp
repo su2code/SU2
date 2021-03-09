@@ -529,8 +529,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   /*--------------------------------------------------------------------------*/
 
   su2double gradWeight[MAXNDIM] = {0.0};
-  const su2double *gradk  = nodes->GetGradient(iPoint)[0];
-  const su2double *gradom = nodes->GetGradient(iPoint)[1];
+  const auto gradk  = nodes->GetGradient(iPoint)[0];
+  const auto gradom = nodes->GetGradient(iPoint)[1];
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
