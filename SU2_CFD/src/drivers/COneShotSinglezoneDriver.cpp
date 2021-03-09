@@ -43,6 +43,8 @@
 
 #include <chrono>
 
+#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
+
 COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
     CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator), StopNext(false) {
 
@@ -165,6 +167,13 @@ void COneShotSinglezoneDriver::RunOneShot(){
 
   /// after the loop finishes store the final design
   OutputDesign("finaldesign.txt");
+
+  /// for debugging purposes output the final mesh
+  COutput* mesh_output = new CMeshOutput(config, geometry->GetnDim());
+  mesh_output->PreprocessVolumeOutput(config);
+  mesh_output->PreprocessHistoryOutput(config, false);
+  mesh_output->Load_Data(geometry, config, nullptr);
+  mesh_output->WriteToFile(config, geometry, MESH, "mesh_oneshot_sol");
 
 }
 
