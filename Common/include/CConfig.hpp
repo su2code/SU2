@@ -205,6 +205,7 @@ private:
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatTransfer,           /*!< \brief Number of heat flux wall boundaries with prescribed heat transfer coefficient. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
   nMarker_Clamped,                /*!< \brief Number of clamped markers in the FEM. */
@@ -253,6 +254,7 @@ private:
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatTransfer,           /*!< \brief Heat flux wall markers with specified heat transfer coefficient. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
@@ -308,6 +310,8 @@ private:
   su2double *Engine_Area;                    /*!< \brief Specified engine area for nacelle boundaries. */
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
+  su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
+  su2double *HeatTransfer_WallTemp;          /*!< \brief Specified isothermal wall temperatures alongside heat transfer coefficients. */
   su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
@@ -861,7 +865,6 @@ private:
   su2double AitkenDynMinInit;     /*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
   bool RampAndRelease;            /*!< \brief option for ramp load and release */
   bool Sine_Load;                 /*!< \brief option for sine load */
-  su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
@@ -1911,12 +1914,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void) const { return RefArea; }
-
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the thermal expansion coefficient.
@@ -6539,6 +6536,20 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index) const;
+
+  /*!
+   * \brief Get the heat transfer coefficient on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The heat transfer coefficient.
+   */
+  su2double GetWall_HeatTransfer_Coefficient(string val_index) const;
+
+  /*!
+   * \brief Get the wall temperature on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The wall temperature.
+   */
+  su2double GetWall_HeatTransfer_Temperature(string val_index) const;
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.

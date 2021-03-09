@@ -201,14 +201,19 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  /*--- Get the specified wall heat flux or temperature from config ---*/
+  /*--- Get the specified wall heat flux, temperature or heat transfer coefficient from config ---*/
 
-  su2double Wall_HeatFlux = 0.0, Twall = 0.0;
+  su2double Wall_HeatFlux = 0.0, Twall = 0.0, Tdelta = 0.0, Transfer_Coefficient = 0.0;
 
   if (kind_boundary == HEAT_FLUX)
     Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
   else if (kind_boundary == ISOTHERMAL)
     Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  else if (kind_boundary == HEAT_TRANSFER) {
+    Twall = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag);
+    Tdelta = Twall - config->GetTemperature_FreeStream()/config->GetTemperature_Ref();
+  }
   else
     SU2_MPI::Error("Unknown type of boundary condition", CURRENT_FUNCTION);
 
@@ -265,6 +270,13 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
     }
+    else if (kind_boundary == HEAT_TRANSFER) {
+
+      /*--- Apply a weak boundary condition for the energy equation.
+      Compute the residual due to the prescribed temperature and transfer coefficient. ---*/
+      LinSysRes(iPoint, nDim+1) -= Transfer_Coefficient*Tdelta*Area;
+
+    }
     else { // ISOTHERMAL
 
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -313,6 +325,12 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver**, CNumerics*
                                     CNumerics*, CConfig *config, unsigned short val_marker) {
 
   BC_Wall_Generic(geometry, config, val_marker, ISOTHERMAL);
+}
+
+void CIncNSSolver::BC_HeatTransfer_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+                                    CNumerics*, CConfig *config, unsigned short val_marker) {
+
+  BC_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
 void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
