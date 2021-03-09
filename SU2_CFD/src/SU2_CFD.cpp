@@ -143,13 +143,7 @@ int main(int argc, char *argv[]) {
     /*--- Turbomachinery problem. ---*/
     driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
 
-  }
-  else {
-
-    /*--- Instantiate the class for external aerodynamics by default. ---*/
-    driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
-
-  }
+  } /*--- These are all the possible cases ---*/
 
   /*--- Launch the main external loop of the solver. ---*/
 

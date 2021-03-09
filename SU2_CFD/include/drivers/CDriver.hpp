@@ -755,7 +755,7 @@ class CFluidDriver : public CDriver {
 protected:
    unsigned long Max_Iter;
 
-public:
+protected:
 
   /*!
    * \brief Constructor of the class.
@@ -768,6 +768,7 @@ public:
                unsigned short val_nZone,
                SU2_Comm MPICommunicator);
 
+public:
   /*!
    * \brief Destructor of the class.
    */
