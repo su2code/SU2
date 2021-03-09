@@ -1495,6 +1495,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
+  SURFACE_MASSFLOW_RATIO = 32,  /*!< \brief Mass flow ratio objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
   SURFACE_SECONDARY = 53,       /*!< \brief Secondary flow strength objective function definition. */
@@ -1546,6 +1547,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
+  MakePair("SURFACE_MASSFLOW_RATIO", SURFACE_MASSFLOW_RATIO)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
   MakePair("SURFACE_SECONDARY", SURFACE_SECONDARY)

@@ -42,6 +42,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
   /// DESCRIPTION: Average mass flow
   AddHistoryOutput("SURFACE_MASSFLOW",         "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average mass flow Ratio
+  AddHistoryOutput("SURFACE_MASSFLOW_RATIO",   "Mssfl_Ratio",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Ratio of average mass flows last/first markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
   AddHistoryOutput("SURFACE_MACH",             "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
@@ -487,7 +489,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     SetHistoryOutputPerSurfaceValue("SURFACE_PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
     Tot_Surface_PressureDrop += Pressure_Drop;
   }
-
+  
+  su2double Surface_MassFlowRatio = Surface_MassFlow_Total[nMarker_Analyze-1]/Surface_MassFlow_Total[0];
+  config->SetSurface_MassFlowRatio(Surface_MassFlowRatio);
+  SetHistoryOutputValue("SURFACE_MASSFLOW_RATIO", Surface_MassFlowRatio);
+  
   SetHistoryOutputValue("SURFACE_MASSFLOW", Tot_Surface_MassFlow);
   SetHistoryOutputValue("SURFACE_MACH", Tot_Surface_Mach);
   SetHistoryOutputValue("SURFACE_STATIC_TEMPERATURE", Tot_Surface_Temperature);

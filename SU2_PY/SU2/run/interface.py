@@ -91,6 +91,7 @@ def CFD(config):
         processes = konfig['NUMBER_PART']
 
         the_Command = 'SU2_CFD_DIRECTDIFF%s %s' % (quote, tempname)
+        the_Command = build_command( the_Command, processes )
 
     elif auto_diff:
         tempname = 'config_CFD_AD.cfg'
@@ -99,6 +100,7 @@ def CFD(config):
         processes = konfig['NUMBER_PART']
 
         the_Command = 'SU2_CFD_AD%s %s' % (quote, tempname)
+        the_Command = build_command( the_Command, processes )
 
     else:
         tempname = 'config_CFD.cfg'
@@ -107,8 +109,8 @@ def CFD(config):
         processes = konfig['NUMBER_PART']
     
         the_Command = 'SU2_CFD%s %s' % (quote, tempname)
+        the_Command = the_Command + ' -t %s' % processes #only works if compiled with omp
 
-    the_Command = build_command( the_Command, processes )
     run_command( the_Command )
     
     #os.remove(tempname)

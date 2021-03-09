@@ -6004,6 +6004,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case SURFACE_TOTAL_PRESSURE:     cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:    cout << "Average static pressure objective function." << endl; break;
         case SURFACE_MASSFLOW:           cout << "Mass flow rate objective function." << endl; break;
+    	case SURFACE_MASSFLOW_RATIO:     cout << "Mass flow ratio objective function." << endl; break;
         case SURFACE_MACH:               cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:             cout << "Custom objective function." << endl; break;
         case REFERENCE_GEOMETRY:         cout << "Target geometry objective function." << endl; break;
@@ -7907,6 +7908,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
+        case SURFACE_MASSFLOW_RATIO:      AdjExt = "_mfrratio"; break;
         case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
         case SURFACE_MOM_DISTORTION:      AdjExt = "_distort";  break;

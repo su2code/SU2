@@ -4859,6 +4859,9 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
+    case SURFACE_MASSFLOW_RATIO:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlowRatio();
+      break;
     default:
       break;
   }

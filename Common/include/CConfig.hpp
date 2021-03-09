@@ -356,6 +356,7 @@ private:
   su2double *Outlet_Density;                 /*!< \brief Avg. density for outlet boundaries. */
   su2double *Outlet_Area;                    /*!< \brief Area for outlet boundaries. */
   su2double *Surface_MassFlow;               /*!< \brief Massflow at the boundaries. */
+  su2double Surface_MassFlowRatio;          /*!< \brief Massflow ratio of two boundaries. */
   su2double *Surface_Mach;                   /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;            /*!< \brief Temperature at the boundaries. */
   su2double *Surface_Pressure;               /*!< \brief Pressure at the boundaries. */
@@ -7301,6 +7302,12 @@ public:
   void SetSurface_MassFlow(unsigned short val_marker, su2double val_surface_massflow) { Surface_MassFlow[val_marker] = val_surface_massflow; }
 
   /*!
+   * \brief Set the massflow ratio
+   * \param[in] val_surface_massflowratio - Value of the mass flow ratio.
+   */
+  void SetSurface_MassFlowRatio(su2double val_surface_massflowratio) { Surface_MassFlowRatio = val_surface_massflowratio; }
+
+  /*!
    * \brief Set the mach number at the surface.
    * \param[in] val_marker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_massflow - Value of the mach number.
@@ -7565,6 +7572,12 @@ public:
    * \return The massflow.
    */
   su2double GetSurface_MassFlow(unsigned short val_marker) const { return Surface_MassFlow[val_marker]; }
+
+    /*!
+   * \brief Get the massflow ratio of two boundaries.
+   * \return The massflow.
+   */
+  su2double GetSurface_MassFlowRatio() const { return Surface_MassFlowRatio; }
 
   /*!
    * \brief Get the mach number at an outlet boundary.

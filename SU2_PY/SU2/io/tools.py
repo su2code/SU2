@@ -387,6 +387,7 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
     if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
+    if ObjFun_name == "SURFACE_MASSFLOW_RATIO"  : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
     if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
     
@@ -444,6 +445,7 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_TOTAL_PRESSURE"      : "pt"        ,
                  "SURFACE_STATIC_PRESSURE"     : "pe"        ,
                  "SURFACE_MASSFLOW"            : "mfr"       ,
+                 "SURFACE_MASSFLOW_RATIO"      : "mfrratio"  ,
                  "SURFACE_MACH"                : "mach"      ,
                  "SURFACE_UNIFORMITY"          : "uniform"   ,
                  "SURFACE_SECONDARY"           : "second"    ,

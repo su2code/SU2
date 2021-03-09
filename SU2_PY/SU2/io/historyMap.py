@@ -886,6 +886,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                       'GROUP': 'FLOW_COEFF',
                       'HEADER': 'Avg_Massflow',
                       'TYPE': 'COEFFICIENT'},
+ 'SURFACE_MASSFLOW_RATIO': {'DESCRIPTION':  'Ratio of average mass flows last/first markers set '
+                                            'in MARKER_ANALYZE',
+                      'GROUP': 'FLOW_COEFF',
+                      'HEADER': 'Mssfl_Ratio',
+                      'TYPE': 'COEFFICIENT'}, 
  'SURFACE_MOM_DISTORTION': {'DESCRIPTION': 'Total momentum distortion on all '
                                            'markers set in MARKER_ANALYZE',
                             'GROUP': 'FLOW_COEFF',
