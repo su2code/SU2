@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,7 +69,10 @@ CSysVector<ScalarType>::~CSysVector() {
 /*--- Explicit instantiations ---*/
 /*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+#ifdef USE_MIXED_PRECISION
 /*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors. ---*/
 template class CSysVector<su2mixedfloat>;
+#endif
+#ifdef CODI_REVERSE_TYPE
+template class CSysVector<passivedouble>;
 #endif

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -176,7 +176,6 @@ enum ENUM_MAIN_SOLVER {
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
   HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
-  FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
@@ -231,13 +230,12 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
   MakePair("DISC_ADJ_FEM", DISC_ADJ_FEM)
-  MakePair("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
   MakePair("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MULTIPHYSICS)
 };
 
 /*!
- * \brief different solver types for the multizone environment component
+ * \brief Different solver types for multizone problems
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
@@ -441,7 +439,6 @@ static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
@@ -699,7 +696,6 @@ enum ENUM_SURFACEMOVEMENT {
   MOVING_WALL = 2,               /*!< \brief Simulation with moving wall. */
   AEROELASTIC = 3,               /*!< \brief Simulation with aeroelastic motion. */
   AEROELASTIC_RIGID_MOTION = 4,  /*!< \brief Simulation with rotation and aeroelastic motion. */
-  FLUID_STRUCTURE = 5,           /*!< \brief Fluid structure deformation. */
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
 };
@@ -708,7 +704,6 @@ static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
   MakePair("AEROELASTIC", AEROELASTIC)
-  MakePair("FLUID_STRUCTURE", FLUID_STRUCTURE)
   MakePair("EXTERNAL", EXTERNAL)
   MakePair("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 };
@@ -2157,8 +2152,6 @@ enum MPI_QUANTITIES {
   SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
   SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
-  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
   SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
   PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
   PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
@@ -2178,7 +2171,6 @@ enum MPI_QUANTITIES {
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
@@ -2263,6 +2255,30 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("MMS_INC_EULER",            MMS_INC_EULER)
   MakePair("MMS_INC_NS",               MMS_INC_NS)
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+};
+
+/*!
+ * \brief Types of streamwise periodicity.
+ */
+enum ENUM_STREAMWISE_PERIODIC {
+  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
+  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
+  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
+};
+static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
+  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
+  MakePair("PRESSURE_DROP", PRESSURE_DROP)
+  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
+};
+
+/*!
+ * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.
+ */
+struct StreamwisePeriodicValues {
+  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 };
 
 #undef MakePair

@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -181,6 +181,11 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Solver(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL], config[val_iZone],
           iMesh);
+
+      integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Geometry(
+          geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][MESH_SOL], config[val_iZone],
+          iMesh);
+
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
     }
 

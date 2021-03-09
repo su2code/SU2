@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,8 +45,7 @@ private:
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
-  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
-  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+  omega_vec;                              /*!< \brief Dummy vector for vibrational energy source term. */
 
   su2double Tref;                         /*!< \brief Reference temperature. */
 

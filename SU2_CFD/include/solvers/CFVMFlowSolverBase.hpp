@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -125,6 +125,8 @@ class CFVMFlowSolverBase : public CSolver {
   AeroCoeffsArray SurfaceCoeff; /*!< \brief Totals for each monitoring surface. */
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
+  su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
+
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
@@ -135,28 +137,28 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
   su2double Total_MaxHeat = 0.0;        /*!< \brief Maximum heat flux on all boundaries. */
   su2double AllBound_CNearFieldOF_Inv = 0.0; /*!< \brief Near-Field press coeff (inviscid) for all the boundaries. */
-  su2double* CNearFieldOF_Inv = nullptr;     /*!< \brief Near field pressure (inviscid) for each boundary. */
-  su2double* Surface_HF_Visc = nullptr;      /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  su2double* Surface_MaxHF_Visc = nullptr;   /*!< \brief Maximum heat flux for each monitored surface. */
-  su2double* HF_Visc = nullptr;              /*!< \brief Heat load (viscous contribution) for each boundary. */
-  su2double* MaxHF_Visc = nullptr;           /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  su2double AllBound_HF_Visc = 0.0;          /*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  su2double AllBound_MaxHF_Visc = 0.0;       /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  vector<su2double> CNearFieldOF_Inv;    /*!< \brief Near field pressure (inviscid) for each boundary. */
+  vector<su2double> Surface_HF_Visc;     /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  vector<su2double> Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
+  vector<su2double> HF_Visc;             /*!< \brief Heat load (viscous contribution) for each boundary. */
+  vector<su2double> MaxHF_Visc;          /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  su2double AllBound_HF_Visc = 0.0;      /*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  su2double AllBound_MaxHF_Visc = 0.0;   /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
 
-  su2double** Inlet_Ptotal = nullptr;      /*!< \brief Value of the Total P. */
-  su2double** Inlet_Ttotal = nullptr;      /*!< \brief Value of the Total T. */
-  su2double*** Inlet_FlowDir = nullptr;    /*!< \brief Value of the Flow Direction. */
-  su2double** HeatFlux = nullptr;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  su2double** HeatFluxTarget = nullptr;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  su2double*** CharacPrimVar = nullptr;    /*!< \brief Value of the characteristic variables at each boundary. */
-  su2double*** CSkinFriction = nullptr;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
-  su2double** WallShearStress = nullptr;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
-  su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
-  su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
-  su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  su2double** YPlus = nullptr;             /*!< \brief Yplus for each boundary and vertex. */
+  vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
+  vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
+  vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
+  vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
+  vector<su2activematrix> CSkinFriction;        /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  vector<vector<su2double> > WallShearStress;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
+  vector<su2activematrix> HeatConjugateVar;     /*!< \brief CHT variables for each boundary and vertex. */
+  vector<vector<su2double> > CPressure;         /*!< \brief Pressure coefficient for each boundary and vertex. */
+  vector<vector<su2double> > CPressureTarget;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  vector<vector<su2double> > YPlus;             /*!< \brief Yplus for each boundary and vertex. */
 
-  bool space_centered;       /*!< \brief True if space centered scheeme used. */
+  bool space_centered;       /*!< \brief True if space centered scheme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
   bool least_squares;        /*!< \brief True if computing gradients by least squares. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
@@ -164,8 +166,8 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*--- Sliding meshes variables ---*/
 
-  su2double**** SlidingState = nullptr;
-  int** SlidingStateNodes = nullptr;
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -178,7 +180,7 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr bool ReducerStrategy = false;
 #endif
 
-  /*--- Edge fluxes, for OpenMP parallelization off difficult-to-color grids.
+  /*--- Edge fluxes, for OpenMP parallelization of difficult-to-color grids.
    * We first store the fluxes and then compute the sum for each cell.
    * This strategy is thread-safe but lower performance than writting to both
    * end points of each edge, so we only use it when necessary, i.e. when the
@@ -248,6 +250,42 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Instantiate a SIMD numerics object.
    */
   inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
+
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \note The convective residual methods include a call to this for each edge,
+   *       this allows convective and viscous loops to be "fused".
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                       CNumerics *numerics, CConfig *config) { }
+  void Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                             CNumerics *numerics, CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
+   * iteration for stability.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig* config);
+
+  /*!
+   * \brief General implementation to load a flow solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   * \param[in] RestartSolution - Optional buffer to load restart vars into,
+   *            this allows default values to be given when nVar > nVar_Restart.
+   * \param[in] nVar_Restart - Number of restart variables, if 0 defaults to nVar.
+   */
+  void LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo,
+                        su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
 
   /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
@@ -426,10 +464,10 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_MASTER
     if (config->GetComm_Level() == COMM_FULL) {
       su2double rbuf_time;
-      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       Min_Delta_Time = rbuf_time;
 
-      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       Max_Delta_Time = rbuf_time;
     }
     SU2_OMP_BARRIER
@@ -481,7 +519,7 @@ class CFVMFlowSolverBase : public CSolver {
 
       SU2_OMP_MASTER
       {
-        SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
         Global_Delta_UnstTimeND = glbDtND;
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
@@ -804,21 +842,18 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Generic implementation of implicit Euler iteration with an optional preconditioner applied to the diagonal.
-   * \param[in] compute_ur - Whether to use automatic under-relaxation for the update.
+   * \brief Generic implementation to prepare an implicit iteration with an optional preconditioner applied to the diagonal.
    * \tparam DiagonalPrecond - A function object implementing:
    *         - active: A boolean variable to determine if the preconditioner should be used.
    *         - (config, iPoint, delta): Compute and return a matrix type compatible with the Jacobian matrix,
    *           where "delta" is V/dt.
    */
   template<class DiagonalPrecond>
-  void ImplicitEuler_Iteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry,
-                                    CSolver **solver_container, CConfig *config, bool compute_ur) {
+  void PrepareImplicitIteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry, CConfig *config) {
 
-    const bool adjoint = config->GetContinuous_Adjoint();
+    const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-    /*--- Set shared residual variables to 0 and declare
-     *    local ones for current thread to work on. ---*/
+    /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
 
     SU2_OMP_MASTER
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -831,41 +866,46 @@ class CFVMFlowSolverBase : public CSolver {
     const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
-    /*--- Build implicit system ---*/
+    /*--- Add pseudotime term to Jacobian. ---*/
+
+    if (implicit) {
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
+
+        if (nodes->GetDelta_Time(iPoint) != 0.0) {
+
+          su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+          su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+          if (preconditioner.active)
+            Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
+          else
+            Jacobian.AddVal2Diag(iPoint, Delta);
+        }
+        else {
+          Jacobian.SetVal2Diag(iPoint, 1.0);
+        }
+      }
+    }
+
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Read the residual ---*/
+      /*--- Multigrid contribution to residual. ---*/
 
       su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
-      /*--- Read the volume ---*/
-
-      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-
-      /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-      if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
-        su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
-
-        if (preconditioner.active) {
-          Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
-        }
-        else {
-          Jacobian.AddVal2Diag(iPoint, Delta);
-        }
-      }
-      else {
-        Jacobian.SetVal2Diag(iPoint, 1.0);
+      if (nodes->GetDelta_Time(iPoint) == 0.0) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           LinSysRes(iPoint,iVar) = 0.0;
           local_Res_TruncError[iVar] = 0.0;
         }
       }
-
-      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         unsigned long total_index = iPoint*nVar + iVar;
@@ -886,35 +926,26 @@ class CFVMFlowSolverBase : public CSolver {
       AddRes_RMS(iVar, resRMS[iVar]);
       AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
-
-    /*--- Initialize residual and solution at the ghost points ---*/
-
-    SU2_OMP(sections nowait)
-    {
-      SU2_OMP(section)
-      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-        LinSysRes.SetBlock_Zero(iPoint);
-
-      SU2_OMP(section)
-      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-        LinSysSol.SetBlock_Zero(iPoint);
-    }
-
-    /*--- Solve or smooth the linear system. ---*/
-
-    auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-    SU2_OMP_MASTER
-    {
-      SetIterLinSolver(iter);
-      SetResLinSolver(System.GetResidual());
-    }
     SU2_OMP_BARRIER
 
-    if (compute_ur) ComputeUnderRelaxationFactor(solver_container, config);
+    /*--- Compute the root mean square residual ---*/
+    SU2_OMP_MASTER
+    SetResidual_RMS(geometry, config);
+    SU2_OMP_BARRIER
+  }
 
-    /*--- Update solution (system written in terms of increments) ---*/
+  /*!
+   * \brief Generic implementation to complete an implicit iteration, i.e. update the solution.
+   * \tparam compute_ur - Whether to use automatic under-relaxation for the update.
+   */
+  template<bool compute_ur>
+  void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
 
-    if (!adjoint) {
+    if (compute_ur) ComputeUnderRelaxationFactor(config);
+
+    /*--- Update solution with under-relaxation and communicate it. ---*/
+
+    if (!config->GetContinuous_Adjoint()) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -928,29 +959,24 @@ class CFVMFlowSolverBase : public CSolver {
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
 
-    /*--- MPI solution ---*/
-
     InitiateComms(geometry, config, SOLUTION);
     CompleteComms(geometry, config, SOLUTION);
 
+    /*--- For verification cases, compute the global error metrics. ---*/
     SU2_OMP_MASTER
-    {
-      /*--- Compute the root mean square residual ---*/
-
-      SetResidual_RMS(geometry, config);
-
-      /*--- For verification cases, compute the global error metrics. ---*/
-
-      ComputeVerificationError(geometry, config);
-    }
+    ComputeVerificationError(geometry, config);
     SU2_OMP_BARRIER
-
   }
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
+   * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
    */
-  inline void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  template<size_t VelocityOffset>
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+
+    const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
+    auto& StrainMag = nodes->GetStrainMag();
 
     SU2_OMP_MASTER {
       StrainMag_Max = 0.0;
@@ -958,37 +984,85 @@ class CFVMFlowSolverBase : public CSolver {
     }
     SU2_OMP_BARRIER
 
-    nodes->SetVorticity_StrainMag();
-
-    /*--- Min and Max are not really differentiable ---*/
-    const bool wasActive = AD::BeginPassive();
-
     su2double strainMax = 0.0, omegaMax = 0.0;
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
-      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
-    }
-    SU2_OMP_CRITICAL {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      constexpr size_t u = VelocityOffset;
+      constexpr size_t v = VelocityOffset+1;
+      constexpr size_t w = VelocityOffset+2;
+
+      /*--- Vorticity ---*/
+
+      su2double* Vorticity = nodes->GetVorticity(iPoint);
+
+      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+
+      Vorticity[2] = Gradient_Primitive(iPoint,v,0)-Gradient_Primitive(iPoint,u,1);
+
+      if (nDim == 3) {
+        Vorticity[0] = Gradient_Primitive(iPoint,w,1)-Gradient_Primitive(iPoint,v,2);
+        Vorticity[1] = -(Gradient_Primitive(iPoint,w,0)-Gradient_Primitive(iPoint,u,2));
+      }
+
+      /*--- Strain Magnitude ---*/
+
+      AD::StartPreacc();
+      AD::SetPreaccIn(&Gradient_Primitive[iPoint][VelocityOffset], nDim, nDim);
+
+      su2double Div = 0.0;
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Div += Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim);
+      Div /= 3.0;
+
+      StrainMag(iPoint) = 0.0;
+
+      /*--- Add diagonal part ---*/
+
+      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+        StrainMag(iPoint) += pow(Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim) - Div, 2);
+      }
+      if (nDim == 2) {
+        StrainMag(iPoint) += pow(Div, 2);
+      }
+
+      /*--- Add off diagonals ---*/
+
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,1) + Gradient_Primitive(iPoint,v,0)), 2);
+
+      if (nDim == 3) {
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,2) + Gradient_Primitive(iPoint,w,0)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,v,2) + Gradient_Primitive(iPoint,w,1)), 2);
+      }
+
+      StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+      AD::SetPreaccOut(StrainMag(iPoint));
+
+      /*--- Max is not differentiable, so we not register them for preacc. ---*/
+      strainMax = max(strainMax, StrainMag(iPoint));
+      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+
+      AD::EndPreacc();
     }
 
     if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
+      SU2_OMP_CRITICAL {
+        StrainMag_Max = max(StrainMag_Max, strainMax);
+        Omega_Max = max(Omega_Max, omegaMax);
+      }
+
       SU2_OMP_BARRIER
-      SU2_OMP_MASTER
-      {
+      SU2_OMP_MASTER {
         su2double MyOmega_Max = Omega_Max;
         su2double MyStrainMag_Max = StrainMag_Max;
 
-        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       }
       SU2_OMP_BARRIER
     }
 
-    AD::EndPassive(wasActive);
   }
 
   /*!
@@ -997,6 +1071,26 @@ class CFVMFlowSolverBase : public CSolver {
   ~CFVMFlowSolverBase();
 
  public:
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo) override;
+
+  /*!
+   * \brief Set the initial condition for the Euler Equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) override;
+
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -1023,11 +1117,9 @@ class CFVMFlowSolverBase : public CSolver {
   void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
-   * iteration for stability. \param[in] solver - Container vector with all the solutions. \param[in] config -
-   * Definition of the particular problem.
+   * \brief Implementation of implicit Euler iteration.
    */
-  void ComputeUnderRelaxationFactor(CSolver** solver, const CConfig* config) final;
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -1489,6 +1581,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the efficiency coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CEff() const final { return TotalCoeff.CEff; }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.
@@ -2083,7 +2180,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double* GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double* GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) final {
     return CharacPrimVar[val_marker][val_vertex];
   }
 
@@ -2141,8 +2238,6 @@ class CFVMFlowSolverBase : public CSolver {
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ttotal == nullptr || Inlet_Ttotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -2160,8 +2255,6 @@ class CFVMFlowSolverBase : public CSolver {
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_Ptotal == nullptr || Inlet_Ptotal[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -2181,8 +2274,6 @@ class CFVMFlowSolverBase : public CSolver {
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_FlowDir == nullptr || Inlet_FlowDir[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
@@ -2322,7 +2413,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
-    return CSkinFriction[val_marker][val_dim][val_vertex];
+    return CSkinFriction[val_marker](val_vertex,val_dim);
   }
 
   /*!

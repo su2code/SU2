@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "./parallelization/mpi_structure.hpp"
+#include "parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -420,6 +420,9 @@ private:
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
+  bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
+  array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
+  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -661,7 +664,7 @@ private:
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
   nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
-  nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
   nMarker_WallFunctions;              /*!< \brief Number of markers for which wall functions must be applied. */
@@ -671,7 +674,7 @@ private:
   *Marker_Plotting,                   /*!< \brief Markers to plot. */
   *Marker_Analyze,                    /*!< \brief Markers to analyze. */
   *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
-  *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions;              /*!< \brief Markers for which wall functions must be applied. */
@@ -717,6 +720,7 @@ private:
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
+  unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
@@ -994,6 +998,13 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
+
+  unsigned short Kind_Streamwise_Periodic;          /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
+  bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
+  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_TargetMassFlow;     /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
+
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -1187,6 +1198,8 @@ private:
   void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
 
   void addDoubleArrayOption(const string name, const int size, su2double* option_field);
+
+  void addUShortArrayOption(const string name, const int size, unsigned short* option_field);
 
   void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field);
 
@@ -2778,7 +2791,7 @@ public:
   const su2double *GetWeightsIntegrationADER_DG(void) const { return WeightsIntegrationADER_DG; }
 
   /*!
-   * \brief Get the total number of boundary markers including send/receive domains.
+   * \brief Get the total number of boundary markers of the local process including send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_All(void) const { return nMarker_All; }
@@ -2802,7 +2815,7 @@ public:
   unsigned short GetnMarker_SymWall(void) const { return nMarker_SymWall; }
 
   /*!
-   * \brief Get the total number of boundary markers.
+   * \brief Get the total number of boundary markers in the cfg plus the possible send/receive domains.
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_Max(void) const { return nMarker_Max; }
@@ -2898,7 +2911,7 @@ public:
   unsigned short GetnMarker_Periodic(void) const { return nMarker_PerBound; }
 
   /*!
-   * \brief Get the total number of heat flux markers.
+   * \brief Get the total (local) number of heat flux markers.
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
@@ -3966,6 +3979,21 @@ public:
    * \brief Get whether to use vectorized numerics (if available).
    */
   bool GetUseVectorization(void) const { return UseVectorization; }
+
+  /*!
+   * \brief Get whether to use a Newton-Krylov method.
+   */
+  bool GetNewtonKrylov(void) const { return NewtonKrylov; }
+
+  /*!
+   * \brief Get Newton-Krylov integer parameters.
+   */
+  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+
+  /*!
+   * \brief Get Newton-Krylov floating-point parameters.
+   */
+  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
@@ -5148,6 +5176,12 @@ public:
   unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
 
   /*!
+   * \brief Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output.
+   * \return Output precision.
+   */
+  unsigned short GetOutput_Precision(void) const { return output_precision; }
+
+  /*!
    * \brief Get the format of the output solution.
    * \return Format of the output solution.
    */
@@ -5707,6 +5741,36 @@ public:
   const su2double* GetBody_Force_Vector(void) const { return body_force; }
 
   /*!
+   * \brief Get information about the streamwise periodicity (None, Pressure_Drop, Massflow).
+   * \return Driving force identification.
+   */
+  unsigned short GetKind_Streamwise_Periodic(void) const { return Kind_Streamwise_Periodic; }
+
+  /*!
+   * \brief Get information about the streamwise periodicity Energy equation handling.
+   * \return Real periodic treatment of energy equation.
+   */
+  bool GetStreamwise_Periodic_Temperature(void) const { return Streamwise_Periodic_Temperature; }
+
+  /*!
+   * \brief Get the value of the artificial periodic outlet heat.
+   * \return Heat value.
+   */
+  su2double GetStreamwise_Periodic_OutletHeat(void) const { return Streamwise_Periodic_OutletHeat; }
+
+  /*!
+   * \brief Get the value of the pressure delta from which body force vector is computed.
+   * \return Delta Pressure for body force computation.
+   */
+  su2double GetStreamwise_Periodic_PressureDrop(void) const { return Streamwise_Periodic_PressureDrop; }
+
+  /*!
+   * \brief Get the value of the massflow from which body force vector is computed.
+   * \return Massflow for body force computation.
+   */
+  su2double GetStreamwise_Periodic_TargetMassFlow(void) const { return Streamwise_Periodic_TargetMassFlow; }
+
+  /*!
    * \brief Get information about the volumetric heat source.
    * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
    */
@@ -6124,9 +6188,16 @@ public:
   const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
-   * \brief Translation vector for a rotational periodic boundary.
+   * \brief Translation vector for a translational periodic boundary.
    */
   const su2double *GetPeriodicTranslation(string val_marker) const;
+
+  /*!
+   * \brief Get the translation vector for a periodic transformation.
+   * \param[in] val_index - Index corresponding to the periodic transformation.
+   * \return The translation vector.
+   */
+  const su2double* GetPeriodic_Translation(unsigned short val_index ) const { return Periodic_Translation[val_index]; }
 
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
