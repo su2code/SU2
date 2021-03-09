@@ -3544,11 +3544,8 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+    if (config->GetSolid_Wall(iMarker))
       nVertex_Wall += nVertex[iMarker];
-
 
   /*--- Create an array with all the coordinates, points, pressures, face area,
    equivalent area, and nearfield weight ---*/
@@ -3560,9 +3557,7 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Copy the boundary information to an array ---*/
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
+    if (config->GetSolid_Wall(iMarker))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 0);
