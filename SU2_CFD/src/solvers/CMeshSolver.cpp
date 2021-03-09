@@ -129,21 +129,12 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     }
   }
 
-  unsigned short iVar;
-
   /*--- Initialize the BGS residuals in multizone problems. ---*/
   if (config->GetMultizone_Residual()){
-
-    Residual_BGS      = new su2double[nVar]();
-    Residual_Max_BGS  = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,0.0);
+    Residual_Max_BGS.resize(nVar,0.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
 

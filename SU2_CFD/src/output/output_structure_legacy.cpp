@@ -728,7 +728,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
 
-    su2double dummy = 0.0, *Coord;
+    su2double dummy = 0.0;
+    const su2double *Coord = nullptr;
     unsigned short iVar, iMarker_Monitoring;
 
     unsigned long LinSolvIter = 0, iPointMaxResid;
