@@ -1823,10 +1823,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
 
     /*--- Set maximum residual to zero. ---*/
 
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
+    SetResToZero();
 
     SU2_OMP_PARALLEL {
 
@@ -1850,7 +1847,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     }
     SU2_OMP_CRITICAL
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      AddRes_RMS(iVar, resRMS[iVar]);
+      Residual_RMS[iVar] += resRMS[iVar];
       AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
     SU2_OMP_BARRIER

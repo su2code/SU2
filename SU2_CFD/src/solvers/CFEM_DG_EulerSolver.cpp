@@ -7119,10 +7119,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
   const unsigned short nRKStages     = config->GetnRKStep();
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /* Set the pointer to the array where the new state vector must be stored.
      If this is the last RK step, the solution should be stored in
@@ -7171,10 +7168,7 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
   su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -7223,10 +7217,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
   /* Initialize the residuals to zero. */
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Loop over the owned elements. It is not possible to loop directly over the owned
         DOFs, because the coordinates of the DOFs are only known in the volume class. ---*/
@@ -7244,7 +7235,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
 
-        AddRes_RMS(iVar, res[i]*res[i]);
+        Residual_RMS[iVar] += res[i]*res[i];
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
@@ -7263,7 +7254,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
       if (rbufRes[iVar] != rbufRes[iVar])
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
+      Residual_RMS[iVar] = max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal));
     }
 
     /*--- The global maximum norms must be obtained. ---*/
@@ -7300,7 +7291,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
       SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
+    Residual_RMS[iVar] = max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal));
   }
 
 #endif

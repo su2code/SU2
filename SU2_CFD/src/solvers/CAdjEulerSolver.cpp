@@ -1985,10 +1985,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2001,7 +1998,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
     for (iVar = 0; iVar < nVar; iVar++) {
       Res = Residual[iVar] + Res_TruncError[iVar];
       nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
-      AddRes_RMS(iVar, Res*Res);
+      Residual_RMS[iVar] += Res*Res;
       AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
@@ -2022,10 +2019,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   unsigned short iVar;
   unsigned long iPoint;
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2038,7 +2032,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     for (iVar = 0; iVar < nVar; iVar++) {
       Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       nodes->AddSolution(iPoint,iVar, -Res*Delta);
-      AddRes_RMS(iVar, Res*Res);
+      Residual_RMS[iVar] += Res*Res;
       AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
@@ -2062,10 +2056,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Build implicit system ---*/
 
@@ -2100,7 +2091,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 

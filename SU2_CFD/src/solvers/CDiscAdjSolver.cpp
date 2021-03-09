@@ -385,10 +385,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set Residuals to zero ---*/
 
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar,0.0);
-    SetRes_Max(iVar,0.0,0);
-  }
+  SetResToZero();
 
   /*--- Set the old solution and compute residuals. ---*/
 
@@ -414,7 +411,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
       residual *= isdomain;
-      AddRes_RMS(iVar,pow(residual,2));
+      Residual_RMS[iVar] += pow(residual,2);
       AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
     }
   }
@@ -581,7 +578,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //      for (iVar = 0; iVar < nVar; iVar++){
 //          residual = node[iPoint]->GetSolution_Geometry(iVar) - node[iPoint]->Get_OldSolution_Geometry(iVar);
 //
-//          AddRes_RMS(iVar,residual*residual);
+//          Residual_RMS[iVar] += residual*residual;
 //          AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
 //      }
 //  }

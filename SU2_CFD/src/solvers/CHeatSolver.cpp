@@ -1419,10 +1419,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   bool adjoint = config->GetContinuous_Adjoint();
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution ---*/
 
@@ -1437,7 +1434,7 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         nodes->AddSolution(iPoint,iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
+        Residual_RMS[iVar] += Res*Res;
         AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       }
     }
@@ -1469,10 +1466,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Build implicit system ---*/
 
@@ -1514,7 +1508,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }

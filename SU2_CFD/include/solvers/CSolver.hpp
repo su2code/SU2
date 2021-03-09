@@ -421,18 +421,16 @@ public:
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \brief Set the RMS and MAX residual to zero.
    */
-  inline void SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+  inline void SetResToZero() {
+    SU2_OMP_MASTER {
+      for (auto& r : Residual_RMS) r = 0;
+      for (auto& r : Residual_Max) r = 0;
+      for (auto& p : Point_Max) p = 0;
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -440,17 +438,6 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
-
-  /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max(unsigned short val_var,
-                         su2double val_residual,
-                         unsigned long val_point) {
-    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point;
-  }
 
   /*!
    * \brief Adds the maximal residual, this is useful for the convergence history (overload).
@@ -471,7 +458,6 @@ public:
     }
   }
 
-
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
@@ -480,36 +466,11 @@ public:
   inline su2double GetRes_Max(unsigned short val_var) const { return Residual_Max[val_var]; }
 
   /*!
-   * \brief Set the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] += val_residual; }
-
-  /*!
    * \brief Get the residual for BGS subiterations.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
-
-  /*!
-   * \brief Set the maximal residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max_BGS(unsigned short val_var,
-                             su2double val_residual,
-                             unsigned long val_point) {
-    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point;
-  }
 
   /*!
    * \brief Adds the maximal residual for BGS subiterations.
@@ -529,7 +490,6 @@ public:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
-
 
   /*!
    * \brief Get the maximal residual for BGS subiterations.

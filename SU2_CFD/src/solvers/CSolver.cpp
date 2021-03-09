@@ -2163,7 +2163,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
       SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
     }
 
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_res[iVar]/Global_nPointDomain)));
+    Residual_RMS[iVar] = max(EPS*EPS, sqrt(rbuf_res[iVar]/Global_nPointDomain));
 
     if (log10(GetRes_RMS(iVar)) > 20.0) {
       SU2_MPI::Error("SU2 has diverged (Residual > 10^20 detected).", CURRENT_FUNCTION);
@@ -2174,7 +2174,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   if (config->GetComm_Level() != COMM_FULL) return;
 
-  const int nProcessor = size;
+  const unsigned long nProcessor = size;
 
   su2activematrix rbuf_residual(nProcessor,nVar);
   su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
@@ -2184,8 +2184,8 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
-  for (int iVar = 0; iVar < static_cast<int>(nVar); iVar++) {
-    for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
       AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
     }
   }
@@ -2204,14 +2204,14 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
   const auto Global_nPointDomain = geometry->GetGlobal_nPointDomain();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_res[iVar]/Global_nPointDomain)));
+    Residual_BGS[iVar] = max(EPS*EPS, sqrt(rbuf_res[iVar]/Global_nPointDomain));
   }
 
   if (config->GetComm_Level() != COMM_FULL) return;
 
   /*--- Set the Maximum residual in all the processors. ---*/
 
-  const int nProcessor = size;
+  const unsigned long nProcessor = size;
 
   su2activematrix rbuf_residual(nProcessor,nVar);
   su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
@@ -2221,8 +2221,8 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
   SU2_MPI::Allgather(Point_Max_BGS.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Point_Max_Coord_BGS.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
-  for (int iVar = 0; iVar < static_cast<int>(nVar); iVar++) {
-    for (int iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
       AddRes_Max_BGS(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
     }
   }
@@ -4033,8 +4033,8 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
   /*--- Set Residuals to zero ---*/
   SU2_OMP_MASTER
   for (unsigned short iVar = 0; iVar < nVar; iVar++){
-    SetRes_BGS(iVar,0.0);
-    SetRes_Max_BGS(iVar,0.0,0);
+    Residual_BGS[iVar] = 0.0;
+    Residual_Max_BGS[iVar] = 0.0;
   }
 
   vector<su2double> resMax(nVar,0.0), resRMS(nVar,0.0);
@@ -4063,7 +4063,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
   /*--- Reduce residual information over all threads in this rank. ---*/
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_BGS(iVar, resRMS[iVar]);
+    Residual_BGS[iVar] += resRMS[iVar];
     AddRes_Max_BGS(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
   SU2_OMP_BARRIER

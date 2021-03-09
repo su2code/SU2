@@ -491,10 +491,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
+
   /*--- Build implicit system ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -523,7 +521,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
