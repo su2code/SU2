@@ -41,8 +41,8 @@ class CEulerSolver : public CSolver {
 protected:
   enum : size_t {MAXNDIM = 3};    /*!< \brief Max number of space dimensions, used in some static arrays. */
   enum : size_t {MAXNVAR = 12};   /*!< \brief Max number of variables, used in some static arrays. */
-  enum : size_t {MAXNVARGRA = 6};      /*!< \brief Max number of extrapolated variables, used in some static arrays. */
-  enum : size_t {MAXNVARTUR = 2};      /*!< \brief Max number of extrapolated turb variables, used in some static arrays. */
+  enum : size_t {MAXNGRA = 6};    /*!< \brief Max number of extrapolated variables, used in some static arrays. */
+  enum : size_t {MAXNTUR = 2};    /*!< \brief Max number of extrapolated turb variables, used in some static arrays. */
 
   enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
   enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */

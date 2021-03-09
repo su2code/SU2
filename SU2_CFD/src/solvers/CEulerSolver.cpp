@@ -3062,9 +3062,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
-  su2double Primitive_i[MAXNVARGRA] = {0.0}, Primitive_j[MAXNVARGRA] = {0.0};
-  su2double Secondary_i[MAXNVARGRA] = {0.0}, Secondary_j[MAXNVARGRA] = {0.0};
-  su2double Turbulent_i[MAXNVARTUR] = {0.0}, Turbulent_j[MAXNVARTUR] = {0.0};
+  su2double Primitive_i[MAXNGRA] = {0.0}, Primitive_j[MAXNGRA] = {0.0};
+  su2double Secondary_i[MAXNGRA] = {0.0}, Secondary_j[MAXNGRA] = {0.0};
+  su2double Turbulent_i[MAXNTUR] = {0.0}, Turbulent_j[MAXNTUR] = {0.0};
 
   su2double tke_i = 0.0, tke_j = 0.0;
 
@@ -3515,12 +3515,16 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const unsigned long nPrimVarTot = nVar + tkeNeeded;
 
-  su2double dFl_dVl[MAXNVARGRA-1][MAXNVARGRA] = {0.0},
-            dFr_dVr[MAXNVARGRA-1][MAXNVARGRA] = {0.0},
-            dUl_dVl[MAXNVARGRA][MAXNVARGRA] = {0.0},
-            dUr_dVr[MAXNVARGRA][MAXNVARGRA] = {0.0},
-            dVi_dUi[MAXNVARGRA][MAXNVARGRA-1] = {0.0},
-            dVk_dUk[MAXNVARGRA][MAXNVARGRA-1] = {0.0};
+  /*--- Note: We use MAXNGRA-1 because we extrapolate temperature since it's index 0,  ---*/
+  /*---       even though we don't use it. For intermediate Jacobians, we need MAXNGRA ---*/
+  /*---       in case TKE is needed.                                                   ---*/
+
+  su2double dFl_dVl[MAXNGRA-1][MAXNGRA] = {0.0},
+            dFr_dVr[MAXNGRA-1][MAXNGRA] = {0.0},
+            dUl_dVl[MAXNGRA][MAXNGRA] = {0.0},
+            dUr_dVr[MAXNGRA][MAXNGRA] = {0.0},
+            dVi_dUi[MAXNGRA][MAXNGRA-1] = {0.0},
+            dVk_dUk[MAXNGRA][MAXNGRA-1] = {0.0};
 
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
   su2double vel_l[MAXNDIM] = {0.0}, vel_r[MAXNDIM] = {0.0};
@@ -3538,7 +3542,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
-  su2double dVl_dVi[MAXNVARGRA] = {0.0}, dVr_dVi[MAXNVARGRA] = {0.0};
+  su2double dVl_dVi[MAXNGRA] = {0.0}, dVr_dVi[MAXNGRA] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     dVl_dVi[ind] = 1.0 + (0.5*nodes->GetLimiter_Primitive(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
@@ -3629,7 +3633,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi[MAXNVARGRA] = {0.0};
+  su2double Psi[MAXNGRA] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     Psi[ind] =  (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;

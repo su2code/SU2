@@ -110,8 +110,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
-  su2double turbPrimVar_i[MAXNVARGRA] = {0.0}, flowPrimVar_i[MAXNVARFLO] = {0.0};
-  su2double turbPrimVar_j[MAXNVARGRA] = {0.0}, flowPrimVar_j[MAXNVARFLO] = {0.0};
+  su2double turbPrimVar_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNFLO] = {0.0};
+  su2double turbPrimVar_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNFLO] = {0.0};
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -387,8 +387,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double sign  = (iPoint < jPoint)? 1.0 : -1.0;
   const su2double sign_grad_i = gg? 1.0 : -1.0;
 
-  su2double dFl_dVl[MAXNVARGRA][MAXNVARGRA] = {0.0},
-            dFr_dVr[MAXNVARGRA][MAXNVARGRA] = {0.0};
+  su2double dFl_dVl[MAXNVAR][MAXNVAR] = {0.0},
+            dFr_dVr[MAXNVAR][MAXNVAR] = {0.0};
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -397,7 +397,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store reconstruction weights ---*/
 
-  su2double dVl_dVi[MAXNVARGRA] = {0.0}, dVr_dVi[MAXNVARGRA] = {0.0};
+  su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     dVl_dVi[iVar] = 1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i;
     dVr_dVi[iVar] =     - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j;
@@ -442,7 +442,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
    /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi[MAXNVARGRA] = {0.0};
+  su2double Psi[MAXNVAR] = {0.0};
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
   }

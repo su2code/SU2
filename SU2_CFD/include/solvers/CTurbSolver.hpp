@@ -41,8 +41,7 @@ class CTurbSolver : public CSolver {
 protected:
   enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
   enum : size_t {MAXNVAR = 2};         /*!< \brief Max number of variables, used in some static arrays. */
-  enum : size_t {MAXNVARGRA = 6};      /*!< \brief Max number of extrapolated variables, used in some static arrays. */
-  enum : size_t {MAXNVARFLO = 6};      /*!< \brief Max number of extrapolated flow variables, used in some static arrays. */
+  enum : size_t {MAXNFLO = 6};         /*!< \brief Max number of extrapolated flow variables, used in some static arrays. */
 
   enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
   enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
