@@ -3983,7 +3983,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
+  inline virtual const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4101,7 +4101,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4122,7 +4122,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4189,7 +4189,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityIn(su2double *value,
+  inline virtual void SetTurboVelocityIn(const su2double *value,
                                          unsigned short inMarkerTP,
                                          unsigned short valSpan) { }
 
@@ -4216,7 +4216,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityOut(su2double *value,
+  inline virtual void SetTurboVelocityOut(const su2double *value,
                                           unsigned short inMarkerTP,
                                           unsigned short valSpan) { }
 
