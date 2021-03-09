@@ -2463,7 +2463,7 @@ void CConfig::SetConfig_Options() {
   /*  Options: NO, YES \ingroup Config */
   addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
   /* DESCRIPTION: Thermal diffusivity constant */
-  addDoubleOption("THERMAL_DIFFUSIVITY_SOLID", Thermal_Diffusivity_Solid, 1.172E-5);
+  addDoubleOption("SOLID_THERMAL_DIFFUSIVITY", Thermal_Diffusivity_Solid, 1.172E-5);
   /* DESCRIPTION: Thermal conductivity used for heat equation */
   addDoubleOption("SOLID_THERMAL_CONDUCTIVITY", Thermal_Conductivity_Solid, 0.0);
   /* DESCRIPTION: Solids temperature at freestream conditions */
