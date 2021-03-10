@@ -760,22 +760,21 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
-  bool dual_time = (dual_time_1st || dual_time_2nd);
+  const bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
-  unsigned long iPoint;
-  unsigned short iVar;
+
   if (dual_time) {
-    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
+    for (auto iPoint = 0ul; iPoint<geometry->GetnPoint(); iPoint++) {
       solution_n = nodes->GetSolution_time_n(iPoint);
       solution_n1 = nodes->GetSolution_time_n1(iPoint);
-      for (iVar=0; iVar < nVar; iVar++) {
+      for (unsigned short iVar=0; iVar < nVar; iVar++) {
         nodes->SetDual_Time_Derivative(iPoint, iVar, solution_n[iVar]+nodes->GetDual_Time_Derivative_n(iPoint, iVar));
         nodes->SetDual_Time_Derivative_n(iPoint,iVar, solution_n1[iVar]);
       }
-    }
-  }
+    } // for iPoint
+  } // if dual_time
 }
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

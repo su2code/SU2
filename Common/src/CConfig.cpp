@@ -3268,6 +3268,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
     }
 
+    /*--- Inc CHT simulation, but energy equation of fluid is inactive. ---*/
+    if (Multizone_Problem && (nMarker_CHTInterface > 0) && !Energy_Equation)
+      SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
