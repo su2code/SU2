@@ -2,7 +2,7 @@
  * \file output_physics.cpp
  * \brief Main subroutines to compute physical output quantities such as CL, CD, entropy generation, mass flow, ecc... .
  * \author S. Vitale
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -279,7 +279,7 @@ void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry
     TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]     = EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections] + 0.5*absVel2;
 
     TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]   = (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
-    TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]	 /= (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]);
+    TotalTotalEfficiency[nBladesRow + nStages][nSpanWiseSections]  /= (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]);
     TotalStaticEfficiency[nBladesRow +nStages][nSpanWiseSections]   = (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - TotalEnthalpyOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)]);
     TotalStaticEfficiency[nBladesRow +nStages][nSpanWiseSections]  /= (TotalEnthalpyIn[0][config->GetnSpan_iZones(0)] - EnthalpyOutIs[nBladesRow + nStages][nSpanWiseSections]);
     PressureRatio[nBladesRow + nStages][nSpanWiseSections]          = PressureRatio[0][config->GetnSpan_iZones(0)]*PressureOut[0][config->GetnSpan_iZones(0)]/PressureOut[nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];

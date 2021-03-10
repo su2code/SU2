@@ -1,8 +1,8 @@
 /*!
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
- * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,8 +28,6 @@
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
-#include "../../include/CConfig.hpp"
-#include "../../include/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
@@ -112,7 +110,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Type of preconditioner the matrix will be asked to build. ---*/
   auto prec = config->GetKind_Linear_Solver_Prec();
 
-  if (!EdgeConnect && !config->GetStructuralProblem()) {
+  if ((!EdgeConnect && !config->GetStructuralProblem()) ||
+      (config->GetKind_SU2() == SU2_DEF) || (config->GetKind_SU2() == SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
   } else if (config->GetDiscrete_Adjoint() && (prec!=ILU)) {
@@ -206,76 +205,53 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
-#ifndef USE_MIXED_PRECISION
-  /*--- Double precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_dgemm
-  #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
-#else
-  /*--- Single precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_sgemm
-  #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
-#endif
-  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
-  MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
+  using mkl = mkl_jit_wrapper<ScalarType>;
+  mkl::create_gemm(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS,
+                   MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
+  MatrixMatrixProductKernel = mkl::get_gemm(MatrixMatrixProductJitter);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
-  MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
+  MatrixVectorProductKernelBetaZero = mkl::get_gemm(MatrixVectorProductJitterBetaZero);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelBetaOne = mkl::get_gemm(MatrixVectorProductJitterBetaOne);
 
-  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
+  mkl::create_gemm(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelAlphaMinusOne = mkl::get_gemm(MatrixVectorProductJitterAlphaMinusOne);
 
-  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
-  MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
+  MatrixVectorProductTranspKernelBetaOne = mkl::get_gemm(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
 }
 
-template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
-                                           CGeometry *geometry,
-                                           const CConfig *config,
-                                           unsigned short commType) const {
+template<class T>
+void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry,
+                               const CConfig *config, unsigned short commType) {
+
   if (geometry->nP2PSend == 0) return;
 
   /*--- Local variables ---*/
 
-  unsigned short iVar;
-  unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
-
-  unsigned long iPoint, msg_offset, buf_offset;
-
-  int iMessage, iSend, nSend;
+  const unsigned short COUNT_PER_POINT = x.GetNVar();
+  const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 
-  bool reverse = false;
+  const bool reverse = (commType == SOLUTION_MATRIXTRANS);
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
   switch (commType) {
     case SOLUTION_MATRIX:
-      COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      reverse          = false;
-      break;
     case SOLUTION_MATRIXTRANS:
-      COUNT_PER_POINT  = nEqn;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      reverse          = true;
       break;
     default:
-      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                     CURRENT_FUNCTION);
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
       break;
   }
 
@@ -286,10 +262,6 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
   geometry->AllocateP2PComms(COUNT_PER_POINT);
 
-  /*--- Set some local pointers to make access simpler. ---*/
-
-  su2double *bufDSend = geometry->bufD_P2PSend;
-
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
 
@@ -297,79 +269,77 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
   geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, reverse);
 
-  for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
+  for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
 
     switch (commType) {
 
-      case SOLUTION_MATRIX:
+      case SOLUTION_MATRIX: {
+
+        su2double* bufDSend = geometry->bufD_P2PSend;
 
         /*--- Get the offset for the start of this message. ---*/
 
-        msg_offset = geometry->nPoint_P2PSend[iMessage];
+        const auto msg_offset = geometry->nPoint_P2PSend[iMessage];
 
         /*--- Total count can include multiple pieces of data per point. ---*/
 
-        nSend = (geometry->nPoint_P2PSend[iMessage+1] -
-                 geometry->nPoint_P2PSend[iMessage]);
+        const auto nSend = (geometry->nPoint_P2PSend[iMessage+1] - geometry->nPoint_P2PSend[iMessage]);
 
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (iSend = 0; iSend < nSend; iSend++) {
+        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+        for (auto iSend = 0; iSend < nSend; iSend++) {
 
           /*--- Get the local index for this communicated data. ---*/
 
-          iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
+          const auto iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
 
           /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
+          const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
           /*--- Load the buffer with the data to be sent. ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
+          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             bufDSend[buf_offset+iVar] = x(iPoint,iVar);
-
         }
-
         break;
+      }
 
-      case SOLUTION_MATRIXTRANS:
+      case SOLUTION_MATRIXTRANS: {
 
         /*--- We are going to communicate in reverse, so we use the
          recv buffer for the send instead. Also, all of the offsets
          and counts are derived from the recv data structures. ---*/
 
-        bufDSend = geometry->bufD_P2PRecv;
+        su2double* bufDSend = geometry->bufD_P2PRecv;
 
         /*--- Get the offset for the start of this message. ---*/
 
-        msg_offset = geometry->nPoint_P2PRecv[iMessage];
+        const auto msg_offset = geometry->nPoint_P2PRecv[iMessage];
 
         /*--- Total count can include multiple pieces of data per point. ---*/
 
-        nSend = (geometry->nPoint_P2PRecv[iMessage+1] -
-                 geometry->nPoint_P2PRecv[iMessage]);
+        const auto nSend = (geometry->nPoint_P2PRecv[iMessage+1] - geometry->nPoint_P2PRecv[iMessage]);
 
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (iSend = 0; iSend < nSend; iSend++) {
+        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+        for (auto iSend = 0; iSend < nSend; iSend++) {
 
           /*--- Get the local index for this communicated data. Here we
            again use the recv structure to find the send point, since
            the usual recv points are now the senders in reverse mode. ---*/
 
-          iPoint = geometry->Local_Point_P2PRecv[msg_offset + iSend];
+          const auto iPoint = geometry->Local_Point_P2PRecv[msg_offset + iSend];
 
           /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
+          const auto buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
           /*--- Load the buffer with the data to be sent. ---*/
 
-          for (iVar = 0; iVar < nEqn; iVar++)
+          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             bufDSend[buf_offset+iVar] = x(iPoint,iVar);
-
         }
-
         break;
+      }
 
       default:
         SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -386,33 +356,24 @@ void CSysMatrix<ScalarType>::InitiateComms(const CSysVector<OtherType> & x,
 
 }
 
-template<class ScalarType>
-template<class OtherType>
-void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
-                                           CGeometry *geometry,
-                                           const CConfig *config,
-                                           unsigned short commType) const {
+template<class T>
+void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
+                               const CConfig *config, unsigned short commType) {
+
   if (geometry->nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
 
-  unsigned short iVar;
-  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
-  const auto COUNT_PER_POINT = (commType == SOLUTION_MATRIX)? nVar : nEqn;
-
-  int ind, source, iMessage, jRecv;
+  const unsigned short COUNT_PER_POINT = x.GetNVar();
 
   /*--- Global status so all threads can see the result of Waitany. ---*/
   static SU2_MPI::Status status;
-
-  /*--- Set some local pointers to make access simpler. ---*/
-
-  const su2double *bufDRecv = geometry->bufD_P2PRecv;
+  int ind;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
 
-  for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
+  for (auto iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
 
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
@@ -423,84 +384,85 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
-    source = status.MPI_SOURCE;
+    const auto source = status.MPI_SOURCE;
 
     switch (commType) {
-      case SOLUTION_MATRIX:
+      case SOLUTION_MATRIX: {
+
+        const su2double *bufDRecv = geometry->bufD_P2PRecv;
 
         /*--- We know the offsets based on the source rank. ---*/
 
-        jRecv = geometry->P2PRecv2Neighbor[source];
+        const auto jRecv = geometry->P2PRecv2Neighbor[source];
 
         /*--- Get the offset for the start of this message. ---*/
 
-        msg_offset = geometry->nPoint_P2PRecv[jRecv];
+        const auto msg_offset = geometry->nPoint_P2PRecv[jRecv];
 
         /*--- Get the number of packets to be received in this message. ---*/
 
-        nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
-                 geometry->nPoint_P2PRecv[jRecv]);
+        const auto nRecv = (geometry->nPoint_P2PRecv[jRecv+1] - geometry->nPoint_P2PRecv[jRecv]);
 
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+        for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
 
           /*--- Get the local index for this communicated data. ---*/
 
-          iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
+          const auto iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
 
           /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
+          const auto buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
           /*--- Store the data correctly depending on the quantity. ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
-            x(iPoint,iVar) = ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
+            x(iPoint,iVar) = CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
         }
         break;
+      }
 
-      case SOLUTION_MATRIXTRANS:
+      case SOLUTION_MATRIXTRANS: {
 
         /*--- We are going to communicate in reverse, so we use the
          send buffer for the recv instead. Also, all of the offsets
          and counts are derived from the send data structures. ---*/
 
-        bufDRecv = geometry->bufD_P2PSend;
+        const su2double* bufDRecv = geometry->bufD_P2PSend;
 
         /*--- We know the offsets based on the source rank. ---*/
 
-        jRecv = geometry->P2PSend2Neighbor[source];
+        const auto jRecv = geometry->P2PSend2Neighbor[source];
 
         /*--- Get the offset for the start of this message. ---*/
 
-        msg_offset = geometry->nPoint_P2PSend[jRecv];
+        const auto msg_offset = geometry->nPoint_P2PSend[jRecv];
 
         /*--- Get the number of packets to be received in this message. ---*/
 
-        nRecv = (geometry->nPoint_P2PSend[jRecv+1] -
-                 geometry->nPoint_P2PSend[jRecv]);
+        const auto nRecv = (geometry->nPoint_P2PSend[jRecv+1] - geometry->nPoint_P2PSend[jRecv]);
 
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        SU2_OMP_FOR_STAT(CSysMatrix<T>::OMP_MIN_SIZE)
+        for (auto iRecv = 0; iRecv < nRecv; iRecv++) {
 
           /*--- Get the local index for this communicated data. ---*/
 
-          iPoint = geometry->Local_Point_P2PSend[msg_offset + iRecv];
+          const auto iPoint = geometry->Local_Point_P2PSend[msg_offset + iRecv];
 
           /*--- Compute the offset in the recv buffer for this point. ---*/
 
-          buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
+          const auto buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
           /*--- Update receiving point. ---*/
 
-          for (iVar = 0; iVar < nEqn; iVar++)
-            x(iPoint,iVar) += ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+          for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
+            x(iPoint,iVar) += CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
         }
         break;
+      }
 
       default:
-        SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                       CURRENT_FUNCTION);
+        SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
         break;
     }
   }
@@ -519,9 +481,12 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
-  SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto index = 0ul; index < nnz*nVar*nEqn; index++)
-    matrix[index] = 0.0;
+  const auto size = nnz*nVar*nEqn;
+  const auto chunk = roundUpDiv(size,omp_get_max_threads());
+  const auto begin = chunk * omp_get_thread_num();
+  const auto mySize = min(chunk, size-begin) * sizeof(ScalarType);
+  memset(&matrix[begin], 0, mySize);
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
@@ -623,31 +588,15 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType *matrix, ScalarType *inver
 template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
-  unsigned long block_i = i/nVar;
-  unsigned long row = i - block_i*nVar;
-  unsigned long index, iVar;
+  const auto block_i = i/nVar;
+  const auto row = i%nVar;
 
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    for (iVar = 0; iVar < nVar; iVar++)
+  for (auto index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
   }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
-                                        unsigned long row_i, ScalarType *prod) const {
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
-  }
-
 }
 
 template<class ScalarType>
@@ -674,20 +623,13 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-    auto prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for(auto iVar = 0ul; iVar < nVar; iVar++)
-      prod[prod_begin+iVar] = 0.0;
-    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      auto vec_begin = col_ind[index]*nEqn; // offset to beginning of block col_ind[index]
-      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
-      MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
-    }
+    RowProduct(vec, row_i, &prod[row_i*nVar]);
   }
 
   /*--- MPI Parallelization. ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
 }
 
@@ -726,8 +668,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIXTRANS);
 
 }
 
@@ -752,8 +694,8 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
   /*--- MPI Parallelization ---*/
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
 }
 
@@ -920,8 +862,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
 }
 
@@ -958,8 +900,8 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 
@@ -987,8 +929,8 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
 }
 
@@ -1013,9 +955,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+    if (config->GetSolid_Wall(iMarker) ||
         (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
@@ -1034,9 +974,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
     iLinelet = 0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+      if (config->GetSolid_Wall(iMarker) ||
           (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
       {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1148,8 +1086,8 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
   }
   Local_nLineLets = nLinelet;
 
-  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Memory allocation --*/
 
@@ -1263,8 +1201,8 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   /*--- MPI Parallelization ---*/
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 
 }
 
@@ -1477,8 +1415,8 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   pastix_wrapper.Solve(vec,prod);
   SU2_OMP_BARRIER
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
 #else
   SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
@@ -1486,23 +1424,28 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 }
 
 /*--- Explicit instantiations ---*/
+
+#define INSTANTIATE_COMMS(TYPE)\
+template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short);\
+template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short);
+
+#define INSTANTIATE_MATRIX(TYPE)\
+template class CSysMatrix<TYPE>;\
+template void CSysMatrix<TYPE>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);\
+template void CSysMatrix<TYPE>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);\
+INSTANTIATE_COMMS(TYPE)
+
 #ifdef CODI_FORWARD_TYPE
 /*--- In forward AD only the active type is used. ---*/
-template class CSysMatrix<su2double>;
-template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+INSTANTIATE_MATRIX(su2double)
 #else
-/*--- Base and reverse AD, matrix is passive (either float or double). ---*/
-template class CSysMatrix<su2mixedfloat>;
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-/*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+/*--- Base and reverse AD, matrix is passive. ---*/
+INSTANTIATE_MATRIX(su2mixedfloat)
+/*--- If using mixed precision (float) instantiate also a version for doubles, and allow cross communications. ---*/
+#ifdef USE_MIXED_PRECISION
+INSTANTIATE_MATRIX(passivedouble)
+#endif
+#ifdef CODI_REVERSE_TYPE
+INSTANTIATE_COMMS(su2double)
 #endif
 #endif // CODI_FORWARD_TYPE

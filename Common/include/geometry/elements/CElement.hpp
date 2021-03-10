@@ -3,7 +3,7 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -487,58 +487,65 @@ public:
   }
 
   /*!
-   * \brief Add the scalar product of the shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[in] val - value of the scalar product of ansatz function.
+   * \brief Register the dead load as a pre-accumulation output.
    */
-  inline void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB) { HiHj[nodeA][nodeB] += val; }
-
-  /*!
-   * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[in] val - value of the scalar product of gradients of ansatz function.
-   */
-  inline void Add_DHiDHj(su2double **val, unsigned short nodeA, unsigned short nodeB){
-    unsigned short iDim, jDim;
-    for(iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
-      }
-    }
+  inline void SetPreaccOut_FDL_a(void) {
+    AD::SetPreaccOut(FDL_a.data(), nNodes*nDim);
   }
 
-  /*!
-   * \brief Add the transposed scalar product of the gradients of shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[in] val - value of the term that will contribute.
-   */
-  inline void Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB)  {
-    unsigned short iDim, jDim;
-    for(iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
-      }
-    }
-  }
+ /*!
+  * \brief Add the scalar product of the shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[in] val - value of the scalar product of ansatz function.
+  */
+ inline void Add_HiHj(su2double val, unsigned short nodeA, unsigned short nodeB) { HiHj[nodeA][nodeB] += val; }
 
-  /*!
-   * \brief Get the scalar product of the shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \param[out] val - value of the scalar product of ansatz function.
-   */
-  inline su2double Get_HiHj(unsigned short nodeA, unsigned short nodeB)  { return HiHj[nodeA][nodeB]; }
+ /*!
+  * \brief Add the scalar product of the gradients of shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[in] val - value of the scalar product of gradients of ansatz function.
+  */
+ inline void Add_DHiDHj(su2double **val, unsigned short nodeA, unsigned short nodeB){
+   unsigned short iDim, jDim;
+   for(iDim = 0; iDim < nDim; iDim++) {
+     for (jDim = 0; jDim < nDim; jDim++) {
+       DHiDHj[nodeA][nodeB][iDim][jDim] += val[iDim][jDim];
+     }
+   }
+ }
 
-  /*!
-   * \brief Get the scalar product of the gradients of shape functions to the tangent matrix.
-   * \param[in] nodeA - index of Node a.
-   * \param[in] nodeB - index of Node b.
-   * \return val - value of the scalar product of gradients of ansatz function.
-   */
-  inline su2activematrix& Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}
+ /*!
+  * \brief Add the transposed scalar product of the gradients of shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[in] val - value of the term that will contribute.
+  */
+ inline void Add_DHiDHj_T(su2double **val, unsigned short nodeA, unsigned short nodeB)  {
+   unsigned short iDim, jDim;
+   for(iDim = 0; iDim < nDim; iDim++) {
+     for (jDim = 0; jDim < nDim; jDim++) {
+       DHiDHj[nodeA][nodeB][iDim][jDim] += val[jDim][iDim];
+     }
+   }
+ }
+
+ /*!
+  * \brief Get the scalar product of the shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \param[out] val - value of the scalar product of ansatz function.
+  */
+ inline su2double Get_HiHj(unsigned short nodeA, unsigned short nodeB)  { return HiHj[nodeA][nodeB]; }
+
+ /*!
+  * \brief Get the scalar product of the gradients of shape functions to the tangent matrix.
+  * \param[in] nodeA - index of Node a.
+  * \param[in] nodeB - index of Node b.
+  * \return val - value of the scalar product of gradients of ansatz function.
+  */
+ inline su2activematrix& Get_DHiDHj(unsigned short nodeA, unsigned short nodeB) { return DHiDHj[nodeA][nodeB];}
 
 };
 
@@ -549,6 +556,37 @@ public:
  */
 template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
+private:
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][1], su2double[][1]) {
+    /*--- Adjoint to Jacobian, we put 1.0 here so that ad/detJac is the inverse later ---*/
+    ad[0][0] = 1.0;
+    /*--- Determinant of Jacobian ---*/
+    detJac = Jacobian[0][0];
+  }
+
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][2], su2double ad[][2]) {
+    ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
+    ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
+    /*--- Determinant of Jacobian ---*/
+    return ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
+  }
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][3], su2double ad[][3]) {
+    ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
+    ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
+    ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
+    ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
+    ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
+    ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
+    ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
+    ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
+    ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
+    /*--- Determinant of Jacobian ---*/
+    return Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
+  }
+
 protected:
   static_assert(NDIM==1 || NDIM==2 || NDIM==3, "ComputeGrad_impl expects 1D, 2D or 3D");
 
@@ -570,7 +608,6 @@ protected:
   void ComputeGrad_impl(void) {
 
     su2double Jacobian[NDIM][NDIM], ad[NDIM][NDIM];
-    su2double detJac, GradNi_Xj;
     unsigned short iNode, iDim, jDim, iGauss;
 
     /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
@@ -592,43 +629,13 @@ protected:
             Jacobian[iDim][jDim] += Coord(iNode,jDim) * dNiXj[iGauss][iNode][iDim];
 
       if (NDIM==1) {
-
         /*--- Obviously the Jacobian is the slope of the line ---*/
         Jacobian[0][0] = (Coord[1][0] - Coord[0][0]);
-
-        /*--- Adjoint to Jacobian, we put 1.0 here so that ad/detJac is the inverse later ---*/
-        ad[0][0] = 1.0;
-
-        /*--- Determinant of Jacobian ---*/
-        detJac = Jacobian[0][0];
-
-      } else if (NDIM == 2) {
-        /*--- Adjoint to Jacobian ---*/
-
-        ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
-        ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
-
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
       }
-      else {
-        /*--- Adjoint to Jacobian ---*/
 
-        ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
-        ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
-        ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
-        ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
-        ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
-        ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
-        ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
-        ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
-        ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
+      /*--- Adjoint to the Jacobian and determinant ---*/
 
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
-      }
+      auto detJac = JacobianAdjoint(Jacobian, ad);
 
       if (FRAME==REFERENCE)
         GaussPoint[iGauss].SetJ_X(detJac);
@@ -645,7 +652,7 @@ protected:
 
       for (iNode = 0; iNode < NNODE; iNode++) {
         for (iDim = 0; iDim < NDIM; iDim++) {
-          GradNi_Xj = 0.0;
+          su2double GradNi_Xj = 0.0;
           for (jDim = 0; jDim < NDIM; jDim++)
             GradNi_Xj += Jacobian[iDim][jDim] * dNiXj[iGauss][iNode][jDim];
 
@@ -929,7 +936,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6,6,3> {
 private:

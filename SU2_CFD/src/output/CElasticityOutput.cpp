@@ -2,7 +2,7 @@
  * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -133,7 +134,16 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
 
-  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
+  SetHistoryOutputValue("REFERENCE_NODE", fea_solver->GetTotal_OFRefNode());
+  SetHistoryOutputValue("TOPOL_COMPLIANCE", fea_solver->GetTotal_OFCompliance());
+  SetHistoryOutputValue("STRESS_PENALTY", fea_solver->GetTotal_OFStressPenalty());
+  if (config->GetRefGeom()) {
+    SetHistoryOutputValue("REFERENCE_GEOMETRY", fea_solver->GetTotal_OFRefGeom());
+  }
+  if (config->GetTopology_Optimization()) {
+    SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
+    SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
+  }
 
 }
 
@@ -157,10 +167,19 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT,    "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",ScreenOutputFormat::FIXED,      "", "LOAD_RAMP");
 
-  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("REFERENCE_NODE", "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_COMPLIANCE", "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("STRESS_PENALTY", "StressPen", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  if (config->GetRefGeom()) {
+    AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  }
+  if (config->GetTopology_Optimization()) {
+    AddHistoryOutput("VOLUME_FRACTION", "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  }
 
 }
 
@@ -198,6 +217,9 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   }
   SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
 
+  if (config->GetTopology_Optimization()) {
+    SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
+  }
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -234,7 +256,11 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
 
+  if (config->GetTopology_Optimization()) {
+    AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
+  }
 }
+
 bool CElasticityOutput::SetInit_Residuals(CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));

@@ -2,7 +2,7 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
-#include "../../../../Common/include/omp_structure.hpp"
+#include "../../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
@@ -243,6 +243,11 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
   SetElement_Properties(element, config);
   /*-----------------------------------------------------------*/
 
+  /*--- Register pre-accumulation inputs, density and reference coords. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Rho_s_DL);
+  element->SetPreaccIn_Coords(false);
+
   unsigned short iGauss, nGauss;
   unsigned short iNode, iDim, nNode;
 
@@ -285,6 +290,10 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
     }
 
   }
+
+  /*--- Register the dead load as preaccumulation output. ---*/
+  element->SetPreaccOut_FDL_a();
+  AD::EndPreacc();
 
 }
 

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include "../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"

@@ -2,7 +2,7 @@
  * \file fds.cpp
  * \brief Implementation of Flux-Difference-Splitting schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/fds.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
@@ -101,10 +102,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   /*--- Face area (norm or the normal vector) ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Compute and unitary normal vector ---*/
 

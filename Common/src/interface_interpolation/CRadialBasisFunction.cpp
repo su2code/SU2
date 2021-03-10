@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,8 +45,9 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 #endif
 
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
+                                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -106,6 +107,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
 
   /*--- Process interface patches in parallel, fetch all donor point coordinates,
    *    then distribute interpolation matrix computation over ranks and threads.
@@ -247,25 +250,25 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 #ifdef HAVE_MPI
     /*--- For simplicity, broadcast small information about the interpolation matrix. ---*/
-    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, SU2_MPI::GetComm());
 
     /*--- Send C_inv_trunc only to the ranks that need it (those with target points),
      *    partial broadcast. MPI wrapper not used due to passive double. ---*/
     vector<unsigned long> allNumVertex(nProcessor);
     SU2_MPI::Allgather(&nVertexTarget, 1, MPI_UNSIGNED_LONG,
-      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     if (rank == iProcessor) {
       for (int jProcessor = 0; jProcessor < nProcessor; ++jProcessor)
         if ((jProcessor != iProcessor) && (allNumVertex[jProcessor] != 0))
           MPI_Send(C_inv_trunc.data(), C_inv_trunc.size(),
-                   MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD);
+                   MPI_DOUBLE, jProcessor, 0, SU2_MPI::GetComm());
     }
     else if (nVertexTarget != 0) {
       C_inv_trunc.resize(1+nPolynomial+nGlobalVertexDonor, nGlobalVertexDonor);
       MPI_Recv(C_inv_trunc.data(), C_inv_trunc.size(), MPI_DOUBLE,
-               iProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+               iProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
     }
 #endif
 
@@ -274,22 +277,15 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
      *    of the entire function matrix (A) and of the result (H), but work
      *    on a slab (set of rows) of A/H to amortize accesses to C_inv_trunc. ---*/
 
-    /*--- Fetch domain target vertices. ---*/
+    /*--- Fetch target vertex coordinates. ---*/
 
-    vector<CVertex*> targetVertices; targetVertices.reserve(nVertexTarget);
-    vector<const su2double*> targetCoord; targetCoord.reserve(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
+    vector<const su2double*> targetCoord(nVertexTarget);
 
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; ++iVertexTarget) {
-
-      auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
-      auto pointTarget = targetVertex->GetNode();
-
-      if (target_geometry->nodes->GetDomain(pointTarget)) {
-        targetVertices.push_back(targetVertex);
-        targetCoord.push_back(target_geometry->nodes->GetCoord(pointTarget));
-      }
+      const auto pointTarget = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      targetCoord[iVertexTarget] = target_geometry->nodes->GetCoord(pointTarget);
     }
-    nVertexTarget = targetVertices.size();
     totalTargetPoints += nVertexTarget;
     denseSize += nVertexTarget*nGlobalVertexDonor;
 
@@ -359,7 +355,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       /*--- Set interpolation coefficients. ---*/
 
       for (auto k = 0ul; k < slabSize; ++k) {
-        auto targetVertex = targetVertices[iVertexTarget+k];
+        auto& targetVertex = targetVertices[markTarget][iVertexTarget+k];
 
         /*--- Prune small coefficients. ---*/
         auto info = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
@@ -372,14 +368,14 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         maxCorr = max(maxCorr, corr);
 
         /*--- Allocate and set donor information for this target point. ---*/
-        targetVertex->Allocate_DonorInfo(nnz);
+        targetVertex.resize(nnz);
 
         for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
           auto coeff = interpMat(k,iVertex);
           if (fabs(coeff) > 0.0) {
-            targetVertex->SetInterpDonorProcessor(iSet, donorProc[iVertex]);
-            targetVertex->SetInterpDonorPoint(iSet, donorPoint[iVertex]);
-            targetVertex->SetDonorCoeff(iSet, coeff);
+            targetVertex.processor[iSet] = donorProc[iVertex];
+            targetVertex.globalPoint[iSet] = donorPoint[iVertex];
+            targetVertex.coefficient[iSet] = coeff;
             ++iSet;
           }
         }
@@ -407,7 +403,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   /*--- Final reduction of interpolation statistics and basic sanity checks. ---*/
   auto Reduce = [](SU2_MPI::Op op, unsigned long &val) {
     auto tmp = val;
-    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, SU2_MPI::GetComm());
   };
   Reduce(MPI_SUM, totalTargetPoints);
   Reduce(MPI_SUM, totalDonorPoints);
@@ -416,8 +412,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   Reduce(MPI_MAX, MaxDonors);
 #ifdef HAVE_MPI
   passivedouble tmp1 = AvgCorrection, tmp2 = MaxCorrection;
-  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
   if (totalTargetPoints == 0)
     SU2_MPI::Error("Somehow there are no target interpolation points.", CURRENT_FUNCTION);

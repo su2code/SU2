@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,6 +77,9 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+      fluid_zone = true;
+      break;
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:
@@ -163,8 +166,9 @@ void CMultizoneDriver::StartSolver() {
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  }
 
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
@@ -257,12 +261,9 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
-
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -569,6 +570,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
+          *interpolator_container[donorZone][targetZone].get(),
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
           solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
           geometry_container[donorZone][INST_0][MESH_0],
@@ -628,6 +630,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   if(donorSolver >= 0 && targetSolver >= 0) {
     interface_container[donorZone][targetZone]->BroadcastData(
+      *interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][donorSolver],
       solver_container[targetZone][INST_0][MESH_0][targetSolver],
       geometry_container[donorZone][INST_0][MESH_0],

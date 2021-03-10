@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,7 @@ private:
    * \brief Run the external solver for the task it is currently setup to execute.
    */
   void Run() {
-    dpastix(&state, MPI_COMM_WORLD, nCols, colptr.data(), rowidx.data(), values.data(),
+    dpastix(&state, SU2_MPI::GetComm(), nCols, colptr.data(), rowidx.data(), values.data(),
             loc2glb.data(), perm.data(), NULL, workvec.data(), 1, iparm, dparm);
   }
 

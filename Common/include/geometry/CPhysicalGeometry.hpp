@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,8 @@
 
 #include "CGeometry.hpp"
 #include "meshreader/CMeshReaderFVM.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
+
 
 /*!
  * \class CPhysicalGeometry
@@ -41,8 +42,6 @@ class CPhysicalGeometry final : public CGeometry {
   unordered_map<unsigned long, unsigned long>
   Global_to_Local_Point;                           /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point{nullptr};            /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker{nullptr}; /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker{nullptr}; /*!< \brief Global to Local marker. */
   unsigned long *adj_counter{nullptr};             /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem{nullptr};          /*!< \brief Adjacency element list. */
   su2activematrix Sensitivity;                     /*!< \brief Matrix holding the sensitivities at each point. */
@@ -105,10 +104,14 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
 
+  vector<int> GlobalMarkerStorageDispl;
+  vector<su2double> GlobalRoughness_Height;
+
+  su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
+
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;
@@ -160,14 +163,14 @@ public:
    * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
    * \param[in] config - Definition of the particular problem.
    */
-  void DistributeColoring(CConfig *config, CGeometry *geometry);
+  void DistributeColoring(const CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void DistributePoints(CConfig *config, CGeometry *geometry);
+  void DistributePoints(const CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
@@ -175,7 +178,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being distributed.
    */
-  void DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void DistributeVolumeConnectivity(const CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
    * \brief Distribute the connectivity for a single surface element type in all markers across all ranks based on a ParMETIS coloring.
@@ -269,21 +272,17 @@ public:
    * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
-  void SortAdjacency(CConfig *config);
+  void SortAdjacency(const CConfig *config);
 
   /*!
    * \brief Set the send receive boundaries of the grid.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_domain - Number of domains for parallelization purposes.
    */
-  void SetSendReceive(CConfig *config) override;
+  void SetSendReceive(const CConfig *config) override;
 
   /*!
    * \brief Set the send receive boundaries of the grid.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_domain - Number of domains for parallelization purposes.
    */
   void SetBoundaries(CConfig *config) override;
 
@@ -302,15 +301,6 @@ public:
     if (it != Global_to_Local_Point.cend())
       return it->second;
     return -1;
-  }
-
-  /*!
-   * \brief Get the local marker that correspond with the global marker.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const override {
-    return Global_to_Local_Marker[val_imarker];
   }
 
   /*!
@@ -369,7 +359,7 @@ public:
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
-  void PrepareAdjacency(CConfig *config);
+  void PrepareAdjacency(const CConfig *config);
 
   /*!
    * \brief Find repeated nodes between two elements to identify the common face.
@@ -446,11 +436,6 @@ public:
   void GatherInOutAverageValues(CConfig *config, bool allocate) override;
 
   /*!
-   * \brief Set the center of gravity of the face, elements and edges.
-   */
-  void SetCoord_CG(void) override;
-
-  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
@@ -460,9 +445,8 @@ public:
   /*!
    * \brief Visualize the structure of the control volume(s).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  void VisualizeControlVolume(CConfig *config, unsigned short action) override;
+  void VisualizeControlVolume(const CConfig *config) const override;
 
   /*!
    * \brief Mach the near field boundary condition.
@@ -488,7 +472,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(CConfig *config, unsigned short action) override;
+  void SetBoundControlVolume(const CConfig *config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
@@ -529,7 +513,7 @@ public:
    * \brief Set the domains for grid grid partitioning using ParMETIS.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetColorGrid_Parallel(CConfig *config) override;
+  void SetColorGrid_Parallel(const CConfig *config) override;
 
   /*!
    * \brief Set the domains for FEM grid partitioning using ParMETIS.
@@ -596,17 +580,10 @@ public:
   void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) override;
 
   /*!
-   * \brief Write the .su2 file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  void SetMeshFile(CConfig *config, string val_mesh_out_filename) override;
-
-  /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMeshQualityStatistics(CConfig *config) override;
+  void ComputeMeshQualityStatistics(const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.
@@ -804,4 +781,20 @@ public:
     }
   }
 
+  /*!
+   * \brief Set roughness values for markers in a global array.
+   */
+  void SetGlobalMarkerRoughness(const CConfig* config);
+
+  /*!
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindUniqueNode_PeriodicBound(const CConfig *config) final;
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline const su2double* GetStreamwise_Periodic_RefNode(void) const final { return Streamwise_Periodic_RefNode;}
 };

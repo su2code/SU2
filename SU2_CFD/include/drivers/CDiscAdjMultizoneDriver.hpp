@@ -1,8 +1,8 @@
 /*!
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
- * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,10 +27,41 @@
 
 #pragma once
 #include "CMultizoneDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+  class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+  public:
+    CDiscAdjMultizoneDriver* const driver;
+    const unsigned short iZone = 0;
+    mutable unsigned long iInnerIter = 0;
+
+    AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+      driver->SetAllSolutions(iZone, true, u);
+      driver->Iterate(iZone, iInnerIter, true);
+      driver->GetAllSolutions(iZone, true, v);
+      v -= u;
+      ++iInnerIter;
+    }
+  };
+
+  class Identity : public CPreconditioner<Scalar> {
+  public:
+    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+  };
 
   /*!
    * \brief Kinds of recordings (three different ones).
@@ -40,8 +71,6 @@ protected:
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */
-    ZONE_SPECIFIC_TAPE        /*!< \brief Record only the dependence of the solution update in a
-                                          specified zone w.r.t. solver variables (from all zones). */
   };
 
   /*!
@@ -58,9 +87,9 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  int RecordingState;             /*!< \brief The kind of recording that the tape currently holds. */
-  bool retape;                    /*!< \brief Boolean whether a full tape can be kept in memory. */
+  int RecordingState = NONE;      /*!< \brief The kind of recording that the tape currently holds. */
 
+  bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
   int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
 
@@ -77,6 +106,15 @@ protected:
               for jZone, we need to store all terms to have BGS-type updates with relaxation. */
   vector<vector<vector<su2passivematrix> > > Cross_Terms;
 
+  /*!< \brief Fixed-Point corrector that can be applied to inner iterations. */
+  vector<CQuasiNewtonInvLeastSquares<passivedouble> > FixPtCorrector;
+
+  /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton). */
+  static constexpr unsigned long KrylovMinIters = 3;
+  const Scalar KrylovTol = 0.01;
+  vector<CSysSolve<Scalar> > LinSolver;
+  vector<CSysVector<Scalar> > AdjRHS, AdjSol;
+
 public:
 
   /*!
@@ -85,9 +123,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDiscAdjMultizoneDriver(char* confFile,
-             unsigned short val_nZone,
-             SU2_Comm MPICommunicator);
+  CDiscAdjMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
@@ -105,6 +141,12 @@ protected:
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
+
+  /*!
+   * \brief Run one inner iteration for a given zone.
+   * \return The result of "monitor".
+   */
+  bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
 
   /*!
    * \brief Evaluate sensitivites for the current adjoint solution and output files.
@@ -203,6 +245,25 @@ protected:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */
-  inline bool GetTimeConvergence() const override {return false;};
+  inline bool GetTimeConvergence() const override {return false;}
+
+  /*!
+   * \brief Get the external of all adjoint solvers in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[out] rhs - Object with interface (iPoint,iVar), set to -external.
+   */
+  template<class Container>
+  void GetAdjointRHS(unsigned short iZone, Container& rhs) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && solver->GetAdjoint())) continue;
+      const auto& ext = solver->GetNodes()->Get_External();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          rhs(iPoint,offset+iVar) = -SU2_TYPE::GetValue(ext(iPoint,iVar));
+      offset += solver->GetnVar();
+    }
+  }
 
 };

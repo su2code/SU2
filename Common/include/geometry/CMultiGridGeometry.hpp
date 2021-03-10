@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,6 @@ class CMultiGridGeometry final : public CGeometry {
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;

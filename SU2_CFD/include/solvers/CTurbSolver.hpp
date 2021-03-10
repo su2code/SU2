@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CTurbVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
  * \class CTurbSolver
@@ -52,13 +52,13 @@ protected:
   lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
   upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
   Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
-  ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
+  Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
+  vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
   /*--- Sliding meshes variables. ---*/
 
-  su2double ****SlidingState = nullptr;
-  int **SlidingStateNodes = nullptr;
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -99,12 +99,20 @@ private:
                         CSolver **solver_container,
                         CNumerics *numerics,
                         CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config);
 
 public:
 
@@ -242,6 +250,22 @@ public:
                           CConfig *config) final;
 
   /*!
+   * \brief Prepare an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -250,6 +274,7 @@ public:
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
                                CConfig *config) override;
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -265,13 +290,6 @@ public:
                             unsigned short iRKStep,
                             unsigned short iMesh,
                             unsigned short RunTime_EqSystem) final;
-
-  /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -370,8 +388,6 @@ public:
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
       SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (Inlet_TurbVars == nullptr || Inlet_TurbVars[val_marker] == nullptr)
-      SU2_MPI::Error("Tried to set custom inlet BC on an invalid marker.", CURRENT_FUNCTION);
     else if (val_vertex >= nVertex[val_marker])
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else if (val_dim >= nVar)

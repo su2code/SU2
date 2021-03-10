@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -139,7 +139,6 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
     SetOutput(val_software, iZone);
 
 }
-
 
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
 
@@ -303,6 +302,7 @@ void CConfig::addDoubleOption(const string name, su2double & option_field, su2do
 }
 
 void CConfig::addStringOption(const string name, string & option_field, string default_value) {
+
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionString(name, option_field, default_value);
@@ -355,7 +355,6 @@ void CConfig::addEnumOption(const string name, unsigned short & option_field, co
   return;
 }
 
-
 // input_size is the number of options read in from the config file
 template <class Tenum>
 void CConfig::addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
@@ -366,10 +365,17 @@ void CConfig::addEnumListOption(const string name, unsigned short & input_size, 
   option_map.insert( pair<string, COptionBase*>(name, val) );
 }
 
-void CConfig::addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
+void CConfig::addDoubleArrayOption(const string name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
+  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addUShortArrayOption(const string name, const int size, unsigned short* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -790,6 +796,7 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
   Marker_CfgFile_ZoneInterface = nullptr;
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
+  Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
   Marker_CfgFile_Fluid_Load    = nullptr;  Marker_All_Fluid_Load    = nullptr;
   Marker_CfgFile_SobolevBC     = nullptr;  Marker_All_SobolevBC     = nullptr;
 
@@ -807,6 +814,7 @@ void CConfig::SetPointersNull(void) {
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
   DoubleInfo_WallFunctions = nullptr;
+  Kind_Wall                = nullptr;
 
   Config_Filenames = nullptr;
 
@@ -815,11 +823,11 @@ void CConfig::SetPointersNull(void) {
   Marker_Euler                = nullptr;    Marker_FarField         = nullptr;    Marker_Custom         = nullptr;
   Marker_SymWall              = nullptr;    Marker_PerBound         = nullptr;
   Marker_PerDonor             = nullptr;    Marker_NearFieldBound   = nullptr;
-  Marker_Deform_Mesh          = nullptr;    Marker_Fluid_Load       = nullptr;
+  Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr; Marker_Fluid_Load    = nullptr;
   Marker_Inlet                = nullptr;    Marker_Outlet           = nullptr;
-  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;
+  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;    Marker_Smoluchowski_Maxwell   = nullptr;
   Marker_Isothermal           = nullptr;    Marker_HeatFlux         = nullptr;    Marker_EngineInflow   = nullptr;
-  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;
+  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;    Marker_RoughWall      = nullptr;
   Marker_EngineExhaust        = nullptr;    Marker_Displacement     = nullptr;    Marker_Load           = nullptr;
   Marker_Load_Dir             = nullptr;    Marker_Load_Sine        = nullptr;    Marker_Clamped        = nullptr;
   Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;
@@ -832,14 +840,15 @@ void CConfig::SetPointersNull(void) {
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = nullptr;
-  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value      = nullptr;
-  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity = nullptr;
+  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
+  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
+  Roughness_Height       = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
   Inlet_Ttotal    = nullptr;    Inlet_Ptotal      = nullptr;
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
-  Inlet_Velocity  = nullptr;
+  Inlet_Velocity  = nullptr;    Inlet_MassFrac    = nullptr;
   Outlet_Pressure = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
@@ -864,8 +873,6 @@ void CConfig::SetPointersNull(void) {
   Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
   Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
   Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
-  Heat_Flux                 = nullptr;     Displ_Value                 = nullptr;     Load_Value            = nullptr;
-  FlowLoad_Value            = nullptr;
 
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
@@ -908,26 +915,14 @@ void CConfig::SetPointersNull(void) {
 
   Aeroelastic_plunge  = nullptr;
   Aeroelastic_pitch   = nullptr;
-  MassFrac_FreeStream = nullptr;
-  Velocity_FreeStream = nullptr;
-  Inc_Velocity_Init   = nullptr;
 
-  RefOriginMoment     = nullptr;
   CFL_AdaptParam      = nullptr;
   CFL                 = nullptr;
-  HTP_Axis = nullptr;
   PlaneTag            = nullptr;
-  Kappa_Flow          = nullptr;
-  Kappa_AdjFlow       = nullptr;
-  Kappa_Heat          = nullptr;
-  Stations_Bounds     = nullptr;
   ParamDV             = nullptr;
   DV_Value            = nullptr;
   Design_Variable     = nullptr;
 
-  Hold_GridFixed_Coord      = nullptr;
-  SubsonicEngine_Cyl        = nullptr;
-  EA_IntLimit               = nullptr;
   TimeDOFsADER_DG           = nullptr;
   TimeIntegrationADER_DG    = nullptr;
   WeightsIntegrationADER_DG = nullptr;
@@ -954,14 +949,6 @@ void CConfig::SetPointersNull(void) {
   nKind_SurfaceMovement = 0;
   Kind_SurfaceMovement = nullptr;
   LocationStations   = nullptr;
-  Motion_Origin     = nullptr;
-  Translation_Rate  = nullptr;
-  Rotation_Rate     = nullptr;
-  Pitching_Omega    = nullptr;
-  Pitching_Ampl     = nullptr;
-  Pitching_Phase    = nullptr;
-  Plunging_Omega    = nullptr;
-  Plunging_Ampl     = nullptr;
   MarkerMotion_Origin     = nullptr;
   MarkerTranslation_Rate  = nullptr;
   MarkerRotation_Rate     = nullptr;
@@ -1001,12 +988,7 @@ void CConfig::SetPointersNull(void) {
   RelaxFactorAverage       = nullptr;
   RelaxFactorFourier       = nullptr;
   nSpan_iZones             = nullptr;
-  ExtraRelFacGiles         = nullptr;
-  Mixedout_Coeff           = nullptr;
-  RampRotatingFrame_Coeff  = nullptr;
-  RampOutletPressure_Coeff = nullptr;
   Kind_TurboMachinery      = nullptr;
-  SineLoad_Coeff           = nullptr;
 
   Marker_MixingPlaneInterface  = nullptr;
   Marker_TurboBoundIn          = nullptr;
@@ -1016,8 +998,6 @@ void CConfig::SetPointersNull(void) {
 
   nBlades                      = nullptr;
   FreeStreamTurboNormal        = nullptr;
-
-  ConvHistFile                 = nullptr;
 
   top_optim_kernels       = nullptr;
   top_optim_kernel_params = nullptr;
@@ -1059,6 +1039,8 @@ void CConfig::SetPointersNull(void) {
 
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
+  Gas_Composition = nullptr;
+
 }
 
 void CConfig::SetRunTime_Options(void) {
@@ -1092,10 +1074,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
+#ifdef CODI_REVERSE_TYPE
+  const bool discAdjDefault = true;
+#else
+  const bool discAdjDefault = false;
+#endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
-  /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
-  addBoolOption("FULL_TAPE", FullTape, YES);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -1122,14 +1107,24 @@ void CConfig::SetConfig_Options() {
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
-  default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
+  body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
-  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
+
+  /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
+  addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
+  /* DESCRIPTION: Use real periodicity for temperature \n Options: NO, YES \n DEFAULT: NO \ingroup Config */
+  addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
+  /* DESCRIPTION: Heatflux boundary at streamwise periodic 'outlet', choose heat [W] such that net domain heatflux is zero. Only active if STREAMWISE_PERIODIC_TEMPERATURE is active. \n DEFAULT: 0.0 \ingroup Config */
+  addDoubleOption("STREAMWISE_PERIODIC_OUTLET_HEAT", Streamwise_Periodic_OutletHeat, 0.0);
+  /* DESCRIPTION: Delta pressure [Pa] on which basis body force will be computed, serves as initial value if MASSFLOW is chosen. \n DEFAULT: 1.0 \ingroup Config */
+  addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
+  /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
+  addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
+  
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
-  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
-  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
@@ -1154,6 +1149,25 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+
+  ///* DESCRIPTION: Specify if Mutation++ library is used */
+  /*--- Reading gas model as string or integer depending on TC library used. ---*/
+  /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
+  addStringOption("GAS_MODEL", GasModel, string("N2"));
+  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
+  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
+  /* DESCRIPTION: Specify mass fraction of each species */
+  addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
+  /* DESCRIPTION: Specify if mixture is frozen */
+  addBoolOption("FROZEN_MIXTURE", frozen, false);
+  /* DESCRIPTION: Specify if there is ionization */
+  addBoolOption("IONIZATION", ionization, false);
+  /* DESCRIPTION: Specify if there is VT transfer residual limiting */
+  addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
+  /* DESCRIPTION: List of catalytic walls */
+  addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
+  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
+
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
@@ -1201,11 +1215,11 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("CP_POLYCOEFFS", N_POLY_COEFFS, CpPolyCoefficients, default_cp_polycoeffs.data());
+  addDoubleArrayOption("CP_POLYCOEFFS", N_POLY_COEFFS, cp_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("MU_POLYCOEFFS", N_POLY_COEFFS, MuPolyCoefficients, default_mu_polycoeffs.data());
+  addDoubleArrayOption("MU_POLYCOEFFS", N_POLY_COEFFS, mu_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, KtPolyCoefficients, default_kt_polycoeffs.data());
+  addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, kt_polycoeffs.data());
 
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -1231,6 +1245,9 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
+
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -1247,8 +1264,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_DENSITY_INIT \n DESCRIPTION: Initial density for incompressible flows (1.2886 kg/m^3 by default) \ingroup Config*/
   addDoubleOption("INC_DENSITY_INIT", Inc_Density_Init, 1.2886);
   /*!\brief INC_VELOCITY_INIT \n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \ingroup Config*/
-  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
-  addDoubleArrayOption("INC_VELOCITY_INIT", 3, Inc_Velocity_Init, default_vel_inf);
+  vel_init[0] = 1.0; vel_init[1] = 0.0; vel_init[2] = 0.0;
+  addDoubleArrayOption("INC_VELOCITY_INIT", 3, vel_init);
   /*!\brief INC_TEMPERATURE_INIT \n DESCRIPTION: Initial temperature for incompressible flows with the energy equation (288.15 K by default) \ingroup Config*/
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
@@ -1260,11 +1277,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
 
-  /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
-  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
+  vel_inf[0] = 1.0; vel_inf[1] = 0.0; vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION: Thermal conductivity used for heat equation */
@@ -1349,8 +1364,8 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to various boundary markers ---*/
 
   /*!\brief HTP_AXIS\n DESCRIPTION: Location of the HTP axis*/
-  default_htp_axis[0] = 0.0; default_htp_axis[1] = 0.0;
-  addDoubleArrayOption("HTP_AXIS", 2, HTP_Axis, default_htp_axis);
+  htp_axis[0] = 0.0; htp_axis[1] = 0.0;
+  addDoubleArrayOption("HTP_AXIS", 2, htp_axis);
   /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -1373,6 +1388,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_DEFORM_MESH\n DESCRIPTION: Deformable marker(s) at the interface \ingroup Config*/
   addStringListOption("MARKER_DEFORM_MESH", nMarker_Deform_Mesh, Marker_Deform_Mesh);
+  /*!\brief MARKER_DEFORM_MESH_SYM_PLANE\n DESCRIPTION: Symmetry plane for mesh deformation only \ingroup Config*/
+  addStringListOption("MARKER_DEFORM_MESH_SYM_PLANE", nMarker_Deform_Mesh_Sym_Plane, Marker_Deform_Mesh_Sym_Plane);
   /*!\brief MARKER_FLUID_LOAD\n DESCRIPTION: Marker(s) in which the flow load is computed/applied \ingroup Config*/
   addStringListOption("MARKER_FLUID_LOAD", nMarker_Fluid_Load, Marker_Fluid_Load);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: ZONE interface boundary marker(s) \ingroup Config*/
@@ -1383,7 +1400,7 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
+  /* DESCRIPTION: Periodic boundary marker(s)
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
@@ -1401,13 +1418,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
 
-  /*!\brief MARKER_ACTDISK\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
-   Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
-   rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
-   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
+  /*!\brief MARKER_ACTDISK\n DESCRIPTION: \ingroup Config*/
   addActDiskOption("MARKER_ACTDISK",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+
+  /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
+  addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
@@ -1440,8 +1457,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SPATIAL_FOURIER", SpatialFourier, false);
   /*!\brief GILES_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
    * the 2nd coefficient is the the percentage of span-wise height influenced by this extra under relaxation factor.*/
-  default_extrarelfac[0] = 0.1; default_extrarelfac[1] = 0.1;
-  addDoubleArrayOption("GILES_EXTRA_RELAXFACTOR", 2, ExtraRelFacGiles, default_extrarelfac);
+  extrarelfac[0] = 0.1; extrarelfac[1] = 0.1;
+  addDoubleArrayOption("GILES_EXTRA_RELAXFACTOR", 2, extrarelfac);
   /*!\brief AVERAGE_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXINGPLANE_INTERFACE_KIND", Kind_MixingPlaneInterface, MixingPlaneInterface_Map, NEAREST_SPAN);
@@ -1451,25 +1468,25 @@ void CConfig::SetConfig_Options() {
   /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
       \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
-  default_mixedout_coeff[0] = 1.0; default_mixedout_coeff[1] = 1.0E-05; default_mixedout_coeff[2] = 15.0;
+  mixedout_coeff[0] = 1.0; mixedout_coeff[1] = 1.0E-05; mixedout_coeff[2] = 15.0;
   /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is an under relaxation factor for the Newton method,
    * the 2nd coefficient is the tolerance for the Newton method, 3rd coefficient is the maximum number of
    * iteration for the Newton Method.*/
-  addDoubleArrayOption("MIXEDOUT_COEFF", 3, Mixedout_Coeff, default_mixedout_coeff);
+  addDoubleArrayOption("MIXEDOUT_COEFF", 3, mixedout_coeff);
   /*!\brief RAMP_ROTATING_FRAME\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_ROTATING_FRAME", RampRotatingFrame, false);
-  default_rampRotFrame_coeff[0] = 0; default_rampRotFrame_coeff[1] = 1.0; default_rampRotFrame_coeff[2] = 1000.0;
+  rampRotFrame_coeff[0] = 0; rampRotFrame_coeff[1] = 1.0; rampRotFrame_coeff[2] = 1000.0;
       /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
-  addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_rampRotFrame_coeff);
+  addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, rampRotFrame_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_OUTLET_PRESSURE", RampOutletPressure, false);
-  default_rampOutPres_coeff[0] = 100000.0; default_rampOutPres_coeff[1] = 1.0; default_rampOutPres_coeff[2] = 1000.0;
+  rampOutPres_coeff[0] = 100000.0; rampOutPres_coeff[1] = 1.0; rampOutPres_coeff[2] = 1000.0;
   /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
-  addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, RampOutletPressure_Coeff, default_rampOutPres_coeff);
+  addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, rampOutPres_coeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
@@ -1503,6 +1520,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief Smluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
+   Format: ( Heat flux marker,  wall temperature (static), momentum accomodation coefficient, thermal accomodation coefficient ... ) \ingroup Config*/
+  addStringDoubleListOption("MARKER_SMOLUCHOWSKI_MAXWELL", nMarker_Smoluchowski_Maxwell, Marker_Smoluchowski_Maxwell, Isothermal_Temperature); //Missing TMAC and TAC
+  /*!\brief WALL_ROUGHNESS  \n DESCRIPTION: Specified roughness heights at wall boundary marker(s)
+   Format: ( Wall marker, roughness_height (static), ... ) \ingroup Config*/
+  addStringDoubleListOption("WALL_ROUGHNESS", nRough_Wall, Marker_RoughWall, Roughness_Height);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
@@ -1521,16 +1544,15 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
-  default_distortion[0] =  5.0; default_distortion[1] =  15.0;
-  addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
+  distortion[0] =  5.0; distortion[1] =  15.0;
+  addDoubleArrayOption("DISTORTION_RACK", 2, distortion);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
-  default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
-  default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
-  addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
+  eng_val[0]=0.0; eng_val[1]=0.0; eng_val[2]=0.0; eng_val[3]=0.0;  eng_val[4]=0.0;
+  addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, eng_val);
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle cylinder (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax, Radius) */
-  default_eng_cyl[0] = 0.0; default_eng_cyl[1] = 0.0; default_eng_cyl[2] = 0.0;
-  default_eng_cyl[3] =  1E15; default_eng_cyl[4] =  1E15; default_eng_cyl[5] =  1E15; default_eng_cyl[6] =  1E15;
-  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, SubsonicEngine_Cyl, default_eng_cyl);
+  eng_cyl[0] = 0.0; eng_cyl[1] = 0.0; eng_cyl[2] = 0.0;
+  eng_cyl[3] = 1E15; eng_cyl[4] = 1E15; eng_cyl[5] = 1E15; eng_cyl[6] = 1E15;
+  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, eng_cyl);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -1553,9 +1575,9 @@ void CConfig::SetConfig_Options() {
   addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
   /*!\brief SINE_LOAD\n DESCRIPTION: option to apply the load as a sine*/
   addBoolOption("SINE_LOAD", Sine_Load, false);
-  default_sineload_coeff[0] = 0.0; default_sineload_coeff[1] = 0.0; default_sineload_coeff[2] = 0.0;
+  sineload_coeff[0] = 0.0; sineload_coeff[1] = 0.0; sineload_coeff[2] = 0.0;
   /*!\brief SINE_LOAD_COEFF \n DESCRIPTION: the 1st coeff is the amplitude, the 2nd is the frequency, 3rd is the phase in radians */
-  addDoubleArrayOption("SINE_LOAD_COEFF", 3, SineLoad_Coeff, default_sineload_coeff);
+  addDoubleArrayOption("SINE_LOAD_COEFF", 3, sineload_coeff);
   /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
@@ -1570,15 +1592,22 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
 
-  /* DESCRIPTION:  Compute buffet sensor */
-  addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
   /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
+  /* DESCRIPTION: Use a Newton-Krylov method. */
+  addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
+  /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
+
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
+  /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
+  addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -1592,11 +1621,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
-   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
+   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max), acceptable linear residual )
    * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0
    * and to decrease when the under-relaxation parameter is less than 0.1. Factor is multiplicative. \ingroup Config*/
   default_cfl_adapt[0] = 1.0; default_cfl_adapt[1] = 1.0; default_cfl_adapt[2] = 10.0; default_cfl_adapt[3] = 100.0;
-  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
+  default_cfl_adapt[4] = 0.001;
+  addDoubleListOption("CFL_ADAPT_PARAM", nCFL_AdaptParam, CFL_AdaptParam);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -1780,18 +1810,20 @@ void CConfig::SetConfig_Options() {
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  jst_coeff[0] = 0.5; jst_coeff[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
+  addDoubleArrayOption("JST_SENSOR_COEFF", 2, jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
+  ad_coeff_heat[0] = 0.5; ad_coeff_heat[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
+  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, ad_coeff_heat);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
+  /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \ingroup Config*/
+  addDoubleOption("CENTRAL_INC_JACOBIAN_FIX_FACTOR", Cent_Inc_Jac_Fix_Factor, 1.0);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -1802,9 +1834,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_jst_adj_coeff[0] = 0.5; default_jst_adj_coeff[1] = 0.02;
+  jst_adj_coeff[0] = 0.5; jst_adj_coeff[1] = 0.02;
   /*!\brief ADJ_JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the adjoint JST method. \ingroup Config*/
-  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, Kappa_AdjFlow, default_jst_adj_coeff);
+  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, jst_adj_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the adjoint Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("ADJ_LAX_SENSOR_COEFF", Kappa_1st_AdjFlow, 0.15);
 
@@ -1857,17 +1889,16 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: parameter for the definition of a complex objective function */
   addDoubleOption("DCD_DCMY_VALUE", dCD_dCMy, 0.0);
 
-  default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
-  default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
+  obj_coeff[0]=0.0; obj_coeff[1]=0.0; obj_coeff[2]=0.0; obj_coeff[3]=0.0; obj_coeff[4]=0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
   * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, Obj_ChainRuleCoeff, default_obj_coeff);
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF", 5, obj_coeff);
 
-  default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
+  geo_loc[0] = 0.0; geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_BOUNDS", 2, Stations_Bounds, default_geo_loc);
+  addDoubleArrayOption("GEO_BOUNDS", 2, geo_loc);
   /* DESCRIPTION: Identify the body to slice */
   addEnumOption("GEO_DESCRIPTION", Geo_Description, Geo_Description_Map, WING);
   /* DESCRIPTION: Z location of the waterline */
@@ -1876,10 +1907,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("GEO_NUMBER_STATIONS", nWingStations, 25);
   /* DESCRIPTION: Definition of the airfoil sections */
   addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
-  default_nacelle_location[0] = 0.0; default_nacelle_location[1] = 0.0; default_nacelle_location[2] = 0.0;
-  default_nacelle_location[3] = 0.0; default_nacelle_location[4] = 0.0;
+  nacelle_location[0] = 0.0; nacelle_location[1] = 0.0; nacelle_location[2] = 0.0;
+  nacelle_location[3] = 0.0; nacelle_location[4] = 0.0;
   /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, NacelleLocation, default_nacelle_location);
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -1931,6 +1962,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
+  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
+  addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
@@ -1944,12 +1977,12 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
 
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
-  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
+  mesh_box_length[0] = 1.0; mesh_box_length[1] = 1.0; mesh_box_length[2] = 1.0;
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, mesh_box_length);
 
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
-  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
+  mesh_box_offset[0] = 0.0; mesh_box_offset[1] = 0.0; mesh_box_offset[2] = 0.0;
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, mesh_box_offset);
 
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
@@ -1976,6 +2009,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief GRAD_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function gradient  \ingroup Config*/
   addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
   /*!\brief VALUE_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function  \ingroup Config*/
   addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
@@ -1990,59 +2026,10 @@ void CConfig::SetConfig_Options() {
   addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
-  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
-  /*!\brief HESS_OBJFUNC_FILENAME
-   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
-  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
-  /*!\brief WRT_SOL_FREQ
-   *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
-  /*!\brief WRT_SOL_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing solution file frequency for dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
-  /*!\brief WRT_CON_FREQ
-   *  \n DESCRIPTION: Writing convergence history frequency  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_CON_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-  /*!\brief WRT_OUTPUT
-   *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
-  addBoolOption("WRT_OUTPUT", Wrt_Output, true);
-  /*!\brief WRT_VOL_SOL
-   *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
-  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
-  /*!\brief WRT_SRF_SOL
-   *  \n DESCRIPTION: Write a surface solution file  \ingroup Config*/
-  addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
-  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a binary coordinates file  \ingroup Config*/
-  addBoolOption("WRT_CRD_SOL", Wrt_Crd_Sol, false);
-  /*!\brief WRT_SURFACE
-   *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
-  addBoolOption("WRT_SURFACE", Wrt_Surface, false);
-  /*!\brief WRT_RESIDUALS
-   *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
-  /*!\brief WRT_LIMITERS
-   *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
-  /*!\brief WRT_SHARPEDGES
-   *  \n DESCRIPTION: Output sharp edge limiter information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
-  /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
-  addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
-  /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
-  addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
-    /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
-  addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -2065,23 +2052,22 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_SOBOLEVBC", nMarker_SobolevBC, Marker_SobolevBC);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
-  default_vel_inf[0] = 0.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleArrayOption("MOTION_ORIGIN", 3, Motion_Origin, default_vel_inf);
+  addDoubleArrayOption("MOTION_ORIGIN", 3, Motion_Origin);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate, default_vel_inf);
+  addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate, default_vel_inf);
+  addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega, default_vel_inf);
+  addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_AMPL", 3, Pitching_Ampl, default_vel_inf);
+  addDoubleArrayOption("PITCHING_AMPL", 3, Pitching_Ampl);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_PHASE", 3, Pitching_Phase, default_vel_inf);
+  addDoubleArrayOption("PITCHING_PHASE", 3, Pitching_Phase);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("PLUNGING_OMEGA", 3, Plunging_Omega, default_vel_inf);
+  addDoubleArrayOption("PLUNGING_OMEGA", 3, Plunging_Omega);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("PLUNGING_AMPL", 3, Plunging_Ampl, default_vel_inf);
+  addDoubleArrayOption("PLUNGING_AMPL", 3, Plunging_Ampl);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
   addDoubleListOption("SURFACE_MOTION_ORIGIN", nMarkerMotion_Origin, MarkerMotion_Origin);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (DEFORMING only) */
@@ -2101,21 +2087,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
 
-  /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
-  /*--- Options related to grid adaptation ---*/
-
-  /* DESCRIPTION: Kind of grid adaptation */
-  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
-  /* DESCRIPTION: Scale factor for the dual volume */
-  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
-  /* DESCRIPTION: Use analytical definition for surfaces */
-  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
-  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
-  /* DESCRIPTION: Adapt the boundary elements */
-  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
+  addUnsignedShortOption("SMOOTH_GEOMETRY", SmoothNumGrid, 0);
 
   /*!\par CONFIG_CATEGORY: Aeroelastic Simulation (Typical Section Model) \ingroup Config*/
   /*--- Options related to aeroelastic simulations using the Typical Section Model) ---*/
@@ -2171,9 +2144,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
   addBoolOption("EQUIV_AREA", EquivArea, false);
-  default_ea_lim[0] = 0.0; default_ea_lim[1] = 1.0; default_ea_lim[2] = 1.0;
+  ea_lim[0] = 0.0; ea_lim[1] = 1.0; ea_lim[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_ea_lim);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
@@ -2219,14 +2192,10 @@ void CConfig::SetConfig_Options() {
   addEnumOption("DV_SENSITIVITY_FORMAT", Sensitivity_FileFormat, Sensitivity_Map, SU2_NATIVE);
   /* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-  default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
-  default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
+  grid_fix[0] = -1E15; grid_fix[1] = -1E15; grid_fix[2] = -1E15;
+  grid_fix[3] =  1E15; grid_fix[4] =  1E15; grid_fix[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-  /* DESCRIPTION: Visualize the deformation (surface grid) */
-  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
-  /* DESCRIPTION: Visualize the deformation (volume grid) */
-  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
+  addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, grid_fix);
 
   /*!\par CONFIG_CATEGORY: Deformable mesh \ingroup Config*/
   /*--- option related to deformable meshes ---*/
@@ -2335,20 +2304,25 @@ void CConfig::SetConfig_Options() {
   addBoolOption("REFERENCE_GEOMETRY", RefGeom, false);
   /*!\brief REFERENCE_GEOMETRY_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
   addDoubleOption("REFERENCE_GEOMETRY_PENALTY", RefGeom_Penalty, 1E6);
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
+  /*!\brief REFERENCE_GEOMETRY_FILENAME \n DESCRIPTION: Reference geometry filename \n Default: reference_geometry.dat \ingroup Config */
   addStringOption("REFERENCE_GEOMETRY_FILENAME", RefGeom_FEMFileName, string("reference_geometry.dat"));
-  /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
+  /*!\brief REFERENCE_GEOMETRY_FORMAT \n DESCRIPTION: Format of the reference geometry file \n OPTIONS: see \link Input_Ref_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("REFERENCE_GEOMETRY_FORMAT", RefGeom_FileFormat, Input_Ref_Map, SU2_REF);
+  /*!\brief REFERENCE_GEOMETRY_SURFACE\n DESCRIPTION: If true consider only the surfaces where loads are applied. \ingroup Config*/
+  addBoolOption("REFERENCE_GEOMETRY_SURFACE", RefGeomSurf, false);
 
   /*!\brief TOTAL_DV_PENALTY\n DESCRIPTION: Penalty weight value to maintain the total sum of DV constant \ingroup Config*/
   addDoubleOption("TOTAL_DV_PENALTY", DV_Penalty, 0);
 
   /*!\brief REFERENCE_NODE\n  DESCRIPTION: Reference node for the structure (optimization applications) */
   addUnsignedLongOption("REFERENCE_NODE", refNodeID, 0);
-  /* DESCRIPTION: Modulus of the electric fields */
+  /*!\brief REFERENCE_NODE_DISPLACEMENT\n DESCRIPTION: Target displacement of the reference node \ingroup Config*/
   addDoubleListOption("REFERENCE_NODE_DISPLACEMENT", nDim_RefNode, RefNode_Displacement);
   /*!\brief REFERENCE_NODE_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
   addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E3);
+
+  /*!\brief STRESS_PENALTY_PARAM\n DESCRIPTION: Maximum allowed stress and KS exponent for structural optimization \ingroup Config*/
+  addDoubleArrayOption("STRESS_PENALTY_PARAM", 2, StressPenaltyParam.data());
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
@@ -2398,9 +2372,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Maximum number of increments of the  */
   addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
 
-  default_inc_crit[0] = 0.0; default_inc_crit[1] = 0.0; default_inc_crit[2] = 0.0;
+  inc_crit[0] = 0.0; inc_crit[1] = 0.0; inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
-  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, inc_crit);
 
   /* DESCRIPTION: Use of predictor */
   addBoolOption("PREDICTOR", Predictor, false);
@@ -2539,11 +2513,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Rotation of the volumetric heat source respect to Z axis */
   addDoubleOption("HEAT_SOURCE_ROTATION_Z", Heat_Source_Rot_Z, 0.0);
   /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
-  default_hs_center[0] = 0.0; default_hs_center[1] = 0.0; default_hs_center[2] = 0.0;
-  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, Heat_Source_Center, default_hs_center);
+  hs_center[0] = 0.0; hs_center[1] = 0.0; hs_center[2] = 0.0;
+  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, hs_center);
   /* DESCRIPTION: Vector of heat source radii (Heat_Source_Axes_A, Heat_Source_Axes_B, Heat_Source_Axes_C) */
-  default_hs_axes[0] = 1.0; default_hs_axes[1] = 1.0; default_hs_axes[2] = 1.0;
-  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, Heat_Source_Axes, default_hs_axes);
+  hs_axes[0] = 1.0; hs_axes[1] = 1.0; hs_axes[2] = 1.0;
+  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, hs_axes);
 
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
@@ -2608,14 +2582,32 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FFD_COORD_SYSTEM", FFD_CoordSystem, CoordSystem_Map, CARTESIAN);
 
   /* DESCRIPTION: Axis information for the spherical and cylindrical coord system */
-  default_ffd_axis[0] = 0.0; default_ffd_axis[1] = 0.0; default_ffd_axis[2] =0.0;
-  addDoubleArrayOption("FFD_AXIS", 3, FFD_Axis, default_ffd_axis);
+  ffd_axis[0] = 0.0; ffd_axis[1] = 0.0; ffd_axis[2] =0.0;
+  addDoubleArrayOption("FFD_AXIS", 3, ffd_axis);
 
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
   addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
+
+  /* DESCRIPTION: Procedure to prevent self-intersections within the FFD box based on Jacobian determinant */
+  addBoolOption("FFD_INTPREV", FFD_IntPrev, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("FFD_INTPREV_ITER", FFD_IntPrev_MaxIter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("FFD_INTPREV_DEPTH", FFD_IntPrev_MaxDepth, 3);
+
+  /* DESCRIPTION: Convexity check on all mesh elements */
+  addBoolOption("CONVEXITY_CHECK", ConvexityCheck, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("CONVEXITY_CHECK_ITER", ConvexityCheck_MaxIter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("CONVEXITY_CHECK_DEPTH", ConvexityCheck_MaxDepth, 3);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
@@ -2630,8 +2622,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FFD_BLENDING", FFD_Blending, Blending_Map, BEZIER );
 
   /* DESCRIPTION: Order of the BSplines for BSpline Blending function */
-  default_ffd_coeff[0] = 2; default_ffd_coeff[1] = 2; default_ffd_coeff[2] = 2;
-  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order, default_ffd_coeff);
+  ffd_coeff[0] = 2; ffd_coeff[1] = 2; ffd_coeff[2] = 2;
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, ffd_coeff);
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
@@ -2712,14 +2704,17 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
-  /* DESCRIPTION: Activate ParMETIS mode for testing */
-  addBoolOption("PARMETIS", ParMETIS, false);
+  /* DESCRIPTION: ParMETIS load balancing tolerance */
+  addDoubleOption("PARMETIS_TOLERANCE", ParMETIS_tolerance, 0.02);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for points */
+  addLongOption("PARMETIS_POINT_WEIGHT", ParMETIS_pointWgt, 0);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
+  addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
-
-  /* DESCRIPTION: Writing surface solution file frequency for dual time */
-  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
 
   /* DESCRIPTION: Starting Iteration for windowing approach */
   addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
@@ -2875,14 +2870,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-  void CConfig::SetConfig_Parsing(istream& config_buffer){
+void CConfig::SetConfig_Parsing(istream& config_buffer){
 
   string text_line, option_name;
   vector<string> option_value;
 
   string errorString;
 
-  int  err_count = 0;  // How many errors have we found in the config file
+  int err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
   int line_count = 1;
 
@@ -2936,9 +2931,34 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append("\n");
           if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
             newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
-                             "and it also applies to discrete adjoint problems\n.");
+                             "and it also applies to discrete adjoint problems.\n\n");
+          if (!option_name.compare("WRT_MESH_QUALITY"))
+            newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
+          if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
+            newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
+            newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_BINARY_RESTART"))
+            newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
+          if (!option_name.compare("WRT_RESIDUALS"))
+            newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_LIMITERS"))
+            newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ"))
+            newString.append("WRT_CON_FREQ is deprecated. Use SCREEN_WRT_FREQ_INNER or SCREEN_WRT_FREQ_OUTER for multizone cases instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
+            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
+          if (!option_name.compare("WRT_SRF_SOL"))
+            newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_CSV_SOL"))
+            newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ"))
+            newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
+            newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           errorString.append(newString);
           err_count++;
+          line_count++;
         continue;
       }
 
@@ -2951,6 +2971,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
         newString.append("\n");
         errorString.append(newString);
         err_count++;
+        line_count++;
         continue;
       }
 
@@ -3096,26 +3117,21 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 }
 
 void CConfig::SetHeader(unsigned short val_software) const{
-  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-   the two lines below that use the dt variable. ---*/
-  //time_t now = time(0);
-  //string dt = ctime(&now); dt[24] = '.';
+
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
     case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
     case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
     }
 
     cout << "|                                                                       |" << endl;
-    //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
     cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
     cout << "|                                                                       |" << endl;
@@ -3201,13 +3217,6 @@ void CConfig::SetnZone(){
 
   }
 
-  /*--- Temporary fix until Multizone Disc. Adj. solver is ready ---- */
-
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-
-    nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
-
-  }
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
@@ -3218,7 +3227,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
+  bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
+                    (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
+  bool nemo = GetNEMOProblem();
 
   if (nZone > 1){
     Multizone_Problem = YES;
@@ -3253,6 +3265,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check if MESH_QUALITY is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_MeshQuality = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("MESH_QUALITY") != string::npos) {
+      Wrt_MeshQuality = true;
+    }
+  }
 
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
@@ -3301,18 +3320,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Compute x-velocity with a safegaurd for 0.0. ---*/
 
     su2double Vx = 1e-10;
-    if (Inc_Velocity_Init[0] != 0.0) {
-      Vx = Inc_Velocity_Init[0];
+    if (vel_init[0] != 0.0) {
+      Vx = vel_init[0];
     }
 
     /*--- Compute the angle-of-attack and sideslip. ---*/
 
     su2double alpha = 0.0, beta = 0.0;
     if (val_nDim == 2) {
-      alpha = atan(Inc_Velocity_Init[1]/Vx)*180.0/PI_NUMBER;
+      alpha = atan(vel_init[1]/Vx)*180.0/PI_NUMBER;
     } else {
-      alpha = atan(Inc_Velocity_Init[2]/Vx)*180.0/PI_NUMBER;
-      beta  = atan(Inc_Velocity_Init[1]/Vx)*180.0/PI_NUMBER;
+      alpha = atan(vel_init[2]/Vx)*180.0/PI_NUMBER;
+      beta  = atan(vel_init[1]/Vx)*180.0/PI_NUMBER;
     }
 
     /*--- Set alpha and beta in the config class. ---*/
@@ -3475,25 +3494,35 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((TimeMarching == TIME_STEPPING ||
        TimeMarching == DT_STEPPING_1ST ||
        TimeMarching == DT_STEPPING_2ND) && !Time_Domain){
-    SU2_MPI::Error("TIME_DOMAIN must be set to YES if UNSTEADY_SIMULATION is "
+    SU2_MPI::Error("TIME_DOMAIN must be set to YES if TIME_MARCHING is "
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
 
   if (Time_Domain){
-    if (TimeMarching == TIME_STEPPING){
-      InnerIter = 1;
-    }
-    if (!OptionIsSet("OUTPUT_WRT_FREQ"))
-      VolumeWrtFreq = 1;
-    if (Restart == NO){
-      Restart_Iter = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")){
-      HistoryWrtFreq[2] = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")){
-      HistoryWrtFreq[1] = 0;
-    }
+    Delta_UnstTime = Time_Step;
+    Delta_DynTime  = Time_Step;
+
+    if (TimeMarching == TIME_STEPPING){ InnerIter = 1; }
+
+    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
+    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
+
+    /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
+    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
+
+    if (Restart == NO) { Restart_Iter = 0; }
+
+    if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
+  } else {
+    nTimeIter = 1;
+    Time_Step = 0;
+
+    /*--- Entry 0 corresponds to unsteady simulation so for steady simulation are just set to 1. ---*/
+    ScreenWrtFreq[0]  = 1;
+    HistoryWrtFreq[0] = 1;
+
+    if (TimeMarching != HARMONIC_BALANCE) { TimeMarching = STEADY; }
   }
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
@@ -3509,6 +3538,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
       Kind_Solver == RANS ||
+      Kind_Solver == NEMO_EULER ||
+      Kind_Solver == NEMO_NAVIER_STOKES ||
       Kind_Solver == FEM_EULER ||
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||
@@ -3540,33 +3571,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Initialize the ofstream ConvHistFile. ---*/
-//  ofstream ConvHistFile;
-
-//  if (Kind_Solver == FEM_ELASTICITY) {
-
-//    if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-//    else { Wrt_Dynamic = true; }
-
-//  } else {
-//    Wrt_Dynamic = false;
-//  }
-
-  if (Kind_Radiation != NO_RADIATION) {
-    Radiation = true;
-  }
-  else{
-    Radiation = false;
-  }
+  Radiation = (Kind_Radiation != NO_RADIATION);
 
   /*--- Check for unsupported features. ---*/
 
   if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (TimeMarching == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
-  }
-
-  if ((Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Buffet_Monitoring == true)){
-    SU2_MPI::Error("Buffet monitoring incompatible with solvers other than NAVIER_STOKES and RANS", CURRENT_FUNCTION);
   }
 
   /*--- Check for Fluid model consistency ---*/
@@ -3600,13 +3610,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  /*--- Check for Convective scheme available for NICFD ---*/
+  if (nemo && Kind_TransCoeffModel != WILKE ) {
+    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
+  }
 
-  if (!ideal_gas) {
+  if (!ideal_gas && !nemo) {
     if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
       SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);
     }
+  }
 
+  if (nemo){
+    if (Kind_Upwind_Flow == AUSMPWPLUS)
+      SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+  }
+
+  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
+      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
+  }
+
+  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
+      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -3622,7 +3646,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Check for Boundary condition available for NICFD ---*/
 
-  if (!ideal_gas) {
+  if ((!ideal_gas) && (!noneq_gas)) {
     if (nMarker_Inlet != 0) {
       SU2_MPI::Error("Riemann Boundary conditions or Giles must be used for inlet and outlet with Not Ideal Compressible Fluids ", CURRENT_FUNCTION);
     }
@@ -3656,41 +3680,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  if ((nKind_SurfaceMovement > 1) && GetSurface_Movement(FLUID_STRUCTURE)) {
-    SU2_MPI::Error("FSI in combination with moving surfaces is currently not supported.", CURRENT_FUNCTION);
-  }
-
-  if ((nKind_SurfaceMovement != nMarker_Moving) && !GetSurface_Movement(FLUID_STRUCTURE)) {
+  if (nKind_SurfaceMovement != nMarker_Moving) {
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
-  }
-
-  if (Time_Domain && Time_Step <= 0.0 && Unst_CFL == 0.0){
-    SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
   }
 
   if (TimeMarching == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
-  }
-
-  if (!Time_Domain){
-    nTimeIter = 1;
-    Time_Step = 0;
-
-    ScreenWrtFreq[0]  = 1;
-    HistoryWrtFreq[0] = 1;
-
-    if (TimeMarching != HARMONIC_BALANCE)
-      TimeMarching = STEADY;
-  }
-
-  if (Time_Domain){
-    Delta_UnstTime = Time_Step;
-    Delta_DynTime  = Time_Step;
-    /*--- Set the default write frequency to 1 if unsteady ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")){
-      VolumeWrtFreq = 1;
-    }
   }
 
   if (!Multizone_Problem){
@@ -3742,7 +3738,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
 
-  if (GetGrid_Movement() && Mach_Motion == 0.0)
+  if (GetDynamic_Grid() && Mach_Motion == 0.0)
     Mach_Motion = Mach;
 
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
@@ -3872,28 +3868,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
     FinalRotation_Rate_Z = Rotation_Rate[2];
     if(abs(FinalRotation_Rate_Z) > 0.0){
-      Rotation_Rate[2] = RampRotatingFrame_Coeff[0];
+      Rotation_Rate[2] = rampRotFrame_coeff[0];
     }
   }
 
   if(RampOutletPressure && !DiscreteAdjoint){
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
-        FinalOutletPressure   = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = RampOutletPressure_Coeff[0];
+        FinalOutletPressure = Giles_Var1[iMarker];
+        Giles_Var1[iMarker] = rampOutPres_coeff[0];
       }
     }
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
       if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
-        FinalOutletPressure      = Riemann_Var1[iMarker];
-        Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
-    }
+        FinalOutletPressure = Riemann_Var1[iMarker];
+        Riemann_Var1[iMarker] = rampOutPres_coeff[0];
       }
     }
+  }
 
   /*--- Check on extra Relaxation factor for Giles---*/
-  if(ExtraRelFacGiles[1] > 0.5){
-    ExtraRelFacGiles[1] = 0.5;
+  if(extrarelfac[1] > 0.5){
+    extrarelfac[1] = 0.5;
   }
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -3948,10 +3944,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }*/
 
-
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = new su2double[3]();
 
   /*--- In case the moment origin coordinates have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
@@ -4077,15 +4069,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Kind_Solver == EULER ||
       Kind_Solver == INC_EULER ||
+      Kind_Solver == NEMO_EULER ||
       Kind_Solver == FEM_EULER)
     Kind_Turb_Model = NONE;
 
-  Kappa_2nd_Flow    = Kappa_Flow[0];
-  Kappa_4th_Flow    = Kappa_Flow[1];
-  Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
-  Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
-  Kappa_2nd_Heat = Kappa_Heat[0];
-  Kappa_4th_Heat = Kappa_Heat[1];
+  Kappa_2nd_Flow = jst_coeff[0];
+  Kappa_4th_Flow = jst_coeff[1];
+  Kappa_2nd_AdjFlow = jst_adj_coeff[0];
+  Kappa_4th_AdjFlow = jst_adj_coeff[1];
+  Kappa_2nd_Heat = ad_coeff_heat[0];
+  Kappa_4th_Heat = ad_coeff_heat[1];
 
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -4220,6 +4213,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
 
+  /*--- Handle optional CFL adapt parameter values ---*/
+
+  if (nCFL_AdaptParam < default_cfl_adapt.size()) {
+    auto newParam = new su2double [default_cfl_adapt.size()];
+    for (iCFL = 0; iCFL < default_cfl_adapt.size(); ++iCFL) {
+      if (iCFL < nCFL_AdaptParam) newParam[iCFL] = CFL_AdaptParam[iCFL];
+      else newParam[iCFL] = default_cfl_adapt[iCFL];
+    }
+    swap(newParam, CFL_AdaptParam);
+    delete [] newParam;
+    nCFL_AdaptParam = default_cfl_adapt.size();
+  }
+
   /*--- Evaluate when the Cl should be evaluated ---*/
 
   Iter_Fixed_CM        = SU2_TYPE::Int(nInnerIter / (su2double(Update_iH)+1));
@@ -4239,8 +4245,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ConvNumScheme_Flow = Kind_ConvNumScheme_AdjFlow;
     Kind_Centered_Flow = Kind_Centered_AdjFlow;
     Kind_Upwind_Flow = Kind_Upwind_AdjFlow;
-    Kappa_Flow[0] = Kappa_AdjFlow[0];
-    Kappa_Flow[1] = Kappa_AdjFlow[1];
+    Kappa_2nd_Flow = jst_adj_coeff[0];
+    Kappa_4th_Flow = jst_adj_coeff[1];
   }
 
   if (Update_AoA_Iter_Limit == 0 && Fixed_CL_Mode) {
@@ -4260,9 +4266,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Check if the byte alignment of the matrix multiplications is a
      multiple of 64. */
   if( byteAlignmentMatMul%64 ) {
-    if(rank == MASTER_NODE)
-      cout << "ALIGNED_BYTES_MATMUL must be a multiple of 64." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("ALIGNED_BYTES_MATMUL must be a multiple of 64.", CURRENT_FUNCTION);
   }
 
   /* Determine the value of sizeMatMulPadding, which is the matrix size in
@@ -4376,6 +4380,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set a flag for viscous simulations ---*/
 
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+             ( Kind_Solver == NEMO_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
@@ -4397,8 +4402,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
       LocationStations[iSections] += EPS;
     }
-    Stations_Bounds[0] += EPS;
-    Stations_Bounds[1] += EPS;
+    geo_loc[0] += EPS;
+    geo_loc[1] += EPS;
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
@@ -4432,30 +4437,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Highlite_Area = Highlite_Area/144.0;
     SemiSpan = SemiSpan/12.0;
 
-    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
-    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
-    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+    ea_lim[0] /= 12.0;
+    ea_lim[1] /= 12.0;
+    ea_lim[2] /= 12.0;
 
     if (Geo_Description != NACELLE) {
       for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
         LocationStations[iSections] = LocationStations[iSections]/12.0;
       }
-      Stations_Bounds[0] = Stations_Bounds[0]/12.0;
-      Stations_Bounds[1] = Stations_Bounds[1]/12.0;
+      geo_loc[0] /= 12.0;
+      geo_loc[1] /= 12.0;
     }
 
-    SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
-    SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
-    SubsonicEngine_Cyl[2] = SubsonicEngine_Cyl[2]/12.0;
-    SubsonicEngine_Cyl[3] = SubsonicEngine_Cyl[3]/12.0;
-    SubsonicEngine_Cyl[4] = SubsonicEngine_Cyl[4]/12.0;
-    SubsonicEngine_Cyl[5] = SubsonicEngine_Cyl[5]/12.0;
-    SubsonicEngine_Cyl[6] = SubsonicEngine_Cyl[6]/12.0;
-
+    for (int i=0; i<7; ++i) eng_cyl[i] /= 12.0;
   }
 
   if ((Kind_Turb_Model != SA) && (Kind_Trans_Model == BC)){
     SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
+  }
+
+  if (Kind_Trans_Model == LM) {
+    SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
   /*--- Check for constant lift mode. Initialize the update flag for
@@ -4465,7 +4467,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
@@ -4685,12 +4687,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Rotating frame is not yet supported with the incompressible solver. ---*/
-
-  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_GridMovement == ROTATING_FRAME)) {
-    SU2_MPI::Error("Support for rotating frame simulation not yet implemented for incompressible flows.", CURRENT_FUNCTION);
-  }
-
   /*--- Assert that there are two markers being analyzed if the
    pressure drop objective function is selected. ---*/
 
@@ -4699,6 +4695,108 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
+  
+  /*--- Check feassbility for Streamwise Periodic flow ---*/
+  if (Kind_Streamwise_Periodic != NONE) {
+    if (Kind_Regime != INCOMPRESSIBLE)
+      SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
+    if (Kind_Solver == INC_EULER)
+      SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
+    if (nMarker_PerBound != 2)
+      SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible in the moment.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
+      SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
+    if (DiscreteAdjoint && Kind_Streamwise_Periodic == MASSFLOW)
+      SU2_MPI::Error("Discrete Adjoint currently not validated for prescribed MASSFLOW.", CURRENT_FUNCTION);
+    if (Ref_Inc_NonDim != DIMENSIONAL)
+      SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
+    if (Axisymmetric)
+      SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
+    if (!Energy_Equation) Streamwise_Periodic_Temperature = false;
+  } else {
+    /*--- Safety measure ---*/
+    Streamwise_Periodic_Temperature = false;
+  }
+
+  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
+   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_CHTInterface > 0)) {
+
+     /*--- The total number of wall markers. ---*/
+     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_CHTInterface;
+
+     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
+     if (nRough_Wall == 0) {
+
+       nRough_Wall = nWall;
+       Roughness_Height = new su2double [nWall];
+       Kind_Wall = new unsigned short [nWall];
+       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+         Roughness_Height[iMarker] = 0.0;
+         Kind_Wall[iMarker] = SMOOTH;
+       }
+       for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
+         Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
+         Kind_Wall[nMarker_HeatFlux + iMarker] = SMOOTH;
+       }
+       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
+         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = SMOOTH;
+       }
+
+       /*--- Check for mismatch in number of rough walls and solid walls. ---*/
+     } else if (nRough_Wall > nWall) {
+        SU2_MPI::Error("Mismatch in number of rough walls and solid walls. Number of rough walls cannot be more than solid walls.", CURRENT_FUNCTION);
+       /*--- Check name of the marker and assign the corresponding roughness. ---*/
+     } else {
+       /*--- Store roughness heights in a temp array. ---*/
+       vector<su2double> temp_rough;
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
+         temp_rough.push_back(Roughness_Height[iMarker]);
+
+       /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
+       delete Roughness_Height;
+       delete Kind_Wall;
+       Roughness_Height = new su2double [nWall];
+       Kind_Wall = new unsigned short [nWall];
+       unsigned short jMarker, chkRough = 0;
+
+       /*--- Initialize everything to smooth. ---*/
+       for (iMarker = 0; iMarker < nWall; iMarker++) {
+         Roughness_Height[iMarker] = 0.0;
+         Kind_Wall[iMarker] = SMOOTH;
+       }
+
+       /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
+         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
+           if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+
+         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++)
+           if (Marker_Isothermal[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[nMarker_HeatFlux + jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+
+         for (jMarker = 0; jMarker < nMarker_CHTInterface; jMarker++)
+           if (Marker_CHTInterface[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+       }
+
+       /*--- Update kind_wall when a non zero roughness value is specified. ---*/
+       for (iMarker = 0; iMarker < nWall; iMarker++)
+         if (Roughness_Height[iMarker] != 0.0)
+           Kind_Wall[iMarker] = ROUGH;
+
+       /*--- Check if a non solid wall marker was specified as rough. ---*/
+       if (chkRough != nRough_Wall)
+         SU2_MPI::Error("Only solid walls can be rough.", CURRENT_FUNCTION);
+     }
+   }
 
   /*--- Handle default options for topology optimization ---*/
 
@@ -4765,16 +4863,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Comm_Level == COMM_NONE)
       SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
-
-    Wrt_Sol_Freq          = nTimeIter+1;
-    Wrt_Sol_Freq_DualTime = nTimeIter+1;
-
-    /*--- Write only the restart. ---*/
-
-    Wrt_Slice   = false;
-    Wrt_Vol_Sol = false;
-    Wrt_Srf_Sol = false;
-    Wrt_Csv_Sol = false;
   }
 
   /*--- Check the conductivity model. Deactivate the turbulent component
@@ -4787,17 +4875,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != DISC_ADJ_INC_RANS)){
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
-
-  /*--- Check for running SU2_MSH for periodic preprocessing, and throw
-   an error to report that this is no longer necessary. ---*/
-
-  if ((Kind_SU2 == SU2_MSH) &&
-      (Kind_Adaptation == PERIODIC)) {
-    SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
-                   string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
-                   string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
-  }
-
 
   /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
 
@@ -4821,8 +4898,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 #endif
 
-    /*--- Disable writing of limiters if enabled ---*/
-    Wrt_Limiters = false;
+    /*--- Use the same linear solver on the primal as the one used in the adjoint. ---*/
+    Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
+    Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
 
     if (TimeMarching) {
 
@@ -4946,6 +5024,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == INC_RANS) ||
                    (Kind_Solver == EULER) ||
                    (Kind_Solver == NAVIER_STOKES) ||
+                   (Kind_Solver == NEMO_EULER) ||
+                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
                    (Kind_Solver == RANS) ||
                    (Kind_Solver == DISC_ADJ_EULER) ||
                    (Kind_Solver == DISC_ADJ_RANS) ||
@@ -4985,6 +5065,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
+  if (GetGasModel() == "ARGON") monoatomic = true;
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -4992,29 +5073,28 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
-  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet, iMarker_Isothermal,
-  iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
+  iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
+  iMarker_Smoluchowski_Maxwell,
+  iMarker_Isothermal,iMarker_HeatFlux,
+  iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_SobolevBC, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
-  iMarker_Fluid_Load, iMarker_Deform_Mesh,
+  iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
-
-#ifdef HAVE_MPI
-  if (val_software != SU2_MSH)
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-#endif
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /*--- Compute the total number of markers in the config file ---*/
 
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
-  nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
+  nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
@@ -5043,6 +5123,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_DV             = new unsigned short[nMarker_All] (); // Store whether the boundary should be affected by design variables.
   Marker_All_Moving         = new unsigned short[nMarker_All] (); // Store whether the boundary should be in motion.
   Marker_All_Deform_Mesh    = new unsigned short[nMarker_All] (); // Store whether the boundary is deformable.
+  Marker_All_Deform_Mesh_Sym_Plane = new unsigned short[nMarker_All] (); //Store wheter the boundary will follow the deformation
   Marker_All_Fluid_Load     = new unsigned short[nMarker_All] (); // Store whether the boundary computes/applies fluid loads.
   Marker_All_PyCustom       = new unsigned short[nMarker_All] (); // Store whether the boundary is Python customizable.
   Marker_All_PerBound       = new short[nMarker_All] ();          // Store whether the boundary belongs to a periodic boundary.
@@ -5068,6 +5149,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_DV                   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Moving               = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Deform_Mesh          = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Deform_Mesh_Sym_Plane= new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Fluid_Load           = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PerBound             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
@@ -5291,6 +5373,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = SMOLUCHOWSKI_MAXWELL;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX;
@@ -5463,6 +5551,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Deform_Mesh_Sym_Plane[iMarker_CfgFile] = NO;
+    for (iMarker_Deform_Mesh_Sym_Plane = 0; iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane; iMarker_Deform_Mesh_Sym_Plane++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Deform_Mesh_Sym_Plane[iMarker_Deform_Mesh_Sym_Plane])
+        Marker_CfgFile_Deform_Mesh_Sym_Plane[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Fluid_Load[iMarker_CfgFile] = NO;
     for (iMarker_Fluid_Load = 0; iMarker_Fluid_Load < nMarker_Fluid_Load; iMarker_Fluid_Load++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Fluid_Load[iMarker_Fluid_Load])
@@ -5490,7 +5585,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
-  iMarker_Deform_Mesh, iMarker_Fluid_Load,
+  iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
+  iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
@@ -5541,6 +5637,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+        if (Kind_Trans_Model == BC) cout << "Using the revised BC transition model (2020)" << endl;
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;
@@ -5552,6 +5649,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
+        }
+        break;
+      case NEMO_EULER:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+        if(Kind_FluidModel == SU2_NONEQ){
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+        }
+        break;
+      case NEMO_NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if(Kind_FluidModel == SU2_NONEQ){
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case FEM_LES:
@@ -5597,21 +5708,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
+          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
+          (Kind_Solver == NEMO_NAVIER_STOKES))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
       }
       if (Fixed_CM_Mode) {
           cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-          cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
+          cout << "HTP rotation axis (X,Z): ("<< htp_axis[0] <<", "<< htp_axis[1] <<")."<< endl;
       }
     }
 
     if (EquivArea) {
       cout <<"The equivalent area is going to be evaluated on the near-field."<< endl;
-      cout <<"The lower integration limit is "<<EA_IntLimit[0]<<", and the upper is "<<EA_IntLimit[1]<<"."<< endl;
-      cout <<"The near-field is situated at "<<EA_IntLimit[2]<<"."<< endl;
+      cout <<"The lower integration limit is "<<ea_lim[0]<<", and the upper is "<<ea_lim[1]<<"."<< endl;
+      cout <<"The near-field is situated at "<<ea_lim[2]<<"."<< endl;
     }
 
     if (GetGrid_Movement()) {
@@ -5621,7 +5733,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case RIGID_MOTION:    cout << "rigid mesh motion." << endl; break;
         case MOVING_HTP:      cout << "HTP moving." << endl; break;
         case ROTATING_FRAME:  cout << "rotating reference frame." << endl; break;
-        case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
       }
     }
@@ -5785,23 +5896,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }else {
     cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
   }
-  }
-
-  if (val_software == SU2_MSH) {
-    switch (Kind_Adaptation) {
-    case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
-      break;
-    case GRAD_FLOW:
-      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
-      break;
-    case GRAD_ADJOINT:
-      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-      break;
-    case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
-      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-      break;
-    }
   }
 
   if (val_software == SU2_DEF) {
@@ -6023,6 +6117,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case VOLUME_FRACTION:            cout << "Volume fraction objective function." << endl; break;
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
+        case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
       }
     }
     else {
@@ -6038,23 +6133,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
-        if (Kind_Centered_Flow == JST_KE) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
+        }
+        else {
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
+          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
       }
 
@@ -6072,11 +6163,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-  if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
-  if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
-      Kind_Solver == NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
-      Kind_Solver == RANS          || Kind_Solver == DISC_ADJ_RANS) {
+        if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
+            Kind_Solver == NAVIER_STOKES || Kind_Solver == DISC_ADJ_NAVIER_STOKES ||
+            Kind_Solver == RANS          || Kind_Solver == DISC_ADJ_RANS) {
           switch (Kind_RoeLowDiss) {
             case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
             case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
@@ -6245,6 +6337,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
@@ -6319,11 +6412,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case TIME_STEPPING:
       cout << "Unsteady simulation using a time stepping strategy."<< endl;
       if (Unst_CFL != 0.0) {
-                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-                          if (Delta_UnstTime != 0.0) {
-                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
-                          }
-                        }
+        cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        if (Delta_UnstTime != 0.0) {
+          cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        }
+      }
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
       break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
@@ -6331,21 +6424,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
       if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
       break;
     }
   }
   else {
     if (Time_Domain) {
-            cout << "Dynamic structural analysis."<< endl;
-            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-     } else {
-            cout << "Static structural analysis." << endl;
+      cout << "Dynamic structural analysis."<< endl;
+      cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+    } else {
+      cout << "Static structural analysis." << endl;
     }
   }
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
@@ -6364,6 +6457,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
+          if((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES))
+            SU2_MPI::Error("Implicit time scheme is not working with NEMO. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:
@@ -6519,7 +6614,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3]
+        <<",\n                acceptable linear residual: "<< CFL_AdaptParam[4] << "." << endl;
 
       if (nMGLevels !=0) {
         PrintingToolbox::CTablePrinter MGTable(&std::cout);
@@ -6579,37 +6675,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_MSH) {
-    cout << endl <<"----------------- Grid adaptation strategy ( Zone "  << iZone << " ) -------------------" << endl;
-
-    switch (Kind_Adaptation) {
-      case NONE: break;
-      case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
-      case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
-      case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
-      case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
-      case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
-      case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
-      case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
-      case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
-      case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
-      case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
-      case SUPERSONIC_SHOCK: cout << "Grid adaptation for a supersonic shock at Mach: " << Mach <<"."<< endl; break;
-    }
-
-    switch (Kind_Adaptation) {
-      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
-        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
-        break;
-    }
-
-    if (Analytical_Surface != NONE)
-      cout << "Use analytical definition for including points in the surfaces." << endl;
-
-  }
-
   cout << endl <<"-------------------- Output Information ( Zone "  << iZone << " ) ----------------------" << endl;
 
   if (val_software == SU2_CFD) {
@@ -6665,9 +6730,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
-    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
-    else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
@@ -6681,28 +6743,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_MSH) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-  }
-
   if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
     }
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
-  }
-
-  if (val_software == SU2_MSH) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    cout << "Restart flow file name: " << Restart_FileName << "." << endl;
-    if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
-        (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
-      if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-    }
   }
 
   cout << endl <<"------------- Config File Boundary Information ( Zone "  << iZone << " ) ---------------" << endl;
@@ -6763,6 +6809,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++) {
       BoundaryTable << Marker_Deform_Mesh[iMarker_Deform_Mesh];
       if (iMarker_Deform_Mesh < nMarker_Deform_Mesh-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_Deform_Mesh_Sym_Plane != 0) {
+    BoundaryTable << "Symmetric deformable mesh boundary";
+    for (iMarker_Deform_Mesh_Sym_Plane = 0; iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane; iMarker_Deform_Mesh_Sym_Plane++) {
+      BoundaryTable << Marker_Deform_Mesh_Sym_Plane[iMarker_Deform_Mesh_Sym_Plane];
+      if (iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -6893,11 +6948,29 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_Smoluchowski_Maxwell != 0) {
+    BoundaryTable << "Smoluchowski/Maxwell jump wall";
+    for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
+      BoundaryTable << Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
+      if (iMarker_Smoluchowski_Maxwell< nMarker_Smoluchowski_Maxwell-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_HeatFlux != 0) {
     BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       BoundaryTable << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nWall_Catalytic != 0) {
+    BoundaryTable << "Catalytic wall";
+    for (iWall_Catalytic = 0; iWall_Catalytic < nWall_Catalytic; iWall_Catalytic++) {
+      BoundaryTable << Wall_Catalytic[iWall_Catalytic];
+      if (iWall_Catalytic < nWall_Catalytic-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -7008,6 +7081,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (iMarker_SobolevBC < nMarker_SobolevBC-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_ActDiskOutlet != 0) {
+    if (GetKind_ActDisk() == VARIABLE_LOAD) {
+      cout << endl << "Actuator disk with variable load." << endl;
+      cout << "Actuator disk data read from file: " << GetActDisk_FileName() << endl;
+    }
   }
 
 }
@@ -7272,6 +7352,13 @@ unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh(string val_marker) const {
   return Marker_CfgFile_Deform_Mesh[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_Deform_Mesh_Sym_Plane(string val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Deform_Mesh_Sym_Plane[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_Fluid_Load(string val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -7307,19 +7394,18 @@ unsigned short CConfig::GetMarker_CfgFile_SobolevBC(string val_marker) const {
   return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
 }
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
-
-  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
-          Marker_All_KindBC[iMarker] == EULER_WALL);
-}
-
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
+}
+
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
+
+  return GetViscous_Wall(iMarker) ||
+         Marker_All_KindBC[iMarker] == EULER_WALL;
 }
 
 void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
@@ -7408,7 +7494,6 @@ CConfig::~CConfig(void) {
 
   /*--- reference origin for moments ---*/
 
-  delete [] RefOriginMoment;
   delete [] RefOriginMoment_X;
   delete [] RefOriginMoment_Y;
   delete [] RefOriginMoment_Z;
@@ -7452,6 +7537,9 @@ CConfig::~CConfig(void) {
   delete[] Marker_CfgFile_Deform_Mesh;
   delete[] Marker_All_Deform_Mesh;
 
+  delete[] Marker_CfgFile_Deform_Mesh_Sym_Plane;
+  delete[] Marker_All_Deform_Mesh_Sym_Plane;
+
   delete[] Marker_CfgFile_Fluid_Load;
   delete[] Marker_All_Fluid_Load;
 
@@ -7473,23 +7561,25 @@ CConfig::~CConfig(void) {
   delete [] Marker_CfgFile_SobolevBC;
   delete [] Marker_All_SobolevBC;
 
-                delete[] Marker_DV;
-            delete[] Marker_Moving;
-       delete[] Marker_Monitoring;
-        delete[] Marker_Designing;
-          delete[] Marker_GeoEval;
-         delete[] Marker_Plotting;
-         delete[] Marker_Analyze;
-   delete[] Marker_WallFunctions;
-         delete[] Marker_ZoneInterface;
-              delete [] Marker_PyCustom;
-     delete[] Marker_All_SendRecv;
-    delete[] Marker_SobolevBC;
+  delete[] Marker_DV;
+  delete[] Marker_Moving;
+  delete[] Marker_Monitoring;
+  delete[] Marker_Designing;
+  delete[] Marker_GeoEval;
+  delete[] Marker_Plotting;
+  delete[] Marker_Analyze;
+  delete[] Marker_WallFunctions;
+  delete[] Marker_ZoneInterface;
+  delete [] Marker_PyCustom;
+  delete[] Marker_All_SendRecv;
+  delete[] Marker_SobolevBC;
 
-       delete[] Kind_Inc_Inlet;
-       delete[] Kind_Inc_Outlet;
+  delete[] Kind_Inc_Inlet;
+  delete[] Kind_Inc_Outlet;
 
   delete[] Kind_WallFunctions;
+
+  delete[] Kind_Wall;
 
   delete[] Config_Filenames;
 
@@ -7641,6 +7731,12 @@ CConfig::~CConfig(void) {
     delete [] Inlet_Velocity;
   }
 
+  if (Inlet_MassFrac != nullptr) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_MassFrac[iMarker];
+    delete [] Inlet_MassFrac;
+  }
+
   if (Riemann_FlowDir != nullptr) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
       delete [] Riemann_FlowDir[iMarker];
@@ -7681,8 +7777,8 @@ CConfig::~CConfig(void) {
      delete[] Load_Sine_Amplitude;
      delete[] Load_Sine_Frequency;
      delete[] FlowLoad_Value;
+     delete[] Roughness_Height;
      delete[] Wall_Emissivity;
-
   /*--- related to periodic boundary conditions ---*/
 
   for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
@@ -7706,6 +7802,7 @@ CConfig::~CConfig(void) {
   delete[] MG_CorrecSmooth;
          delete[] PlaneTag;
               delete[] CFL;
+   delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
@@ -7717,6 +7814,7 @@ CConfig::~CConfig(void) {
             delete[] Marker_PerDonor;
       delete[] Marker_NearFieldBound;
          delete[] Marker_Deform_Mesh;
+         delete[] Marker_Deform_Mesh_Sym_Plane;
           delete[] Marker_Fluid_Load;
       delete[] Marker_Fluid_InterfaceBound;
                delete[] Marker_Inlet;
@@ -7724,6 +7822,7 @@ CConfig::~CConfig(void) {
     delete[] Marker_Supersonic_Outlet;
               delete[] Marker_Outlet;
           delete[] Marker_Isothermal;
+  delete[] Marker_Smoluchowski_Maxwell;
        delete[] Marker_EngineInflow;
       delete[] Marker_EngineExhaust;
         delete[] Marker_Displacement;
@@ -7788,7 +7887,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7876,33 +7975,33 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
-    multizone_filename += ext;
-    return multizone_filename;
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
-string CConfig::GetObjFunc_Extension(string val_filename) {
+string CConfig::GetObjFunc_Extension(string val_filename) const {
 
   string AdjExt, Filename = val_filename;
 
@@ -7933,9 +8032,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
-        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
+        case AVG_TEMPERATURE:             AdjExt = "_avtp";     break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
-        case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
+        case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
@@ -7961,6 +8060,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
+        case STRESS_PENALTY:              AdjExt = "_stress";   break;
       }
     }
     else{
@@ -7984,7 +8084,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
@@ -8019,7 +8118,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   /*--- Set the solver methods ---*/
 
   switch (val_solver) {
-    case EULER: case INC_EULER:
+    case EULER: case INC_EULER: case NEMO_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8027,7 +8126,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES:
+    case NAVIER_STOKES: case INC_NAVIER_STOKES: case NEMO_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8369,7 +8468,6 @@ bool CConfig::GetVolumetric_Movement() const {
 
   if (GetSurface_Movement(AEROELASTIC) ||
       GetSurface_Movement(AEROELASTIC_RIGID_MOTION)||
-      GetSurface_Movement(FLUID_STRUCTURE) ||
       GetSurface_Movement(EXTERNAL) ||
       GetSurface_Movement(EXTERNAL_ROTATION)){
     volumetric_movement = true;
@@ -8423,6 +8521,16 @@ unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) const {
     if (Marker_Deform_Mesh[iMarker_Deform_Mesh] == val_marker) break;
 
   return iMarker_Deform_Mesh;
+}
+
+unsigned short CConfig::GetMarker_Deform_Mesh_Sym_Plane(string val_marker) const {
+  unsigned short iMarker_Deform_Mesh_Sym_Plane;
+
+  /*--- Find the marker for this interface boundary. ---*/
+  for (iMarker_Deform_Mesh_Sym_Plane = 0; iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane; iMarker_Deform_Mesh_Sym_Plane++)
+    if (Marker_Deform_Mesh_Sym_Plane[iMarker_Deform_Mesh_Sym_Plane] == val_marker) break;
+
+  return iMarker_Deform_Mesh_Sym_Plane;
 }
 
 unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
@@ -8494,7 +8602,7 @@ void CConfig::SetInlet_Ptotal(su2double val_pressure, string val_marker) {
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-su2double* CConfig::GetInlet_FlowDir(string val_marker) {
+const su2double* CConfig::GetInlet_FlowDir(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -8515,11 +8623,18 @@ su2double CConfig::GetInlet_Pressure(string val_marker) const {
   return Inlet_Pressure[iMarker_Supersonic_Inlet];
 }
 
-su2double* CConfig::GetInlet_Velocity(string val_marker) {
+const su2double* CConfig::GetInlet_Velocity(string val_marker) const {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
+}
+
+const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
+  unsigned short iMarker_Supersonic_Inlet;
+  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
+    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
+  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {
@@ -8550,7 +8665,7 @@ su2double CConfig::GetRiemann_Var2(string val_marker) const {
   return Riemann_Var2[iMarker_Riemann];
 }
 
-su2double* CConfig::GetRiemann_FlowDir(string val_marker) {
+const su2double* CConfig::GetRiemann_FlowDir(string val_marker) const {
   unsigned short iMarker_Riemann;
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
@@ -8563,7 +8678,6 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) const {
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
   return Kind_Data_Riemann[iMarker_Riemann];
 }
-
 
 su2double CConfig::GetGiles_Var1(string val_marker) const {
   unsigned short iMarker_Giles;
@@ -8600,7 +8714,7 @@ su2double CConfig::GetGiles_RelaxFactorFourier(string val_marker) const {
   return RelaxFactorFourier[iMarker_Giles];
 }
 
-su2double* CConfig::GetGiles_FlowDir(string val_marker) {
+const su2double* CConfig::GetGiles_FlowDir(string val_marker) const {
   unsigned short iMarker_Giles;
   for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++)
     if (Marker_Giles[iMarker_Giles] == val_marker) break;
@@ -8807,7 +8921,38 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
+pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
+  unsigned short iMarker = 0;
+  short          flag = -1;
+  pair<unsigned short, su2double> WallProp;
+
+  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
+    for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
+      if (Marker_HeatFlux[iMarker] == val_marker) {
+        flag = iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+      if (Marker_Isothermal[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+    for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
+      if (Marker_CHTInterface[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+  }
+
+  WallProp = make_pair(SMOOTH, 0.0);
+  return WallProp;
+}
+
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
+
   unsigned short WallFunction = NO_WALL_FUNCTION;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
@@ -8820,7 +8965,7 @@ unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
   return WallFunction;
 }
 
-unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
+const unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) const {
   unsigned short *intInfo = nullptr;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
@@ -8833,7 +8978,7 @@ unsigned short* CConfig::GetWallFunction_IntInfo(string val_marker) {
   return intInfo;
 }
 
-su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) {
+const su2double* CConfig::GetWallFunction_DoubleInfo(string val_marker) const {
   su2double *doubleInfo = nullptr;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
@@ -9243,8 +9388,8 @@ void CConfig::SetProfilingCSV(void) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 #endif
 
   /*--- Each rank has the same stack trace, so the they have the same
@@ -9328,11 +9473,11 @@ void CConfig::SetProfilingCSV(void) {
   }
 
 #ifdef HAVE_MPI
-  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 #else
   memcpy(n_calls_red, n_calls, map_size*sizeof(int));
   memcpy(l_tot_red,   l_tot,   map_size*sizeof(double));
@@ -9355,14 +9500,9 @@ void CConfig::SetProfilingCSV(void) {
 
     /*--- Now write a CSV file with the processed results ---*/
 
-    char cstr[200];
     ofstream Profile_File;
-    strcpy (cstr, "profiling.csv");
-
-    /*--- Prepare and open the file ---*/
-
     Profile_File.precision(15);
-    Profile_File.open(cstr, ios::out);
+    Profile_File.open("profiling.csv");
 
     /*--- Create the CSV header ---*/
 
@@ -9398,7 +9538,7 @@ void CConfig::SetProfilingCSV(void) {
 
 }
 
-void CConfig::GEMM_Tick(double *val_start_time) {
+void CConfig::GEMM_Tick(double *val_start_time) const {
 
 #ifdef PROFILE
 
@@ -9412,7 +9552,7 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 }
 
-void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
+void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) const {
 
 #ifdef PROFILE
 
@@ -9471,8 +9611,8 @@ void CConfig::GEMMProfilingCSV(void) {
   /* Parallel executable. The profiling data must be sent to the master node.
      First determine the rank and size. */
   int size;
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /* Check for the master node. */
   if(rank == MASTER_NODE) {
@@ -9483,7 +9623,7 @@ void CConfig::GEMMProfilingCSV(void) {
       /* Block until a message from this processor arrives. Determine
          the number of entries in the receive buffers. */
       SU2_MPI::Status status;
-      SU2_MPI::Probe(proc, 0, MPI_COMM_WORLD, &status);
+      SU2_MPI::Probe(proc, 0, SU2_MPI::GetComm(), &status);
 
       int nEntries;
       SU2_MPI::Get_count(&status, MPI_LONG, &nEntries);
@@ -9497,15 +9637,15 @@ void CConfig::GEMMProfilingCSV(void) {
       vector<long>   recvBufMNK(3*nEntries);
 
       SU2_MPI::Recv(recvBufNCalls.data(), recvBufNCalls.size(),
-                    MPI_LONG, proc, 0, MPI_COMM_WORLD, &status);
+                    MPI_LONG, proc, 0, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufTotTime.data(), recvBufTotTime.size(),
-                    MPI_DOUBLE, proc, 1, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 1, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMinTime.data(), recvBufMinTime.size(),
-                    MPI_DOUBLE, proc, 2, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 2, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMaxTime.data(), recvBufMaxTime.size(),
-                    MPI_DOUBLE, proc, 3, MPI_COMM_WORLD, &status);
+                    MPI_DOUBLE, proc, 3, SU2_MPI::GetComm(), &status);
       SU2_MPI::Recv(recvBufMNK.data(), recvBufMNK.size(),
-                    MPI_LONG, proc, 4, MPI_COMM_WORLD, &status);
+                    MPI_LONG, proc, 4, SU2_MPI::GetComm(), &status);
 
       /* Loop over the number of entries. */
       for(int i=0; i<nEntries; ++i) {
@@ -9554,15 +9694,15 @@ void CConfig::GEMMProfilingCSV(void) {
 
     /* Send the data to the master node using blocking sends. */
     SU2_MPI::Send(GEMM_Profile_NCalls.data(), GEMM_Profile_NCalls.size(),
-                  MPI_LONG, MASTER_NODE, 0, MPI_COMM_WORLD);
+                  MPI_LONG, MASTER_NODE, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_TotTime.data(), GEMM_Profile_TotTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 1, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_MinTime.data(), GEMM_Profile_MinTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 2, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 2, SU2_MPI::GetComm());
     SU2_MPI::Send(GEMM_Profile_MaxTime.data(), GEMM_Profile_MaxTime.size(),
-                  MPI_DOUBLE, MASTER_NODE, 3, MPI_COMM_WORLD);
+                  MPI_DOUBLE, MASTER_NODE, 3, SU2_MPI::GetComm());
     SU2_MPI::Send(sendBufMNK.data(), sendBufMNK.size(),
-                  MPI_LONG, MASTER_NODE, 4, MPI_COMM_WORLD);
+                  MPI_LONG, MASTER_NODE, 4, SU2_MPI::GetComm());
   }
 
 #endif
@@ -9594,12 +9734,9 @@ void CConfig::GEMMProfilingCSV(void) {
     sort(sortedTime.begin(), sortedTime.end());
 
     /* Open the profiling file. */
-    char cstr[200];
     ofstream Profile_File;
-    strcpy (cstr, "gemm_profiling.csv");
-
     Profile_File.precision(15);
-    Profile_File.open(cstr, ios::out);
+    Profile_File.open("gemm_profiling.csv");
 
     /* Create the CSV header */
     Profile_File << "\"Total_Time\", \"N_Calls\", \"Avg_Time\", \"Min_Time\", \"Max_Time\", \"M\", \"N\", \"K\", \"Avg GFLOPs\"" << endl;
@@ -9715,6 +9852,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

@@ -2,7 +2,7 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #include "../../include/output/CFlowOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
@@ -40,13 +41,13 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
 
   /// DESCRIPTION: Average mass flow
-  AddHistoryOutput("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_MASSFLOW",         "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
-  AddHistoryOutput("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_MACH",             "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mach number on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
-  AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_STATIC_TEMPERATURE","Avg_Temp",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Pressure
-  AddHistoryOutput("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_STATIC_PRESSURE",  "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Density
   AddHistoryOutput("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average density on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Enthalpy
@@ -54,19 +55,19 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   /// DESCRIPTION: Average velocity in normal direction of the surface
   AddHistoryOutput("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average normal velocity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Flow uniformity
-  AddHistoryOutput("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total flow uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_UNIFORMITY",       "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total flow uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
-  AddHistoryOutput("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary strength on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_SECONDARY",        "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary strength on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
-  AddHistoryOutput("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_MOM_DISTORTION",   "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total momentum distortion on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
-  AddHistoryOutput("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_SECOND_OVER_UNIFORM","Secondary_Over_Uniformity",ScreenOutputFormat::SCIENTIFIC,"FLOW_COEFF", "Total secondary over uniformity on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
-  AddHistoryOutput("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total temperature all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
-  AddHistoryOutput("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  AddHistoryOutput("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 
@@ -77,13 +78,13 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   }
 
   /// DESCRIPTION: Average mass flow
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_MASSFLOW",         "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Mach number
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_MACH",             "Avg_Mach",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Temperature
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_STATIC_TEMPERATURE","Avg_Temp",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Pressure
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_STATIC_PRESSURE",  "Avg_Press",                 ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Density
   AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average Enthalpy
@@ -91,19 +92,19 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   /// DESCRIPTION: Average velocity in normal direction of the surface
   AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Flow uniformity
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_UNIFORMITY",       "Uniformity",                ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary strength
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_SECONDARY",        "Secondary_Strength",        ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Momentum distortion
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_MOM_DISTORTION",   "Momentum_Distortion",       ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Secondary over uniformity
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_SECOND_OVER_UNIFORM","Secondary_Over_Uniformity",ScreenOutputFormat::SCIENTIFIC,"FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total temperature
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_TOTAL_TEMPERATURE","Avg_TotalTemp",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average total pressure
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  AddHistoryOutputPerSurface("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -113,38 +114,37 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
-  Enthalpy, Velocity[3] = {}, TangVel[3], Velocity2, MassFlow, Density, Area,
+  Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
-  su2double Gas_Constant      = config->GetGas_ConstantND();
-  su2double Gamma             = config->GetGamma();
-  unsigned short nMarker      = config->GetnMarker_All();
-  unsigned short nDim         = geometry->GetnDim();
-  unsigned short Kind_Average = config->GetKind_Average();
+  const su2double Gas_Constant      = config->GetGas_ConstantND();
+  const su2double Gamma             = config->GetGamma();
+  const unsigned short nMarker      = config->GetnMarker_All();
+  const unsigned short nDim         = geometry->GetnDim();
+  const unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
-  bool energy         = config->GetEnergy_Equation();
+  const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
+  const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  const bool energy         = config->GetEnergy_Equation();
+  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
 
+  const bool axisymmetric               = config->GetAxisymmetric();
+  const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
 
-  bool axisymmetric               = config->GetAxisymmetric();
-  unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
-
-  su2double  *Vector                    = new su2double[nDim];
-  su2double  *Surface_MassFlow          = new su2double[nMarker];
-  su2double  *Surface_Mach              = new su2double[nMarker];
-  su2double  *Surface_Temperature       = new su2double[nMarker];
-  su2double  *Surface_Density           = new su2double[nMarker];
-  su2double  *Surface_Enthalpy          = new su2double[nMarker];
-  su2double  *Surface_NormalVelocity    = new su2double[nMarker];
-  su2double  *Surface_StreamVelocity2   = new su2double[nMarker];
-  su2double  *Surface_TransvVelocity2   = new su2double[nMarker];
-  su2double  *Surface_Pressure          = new su2double[nMarker];
-  su2double  *Surface_TotalTemperature  = new su2double[nMarker];
-  su2double  *Surface_TotalPressure     = new su2double[nMarker];
-  su2double  *Surface_VelocityIdeal     = new su2double[nMarker];
-  su2double  *Surface_Area              = new su2double[nMarker];
-  su2double  *Surface_MassFlow_Abs      = new su2double[nMarker];
+  vector<su2double> Surface_MassFlow          (nMarker,0.0);
+  vector<su2double> Surface_Mach              (nMarker,0.0);
+  vector<su2double> Surface_Temperature       (nMarker,0.0);
+  vector<su2double> Surface_Density           (nMarker,0.0);
+  vector<su2double> Surface_Enthalpy          (nMarker,0.0);
+  vector<su2double> Surface_NormalVelocity    (nMarker,0.0);
+  vector<su2double> Surface_StreamVelocity2   (nMarker,0.0);
+  vector<su2double> Surface_TransvVelocity2   (nMarker,0.0);
+  vector<su2double> Surface_Pressure          (nMarker,0.0);
+  vector<su2double> Surface_TotalTemperature  (nMarker,0.0);
+  vector<su2double> Surface_TotalPressure     (nMarker,0.0);
+  vector<su2double> Surface_VelocityIdeal     (nMarker,0.0);
+  vector<su2double> Surface_Area              (nMarker,0.0);
+  vector<su2double> Surface_MassFlow_Abs      (nMarker,0.0);
 
   su2double  Tot_Surface_MassFlow          = 0.0;
   su2double  Tot_Surface_Mach              = 0.0;
@@ -164,21 +164,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    Surface_MassFlow[iMarker]          = 0.0;
-    Surface_Mach[iMarker]              = 0.0;
-    Surface_Temperature[iMarker]       = 0.0;
-    Surface_Density[iMarker]           = 0.0;
-    Surface_Enthalpy[iMarker]          = 0.0;
-    Surface_NormalVelocity[iMarker]    = 0.0;
-    Surface_StreamVelocity2[iMarker]   = 0.0;
-    Surface_TransvVelocity2[iMarker]   = 0.0;
-    Surface_Pressure[iMarker]          = 0.0;
-    Surface_TotalTemperature[iMarker]  = 0.0;
-    Surface_TotalPressure[iMarker]     = 0.0;
-    Surface_VelocityIdeal[iMarker]     = 0.0;
-    Surface_Area[iMarker]              = 0.0;
-    Surface_MassFlow_Abs[iMarker]      = 0.0;
 
     if (config->GetMarker_All_Analyze(iMarker) == YES) {
 
@@ -223,6 +208,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
           Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
+          if(streamwisePeriodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -284,68 +271,35 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   /*--- Copy to the appropriate structure ---*/
 
-  su2double *Surface_MassFlow_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Local              = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Local       = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Local           = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Local    = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity2_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity2_Local   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Local          = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Local  = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Local     = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Local              = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Local      = new su2double [nMarker_Analyze];
+  vector<su2double> Surface_MassFlow_Local          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Mach_Local              (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Temperature_Local       (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Density_Local           (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Enthalpy_Local          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_NormalVelocity_Local    (nMarker_Analyze,0.0);
+  vector<su2double> Surface_StreamVelocity2_Local   (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TransvVelocity2_Local   (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Pressure_Local          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TotalTemperature_Local  (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TotalPressure_Local     (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Area_Local              (nMarker_Analyze,0.0);
+  vector<su2double> Surface_MassFlow_Abs_Local      (nMarker_Analyze,0.0);
 
-  su2double *Surface_MassFlow_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_Mach_Total              = new su2double [nMarker_Analyze];
-  su2double *Surface_Temperature_Total       = new su2double [nMarker_Analyze];
-  su2double *Surface_Density_Total           = new su2double [nMarker_Analyze];
-  su2double *Surface_Enthalpy_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_NormalVelocity_Total    = new su2double [nMarker_Analyze];
-  su2double *Surface_StreamVelocity2_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_TransvVelocity2_Total   = new su2double [nMarker_Analyze];
-  su2double *Surface_Pressure_Total          = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalTemperature_Total  = new su2double [nMarker_Analyze];
-  su2double *Surface_TotalPressure_Total     = new su2double [nMarker_Analyze];
-  su2double *Surface_Area_Total              = new su2double [nMarker_Analyze];
-  su2double *Surface_MassFlow_Abs_Total      = new su2double [nMarker_Analyze];
+  vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Temperature_Total       (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Density_Total           (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Enthalpy_Total          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_NormalVelocity_Total    (nMarker_Analyze,0.0);
+  vector<su2double> Surface_StreamVelocity2_Total   (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TransvVelocity2_Total   (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Pressure_Total          (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TotalTemperature_Total  (nMarker_Analyze,0.0);
+  vector<su2double> Surface_TotalPressure_Total     (nMarker_Analyze,0.0);
+  vector<su2double> Surface_Area_Total              (nMarker_Analyze,0.0);
+  vector<su2double> Surface_MassFlow_Abs_Total      (nMarker_Analyze,0.0);
 
-  su2double *Surface_MomentumDistortion_Total = new su2double [nMarker_Analyze];
-
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Local[iMarker_Analyze]          = 0.0;
-    Surface_Mach_Local[iMarker_Analyze]              = 0.0;
-    Surface_Temperature_Local[iMarker_Analyze]       = 0.0;
-    Surface_Density_Local[iMarker_Analyze]           = 0.0;
-    Surface_Enthalpy_Local[iMarker_Analyze]          = 0.0;
-    Surface_NormalVelocity_Local[iMarker_Analyze]    = 0.0;
-    Surface_StreamVelocity2_Local[iMarker_Analyze]   = 0.0;
-    Surface_TransvVelocity2_Local[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Local[iMarker_Analyze]          = 0.0;
-    Surface_TotalTemperature_Local[iMarker_Analyze]  = 0.0;
-    Surface_TotalPressure_Local[iMarker_Analyze]     = 0.0;
-    Surface_Area_Local[iMarker_Analyze]              = 0.0;
-    Surface_MassFlow_Abs_Local[iMarker_Analyze]      = 0.0;
-
-    Surface_MassFlow_Total[iMarker_Analyze]          = 0.0;
-    Surface_Mach_Total[iMarker_Analyze]              = 0.0;
-    Surface_Temperature_Total[iMarker_Analyze]       = 0.0;
-    Surface_Density_Total[iMarker_Analyze]           = 0.0;
-    Surface_Enthalpy_Total[iMarker_Analyze]          = 0.0;
-    Surface_NormalVelocity_Total[iMarker_Analyze]    = 0.0;
-    Surface_StreamVelocity2_Total[iMarker_Analyze]   = 0.0;
-    Surface_TransvVelocity2_Total[iMarker_Analyze]   = 0.0;
-    Surface_Pressure_Total[iMarker_Analyze]          = 0.0;
-    Surface_TotalTemperature_Total[iMarker_Analyze]  = 0.0;
-    Surface_TotalPressure_Total[iMarker_Analyze]     = 0.0;
-    Surface_Area_Total[iMarker_Analyze]              = 0.0;
-    Surface_MassFlow_Abs_Total[iMarker_Analyze]      = 0.0;
-
-    Surface_MomentumDistortion_Total[iMarker_Analyze] = 0.0;
-
-  }
+  vector<su2double> Surface_MomentumDistortion_Total (nMarker_Analyze,0.0);
 
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
 
@@ -379,41 +333,23 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   }
 
-#ifdef HAVE_MPI
+  auto Allreduce = [](const vector<su2double>& src, vector<su2double>& dst) {
+    SU2_MPI::Allreduce(src.data(), dst.data(), src.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  };
 
-  SU2_MPI::Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Mach_Local, Surface_Mach_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Temperature_Local, Surface_Temperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Density_Local, Surface_Density_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_StreamVelocity2_Local, Surface_StreamVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TransvVelocity2_Local, Surface_TransvVelocity2_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Pressure_Local, Surface_Pressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_Area_Local, Surface_Area_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total, nMarker_Analyze, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-#else
-
-  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Total[iMarker_Analyze]          = Surface_MassFlow_Local[iMarker_Analyze];
-    Surface_Mach_Total[iMarker_Analyze]              = Surface_Mach_Local[iMarker_Analyze];
-    Surface_Temperature_Total[iMarker_Analyze]       = Surface_Temperature_Local[iMarker_Analyze];
-    Surface_Density_Total[iMarker_Analyze]           = Surface_Density_Local[iMarker_Analyze];
-    Surface_Enthalpy_Total[iMarker_Analyze]          = Surface_Enthalpy_Local[iMarker_Analyze];
-    Surface_NormalVelocity_Total[iMarker_Analyze]    = Surface_NormalVelocity_Local[iMarker_Analyze];
-    Surface_StreamVelocity2_Total[iMarker_Analyze]   = Surface_StreamVelocity2_Local[iMarker_Analyze];
-    Surface_TransvVelocity2_Total[iMarker_Analyze]   = Surface_TransvVelocity2_Local[iMarker_Analyze];
-    Surface_Pressure_Total[iMarker_Analyze]          = Surface_Pressure_Local[iMarker_Analyze];
-    Surface_TotalTemperature_Total[iMarker_Analyze]  = Surface_TotalTemperature_Local[iMarker_Analyze];
-    Surface_TotalPressure_Total[iMarker_Analyze]     = Surface_TotalPressure_Local[iMarker_Analyze];
-    Surface_Area_Total[iMarker_Analyze]              = Surface_Area_Local[iMarker_Analyze];
-    Surface_MassFlow_Abs_Total[iMarker_Analyze]      = Surface_MassFlow_Abs_Local[iMarker_Analyze];
-  }
-
-#endif
+  Allreduce(Surface_MassFlow_Local, Surface_MassFlow_Total);
+  Allreduce(Surface_Mach_Local, Surface_Mach_Total);
+  Allreduce(Surface_Temperature_Local, Surface_Temperature_Total);
+  Allreduce(Surface_Density_Local, Surface_Density_Total);
+  Allreduce(Surface_Enthalpy_Local, Surface_Enthalpy_Total);
+  Allreduce(Surface_NormalVelocity_Local, Surface_NormalVelocity_Total);
+  Allreduce(Surface_StreamVelocity2_Local, Surface_StreamVelocity2_Total);
+  Allreduce(Surface_TransvVelocity2_Local, Surface_TransvVelocity2_Total);
+  Allreduce(Surface_Pressure_Local, Surface_Pressure_Total);
+  Allreduce(Surface_TotalTemperature_Local, Surface_TotalTemperature_Total);
+  Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total);
+  Allreduce(Surface_Area_Local, Surface_Area_Total);
+  Allreduce(Surface_MassFlow_Abs_Local, Surface_MassFlow_Abs_Total);
 
   /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
    set the value in the config structure for future use ---*/
@@ -448,10 +384,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
 
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
-    
+
     /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
     https://www.sciencedirect.com/science/article/pii/S0142727X16301412 ------*/
-    
+
     if (Area != 0.0) {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
@@ -469,22 +405,22 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
     su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
-    SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_MASSFLOW", MassFlow, iMarker_Analyze);
     Tot_Surface_MassFlow += MassFlow;
     config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
 
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];
-    SetHistoryOutputPerSurfaceValue("AVG_MACH", Mach, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_MACH", Mach, iMarker_Analyze);
     Tot_Surface_Mach += Mach;
     config->SetSurface_Mach(iMarker_Analyze, Mach);
 
     su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
-    SetHistoryOutputPerSurfaceValue("AVG_TEMP", Temperature, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_STATIC_TEMPERATURE", Temperature, iMarker_Analyze);
     Tot_Surface_Temperature += Temperature;
     config->SetSurface_Temperature(iMarker_Analyze, Temperature);
 
     su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
-    SetHistoryOutputPerSurfaceValue("AVG_PRESS", Pressure, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_STATIC_PRESSURE", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
     config->SetSurface_Pressure(iMarker_Analyze, Pressure);
 
@@ -504,32 +440,32 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
 
     su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
-    SetHistoryOutputPerSurfaceValue("UNIFORMITY", Uniformity, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_UNIFORMITY", Uniformity, iMarker_Analyze);
     Tot_Surface_StreamVelocity2 += Uniformity;
     config->SetSurface_Uniformity(iMarker_Analyze, Uniformity);
 
     su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
-    SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH", SecondaryStrength, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_SECONDARY", SecondaryStrength, iMarker_Analyze);
     Tot_Surface_TransvVelocity2 += SecondaryStrength;
     config->SetSurface_SecondaryStrength(iMarker_Analyze, SecondaryStrength);
 
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
-    SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION", MomentumDistortion, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_MOM_DISTORTION", MomentumDistortion, iMarker_Analyze);
     Tot_Momentum_Distortion += MomentumDistortion;
     config->SetSurface_MomentumDistortion(iMarker_Analyze, MomentumDistortion);
 
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
-    SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_SECOND_OVER_UNIFORM", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
     config->SetSurface_SecondOverUniform(iMarker_Analyze, SecondOverUniform);
 
     su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP", TotalTemperature, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_TOTAL_TEMPERATURE", TotalTemperature, iMarker_Analyze);
     Tot_Surface_TotalTemperature += TotalTemperature;
     config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
 
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_TOTAL_PRESSURE", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
     config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
@@ -548,24 +484,24 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
       Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
     }
-    SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
+    SetHistoryOutputPerSurfaceValue("SURFACE_PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
     Tot_Surface_PressureDrop += Pressure_Drop;
   }
 
-  SetHistoryOutputValue("AVG_MASSFLOW", Tot_Surface_MassFlow);
-  SetHistoryOutputValue("AVG_MACH", Tot_Surface_Mach);
-  SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temperature);
-  SetHistoryOutputValue("AVG_PRESS", Tot_Surface_Pressure);
+  SetHistoryOutputValue("SURFACE_MASSFLOW", Tot_Surface_MassFlow);
+  SetHistoryOutputValue("SURFACE_MACH", Tot_Surface_Mach);
+  SetHistoryOutputValue("SURFACE_STATIC_TEMPERATURE", Tot_Surface_Temperature);
+  SetHistoryOutputValue("SURFACE_STATIC_PRESSURE", Tot_Surface_Pressure);
   SetHistoryOutputValue("AVG_DENSITY", Tot_Surface_Density);
   SetHistoryOutputValue("AVG_ENTHALPY", Tot_Surface_Enthalpy);
-  SetHistoryOutputValue("AVG_NORMALVEL", Tot_Surface_Enthalpy);
-  SetHistoryOutputValue("UNIFORMITY", Tot_Surface_StreamVelocity2);
-  SetHistoryOutputValue("SECONDARY_STRENGTH", Tot_Surface_TransvVelocity2);
-  SetHistoryOutputValue("MOMENTUM_DISTORTION", Tot_Momentum_Distortion);
-  SetHistoryOutputValue("SECONDARY_OVER_UNIFORMITY", Tot_SecondOverUniformity);
-  SetHistoryOutputValue("AVG_TOTALTEMP", Tot_Surface_TotalTemperature);
-  SetHistoryOutputValue("AVG_TOTALPRESS", Tot_Surface_TotalPressure);
-  SetHistoryOutputValue("PRESSURE_DROP",  Tot_Surface_PressureDrop);
+  SetHistoryOutputValue("AVG_NORMALVEL", Tot_Surface_NormalVelocity);
+  SetHistoryOutputValue("SURFACE_UNIFORMITY", Tot_Surface_StreamVelocity2);
+  SetHistoryOutputValue("SURFACE_SECONDARY", Tot_Surface_TransvVelocity2);
+  SetHistoryOutputValue("SURFACE_MOM_DISTORTION", Tot_Momentum_Distortion);
+  SetHistoryOutputValue("SURFACE_SECOND_OVER_UNIFORM", Tot_SecondOverUniformity);
+  SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
+  SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
+  SetHistoryOutputValue("SURFACE_PRESSURE_DROP", Tot_Surface_PressureDrop);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
@@ -648,51 +584,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   }
 
-  delete [] Surface_MassFlow_Local;
-  delete [] Surface_Mach_Local;
-  delete [] Surface_Temperature_Local;
-  delete [] Surface_Density_Local;
-  delete [] Surface_Enthalpy_Local;
-  delete [] Surface_NormalVelocity_Local;
-  delete [] Surface_StreamVelocity2_Local;
-  delete [] Surface_TransvVelocity2_Local;
-  delete [] Surface_Pressure_Local;
-  delete [] Surface_TotalTemperature_Local;
-  delete [] Surface_TotalPressure_Local;
-  delete [] Surface_Area_Local;
-  delete [] Surface_MassFlow_Abs_Local;
-
-  delete [] Surface_MassFlow_Total;
-  delete [] Surface_Mach_Total;
-  delete [] Surface_Temperature_Total;
-  delete [] Surface_Density_Total;
-  delete [] Surface_Enthalpy_Total;
-  delete [] Surface_NormalVelocity_Total;
-  delete [] Surface_StreamVelocity2_Total;
-  delete [] Surface_TransvVelocity2_Total;
-  delete [] Surface_Pressure_Total;
-  delete [] Surface_TotalTemperature_Total;
-  delete [] Surface_TotalPressure_Total;
-  delete [] Surface_Area_Total;
-  delete [] Surface_MassFlow_Abs_Total;
-  delete [] Surface_MomentumDistortion_Total;
-
-  delete [] Surface_MassFlow;
-  delete [] Surface_Mach;
-  delete [] Surface_Temperature;
-  delete [] Surface_Density;
-  delete [] Surface_Enthalpy;
-  delete [] Surface_NormalVelocity;
-  delete [] Surface_StreamVelocity2;
-  delete [] Surface_TransvVelocity2;
-  delete [] Surface_Pressure;
-  delete [] Surface_TotalTemperature;
-  delete [] Surface_TotalPressure;
-  delete [] Surface_Area;
-  delete [] Vector;
-  delete [] Surface_VelocityIdeal;
-  delete [] Surface_MassFlow_Abs;
-
   std::cout << std::resetiosflags(std::cout.flags());
 }
 
@@ -750,6 +641,8 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
+
+  AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
@@ -792,54 +685,47 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   }
 
   SetHistoryOutputValue("AOA", config->GetAoA());
+
+  SetHistoryOutputValue("COMBO", flow_solver->GetTotal_ComboObj());
 }
 
 void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
 
-  SetHistoryOutputValue("CT", flow_solver->GetTotal_CT());
-  SetHistoryOutputValue("CQ", flow_solver->GetTotal_CQ());
-  SetHistoryOutputValue("MERIT", flow_solver->GetTotal_CMerit());
+  SetHistoryOutputValue("THRUST", flow_solver->GetTotal_CT());
+  SetHistoryOutputValue("TORQUE", flow_solver->GetTotal_CQ());
+  SetHistoryOutputValue("FIGURE_OF_MERIT", flow_solver->GetTotal_CMerit());
 }
 
 
 void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
 
-  AddHistoryOutput("CP_DIFF", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
+  AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
 
 }
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
 
-  unsigned short iMarker, icommas, Boundary, iDim;
+  unsigned short iMarker, icommas, Boundary;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
-  char cstr[200];
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
-  surfCp_filename = "TargetCp";
-
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
-
-  strcpy (cstr, surfCp_filename.c_str());
+  surfCp_filename = config->GetUnsteady_FileName("TargetCp", (int)curTimeIter, ".dat");
 
   /*--- Read the surface pressure file ---*/
 
   string::size_type position;
 
-  Surface_file.open(cstr, ios::in);
+  Surface_file.open(surfCp_filename);
 
   if (!(Surface_file.fail())) {
 
     nPointLocal = geometry->GetnPoint();
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nPointGlobal = nPointLocal;
-#endif
+    SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
     Point2Vertex = new unsigned long[nPointGlobal][2];
     PointInDomain = new bool[nPointGlobal];
@@ -918,10 +804,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
           Cp = solver->GetCPressure(iMarker, iVertex);
           CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
 
-          Area = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
         }
@@ -929,18 +812,15 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
       }
     }
 
-#ifdef HAVE_MPI
     su2double MyPressDiff = PressDiff;
-    SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
+    SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Update the total Cp difference coeffient ---*/
 
   solver->SetTotal_CpDiff(PressDiff);
 
-  SetHistoryOutputValue("CP_DIFF", PressDiff);
+  SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", PressDiff);
 
 }
 
@@ -1033,29 +913,35 @@ void CFlowOutput::WriteMetaData(CConfig *config){
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  char cstr[200];
-  unsigned short iDim, iMarker_Monitoring;
-  ofstream Breakdown_file;
+  unsigned short iMarker_Monitoring;
 
-  bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool unsteady           = (config->GetTime_Marching() != NO);
-  bool viscous            = config->GetViscous();
-  bool dynamic_grid       = config->GetDynamic_Grid();
-  bool gravity            = config->GetGravityForce();
-  bool turbulent          = config->GetKind_Solver() == RANS;
-  bool fixed_cl           = config->GetFixed_CL_Mode();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  unsigned short Kind_Turb_Model = config->GetKind_Turb_Model();
-  unsigned short Ref_NonDim = config->GetRef_NonDim();
+  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool unsteady        = config->GetTime_Domain();
+  const bool viscous         = config->GetViscous();
+  const bool dynamic_grid    = config->GetDynamic_Grid();
+  const bool gravity         = config->GetGravityForce();
+  const bool turbulent       = config->GetKind_Solver() == RANS;
+  const bool fixed_cl        = config->GetFixed_CL_Mode();
+  const auto Kind_Solver     = config->GetKind_Solver();
+  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
+  const auto Ref_NonDim      = config->GetRef_NonDim();
 
-  unsigned short nDim =  geometry->GetnDim();
+  const auto nDim =  geometry->GetnDim();
+
+  auto fileName = config->GetBreakdown_FileName();
+  if (unsteady) {
+    const auto lastindex = fileName.find_last_of(".");
+    const auto ext = fileName.substr(lastindex, fileName.size());
+    fileName = fileName.substr(0, lastindex);
+    fileName = config->GetFilename(fileName, ext, curTimeIter);
+  }
 
   /*--- Output the mean flow solution using only the master node ---*/
 
   if ( rank == MASTER_NODE) {
 
-    cout << endl << "Writing the forces breakdown file ("<< config->GetBreakdown_FileName() << ")." << endl;
+    cout << endl << "Writing the forces breakdown file ("<< fileName << ")." << endl;
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
 
@@ -1090,11 +976,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
     nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
     *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
-
-    /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-     the two lines below that use the dt variable. ---*/
-    //time_t now = time(0);
-    //string dt = ctime(&now); dt[24] = '.';
 
     /*--- Allocate memory for the coefficients being monitored ---*/
 
@@ -1371,17 +1252,14 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     }
 
-
     /*--- Write file name with extension ---*/
 
-    string filename = config->GetBreakdown_FileName();
-    strcpy (cstr, filename.data());
-
-    Breakdown_file.open(cstr, ios::out);
+    ofstream Breakdown_file;
+    Breakdown_file.open(fileName);
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -2157,26 +2035,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     /*--- Reference area and force factors. ---*/
 
-    su2double RefDensity, RefArea, RefVel, Factor, Ref;
-    RefArea     = config->GetRefArea();
-    if (compressible) {
-      RefDensity  = solver_container[FLOW_SOL]->GetDensity_Inf();
-      RefVel = solver_container[FLOW_SOL]->GetModVelocity_Inf();
-    } else {
-      if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) ||
-          (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-        RefDensity  = solver_container[FLOW_SOL]->GetDensity_Inf();
-        RefVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          RefVel  += solver_container[FLOW_SOL]->GetVelocity_Inf(iDim)*solver_container[FLOW_SOL]->GetVelocity_Inf(iDim);
-        RefVel = sqrt(RefVel);
-      } else {
-        RefDensity = config->GetInc_Density_Ref();
-        RefVel    = config->GetInc_Velocity_Ref();
-      }
-    }
-    Factor = (0.5*RefDensity*RefArea*RefVel*RefVel);
-    Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
+    const su2double Factor = solver_container[FLOW_SOL]->GetAeroCoeffsReferenceForce();
+    const su2double Ref = config->GetDensity_Ref() * pow(config->GetVelocity_Ref(),2);
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";
@@ -2847,8 +2707,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMy_Mnt;
     delete [] Surface_CMz_Mnt;
 
-    Breakdown_file.close();
-
   }
 
 }
@@ -2857,16 +2715,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-         (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
-        ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+2 == config->GetnTime_Iter())))){
+        ((Iter == 0) ||
+         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
+         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
+         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
       return true;
     }
   } else {

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridBoundFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 /*!
  * \class CPrimalGridBoundFEM
  * \brief Class to define primal grid boundary element for the FEM solver.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CPrimalGridBoundFEM final: public CPrimalGrid {
 private:
@@ -87,7 +87,7 @@ public:
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return -1; }
+  inline unsigned short GetnNodesFace(unsigned short val_face) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the face index of an element.
@@ -95,7 +95,7 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return -1; }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -103,7 +103,7 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
    * \return Local (to the element) index of the nodes that are neighbor to val_node.
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return -1; }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the number of nodes of an element.
@@ -115,14 +115,14 @@ public:
    * \brief Get the number of faces of an element.
    * \return Number of faces of an element.
    */
-  inline unsigned short GetnFaces(void) override { return -1; }
+  inline unsigned short GetnFaces(void) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the number of neighbors nodes of a node.
    * \param[in] val_node - Local (to the element) index of a node.
    * \return Number if neighbors of a node val_node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return -1; }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Change the orientation of an element.
@@ -133,13 +133,13 @@ public:
    * \brief Get the number of element that are neighbor to this element.
    * \return Number of neighbor elements.
    */
-  inline unsigned short GetnNeighbor_Elements(void) override { return -1; }
+  inline unsigned short GetnNeighbor_Elements(void) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */
-  inline unsigned short GetMaxNodesFace(void) override { return -1; }
+  inline unsigned short GetMaxNodesFace(void) override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.

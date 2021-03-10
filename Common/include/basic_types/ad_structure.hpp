@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -371,8 +371,7 @@ namespace AD{
   /*--- Base case for parameter pack expansion. ---*/
   FORCEINLINE void SetPreaccIn() {}
 
-  template<class T, class... Ts,
-           typename std::enable_if<std::is_same<T,su2double>::value,bool>::type = 0>
+  template<class T, class... Ts, su2enable_if<std::is_same<T,su2double>::value> = 0>
   FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
     if (!PreaccActive) return;
     if (data.isActive())
@@ -403,6 +402,18 @@ namespace AD{
     }
   }
 
+  template<class T>
+  FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y, const int size_z) {
+    if (!PreaccActive) return;
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        for (int k = 0; k < size_z; k++) {
+          if (data[i][j][k].isActive()) PreaccHelper.addInput(data[i][j][k]);
+        }
+      }
+    }
+  }
+
   FORCEINLINE void StartPreacc() {
     if (globalTape.isActive() && PreaccEnabled) {
       PreaccHelper.start();
@@ -413,8 +424,7 @@ namespace AD{
   /*--- Base case for parameter pack expansion. ---*/
   FORCEINLINE void SetPreaccOut() {}
 
-  template<class T, class... Ts,
-           typename std::enable_if<std::is_same<T,su2double>::value,bool>::type = 0>
+  template<class T, class... Ts, su2enable_if<std::is_same<T,su2double>::value> = 0>
   FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
     if (!PreaccActive) return;
     if (data.isActive())

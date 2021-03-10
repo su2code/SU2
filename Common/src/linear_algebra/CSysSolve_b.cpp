@@ -2,7 +2,7 @@
  * \file CSysSolve_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,5 +70,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
 }
 
 template class CSysSolve_b<su2mixedfloat>;
-
+#ifdef USE_MIXED_PRECISION
+template class CSysSolve_b<passivedouble>;
+#endif
 #endif

@@ -2,7 +2,7 @@
  * \file CDriverOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"

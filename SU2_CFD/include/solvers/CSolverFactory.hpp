@@ -46,6 +46,8 @@ enum class SUB_SOLVER_TYPE {
   DISC_ADJ_HEAT,           /*!< \brief Discrete adjoint heat solver */
   EULER,                   /*!< \brief Compressible Euler solver */
   NAVIER_STOKES,           /*!< \brief Compressible Navier-Stokes solver */
+  NEMO_EULER,              /*!< \brief NEMO Euler solver */
+  NEMO_NAVIER_STOKES,      /*!< \brief NEMO Navier-Stokes solver */
   INC_EULER,               /*!< \brief Incompressible Euler solver */
   INC_NAVIER_STOKES,       /*!< \brief Incompressible Navier-stokes solver */
   FEA,                     /*!< \brief Structural Finite-Element solver */
@@ -65,6 +67,7 @@ enum class SUB_SOLVER_TYPE {
 
 enum class INTEGRATION_TYPE{
   MULTIGRID,
+  NEWTON,
   SINGLEGRID,
   DEFAULT,
   FEM_DG,
@@ -82,7 +85,7 @@ class CGeometry;
 class CConfig;
 
 class CSolverFactory {
-  
+
 private:
 
   static map<const CSolver*, SolverMetaData> allocatedSolvers;
@@ -98,10 +101,10 @@ private:
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
-  
+
   /*!
-   * \brief Create a heat solver 
-   * \param[in] solver        - The solver container 
+   * \brief Create a heat solver
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
@@ -109,10 +112,10 @@ private:
    * \return                  - A pointer to the allocated heat solver
    */
   static CSolver* CreateHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
-  
+
   /*!
-   * \brief Create a mesh solver 
-   * \param[in] solver        - The solver container 
+   * \brief Create a mesh solver
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
@@ -120,9 +123,9 @@ private:
    * \return                  - A pointer to the allocated mesh solver
    */
   static CSolver* CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
-  
+
   /*!
-   * \brief Create a DG solver 
+   * \brief Create a DG solver
    * \param[in] kindTurbModel - Kind of DG solver
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
@@ -130,9 +133,9 @@ private:
    * \return                  - A pointer to the allocated DG solver
    */
   static CSolver* CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
+
   /*!
-   * \brief Create a flow solver 
+   * \brief Create a flow solver
    * \param[in] kindFlowSolver - Kind of flow solver
    * \param[in] solver         - The solver container
    * \param[in] geometry       - The geometry definition
@@ -141,18 +144,18 @@ private:
    * \return                   - A pointer to the allocated flow solver
    */
   static CSolver* CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
+
   /*!
-   * \brief Generic routine to create a solver 
+   * \brief Generic routine to create a solver
    * \param[in] kindSolver    - Kind of solver
-   * \param[in] solver        - The solver container 
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated solver
    */
   static CSolver* CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
+
 public:
 
   /*!
@@ -161,7 +164,7 @@ public:
   CSolverFactory() = delete;
 
   /*!
-   * \brief Create the solver container by allocating the primary solver 
+   * \brief Create the solver container by allocating the primary solver
    * and secondary solvers like heat solver, turbulent solver etc
    * \param[in] kindSolver    - The kind of primary solver
    * \param[in] config        - The configuration

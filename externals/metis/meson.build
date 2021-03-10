@@ -1,9 +1,23 @@
 metis_c_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_GETLINE', '-DUSE_GKREGEX']
 
-if build_machine.system() == 'windows'
-  metis_default_warnings = []
-else
-  metis_default_warnings = ['-Wno-implicit-function-declaration', '-Wno-unused-result', '-Wno-macro-redefined']
+metis_default_warnings = []
+if build_machine.system() != 'windows'
+  metis_default_warnings += ['-Wno-implicit-function-declaration']
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    metis_default_warnings += ['-Wno-unused-result',
+                               '-Wno-unused-parameter',
+                               '-Wno-unused-variable',
+                               '-Wno-unused-but-set-variable',
+                               '-Wno-macro-redefined',
+                               '-Wno-unknown-pragmas',
+                               '-Wno-sign-compare',
+                               '-Wno-clobbered',
+                               '-Wno-empty-body',
+                               '-Wno-unused-label',
+                               '-Wno-misleading-indentation',
+                               '-Wno-maybe-uninitialized',
+                               '-Wno-pedantic']
+  endif
 endif
 
 metis_src = ['GKlib/pqueue.c',

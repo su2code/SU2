@@ -2,7 +2,7 @@
  * \file CNumerics_tests.cpp
  * \brief Unit tests for the numerics classes.
  * \author C. Pederson
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,8 +38,6 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   config_options << "REYNOLDS_NUMBER= 5" << std::endl;
   
   /*--- Setup ---*/
-
-  const unsigned short nDim = 3;
 
   CConfig* config = new CConfig(config_options, SU2_CFD, false);
 

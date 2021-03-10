@@ -2,11 +2,11 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,20 +25,19 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CIncEulerVariable.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
                                      unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                      (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool viscous      = config->GetViscous();
-  bool axisymmetric = config->GetAxisymmetric();
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool viscous   = config->GetViscous();
 
-  /*--- Allocate and initialize the primitive variables and gradients ---*/
+  /*--- Allocate and initialize the primitive variables and gradients.
+        Make sure to align the sizes with the constructor of CIncEulerSolver ---*/
 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
 
@@ -56,20 +55,19 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     }
   }
 
-  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  /*--- Allocate undivided laplacian (centered) ---*/
 
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
 
-  /*--- Always allocate the slope limiter,
-   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
+      config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
+    Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+    Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  }
 
   /*--- Solution initialization ---*/
 
@@ -93,51 +91,50 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta),
-        We need P, and rho for running the adjoint problem ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
 
-  Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  if (config->GetMUSCL_Flow() || viscous) {
+    Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
 
-  if (config->GetReconstructionGradientRequired()) {
+  if (config->GetReconstructionGradientRequired() &&
+      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-  
-  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-  
-  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
-  Density_Old.resize(nPoint) = su2double(0.0);
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
   Lambda.resize(nPoint) = su2double(0.0);
   Sensor.resize(nPoint) = su2double(0.0);
 
+  if (config->GetKind_Streamwise_Periodic() != NONE) {
+    Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);
+    if (config->GetStreamwise_Periodic_Temperature())
+      Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
+  }
+
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
-  
+
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
-  
+
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   unsigned long iVar;
   bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 

@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_SOL.
  *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include "../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 #include "../../SU2_CFD/include/solvers/CBaselineSolver_FEM.hpp"

@@ -2,7 +2,7 @@
  * \file CFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -196,8 +196,9 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
   /*----------------- Update structural solver ----------------------*/
 
   if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetStructural_Solver(
-        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
+        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
+        MESH_0);
     integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);
 
     /*--- Verify convergence criteria (based on total time) ---*/
@@ -260,11 +261,6 @@ bool CFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeom
   return output->GetConvergence();
 }
 
-void CFEAIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {}
-
 void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
@@ -273,8 +269,9 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
   Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
           val_iInst);
 
-  /*--- Write the convergence history for the structure (only screen output) ---*/
-  //  if (multizone) output->SetConvHistory_Body(geometry, solver, config, integration, false, 0.0, val_iZone, INST_0);
+  if (multizone && !config[val_iZone]->GetTime_Domain()) {
+    Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), false, val_iZone, val_iInst);
+  }
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
   integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);

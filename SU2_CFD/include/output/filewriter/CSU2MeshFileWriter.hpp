@@ -2,7 +2,7 @@
  * \file CSU2MeshFileWriter.hpp
  * \brief Headers fo the CSV file writer class.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,11 +49,6 @@ public:
    */
   CSU2MeshFileWriter(string valFileName, CParallelDataSorter* valDataSorter,
                      unsigned short valiZone, unsigned short valnZone);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSU2MeshFileWriter() override;
 
   /*!
    * \brief Write sorted data to file in SU2 mesh file format

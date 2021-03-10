@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.6 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -470,6 +470,10 @@ def read_config(filename):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
                 break
+            if case("CONFIG_LIST"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
             if case("HISTORY_OUTPUT"):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
@@ -671,9 +675,6 @@ def read_config(filename):
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if 'OPT_COMBINE_OBJECTIVE' not in data_dict:
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
-    # ensure that per-surface output will be included when there are multiple objectives
-    if 'WRT_SURFACE' not in data_dict and 'OPT_OBJECTIVE' in data_dict and len(data_dict['OPT_OBJECTIVE'])>1:
-        data_dict['WRT_SURFACE'] = "YES"
     if 'OPT_CONSTRAINT' not in data_dict:
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if 'VALUE_OBJFUNC_FILENAME' not in data_dict:
@@ -904,6 +905,16 @@ def write_config(filename,param_dict):
                 output_file.write(" )") 
                 break                
             if case("OUTPUT_FILES"):
+                n_lists = len(new_value)
+                output_file.write("(")
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(")")
+                break
+
+            if case("CONFIG_LIST"):
                 n_lists = len(new_value)
                 output_file.write("(")
                 for i_value in range(n_lists):

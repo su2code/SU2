@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,8 @@
 #include "../../include/solvers/CIncEulerSolver.hpp"
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/solvers/CIncNSSolver.hpp"
+#include "../../include/solvers/CNEMOEulerSolver.hpp"
+#include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/solvers/CTransLMSolver.hpp"
@@ -72,6 +74,9 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
     case EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       break;
+    case NEMO_EULER:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
+      break;
     case INC_NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -79,6 +84,9 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       break;
     case NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      break;
+    case NEMO_NAVIER_STOKES:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -198,7 +206,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
   CSolver *genericSolver = nullptr;
 
   ENUM_TURB_MODEL kindTurbModel = static_cast<ENUM_TURB_MODEL>(config->GetKind_Turb_Model());
-  
+
   SolverMetaData metaData;
 
   metaData.solverType = kindSolver;
@@ -245,20 +253,16 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::EULER:
-      genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
-      break;
-    case SUB_SOLVER_TYPE::NAVIER_STOKES:
-      genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
-      break;
     case SUB_SOLVER_TYPE::INC_EULER:
-      genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
-      break;
+    case SUB_SOLVER_TYPE::NEMO_EULER:
+    case SUB_SOLVER_TYPE::NAVIER_STOKES:
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
-      genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
+      genericSolver = CreateFlowSolver(kindSolver, solver, geometry, config, iMGLevel);
+      if (!config->GetNewtonKrylov() || config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint())
+        metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+      else
+        metaData.integrationType = INTEGRATION_TYPE::NEWTON;
       break;
     case SUB_SOLVER_TYPE::FEA:
       genericSolver = new CFEASolver(geometry, config);
@@ -269,11 +273,8 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::NONE;
       break;
     case SUB_SOLVER_TYPE::DG_EULER:
-      genericSolver = CreateDGSolver(SUB_SOLVER_TYPE::DG_EULER, geometry, config, iMGLevel);
-      metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
-      break;
     case SUB_SOLVER_TYPE::DG_NAVIER_STOKES:
-      genericSolver = CreateDGSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, geometry, config, iMGLevel);
+      genericSolver = CreateDGSolver(kindSolver, geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
       break;
     case SUB_SOLVER_TYPE::HEAT:
@@ -288,7 +289,9 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
-    case SUB_SOLVER_TYPE::TURB: case SUB_SOLVER_TYPE::TURB_SA: case SUB_SOLVER_TYPE::TURB_SST:
+    case SUB_SOLVER_TYPE::TURB:
+    case SUB_SOLVER_TYPE::TURB_SA:
+    case SUB_SOLVER_TYPE::TURB_SST:
       genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
@@ -317,7 +320,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
       break;
   }
-  
+
   if (genericSolver != nullptr)
     allocatedSolvers[genericSolver] = metaData;
 
@@ -443,11 +446,17 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
       flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
       break;
+    case SUB_SOLVER_TYPE::NEMO_EULER:
+      flowSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      break;
+    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
+      flowSolver = new CNEMONSSolver(geometry, config, iMGLevel);
+      break;
     default:
       SU2_MPI::Error("Flow solver not found", CURRENT_FUNCTION);
       break;
   }
 
   return flowSolver;
-
 }

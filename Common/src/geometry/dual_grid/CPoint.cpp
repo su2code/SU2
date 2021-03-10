@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
-#include "../../../include/omp_structure.hpp"
+#include "../../../include/parallelization/omp_structure.hpp"
 
 CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) {
 
@@ -126,6 +126,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
   Wall_Distance.resize(npoint) = su2double(0.0);
+  RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
 }
