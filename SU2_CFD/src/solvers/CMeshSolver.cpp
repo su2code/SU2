@@ -277,6 +277,8 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   } SU2_OMP_BARRIER
 
   AD::EndPassive(wasActive);
+
+  geometry->ComputeMeshQualityStatistics(config); // Only used for debug purpose
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
