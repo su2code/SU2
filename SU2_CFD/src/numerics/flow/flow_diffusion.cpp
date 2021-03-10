@@ -552,13 +552,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
-  proj_vector_ij = 0.0;
-  dist_ij_2 = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
-  }
+  for (auto iDim = 0u; iDim < nDim; iDim++) Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+  dist_ij_2 = GeometryToolbox::SquaredNorm(nDim,Edge_Vector);
+  proj_vector_ij = correct_gradient? GeometryToolbox::DotProduct(nDim,Normal,Edge_Vector)/dist_ij_2 : 1.0;
 
   /*--- Laminar and Eddy viscosity ---*/
 
