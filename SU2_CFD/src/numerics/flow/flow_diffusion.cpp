@@ -554,7 +554,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   for (auto iDim = 0u; iDim < nDim; iDim++) Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
   dist_ij_2 = GeometryToolbox::SquaredNorm(nDim,Edge_Vector);
-  proj_vector_ij = correct_gradient? GeometryToolbox::DotProduct(nDim,Normal,Edge_Vector)/dist_ij_2 : 1.0;
+  proj_vector_ij = correct_gradient? GeometryToolbox::DotProduct(nDim,Normal,Edge_Vector)/dist_ij_2 : su2double(1.0);
 
   /*--- Laminar and Eddy viscosity ---*/
 
