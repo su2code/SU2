@@ -50,16 +50,9 @@ protected:
   a_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
   a_i = 0.0,                   /*!< \brief The maximum of the face-normal velocity and 0 */
   a_j = 0.0,                   /*!< \brief The minimum of the face-normal velocity and 0 */
-  Proj_i = 0.0,                /*!< \brief Projected velocity, needed for exact Jacobian */
-  Proj_j = 0.0,                /*!< \brief Projected velocity, needed for exact Jacobian */
   *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,      /*!< \brief Flux Jacobian w.r.t. node i. */
   **Jacobian_j = nullptr;      /*!< \brief Flux Jacobian w.r.t. node j. */
-  su2double muscl_kappa;
-  bool muscl;
-
-  su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
-  su2double R, inv_R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeOmega, RoeSoundSpeed2, RoeSoundSpeed;
 
   const bool incompressible = false, dynamic_grid = false, exact_jacobian = false;
 
