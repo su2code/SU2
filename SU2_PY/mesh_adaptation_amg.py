@@ -50,26 +50,18 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=0,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-c", "--cycle", dest="cycle", default=1,
-                      help="number of CYCLE adaptations", metavar="CYCLE")
-    parser.add_option("-o", "--overwrite", dest="overwrite", default="False",
-                      help="OVERWRITE_MESH the output mesh with the adapted one", metavar="OVERWRITE_MESH")
-    parser.add_option("-s", "--save_all", dest="save_all", default="False",
-                      help="SAVE_ALL the flow/adjoint/meshes solutions at each adaptation cycle", metavar="SAVE_ALL")
+    parser.add_option("-e", "--stderr", dest="stderr", default="False",
+                      help="print stderr files", metavar="STDERR")
 
     (options, args)=parser.parse_args()
 
     options.partitions = int( options.partitions )
-    options.cycle      = int( options.cycle      )
-    options.overwrite  = options.overwrite == "True"    
-    options.save_all   = options.save_all  == "True"
+    options.stderr     = options.stderr == "True"
     
     # Run Mesh Adaptation
     mesh_adaptation_amg ( options.filename   ,
-                      options.partitions ,
-                      options.cycle      ,
-                      options.overwrite  ,
-                      options.save_all    )
+                          options.partitions ,
+                          options.stderr )
 
 #: def main()
 
@@ -78,11 +70,9 @@ def main():
 #  Mesh Adaptation Function
 # -------------------------------------------------------------------
 
-def mesh_adaptation_amg( filename             ,
-                     partitions   = 0     , 
-                     cycles       = 1     ,
-                     overwrite    = False ,
-                     save_all     = False  ):
+def mesh_adaptation_amg( filename       ,
+                         partitions = 0 ,
+                         stderr     = False ):
     
     if not filename:
     	sys.stderr.write("  ## ERROR : a .cfg file must be provided.\n");
@@ -96,6 +86,9 @@ def mesh_adaptation_amg( filename             ,
     
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
+
+    # Output stderr
+    config.STDERR = stderr
     
     # Call CFD to generate a solution
     SU2.run.amg(config)

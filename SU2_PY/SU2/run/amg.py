@@ -204,7 +204,8 @@ def amg ( config , kind='' ):
     if config['RESTART_SOL'] == 'NO':
         
         stdout_hdl = open('su2.out','w') # new targets
-        stderr_hdl = open('su2.err','w')
+        if (config.STDERR):
+            stderr_hdl = open('su2.err','w')
         
         success = False
         val_out = [False]
@@ -215,7 +216,8 @@ def amg ( config , kind='' ):
         try: # run with redirected outputs
             
             sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-            sav_stderr, sys.stderr = sys.stderr, stderr_hdl
+            if (config.STDERR):
+                sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
             cur_meshfil = config['MESH_FILENAME']
             cur_solfil  = "restart_flow" + sol_ext
@@ -270,11 +272,13 @@ def amg ( config , kind='' ):
 
         except:
             sys.stdout = sav_stdout
-            sys.stderr = sav_stderr
+            if (config.STDERR):
+                sys.stderr = sav_stderr
             raise
         
         sys.stdout = sav_stdout
-        sys.stderr = sav_stderr
+        if (config.STDERR):
+            sys.stderr = sav_stderr
         
     else:
         required_options=['SOLUTION_FILENAME','SOLUTION_ADJ_FILENAME']
@@ -291,13 +295,15 @@ def amg ( config , kind='' ):
         sys.stdout.flush()
 
         stdout_hdl = open('su2.out','w') # new targets
-        stderr_hdl = open('su2.err','w')
+        if (config.STDERR):
+            stderr_hdl = open('su2.err','w')
 
         success = False
         val_out = [False]
 
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-        sav_stderr, sys.stderr = sys.stderr, stderr_hdl
+        if (config.STDERR):
+            sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
         cur_meshfil    = config['MESH_FILENAME']
         cur_solfil     = "restart_flow" + sol_ext
@@ -361,7 +367,8 @@ def amg ( config , kind='' ):
                 cur_solfil_adj = cur_solfil_adj_ini
 
         sys.stdout = sav_stdout
-        sys.stderr = sav_stderr
+        if (config.STDERR):
+            sys.stderr = sav_stderr
         
     #--- Check existence of initial mesh, solution
     
@@ -494,7 +501,8 @@ def amg ( config , kind='' ):
             #--- Run su2
             
             stdout_hdl = open('su2.out','w') # new targets
-            stderr_hdl = open('su2.err','w')
+            if (config.STDERR):
+                stderr_hdl = open('su2.err','w')
             
             success = False
             val_out = [False]
@@ -505,7 +513,8 @@ def amg ( config , kind='' ):
             try: # run with redirected outputs
             
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-                sav_stderr, sys.stderr = sys.stderr, stderr_hdl
+                if (config.STDERR):
+                    sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
                 cur_solfil_ini = "flo_ini" + sol_ext
                 os.rename(cur_solfil, cur_solfil_ini)
@@ -556,11 +565,13 @@ def amg ( config , kind='' ):
             
             except:
                 sys.stdout = sav_stdout
-                sys.stderr = sav_stderr
+                if (config.STDERR):
+                    sys.stderr = sav_stderr
                 raise
             
             sys.stdout = sav_stdout
-            sys.stderr = sav_stderr
+            if (config.STDERR):
+                sys.stderr = sav_stderr
             
                     
             #--- Print convergence history
