@@ -736,10 +736,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           /*--- The Pressure file uses the global numbering ---*/
@@ -793,10 +790,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
