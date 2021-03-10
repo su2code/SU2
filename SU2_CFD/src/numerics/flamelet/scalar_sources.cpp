@@ -86,7 +86,7 @@ void CSourceAxisymmetric_Scalar::ComputeResidual(su2double *val_residual, su2dou
     /*--- Inviscid component of the source term. ---*/
     
     for (iVar=0; iVar < nVar; iVar++)
-      val_residual[iVar] = yinv*Volume*Density_i*scalar_i[iVar]*Velocity_i[1];
+      val_residual[iVar] = yinv*Volume*Density_i*Scalar_i[iVar]*Velocity_i[1];
     
     if (implicit) {
       
@@ -104,7 +104,7 @@ void CSourceAxisymmetric_Scalar::ComputeResidual(su2double *val_residual, su2dou
     if (viscous) {
       
       for (iVar=0; iVar < nVar; iVar++)
-        val_residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*scalar_grad_i[iVar][1];
+        val_residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*Scalar_Grad_i[iVar][1];
       
     }
     

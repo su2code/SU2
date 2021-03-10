@@ -69,7 +69,7 @@ CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* 
   // FIXME daniel: this has to work for TurbVar and for flamelet scalars
   // AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
 
-  AD::SetPreaccIn(scalar_i, nVar);  AD::SetPreaccIn(scalar_j, nVar);
+  AD::SetPreaccIn(Scalar_i, nVar);  AD::SetPreaccIn(Scalar_j, nVar);
 
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
@@ -116,7 +116,7 @@ CUpwtransportedScalar_General::CUpwtransportedScalar_General(unsigned short val_
 CUpwtransportedScalar_General::~CUpwtransportedScalar_General(void) { }
 
 void CUpwtransportedScalar_General::ExtraADPreaccIn() {
-  AD::SetPreaccIn(scalar_i, nVar);  AD::SetPreaccIn(scalar_j, nVar);
+  AD::SetPreaccIn(Scalar_i, nVar);  AD::SetPreaccIn(Scalar_j, nVar);
   AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
   
 }
@@ -129,8 +129,8 @@ void CUpwtransportedScalar_General::FinishResidualCalc(su2double *val_residual,
   unsigned short iVar, jVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = (a0*Density_i*scalar_i[iVar] +
-                          a1*Density_j*scalar_j[iVar]);
+    val_residual[iVar] = (a0*Density_i*Scalar_i[iVar] +
+                          a1*Density_j*Scalar_j[iVar]);
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {
         if (iVar == jVar) {
@@ -151,8 +151,8 @@ void CUpwtransportedScalar_General::FinishResidualCalc(const CConfig* config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    Flux[iVar] = a0 * Density_i * scalar_i[iVar]
-               + a1 * Density_j * scalar_j[iVar];
+    Flux[iVar] = a0 * Density_i * Scalar_i[iVar]
+               + a1 * Density_j * Scalar_j[iVar];
 
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {
