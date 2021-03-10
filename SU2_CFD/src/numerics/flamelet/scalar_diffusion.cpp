@@ -156,9 +156,10 @@ void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residu
     //Mean_Diffusivity[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
 
     /*--- Compute the viscous residual. ---*/
-    
+    cout << "proj = " << Proj_Mean_GradScalarVar[0]<<endl;
+
     //val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
-    val_residual[iVar] = 1.0e-4;//*Proj_Mean_GradScalarVar[iVar];
+    val_residual[iVar] = 1.0e-4*Proj_Mean_GradScalarVar[iVar];
     
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
