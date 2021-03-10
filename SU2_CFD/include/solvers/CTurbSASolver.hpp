@@ -2,7 +2,7 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,7 +71,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSASolver(void);
+  CTurbSASolver();
 
   /*!
    * \overload
@@ -85,7 +85,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void) override;
+  ~CTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

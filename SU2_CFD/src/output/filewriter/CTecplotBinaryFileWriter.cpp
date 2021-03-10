@@ -2,7 +2,7 @@
  * \file CTecplotBinaryFileWriter.cpp
  * \brief Filewriter class for Tecplot binary format.
  * \author T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,14 +55,13 @@ void CTecplotBinaryFileWriter::Write_Data(){
 
   /*--- Reduce the total number of each element. ---*/
 
-  unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
-                nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
+  unsigned long nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
                 nParallel_Tetr = dataSorter->GetnElem(TETRAHEDRON),
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
+
   unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
                 nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
                 nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
@@ -134,6 +133,8 @@ void CTecplotBinaryFileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
+
+  unsigned long nParallel_Line = dataSorter->GetnElem(LINE);
 
   unsigned short iVar;
   NodePartitioner node_partitioner(num_nodes, size);
