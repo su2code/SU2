@@ -44,7 +44,7 @@ from .interface import CFD as SU2_CFD
 
 import _amgio as amgio
 
-def amg ( config , kind='' ):
+def amg ( config , stderr = False ):
     
     sys.stdout.write("SU2-AMG Anisotropic Mesh Adaptation\n")
         
@@ -204,7 +204,7 @@ def amg ( config , kind='' ):
     if config['RESTART_SOL'] == 'NO':
         
         stdout_hdl = open('su2.out','w') # new targets
-        if (config.STDERR):
+        if (stderr):
             stderr_hdl = open('su2.err','w')
         
         success = False
@@ -216,7 +216,7 @@ def amg ( config , kind='' ):
         try: # run with redirected outputs
             
             sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-            if (config.STDERR):
+            if (stderr):
                 sav_stderr, sys.stderr = sys.stderr, stderr_hdl
         
             cur_meshfil = config['MESH_FILENAME']
@@ -272,12 +272,12 @@ def amg ( config , kind='' ):
 
         except:
             sys.stdout = sav_stdout
-            if (config.STDERR):
+            if (stderr):
                 sys.stderr = sav_stderr
             raise
         
         sys.stdout = sav_stdout
-        if (config.STDERR):
+        if (stderr):
             sys.stderr = sav_stderr
         
     else:
@@ -295,14 +295,14 @@ def amg ( config , kind='' ):
         sys.stdout.flush()
 
         stdout_hdl = open('su2.out','w') # new targets
-        if (config.STDERR):
+        if (stderr):
             stderr_hdl = open('su2.err','w')
 
         success = False
         val_out = [False]
 
         sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-        if (config.STDERR):
+        if (stderr):
             sav_stderr, sys.stderr = sys.stderr, stderr_hdl
 
         cur_meshfil    = config['MESH_FILENAME']
@@ -367,7 +367,7 @@ def amg ( config , kind='' ):
                 cur_solfil_adj = cur_solfil_adj_ini
 
         sys.stdout = sav_stdout
-        if (config.STDERR):
+        if (stderr):
             sys.stderr = sav_stderr
         
     #--- Check existence of initial mesh, solution
@@ -501,7 +501,7 @@ def amg ( config , kind='' ):
             #--- Run su2
             
             stdout_hdl = open('su2.out','w') # new targets
-            if (config.STDERR):
+            if (stderr):
                 stderr_hdl = open('su2.err','w')
             
             success = False
@@ -513,7 +513,7 @@ def amg ( config , kind='' ):
             try: # run with redirected outputs
             
                 sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
-                if (config.STDERR):
+                if (stderr):
                     sav_stderr, sys.stderr = sys.stderr, stderr_hdl
                 
                 cur_solfil_ini = "flo_ini" + sol_ext
@@ -565,12 +565,12 @@ def amg ( config , kind='' ):
             
             except:
                 sys.stdout = sav_stdout
-                if (config.STDERR):
+                if (stderr):
                     sys.stderr = sav_stderr
                 raise
             
             sys.stdout = sav_stdout
-            if (config.STDERR):
+            if (stderr):
                 sys.stderr = sav_stderr
             
                     

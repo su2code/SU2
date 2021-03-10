@@ -86,12 +86,9 @@ def mesh_adaptation_amg( filename       ,
     
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
-
-    # Output stderr
-    config.STDERR = stderr
     
     # Call CFD to generate a solution
-    SU2.run.amg(config)
+    SU2.run.amg(config, stderr)
     
 #: def mesh_adaptation()
 
