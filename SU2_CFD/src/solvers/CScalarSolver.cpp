@@ -283,11 +283,11 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
-  SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  //SU2_OMP_MASTER
+  //for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //  SetRes_RMS(iVar, 0.0);
+  //  SetRes_Max(iVar, 0.0, 0);
+  //}
   SU2_OMP_BARRIER
 
 
@@ -348,7 +348,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry  *geometry,
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      //AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]),
                  geometry->nodes->GetGlobalIndex(iPoint),
                  geometry->nodes->GetCoord(iPoint));

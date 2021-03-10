@@ -1,8 +1,8 @@
 /*!
- * \file output_flow.cpp
+ * \file CFlowOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -135,6 +135,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
@@ -225,7 +226,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
           Area       = sqrt (Area);
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
+
           Pressure   = flow_solver->GetNodes()->GetPressure(iPoint);
+          /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
+          if(streamwisePeriodic) Pressure = flow_solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = flow_solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -782,10 +786,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           /*--- The Pressure file uses the global numbering ---*/
@@ -839,10 +840,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1305,7 +1303,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.1.0 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";

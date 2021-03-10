@@ -102,7 +102,7 @@ public:
  */
 class CAvgGradtransportedScalar_General : public CAvgGradtransportedScalar {
 protected:
-  su2double *Mean_Diffusivity;   /*!< \brief Average of mass diffusivities at cell face */
+  //su2double *Mean_Diffusivity;   /*!< \brief Average of mass diffusivities at cell face */
 
 private:
 

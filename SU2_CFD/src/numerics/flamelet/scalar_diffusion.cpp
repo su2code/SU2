@@ -131,12 +131,12 @@ CAvgGradtransportedScalar_General::CAvgGradtransportedScalar_General(unsigned sh
                                                CConfig *config)
 : CAvgGradtransportedScalar(val_nDim, val_nVar, correct_grad, config) {
   
-  Mean_Diffusivity = new su2double[nVar];
+  //Mean_Diffusivity = new su2double[nVar];
 }
 
 CAvgGradtransportedScalar_General::~CAvgGradtransportedScalar_General(void) {
   
-  if (Mean_Diffusivity != NULL) delete [] Mean_Diffusivity;
+  //if (Mean_Diffusivity != NULL) delete [] Mean_Diffusivity;
   
 }
 
@@ -152,20 +152,23 @@ void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residu
   for (iVar = 0; iVar < nVar; iVar++) {
     
     /*--- Get the diffusion coefficient(s). ---*/
-
-    Mean_Diffusivity[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+    
+    //Mean_Diffusivity[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
 
     /*--- Compute the viscous residual. ---*/
     
-    val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
+    //val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
+    val_residual[iVar] = 1.0e-4;//*Proj_Mean_GradScalarVar[iVar];
     
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
-          Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
+          //Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
+          //Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
+          Jacobian_i[iVar][jVar] = -1.0e-4*proj_vector_ij;
+          Jacobian_j[iVar][jVar] =  1.0e-4*proj_vector_ij;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;

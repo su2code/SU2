@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -186,14 +186,10 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
     if(iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
   }
 
-  /*--- Residuals during GMRES iterations have no meaning ---*/
-
-  if (KrylovMode && iInnerIter) return false;
-
   /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
    *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
 
-  Set_SolutionOld_To_Solution(iZone);
+  if (!KrylovMode) Set_SolutionOld_To_Solution(iZone);
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
@@ -231,7 +227,6 @@ void CDiscAdjMultizoneDriver::Run() {
       AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       LinSolver[iZone].SetRecomputeResidual(false);
-      LinSolver[iZone].SetMonitoringFrequency(config_container[iZone]->GetScreen_Wrt_Freq(2));
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
@@ -371,20 +366,39 @@ void CDiscAdjMultizoneDriver::Run() {
         const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
         const auto product = AdjointProduct(this, iZone);
 
+        /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
+        const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
+        config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
+        LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
+
         Scalar eps = 1.0;
         for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
           Scalar eps_l = 0.0;
           Scalar tol_l = KrylovTol / eps;
-          auto iter = min(totalIter-1ul, config_container[iZone]->GetnQuasiNewtonSamples()-1ul);
+          auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
           iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
                                                    tol_l, iter, eps_l, monitor, config_container[iZone]);
           totalIter -= iter+1;
           eps *= eps_l;
         }
 
+        /*--- Store the solution and restore user settings. ---*/
         SetAllSolutions(iZone, true, AdjSol[iZone]);
+        config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
 
-        Iterate(iZone, nInnerIter[iZone]-1);
+        /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
+        AdjSol[iZone] += AdjRHS[iZone];
+        SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
+
+        /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
+         * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
+        eval_transfer = true;
+        Iterate(iZone, product.iInnerIter);
+
+        /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
+         * This is set without the "External" (by adding RHS above) so that it can be added
+         * again in the next outer iteration with new contributions from other zones. ---*/
+        SetAllSolutions(iZone, true, AdjSol[iZone]);
       }
 
       /*--- Off-diagonal (coupling term) BGS update. ---*/
@@ -419,7 +433,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Check for convergence. ---*/
 
-    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1);
+    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1) ||
+               ((nZone==1) && output_container[ZONE_0]->GetConvergence());
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

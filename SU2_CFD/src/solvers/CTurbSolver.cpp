@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
-  nVertex = new unsigned long[nMarker];
+  nVertex.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
@@ -515,12 +515,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
-  SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
+  SetResToZero();
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -564,7 +559,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   }
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
+    Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
   SU2_OMP_BARRIER
