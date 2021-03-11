@@ -45,12 +45,14 @@
  */
 #ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
-#define CSYSVEC_PARFOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(simd schedule(static,omp_chunk_size) SU2_NOWAIT)
 #else
-#define CSYSVEC_PARFOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
 #endif
+#define END_CSYSVEC_PARFOR END_SU2_OMP_FOR
 #else
 #define CSYSVEC_PARFOR SU2_OMP_SIMD
+#define END_CSYSVEC_PARFOR
 #endif
 
 /*!
@@ -443,3 +445,4 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 };
 
 #undef CSYSVEC_PARFOR
+#undef END_CSYSVEC_PARFOR

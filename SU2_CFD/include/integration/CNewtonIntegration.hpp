@@ -33,12 +33,14 @@
 
 #ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
-#define CNEWTON_PARFOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#define CNEWTON_PARFOR SU2_OMP_FOR_(simd schedule(static,omp_chunk_size) SU2_NOWAIT)
 #else
-#define CNEWTON_PARFOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#define CNEWTON_PARFOR SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
 #endif
+#define END_CNEWTON_PARFOR END_SU2_OMP_FOR
 #else
 #define CNEWTON_PARFOR SU2_OMP_SIMD
+#define END_CNEWTON_PARFOR
 #endif
 
 /*!
@@ -212,3 +214,4 @@ public:
 };
 
 #undef CNEWTON_PARFOR
+#undef END_CNEWTON_PARFOR
