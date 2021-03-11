@@ -120,9 +120,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                       CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
+  void Source_Residual(CGeometry *geometry, 
+                       CSolver **solver_container,
+                       CNumerics **numerics_container, 
+                       CConfig *config, 
+                       unsigned short iMesh) override;
 
     /*!
    * \brief Impose the Navier-Stokes wall boundary condition.

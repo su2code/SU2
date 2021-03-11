@@ -175,6 +175,19 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   
   nodes = new CPassiveScalarVariable(Scalar_Inf, nPoint, nDim, nVar, config);
+
+
+  /*--- initialize the mass diffusivity ---*/
+  for (iVar = 0; iVar < nVar; iVar++){
+    auto M = FluidModel->GetMassDiffusivity(); // returns a su2double, note that for more species this should be a vector
+    // loop over all points and set diffusivity
+    // why construct the entire diffusivity matrix?
+   for (iPoint = 0; iPoint < nPoint; iPoint++)
+     nodes->SetDiffusivity(iPoint, M, iVar);
+  }
+
+
+
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -299,9 +312,9 @@ unsigned long CPassiveScalarSolver::SetPrimitive_Variables(CSolver **solver_cont
     // nijso: necessary? does not seem to matter!
     FluidModel->SetDiffusivityState(Temperature, Density, lam_visc, eddy_visc, Cp);
 
-
-    for (int i_scalar = 0; i_scalar < nVar; i_scalar++)
-      nodes->SetDiffusivity(iPoint, FluidModel->GetMassDiffusivity(), i_scalar);
+    // here, we again set the diffusivity in the entire domain!!! why?
+    //for (int i_scalar = 0; i_scalar < nVar; i_scalar++)
+    //  nodes->SetDiffusivity(iPoint, FluidModel->GetMassDiffusivity(), i_scalar);
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
 
@@ -450,12 +463,8 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
   
 }
 
-void CPassiveScalarSolver::Source_Residual(CGeometry *geometry,
-                                      CSolver **solver_container,
-                                      CNumerics *numerics,
-                                      CNumerics *second_numerics,
-                                      CConfig *config,
-                                      unsigned short iMesh) {
+void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                           CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
   
   unsigned short iVar;
   unsigned long iPoint;
@@ -464,98 +473,62 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry,
   bool axisymmetric   = config->GetAxisymmetric();
   bool viscous        = config->GetViscous();
   
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Pick one numerics object per thread. ---*/
+  //CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
+    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
-    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint), NULL);
+    numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), NULL);
     
     /*--- Scalar variables w/o reconstruction, and its gradient ---*/
     
     numerics->SetScalarVar(nodes->GetSolution(iPoint), NULL);
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), NULL);
-    
+
+    /*--- Mass diffusivity coefficients. ---*/
+    su2double *M;
+    M = nodes->GetDiffusivity(iPoint);
+
+    /*--- for multiple species, we need an array---*/
+    numerics->SetDiffusionCoeff(M, M);
+ 
     /*--- Set volume ---*/
     
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
     
     /*--- Compute the source term ---*/
-    
-    numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
-    
+    //numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     /*--- Subtract residual and the Jacobian ---*/
+    //LinSysRes.SubtractBlock(iPoint, Residual);
+    //Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
-  }
+   
+    /*--- Axisymmetry source term for the scalar equation. ---*/
   
-  /*--- Axisymmetry source term for the scalar equation. ---*/
-  
-  if (axisymmetric) {
-    
-    /*--- Zero out Jacobian structure ---*/
-    
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar ++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar ++)
-          Jacobian_i[iVar][jVar] = 0.0;
-    }
-    
-    /*--- loop over points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
-      /*--- Primitive variables w/o reconstruction ---*/
-      
-      second_numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), NULL);
-      
-      /*--- Scalar variables w/o reconstruction ---*/
-      
-      second_numerics->SetScalarVar(nodes->GetSolution(iPoint), NULL);
-      
-      /*--- Mass diffusivity coefficients. ---*/
-      
-      second_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
-                                         NULL);
-      
-      /*--- Set control volume ---*/
-      
-      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-      
+    if (axisymmetric) {
       /*--- Set y coordinate ---*/
-      
-      second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                NULL);
-      
-      /*--- If viscous, we need gradients for extra terms. ---*/
-      
-      if (viscous) {
-        
-        /*--- Gradient of the scalar variables ---*/
-        
-        second_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), NULL);
-        
-      }
-      
-      /*--- Compute Source term Residual ---*/
-      
-      second_numerics->ComputeResidual(Residual, Jacobian_i, config);
-      
-      /*--- Add Residual ---*/
-      
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Implicit part ---*/
-      
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));  
     }
+
+    /*--- Compute the source term ---*/
+
+    auto residual = numerics->ComputeResidual(config);
+
+    /*--- Subtract residual and the Jacobian ---*/
+
+    LinSysRes.SubtractBlock(iPoint, residual);
+    if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
   }
 
 }

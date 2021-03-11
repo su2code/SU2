@@ -78,6 +78,8 @@ CScalarSolver::~CScalarSolver(void) {
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
+  
+  delete nodes;
 
 }
 
@@ -255,9 +257,9 @@ void CScalarSolver::Viscous_Residual(CGeometry      *geometry,
                                    nodes->GetGradient(jPoint));
     
     /*--- Mass diffusivity coefficients. ---*/
-    
-    numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
-                                nodes->GetDiffusivity(jPoint));
+    // do not need for viscousresidual, not available!
+    //numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
+    //                            nodes->GetDiffusivity(jPoint));
     
     /*--- Compute residuals and Jacobians ---*/
     

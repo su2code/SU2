@@ -1,8 +1,9 @@
 /*!
- * \file scalar_sources.cpp
- * \brief This file contains the numerical methods for scalar transport eqns.
- * \author T. Economon, D. Mayer, N. Beishuizen
- * \version 7.1.0 "Blackbird"
+ * \file turb_sources.cpp
+ * \brief Implementation of numerics classes for integration of
+ *        turbulence source-terms.
+ * \author F. Palacios, T. Economon
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,100 +28,72 @@
 
 #include "../../../include/numerics/flamelet/scalar_sources.hpp"
 
-CSourcePieceWise_Scalar::CSourcePieceWise_Scalar(unsigned short val_nDim,
-                                                 unsigned short val_nVar,
-                                                 CConfig *config) :
-CNumerics(val_nDim, val_nVar, config) {
-  
-  implicit       = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
+CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_general(unsigned short val_nDim,
+                                                   unsigned short val_nVar,
+                                                   const CConfig* config) :
+                          CNumerics(val_nDim, val_nVar, config) {
+
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+  axisymmetric = config->GetAxisymmetric();
+  viscous = config->GetViscous();
+  implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
+
+  /*--- "Allocate" the Jacobian using the static buffer. ---*/
+  Jacobian_i[0] = Jacobian_Buffer;
+  Jacobian_i[1] = Jacobian_Buffer+2;
+
 }
 
-CSourcePieceWise_Scalar::~CSourcePieceWise_Scalar(void) { }
+CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
 
-void CSourcePieceWise_Scalar::ComputeResidual(su2double *val_residual,
-                                              su2double **val_Jacobian_i,
-                                              su2double **val_Jacobian_j,
-                                              CConfig *config) {
-  
-  unsigned short iVar, jVar;
-  
-  Density_i = V_i[nDim+2];
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.0;
-    if (implicit) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_i[iVar][jVar] = 0.0;
-      }
-    }
+  AD::StartPreacc();
+  //AD::SetPreaccIn(StrainMag_i);
+  AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+  //AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  //AD::SetPreaccIn(Vorticity_i, 3);
+
+  unsigned short iDim;
+
+  if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+6);
+
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+    Eddy_Viscosity_i = V_i[nDim+5];
   }
-  
-}
+  else {
+    AD::SetPreaccIn(V_i, nDim+7);
 
-CSourceAxisymmetric_Scalar::CSourceAxisymmetric_Scalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  energy   = config->GetEnergy_Equation();
-  viscous  = config->GetViscous();
-  
-}
-
-CSourceAxisymmetric_Scalar::~CSourceAxisymmetric_Scalar(void) { }
-
-void CSourceAxisymmetric_Scalar::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
-  
-  su2double yinv, Velocity_i[3];
-  unsigned short iDim, iVar, jVar;
-  
-  if (Coord_i[1] > EPS) {
-    yinv          = 1.0/Coord_i[1];
-    Density_i     = V_i[nDim+2];
-    
-    /*--- Set primitive variables at points iPoint. ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity_i[iDim] = V_i[iDim+1];
-    
-    /*--- Inviscid component of the source term. ---*/
-    
-    for (iVar=0; iVar < nVar; iVar++)
-      val_residual[iVar] = yinv*Volume*Density_i*Scalar_i[iVar]*Velocity_i[1];
-    
-    if (implicit) {
-      
-      for (iVar=0; iVar < nVar; iVar++) {
-        for (jVar=0; jVar < nVar; jVar++) {
-          if (iVar == jVar) Jacobian_i[iVar][jVar] = Velocity_i[1];
-          Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i;
-        }
-      }
-      
-    }
-    
-    /*--- Add the viscous terms if necessary. ---*/
-    
-    if (viscous) {
-      
-      for (iVar=0; iVar < nVar; iVar++)
-        val_residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*Scalar_Grad_i[iVar][1];
-      
-    }
-    
-  } else {
-    
-    for (iVar=0; iVar < nVar; iVar++)
-      val_residual[iVar] = 0.0;
-    
-    if (implicit) {
-      for (iVar=0; iVar < nVar; iVar++) {
-        for (jVar=0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-      }
-    }
-    
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];
   }
-  
-}
 
+  Residual[0] = 0.0;       Residual[1] = 0.0;
+  Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
+
+   /*--- Add the production terms to the residuals. ---*/
+
+   //Residual[0] += pk*Volume;
+   //Residual[1] += pw*Volume;
+
+   /*--- Contribution due to 2D axisymmetric formulation ---*/
+   if (axisymmetric) ResidualAxisymmetric();
+
+   /*--- Implicit part ---*/
+
+   //Jacobian_i[0][0] =0.0;// -beta_star*ScalarVar_i[1]*Volume;
+   //Jacobian_i[0][1] = 0.0;//-beta_star*ScalarVar_i[0]*Volume;
+   //Jacobian_i[1][0] = 0.0;
+   //Jacobian_i[1][1] = 0.0;//-2.0*beta_blended*ScalarVar_i[1]*Volume;
+
+  AD::SetPreaccOut(Residual, nVar);
+  AD::EndPreacc();
+
+  return ResidualType<>(Residual, Jacobian_i, nullptr);
+
+}

@@ -158,8 +158,8 @@ protected:
   *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
   *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
   su2double
-  *Scalar_i,
-  *Scalar_j;
+  *ScalarVar_i,
+  *ScalarVar_j;
   su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -180,8 +180,8 @@ protected:
   **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TurbVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
   su2double
-  **Scalar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
-  **Scalar_Grad_j; 
+  **ScalarVar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
+  **ScalarVar_Grad_j; 
   su2double 
   **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TransVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
@@ -405,8 +405,8 @@ public:
    * \param[in] val_scalar_j - Value of the scalar at point j.
    */
   inline void SetScalarVar(su2double *val_scalar_i, su2double *val_scalar_j) {
-    Scalar_i = val_scalar_i;
-    Scalar_j = val_scalar_j;
+    ScalarVar_i = val_scalar_i;
+    ScalarVar_j = val_scalar_j;
   }
 
   /*!
@@ -418,8 +418,8 @@ public:
    */
   inline void SetScalarVar(su2double val_scalar_i, int val_ix_i,
                            su2double val_scalar_j, int val_ix_j) {
-    Scalar_i[val_ix_i] = val_scalar_i;
-    Scalar_j[val_ix_j] = val_scalar_j;
+    ScalarVar_i[val_ix_i] = val_scalar_i;
+    ScalarVar_j[val_ix_j] = val_scalar_j;
   }
 
   /*!
@@ -449,8 +449,8 @@ public:
    * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
    */
   inline void SetScalarVarGradient(su2double **val_scalar_grad_i, su2double **val_scalar_grad_j) {
-  Scalar_Grad_i = val_scalar_grad_i;
-  Scalar_Grad_j = val_scalar_grad_j;
+  ScalarVar_Grad_i = val_scalar_grad_i;
+  ScalarVar_Grad_j = val_scalar_grad_j;
 }
 
   /*!
