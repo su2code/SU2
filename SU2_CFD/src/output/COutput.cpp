@@ -2197,6 +2197,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE && false){
     auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
+    auto nSpan = config->GetnSpan_iZones(ZONE_0);
 
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
@@ -2208,12 +2209,12 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.PrintHeader();
 
     // TODO: Error is assessing boundary state values.
-    TurboInOut << "Entropy"     << BladePerformance.at(0).at(0)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(0)->GetOutletState().GetEntropy();
-    TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(0)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(0).at(0)->GetOutletState().GetTotalEnthalpy();
-    TurboInOut << "TotPressure" << BladePerformance.at(0).at(0)->GetInletState().GetTotalPressure()               << BladePerformance.at(0).at(0)->GetOutletState().GetTotalPressure();
-    TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(0)->GetInletState().GetMassFlow()                    << BladePerformance.at(0).at(0)->GetOutletState().GetMassFlow();
-    TurboInOut << "Mach No."    << BladePerformance.at(0).at(0)->GetInletState().GetMachValue()                   << BladePerformance.at(0).at(0)->GetOutletState().GetMachValue();
-    TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(0)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(0).at(0)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+    TurboInOut << "Entropy"     << BladePerformance.at(0).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(nSpan)->GetOutletState().GetEntropy();
+    TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(0).at(nSpan)->GetOutletState().GetTotalEnthalpy();
+    TurboInOut << "TotPressure" << BladePerformance.at(0).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(0).at(nSpan)->GetOutletState().GetTotalPressure();
+    TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(0).at(nSpan)->GetOutletState().GetMassFlow();
+    TurboInOut << "Mach No."    << BladePerformance.at(0).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(0).at(nSpan)->GetOutletState().GetMachValue();
+    TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(0).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
     TurboInOut.PrintFooter();
     cout<<TurboInOutTable.str();
 
@@ -2224,9 +2225,9 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboPerformance.AddColumn("Values", 32);
     TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     TurboPerformance.PrintHeader();
-    TurboPerformance << "EntropyGen " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetEntropyGen();
-    TurboPerformance << "KineEnergyLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetKineticEnergyLoss();
-    TurboPerformance << "TotPressLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetTotalPressureLoss();
+    TurboPerformance << "EntropyGen " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetEntropyGen();
+    TurboPerformance << "KineEnergyLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetKineticEnergyLoss();
+    TurboPerformance << "TotPressLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetTotalPressureLoss();
     TurboPerformance.PrintFooter();
     cout<<TurboPerfTable.str();
   }
