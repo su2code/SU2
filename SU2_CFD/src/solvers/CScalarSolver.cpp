@@ -97,7 +97,9 @@ void CScalarSolver::Upwind_Residual(CGeometry       *geometry,
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
-  
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+ 
   bool muscl         = (config->GetMUSCL_Scalar() && (iMesh == MESH_0));
   bool limiter       = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
@@ -193,47 +195,32 @@ void CScalarSolver::Upwind_Residual(CGeometry       *geometry,
     /*--- Add and subtract residual ---*/
     //FIXME dan: trying out new method
     auto residual = numerics->ComputeResidual(config);
+
     LinSysRes.AddBlock(iPoint, residual);
     LinSysRes.SubtractBlock(jPoint, residual);
+    if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
-    //numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    //LinSysRes.AddBlock(iPoint, Residual);
-    //LinSysRes.SubtractBlock(jPoint, Residual);
-    
-    
-    /*--- Implicit part ---*/
-    
-    Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
-    Jacobian.AddBlock(iPoint, jPoint, residual.jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, residual.jacobian_i);
-    Jacobian.SubtractBlock(jPoint, jPoint, residual.jacobian_j);
-    
-    //Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    //Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-    //Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-    //Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+    /*--- Viscous contribution. ---*/
     
   }
   
 }
 
-void CScalarSolver::Viscous_Residual(CGeometry      *geometry,
-                                     CSolver       **solver_container,
-                                     CNumerics     **numerics_container,
-                                     CConfig        *config,
-                                     unsigned short  iMesh,
-                                     unsigned short  iRKStep) {
-  
-  unsigned long iEdge, iPoint, jPoint;
 
-  CNumerics* numerics = numerics_container[VISC_TERM];
+void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                   CNumerics *numerics, CConfig *config) {
+
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge ---*/
     
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
     
     /*--- Points coordinates, and normal vector ---*/
     
@@ -243,19 +230,19 @@ void CScalarSolver::Viscous_Residual(CGeometry      *geometry,
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint),
-                           solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint));
+    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
+                           flowNodes->GetPrimitive(jPoint));
     
     /*--- Scalar variables w/o reconstruction. ---*/
     
     numerics->SetScalarVar(nodes->GetSolution(iPoint),
                            nodes->GetSolution(jPoint));
-    
-    /*--- Scalar variable gradients. ---*/
-
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                    nodes->GetGradient(jPoint));
     
+
+    // < --- your viscous contribution here... --->
+
     /*--- Mass diffusivity coefficients. ---*/
     // do not need for viscousresidual, not available!
     //numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
@@ -263,21 +250,28 @@ void CScalarSolver::Viscous_Residual(CGeometry      *geometry,
     
     /*--- Compute residuals and Jacobians ---*/
     
-    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    
+    //numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+    /*--- Compute residual, and Jacobians ---*/
+
+    auto residual = numerics->ComputeResidual(config);
+
     /*--- Add/subtract residual and update Jacobians ---*/
+    /* NEW METHOD*/
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+
+
+    //LinSysRes.SubtractBlock(iPoint, Residual);
+    //LinSysRes.AddBlock(jPoint, Residual);
     
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    LinSysRes.AddBlock(jPoint, Residual);
+    //Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    //Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    //Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    //Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     
   }
-  
 }
 
 void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {

@@ -1,8 +1,9 @@
 /*!
  * \file scalar_convection.cpp
- * \brief This file contains the numerical methods for scalar transport eqns.
- * \author T. Economon, D. Mayer, N. Beishuizen
- * \version 7.1.0 "Blackbird"
+ * \brief Implementation of numerics classes to compute convective
+ *        fluxes in turbulence problems.
+ * \author F. Palacios, T. Economon
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +32,6 @@ CUpwtransportedScalar::CUpwtransportedScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
-  // FIXME dan: this has to work for turbulence scalars and others. 
-  //implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT)
   implicit(config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
@@ -65,12 +64,7 @@ CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* 
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-
-  // FIXME daniel: this has to work for TurbVar and for flamelet scalars
-  // AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
-
   AD::SetPreaccIn(ScalarVar_i, nVar);  AD::SetPreaccIn(ScalarVar_j, nVar);
-
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
@@ -90,9 +84,7 @@ CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* 
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1];
-      su2double Velocity_j = V_j[iDim+1];
-      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
+      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
     }
   }
 
@@ -108,55 +100,25 @@ CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* 
 
 }
 
-CUpwtransportedScalar_General::CUpwtransportedScalar_General(unsigned short val_nDim,
-                                       unsigned short val_nVar,
-                                       CConfig *config)
-: CUpwtransportedScalar(val_nDim, val_nVar, config) { }
+CUpwSca_transportedScalar_general::CUpwSca_transportedScalar_general(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 const CConfig* config) :
+                 CUpwtransportedScalar(val_nDim, val_nVar, config) { }
 
-CUpwtransportedScalar_General::~CUpwtransportedScalar_General(void) { }
-
-void CUpwtransportedScalar_General::ExtraADPreaccIn() {
-  AD::SetPreaccIn(ScalarVar_i, nVar);  AD::SetPreaccIn(ScalarVar_j, nVar);
-  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
-  
+void CUpwSca_transportedScalar_general::ExtraADPreaccIn() {
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
 }
 
-void CUpwtransportedScalar_General::FinishResidualCalc(su2double *val_residual,
-                                            su2double **val_Jacobian_i,
-                                            su2double **val_Jacobian_j,
-                                            CConfig *config) {
-  
-  unsigned short iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = (a0*Density_i*ScalarVar_i[iVar] +
-                          a1*Density_j*ScalarVar_j[iVar]);
-    if (implicit) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        if (iVar == jVar) {
-          val_Jacobian_i[iVar][jVar] = a0*Density_i;
-          val_Jacobian_j[iVar][jVar] = a1*Density_j;
-        } else {
-          val_Jacobian_i[iVar][jVar] = 0.0;
-          val_Jacobian_j[iVar][jVar] = 0.0;
-        }
-      }
-    }
-  }
-}
+void CUpwSca_transportedScalar_general::FinishResidualCalc(const CConfig* config) {
 
-void CUpwtransportedScalar_General::FinishResidualCalc(const CConfig* config) {
-
-  unsigned short iVar, jVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-
-    Flux[iVar] = a0 * Density_i * ScalarVar_i[iVar]
-               + a1 * Density_j * ScalarVar_j[iVar];
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    Flux[iVar] = a0*Density_i*ScalarVar_i[iVar]+a1*Density_j*ScalarVar_j[iVar];
 
     if (implicit) {
-      for (jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         if (iVar == jVar) {
+          // note that for transported scalar we multiply by density
           Jacobian_i[iVar][jVar] = a0*Density_i;
           Jacobian_j[iVar][jVar] = a1*Density_j;
         } else {
@@ -165,5 +127,10 @@ void CUpwtransportedScalar_General::FinishResidualCalc(const CConfig* config) {
         }
       }
     }
+    //Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+    //Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
+    //Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+    //Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
   }
+
 }

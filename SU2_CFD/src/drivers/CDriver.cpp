@@ -2184,7 +2184,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (passive_scalar || progress_variable) {
-            numerics[iMGlevel][SCALAR_SOL][CONV_TERM] = new CUpwtransportedScalar_General(nDim, nVar_Scalar, config);
+            numerics[iMGlevel][SCALAR_SOL][CONV_TERM] = new CUpwSca_transportedScalar_general(nDim, nVar_Scalar, config);
           }
         }
         break;
@@ -2218,7 +2218,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable) {
-        numerics[iMGlevel][SCALAR_SOL][CONV_BOUND_TERM] = new CUpwtransportedScalar_General(nDim, nVar_Scalar, config);
+        numerics[iMGlevel][SCALAR_SOL][CONV_BOUND_TERM] = new CUpwSca_transportedScalar_general(nDim, nVar_Scalar, config);
         numerics[iMGlevel][SCALAR_SOL][VISC_BOUND_TERM] = new CAvgGradtransportedScalar_General(nDim, nVar_Scalar, false, config);
       }
     }
