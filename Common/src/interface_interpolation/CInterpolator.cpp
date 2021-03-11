@@ -173,7 +173,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
   unsigned long iVertex, kVertex;
 
-  unsigned long *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long *uptr, nVertex, iDim, nDim, iPoint;
 
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
 
@@ -184,94 +184,88 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   else
     nVertex  = 0;
 
+  /*--- Get the number of domain vertices on the marker, and a mapping
+  * (iVertex) -> (iLocalVertex, non-domain points being ignored). ---*/
+  unsigned long* iVertex_to_iLocalVertex = new unsigned long[ nVertex ];
+  nLocalVertex = 0;
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+    if (geom->nodes->GetDomain(iPoint)){
+      iVertex_to_iLocalVertex[iVertex] = nLocalVertex;
+      nLocalVertex++;
+    }  else {
+      iVertex_to_iLocalVertex[iVertex] = numeric_limits<unsigned long>::max();
+    }
+  }
 
-  su2double *Buffer_Send_Coord           = new su2double     [ nVertex * nDim ];
+  // coordinates of all domain vertices on the marker
+  su2double *Buffer_Send_Coord           = new su2double     [ nLocalVertex * nDim ];
+  // global point IDs of all domain vertices on the marker
   unsigned long *Buffer_Send_GlobalPoint = new unsigned long [ nVertex ];
 
-  unsigned long *Buffer_Send_nLinkedNodes       = new unsigned long [ nVertex ];
-  unsigned long *Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertex ];
-  unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
+  // Assign to each domain vertex on the marker, identified by local point ID,
+  // a set of surface-neighbor vertices on the marker, identified by global point ID.
+  map<unsigned long, set<unsigned long>*> neighbors;
 
-  /*--- Copy coordinates and point to the auxiliar vector ---*/
-
-  nGlobalVertex     = 0;
-  nLocalVertex      = 0;
-  nLocalLinkedNodes = 0;
-
+  /*--- Define or initialize them. ---*/
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
-
-    Buffer_Send_nLinkedNodes[iVertex] = 0;
-    Aux_Send_Map[iVertex]             = nullptr;
-
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
-
     if (geom->nodes->GetDomain(iPoint)) {
-      Buffer_Send_GlobalPoint[nLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
-
+      unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
+      Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex*nDim+iDim] = geom->nodes->GetCoord(iPoint, iDim);
-
-      nNodes = 0;
-      nEdges = geom->nodes->GetnPoint(iPoint);
-
-      for (jEdge = 0; jEdge < nEdges; jEdge++){
-        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
-
-        if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
-          dPoint = geom->edges->GetNode(EdgeIndex,1);
-        else
-          dPoint = geom->edges->GetNode(EdgeIndex,0);
-
-        if ( geom->nodes->GetVertex(dPoint, val_marker) != -1 )
-          nNodes++;
-      }
-
-      Buffer_Send_StartLinkedNodes[nLocalVertex] = nLocalLinkedNodes;
-      Buffer_Send_nLinkedNodes[nLocalVertex]     = nNodes;
-
-      nLocalLinkedNodes += nNodes;
-
-      Aux_Send_Map[nLocalVertex] = new unsigned long[ nNodes ];
-      nNodes = 0;
-
-      for (jEdge = 0; jEdge < nEdges; jEdge++){
-        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
-
-        if( iPoint == geom->edges->GetNode(EdgeIndex,0) )
-          dPoint = geom->edges->GetNode(EdgeIndex,1);
-        else
-          dPoint = geom->edges->GetNode(EdgeIndex,0);
-
-        if ( geom->nodes->GetVertex(dPoint, val_marker) != -1 ){
-          // Though we store global indices here, they will be later replaced by
-          // the index to Buffer_Receive_nLinkedNodes, Buffer_Receive_StartLinkedNodes etc.
-          Aux_Send_Map[nLocalVertex][nNodes] = geom->nodes->GetGlobalIndex(dPoint);
-          nNodes++;
-        }
-      }
-      nLocalVertex++;
+        Buffer_Send_Coord[iLocalVertex*nDim+iDim] = geom->nodes->GetCoord(iPoint, iDim);
+      neighbors[iPoint] = new set<unsigned long>;
     }
   }
 
-  unsigned long *Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
+  /*--- Define the neighbors map. ---*/
+  for(unsigned long iElem; iElem < geom->nElem_Bound[val_marker]; iElem++){
+    CPrimalGrid* elem = geom->bound[val_marker][iElem];
+    for(unsigned short iNode=0; iNode<elem->GetnNodes(); iNode++){
+      unsigned short iPoint = elem->GetNode(iNode);
+      for(unsigned short iNeighbor=0; iNeighbor<elem->GetnNeighbor_Nodes(iNeighbor); iNeighbor++){
+        unsigned long jPoint = elem->GetNode( elem->GetNeighbor_Nodes(iNode,iNeighbor) );
+        unsigned long jPoint_global = geom->nodes->GetGlobalIndex(jPoint);
+        neighbors[iPoint]->insert( jPoint_global );
+      }
+    }
+  }
 
+  // numbers of surface-neighbors of all domain vertices on the marker
+  unsigned long *Buffer_Send_nLinkedNodes       = new unsigned long [ nLocalVertex ];
+  // cumsum of Buffer_Send_nLinkedNodes
+  unsigned long *Buffer_Send_StartLinkedNodes   = new unsigned long [ nLocalVertex ];
   nLocalLinkedNodes = 0;
-
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++){
-    for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertex]; jEdge++){
-      Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertex][jEdge];
-      nLocalLinkedNodes++;
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+    if (geom->nodes->GetDomain(iPoint)) {
+      unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
+      Buffer_Send_nLinkedNodes[iLocalVertex] = neighbors[iPoint]->size();
+      Buffer_Send_StartLinkedNodes[iLocalVertex] = nLocalLinkedNodes;
+      nLocalLinkedNodes += Buffer_Send_nLinkedNodes[iLocalVertex];
+    }
+  }
+  // global point IDs of surface-neighbors of all domain vertices on the marker
+  unsigned long *Buffer_Send_LinkedNodes        = new unsigned long [ nLocalLinkedNodes ];
+  unsigned long index = 0;
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+    if (geom->nodes->GetDomain(iPoint)) {
+      for(unsigned long jPoint_global : *(neighbors[iPoint])){
+        Buffer_Send_LinkedNodes[index] = jPoint_global;
+        index++;
+      }
+      delete neighbors[iPoint];
+      neighbors[iPoint]=nullptr;
     }
   }
 
-  for (iVertex = 0; iVertex < nVertex; iVertex++){
-    if( Aux_Send_Map[iVertex] != nullptr )
-      delete [] Aux_Send_Map[iVertex];
-  }
-  delete [] Aux_Send_Map; Aux_Send_Map = nullptr;
 
-  /*--- Now the arrays of all processes must be joined to a single/global arrays, StartLinkedNodes indices must be shifted,
-   * and the global point IDs in LinkedNodes are replaced by global vertex IDs.
+
+  /*--- Now these arrays of all processes must be joined to a single/global arrays. For this,
+   * the entries of StartLinkedNodes must be shifted.
+   * Furthermore, the global point IDs in LinkedNodes are replaced by global vertex IDs.
    * For this, the master process collects the data from all processes, joins them and broadcasts them again. ---*/
 
   /*--- Allocate global arrays. ---*/
