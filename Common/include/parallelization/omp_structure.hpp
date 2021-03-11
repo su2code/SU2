@@ -139,8 +139,11 @@ void omp_finalize();
 
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
-#define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
+
+#ifndef HAVE_OPDI
+
+#define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
 #define SU2_OMP_CRITICAL SU2_OMP(critical)
 
@@ -148,8 +151,39 @@ void omp_finalize();
 #define SU2_OMP_PARALLEL_(ARGS) SU2_OMP(parallel ARGS)
 #define SU2_OMP_PARALLEL_ON(NTHREADS) SU2_OMP(parallel num_threads(NTHREADS))
 
+#define SU2_OMP_FOR_(ARGS) SU2_OMP(for ARGS)
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
+
+#define SU2_NOWAIT nowait
+
+#define END_SU2_OMP_MASTER
+#define END_SU2_OMP_CRITICAL
+#define END_SU2_OMP_PARALLEL
+#define END_SU2_OMP_FOR
+
+#else
+
+#define SU2_OMP_MASTER OPDI_MASTER()
+#define SU2_OMP_BARRIER OPDI_BARRIER()
+#define SU2_OMP_CRITICAL OPDI_CRITICAL()
+
+#define SU2_OMP_PARALLEL OPDI_PARALLEL()
+#define SU2_OMP_PARALLEL_(ARGS) OPDI_PARALLEL(ARGS)
+#define SU2_OMP_PARALLEL_ON(NTHREADS) OPDI_PARALLEL(num_threads(NTHREADS))
+
+#define SU2_OMP_FOR_(ARGS) OPDI_FOR(ARGS)
+#define SU2_OMP_FOR_DYN(CHUNK) OPDI_FOR(schedule(dynamic,CHUNK))
+#define SU2_OMP_FOR_STAT(CHUNK) OPDI_FOR(schedule(static,CHUNK))
+
+#define SU2_NOWAIT OPDI_NOWAIT
+
+#define END_SU2_OMP_MASTER OPDI_END_MASTER
+#define END_SU2_OMP_CRITICAL OPDI_END_CRITICAL
+#define END_SU2_OMP_PARALLEL OPDI_END_PARALLEL
+#define END_SU2_OMP_FOR OPDI_END_FOR
+
+#endif
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
