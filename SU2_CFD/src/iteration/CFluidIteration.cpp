@@ -323,7 +323,9 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   }
 
   if (multizone && steady) {
-    Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
+    // TODO: I dont see why outer iter should be send instead of inner iter, outiter is in config already. Nitish
+    //Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
+    Output(output, geometry, solver, config, Inner_Iter, StopCalc, val_iZone, val_iInst);
 
     /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
