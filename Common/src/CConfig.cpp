@@ -2490,14 +2490,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: CHT interface coupling methods */
   /*  Options: NO, YES \ingroup Config */
   addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
-  /* DESCRIPTION: Thermal diffusivity constant */
-  addDoubleOption("SOLID_THERMAL_DIFFUSIVITY", Thermal_Diffusivity_Solid, 1.172E-5);
-  /* DESCRIPTION: Thermal conductivity used for heat equation */
-  addDoubleOption("SOLID_THERMAL_CONDUCTIVITY", Thermal_Conductivity_Solid, 0.0);
-  /* DESCRIPTION: Solids temperature at freestream conditions */
-  addDoubleOption("SOLID_TEMPERATURE_INIT", Temperature_Freestream_Solid, 288.15);
-  /* DESCRIPTION: Density used in solids */
-  addDoubleOption("SOLID_DENSITY", Density_Solid, 2710.0);
 
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
@@ -2880,6 +2872,16 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          if (!option_name.compare("THERMAL_DIFFUSIVITY"))
+            newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
+          if (!option_name.compare("SOLID_THERMAL_DIFFUSIVITY"))
+            newString.append("SOLID_THERMAL_DIFFUSIVITY is deprecated. Set KT_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
+          if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
+            newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use KT_CONSTANT instead.\n\n");
+          if (!option_name.compare("SOLID_DENSITY"))
+            newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
+          if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
+            newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;

@@ -805,11 +805,7 @@ private:
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
-  su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
-  Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
-  Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
-  Density_Solid,                   /*!< \brief Total density in solids. */
-  Energy_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
+  su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -827,14 +823,15 @@ private:
   Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
-  Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-  Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
-  Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
-  Temperature_ve_Ref,  /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
-  Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
-  Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
+  Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  Thermal_Diffusivity,        /*!< \brief Thermal diffusivity (specified for heat conduction in solids). */
+  Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
+  Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
+  Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
+  Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
+  Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
@@ -1636,12 +1633,6 @@ public:
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
 
   /*!
-   * \brief Get the value of the solid density.
-   * \return Solid density.
-   */
-  su2double GetDensity_Solid(void) const { return Density_Solid; }
-
-  /*!
    * \brief Get the value of the frestream temperature.
    * \return Freestream temperature.
    */
@@ -1666,22 +1657,10 @@ public:
   su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
 
   /*!
-   * \brief Get the value of the thermal conductivity for solids.
-   * \return Thermal conductivity (solid).
-   */
-  su2double GetThermalConductivity_Solid(void) const { return Thermal_Conductivity_Solid; }
-
-  /*!
    * \brief Get the value of the thermal diffusivity for solids.
    * \return Thermal conductivity (solid).
    */
-  su2double GetThermalDiffusivity_Solid(void) const { return Thermal_Diffusivity_Solid; }
-
-  /*!
-   * \brief Get the temperature in solids at initial conditions.
-   * \return Freestream temperature (solid).
-   */
-  su2double GetTemperature_Initial_Solid(void) const { return Temperature_Freestream_Solid;  }
+  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -2519,7 +2498,7 @@ public:
    * \brief Set the thermal diffusivity for solids.
    * \return Value of the Froude number.
    */
-  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity) { Thermal_Diffusivity = val_thermal_diffusivity; }
 
   /*!
    * \brief Set the Froude number for free surface problems.
