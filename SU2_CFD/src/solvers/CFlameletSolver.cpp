@@ -45,6 +45,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
                          (config->GetKind_Solver() == DISC_ADJ_RANS));
   const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Dimension of the problem --> passive scalar will only ever
    have a single equation. Other child classes of CScalarSolver
@@ -53,15 +54,15 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   nVar     = config->GetNScalars();
   nPrimVar = config->GetNScalars();
 
-  nPoint       = geometry->GetnPoint();
+  nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  
+
   /*--- Initialize nVarGrad for deallocation ---*/
-  
+
   nVarGrad = nVar;
-  
+
   /*--- Define geometry constants in the solver structure ---*/
-  
+
   nDim = geometry->GetnDim();
   
   /*--- Fluid model pointer initialization ---*/
@@ -69,117 +70,97 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   FluidModel = NULL;
   
   /*--- Define some auxiliar vector related with the residual ---*/
-  
-  Residual     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual    [iVar] = 0.0;
-  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
-  Residual_i   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i  [iVar] = 0.0;
-  Residual_j   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j  [iVar] = 0.0;
-  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-  Res_Conv     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv    [iVar] = 0.0;
-  Res_Visc     = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc    [iVar] = 0.0;
+
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
+
+  //Residual     = new su2double[nVar]{};
+  //Residual_i   = new su2double[nVar]{};
+  //Residual_j   = new su2double[nVar]{};
+  //Res_Conv     = new su2double[nVar]{};
+  //Res_Visc     = new su2double[nVar]{};
   
   /*--- Define some structures for locating max residuals ---*/
-  
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
-  
+
   /*--- Define some auxiliar vector related with the solution ---*/
   
   Solution = new su2double[nVar];
   Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
   
-  /*--- Define some auxiliar vector related with the geometry ---*/
+
+
+  /*--- Define some auxiliary vector related with the geometry ---*/
   
   Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-  
-  /*--- Define some auxiliar vector related with the flow solution ---*/
-  
-  FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
-  
-  /*--- Jacobians and vector structures for implicit computations ---*/
-  
-  Jacobian_i = new su2double* [nVar];
-  Jacobian_j = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-  }
-  
-  /*--- Initialization of the structure of the whole Jacobian ---*/
-  
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Combustion Scalar). MG level: " << iMesh <<"." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-  
-  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-  }
-  
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
-  /*--- Computation of gradients by least squares ---*/
-  
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    /*--- S matrix := inv(R)*transpose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    
-    Cvector = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Cvector[iVar] = new su2double [nDim];
-  }
-  
+
+
+    /*--- Initialization of the structure of the whole Jacobian ---*/
+
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    System.SetxIsZero(true);
+
+    if (ReducerStrategy)
+      EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (multizone){
+      Residual_BGS.resize(nVar,0.0);
+      Residual_Max_BGS.resize(nVar,0.0);
+      Point_Max_BGS.resize(nVar,0);
+      Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
+    }
+
   /*--- Initialize lower and upper limits---*/
-  
+
   lowerlimit = new su2double[nVar];
   upperlimit = new su2double[nVar];
-  
+
   lowerlimit[0] = -1.0e15;
   upperlimit[0] =  1.0e15;
-  
+
   /*--- Read farfield conditions from config ---*/
-  
+
   Density_Inf   = config->GetDensity_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
 
   /*--- Set up fluid model for the diffusivity ---*/
-  
+
   su2double Diffusivity_Ref = 1.0;
-  
   su2double DiffusivityND = config->GetDiffusivity_Constant()/Diffusivity_Ref;
-  
   config->SetDiffusivity_ConstantND(DiffusivityND);
-  
+
   /*--- Scalar variable state at the far-field. ---*/
-  
+
   Scalar_Inf = new su2double[nVar];
-  
+
   //FIXME daniel: scalar_inf should be set depending on inlet temperature
   //              can be done in the initial condition, also set Inlet_Scalar_vars!
   for (iVar = 0; iVar < nVar; iVar++){
     Scalar_Inf[iVar] = config->GetScalar_Init(iVar);
   }
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  
+
   nodes = new CFlameletVariable(Scalar_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
-  
+
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
-  
+
   /*--- Initialize quantities for SlidingMesh Interface ---*/
-  
+
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
 
@@ -190,15 +171,11 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
     }
   }
 
-  
-  /*-- Allocation of inlets has to happen in derived classes
-   (not CScalarSolver), due to arbitrary number of scalar variables.
-   First, we also set the column index for any inlet profiles. ---*/
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
-   * due to arbitrary number of turbulence variables ---*/
+    due to arbitrary number of turbulence variables ---*/
 
   Inlet_ScalarVars.resize(nMarker);
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++){
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     Inlet_ScalarVars[iMarker].resize(nVertex[iMarker],nVar);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++){
@@ -207,14 +184,15 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
     }
   }
 
-
   Inlet_Position = nDim*2+2;
   if (turbulent) {
     if (turb_SA) Inlet_Position += 1;
     else if (turb_SST) Inlet_Position += 2;
   }
-  
-  
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "FLAMELET";
+
 }
 
 CFlameletSolver::~CFlameletSolver(void) {
@@ -224,14 +202,9 @@ CFlameletSolver::~CFlameletSolver(void) {
   
 }
 
-void CFlameletSolver::Preprocessing(CGeometry *geometry,
-                                         CSolver **solver_container,
-                                         CConfig *config,
-                                         unsigned short iMesh,
-                                         unsigned short iRKStep,
-                                         unsigned short RunTime_EqSystem,
-                                         bool Output) {
-  
+void CFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
   unsigned long InnerIter = config->GetInnerIter();
   bool disc_adjoint       = config->GetDiscrete_Adjoint();
   bool limiter_flow       = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
@@ -672,16 +645,10 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     }
   }
 
-
   delete[] scalars;
   delete[] sources;
   
 }
-
-
-
-
-
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics,
@@ -733,18 +700,16 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   }
 }
 
-void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *conv_numerics,
-                                CNumerics *visc_numerics, CConfig *config,
-                                unsigned short val_marker) {
+void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long i_point, i_vertex, total_index;
   su2double *normal;
   su2double *v_outlet, *v_domain;
 
-  bool grid_movement  = config->GetGrid_Movement();
-  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  
+  //bool grid_movement  = config->GetGrid_Movement();
+  const bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+
 
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();  
 

@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -705,6 +705,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
         geometry[iMesh]->MatchPeriodic(config, iPeriodic);
       }
 
+      /*--- For Streamwise Periodic flow, find a unique reference node on the dedicated inlet marker. ---*/
+      if (config->GetKind_Streamwise_Periodic() != NONE)
+        geometry[iMesh]->FindUniqueNode_PeriodicBound(config);
+
       /*--- Initialize the communication framework for the periodic BCs. ---*/
       geometry[iMesh]->PreprocessPeriodicComms(geometry[iMesh], config);
 
@@ -1300,7 +1304,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
       solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (is_scalar_model) {
-      // nijso: do we need SU2_OMP_PARALLEL???
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][SCALAR_SOL]->GetHasHybridParallel()))
       solver[MESH_0][SCALAR_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (fem) {
@@ -1867,6 +1871,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
       }
+      else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) {
+        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);
+      }
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       }
@@ -1897,6 +1904,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
       if (config->AddRadiation())
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
+      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) &&
+               (config->GetEnergy_Equation() && !config->GetStreamwise_Periodic_Temperature()))
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
     }
@@ -2174,7 +2184,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (passive_scalar || progress_variable) {
-            numerics[iMGlevel][SCALAR_SOL][CONV_TERM] = new CUpwtransportedScalar_General(nDim, nVar_Scalar, config);
+            numerics[iMGlevel][SCALAR_SOL][CONV_TERM] = new CUpwSca_transportedScalar_general(nDim, nVar_Scalar, config);
           }
         }
         break;
@@ -2187,8 +2197,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable){
-        if (iMGlevel == MESH_0) numerics[iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradtransportedScalar_General(nDim, nVar_Scalar, true, config);
-        else numerics[iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradtransportedScalar_General(nDim, nVar_Scalar, false, config);
+        if (iMGlevel == MESH_0) numerics[iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGrad_transportedScalar_general(nDim, nVar_Scalar, true, config);
+        else numerics[iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGrad_transportedScalar_general(nDim, nVar_Scalar, false, config);
       }
     }
     
@@ -2196,10 +2206,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable) {
-        numerics[iMGlevel][SCALAR_SOL][SOURCE_FIRST_TERM]  = new CSourcePieceWise_Scalar(nDim, nVar_Scalar, config);
-      if (config->GetAxisymmetric() == YES)
-          numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceAxisymmetric_Scalar(nDim, nVar_Scalar, config);
-      else  numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Scalar, config);
+        numerics[iMGlevel][SCALAR_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Scalar, config);
+   //if (config->GetAxisymmetric() == YES)
+      //    numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceAxisymmetric_Scalar(nDim, nVar_Scalar, config);
+      //else  
+        numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Scalar, config);
       }
     }
     
@@ -2207,8 +2218,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable) {
-        numerics[iMGlevel][SCALAR_SOL][CONV_BOUND_TERM] = new CUpwtransportedScalar_General(nDim, nVar_Scalar, config);
-        numerics[iMGlevel][SCALAR_SOL][VISC_BOUND_TERM] = new CAvgGradtransportedScalar_General(nDim, nVar_Scalar, false, config);
+        numerics[iMGlevel][SCALAR_SOL][CONV_BOUND_TERM] = new CUpwSca_transportedScalar_general(nDim, nVar_Scalar, config);
+        numerics[iMGlevel][SCALAR_SOL][VISC_BOUND_TERM] = new CAvgGrad_transportedScalar_general(nDim, nVar_Scalar, false, config);
       }
     }
   }

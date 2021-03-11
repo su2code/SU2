@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.1.0 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v7.1.1 \"Blackbird\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -89,17 +89,17 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
 
-  CConfig* config = new CConfig(config_file_name, SU2_CFD);
-  unsigned short nZone = config->GetnZone();
-  bool turbo = config->GetBoolTurbomachinery();
+  const CConfig config(config_file_name, SU2_CFD);
+  const unsigned short nZone = config.GetnZone();
+  const bool turbo = config.GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  bool disc_adj = config->GetDiscrete_Adjoint();
-  bool multizone = config->GetMultizone_Problem();
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool disc_adj = config.GetDiscrete_Adjoint();
+  const bool multizone = config.GetMultizone_Problem();
+  const bool harmonic_balance = (config.GetTime_Marching() == HARMONIC_BALANCE);
 
   if (dry_run) {
 
@@ -143,16 +143,7 @@ int main(int argc, char *argv[]) {
     /*--- Turbomachinery problem. ---*/
     driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
 
-  }
-  else {
-
-    /*--- Instantiate the class for external aerodynamics by default. ---*/
-    driver = new CFluidDriver(config_file_name, nZone, MPICommunicator);
-
-  }
-
-  delete config;
-  config = nullptr;
+  } /*--- These are all the possible cases ---*/
 
   /*--- Launch the main external loop of the solver. ---*/
 
@@ -163,7 +154,6 @@ int main(int argc, char *argv[]) {
   driver->Postprocessing();
 
   delete driver;
-  driver = nullptr;
 
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM

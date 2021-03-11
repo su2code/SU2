@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,17 +87,20 @@ protected:
   su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
-  su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
-  *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
-  *Residual,                /*!< \brief Auxiliary nVar vector. */
+  vector<su2double> Residual_RMS;      /*!< \brief Vector with the mean residual for each variable. */
+  vector<su2double> Residual_Max;      /*!< \brief Vector with the maximal residual for each variable. */
+  vector<su2double> Residual_BGS;      /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
+  vector<su2double> Residual_Max_BGS;  /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
+  vector<unsigned long> Point_Max;     /*!< \brief Vector with the maximal residual for each variable. */
+  vector<unsigned long> Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+
+  /*--- Variables that need to go. ---*/
+
+  su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
   *Residual_i,              /*!< \brief Auxiliary nVar vector for storing the residual at point i. */
   *Residual_j;              /*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-  su2double *Residual_BGS,  /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
-  *Residual_Max_BGS;        /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
-  unsigned long *Point_Max;        /*!< \brief Vector with the maximal residual for each variable. */
-  unsigned long *Point_Max_BGS;    /*!< \brief Vector with the maximal residual for each variable. */
-  su2double **Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
-  su2double **Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2double *Solution,    /*!< \brief Auxiliary nVar vector. */
   *Solution_i,            /*!< \brief Auxiliary nVar vector for storing the solution at point i. */
   *Solution_j;            /*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -117,19 +120,21 @@ protected:
   **Jacobian_ij,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double **Smatrix;        /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  su2double **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
+  su2double **Cvector;        /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
+  /*--- End variables that need to go. ---*/
+
+  su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
-  unsigned long nMarker,            /*!< \brief Total number of markers using the grid information. */
-  *nVertex;                         /*!< \brief Store nVertex at each marker for deallocation */
+  unsigned long nMarker;            /*!< \brief Total number of markers using the grid information. */
+  vector<unsigned long> nVertex;    /*!< \brief Store nVertex at each marker for deallocation */
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
@@ -298,19 +303,19 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_RMS(CGeometry *geometry, CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_BGS(CGeometry *geometry, CConfig *config);
+  void SetResidual_BGS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Move the mesh in time
@@ -418,18 +423,16 @@ public:
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \brief Set the RMS and MAX residual to zero.
    */
-  inline void SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+  inline void SetResToZero() {
+    SU2_OMP_MASTER {
+      for (auto& r : Residual_RMS) r = 0;
+      for (auto& r : Residual_Max) r = 0;
+      for (auto& p : Point_Max) p = 0;
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -451,17 +454,6 @@ public:
   inline virtual unsigned long GetNTableMisses() { return 0; }
 
   /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max(unsigned short val_var,
-                         su2double val_residual,
-                         unsigned long val_point) {
-    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point;
-  }
-
-  /*!
    * \brief Adds the maximal residual, this is useful for the convergence history (overload).
    * \param[in] val_var - Index of the variable.
    * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
@@ -480,7 +472,6 @@ public:
     }
   }
 
-
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
@@ -489,36 +480,11 @@ public:
   inline su2double GetRes_Max(unsigned short val_var) const { return Residual_Max[val_var]; }
 
   /*!
-   * \brief Set the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] += val_residual; }
-
-  /*!
    * \brief Get the residual for BGS subiterations.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
-
-  /*!
-   * \brief Set the maximal residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max_BGS(unsigned short val_var,
-                             su2double val_residual,
-                             unsigned long val_point) {
-    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point;
-  }
 
   /*!
    * \brief Adds the maximal residual for BGS subiterations.
@@ -538,7 +504,6 @@ public:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
-
 
   /*!
    * \brief Get the maximal residual for BGS subiterations.
@@ -566,7 +531,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
+  inline const su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -580,7 +545,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
+  inline const su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
 
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
@@ -795,22 +760,6 @@ public:
                                       CNumerics **numerics_container,
                                       CConfig *config,
                                       unsigned short iMesh) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  inline virtual void Convective_Residual(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CNumerics *numerics,
-                                          CConfig *config,
-                                          unsigned short iMesh,
-                                          unsigned short iRKStep) { }
 
   /*!
    * \brief A virtual member.
@@ -4022,7 +3971,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
+  inline virtual const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4140,7 +4089,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4161,7 +4110,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4228,7 +4177,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityIn(su2double *value,
+  inline virtual void SetTurboVelocityIn(const su2double *value,
                                          unsigned short inMarkerTP,
                                          unsigned short valSpan) { }
 
@@ -4255,7 +4204,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityOut(su2double *value,
+  inline virtual void SetTurboVelocityOut(const su2double *value,
                                           unsigned short inMarkerTP,
                                           unsigned short valSpan) { }
 
@@ -4433,6 +4382,13 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  /*!
+   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
+   */
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
+
 
 protected:
   /*!

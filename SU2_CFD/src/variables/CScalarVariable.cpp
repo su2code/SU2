@@ -54,13 +54,13 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   UnderRelaxation.resize(nPoint) = su2double(1.0);
 
   /*--- Allocate space for the mass diffusivity. ---*/
-  
+  /*--- nijso asks: why do we need to store the entire diffusivity array? ---*/ 
   Diffusivity.resize(nPoint,nVar) = su2double(0.0);
   
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
   
   if (config->GetAxisymmetric() && config->GetViscous()) {
-    AuxVar.resize(nPoint,nVar)=su2double(0.0); //nijso: nvar is correct? do we use this?
+    AuxVar.resize(nPoint,nVar)=su2double(0.0); 
     Grad_AuxVar.resize(nPoint,nVar,nDim);
   }
 

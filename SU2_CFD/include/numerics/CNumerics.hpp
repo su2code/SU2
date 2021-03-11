@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,6 +82,9 @@ protected:
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
+  SpecificHeat_i, /*!< \brief Specific heat c_p at point j. */
+  SpecificHeat_j; /*!< \brief Specific heat c_p at point j. */
+  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
@@ -155,8 +158,8 @@ protected:
   *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
   *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
   su2double
-  *scalar_i,
-  *scalar_j;
+  *ScalarVar_i,
+  *ScalarVar_j;
   su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -177,8 +180,8 @@ protected:
   **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TurbVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
   su2double
-  **scalar_grad_i,   /*!< \brief Gradient of scalar variables at point i. */
-  **scalar_grad_j; 
+  **ScalarVar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
+  **ScalarVar_Grad_j; 
   su2double 
   **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TransVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
@@ -402,8 +405,8 @@ public:
    * \param[in] val_scalar_j - Value of the scalar at point j.
    */
   inline void SetScalarVar(su2double *val_scalar_i, su2double *val_scalar_j) {
-    scalar_i = val_scalar_i;
-    scalar_j = val_scalar_j;
+    ScalarVar_i = val_scalar_i;
+    ScalarVar_j = val_scalar_j;
   }
 
   /*!
@@ -415,8 +418,8 @@ public:
    */
   inline void SetScalarVar(su2double val_scalar_i, int val_ix_i,
                            su2double val_scalar_j, int val_ix_j) {
-    scalar_i[val_ix_i] = val_scalar_i;
-    scalar_j[val_ix_j] = val_scalar_j;
+    ScalarVar_i[val_ix_i] = val_scalar_i;
+    ScalarVar_j[val_ix_j] = val_scalar_j;
   }
 
   /*!
@@ -446,8 +449,8 @@ public:
    * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
    */
   inline void SetScalarVarGradient(su2double **val_scalar_grad_i, su2double **val_scalar_grad_j) {
-  scalar_grad_i = val_scalar_grad_i;
-  scalar_grad_j = val_scalar_grad_j;
+  ScalarVar_Grad_i = val_scalar_grad_i;
+  ScalarVar_Grad_j = val_scalar_grad_j;
 }
 
   /*!
@@ -788,6 +791,17 @@ public:
                                     su2double val_thermal_diffusivity_j) {
     Thermal_Diffusivity_i = val_thermal_diffusivity_i;
     Thermal_Diffusivity_j = val_thermal_diffusivity_j;
+  }
+
+  /*!
+   * \brief Set the specifc heat c_p.
+   * \param[in] val_specific_heat_i - Value of the specific heat at point i.
+   * \param[in] val_specific_heat_j - Value of the specific heat at point j.
+   */
+  inline void SetSpecificHeat(su2double val_specific_heat_i,
+                              su2double val_specific_heat_j) {
+    SpecificHeat_i = val_specific_heat_i;
+    SpecificHeat_j = val_specific_heat_j;
   }
 
   /*!
@@ -1629,6 +1643,11 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
+  /*!
+   * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
+   * \param[in] SolverSPvals - Struct holding the values.
+   */
+  virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
 };
 
 /*!

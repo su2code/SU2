@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -275,15 +275,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
-  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
-  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,1.e-35);
+  Residual_Max.resize(nVar,1.e-35);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Non-dimensional coefficients ---*/
   CD_Inv   = new su2double[nMarker];
@@ -7125,10 +7120,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
   const unsigned short nRKStages     = config->GetnRKStep();
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /* Set the pointer to the array where the new state vector must be stored.
      If this is the last RK step, the solution should be stored in
@@ -7177,10 +7169,7 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
   su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -7229,10 +7218,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
   /* Initialize the residuals to zero. */
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Loop over the owned elements. It is not possible to loop directly over the owned
         DOFs, because the coordinates of the DOFs are only known in the volume class. ---*/
@@ -7250,7 +7236,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
 
-        AddRes_RMS(iVar, res[i]*res[i]);
+        Residual_RMS[iVar] += res[i]*res[i];
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
@@ -7263,22 +7249,22 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
     vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Residual_RMS.data(), rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       if (rbufRes[iVar] != rbufRes[iVar])
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
+      Residual_RMS[iVar] = max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal));
     }
 
     /*--- The global maximum norms must be obtained. ---*/
     rbufRes.resize(nVar*size);
-    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
+    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbufRes.data(),
                        nVar, MPI_DOUBLE, SU2_MPI::GetComm());
 
     vector<unsigned long> rbufPoint(nVar*size);
-    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
                        nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     vector<su2double> sbufCoor(nDim*nVar);
@@ -7306,7 +7292,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
       SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
+    Residual_RMS[iVar] = max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal));
   }
 
 #endif

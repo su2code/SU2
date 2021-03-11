@@ -1,8 +1,9 @@
-/*!
- * \file scalar_convection.hpp
- * \brief Delarations of numerics classes for scalar transport problems.
- * \author T. Economon, D. Mayer, N. Beishuizen
- * \version 7.1.0 "Blackbird"
+﻿/*!
+ * \file turb_convection.hpp
+ * \brief Delarations of numerics classes for discretization of
+ *        convective fluxes in turbulence problems.
+ * \author F. Palacios, T. Economon
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,10 +25,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
-/* nijso says: the creation of a transportedscalar class from the turbulent class 
-   is a temporary solution. We should aim again for a general transported variable class
-*/
 
 #pragma once
 
@@ -83,61 +80,43 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwtransportedScalar(void);
+  ~CUpwtransportedScalar(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
-  ResidualType<> ComputeResidual(const CConfig* config);
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
 
 /*!
- * \class CUpwtransportedScalar_General
- * \brief Class for a general scalar upwind solver for an arbitrary number of scalar transport eqns.
+ * \class CUpwSca_transportedScalar_general
+ * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
- * \author T. Economon
+ * \author A. Campos.
  */
-class CUpwtransportedScalar_General : public CUpwtransportedScalar {
+class CUpwSca_transportedScalar_general final : public CUpwtransportedScalar {
 private:
-
   /*!
    * \brief Adds any extra variables to AD
    */
-  void ExtraADPreaccIn();
+  void ExtraADPreaccIn() override;
 
   /*!
    * \brief SST specific steps in the ComputeResidual method
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(su2double *val_residual, su2double **Jacobian_i,
-                          su2double **Jacobian_j, CConfig *config);
-
-  /*!
-   * \brief SA specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override;
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwtransportedScalar_General(unsigned short val_nDim,
-                     unsigned short val_nVar,
-                     CConfig *config);
+  CUpwSca_transportedScalar_general(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwtransportedScalar_General(void);
 };
