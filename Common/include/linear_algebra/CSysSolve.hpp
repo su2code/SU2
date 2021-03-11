@@ -99,7 +99,7 @@ private:
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
-  LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
+  LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
   bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
   bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
   unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */

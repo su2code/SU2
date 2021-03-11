@@ -248,15 +248,15 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
     norm_r = r.norm();
     norm0  = b.norm();
+
+    /*--- Set the norm to the initial initial residual value ---*/
+
+    if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
+
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (master && !mesh_deform) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
-
-    /*--- Set the norm to the initial initial residual value ---*/
-
-    if (tol_type == LinearToleranceType::RELATIVE)
-      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -399,6 +399,10 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   ScalarType beta = W[0].norm();
 
+  /*--- Set the norm to the initial initial residual value ---*/
+
+  if (tol_type == LinearToleranceType::RELATIVE) norm0 = beta;
+
   if ((beta < tol*norm0) || (beta < eps)) {
 
     /*--- System is already solved ---*/
@@ -416,11 +420,6 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Initialize the RHS of the reduced system ---*/
 
   g[0] = beta;
-
-  /*--- Set the norm to the initial residual value ---*/
-
-  if (tol_type == LinearToleranceType::RELATIVE)
-    norm0 = beta;
 
   /*--- Output header information including initial residual ---*/
 
@@ -551,15 +550,15 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
     norm_r = r.norm();
     norm0  = b.norm();
+
+    /*--- Set the norm to the initial initial residual value ---*/
+
+    if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
+
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
       if (master) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
       return 0;
     }
-
-    /*--- Set the norm to the initial initial residual value ---*/
-
-    if (tol_type == LinearToleranceType::RELATIVE)
-      norm0 = norm_r;
 
     /*--- Output header information including initial residual ---*/
 
@@ -713,15 +712,15 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
     norm_r = r.norm();
     norm0  = b.norm();
+
+    /*--- Set the norm to the initial initial residual value ---*/
+
+    if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
+
     if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
       if (master) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
       return 0;
     }
-
-    /*--- Set the norm to the initial initial residual value. ---*/
-
-    if (tol_type == LinearToleranceType::RELATIVE)
-      norm0 = norm_r;
 
     /*--- Output header information including initial residual. ---*/
 
