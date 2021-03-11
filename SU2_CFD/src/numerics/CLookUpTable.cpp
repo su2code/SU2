@@ -482,11 +482,28 @@ unsigned long CLookUpTable::LookUp_ProgEnth(string    val_name_var,
       exit_code = 1;
     }
   } else {
-    if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<< val_prog<< " "<<val_enth<<endl;
+    //if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<< val_prog<< " "<<val_enth<<endl;
     unsigned long nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth,name_prog,name_enth);
     *val_var = GetData(val_name_var).at(nearest_neighbor);
     exit_code = 1;
   }
+  return exit_code;
+}
+
+
+unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
+                                            vector<su2double>  &val_vars,
+                                            su2double           val_prog,
+                                            su2double           val_enth, string name_prog,string name_enth) {
+
+  vector<su2double*> look_up_data;
+
+  for (int i_var=0; i_var < val_vars.size(); ++i_var) {
+    look_up_data.push_back(&val_vars[i_var]);
+  }
+
+  unsigned long exit_code = LookUp_ProgEnth(val_names_var, look_up_data, val_prog, val_enth, name_prog, name_enth);
+
   return exit_code;
 }
 
@@ -526,7 +543,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
     }
 
   } else {
-    if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<< val_prog<< " "<<val_enth<<endl;
+    //if (rank == MASTER_NODE) cout << "WARNING: LookUp_ProgEnth: lookup is outside of table bounding box, c,h = "<< val_prog<< " "<<val_enth<<endl;
 
     /* if point is outside of table range, search nearest neighbor */
     nearest_neighbor = FindNearestNeighborOnHull(val_prog, val_enth,name_prog,name_enth);

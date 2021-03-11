@@ -132,6 +132,11 @@ protected:
                                 su2double           val_prog,
                                 su2double           val_enth, string name_prog, string name_enth);
 
+  unsigned long LookUp_ProgEnth(vector<string>     &val_names_var,
+                                vector<su2double>  &val_vars,
+                                su2double           val_prog,
+                                su2double           val_enth, string name_prog, string name_enth);
+
   inline pair<su2double, su2double> GetTableLimitsEnth() {
     return make_pair(limits_table_enth[0], limits_table_enth[1]);
 }

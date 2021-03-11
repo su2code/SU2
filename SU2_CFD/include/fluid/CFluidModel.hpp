@@ -128,7 +128,7 @@ class CFluidModel {
   /*!
    * \brief Get the source term of the transported scalar
    */
-  virtual inline su2double GetSourceScalar(int){ return 37; }
+  virtual inline su2double GetScalarSources(int){ return 37; }
   
   /*!
   * \brief Get the number of transported scalars
@@ -138,7 +138,7 @@ class CFluidModel {
   /*!
    * \brief Get the looked up scalar field for combustion
    */
-  virtual inline su2double GetLookupScalar(int){ return 37; }
+  virtual inline su2double GetScalarLookups(int){ return 37; }
 
 
   virtual CLookUpTable* GetLookUpTable() {return look_up_table; }
@@ -356,6 +356,8 @@ class CFluidModel {
   virtual unsigned long SetTDState_T(su2double val_Temperature, su2double *val_scalars = nullptr) {return 0;}
 
   virtual unsigned long SetScalarSources(su2double *val_scalars) {return 0;}
+
+  virtual unsigned long SetScalarLookups(su2double *val_scalars) {return 0;}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

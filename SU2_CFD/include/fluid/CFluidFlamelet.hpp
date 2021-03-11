@@ -24,8 +24,8 @@ protected:
   su2double dSourcePVdPV;
   su2double dDensitydEnth;
 
-  su2double *source_scalar;
-  su2double *lookupScalar;
+  vector<su2double> source_scalar;
+  vector<su2double> lookup_scalar;
 
   CLookUpTable *look_up_table;
 
@@ -37,6 +37,8 @@ protected:
   unsigned long SetTDState_T(su2double val_temperature, su2double *val_scalars);
 
   unsigned long SetScalarSources(su2double *val_scalars);
+
+  unsigned long SetScalarLookups(su2double *val_scalars);
 
   void SetTDState_prog_enth(su2double val_prog, su2double val_enth);
 
@@ -62,10 +64,10 @@ protected:
 
   inline su2double GetdDensitydEnth() { return dDensitydEnth; }
 
-  inline su2double GetSourceScalar(int i_scalar) { return source_scalar[i_scalar]; }
+  inline su2double GetScalarSources(int i_scalar) { return source_scalar.at(i_scalar); }
 
   inline unsigned short GetNScalars() { return n_scalars; }
 
-  inline su2double GetLookupScalar(int i_scalar) { return lookupScalar[i_scalar]; }
+  inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar.at(i_scalar); }
 
 };

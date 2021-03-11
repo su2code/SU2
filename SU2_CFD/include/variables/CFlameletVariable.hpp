@@ -90,7 +90,7 @@ public:
    * \param[in] val_ivar - eqn. index to the transported scalar source term
    * \return Value of the progress variable source term
    */
-  inline su2double GetSourceScalar(unsigned long  iPoint,
+  inline su2double GetScalarSources(unsigned long  iPoint,
                                  unsigned short val_ivar) override {
     return source_scalar(iPoint,val_ivar);
   }
@@ -100,7 +100,7 @@ public:
    * \param[in] val_ivar - eqn. index to the looked up scalar field
    * \return Value of the looked up scalar field
    */
-  inline su2double GetLookupScalar(unsigned long  iPoint,
+  inline su2double GetScalarLookups(unsigned long  iPoint,
                                  unsigned short val_ivar) override {
     return lookup_scalar(iPoint,val_ivar);
   }
@@ -110,7 +110,7 @@ public:
    * \brief Get the value of the transported scalars source term
    * \return Pointer to the transported scalars source term
    */
-  inline su2double *GetSourceScalar(unsigned long iPoint) override {
+  inline su2double *GetScalarSources(unsigned long iPoint) override {
     return source_scalar[iPoint];
   }
 
@@ -118,7 +118,7 @@ public:
    * \brief Get the value of the looked up table based on the transported scalar
    * \return Pointer to the transported scalars source term
    */
-  inline su2double *GetLookupScalar(unsigned long iPoint) override {
+  inline su2double *GetScalarLookups(unsigned long iPoint) override {
     return lookup_scalar[iPoint];
   }
   

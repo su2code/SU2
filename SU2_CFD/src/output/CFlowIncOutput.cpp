@@ -471,15 +471,13 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
           string strname1="lookup_"+config->GetLookupName(i_lookup);
           AddVolumeOutput(config->GetLookupName(i_lookup),strname1,"LOOKUP",config->GetLookupName(i_lookup));
         }
+      AddVolumeOutput("TABLE_MISS"       , "Table_miss"       , "SOLUTION", "Lookup table miss");
+      
 
       break;
     case NO_SCALAR_MODEL:
       break;
   }
-
-  // Radiation variables
-  if (config->AddRadiation())
-    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
 
   // Sources
   switch (scalar_model) {
@@ -493,6 +491,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     case NO_SCALAR_MODEL:
       break;
   }
+
+  // Radiation variables
+  if (config->AddRadiation())
+    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
 
   // Grid velocity
   if (config->GetDynamic_Grid()){
@@ -685,6 +687,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
   
   // Solution data
+  su2double *scalars;
+  unsigned long table_miss;
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
@@ -694,10 +698,30 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("ENTHALPY"         , iPoint, Node_Scalar->GetSolution(iPoint, I_ENTHALPY));
       SetVolumeOutputValue("Y_CO"             , iPoint, Node_Scalar->GetSolution(iPoint, I_CO      ));
       SetVolumeOutputValue("Y_NOX"            , iPoint, Node_Scalar->GetSolution(iPoint, I_NOX     ));
+
+      // update lookup
+      scalars = Node_Scalar->GetSolution(iPoint);
+      table_miss = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
-        if (config->GetLookupName(i_lookup)!="NULL") 
-          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, Node_Scalar->GetLookupScalar(iPoint, i_lookup));
+        if (config->GetLookupName(i_lookup)!="NULL")
+          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarLookups(i_lookup));
       }
+      SetVolumeOutputValue("TABLE_MISS"       , iPoint, (su2double)table_miss);
+
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+
+  // Sources
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      break;
+    case PROGRESS_VARIABLE:
+      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, Node_Scalar->GetScalarSources(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("SOURCE_ENTHALPY"         , iPoint, Node_Scalar->GetScalarSources(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("SOURCE_Y_CO"             , iPoint, Node_Scalar->GetScalarSources(iPoint, I_CO      ));
+      SetVolumeOutputValue("SOURCE_Y_NOX"            , iPoint, Node_Scalar->GetScalarSources(iPoint, I_NOX     ));
       break;
     case NO_SCALAR_MODEL:
       break;
@@ -707,20 +731,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (config->AddRadiation()){
     Node_Rad = solver[RAD_SOL]->GetNodes();
     SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
-  }
-
-  // Sources
-    switch(scalar_model){
-    case PASSIVE_SCALAR:
-      break;
-    case PROGRESS_VARIABLE:
-      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, Node_Scalar->GetSourceScalar(iPoint, I_PROG_VAR));
-      SetVolumeOutputValue("SOURCE_ENTHALPY"         , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_ENTHALPY));
-      SetVolumeOutputValue("SOURCE_Y_CO"             , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_CO      ));
-      SetVolumeOutputValue("SOURCE_Y_NOX"            , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_NOX     ));
-      break;
-    case NO_SCALAR_MODEL:
-      break;
   }
 
   if (config->GetDynamic_Grid()){

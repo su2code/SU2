@@ -38,8 +38,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
       table_lookup_names.at(i_lookup) = config->GetLookupName(i_lookup);
     }
 
-    source_scalar = new su2double[n_scalars];
-    lookupScalar  = new su2double[n_lookups];
+    source_scalar.resize(n_scalars);
+    lookup_scalar.resize(n_lookups);
 
     Pressure = value_pressure_operating;
 }
@@ -47,9 +47,20 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
 CFluidFlamelet::~CFluidFlamelet() {
 
   if (look_up_table!=NULL) delete   look_up_table;
-  if (source_scalar!=NULL) delete[] source_scalar;
-  if (lookupScalar !=NULL) delete[] lookupScalar;
+}
 
+unsigned long CFluidFlamelet::SetScalarLookups(su2double *val_scalars){
+
+  su2double enth   = val_scalars[I_ENTHALPY];
+  su2double prog   = val_scalars[I_PROG_VAR];
+
+  string name_enth = table_scalar_names.at(I_ENTHALPY);
+  string name_prog = table_scalar_names.at(I_PROG_VAR);
+
+  /* perform table look ups */
+  unsigned long exit_code = look_up_table->LookUp_ProgEnth(table_lookup_names, lookup_scalar, prog, enth, name_prog, name_enth);
+
+  return exit_code;
 }
 
 unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
@@ -74,17 +85,17 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   /* perform table look ups */
   unsigned long exit_code = look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, prog, enth, name_prog, name_enth);
 
-  source_scalar[I_ENTHALPY] = 0;
-  source_scalar[I_PROG_VAR] = table_sources[I_SRC_TOT_PROG_VAR];
-  source_scalar[I_CO]       = table_sources[I_SRC_TOT_CO];
-  source_scalar[I_NOX]      = table_sources[I_SRC_TOT_NOX];
+  source_scalar.at(I_ENTHALPY) = 0;
+  source_scalar.at(I_PROG_VAR) = table_sources[I_SRC_TOT_PROG_VAR];
+  source_scalar.at(I_CO)       = table_sources[I_SRC_TOT_CO];
+  source_scalar.at(I_NOX)      = table_sources[I_SRC_TOT_NOX];
 
 
   /*--- we clip at a small positive value --- */
   if (table_sources[I_SRC_TOT_PROG_VAR]<1.0e-6){
   // cout << "source term < 0!! (c,h)= "<<prog<<", "<<enth << endl;
   /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
-    source_scalar[I_PROG_VAR] = 0.0;
+    source_scalar.at(I_PROG_VAR) = 0.0;
   }
 
   /* calculate derivatives for jacobian preconditioner*/
@@ -125,13 +136,6 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
   look_up_data.push_back(&mass_diffusivity);
   look_up_tags.push_back("HeatRelease");
   look_up_data.push_back(&source_energy);
-
-
-/* passive lookup variables, for visualization */
-for (int i_lookup=0; i_lookup < n_lookups; ++i_lookup) {
-    look_up_tags.push_back(table_lookup_names.at(i_lookup));
-    look_up_data.push_back(&lookupScalar[i_lookup]);
-  }
 
   /* perform table look ups */
   exit_code = look_up_table->LookUp_ProgEnth(look_up_tags,look_up_data, val_prog, val_enth,name_prog,name_enth);

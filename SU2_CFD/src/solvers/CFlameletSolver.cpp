@@ -568,13 +568,13 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Implicit part for production term (to do). ---*/
 
-    for(int i_lookup = 0; i_lookup < n_lookups; ++i_lookup){
-      su2double next_lookup = fluid_model_local->GetLookupScalar(i_lookup);
-      nodes->SetLookupScalar(iPoint, next_lookup, i_lookup);
-    }
+    // for(int i_lookup = 0; i_lookup < n_lookups; ++i_lookup){
+    //   su2double next_lookup = fluid_model_local->GetScalarLookups(i_lookup);
+    //   nodes->SetLookupScalar(iPoint, next_lookup, i_lookup);
+    // }
 
     for(int i_scalar = 0; i_scalar < n_scalars; ++i_scalar){
-      su2double next_source = fluid_model_local->GetSourceScalar(i_scalar);
+      su2double next_source = fluid_model_local->GetScalarSources(i_scalar);
       nodes->SetSourceScalar(iPoint, next_source, i_scalar);
       Residual[i_scalar] = next_source * Volume;
     }
