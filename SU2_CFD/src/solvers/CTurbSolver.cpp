@@ -437,8 +437,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
   su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
+  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
 
    /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 

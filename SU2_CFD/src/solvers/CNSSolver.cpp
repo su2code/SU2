@@ -1119,10 +1119,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
           const auto Coord_i = geometry->node[iPoint]->GetCoord();
           const auto Coord_j = geometry->node[Point_Normal]->GetCoord();
 
-          su2double dist_ij = 0;
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-          dist_ij = sqrt(dist_ij);
+          const su2double dist_ij = GeometryToolbox::Distance(nDim,Coord_j,Coord_i);
 
           su2double theta2 = 0.0;
           for (auto iDim = 0u; iDim < nDim; iDim++)
@@ -1196,7 +1193,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, CNumer
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
 
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
+  su2double *Normal, Area, theta2;
   su2double Twall, dTdn, dTdrho, thermal_conductivity;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
@@ -1251,12 +1248,10 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, CNumer
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      Coord_i = geometry->node[iPoint]->GetCoord();
-      Coord_j = geometry->node[Point_Normal]->GetCoord();
-      dist_ij = 0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      dist_ij = sqrt(dist_ij);
+      const auto Coord_i = geometry->node[iPoint]->GetCoord();
+      const auto Coord_j = geometry->node[Point_Normal]->GetCoord();
+      
+      const su2double dist_ij = GeometryToolbox::Distance(nDim,Coord_j,Coord_i);
 
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/

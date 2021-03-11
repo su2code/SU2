@@ -3318,9 +3318,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
   su2double Vector_ij[MAXNDIM] = {0.0};
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
-  }
+  GeometryToolbox::Distance(nDim,Coord_j,Coord_i,Vector_ij);
 
   /*--- Reconstruct flow primitive variables. ---*/
 
@@ -3628,8 +3626,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
   su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0}, vel_k[MAXNDIM] = {0.0};
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
+  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
 
   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
@@ -3718,8 +3715,7 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
   const bool wasActive = AD::BeginPassive();
 
   su2double EdgVec[MAXNDIM] = {0.0};
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
 
   /*--- Get norm of projection and distance vectors ---*/
 
