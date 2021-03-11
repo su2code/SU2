@@ -2874,8 +2874,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("THERMAL_DIFFUSIVITY"))
             newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
-          if (!option_name.compare("SOLID_THERMAL_DIFFUSIVITY"))
-            newString.append("SOLID_THERMAL_DIFFUSIVITY is deprecated. Set KT_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
+          if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
+            newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set KT_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
           if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
             newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use KT_CONSTANT instead.\n\n");
           if (!option_name.compare("SOLID_DENSITY"))
