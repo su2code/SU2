@@ -52,7 +52,11 @@
 #include <omp.h>
 
 #if defined(HAVE_OPDI)
+#if defined(HAVE_OMPT)
 #include "opdi/backend/ompt/omptBackend.hpp"
+#else
+#include "opdi/backend/macro/macroBackend.hpp"
+#endif
 #include "codi/externals/codiOpdiTool.hpp"
 #include "opdi.hpp"
 #endif
