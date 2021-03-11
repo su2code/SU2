@@ -2195,7 +2195,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
-  if(curInnerIter%10 == 0 && rank == MASTER_NODE && false){
+  if(curInnerIter%10 == 0 && rank == MASTER_NODE ){
     auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
     auto nSpan = config->GetnSpan_iZones(ZONE_0);
 

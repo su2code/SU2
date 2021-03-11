@@ -1358,9 +1358,6 @@ enum TURBOMACHINERY_TYPE {
   CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
   CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
   AXIAL_CENTRIFUGAL = 5,  /*!< \brief mixed flow turbine. */
-  TURBINE = 6,            /*!< \brief Turbine Performance. */
-  COMPRESSOR = 7,         /*!< \brief Compressor Performance. */
-  PROPELLOR = 8           /*!< \brief Propellor Performance. */
 };
 static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
   MakePair("AXIAL", AXIAL)
@@ -1368,6 +1365,17 @@ static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
   MakePair("CENTRIPETAL",  CENTRIPETAL)
   MakePair("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
   MakePair("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL)
+};
+
+/*!
+ * \brief Types of Turbomachinery performance Type.
+ */
+enum TURBO_PERF_KIND{
+  TURBINE = 0,            /*!< \brief Turbine Performance. */
+  COMPRESSOR = 1,         /*!< \brief Compressor Performance. */
+  PROPELLOR = 2           /*!< \brief Propellor Performance. */
+};
+static const MapType<string, TURBO_PERF_KIND> TurboPerfKind_Map = {
   MakePair("TURBINE",  TURBINE)
   MakePair("COMPRESSOR",  COMPRESSOR)
   MakePair("PROPELLOR",  PROPELLOR)

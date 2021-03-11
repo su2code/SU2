@@ -197,7 +197,8 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
         const int thread = omp_get_thread_num();
 
       /* Switch between the Turbomachinery Performance Kind */
-      switch (config.GetKind_TurboMachinery(1)) {
+      // TODO: THis needs to be fixed
+      switch (config.GetKind_TurboPerf(iBladeRow)) {
         
       case TURBINE:
         bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
