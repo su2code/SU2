@@ -171,9 +171,9 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
   CGeometry *geom = Geometry[val_zone][INST_0][MESH_0];
 
-  unsigned long iVertex, jVertex, kVertex;
+  unsigned long iVertex, kVertex;
 
-  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+  unsigned long *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
 
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
 
@@ -191,11 +191,6 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   unsigned long *Buffer_Send_nLinkedNodes       = new unsigned long [ nVertex ];
   unsigned long *Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertex ];
   unsigned long **Aux_Send_Map                  = new unsigned long*[ nVertex ];
-
-#ifdef HAVE_MPI
-  int nProcessor = size, iRank;
-  unsigned long iTmp2, tmp_index, tmp_index_2;
-#endif
 
   /*--- Copy coordinates and point to the auxiliar vector ---*/
 
@@ -248,6 +243,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
           dPoint = geom->edges->GetNode(EdgeIndex,0);
 
         if ( geom->nodes->GetVertex(dPoint, val_marker) != -1 ){
+          // Though we store global indices here, they will be later replaced by
+          // the index to Buffer_Receive_nLinkedNodes, Buffer_Receive_StartLinkedNodes etc.
           Aux_Send_Map[nLocalVertex][nNodes] = geom->nodes->GetGlobalIndex(dPoint);
           nNodes++;
         }
@@ -273,8 +270,11 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   }
   delete [] Aux_Send_Map; Aux_Send_Map = nullptr;
 
-  /*--- Reconstruct  boundary by gathering data from all ranks ---*/
+  /*--- Now the arrays of all processes must be joined to a single/global arrays, StartLinkedNodes indices must be shifted,
+   * and the global point IDs in LinkedNodes are replaced by global vertex IDs.
+   * For this, the master process collects the data from all processes, joins them and broadcasts them again. ---*/
 
+  /*--- Allocate global arrays. ---*/
   SU2_MPI::Allreduce(     &nLocalVertex,      &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalLinkedNodes, &nGlobalLinkedNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
@@ -286,9 +286,13 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes   ];
   Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex ];
 
+  /*--- Master process gathers data from all ranks ---*/
 #ifdef HAVE_MPI
-  if (rank == MASTER_NODE){
+  int nProcessor = size, iRank;
+  unsigned long received_nLocalLinkedNodes, received_nLocalVertex, received_nLocalLinkedNodes_sum;
 
+  if (rank == MASTER_NODE){
+    /*--- "Receive" from master process, i.e. copy. ---*/
     for (iVertex = 0; iVertex < nDim*nLocalVertex; iVertex++)
       Buffer_Receive_Coord[iVertex]  = Buffer_Send_Coord[iVertex];
 
@@ -302,28 +306,29 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     for (iVertex = 0; iVertex < nLocalLinkedNodes; iVertex++)
       Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
 
-    tmp_index   = nLocalVertex;
-    tmp_index_2 = nLocalLinkedNodes;
+    unsigned long received_nLocalVertex_sum   = nLocalVertex;
+    unsigned long received_nLocalLinkedNodes_sum = nLocalLinkedNodes;
 
+    /*--- Receive from other processes to the appropriate position in the buffers and shift StartLinkedNodes indices. ---*/
     for(iRank = 1; iRank < nProcessor; iRank++){
 
-      SU2_MPI::Recv(                           &iTmp2,     1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      SU2_MPI::Recv(&Buffer_Receive_LinkedNodes[tmp_index_2], iTmp2, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&received_nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_LinkedNodes[received_nLocalLinkedNodes_sum], received_nLocalLinkedNodes, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
-      SU2_MPI::Recv(                         &iTmp,         1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      SU2_MPI::Recv(&Buffer_Receive_Coord[tmp_index*nDim], nDim*iTmp,        MPI_DOUBLE, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&received_nLocalVertex, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_Coord[received_nLocalVertex_sum*nDim], nDim*received_nLocalVertex,        MPI_DOUBLE, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
-      SU2_MPI::Recv(     &Buffer_Receive_GlobalPoint[tmp_index], iTmp, MPI_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      SU2_MPI::Recv(    &Buffer_Receive_nLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
-      SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(     &Buffer_Receive_GlobalPoint[received_nLocalVertex_sum], received_nLocalVertex, MPI_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(    &Buffer_Receive_nLinkedNodes[received_nLocalVertex_sum], received_nLocalVertex, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[received_nLocalVertex_sum], received_nLocalVertex, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
-      for (iVertex = 0; iVertex < iTmp; iVertex++){
-        Buffer_Receive_Proc[ tmp_index + iVertex ] = iRank;
-        Buffer_Receive_StartLinkedNodes[ tmp_index + iVertex ] += tmp_index_2;
+      for (iVertex = 0; iVertex < received_nLocalVertex; iVertex++){
+        Buffer_Receive_Proc[ received_nLocalVertex_sum + iVertex ] = iRank;
+        Buffer_Receive_StartLinkedNodes[ received_nLocalVertex_sum + iVertex ] += received_nLocalLinkedNodes_sum;
       }
 
-      tmp_index   += iTmp;
-      tmp_index_2 += iTmp2;
+      received_nLocalVertex_sum   += received_nLocalVertex;
+      received_nLocalLinkedNodes_sum += received_nLocalLinkedNodes;
     }
   }
   else{
@@ -333,7 +338,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     SU2_MPI::Send(    &nLocalVertex,                   1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_Coord, nDim * nLocalVertex,        MPI_DOUBLE, 0, 1, SU2_MPI::GetComm());
 
-    SU2_MPI::Send(     Buffer_Send_GlobalPoint, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(     Buffer_Send_GlobalPoint, nLocalVertex, MPI_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(    Buffer_Send_nLinkedNodes, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_StartLinkedNodes, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
   }
@@ -352,27 +357,29 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
 #endif
 
+  /*--- Master process replaced global point indices in Buffer_Receive_LinkedNodes by their indices in
+   * Buffer_Receive_GlobalPoint, Buffer_Receive_nLinkedNodes etc. ---*/
   if (rank == MASTER_NODE){
     for (iVertex = 0; iVertex < nGlobalVertex; iVertex++){
-      count = 0;
       uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertex] ];
 
-      for (jVertex = 0; jVertex < Buffer_Receive_nLinkedNodes[iVertex]; jVertex++){
-        iTmp = uptr[ jVertex ];
+      for (unsigned long jLinkedNode = 0; jLinkedNode < Buffer_Receive_nLinkedNodes[iVertex]; jLinkedNode++){
+        unsigned long jPoint = uptr[ jLinkedNode ];
+        bool found = false; // Global point index has been found
         for (kVertex = 0; kVertex < nGlobalVertex; kVertex++){
-          if( Buffer_Receive_GlobalPoint[kVertex] == long(iTmp) ){
-            uptr[ jVertex ] = kVertex;
-            count++;
+          if( Buffer_Receive_GlobalPoint[kVertex] == long(jPoint) ){
+            uptr[ jLinkedNode ] = kVertex;
+            found = true;
             break;
           }
         }
 
-        if( count != (jVertex+1) ){
-          for (kVertex = jVertex; kVertex < Buffer_Receive_nLinkedNodes[iVertex]-1; kVertex++){
+        if( !found ){ // remove from list
+          for (kVertex = jLinkedNode; kVertex < Buffer_Receive_nLinkedNodes[iVertex]-1; kVertex++){
             uptr[ kVertex ] = uptr[ kVertex + 1];
           }
           Buffer_Receive_nLinkedNodes[iVertex]--;
-          jVertex--;
+          jLinkedNode--;
         }
       }
     }

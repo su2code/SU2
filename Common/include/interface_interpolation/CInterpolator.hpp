@@ -60,8 +60,8 @@ protected:
   *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
   unsigned long
-  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node. */
-  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge. */
+  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges surface-connected to each node. */
+  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of nodes surface-connected to the nodes through an edge. */
   *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
   *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node. */
 
@@ -141,7 +141,7 @@ public:
 
 protected:
   /*!
-   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
+   * \brief Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads.
    * \param[in] val_zone   - index of the zone
    * \param[in] val_marker - index of the marker
    */
