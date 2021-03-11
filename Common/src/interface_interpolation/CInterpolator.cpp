@@ -201,33 +201,38 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   // coordinates of all domain vertices on the marker
   su2double *Buffer_Send_Coord           = new su2double     [ nLocalVertex * nDim ];
   // global point IDs of all domain vertices on the marker
-  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [ nVertex ];
+  long *Buffer_Send_GlobalPoint = new long [ nVertex ];
 
   // Assign to each domain vertex on the marker, identified by local point ID,
   // a set of surface-neighbor vertices on the marker, identified by global point ID.
-  map<unsigned long, set<unsigned long>*> neighbors;
+  map<unsigned long, forward_list<unsigned long>*> neighbors;
 
   /*--- Define or initialize them. ---*/
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
       unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
-      Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
+      Buffer_Send_GlobalPoint[iLocalVertex] = (long) geom->nodes->GetGlobalIndex(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
         Buffer_Send_Coord[iLocalVertex*nDim+iDim] = geom->nodes->GetCoord(iPoint, iDim);
-      neighbors[iPoint] = new set<unsigned long>;
+      neighbors.insert(pair<unsigned long, forward_list<unsigned long>*>(iPoint, new forward_list<unsigned long>));
     }
   }
 
   /*--- Define the neighbors map. ---*/
-  for(unsigned long iElem; iElem < geom->nElem_Bound[val_marker]; iElem++){
+  for(unsigned long iElem=0; iElem < geom->nElem_Bound[val_marker]; iElem++){
     CPrimalGrid* elem = geom->bound[val_marker][iElem];
     for(unsigned short iNode=0; iNode<elem->GetnNodes(); iNode++){
-      unsigned short iPoint = elem->GetNode(iNode);
-      for(unsigned short iNeighbor=0; iNeighbor<elem->GetnNeighbor_Nodes(iNeighbor); iNeighbor++){
-        unsigned long jPoint = elem->GetNode( elem->GetNeighbor_Nodes(iNode,iNeighbor) );
-        unsigned long jPoint_global = geom->nodes->GetGlobalIndex(jPoint);
-        neighbors[iPoint]->insert( jPoint_global );
+      iPoint = elem->GetNode(iNode);
+      if (geom->nodes->GetDomain(iPoint)) {
+        forward_list<unsigned long>* neighb = neighbors.at(iPoint);
+        for(unsigned short iNeighbor=0; iNeighbor<elem->GetnNeighbor_Nodes(iNode); iNeighbor++){
+          unsigned long jPoint = elem->GetNode( elem->GetNeighbor_Nodes(iNode,iNeighbor) );
+          unsigned long jPoint_global = geom->nodes->GetGlobalIndex(jPoint);
+          if( std::find(std::begin(*neighb), std::end(*neighb), jPoint_global) == std::end(*neighb) ){
+            neighb->emplace_front( jPoint_global );
+          }
+        }
       }
     }
   }
@@ -241,7 +246,9 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
       unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
-      Buffer_Send_nLinkedNodes[iLocalVertex] = neighbors[iPoint]->size();
+      Buffer_Send_nLinkedNodes[iLocalVertex] = std::count_if(
+        std::begin(*neighbors[iPoint]), std::end(*neighbors[iPoint]),
+        [](unsigned long i){return true;} );
       Buffer_Send_StartLinkedNodes[iLocalVertex] = nLocalLinkedNodes;
       nLocalLinkedNodes += Buffer_Send_nLinkedNodes[iLocalVertex];
     }
