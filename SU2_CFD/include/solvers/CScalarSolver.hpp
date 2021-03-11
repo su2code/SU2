@@ -39,32 +39,57 @@
  */
 class CScalarSolver : public CSolver {
 protected:
-  su2double *FlowPrimVar_i,      /*!< \brief Store the flow solution at point i. */
-  *FlowPrimVar_j,                /*!< \brief Store the flow solution at point j. */
-  *lowerlimit,                   /*!< \brief contains lower limits for turbulence variables. */
-  *upperlimit;                   /*!< \brief contains upper limits for turbulence variables. */
-  vector<su2activematrix> Inlet_ScalarVars;  /*!< \brief scalar variables at inlet profiles */
+  enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
+  enum : size_t {MAXNVAR = 1};         /*!< \brief Max number of passive variables, used in some static arrays. */
+  enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
 
- /* Sliding mesh variables */
-  
+  enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
+  enum : size_t {OMP_MIN_SIZE = 32};   /*!< \brief Min chunk size for edge loops (max is color group size). */
+
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+
+  su2double *FlowPrimVar_i, *FlowPrimVar_j,
+  *lowerlimit,  /*!< \brief contains lower limits for turbulence variables. */
+  *upperlimit;  /*!< \brief contains upper limits for turbulence variables. */
+
+  unsigned short Inlet_Position; /*!< \brief Column index for scalar variables in inlet files. */
+  su2double *Scalar_Inf,         /*!< \brief Array of far-field values for the scalar variables. */
+  Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
+  vector<su2activematrix> Inlet_ScalarVars;  /*!< \brief scalar variables at inlet profiles */
+  /*--- Sliding meshes variables. ---*/
+
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
   vector<vector<int> > SlidingStateNodes;
 
-  unsigned long nMarker,         /*!< \brief Total number of markers using the grid information. */
-  *nVertex;                      /*!< \brief Store nVertex at each marker for deallocation */
-  unsigned short Inlet_Position; /*!< \brief Column index for scalar variables in inlet files. */
-  su2double *Scalar_Inf;         /*!< \brief Array of far-field values for the scalar variables. */
-  
-  CScalarVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-  
+  /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
+
+#ifdef HAVE_OMP
+  vector<GridColor<> > EdgeColoring;   /*!< \brief Edge colors. */
+  bool ReducerStrategy = false;        /*!< \brief If the reducer strategy is in use. */
+#else
+  array<DummyGridColor<>,1> EdgeColoring;
+  /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
+  static constexpr bool ReducerStrategy = false;
+#endif
+
+  /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
+  CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy this solver can safely use.
+   */
+  CScalarVariable* nodes = nullptr;
+
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
-  inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
 private:
 
-/*!
+  /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
@@ -79,69 +104,52 @@ private:
                         CConfig *config);
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config);
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CScalarSolver(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CScalarSolver(void);
-  
+  ~CScalarSolver(void) override;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CScalarSolver(CGeometry* geometry, CConfig *config);
-  
+
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  
   void Upwind_Residual(CGeometry *geometry,
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) override;
-  
-  
-  
-  /*!
-   * \brief Prepare an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
 
-  /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
-
-
-  /*!
-   * \brief Update the solution using an implicit scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry  *geometry,
-                               CSolver   **solver_container,
-                               CConfig    *config) override;
-  
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -151,28 +159,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Sym_Plane(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CNumerics *conv_numerics,
-                    CNumerics *visc_numerics,
-                    CConfig *config,
+  void BC_Sym_Plane(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
                     unsigned short val_marker) override;
-  
+
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Euler_Wall(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CNumerics *conv_numerics,
-                     CNumerics *visc_numerics,
-                     CConfig *config,
+  void BC_Euler_Wall(CGeometry      *geometry,
+                     CSolver        **solver_container,
+                     CNumerics      *conv_numerics,
+                     CNumerics      *visc_numerics,
+                     CConfig        *config,
                      unsigned short val_marker) override;
-  
+
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config) override;
+
+
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -202,17 +222,32 @@ public:
                     CConfig         *config, 
                     unsigned short   val_marker) override;
 
+
   /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                   CNumerics *numerics, CConfig *config) override;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
 
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
 
+  /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
@@ -223,13 +258,13 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
-  void SetResidual_DualTime(CGeometry       *geometry,
-                            CSolver        **solver_container,
-                            CConfig         *config,
-                            unsigned short   iRKStep,
-                            unsigned short   iMesh,
-                            unsigned short   RunTime_EqSystem) override;
-  
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem) final;
+
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -238,23 +273,11 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry  **geometry,
-                   CSolver   ***solver,
-                   CConfig     *config,
-                   int          val_iter,
-                   bool         val_update_geo) override;
-  
-  /*!
-   * \brief Set custom scalar variables at the vertex of an inlet.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] iDim - Index of the scalar variable
-   * \param[in] val_turb_var - Value of the turbulence variable to be used.
-   */
-  void SetInlet_ScalarVar(unsigned short val_marker,
-                          unsigned long val_vertex,
-                          unsigned short val_dim,
-                          su2double val_scalar_var);
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo) override;
   
   /*!
    * \brief Set the solution using the Freestream values.
@@ -308,5 +331,23 @@ public:
    * \return Value of the scalar variables at the far-field.
    */
   inline su2double GetScalar_Inf(unsigned short val_ivar) { return Scalar_Inf[val_ivar]; }
+
+
+  /*!
+   * \brief Set custom scalar variables at the vertex of an inlet.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the scalar variable
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetInlet_ScalarVar(unsigned short val_marker,
+                          unsigned long val_vertex,
+                          unsigned short val_dim,
+                          su2double val_scalar_var);
   
+  /*!
+   * \brief SA and SST support OpenMP+MPI.
+   */
+  inline bool GetHasHybridParallel() const override { return true; }
+
 };

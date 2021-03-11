@@ -1,8 +1,9 @@
 /*!
  * \file scalar_diffusion.cpp
- * \brief This file contains the numerical methods for scalar transport eqns.
- * \author T. Economon, D. Mayer, N. Beishuizen
- * \version 7.1.0 "Blackbird"
+ * \brief Implementation of numerics classes to compute viscous
+ *        fluxes in turbulence problems.
+ * \author F. Palacios, T. Economon
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,71 +28,76 @@
 
 #include "../../../include/numerics/flamelet/scalar_diffusion.hpp"
 
-CAvgGradtransportedScalar::CAvgGradtransportedScalar(unsigned short val_nDim,
-                               unsigned short val_nVar,
-                               bool correct_grad,
-                               CConfig *config)
-: CNumerics(val_nDim, val_nVar, config), correct_gradient(correct_grad) {
-  
-  implicit       = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
-  Edge_Vector = new su2double[nDim];
-  
-  Proj_Mean_GradScalarVar_Normal = new su2double[nVar];
-  Proj_Mean_GradScalarVar_Edge   = new su2double[nVar];
-  Proj_Mean_GradScalarVar        = new su2double[nVar];
-  
-  Mean_GradScalarVar = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    Mean_GradScalarVar[iVar] = new su2double[nDim];
+CAvgGrad_transportedScalar::CAvgGrad_transportedScalar(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 bool correct_grad,
+                                 const CConfig* config) :
+  CNumerics(val_nDim, val_nVar, config),
+  correct_gradient(correct_grad),
+  implicit(config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT),
+  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
+{
+  Proj_Mean_GradScalarVar_Normal = new su2double [nVar] ();
+  Proj_Mean_GradScalarVar_Edge = new su2double [nVar] ();
+  Proj_Mean_GradScalarVar = new su2double [nVar] ();
+
+  Flux = new su2double [nVar] ();
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
+  }
 }
 
-CAvgGradtransportedScalar::~CAvgGradtransportedScalar(void) {
-  
-  delete [] Edge_Vector;
+CAvgGrad_transportedScalar::~CAvgGrad_transportedScalar(void) {
+
   delete [] Proj_Mean_GradScalarVar_Normal;
   delete [] Proj_Mean_GradScalarVar_Edge;
   delete [] Proj_Mean_GradScalarVar;
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] Mean_GradScalarVar[iVar];
-  delete [] Mean_GradScalarVar;
+
+  delete [] Flux;
+  if (Jacobian_i != nullptr) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+      delete [] Jacobian_j[iVar];
+    }
+    delete [] Jacobian_i;
+    delete [] Jacobian_j;
+  }
 }
 
-void CAvgGradtransportedScalar::ComputeResidual(su2double *val_residual,
-                                     su2double **Jacobian_i,
-                                     su2double **Jacobian_j,
-                                     CConfig *config) {
-  
+CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CConfig* config) {
+
+  unsigned short iVar, iDim;
+
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
-  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
-  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
   if (correct_gradient) {
-    AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j, nVar);
+    AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
   ExtraADPreaccIn();
-  
+
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
-    
-    Density_i           = V_i[nDim+2];            Density_j = V_j[nDim+2];
+
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i    = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
-    
-    Density_i           = V_i[nDim+2];            Density_j = V_j[nDim+2];
+
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i    = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
-  
+
   /*--- Compute vector going from iPoint to jPoint ---*/
-  
+
   dist_ij_2 = 0; proj_vector_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -100,18 +106,19 @@ void CAvgGradtransportedScalar::ComputeResidual(su2double *val_residual,
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
-  
+
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradScalarVar_Normal[iVar] = 0.0;
     Proj_Mean_GradScalarVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradScalarVar[iVar][iDim] = 0.5*(ScalarVar_Grad_i[iVar][iDim] +
-                                            ScalarVar_Grad_j[iVar][iDim]);
-      Proj_Mean_GradScalarVar_Normal[iVar] += Mean_GradScalarVar[iVar][iDim] *
-      Normal[iDim];
+      su2double Mean_GradScalarVar = 0.5*(ScalarVar_Grad_i[iVar][iDim] +
+                                        ScalarVar_Grad_j[iVar][iDim]);
+
+      Proj_Mean_GradScalarVar_Normal[iVar] += Mean_GradScalarVar * Normal[iDim];
+
       if (correct_gradient)
-        Proj_Mean_GradScalarVar_Edge[iVar] += Mean_GradScalarVar[iVar][iDim]*Edge_Vector[iDim];
+        Proj_Mean_GradScalarVar_Edge[iVar] += Mean_GradScalarVar * Edge_Vector[iDim];
     }
     Proj_Mean_GradScalarVar[iVar] = Proj_Mean_GradScalarVar_Normal[iVar];
     if (correct_gradient) {
@@ -119,37 +126,30 @@ void CAvgGradtransportedScalar::ComputeResidual(su2double *val_residual,
       (ScalarVar_j[iVar]-ScalarVar_i[iVar])*proj_vector_ij;
     }
   }
-  
-  FinishResidualCalc(val_residual, Jacobian_i, Jacobian_j, config);
-  
-  AD::SetPreaccOut(val_residual, nVar);
+
+  FinishResidualCalc(config);
+
+  AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
 }
 
-CAvgGradtransportedScalar_General::CAvgGradtransportedScalar_General(unsigned short val_nDim,
-                                               unsigned short val_nVar, bool correct_grad,
-                                               CConfig *config)
-: CAvgGradtransportedScalar(val_nDim, val_nVar, correct_grad, config) {
-  
-  //Mean_Diffusivity = new su2double[nVar];
+CAvgGrad_transportedScalar_general::CAvgGrad_transportedScalar_general(unsigned short val_nDim,
+                                   unsigned short val_nVar,
+                                   bool correct_grad,
+                                   const CConfig* config) :
+  CAvgGrad_transportedScalar(val_nDim, val_nVar, correct_grad, config){ }
+
+
+void CAvgGrad_transportedScalar_general::ExtraADPreaccIn() {
+  //AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 }
 
-CAvgGradtransportedScalar_General::~CAvgGradtransportedScalar_General(void) {
-  
-  //if (Mean_Diffusivity != NULL) delete [] Mean_Diffusivity;
-  
-}
+void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* config) {
 
-void CAvgGradtransportedScalar_General::ExtraADPreaccIn() { }
-
-void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residual,
-                                                su2double **Jacobian_i,
-                                                su2double **Jacobian_j,
-                                                CConfig *config) {
-  
-  unsigned short iVar, jVar;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
     
     /*--- Get the diffusion coefficient(s). ---*/
     
@@ -158,17 +158,17 @@ void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residu
     /*--- Compute the viscous residual. ---*/
 
     //val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
-    val_residual[iVar] = 1.0e-4*Proj_Mean_GradScalarVar[iVar];
+    Flux[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*Proj_Mean_GradScalarVar[iVar];
     
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
     if (implicit) {
-      for (jVar = 0; jVar < nVar; jVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
         if (iVar == jVar) {
           //Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
           //Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
-          Jacobian_i[iVar][jVar] = -1.0e-4*proj_vector_ij;
-          Jacobian_j[iVar][jVar] =  1.0e-4*proj_vector_ij;
+          Jacobian_i[iVar][jVar] = -0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*proj_vector_ij;
+          Jacobian_j[iVar][jVar] =  0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*proj_vector_ij;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;
@@ -176,4 +176,6 @@ void CAvgGradtransportedScalar_General::FinishResidualCalc(su2double *val_residu
       }
     }
   }
+
+
 }

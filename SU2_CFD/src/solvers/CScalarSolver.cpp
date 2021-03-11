@@ -26,6 +26,9 @@
  */
 
 #include "../../include/solvers/CScalarSolver.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
 
 CScalarSolver::CScalarSolver(void) : CSolver() {
   
@@ -33,15 +36,9 @@ CScalarSolver::CScalarSolver(void) : CSolver() {
   FlowPrimVar_j    = NULL;
   lowerlimit       = NULL;
   upperlimit       = NULL;
-  nVertex          = NULL;
-  nMarker          = 0;
-  Scalar_Inf       = NULL;
-  
-  /*--- The turbulence models are always solved implicitly, so set the
-   implicit flag in case we have periodic BCs. ---*/
-  
-  SetImplicitPeriodic(true);
-  
+  //nVertex          = NULL;
+  //nMarker          = 0;
+  Scalar_Inf       = NULL;  
 }
 
 CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
@@ -50,228 +47,326 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   FlowPrimVar_j    = NULL;
   lowerlimit       = NULL;
   upperlimit       = NULL;
-  nMarker          = config->GetnMarker_All();
+
   Scalar_Inf       = NULL;
-  
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+
+  nMarker = config->GetnMarker_All();
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
-  
-  nVertex = new unsigned long[nMarker];
+  nVertex.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
-  /*--- The turbulence models are always solved implicitly, so set the
-   implicit flag in case we have periodic BCs. ---*/
+  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
+  dynamic_grid = config->GetDynamic_Grid();
 
-  SetImplicitPeriodic(true);
+#ifdef HAVE_OMP
+  /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
+  su2double parallelEff = 1.0;
+  const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
 
+  ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
+
+  if (ReducerStrategy && (coloring.getOuterSize()>1))
+    geometry->SetNaturalEdgeColoring();
+
+  if (!coloring.empty()) {
+    auto groupSize = ReducerStrategy? 1ul : geometry->GetEdgeColorGroupSize();
+    auto nColor = coloring.getOuterSize();
+    EdgeColoring.reserve(nColor);
+
+    for(auto iColor = 0ul; iColor < nColor; ++iColor)
+      EdgeColoring.emplace_back(coloring.innerIdx(iColor), coloring.getNumNonZeros(iColor), groupSize);
+  }
+
+  nPoint = geometry->GetnPoint();
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
+#else
+  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
+#endif
 }
 
 CScalarSolver::~CScalarSolver(void) {
-  
+
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL)    delete [] lowerlimit;
   if (upperlimit != NULL)    delete [] upperlimit;
-  if (nVertex != NULL)       delete [] nVertex;
+  //if (nVertex != NULL)       delete [] nVertex;
   if (Scalar_Inf != NULL)    delete [] Scalar_Inf;
 
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
-  
-  delete nodes;
 
+  delete nodes;
 }
 
-void CScalarSolver::Upwind_Residual(CGeometry       *geometry,
-                                    CSolver        **solver_container,
-                                    CNumerics      **numerics_container,
-                                    CConfig         *config,
-                                    unsigned short   iMesh) {
+void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
   
-  su2double *Scalar_i, *Scalar_j, *Limiter_i = NULL, *Limiter_j = NULL;
-  su2double *V_i, *V_j, **Gradient_i, **Gradient_j;
+  su2double *Limiter_i = NULL, *Limiter_j = NULL;
+  su2double **Gradient_i, **Gradient_j;
   su2double Project_Grad_i, Project_Grad_j;
 
-  CNumerics* numerics = numerics_container[CONV_TERM];
-  
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
-
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
- 
-  bool muscl         = (config->GetMUSCL_Scalar() && (iMesh == MESH_0));
-  bool limiter       = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER);
-  bool grid_movement = config->GetGrid_Movement();
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    
+  const bool muscl = config->GetMUSCL_Scalar();
+  const bool limiter = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER);
+
+  /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and scalar. ---*/
+  const bool musclFlow = config->GetMUSCL_Flow() && muscl &&
+                        (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
+  /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
+  const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                           (config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE);
+
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
+  su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
+  su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
+
+    unsigned short iDim, iVar;
+
     /*--- Points in edge and normal vectors ---*/
-    
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    auto iPoint = geometry->edges->GetNode(iEdge,0);
+    auto jPoint = geometry->edges->GetNode(iEdge,1);
+
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    
+
     /*--- Primitive variables w/o reconstruction ---*/
-    
-    V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
-    V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
+
+    const auto V_i = flowNodes->GetPrimitive(iPoint);
+    const auto V_j = flowNodes->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
-    
+
     /*--- Scalar variables w/o reconstruction ---*/
-    
-    Scalar_i = nodes->GetSolution(iPoint);
-    Scalar_j = nodes->GetSolution(jPoint);
+
+    const auto Scalar_i = nodes->GetSolution(iPoint);
+    const auto Scalar_j = nodes->GetSolution(jPoint);
     numerics->SetScalarVar(Scalar_i, Scalar_j);
-    
+
     /*--- Grid Movement ---*/
-    
-    if (grid_movement)
-      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
-    
-    if (muscl) {
-      
+
+    if (dynamic_grid)
+      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                           geometry->nodes->GetGridVel(jPoint));
+
+    if (muscl || musclFlow) {
+      const su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(jPoint);
+
+      su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) - geometry->nodes->GetCoord(iPoint, iDim));
-        Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
-      
-      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
-      
-      Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-      Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(jPoint);
-      if (limiter) {
-        Limiter_i = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(iPoint);
-        Limiter_j = solver_container[FLOW_SOL]->GetNodes()->GetLimiter_Primitive(jPoint);
-      }
-      
-      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+
+      if (musclFlow) {
+        /*--- Reconstruct mean flow primitive variables. ---*/
+
+        auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+
+        if (limiterFlow) {
+          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
         }
+
+        for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          }
+          if (limiterFlow) {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
+          flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+          flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+        }
+
+        numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
+      }
+
+      if (muscl) {
+        /*--- Reconstruct turbulence variables. ---*/
+
+        auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
         if (limiter) {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          Limiter_i = nodes->GetLimiter(iPoint);
+          Limiter_j = nodes->GetLimiter(jPoint);
         }
-        else {
-          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          }
+          if (limiter) {
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
+          solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
+          solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
         }
+
+        numerics->SetScalarVar(solution_i, solution_j);
       }
-      
-      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
-      
-      /*--- Scalar variables using gradient reconstruction and limiters ---*/
-      
-      Gradient_i = nodes->GetGradient(iPoint);
-      Gradient_j = nodes->GetGradient(jPoint);
-      if (limiter) {
-        Limiter_i = nodes->GetLimiter(iPoint);
-        Limiter_j = nodes->GetLimiter(jPoint);
-      }
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-        }
-        if (limiter) {
-          Solution_i[iVar] = Scalar_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Solution_j[iVar] = Scalar_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-        }
-        else {
-          Solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
-          Solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
-        }
-      }
-      
-      numerics->SetScalarVar(Solution_i, Solution_j);
-      
     }
-    
-    /*--- Add and subtract residual ---*/
-    //FIXME dan: trying out new method
+
+    /*--- Update convective residual value ---*/
+
     auto residual = numerics->ComputeResidual(config);
 
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
-    if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (ReducerStrategy) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      if (implicit) Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+    }
+    else {
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+      if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
 
     /*--- Viscous contribution. ---*/
-    
-  }
-  
-}
 
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+  }
+  } // end color loop
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
+  }
+}
 
 void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *numerics, CConfig *config) {
 
-
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Points in edge ---*/
+
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
+
+  /*--- Points coordinates, and normal vector ---*/
+
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+  /*--- Conservative variables w/o reconstruction ---*/
+
+  numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
+                         flowNodes->GetPrimitive(jPoint));
     
-    /*--- Points in edge ---*/
+  /*--- Scalar variables w/o reconstruction. ---*/
     
-    auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    auto jPoint = geometry->edges->GetNode(iEdge, 1);
-    
-    /*--- Points coordinates, and normal vector ---*/
-    
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                       geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    
-    /*--- Conservative variables w/o reconstruction ---*/
-    
-    numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
-                           flowNodes->GetPrimitive(jPoint));
-    
-    /*--- Scalar variables w/o reconstruction. ---*/
-    
-    numerics->SetScalarVar(nodes->GetSolution(iPoint),
-                           nodes->GetSolution(jPoint));
-    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
-                                   nodes->GetGradient(jPoint));
+  numerics->SetScalarVar(nodes->GetSolution(iPoint),
+                         nodes->GetSolution(jPoint));
+  numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
+                                 nodes->GetGradient(jPoint));
     
 
-    // < --- your viscous contribution here... --->
 
-    /*--- Mass diffusivity coefficients. ---*/
-    // do not need for viscousresidual, not available!
-    //numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
-    //                            nodes->GetDiffusivity(jPoint));
-    
-    /*--- Compute residuals and Jacobians ---*/
-    
-    //numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-    /*--- Compute residual, and Jacobians ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+  /*--- Mass diffusivity coefficients. ---*/
 
-    /*--- Add/subtract residual and update Jacobians ---*/
-    /* NEW METHOD*/
+  numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint),
+                              nodes->GetDiffusivity(jPoint));
+
+  /*--- Compute residual, and Jacobians ---*/
+
+  auto residual = numerics->ComputeResidual(config);
+
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
     if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-
-
-    //LinSysRes.SubtractBlock(iPoint, Residual);
-    //LinSysRes.AddBlock(jPoint, Residual);
-    
-    //Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    //Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-    
-    //Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-    //Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-    
   }
+}
+
+void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
+        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      else
+        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
+  }
+
+}
+
+void CScalarSolver::BC_Sym_Plane(CGeometry      *geometry,
+                               CSolver        **solver_container,
+                               CNumerics      *conv_numerics,
+                               CNumerics      *visc_numerics,
+                               CConfig        *config,
+                               unsigned short val_marker) {
+
+  /*--- Convective and viscous fluxes across symmetry plane are equal to zero. ---*/
+
+}
+
+void CScalarSolver::BC_Euler_Wall(CGeometry      *geometry,
+                                CSolver        **solver_container,
+                                CNumerics      *conv_numerics,
+                                CNumerics      *visc_numerics,
+                                CConfig        *config,
+                                unsigned short val_marker) {
+
+  /*--- Convective fluxes across euler wall are equal to zero. ---*/
+
+}
+
+void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics *numerics, CConfig *config) {
+
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. For implicit calculations
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+
 }
 
 void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
@@ -408,23 +503,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry  *geometry,
   
 }
 
-void CScalarSolver::BC_Sym_Plane(CGeometry *geometry,
-                                 CSolver **solver_container,
-                                 CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics, CConfig *config,
-                                 unsigned short val_marker) {
-  /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
-}
 
-void CScalarSolver::BC_Euler_Wall(CGeometry   *geometry,
-                                  CSolver    **solver_container,
-                                  CNumerics   *conv_numerics,
-                                  CNumerics   *visc_numerics,
-                                  CConfig     *config,
-                                  unsigned short val_marker) {
-  /*--- Convective fluxes across euler wall are equal to zero. ---*/
-  
-}
 
 void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CSolver **solver_container,
@@ -503,21 +582,7 @@ void CScalarSolver::BC_Far_Field(CGeometry *geometry,
   
 }
 
-void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
-                                CNumerics *numerics, CConfig *config) {
-  
-  /*--- Complete residuals for periodic boundary conditions. We loop over
-   the periodic BCs in matching pairs so that, in the event that there are
-   adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. For implicit calculations
-   the Jacobians and linear system are also correctly adjusted here. ---*/
-  
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
-  }
-  
-}
+
 
 void CScalarSolver::SetInletAtVertex(const su2double *val_inlet,
                                      unsigned short iMarker,
