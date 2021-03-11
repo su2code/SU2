@@ -675,7 +675,7 @@ template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
+  SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
 
@@ -1105,7 +1105,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   /*--- Jacobi preconditioning where there is no linelet ---*/
 
-  SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
+  SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
     if (!LineletBool[iPoint])
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);

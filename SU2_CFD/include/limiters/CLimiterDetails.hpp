@@ -185,7 +185,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     localMin = largeNum;
     localMax =-largeNum;
 
-    SU2_OMP(for schedule(static, 512) nowait)
+    SU2_OMP_FOR_(schedule(static, 512) SU2_NOWAIT)
     for(size_t iPoint = 0; iPoint < geometry.GetnPointDomain(); ++iPoint)
     {
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)

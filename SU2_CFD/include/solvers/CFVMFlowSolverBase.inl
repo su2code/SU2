@@ -581,7 +581,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 
   /*--- Solve or smooth the linear system. ---*/
 
-  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);

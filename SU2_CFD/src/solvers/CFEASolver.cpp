@@ -1317,7 +1317,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
     su2double maxVonMises = 0.0;
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint));

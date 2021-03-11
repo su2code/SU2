@@ -427,7 +427,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Thread-local variables for min/max reduction. ---*/
       su2double minDt = 1e30, maxDt = 0.0;
 
-      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
         su2double Vol = geometry->nodes->GetVolume(iPoint);
@@ -509,7 +509,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Thread-local variable for reduction. ---*/
       su2double glbDtND = 1e30;
 
-      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
         glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
       }
@@ -744,7 +744,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Update the solution and residuals ---*/
 
     if (!adjoint) {
-      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
@@ -869,7 +869,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Add pseudotime term to Jacobian. ---*/
 
     if (implicit) {
-      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
@@ -893,7 +893,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Multigrid contribution to residual. ---*/

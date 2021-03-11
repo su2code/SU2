@@ -528,7 +528,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
 
   /*--- Build implicit system ---*/
 
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /// TODO: This could be the SetTime_Step of this solver.
@@ -637,7 +637,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system. ---*/
 
-  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);
