@@ -5,7 +5,7 @@
  *        case a tensor product is used.
  *        The functions are in the <i>CGemmFaceHex.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ using namespace std;
  * \brief Class to carry out a GEMM multiplication for a face when the adjacent
  *        element is a hexahedron. In this case a tensor product is used.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CGemmFaceHex final : public CGemmBase {
 

@@ -3,7 +3,7 @@
  * \brief Header file for the class CSU2ASCIIMeshReaderBase.
  *        The implementations are in the <i>CSU2ASCIIMeshReaderBase.cpp</i> file.
  * \author T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

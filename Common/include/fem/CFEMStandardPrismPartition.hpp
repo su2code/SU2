@@ -4,7 +4,7 @@
  *        used during the partitioning.
  *        The functions are in the <i>CFEMStandardPrismPartitionin.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Class which defines the variables and methods for the
  *        prism standard element used in the partitioning.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CFEMStandardPrismPartition final: public CFEMStandardPrismBase {
 

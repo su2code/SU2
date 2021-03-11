@@ -3,7 +3,7 @@
  * \brief Base class definition for a mesh object for the FEM solver.
  *        The implementations are in the <i>CMeshFEM_Base.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ using namespace std;
  * \class CMeshFEM_Base
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CMeshFEM_Base: public CGeometry {
 protected:

@@ -3,7 +3,7 @@
  * \brief Class definition for a mesh object for the DG-FEM solver.
  *        The implementations are in the <i>CMeshFEM_DG.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,7 +43,7 @@ using namespace std;
  * \class CMeshFEM_DG
  * \brief Class which contains a grid for the DG FEM solver.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM_Base {
 protected:

@@ -3,7 +3,7 @@
  * \brief Base class for the FEM hexahedron standard element.
  *        The functions are in the <i>CFEMStandardHexBase.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Base class which defines the variables and methods for the
  *        hexahedron standard element.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CFEMStandardHexBase: public virtual CFEMStandardQuadBase {
 

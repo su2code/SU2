@@ -3,7 +3,7 @@
  * \brief Base class for the FEM pyramid standard element.
  *        The functions are in the <i>CFEMStandardPyraBase.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Base class which defines the variables and methods for the
  *        pyramid standard element.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CFEMStandardPyraBase: public virtual CFEMStandardQuadBase,
                             public virtual CFEMStandardTriBase  {

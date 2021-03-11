@@ -2,7 +2,7 @@
  * \file CFEM_DG_SolverBase.cpp
  * \brief Main subroutines for the base class of the finite element flow solvers.
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

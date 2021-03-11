@@ -5,7 +5,7 @@
  *        in the 2D surface integration points for a 3D simulation.
  *        This corresponds to a quad adjacent to a hexahedron.
  * \author E. van der Weide
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -629,7 +629,7 @@ void WriteFileHeader(std::ofstream &file,
   file << " * \\author Automatically generated file, do not change manually" << std::endl;
 
   /* Write the remainder of the header file. */
-  file << " * \\version 7.1.0 \"Blackbird\"" << std::endl;
+  file << " * \\version 7.1.1 \"Blackbird\"" << std::endl;
   file << " *" << std::endl;
   file << " * SU2 Project Website: https://su2code.github.io" << std::endl;
   file << " *" << std::endl;

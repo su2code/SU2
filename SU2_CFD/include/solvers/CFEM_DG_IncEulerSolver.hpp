@@ -2,7 +2,7 @@
  * \file CFEM_DG_InvEulerSolver.hpp
  * \brief Headers of the CFEM_DG_IncEulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the incompressible Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CFEM_DG_IncEulerSolver : public CFEM_DG_SolverBase {
 protected:

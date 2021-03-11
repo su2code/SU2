@@ -2,7 +2,7 @@
  * \file CCGNSMeshReaderBase.cpp
  * \brief Helper class for the reading of a CGNS grid file.
  * \author T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
