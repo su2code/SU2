@@ -89,11 +89,9 @@ public:
    * \brief Per-Olof Persson's method for capturing shock in DG
    * \param[in]  elemBeg   - Begin index of the element range to be computed.
    * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
-   * \param[out] workArray - Work array.
    */
   void Shock_Capturing_DG_Persson(const unsigned long elemBeg,
-                                  const unsigned long elemEnd,
-                                  su2double           *workArray);
+                                  const unsigned long elemEnd);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual.

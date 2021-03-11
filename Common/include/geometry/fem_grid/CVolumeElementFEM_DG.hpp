@@ -73,6 +73,9 @@ public:
                                                                         of a previous time level. */
   vector<ColMajorMatrix<su2double> > solDOFsADERPredictor;  /*!< \brief The vector containing the predictor solution
                                                                         in the DOFs (space and time) for ADER. */
+
+  ColMajorMatrix<su2double> dUdVInt;   /*!< \brief The transformation matrix between conservative and
+                                                   entropy variables in the volume integration points. ---*/
   
   ColMajorMatrix<su2double> resDOFs;         /*!< \brief The residual in the solution DOFs. */
   ColMajorMatrix<su2double> resTotDOFsADER;  /*!< \brief The total residuals in the solution DOFs for ADER. */

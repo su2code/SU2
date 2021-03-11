@@ -847,6 +847,29 @@ protected:
    */
   void EntropyToPrimitiveVariables(ColMajorMatrix<su2double> &sol);
 
+  /*!
+   * \brief Function, which computes the volume source terms for the given element.
+   * \param[in]     config - Definition of the particular problem.
+   * \param[in]     elem   - Volume element for which the source terms must be computed.
+   * \param[in,out] sol    - Matrix, which contains the primitive variables in the
+   *                         integration points on entry and the source terms on exit,
+   *                         if these must be computed.
+   * \return - Whether or not source terms are present.
+   */
+  bool VolumeSourceTerms(CConfig                  *config,
+                         CVolumeElementFEM_DG     *elem,
+                         ColMajorMatrix<su2double> &sol);
+
+  /*!
+   * \brief Function, which computes the transformation matrix between conservative
+   *        and entropy variables in the integration points of the element.
+   * \param[in,out] elem - Volume element for which the transformation matrix
+   *                       must be computed.
+   * \param[in] sol     - Matrix, which contains the primitive variables in the
+   *                      integration points.
+   */
+  void VolumeTransformationMatrix(CVolumeElementFEM_DG     *elem,
+                                  ColMajorMatrix<su2double> &sol);
 private:
 
   /*!

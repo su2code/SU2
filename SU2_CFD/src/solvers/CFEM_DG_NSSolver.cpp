@@ -231,7 +231,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             /*--- Loop over the integration points to compute the SGS
                   eddy viscosity for the 2D situation, which is stored
                   in gradSolInt[0](i,0). ---*/
-            for(unsigned short i=0; i<nIntPad; ++i)
+            for(unsigned short i=0; i<nInt; ++i)
               gradSolInt[0](i,0) = SGSModel->ComputeEddyViscosity_2D(solInt(i,0),
                                                                      gradSolInt[0](i,1),
                                                                      gradSolInt[1](i,1),
@@ -306,7 +306,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             /*--- Loop over the integration points to compute the SGS
                   eddy viscosity for the 3D situation, which is stored
                   in gradSolInt[0](i,0). ---*/
-            for(unsigned short i=0; i<nIntPad; ++i)
+            for(unsigned short i=0; i<nInt; ++i)
               gradSolInt[0](i,0) = SGSModel->ComputeEddyViscosity_3D(solInt(i,0),
                                                                      gradSolInt[0](i,1),
                                                                      gradSolInt[1](i,1),
@@ -326,8 +326,6 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         /*--- Set the eddy viscosity for the padded values to avoid problems. ---*/
         for(unsigned short i=nInt; i<nIntPad; ++i)
           gradSolInt[0](i,0) = gradSolInt[0](0,0);
-
-        SU2_MPI::Error(string("SGS model not there yet in time step computation"), CURRENT_FUNCTION);
       }
       else {
 
@@ -594,27 +592,19 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
                                           const unsigned long elemBeg,
                                           const unsigned long elemEnd) {
-  for(int i=0; i<size; ++i) {
 
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
+    case PERSSON:
+      Shock_Capturing_DG_Persson(elemBeg, elemEnd);
+      break;
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
+
 void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
-                                                  const unsigned long elemEnd,
-                                                  su2double           *workArray) {
+                                                  const unsigned long elemEnd) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -637,6 +627,469 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
 void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemBeg,
                                        const unsigned long elemEnd) {
+
+  /*--- Abbreviation of 1/(Gamma-1) and compute the constant
+        factors present in the heat flux vector. ---*/
+  const su2double ovgm1             = 1.0/Gamma_Minus_One;
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
+
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nElem = elemEnd - elemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the given element range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
+
+    /*--- Abbreviate the number of integration points, its padded version
+          and the integration weights. ---*/
+    const unsigned short nInt    = volElem[l].standardElemFlow->GetNIntegration();
+    const unsigned short nIntPad = volElem[l].standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights = volElem[l].standardElemFlow->GetIntegrationWeights();
+
+    /*--- Determine the length scale for the LES. This is the length scale
+          of the element corrected with its polynomial degree. ---*/
+    unsigned short nPoly = volElem[l].standardElemFlow->GetPolyDegree();
+    if(nPoly == 0) nPoly = 1;
+    const su2double lenScale = volElem[l].lenScale/nPoly;
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Determine the primitive solution and the gradients of    ---*/
+    /*---         the entropy variables in the integration points.         ---*/
+    /*------------------------------------------------------------------------*/
+
+    ColMajorMatrix<su2double>          &solInt     = volElem[l].ComputeSolIntPoints();
+    vector<ColMajorMatrix<su2double> > &gradSolInt = volElem[l].ComputeGradSolIntPoints();
+
+    EntropyToPrimitiveVariables(solInt);
+
+    /*--- Compute the transformation matrix between conservative and
+          entropy variables in the integration poins. ---*/
+    VolumeTransformationMatrix(&volElem[l], solInt);
+
+    /*--- Make a distinction between two and three space dimensions
+          in order to have the most efficient code. ---*/
+    switch( nDim ) {
+      case 2: {
+
+        /*--- Two dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
+        ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 2: Convert the gradients of the entropy variables to    ---*/
+        /*---         the gradients of velocity and internal energy.       ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the padded number of integration points. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of some of the primitive variables. ---*/
+          const su2double u     =  solInt(i,1);
+          const su2double v     =  solInt(i,2);
+          const su2double V4Inv = -solInt(i,3)/solInt(i,0);
+
+          /*--- Compute the velocity gradients in computational space. ---*/
+          const su2double dudr = -V4Inv*(gradSolInt[0](i,1) + u*gradSolInt[0](i,3));
+          const su2double dvdr = -V4Inv*(gradSolInt[0](i,2) + v*gradSolInt[0](i,3));
+
+          const su2double duds = -V4Inv*(gradSolInt[1](i,1) + u*gradSolInt[1](i,3));
+          const su2double dvds = -V4Inv*(gradSolInt[1](i,2) + v*gradSolInt[1](i,3));
+
+          /*--- Compute the gradient of the internal energy in computational space. ---*/
+          const su2double fact = V4Inv*V4Inv*ovgm1;
+          const su2double dedr = fact*gradSolInt[0](i,3);
+          const su2double deds = fact*gradSolInt[1](i,3);
+
+          /*--- Compute the true value of the metric terms in this integration point.
+                Note that the metric terms stored are scaled by the Jacobian. ---*/
+          const su2double JacInv = 1.0/volElem[l].JacobiansInt(i);
+
+          const su2double drdx = JacInv*dParDx(i,0);
+          const su2double dsdx = JacInv*dParDx(i,1);
+
+          const su2double drdy = JacInv*dParDy(i,0);
+          const su2double dsdy = JacInv*dParDy(i,1);
+
+          /*--- Compute the Cartesian gradients of the velocities and
+                internal energy. ---*/
+          gradSolInt[0](i,1) = dudr*drdx + duds*dsdx;
+          gradSolInt[0](i,2) = dvdr*drdx + dvds*dsdx;
+          gradSolInt[0](i,3) = dedr*drdx + deds*dsdx;
+
+          gradSolInt[1](i,1) = dudr*drdy + duds*dsdy;
+          gradSolInt[1](i,2) = dvdr*drdy + dvds*dsdy;
+          gradSolInt[1](i,3) = dedr*drdy + deds*dsdy;
+        }
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 3: Compute the laminar viscosity and, if needed, the    ---*/
+        /*---         eddy viscosity of the subgrid scale model.           ---*/
+        /*---         These are stored in gradSolInt[1](i,0) and           ---*/
+        /*---         gradSolInt[0](i,0), respectively.                    ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the number of integration points. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /*--- Compute the laminar viscosity from the gas model. ---*/
+          GetFluidModel()->SetTDState_Prho(solInt(i,3), solInt(i,0));
+          gradSolInt[1](i,0) = GetFluidModel()->GetLaminarViscosity();
+
+          /*--- Compute the eddy viscosity, if needed. 
+                Otherwise set it to zero. ---*/
+          if( SGSModelUsed )
+            gradSolInt[0](i,0) = SGSModel->ComputeEddyViscosity_2D(solInt(i,0),
+                                                                   gradSolInt[0](i,1),
+                                                                   gradSolInt[1](i,1),
+                                                                   gradSolInt[0](i,2),
+                                                                   gradSolInt[1](i,2),
+                                                                   lenScale,
+                                                                   volElem[l].wallDistanceInt(i));
+          else
+            gradSolInt[0](i,0) = 0.0;
+        }
+
+        /*--- Set the padded values to avoid problems. ---*/
+        for(unsigned short i=nInt; i<nIntPad; ++i) {
+          gradSolInt[0](i,0) = gradSolInt[0](0,0);
+          gradSolInt[1](i,0) = gradSolInt[1](0,0);
+        }
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 4: Compute the total fluxes (inviscid fluxes minus the  ---*/
+        /*---         viscous fluxes), multiplied by minus the integration ---*/
+        /*---         weight, in the integration points.                   ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the padded number of integration points. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of the primitive variables. ---*/
+          const su2double rho = solInt(i,0);
+          const su2double u   = solInt(i,1);
+          const su2double v   = solInt(i,2);
+          const su2double p   = solInt(i,3);
+
+          /*--- Easier storage of the gradients. ---*/
+          const su2double dudx = gradSolInt[0](i,1);
+          const su2double dvdx = gradSolInt[0](i,2);
+          const su2double dedx = gradSolInt[0](i,3);
+
+          const su2double dudy = gradSolInt[1](i,1);
+          const su2double dvdy = gradSolInt[1](i,2);
+          const su2double dedy = gradSolInt[1](i,3);
+
+          /*--- Compute the total energy per unit volume
+                and the relative velocities. ---*/
+          const su2double rE   = ovgm1*p + 0.5*rho*(u*u + v*v);
+          const su2double uRel = u - volElem[l].gridVelocitiesInt(i,0);
+          const su2double vRel = v - volElem[l].gridVelocitiesInt(i,1);
+
+          /*--- Compute the total viscosity and total factor for the heat flux. ---*/
+          const su2double Viscosity = gradSolInt[1](i,0) + gradSolInt[0](i,0);
+          const su2double kOverCv   = gradSolInt[1](i,0)*factHeatFlux_Lam
+                                    + gradSolInt[0](i,0)*factHeatFlux_Turb;
+
+          /*--- Set the value of the second viscosity and compute the divergence
+                term in the viscous normal stresses. ---*/
+          const su2double lambda     = -TWO3*Viscosity;
+          const su2double lamDivTerm =  lambda*(dudx + dvdy);
+
+          /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+          const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+          const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+          const su2double tauxy = Viscosity*(dudy + dvdx);
+
+          const su2double qx = kOverCv*dedx;
+          const su2double qy = kOverCv*dedy;
+
+          /*--- Compute the viscous normal stress minus the pressure. ---*/
+          const su2double tauxxMP = tauxx - p;
+          const su2double tauyyMP = tauyy - p;
+
+          /*--- Compute the metric terms multiplied by minus the integration weight.
+                The minus sign comes from the integration by parts in the weak
+                formulation. ---*/
+          const su2double drdx = -weights[i]*dParDx(i,0);
+          const su2double dsdx = -weights[i]*dParDx(i,1);
+
+          const su2double drdy = -weights[i]*dParDy(i,0);
+          const su2double dsdy = -weights[i]*dParDy(i,1);
+
+          /*--- Fluxes in r-direction, which are stored in gradSolInt[0]. */
+          const su2double Ur = uRel*drdx + vRel*drdy;
+
+          gradSolInt[0](i,0) = Ur*rho;
+          gradSolInt[0](i,1) = Ur*rho*u - tauxxMP*drdx - tauxy*drdy;
+          gradSolInt[0](i,2) = Ur*rho*v - tauxy*drdx - tauyyMP*drdy;
+          gradSolInt[0](i,3) = Ur*rE - (u*tauxxMP + v*tauxy + qx)*drdx
+                                     - (u*tauxy + v*tauyyMP + qy)*drdy;
+
+          /*--- Fluxes in s-direction, which are stored in gradSolInt[1]. */
+          const su2double Us = uRel*dsdx + vRel*dsdy;
+
+          gradSolInt[1](i,0) = Us*rho;
+          gradSolInt[1](i,1) = Us*rho*u - tauxxMP*dsdx - tauxy*dsdy;
+          gradSolInt[1](i,2) = Us*rho*v - tauxy*dsdx - tauyyMP*dsdy;
+          gradSolInt[1](i,3) = Us*rE - (u*tauxxMP + v*tauxy + qx)*dsdx
+                                     - (u*tauxy + v*tauyyMP + qy)*dsdy;
+        }
+
+        break;
+      }
+
+      case 3: {
+
+        /*--- Three dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
+        ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
+        ColMajorMatrix<su2double> &dParDz = volElem[l].metricTermsInt[2];
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 2: Convert the gradients of the entropy variables to    ---*/
+        /*---         the gradients of velocity and internal energy.       ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the padded number of integration points. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of some of the primitive variables. ---*/
+          const su2double u     =  solInt(i,1);
+          const su2double v     =  solInt(i,2);
+          const su2double w     =  solInt(i,3);
+          const su2double V4Inv = -solInt(i,4)/solInt(i,0);
+
+          /*--- Compute the velocity gradients in computational space. ---*/
+          const su2double dudr = -V4Inv*(gradSolInt[0](i,1) + u*gradSolInt[0](i,4));
+          const su2double dvdr = -V4Inv*(gradSolInt[0](i,2) + v*gradSolInt[0](i,4));
+          const su2double dwdr = -V4Inv*(gradSolInt[0](i,3) + w*gradSolInt[0](i,4));
+
+          const su2double duds = -V4Inv*(gradSolInt[1](i,1) + u*gradSolInt[1](i,4));
+          const su2double dvds = -V4Inv*(gradSolInt[1](i,2) + v*gradSolInt[1](i,4));
+          const su2double dwds = -V4Inv*(gradSolInt[1](i,3) + w*gradSolInt[1](i,4));
+
+          const su2double dudt = -V4Inv*(gradSolInt[2](i,1) + u*gradSolInt[2](i,4));
+          const su2double dvdt = -V4Inv*(gradSolInt[2](i,2) + v*gradSolInt[2](i,4));
+          const su2double dwdt = -V4Inv*(gradSolInt[2](i,3) + w*gradSolInt[2](i,4));
+
+          /*--- Compute the gradient of the internal energy in computational space. ---*/
+          const su2double fact = V4Inv*V4Inv*ovgm1;
+          const su2double dedr = fact*gradSolInt[0](i,4);
+          const su2double deds = fact*gradSolInt[1](i,4);
+          const su2double dedt = fact*gradSolInt[2](i,4);
+
+          /*--- Compute the true value of the metric terms in this integration point.
+                Note that the metric terms stored are scaled by the Jacobian. ---*/
+          const su2double JacInv = 1.0/volElem[l].JacobiansInt(i);
+
+          const su2double drdx = JacInv*dParDx(i,0);
+          const su2double dsdx = JacInv*dParDx(i,1);
+          const su2double dtdx = JacInv*dParDx(i,2);
+
+          const su2double drdy = JacInv*dParDy(i,0);
+          const su2double dsdy = JacInv*dParDy(i,1);
+          const su2double dtdy = JacInv*dParDy(i,2);
+
+          const su2double drdz = JacInv*dParDz(i,0);
+          const su2double dsdz = JacInv*dParDz(i,1);
+          const su2double dtdz = JacInv*dParDz(i,2);
+
+          /*--- Compute the Cartesian gradients of the velocities and
+                internal energy. ---*/
+          gradSolInt[0](i,1) = dudr*drdx + duds*dsdx + dudt*dtdx;
+          gradSolInt[0](i,2) = dvdr*drdx + dvds*dsdx + dvdt*dtdx;
+          gradSolInt[0](i,3) = dwdr*drdx + dwds*dsdx + dwdt*dtdx;
+          gradSolInt[0](i,4) = dedr*drdx + deds*dsdx + dedt*dtdx;
+
+          gradSolInt[1](i,1) = dudr*drdy + duds*dsdy + dudt*dtdy;
+          gradSolInt[1](i,2) = dvdr*drdy + dvds*dsdy + dvdt*dtdy;
+          gradSolInt[1](i,3) = dwdr*drdy + dwds*dsdy + dwdt*dtdy;
+          gradSolInt[1](i,4) = dedr*drdy + deds*dsdy + dedt*dtdy;
+
+          gradSolInt[2](i,1) = dudr*drdz + duds*dsdz + dudt*dtdz;
+          gradSolInt[2](i,2) = dvdr*drdz + dvds*dsdz + dvdt*dtdz;
+          gradSolInt[2](i,3) = dwdr*drdz + dwds*dsdz + dwdt*dtdz;
+          gradSolInt[2](i,4) = dedr*drdz + deds*dsdz + dedt*dtdz;
+        }
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 3: Compute the laminar viscosity and, if needed, the    ---*/
+        /*---         eddy viscosity of the subgrid scale model.           ---*/
+        /*---         These are stored in gradSolInt[1](i,0) and           ---*/
+        /*---         gradSolInt[0](i,0), respectively.                    ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the number of integration points. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /*--- Compute the laminar viscosity from the gas model. ---*/
+          GetFluidModel()->SetTDState_Prho(solInt(i,4), solInt(i,0));
+          gradSolInt[1](i,0) = GetFluidModel()->GetLaminarViscosity();
+
+          /*--- Compute the eddy viscosity, if needed. 
+                Otherwise set it to zero. ---*/
+          if( SGSModelUsed )
+            gradSolInt[0](i,0) = SGSModel->ComputeEddyViscosity_3D(solInt(i,0),
+                                                                   gradSolInt[0](i,1),
+                                                                   gradSolInt[1](i,1),
+                                                                   gradSolInt[2](i,1),
+                                                                   gradSolInt[0](i,2),
+                                                                   gradSolInt[1](i,2),
+                                                                   gradSolInt[2](i,2),
+                                                                   gradSolInt[0](i,3),
+                                                                   gradSolInt[1](i,3),
+                                                                   gradSolInt[2](i,3),
+                                                                   lenScale,
+                                                                   volElem[l].wallDistanceInt(i));
+          else
+            gradSolInt[0](i,0) = 0.0;
+        }
+
+        /*--- Set the padded values to avoid problems. ---*/
+        for(unsigned short i=nInt; i<nIntPad; ++i) {
+          gradSolInt[0](i,0) = gradSolInt[0](0,0);
+          gradSolInt[1](i,0) = gradSolInt[1](0,0);
+        }
+
+        /*--------------------------------------------------------------------*/
+        /*--- Step 4: Compute the total fluxes (inviscid fluxes minus the  ---*/
+        /*---         viscous fluxes), multiplied by minus the integration ---*/
+        /*---         weight, in the integration points.                   ---*/
+        /*--------------------------------------------------------------------*/
+
+        /*--- Loop over the padded number of integration points. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of the primitive variables. ---*/
+          const su2double rho = solInt(i,0);
+          const su2double u   = solInt(i,1);
+          const su2double v   = solInt(i,2);
+          const su2double w   = solInt(i,3);
+          const su2double p   = solInt(i,4);
+
+          /*--- Easier storage of the gradients. ---*/
+          const su2double dudx = gradSolInt[0](i,1);
+          const su2double dvdx = gradSolInt[0](i,2);
+          const su2double dwdx = gradSolInt[0](i,3);
+          const su2double dedx = gradSolInt[0](i,4);
+
+          const su2double dudy = gradSolInt[1](i,1);
+          const su2double dvdy = gradSolInt[1](i,2);
+          const su2double dwdy = gradSolInt[1](i,3);
+          const su2double dedy = gradSolInt[1](i,4);
+
+          const su2double dudz = gradSolInt[2](i,1);
+          const su2double dvdz = gradSolInt[2](i,2);
+          const su2double dwdz = gradSolInt[2](i,3);
+          const su2double dedz = gradSolInt[2](i,4);
+
+          /*--- Compute the total energy per unit volume
+                and the relative velocities. ---*/
+          const su2double rE   = ovgm1*p + 0.5*rho*(u*u + v*v + w*w);
+          const su2double uRel = u - volElem[l].gridVelocitiesInt(i,0);
+          const su2double vRel = v - volElem[l].gridVelocitiesInt(i,1);
+          const su2double wRel = w - volElem[l].gridVelocitiesInt(i,2);
+
+          /*--- Compute the total viscosity and total factor for the heat flux. ---*/
+          const su2double Viscosity = gradSolInt[1](i,0) + gradSolInt[0](i,0);
+          const su2double kOverCv   = gradSolInt[1](i,0)*factHeatFlux_Lam
+                                    + gradSolInt[0](i,0)*factHeatFlux_Turb;
+
+          /*--- Set the value of the second viscosity and compute the divergence
+                term in the viscous normal stresses. ---*/
+          const su2double lambda     = -TWO3*Viscosity;
+          const su2double lamDivTerm =  lambda*(dudx + dvdy + dwdz);
+
+          /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+          const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+          const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+          const su2double tauzz = 2.0*Viscosity*dwdz + lamDivTerm;
+
+          const su2double tauxy = Viscosity*(dudy + dvdx);
+          const su2double tauxz = Viscosity*(dudz + dwdx);
+          const su2double tauyz = Viscosity*(dvdz + dwdy);
+
+          const su2double qx = kOverCv*dedx;
+          const su2double qy = kOverCv*dedy;
+          const su2double qz = kOverCv*dedz;
+
+          /*--- Compute the viscous normal stress minus the pressure. ---*/
+          const su2double tauxxMP = tauxx - p;
+          const su2double tauyyMP = tauyy - p;
+          const su2double tauzzMP = tauzz - p;
+
+          /*--- Compute the metric terms multiplied by minus the integration weight.
+                The minus sign comes from the integration by parts in the weak
+                formulation. ---*/
+          const su2double drdx = -weights[i]*dParDx(i,0);
+          const su2double dsdx = -weights[i]*dParDx(i,1);
+          const su2double dtdx = -weights[i]*dParDx(i,2);
+
+          const su2double drdy = -weights[i]*dParDy(i,0);
+          const su2double dsdy = -weights[i]*dParDy(i,1);
+          const su2double dtdy = -weights[i]*dParDy(i,2);
+
+          const su2double drdz = -weights[i]*dParDz(i,0);
+          const su2double dsdz = -weights[i]*dParDz(i,1);
+          const su2double dtdz = -weights[i]*dParDz(i,2);
+
+          /*--- Fluxes in r-direction, which are stored in gradSolInt[0]. */
+          const su2double Ur = uRel*drdx + vRel*drdy + wRel*drdz;
+
+          gradSolInt[0](i,0) = Ur*rho;
+          gradSolInt[0](i,1) = Ur*rho*u - tauxxMP*drdx - tauxy*drdy - tauxz*drdz;
+          gradSolInt[0](i,2) = Ur*rho*v - tauxy*drdx - tauyyMP*drdy - tauyz*drdz;
+          gradSolInt[0](i,3) = Ur*rho*w - tauxz*drdx - tauyz*drdy - tauzzMP*drdz;
+          gradSolInt[0](i,4) = Ur*rE - (u*tauxxMP + v*tauxy + w*tauxz + qx)*drdx
+                                     - (u*tauxy + v*tauyyMP + w*tauyz + qy)*drdy
+                                     - (u*tauxz + v*tauyz + w*tauzzMP + qz)*drdz;
+
+          /*--- Fluxes in s-direction, which are stored in gradSolInt[1]. */
+          const su2double Us = uRel*dsdx + vRel*dsdy + wRel*dsdz;
+
+          gradSolInt[1](i,0) = Us*rho;
+          gradSolInt[1](i,1) = Us*rho*u - tauxxMP*dsdx - tauxy*dsdy - tauxz*dsdz;
+          gradSolInt[1](i,2) = Us*rho*v - tauxy*dsdx - tauyyMP*dsdy - tauyz*dsdz;
+          gradSolInt[1](i,3) = Us*rho*w - tauxz*dsdx - tauyz*dsdy - tauzzMP*dsdz;
+          gradSolInt[1](i,4) = Us*rE - (u*tauxxMP + v*tauxy + w*tauxz + qx)*dsdx
+                                     - (u*tauxy + v*tauyyMP + w*tauyz + qy)*dsdy
+                                     - (u*tauxz + v*tauyz + w*tauzzMP + qz)*dsdz;
+
+          /*--- Fluxes in t-direction, which are stored in gradSolInt[2]. */
+          const su2double Ut = uRel*dtdx + vRel*dtdy + wRel*dtdz;
+
+          gradSolInt[2](i,0) = Ut*rho;
+          gradSolInt[2](i,1) = Ut*rho*u - tauxxMP*dtdx - tauxy*dtdy - tauxz*dtdz;
+          gradSolInt[2](i,2) = Ut*rho*v - tauxy*dtdx - tauyyMP*dtdy - tauyz*dtdz;
+          gradSolInt[2](i,3) = Ut*rho*w - tauxz*dtdx - tauyz*dtdy - tauzzMP*dtdz;
+          gradSolInt[2](i,4) = Ut*rE - (u*tauxxMP + v*tauxy + w*tauxz + qx)*dtdx
+                                     - (u*tauxy + v*tauyyMP + w*tauyz + qy)*dtdy
+                                     - (u*tauxz + v*tauyz + w*tauzzMP + qz)*dtdz;
+        }
+
+        break;
+      }
+    }
+
+    /*--- Compute the volume source terms, if needed. ---*/
+    const bool addSourceTerms = VolumeSourceTerms(config, &volElem[l], solInt);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 5: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the volume element.                     ---*/
+    /*------------------------------------------------------------------------*/
+
+
+  }
+
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {

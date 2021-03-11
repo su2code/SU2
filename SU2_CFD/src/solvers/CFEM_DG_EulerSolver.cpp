@@ -3093,6 +3093,194 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
                                              const unsigned long elemBeg,
                                              const unsigned long elemEnd) {
 
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
+  }
+}
+
+void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
+                                          const unsigned long elemBeg,
+                                          const unsigned long elemEnd) {
+
+  /*--- Abbreviation of 1/(Gamma-1). ---*/
+  const su2double ovgm1 = 1.0/Gamma_Minus_One;
+
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nElem = elemEnd - elemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the given element range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Determine the primitive solution in the integration      ---*/
+    /*---         points and store the reference to memory for the fluxes. ---*/
+    /*------------------------------------------------------------------------*/
+
+    ColMajorMatrix<su2double>          &solInt = volElem[l].ComputeSolIntPoints();
+    vector<ColMajorMatrix<su2double> > &fluxes = volElem[l].standardElemFlow->workGradSolInt[omp_get_thread_num()];
+
+    EntropyToPrimitiveVariables(solInt);
+
+    /*--- Compute the transformation matrix between conservative and
+          entropy variables in the integration poins. ---*/
+    VolumeTransformationMatrix(&volElem[l], solInt);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
+    /*---         integration weight, in the integration points.           ---*/
+    /*---         If needed, also the source terms are computed.           ---*/
+    /*------------------------------------------------------------------------*/
+
+    const unsigned short nIntPad = volElem[l].standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights = volElem[l].standardElemFlow->GetIntegrationWeights();
+
+    /*--- Make a distinction between two and three space dimensions
+          in order to have the most efficient code. ---*/
+    switch( nDim ) {
+
+      case 2: {
+
+        /*--- Two dimensional simulation. Easier storage of the metric terms. ---*/
+        ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
+        ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
+        
+        /*--- Loop over the padded number of integration points, such that vectorization
+              is more efficient, and compute the fluxes in r- and s-direction. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of the primitive variables. ---*/
+          const su2double rho = solInt(i,0);
+          const su2double u   = solInt(i,1);
+          const su2double v   = solInt(i,2);
+          const su2double p   = solInt(i,3);
+
+          /*--- Compute the total energy per unit volume and the
+                relative velocities. ---*/
+          const su2double rE   = ovgm1*p + 0.5*rho*(u*u + v*v);
+          const su2double uRel = u - volElem[l].gridVelocitiesInt(i,0);
+          const su2double vRel = v - volElem[l].gridVelocitiesInt(i,1);
+
+          /*--- Compute the metric terms multiplied by minus the integration weight.
+                The minus sign comes from the integration by parts in the weak
+                formulation. ---*/
+          const su2double drdx = -weights[i]*dParDx(i,0);
+          const su2double dsdx = -weights[i]*dParDx(i,1);
+
+          const su2double drdy = -weights[i]*dParDy(i,0);
+          const su2double dsdy = -weights[i]*dParDy(i,1);
+
+          /*--- Fluxes in r-direction. */
+          const su2double Ur = uRel*drdx + vRel*drdy;
+
+          fluxes[0](i,0) = Ur*rho;
+          fluxes[0](i,1) = Ur*rho*u + p*drdx;
+          fluxes[0](i,2) = Ur*rho*v + p*drdy;
+          fluxes[0](i,3) = Ur*rE + p*(u*drdx + v*drdy);
+
+          /*--- Fluxes in s-direction. */
+          const su2double Us = uRel*dsdx + vRel*dsdy;
+
+          fluxes[1](i,0) = Us*rho;
+          fluxes[1](i,1) = Us*rho*u + p*dsdx;
+          fluxes[1](i,2) = Us*rho*v + p*dsdy;
+          fluxes[1](i,3) = Us*rE + p*(u*dsdx + v*dsdy);
+        }
+
+        break;
+      }
+
+      /*----------------------------------------------------------------------*/
+
+      case 3: {
+
+        /*--- Three dimensional simulation. Easier storage of the metric terms. ---*/
+            ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
+            ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
+            ColMajorMatrix<su2double> &dParDz = volElem[l].metricTermsInt[2];
+
+        /*--- Loop over the padded number of integration points, such that vectorization
+              is more efficient, and compute the fluxes in r-, s- and t-direction. ---*/
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nIntPad; ++i) {
+
+          /*--- Easier storage of the primitive variables. ---*/
+          const su2double rho = solInt(i,0);
+          const su2double u   = solInt(i,1);
+          const su2double v   = solInt(i,2);
+          const su2double w   = solInt(i,3);
+          const su2double p   = solInt(i,4);
+
+          /*--- Compute the total energy per unit volume and the
+                relative velocities. ---*/
+          const su2double rE   = ovgm1*p + 0.5*rho*(u*u + v*v + w*w);
+          const su2double uRel = u - volElem[l].gridVelocitiesInt(i,0);
+          const su2double vRel = v - volElem[l].gridVelocitiesInt(i,1);
+          const su2double wRel = w - volElem[l].gridVelocitiesInt(i,2);
+
+          /*--- Compute the metric terms multiplied by minus the integration weight.
+                The minus sign comes from the integration by parts in the weak
+                formulation. ---*/
+          const su2double drdx = -weights[i]*dParDx(i,0);
+          const su2double dsdx = -weights[i]*dParDx(i,1);
+          const su2double dtdx = -weights[i]*dParDx(i,2);
+
+          const su2double drdy = -weights[i]*dParDy(i,0);
+          const su2double dsdy = -weights[i]*dParDy(i,1);
+          const su2double dtdy = -weights[i]*dParDy(i,2);
+
+          const su2double drdz = -weights[i]*dParDz(i,0);
+          const su2double dsdz = -weights[i]*dParDz(i,1);
+          const su2double dtdz = -weights[i]*dParDz(i,2);
+
+          /*--- Fluxes in r-direction. */
+          const su2double Ur = uRel*drdx + vRel*drdy + wRel*drdz;
+
+          fluxes[0](i,0) = Ur*rho;
+          fluxes[0](i,1) = Ur*rho*u + p*drdx;
+          fluxes[0](i,2) = Ur*rho*v + p*drdy;
+          fluxes[0](i,3) = Ur*rho*w + p*drdz;
+          fluxes[0](i,4) = Ur*rE + p*(u*drdx + v*drdy + w*drdz);
+
+          /*--- Fluxes in s-direction. */
+          const su2double Us = uRel*dsdx + vRel*dsdy + wRel*dsdz;
+
+          fluxes[1](i,0) = Us*rho;
+          fluxes[1](i,1) = Us*rho*u + p*dsdx;
+          fluxes[1](i,2) = Us*rho*v + p*dsdy;
+          fluxes[1](i,3) = Us*rho*w + p*dsdz;
+          fluxes[1](i,4) = Us*rE + p*(u*dsdx + v*dsdy + w*dsdz);
+
+          /*--- Fluxes in t-direction. */
+          const su2double Ut = uRel*dtdx + vRel*dtdy + wRel*dtdz;
+
+          fluxes[2](i,0) = Ut*rho;
+          fluxes[2](i,1) = Ut*rho*u + p*dtdx;
+          fluxes[2](i,2) = Ut*rho*v + p*dtdy;
+          fluxes[2](i,3) = Ut*rho*w + p*dtdz;
+          fluxes[2](i,4) = Ut*rE + p*(u*dtdx + v*dtdy + w*dtdz);
+        }
+
+        break;
+      }
+    }
+
+    /*--- Compute the volume source terms, if needed. ---*/
+    const bool addSourceTerms = VolumeSourceTerms(config, &volElem[l], solInt);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the volume element.                     ---*/
+    /*------------------------------------------------------------------------*/
+
+  }
+
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -3112,27 +3300,190 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
-void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
-                                          const unsigned long elemBeg,
-                                          const unsigned long elemEnd) {
+bool CFEM_DG_EulerSolver::VolumeSourceTerms(CConfig                  *config,
+                                            CVolumeElementFEM_DG     *elem,
+                                            ColMajorMatrix<su2double> &sol) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Determine whether a body force term is present and. ---*/
+  const bool body_force = config->GetBody_Force();
 
-    if(i == rank) {
+  if( body_force ) {
+    const su2double *body_force_vector = config->GetBody_Force_Vector();
+    const unsigned short nIntPad = elem->standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights = elem->standardElemFlow->GetIntegrationWeights();
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
+    /*--- Loop over the padded number of integration points to initialize
+          the source term for the density and energy. ---*/
+    const unsigned short indE = nDim+1;
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nIntPad; ++i) {
+      sol(i,0)    = 0.0;
+      sol(i,indE) = 0.0;
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    /*--- Loop over the number of dimensions to set the momentum source terms
+          and to update the energy source term. Note that the source terms are
+          multiplied with minus the integration weight in order to be consistent
+          with the formulation of the residual. Also note that for the energy
+          source term the absolute velocity must be taken and not the relative. ---*/
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      const unsigned short jDim = iDim+1;
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i) {
+        const su2double abv = -weights[i]*elem->JacobiansInt(i)*body_force_vector[iDim];
+        sol(i,indE) += abv*sol(i,jDim);
+        sol(i,jDim)  = abv;
+      }
+    }
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Initialize addSourceTerms to body_force. The value of addSourceTerms
+        will be set to true when a manufactured solution is computed. ---*/
+  bool addSourceTerms = body_force;
+
+  /*--- Check whether or not a manufactured solution is used. ---*/
+  if( VerificationSolution ) {
+    if( VerificationSolution->IsManufacturedSolution() ) {
+
+      /*--- Get the physical time if necessary. ---*/
+      su2double time = 0.0;
+      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+
+      /*--- Store the number of integration points and the integration weights. ---*/
+      const unsigned short nIntPad = elem->standardElemFlow->GetNIntegrationPad();
+      const unsigned short nInt    = elem->standardElemFlow->GetNIntegration();
+      const passivedouble *weights = elem->standardElemFlow->GetIntegrationWeights();
+
+      /*--- For the manufactured solutions a source term must be added. If a
+            standard source term has not been specified, initialize the source
+            terms, stored in sol, to zero and set addSourceTerms to true. ---*/
+      addSourceTerms = true;
+      if( !body_force ) {
+        for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+          SU2_OMP_SIMD
+          for(unsigned short i=0; i<nIntPad; ++i)
+            sol(i,iVar) = 0.0;
+        }
+      }
+
+      /*--- Loop over the integration points. ---*/
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /*--- Copy the coordinates of this integration point and determine
+              the source terms for the manufactured solution. ---*/
+        su2double coor[3] = {0.0};
+        for(unsigned iDim=0; iDim<nDim; ++iDim)
+          coor[iDim] = elem->coorIntegrationPoints(i,iDim);
+
+        su2double sourceMan[5] = {0.0};
+        VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan);
+
+        /*--- Subtract the source term of the manufactured solution, multiplied
+              by the appropriate weight, from the possibly earlier computed
+              source term. It is subtracted in order to be consistent with
+              the definition of the residual used in this code. ---*/
+        const su2double weightJac = weights[i]*elem->JacobiansInt(i);
+        for(unsigned short iVar=0; iVar<nVar; ++iVar)
+          sol(i,iVar) -= weightJac*sourceMan[iVar];
+      }
+    }
+  }
+
+  /*--- Return the value of addSourceTerms. ---*/
+  return addSourceTerms;
+}
+
+void CFEM_DG_EulerSolver::VolumeTransformationMatrix(CVolumeElementFEM_DG     *elem,
+                                                     ColMajorMatrix<su2double> &sol) {
+
+  /*--- Easier storage of the padded number of integration points
+        and the inverse of Gamma-1. ---*/
+  const unsigned short nIntPad = elem->standardElemFlow->GetNIntegrationPad();
+  const su2double      ovgm1   = 1.0/Gamma_Minus_One;
+
+  /*--- Make a distinction between 2D and 3D. ---*/
+  switch( nDim ) {
+    case 2: {
+
+      /*--- Two dimensional simulation. Loop over the integration points. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i) {
+
+        /*--- Compute the necessary variables that appear in the
+              transformation matrix. ---*/
+        const su2double rho = sol(i,0);
+        const su2double u   = sol(i,1);
+        const su2double v   = sol(i,2);
+        const su2double p   = sol(i,3);
+
+        const su2double ru   = rho*u;
+        const su2double rv   = rho*v;
+        const su2double eKin = 0.5*(u*u + v*v);
+        const su2double rE   = p*ovgm1 + rho*eKin;
+        const su2double rH   = rE + p;
+
+        /*--- Store the elements of the transformation matrix dUdV in this
+              integration point. Note that this matrix is symmetric and hence
+              only the upper-diagonal part (or lower diagonal part) is stored. ---*/
+        elem->dUdVInt(i,0) = rho;                // dUdV(0,0)
+        elem->dUdVInt(i,1) = ru;                 // dUdV(0,1) = dUdV(1,0)
+        elem->dUdVInt(i,2) = rv;                 // dUdV(0,2) = dUdV(2,0)
+        elem->dUdVInt(i,3) = rE;                 // dUdV(0,3) = dUdV(3,0)
+        elem->dUdVInt(i,4) = ru*u + p;           // dUdV(1,1)
+        elem->dUdVInt(i,5) = ru*v;               // dUdV(1,2) = dUdV(2,1)
+        elem->dUdVInt(i,6) = rH*u;               // dUdV(1,3) = dUdV(3,1)
+        elem->dUdVInt(i,7) = rv*v + p;           // dUdV(2,2)
+        elem->dUdVInt(i,8) = rH*v;               // dUdV(2,3) = dUdV(3,2)
+        elem->dUdVInt(i,9) = rE*rH/rho + p*eKin; // dUdV(3,3)
+      }
+
+      break;
+    }
+
+    case 3: {
+
+      /*--- Two dimensional simulation. Loop over the integration points. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i) {
+
+        /*--- Compute the necessary variables that appear in the
+              transformation matrix. ---*/
+        const su2double rho = sol(i,0);
+        const su2double u   = sol(i,1);
+        const su2double v   = sol(i,2);
+        const su2double w   = sol(i,3);
+        const su2double p   = sol(i,4);
+
+        const su2double ru   = rho*u;
+        const su2double rv   = rho*v;
+        const su2double rw   = rho*w;
+        const su2double eKin = 0.5*(u*u + v*v + w*w);
+        const su2double rE   = p*ovgm1 + rho*eKin;
+        const su2double rH   = rE + p;
+
+        /*--- Store the elements of the transformation matrix dUdV in this
+              integration point. Note that this matrix is symmetric and hence
+              only the upper-diagonal part (or lower diagonal part) is stored. ---*/
+        elem->dUdVInt(i, 0) = rho;                // dUdV(0,0)
+        elem->dUdVInt(i, 1) = ru;                 // dUdV(0,1) = dUdV(1,0)
+        elem->dUdVInt(i, 2) = rv;                 // dUdV(0,2) = dUdV(2,0)
+        elem->dUdVInt(i, 3) = rw;                 // dUdV(0,3) = dUdV(3,0)
+        elem->dUdVInt(i, 4) = rE;                 // dUdV(0,4) = dUdV(4,0)
+        elem->dUdVInt(i, 5) = ru*u + p;           // dUdV(1,1)
+        elem->dUdVInt(i, 6) = ru*v;               // dUdV(1,2) = dUdV(2,1)
+        elem->dUdVInt(i, 7) = ru*w;               // dUdV(1,3) = dUdV(3,1)
+        elem->dUdVInt(i, 8) = rH*u;               // dUdV(1,4) = dUdV(4,1)
+        elem->dUdVInt(i, 9) = rv*v + p;           // dUdV(2,2)
+        elem->dUdVInt(i,10) = rv*w;               // dUdV(2,3) = dUdV(3,2)
+        elem->dUdVInt(i,11) = rH*v;               // dUdV(2,4) = dUdV(4,2)
+        elem->dUdVInt(i,12) = rw*w + p;           // dUdV(3,3)
+        elem->dUdVInt(i,13) = rH*w;               // dUdV(3,4) = dUdV(4,3)
+        elem->dUdVInt(i,14) = rE*rH/rho + p*eKin; // dUdV(4,4)
+      }
+
+      break;
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,

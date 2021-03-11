@@ -41,6 +41,13 @@ void CVolumeElementFEM_DG::AllocateCompressibleFlowVar(CConfig        *config,
   solDOFs.resize(nDOFs,nVar);
   solDOFsWork.resize(nDOFs,nVar);
 
+  /*--- Allocate the memory for the transformation matrix between
+        conservative and entropy variables in the integration points.
+        As this matrix is symmetric, only the upper half (or lower
+        half) needs to be stored. ---*/
+  const unsigned short nIntPad = standardElemFlow->GetNIntegrationPad();
+  dUdVInt.resize(nIntPad,nVar*(nVar+1)/2);
+
   /*--- Check for the classical Runge-Kutta time integration scheme.
         If used, allocate the memory to store the new state in
         solDOFsAux for an owned element. ---*/
