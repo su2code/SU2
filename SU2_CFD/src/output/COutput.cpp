@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1228,7 +1228,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
   historyFileTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
   historyFileTable->SetPrintHeaderTopLine(false);
   historyFileTable->SetPrintHeaderBottomLine(false);
-  historyFileTable->SetPrecision(10);
+  historyFileTable->SetPrecision(config->GetOutput_Precision());
 
   /*--- Add the header to the history file. ---*/
 

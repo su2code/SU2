@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1710,5 +1710,17 @@ public:
    * \param[out] nNonconvexElements- amount of nonconvex elements in the mesh
    */
   unsigned long GetnNonconvexElements() const {return nNonconvexElements;}
+
+  /*!
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void FindUniqueNode_PeriodicBound(const CConfig *config) {}
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline virtual const su2double* GetStreamwise_Periodic_RefNode(void) const { return nullptr; }
 };
 

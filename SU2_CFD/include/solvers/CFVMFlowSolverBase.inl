@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,27 +34,18 @@
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iVar;
-  unsigned long iMarker;
-
   /*--- Define some auxiliar vector related with the residual ---*/
 
-  Residual_RMS = new su2double[nVar]();
-  Residual_Max = new su2double[nVar]();
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar]();
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
   if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
-    iPoint_UndLapl = new su2double[nPointDomain];
-    jPoint_UndLapl = new su2double[nPointDomain];
+    iPoint_UndLapl.resize(nPointDomain);
+    jPoint_UndLapl.resize(nPointDomain);
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -69,14 +60,14 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
@@ -129,7 +120,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
       SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
       SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
@@ -162,14 +153,14 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   if (MGLevel == MESH_0) {
     VertexTraction.resize(nMarker);
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config.GetSolid_Wall(iMarker))
         VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
     }
 
     if (config.GetDiscrete_Adjoint()) {
       VertexTractionAdjoint.resize(nMarker);
-      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
         if (config.GetSolid_Wall(iMarker))
           VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
       }
@@ -178,19 +169,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config.GetMultizone_Residual()) {
-    Residual_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar] = 1.0;
-
-    Residual_Max_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar] = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 }
 

@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.1.0 "Blackbird"
+ * \version 7.0.8
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:

@@ -64,15 +64,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
   nVar = nDim + 2;
 
   /*--- Define some auxiliary vectors related to the residual ---*/
-  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
-  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
-  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,1.e-35);
+  Residual_Max.resize(nVar,1.e-35);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/

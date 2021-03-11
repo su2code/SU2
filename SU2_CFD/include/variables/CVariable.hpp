@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2550,6 +2550,34 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+   /*!
+   * \brief A virtual member: Set the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_pressure - pressure value.
+   */
+  inline virtual void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint,su2double val_pressure) { }
+
+  /*!
+   * \brief A virtual member: Get the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
+   */
+  inline virtual su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member: Set the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_temperature - temperature value.
+   */
+  inline virtual void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) { }
+
+  /*!
+   * \brief A virtual member: Get the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical temperature for streamwise periodic flow.
+   */
+  inline virtual su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Virtual member: Set the Radiative source term at the node
