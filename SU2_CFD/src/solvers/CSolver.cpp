@@ -3199,7 +3199,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
     {
       su2double weight = 1.0;
       su2double dist_ij[3] = {0.0};
-      GeometryToolbox::Distance(nDim,geometr->node[jPoint]->GetCoord(),geometry->node[iPoint]->GetCoord(),dist_ij);
+      GeometryToolbox::Distance(nDim,geometry->node[jPoint]->GetCoord(),geometry->node[iPoint]->GetCoord(),dist_ij);
       
       if (kindGrad == WEIGHTED_LEAST_SQUARES) {
         weight = GeometryToolbox::Norm(nDim, dist_ij);
@@ -5813,7 +5813,6 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
             auto node_j = geometry->node[jPoint];
             if(!node_j->GetSolidBoundary()) {
               const su2double dist = GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord());
-              dist = sqrt(dist);
               suminvdist += 1./dist;
               for(unsigned short iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;

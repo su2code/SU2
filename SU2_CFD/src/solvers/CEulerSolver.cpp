@@ -3715,7 +3715,7 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
   const bool wasActive = AD::BeginPassive();
 
   su2double EdgVec[MAXNDIM] = {0.0};
-  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
+  GeometryToolbox::Distance(nDim,geometry->node[jPoint]->GetCoord(),geometry->node[iPoint]->GetCoord(),dist_ij);
 
   /*--- Get norm of projection and distance vectors ---*/
 
