@@ -1304,7 +1304,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
       solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (is_scalar_model) {
-      // nijso: do we need SU2_OMP_PARALLEL???
+      SU2_OMP_PARALLEL_(if(solver[MESH_0][SCALAR_SOL]->GetHasHybridParallel()))
       solver[MESH_0][SCALAR_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (fem) {

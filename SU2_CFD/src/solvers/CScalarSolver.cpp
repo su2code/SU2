@@ -32,8 +32,8 @@
 
 CScalarSolver::CScalarSolver(void) : CSolver() {
   
-  FlowPrimVar_i    = NULL;
-  FlowPrimVar_j    = NULL;
+  //FlowPrimVar_i    = NULL;
+  //FlowPrimVar_j    = NULL;
   lowerlimit       = NULL;
   upperlimit       = NULL;
   //nVertex          = NULL;
@@ -43,8 +43,8 @@ CScalarSolver::CScalarSolver(void) : CSolver() {
 
 CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  FlowPrimVar_i    = NULL;
-  FlowPrimVar_j    = NULL;
+  //FlowPrimVar_i    = NULL;
+  //FlowPrimVar_j    = NULL;
   lowerlimit       = NULL;
   upperlimit       = NULL;
 
@@ -90,8 +90,8 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CScalarSolver::~CScalarSolver(void) {
 
-  if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
+  //if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
+  //if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL)    delete [] lowerlimit;
   if (upperlimit != NULL)    delete [] upperlimit;
   //if (nVertex != NULL)       delete [] nVertex;
@@ -290,9 +290,6 @@ void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, C
                          nodes->GetSolution(jPoint));
   numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                  nodes->GetGradient(jPoint));
-    
-
-
 
   /*--- Mass diffusivity coefficients. ---*/
 
@@ -371,138 +368,193 @@ void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
 
+ const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+ const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+
+/*--- use preconditioner for scalar transport equations ---*/
+
+//if (incompressible) SetPreconditioner(geometry, solver_container, config);
+
+
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
-  //SU2_OMP_MASTER
-  //for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-  //  SetRes_RMS(iVar, 0.0);
-  //  SetRes_Max(iVar, 0.0, 0);
-  //}
+  SetResToZero();
+
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
+
+  /*--- Build implicit system ---*/
+
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /// TODO: This could be the SetTime_Step of this solver.
+     // we use a global cfl
+     //Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    //su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
+
+    /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
+
+    if (dt != 0.0) {
+      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Vol / dt);
+    }
+    else {
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      LinSysRes.SetBlock_Zero(iPoint);
+    }
+
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = -LinSysRes[total_index];
+      LinSysSol[total_index] = 0.0;
+
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res*Res;
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+      }
+    }
+  }
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Residual_RMS[iVar] += resRMS[iVar];
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+  }
   SU2_OMP_BARRIER
 
-
+  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  SetResidual_RMS(geometry, config);
+  SU2_OMP_BARRIER
 }
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-}
 
-void CScalarSolver::ImplicitEuler_Iteration(CGeometry  *geometry,
-                                            CSolver   **solver_container,
-                                            CConfig    *config) {
-  
-  unsigned short iVar;
-  unsigned long iPoint, total_index;
-  su2double Delta, *local_Res_TruncError, Vol;
-  
-  bool scalar_clipping = config->GetScalar_Clipping();
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
   su2double *scalar_clipping_min = config->GetScalar_Clipping_Min();
   su2double *scalar_clipping_max = config->GetScalar_Clipping_Max();
+  // nijso: TODO: we also still have an underrelaxation factor as config option
+  ComputeUnderRelaxationFactor(config);
 
-  bool adjoint = ( config->GetContinuous_Adjoint() ||
-                  (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc()));
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
-  if (incompressible) SetPreconditioner(geometry, solver_container, config);
-
-
-  PrepareImplicitIteration(geometry, solver_container, config);
-
-  /*--- Set maximum residual to zero ---*/
-  
-  //for (iVar = 0; iVar < nVar; iVar++) {
-  //  SetRes_RMS(iVar, 0.0);
-  //  SetRes_Max(iVar, 0.0, 0);
-  //}
-  
-  /*--- Build implicit system ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-    /*--- Read the residual ---*/
-
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-    
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-    
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    
-    Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
-    Jacobian.AddVal2Diag(iPoint, Delta);
-    
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      //AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]),
-                 geometry->nodes->GetGlobalIndex(iPoint),
-                 geometry->nodes->GetCoord(iPoint));
-    }
-  }
-  
-  /*--- Initialize residual and solution at the ghost points ---*/
-  
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-  }
-  
-  /*--- Solve or smooth the linear system ---*/
-  
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  
   /*--- Update solution (system written in terms of increments) ---*/
-  
+
   if (!adjoint) {
-    
-    /*--- Update the scalar solution. ---*/
 
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (scalar_clipping) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          nodes->AddClippedSolution(iPoint, iVar,
-                                    config->GetRelaxation_Factor_Scalar() *
-                                    LinSysSol[iPoint * nVar + iVar],
-                                    scalar_clipping_min[iVar],
-                                    scalar_clipping_max[iVar]);
-        }
-      }
-      else {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          nodes->AddSolution(iPoint, iVar, config->GetRelaxation_Factor_Scalar()*LinSysSol[iPoint*nVar+iVar]);
-        }
-      }
-    }
+  /*--- Update the scalar solution. ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      su2double density = flowNodes->GetDensity(iPoint);
+      su2double density_old = density;
+
+      if (compressible)
+        density_old = flowNodes->GetSolution_Old(iPoint,0);
+      // nijso: check difference between conservative and regular solution
+      // nijso: check underrelaxation
+      for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
+        nodes->AddConservativeSolution(iPoint, iVar,
+          nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+          density, density_old, scalar_clipping_min[iVar], scalar_clipping_max[iVar]);
+      }
+    }                
   }
-  
-  /*--- Communicate the solution at the periodic boundaries. ---*/
-  
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
-  
-  /*--- MPI solution ---*/
-  
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-  
-  /*--- Compute the root mean square residual ---*/
-  
-  SetResidual_RMS(geometry, config);
-  
+
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+
 }
 
+void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, solver_container, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, solver_container, config);
+
+}
+
+void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Only apply the turbulent under-relaxation to the SA variants. The
+   SA_NEG model is more robust due to allowing for negative nu_tilde,
+   so the under-relaxation is not applied to that variant. */
+
+  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+                   (config->GetKind_Turb_Model() == SA_E)      ||
+                   (config->GetKind_Turb_Model() == SA_COMP)   ||
+                   (config->GetKind_Turb_Model() == SA_E_COMP));
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  su2double localUnderRelaxation =  1.00;
+
+  
+  const su2double allowableRatio =  0.99;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    localUnderRelaxation = 1.0;
+    //if (sa_model) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+        /* We impose a limit on the maximum percentage that the
+         scalar variables can change over a nonlinear iteration. */
+
+        const unsigned long index = iPoint * nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+        }
+
+      }
+    //}
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
+  }
+
+}
 
 
 void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,

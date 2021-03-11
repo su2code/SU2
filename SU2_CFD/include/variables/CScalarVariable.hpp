@@ -37,7 +37,6 @@
  */
 class CScalarVariable : public CVariable {
 protected:
-  // Vector Diffusivity
   MatrixType Diffusivity;  /*!< \brief Vector of mass diffusivities for scalar transport. */
 public:
   /*!

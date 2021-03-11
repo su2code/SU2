@@ -40,7 +40,8 @@
 class CScalarSolver : public CSolver {
 protected:
   enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {MAXNVAR = 1};         /*!< \brief Max number of passive variables, used in some static arrays. */
+  // nijso: pv,enthalpy, Y1, Y2, Y3, Y4, Y5, Y6 
+  enum : size_t {MAXNVAR = 8};         /*!< \brief Max number of transported variables, used in some static arrays. */
   enum : size_t {MAXNVARFLOW = 12};    /*!< \brief Max number of flow variables, used in some static arrays. */
 
   enum : size_t {OMP_MAX_SIZE = 512};  /*!< \brief Max chunk size for light point loops. */
@@ -49,7 +50,8 @@ protected:
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
 
-  su2double *FlowPrimVar_i, *FlowPrimVar_j,
+  su2double 
+  //*FlowPrimVar_i, *FlowPrimVar_j,
   *lowerlimit,  /*!< \brief contains lower limits for turbulence variables. */
   *upperlimit;  /*!< \brief contains upper limits for turbulence variables. */
 

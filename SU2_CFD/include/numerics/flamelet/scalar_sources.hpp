@@ -51,7 +51,6 @@ private:
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
   inline void ResidualAxisymmetric(void){
-    // nijso: change 3 to maxndim
     su2double yinv,Density_i,Velocity_i[3];
     if (Coord_i[1] > EPS){
 
