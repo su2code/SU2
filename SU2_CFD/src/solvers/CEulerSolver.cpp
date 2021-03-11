@@ -3921,8 +3921,8 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
     const su2double F1_i = turbNodes->GetF1blending(iPoint);
     const su2double F1_j = turbNodes->GetF1blending(jPoint);
     const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
-    const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodes->GetEddyViscosity(iPoint);
-    const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodes->GetEddyViscosity(jPoint);
+    const su2double visc_k_i = 0.5*nodes->GetEddyViscosity(iPoint)/(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2);
+    const su2double visc_k_j = 0.5*nodes->GetEddyViscosity(jPoint)/(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
 
     tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
     tke_i = turbNodes->GetPrimitive(iPoint,0);
