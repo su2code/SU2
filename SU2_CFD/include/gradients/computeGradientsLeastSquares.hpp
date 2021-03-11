@@ -284,6 +284,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
@@ -300,6 +301,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
       solveLeastSquares<nDim, true>(iPoint, varBegin, varEnd, Rmatrix, gradient);
+    END_SU2_OMP_FOR
   }
 
   /*--- If no solver was provided we do not communicate ---*/

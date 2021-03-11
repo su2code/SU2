@@ -223,7 +223,8 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 
   if ((iMesh==MESH_0) && config->GetDeform_Mesh()) mesh_solver->SetDualTime_Mesh();
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
@@ -236,6 +237,7 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
 
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
@@ -247,6 +249,8 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
     /*--- Initialize the local CFL number ---*/
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
   }
+  END_SU2_OMP_FOR
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }

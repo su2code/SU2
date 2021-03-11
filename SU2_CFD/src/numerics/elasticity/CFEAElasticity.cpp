@@ -333,6 +333,7 @@ void CFEAElasticity::ReadDV(const CConfig *config) {
   bool master_node = false;
   SU2_OMP_MASTER
   master_node = (rank == MASTER_NODE);
+  END_SU2_OMP_MASTER
 
   unsigned long index;
 

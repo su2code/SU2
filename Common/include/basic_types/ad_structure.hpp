@@ -493,6 +493,7 @@ namespace AD{
         FuncHelper->disableOutputPrimalStore();
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE void SetExtFuncIn(const su2double &data) {
@@ -500,6 +501,7 @@ namespace AD{
     {
       FuncHelper->addInput(data);
     }
+    END_SU2_OMP_MASTER
   }
 
   template<class T>
@@ -510,6 +512,7 @@ namespace AD{
         FuncHelper->addInput(data[i]);
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   template<class T>
@@ -522,6 +525,7 @@ namespace AD{
         }
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE void SetExtFuncOut(su2double& data) {
@@ -531,6 +535,7 @@ namespace AD{
         FuncHelper->addOutput(data);
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   template<class T>
@@ -543,6 +548,7 @@ namespace AD{
         }
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   template<class T>
@@ -557,6 +563,7 @@ namespace AD{
         }
       }
     }
+    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE void delete_handler(void *handler) {
@@ -569,6 +576,7 @@ namespace AD{
     {
       delete FuncHelper;
     }
+    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE bool BeginPassive() {

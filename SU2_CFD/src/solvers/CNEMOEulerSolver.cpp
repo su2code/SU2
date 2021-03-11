@@ -525,6 +525,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
   ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM];
@@ -697,6 +698,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 }
@@ -985,6 +987,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         }else
           eAxi_local++;
       }
+      END_SU2_OMP_FOR
     }
 
   /*--- Checking for NaN ---*/

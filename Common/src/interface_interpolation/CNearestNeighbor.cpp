@@ -158,13 +158,16 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         target_vertex.coefficient[iDonor] = donorInfo[iDonor].dist/denom;
       }
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalTargetPoints += numTarget;
       AvgDistance += avgDist;
       MaxDistance = max(MaxDistance, maxDist);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_GlobalPoint;

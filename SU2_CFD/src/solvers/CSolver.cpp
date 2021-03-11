@@ -1155,6 +1155,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -1232,6 +1233,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       SU2_MPI::Waitany(geometry->nPeriodicRecv,
                        geometry->req_PeriodicRecv,
                        &ind, &status);
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
       source = status.MPI_SOURCE;
 #else
@@ -1543,6 +1545,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
           }
         }
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -1554,6 +1557,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
     SU2_MPI::Waitall(geometry->nPeriodicSend,
                      geometry->req_PeriodicSend,
                      MPI_STATUS_IGNORE);
+    END_SU2_OMP_MASTER
 #endif
     SU2_OMP_BARRIER
   }
@@ -1772,6 +1776,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -1818,6 +1823,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
       SU2_OMP_MASTER
       SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
@@ -1932,6 +1938,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -1941,6 +1948,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 #ifdef HAVE_MPI
     SU2_OMP_MASTER
     SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+    END_SU2_OMP_MASTER
 #endif
     SU2_OMP_BARRIER
   }
@@ -2067,6 +2075,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
     }
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /* Loop over all points on this grid and apply CFL adaption. */
@@ -2079,6 +2088,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       Max_CFL_Local = 0.0;
       Avg_CFL_Local = 0.0;
     }
+    END_SU2_OMP_MASTER
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
@@ -2147,6 +2157,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
 
     }
+    END_SU2_OMP_FOR
 
     /* Reduce the min/max/avg local CFL numbers. */
 
@@ -2157,6 +2168,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
         Avg_CFL_Local += myCFLSum;
       }
+      END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
 
       SU2_OMP_MASTER
@@ -2167,6 +2179,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
     }
 
@@ -2401,6 +2414,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
         LinSysRes(iPoint,iVar) += Flux * Solution_i[iVar];
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Loop boundary edges ---*/
 
@@ -2426,6 +2440,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           LinSysRes(iPoint,iVar) -= Flux * base_nodes->GetSolution(iPoint,iVar);
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -2508,6 +2523,7 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
       }
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the Laplacian across any periodic boundaries. ---*/
 
@@ -3049,7 +3065,9 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   }
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- It's necessary to communicate this information ---*/
 

@@ -228,6 +228,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -304,6 +305,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -502,6 +504,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   delete [] PrimVar_j;
@@ -520,6 +523,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
@@ -562,16 +566,19 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
       }
     }
   }
+  END_SU2_OMP_FOR
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   /*--- Compute the root mean square residual ---*/
   SU2_OMP_MASTER
   SetResidual_RMS(geometry, config);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
@@ -597,6 +604,7 @@ void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solve
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
+        END_SU2_OMP_FOR
         break;
 
       case SST: case SST_SUST:
@@ -616,6 +624,7 @@ void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solve
                       density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
         }
+        END_SU2_OMP_FOR
         break;
 
     }
@@ -642,6 +651,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
@@ -649,6 +659,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CompleteImplicitIteration(geometry, solver_container, config);
@@ -702,6 +713,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -803,6 +815,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       }
 
     }
+    END_SU2_OMP_FOR
 
   } else {
 
@@ -849,6 +862,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -896,6 +910,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           }
 
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -968,6 +983,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
+    END_SU2_OMP_FOR
 
   } // end dynamic grid
 
@@ -1050,6 +1066,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- MPI solution and compute the eddy viscosity ---*/
@@ -1077,6 +1094,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       }
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+    END_SU2_OMP_FOR
 
     solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
@@ -1093,7 +1111,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
 
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
 }

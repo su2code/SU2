@@ -245,6 +245,7 @@ public:
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);
     }
+    END_SU2_OMP_FOR
   }
 
   /*!

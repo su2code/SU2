@@ -177,6 +177,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Per thread reduction. ---*/
@@ -194,6 +195,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
         localMax(iVar) = max(localMax(iVar), field(iPoint, iVar));
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Per rank reduction. ---*/
 
@@ -203,6 +205,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin(iVar) = min(sharedMin(iVar), localMin(iVar));
       sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     /*--- Global reduction. ---*/
@@ -215,6 +218,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       localMax = sharedMax;
       SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Compute eps^2 (each thread has its own copy of it). ---*/

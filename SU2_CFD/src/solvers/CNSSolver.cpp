@@ -90,6 +90,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SU2_OMP_BARRIER
     SU2_OMP_MASTER
     nPrimVarGrad = 1+nDim;
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -116,6 +117,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (Output) {
     SU2_OMP_MASTER
     nPrimVarGrad = nPrimVarGrad_bak;
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -171,6 +173,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
     nonPhysicalPoints += !physical;
 
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 }
@@ -316,6 +319,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
       nodes->SetRoe_Dissipation_NTS(iPoint, delta, config->GetConst_DES());
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -520,6 +524,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
       }
     }
   }
+  END_SU2_OMP_FOR
 
   if (Jacobian_i)
     for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -717,6 +722,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       }
     }
   }
+  END_SU2_OMP_FOR
 
   if (Jacobian_i)
     for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -914,6 +920,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }
+    END_SU2_OMP_FOR
 
   }
 

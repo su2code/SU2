@@ -253,13 +253,16 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       }
 
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       MaxDistance = max(MaxDistance, maxDist);
       ErrorCounter += errorCount;
       nGlobalVertexTarget += totalCount;
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
   } // end nMarkerInt loop
 

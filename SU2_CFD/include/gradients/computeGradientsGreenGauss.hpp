@@ -127,6 +127,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
     AD::EndPreacc();
   }
+  END_SU2_OMP_FOR
 
   /*--- Add boundary fluxes. ---*/
 
@@ -160,6 +161,7 @@ void computeGradientsGreenGauss(CSolver* solver,
             gradient(iPoint, iVar, iDim) -= flux * area[iDim];
         }
       }
+      END_SU2_OMP_FOR
     }
   }
 

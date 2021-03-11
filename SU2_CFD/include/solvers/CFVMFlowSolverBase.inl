@@ -572,6 +572,7 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+  END_SU2_OMP_FOR
 }
 
 template <class V, ENUM_REGIME R>
@@ -586,6 +587,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
@@ -593,6 +595,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CompleteImplicitIteration(geometry, nullptr, config);
@@ -848,7 +851,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- Update the geometry for flows on deforming meshes ---*/
@@ -918,6 +922,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
       }
       solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+    END_SU2_OMP_FOR
 
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
@@ -941,7 +946,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
 
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
 }
@@ -987,6 +993,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
            but this is not necessary. */
         VerificationSolution->GetInitialCondition(coor, solDOF);
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -996,7 +1003,8 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
     PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
   }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 
 }
 
@@ -1281,6 +1289,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       }  // if viscous
     }    // if GetDomain
   }      // for iVertex
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) delete[] Grad_Reflected[iVar];
@@ -1462,6 +1471,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
           }
         }
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -1524,6 +1534,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
         }
       }
     }
+    END_SU2_OMP_FOR
 
   } else {
     /* The user must specify the custom BC's here. */
@@ -1558,6 +1569,7 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
     }
+    END_SU2_OMP_FOR
   }
 
   if (ReducerStrategy) {
@@ -1583,6 +1595,7 @@ void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
     }
   }
+  END_SU2_OMP_FOR
 }
 
 template <class V, ENUM_REGIME FlowRegime>
@@ -1646,6 +1659,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
+    END_SU2_OMP_FOR
 
   }
 
@@ -1684,6 +1698,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -1716,6 +1731,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
           for (iVar = 0; iVar < nVar; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -1758,6 +1774,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }

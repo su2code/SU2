@@ -324,6 +324,7 @@ class CFVMFlowSolverBase : public CSolver {
       Max_Delta_Time = 0.0;
       Global_Delta_UnstTimeND = 1e30;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Loop domain points. ---*/
@@ -377,6 +378,7 @@ class CFVMFlowSolverBase : public CSolver {
       }
 
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop boundary edges ---*/
 
@@ -419,6 +421,7 @@ class CFVMFlowSolverBase : public CSolver {
           Lambda = lambdaVisc(*nodes,iPoint) * Area2;
           nodes->AddMax_Lambda_Visc(iPoint, Lambda);
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -449,6 +452,7 @@ class CFVMFlowSolverBase : public CSolver {
           nodes->SetDelta_Time(iPoint,0.0);
         }
       }
+      END_SU2_OMP_FOR
       /*--- Min/max over threads. ---*/
       SU2_OMP_CRITICAL
       {
@@ -456,6 +460,7 @@ class CFVMFlowSolverBase : public CSolver {
         Max_Delta_Time = max(Max_Delta_Time, maxDt);
         Global_Delta_Time = Min_Delta_Time;
       }
+      END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
     }
 
@@ -470,6 +475,7 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       Max_Delta_Time = rbuf_time;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -490,6 +496,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         config->SetDelta_UnstTimeND(Global_Delta_Time);
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
 
       /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
@@ -499,6 +506,7 @@ class CFVMFlowSolverBase : public CSolver {
         nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
         nodes->SetDelta_Time(iPoint, Global_Delta_Time);
       }
+      END_SU2_OMP_FOR
 
     }
 
@@ -513,8 +521,10 @@ class CFVMFlowSolverBase : public CSolver {
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
         glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
       }
+      END_SU2_OMP_FOR
       SU2_OMP_CRITICAL
       Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+      END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
 
       SU2_OMP_MASTER
@@ -524,6 +534,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
     }
 
@@ -535,6 +546,7 @@ class CFVMFlowSolverBase : public CSolver {
         su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
         nodes->SetDelta_Time(iPoint, dt);
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -585,6 +597,7 @@ class CFVMFlowSolverBase : public CSolver {
         nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop boundary edges ---*/
 
@@ -619,6 +632,7 @@ class CFVMFlowSolverBase : public CSolver {
 
           nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -681,6 +695,7 @@ class CFVMFlowSolverBase : public CSolver {
         nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
       }
     }
+    END_SU2_OMP_FOR
 
     if (isPeriodic) {
       /*--- Correct the sensor values across any periodic boundaries. ---*/
@@ -695,6 +710,7 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
         nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+      END_SU2_OMP_FOR
     }
 
     /*--- MPI parallelization ---*/
@@ -735,6 +751,7 @@ class CFVMFlowSolverBase : public CSolver {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
@@ -797,12 +814,14 @@ class CFVMFlowSolverBase : public CSolver {
           }
         }
       }
+      END_SU2_OMP_FOR
       /*--- Reduce residual information over all threads in this rank. ---*/
       SU2_OMP_CRITICAL
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         AddRes_RMS(iVar, resRMS[iVar]);
         AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
       }
+      END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
     }
 
@@ -821,6 +840,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         ComputeVerificationError(geometry, config);
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
     }
 
@@ -860,6 +880,7 @@ class CFVMFlowSolverBase : public CSolver {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
@@ -889,6 +910,7 @@ class CFVMFlowSolverBase : public CSolver {
           Jacobian.SetVal2Diag(iPoint, 1.0);
         }
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -921,16 +943,19 @@ class CFVMFlowSolverBase : public CSolver {
         }
       }
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
       AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     /*--- Compute the root mean square residual ---*/
     SU2_OMP_MASTER
     SetResidual_RMS(geometry, config);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -952,6 +977,7 @@ class CFVMFlowSolverBase : public CSolver {
           nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         }
       }
+      END_SU2_OMP_FOR
     }
 
     for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
@@ -965,6 +991,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- For verification cases, compute the global error metrics. ---*/
     SU2_OMP_MASTER
     ComputeVerificationError(geometry, config);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -982,6 +1009,7 @@ class CFVMFlowSolverBase : public CSolver {
       StrainMag_Max = 0.0;
       Omega_Max = 0.0;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     su2double strainMax = 0.0, omegaMax = 0.0;
@@ -1045,12 +1073,14 @@ class CFVMFlowSolverBase : public CSolver {
 
       AD::EndPreacc();
     }
+    END_SU2_OMP_FOR
 
     if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
       SU2_OMP_CRITICAL {
         StrainMag_Max = max(StrainMag_Max, strainMax);
         Omega_Max = max(Omega_Max, omegaMax);
       }
+      END_SU2_OMP_CRITICAL
 
       SU2_OMP_BARRIER
       SU2_OMP_MASTER {
@@ -1060,6 +1090,7 @@ class CFVMFlowSolverBase : public CSolver {
         SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
         SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
     }
 

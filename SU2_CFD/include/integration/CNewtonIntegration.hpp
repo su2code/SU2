@@ -116,6 +116,7 @@ private:
   inline void SetSolutionResult(CSysVector<T>& x) const {
     CNEWTON_PARFOR
     for (auto i = 0ul; i < x.GetLocSize(); ++i) x[i] = LinSysSol[i];
+    END_CNEWTON_PARFOR
   }
 
   /*--- Preconditioner objects for each active solver. ---*/
@@ -129,11 +130,13 @@ private:
                                            unsigned long iters, Scalar& eps) const {
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
+    END_CNEWTON_PARFOR
 
     iters = Preconditioner_impl(precondIn, precondOut, iters, eps);
 
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
+    END_CNEWTON_PARFOR
     SU2_OMP_BARRIER
 
     return iters;

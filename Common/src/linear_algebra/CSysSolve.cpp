@@ -132,6 +132,7 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
     SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Begin main Gram-Schmidt loop ---*/
@@ -211,6 +212,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   if (m < 1) {
     SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet, only one thread can
@@ -230,6 +232,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       cg_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -351,11 +354,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   if (m < 1) {
     SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   if (m > 5000) {
     SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES subspace is too large.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet ---*/
@@ -368,6 +373,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -513,6 +519,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   if (m < 1) {
     SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet ---*/
@@ -533,6 +540,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       bcg_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -677,6 +685,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   if (m < 1) {
     SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate vectors for residual (r), solution increment (z), and matrix-vector
@@ -695,6 +704,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
       smooth_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -911,6 +921,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     Residual = residual;
     Iterations = IterLinSol;
   }
+  END_SU2_OMP_MASTER
 
   HandleTemporariesOut(LinSysSol);
 
@@ -942,6 +953,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       AD::FuncHelper->addUserData(config);
       AD::FuncHelper->addUserData(this);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
@@ -1073,6 +1085,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   SU2_OMP_MASTER
   Iterations = IterLinSol;
+  END_SU2_OMP_MASTER
 
   return IterLinSol;
 

@@ -157,6 +157,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   SU2_OMP_PARALLEL {
     SetMinMaxVolume(geometry, config, false);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
@@ -187,6 +188,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     MaxVolume = -1E22; MinVolume = 1E22;
     ElemCounter = 0;
   }
+  END_SU2_OMP_MASTER
 
   /*--- Local min/max, final reduction outside loop. ---*/
   su2double maxVol = -1E22, minVol = 1E22;
@@ -238,12 +240,14 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     /*--- Count distorted elements. ---*/
     if (ElemVolume <= 0.0) elCount++;
   }
+  END_SU2_OMP_FOR
   SU2_OMP_CRITICAL
   {
     MaxVolume = max(MaxVolume, maxVol);
     MinVolume = min(MinVolume, minVol);
     ElemCounter += elCount;
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   SU2_OMP_MASTER
@@ -253,6 +257,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- Volume from 0 to 1 ---*/
@@ -268,6 +273,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       element[iElem].SetRef_Volume(ElemVolume);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Store the maximum and minimum volume. ---*/
   SU2_OMP_MASTER {
@@ -283,7 +289,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   AD::EndPassive(wasActive);
 }
@@ -346,6 +354,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
       nodes->SetWallDistance(iPoint, MaxDistance);
     }
+    END_SU2_OMP_FOR
   }
   else {
     su2double MaxDistance_Local = -1E22, MinDistance_Local = 1E22;
@@ -368,11 +377,13 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       if (dist > EPS)  MinDistance_Local = min(MinDistance_Local, dist);
 
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       MaxDistance = max(MaxDistance, MaxDistance_Local);
       MinDistance = min(MinDistance, MinDistance_Local);
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     SU2_OMP_MASTER
@@ -382,6 +393,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -391,6 +403,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     su2double nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
     nodes->SetWallDistance(iPoint,nodeDist);
   }
+  END_SU2_OMP_FOR
 
   /*--- Compute the element distances ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -411,8 +424,10 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     element[iElem].SetWallDistance(ElemDist);
   }
+  END_SU2_OMP_FOR
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
@@ -466,6 +481,8 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
     break;
   }
   }
+  END_SU2_OMP_PARALLEL
+
   stiffness_set = true;
 
 }
@@ -496,6 +513,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
@@ -521,7 +539,8 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Check for failed deformation (negative volumes). ---*/
   SetMinMaxVolume(geometry[MESH_0], config, true);
 
-  } // end parallel
+  }
+  END_SU2_OMP_PARALLEL
 
 }
 
@@ -543,6 +562,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       geometry->nodes->SetCoord(iPoint, iDim, val_coord);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Communicate the updated displacements and mesh coordinates. ---*/
   geometry->InitiateComms(geometry, config, COORDINATES);
@@ -600,6 +620,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
   geometry->InitiateComms(geometry, config, GRID_VELOCITY);

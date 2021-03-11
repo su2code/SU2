@@ -188,10 +188,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
     SU2_OMP_MASTER
     Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
+    END_CSYSVEC_PARFOR
   }
 
   /*!
@@ -252,6 +254,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& operator=(const CSysVector& other) {
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
+    END_CSYSVEC_PARFOR
     return *this;
   }
 
@@ -263,12 +266,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& operator OP(ScalarType val) {                               \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
+    END_CSYSVEC_PARFOR                                                    \
     return *this;                                                         \
   }                                                                       \
   template <class T>                                                      \
   CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
+    END_CSYSVEC_PARFOR                                                    \
     return *this;                                                         \
   }
   MAKE_COMPOUND(=)
@@ -295,6 +300,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     SU2_OMP_BARRIER
     SU2_OMP_MASTER
     dotRes = 0.0;
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Local dot product for each thread. ---*/
@@ -304,6 +310,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     for (auto i = 0ul; i < nElmDomain; ++i) {
       sum += vec_val[i] * expr.derived()[i];
     }
+    END_CSYSVEC_PARFOR
 
     /*--- Update shared variable with "our" partial sum. ---*/
     atomicAdd(sum, dotRes);
@@ -318,6 +325,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
         const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
         SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
       }
+      END_SU2_OMP_MASTER
     }
 #endif
     /*--- Make view of result consistent across threads. ---*/

@@ -97,11 +97,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if(matrix != nullptr) {
     SU2_OMP_MASTER
     SU2_MPI::Error("CSysMatrix can only be initialized once.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   if(nvar > MAXNVAR) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nVar larger than expected, increase MAXNVAR.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   /*--- Application of this matrix, FVM or FEM. ---*/
@@ -296,6 +298,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry,
           for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             bufDSend[buf_offset+iVar] = x(iPoint,iVar);
         }
+        END_SU2_OMP_FOR
         break;
       }
 
@@ -333,6 +336,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry *geometry,
           for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             bufDSend[buf_offset+iVar] = x(iPoint,iVar);
         }
+        END_SU2_OMP_FOR
         break;
       }
 
@@ -375,6 +379,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
 
     SU2_OMP_MASTER
     SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
@@ -414,6 +419,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
           for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             x(iPoint,iVar) = CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
         }
+        END_SU2_OMP_FOR
         break;
       }
 
@@ -453,6 +459,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
           for (auto iVar = 0ul; iVar < x.GetNVar(); iVar++)
             x(iPoint,iVar) += CSysMatrix<T>::template ActiveAssign<T>(bufDRecv[buf_offset+iVar]);
         }
+        END_SU2_OMP_FOR
         break;
       }
 
@@ -469,6 +476,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry *geometry,
 #ifdef HAVE_MPI
   SU2_OMP_MASTER
   SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+  END_SU2_OMP_MASTER
 #endif
   SU2_OMP_BARRIER
 
@@ -490,6 +498,7 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
     for (auto index = 0ul; index < nVar*nEqn; ++index)
       matrix[dia_ptr[iPoint]*nVar*nEqn + index] = 0.0;
+  END_SU2_OMP_FOR
 }
 
 template<class ScalarType>
@@ -603,10 +612,12 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
   if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
   if (nPoint != prod.GetNBlk()) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 #endif
 
@@ -620,6 +631,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
     RowProduct(vec, row_i, &prod[row_i*nVar]);
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization. ---*/
 
@@ -639,10 +651,12 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
   if ((nVar != vec.GetNVar()) || (nEqn != prod.GetNVar())) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
   if (nPoint != vec.GetNBlk()) {
     SU2_OMP_MASTER
     SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 #endif
   SU2_OMP_BARRIER
@@ -660,8 +674,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<Scal
       MatrixVectorProductTransp(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
     }
   }
-
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- MPI Parallelization ---*/
@@ -678,6 +692,7 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
   SU2_OMP_FOR_(schedule(dynamic,omp_heavy_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
+  END_SU2_OMP_FOR
 
 }
 
@@ -690,6 +705,7 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
   CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
@@ -707,6 +723,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
     SU2_OMP_FOR_STAT(omp_light_size)
     for (auto iVar = 0ul; iVar < nnz*nVar*nVar; ++iVar)
       ILU_matrix[iVar] = matrix[iVar];
+    END_SU2_OMP_FOR
   }
   else {
     /*--- ILUn clear the ILU matrix first, for ILU0^T
@@ -715,6 +732,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
       SU2_OMP_FOR_STAT(omp_light_size)
       for (auto iVar = 0ul; iVar < nnz_ilu*nVar*nVar; iVar++)
         ILU_matrix[iVar] = 0.0;
+      END_SU2_OMP_FOR
     }
 
     /*--- Transposed or ILUn, traverse matrix to access its blocks
@@ -730,6 +748,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
         }
       }
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Transform system in Upper Matrix ---*/
@@ -804,6 +823,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
     InverseDiagonalBlock_ILUMatrix(end-1, &invM[(end-1)*nVar*nVar]);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -857,6 +877,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       MatrixVectorProduct(&invM[iPoint*nVar*nVar], aux_vec, &prod[iPoint*nVar]);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
 
@@ -895,6 +916,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
       Gauss_Elimination(iPoint, &prod[idx]);              // Solve D.x* = y
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
 
@@ -924,6 +946,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
       Gauss_Elimination(iPoint, &prod[idx]);            // Solve D.x* = y
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
 
@@ -1109,6 +1132,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++)
     if (!LineletBool[iPoint])
       MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
+  END_SU2_OMP_FOR
 
   /*--- Solve each linelet using the Thomas algorithm ---*/
 
@@ -1196,6 +1220,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     }
 
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
 
@@ -1214,6 +1239,7 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
     RowProduct(sol, iPoint, aux_vec);
     VectorSubtraction(aux_vec, &f[iPoint*nVar], &res[iPoint*nVar]);
   }
+  END_SU2_OMP_FOR
 }
 
 template<class ScalarType>
@@ -1315,6 +1341,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
       if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
     }
   }
+  END_SU2_OMP_FOR
 }
 
 template<class ScalarType>
@@ -1328,11 +1355,13 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
   if (!ok) {
     SU2_OMP_MASTER
     SU2_MPI::Error("Matrices do not have compatible sparsity.", CURRENT_FUNCTION);
+    END_SU2_OMP_MASTER
   }
 
   SU2_OMP_FOR_STAT(omp_light_size)
   for (auto i = 0ul; i < nnz*nVar*nEqn; ++i)
     matrix[i] += alpha*B.matrix[i];
+  END_SU2_OMP_FOR
 
 }
 
@@ -1346,10 +1375,12 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, cons
     pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
     pastix_wrapper.Factorize(geometry, config, kind_fact, transposed);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 #else
   SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
+  END_SU2_OMP_MASTER
 #endif
 }
 
@@ -1360,6 +1391,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   SU2_OMP_BARRIER
   SU2_OMP_MASTER
   pastix_wrapper.Solve(vec,prod);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
@@ -1367,6 +1399,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #else
   SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
+  END_SU2_OMP_MASTER
 #endif
 }
 

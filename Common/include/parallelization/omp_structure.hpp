@@ -232,6 +232,7 @@ void parallelCopy(size_t size, const T* src, U* dst)
 {
   SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = src[i];
+  END_SU2_OMP_FOR
 }
 
 /*!
@@ -245,6 +246,7 @@ void parallelSet(size_t size, T val, U* dst)
 {
   SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = val;
+  END_SU2_OMP_FOR
 }
 
 /*!
@@ -258,6 +260,7 @@ inline void atomicAdd(T rhs, T& lhs)
 {
   SU2_OMP_CRITICAL
   lhs += rhs;
+  END_SU2_OMP_CRITICAL
 }
 template<class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
 inline void atomicAdd(T rhs, T& lhs)
