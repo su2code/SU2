@@ -141,8 +141,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (needTranspPtr)
     col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
-  if (type == ConnectivityType::FiniteVolume)
+  if (type == ConnectivityType::FiniteVolume) {
     edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
+    edge_ptr.nEdge = geometry->GetnEdge();
+  }
 
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
@@ -1311,6 +1313,72 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
       auto block_ji = &matrix[col_ptr[k]*nVar*nEqn];
       if (block_ji != block_ii) MatrixSubtraction(block_ii, block_ji, block_ii);
     }
+  }
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::TransposeInPlace() {
+
+  assert(nVar==nEqn && "Cannot transpose with nVar != nEqn.");
+
+  auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {
+    assert(a!=b);
+    /*--- a=b', b=a' ---*/
+    for (auto i=0ul; i<n; ++i) {
+      for (auto j=0ul; j<i; ++j) {
+        std::swap(a[i*n+j], b[j*n+i]);
+        std::swap(a[j*n+i], b[i*n+j]);
+      }
+      std::swap(a[i*n+i], b[i*n+i]);
+    }
+  };
+
+  /*--- Swap ij with ji and transpose them. ---*/
+
+  if (edge_ptr.nEdge) {
+    /*--- The FV way. ---*/
+    SU2_OMP_FOR_DYN(omp_light_size)
+    for (auto iEdge = 0ul; iEdge < edge_ptr.nEdge; ++iEdge) {
+      auto bij = &matrix[edge_ptr(iEdge,0)*nVar*nVar];
+      auto bji = &matrix[edge_ptr(iEdge,1)*nVar*nVar];
+
+      swapAndTransp(nVar, bij, bji);
+    }
+  }
+  else if (col_ptr) {
+    /*--- If the column pointer was built. ---*/
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      for (auto k = row_ptr[iPoint]; k < dia_ptr[iPoint]; ++k) {
+        auto bij = &matrix[k*nVar*nVar];
+        auto bji = &matrix[col_ptr[k]*nVar*nVar];
+
+        swapAndTransp(nVar, bij, bji);
+      }
+    }
+  }
+  else {
+    /*--- Slow fallback, needs to search for ji. ---*/
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      for (auto k = dia_ptr[iPoint]+1ul; k < row_ptr[iPoint+1]; ++k) {
+        const auto jPoint = col_ind[k];
+        auto bij = &matrix[k*nVar*nVar];
+        auto bji = GetBlock(jPoint,iPoint);
+
+        swapAndTransp(nVar, bij, bji);
+      }
+    }
+  }
+
+  /*--- Transpose the diagonal blocks. ---*/
+
+  SU2_OMP_FOR_STAT(omp_heavy_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    auto bii = &matrix[dia_ptr[iPoint]*nVar*nVar];
+    for (auto i=0ul; i<nVar; ++i)
+      for (auto j=0ul; j<i; ++j)
+        std::swap(bii[i*nVar+j], bii[j*nVar+i]);
   }
 }
 

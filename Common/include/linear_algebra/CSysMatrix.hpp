@@ -177,6 +177,7 @@ private:
    */
   struct {
     const unsigned long *ptr = nullptr;
+    unsigned long nEdge = 0;
 
     inline unsigned long operator() (unsigned long edge, unsigned long node) const {
       return ptr[2*edge+node];
@@ -804,6 +805,11 @@ public:
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
    */
   void SetDiagonalAsColumnSum();
+
+  /*!
+   * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
+   */
+  void TransposeInPlace();
 
   /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).

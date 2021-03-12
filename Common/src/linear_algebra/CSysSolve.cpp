@@ -922,7 +922,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
   if(TapeActive) {
 
-    bool RequiresTranspose = !mesh_deform; // jacobian is symmetric
+    /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
+    const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_DOT);
+
     if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
     else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
 
@@ -944,15 +946,19 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
 
+    if (RequiresTranspose) Jacobian.TransposeInPlace();
+
     switch(KindPrecond) {
       case ILU:
-        Jacobian.BuildILUPreconditioner(RequiresTranspose);
+        Jacobian.BuildILUPreconditioner();
         break;
       case JACOBI:
-        Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
+        Jacobian.BuildJacobiPreconditioner();
+        break;
+      case LU_SGS:
         break;
       case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond, RequiresTranspose);
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond);
         break;
       default:
         SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -972,7 +978,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
   ScalarType SolverTol, Norm0 = 0.0;
-  bool ScreenOutput, RequiresTranspose = !mesh_deform; // jacobian is symmetric
+  bool ScreenOutput;
 
   /*--- Normal mode ---*/
 
@@ -998,29 +1004,35 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     ScreenOutput = config->GetDeform_Output();
   }
 
-  /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
-  if (config->GetKind_SU2() == SU2_DOT) RequiresTranspose = true;
-
   /*--- Set up preconditioner and matrix-vector product ---*/
 
   CPreconditioner<ScalarType>* precond  = nullptr;
 
   switch(KindPrecond) {
     case ILU:
-      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config, RequiresTranspose);
+      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config, false);
       break;
     case JACOBI:
-      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, RequiresTranspose);
+      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, false);
+      break;
+    case LU_SGS:
+      precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
     case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, RequiresTranspose);
+      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, false);
+      break;
+    default:
+      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
       break;
   }
 
   /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
-  if (config->GetKind_SU2() == SU2_DOT) precond->Build();
+  if (config->GetKind_SU2() == SU2_DOT) {
+    Jacobian.TransposeInPlace();
+    precond->Build();
+  }
 
-  auto mat_vec = CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
+  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
   /*--- Solve the system ---*/
 
@@ -1057,7 +1069,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
       break;
     case PASTIX_LDLT : case PASTIX_LU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
       Residual = 1e-20;
