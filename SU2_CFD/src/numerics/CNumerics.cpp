@@ -588,7 +588,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     P[3][2] = alpha*(h+(*c)*theta);
     P[3][3] = alpha*(h-(*c)*theta);
 
-    // if (tkeNeeded) P[3][4] = 1.0;
+    if (tkeNeeded) P[3][4] = 1.0;
   }
   else {
     P[0][0] = n[0];
@@ -742,18 +742,18 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     PInv[3][2] = -Gamma_Minus_One*v[1]-(*c)*n[1];
     PInv[3][3] = Gamma_Minus_One;
 
-    // if (tkeNeeded) {
-    //   PInv[0][4] = beta;
-    //   PInv[1][4] = 0.0;
-    //   PInv[2][4] = -Gamma_Minus_One;
-    //   PInv[3][4] = -Gamma_Minus_One;
+    if (tkeNeeded) {
+      // PInv[0][4] = beta;
+      // PInv[1][4] = 0.0;
+      // PInv[2][4] = -Gamma_Minus_One;
+      // PInv[3][4] = -Gamma_Minus_One;
 
-    //   PInv[4][0] = -alpha*phi2*(*k);
-    //   PInv[4][1] = beta*(*k)*v[0];
-    //   PInv[4][2] = beta*(*k)*v[1];
-    //   PInv[4][3] = -beta*(*k);
-    //   PInv[4][4] = beta*(*k)+1.0;
-    // }
+      PInv[4][0] = -alpha*phi2*(*k);
+      PInv[4][1] = beta*(*k)*v[0];
+      PInv[4][2] = beta*(*k)*v[1];
+      PInv[4][3] = -beta*(*k);
+      PInv[4][4] = beta*(*k)+1.0;
+    }
   }
   else {
     PInv[0][0] = (1.0-phi2*alpha)*n[0]-(v[1]*n[2]-v[2]*n[1])/(*r);
@@ -786,20 +786,20 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     PInv[4][3] = -Gamma_Minus_One*v[2]-(*c)*n[2];
     PInv[4][4] = Gamma_Minus_One;
 
-    // if (tkeNeeded) {
-    //   PInv[0][5] = beta*n[0];
-    //   PInv[1][5] = beta*n[1];
-    //   PInv[2][5] = beta*n[2];
-    //   PInv[3][5] = -Gamma_Minus_One;
-    //   PInv[4][5] = -Gamma_Minus_One;
+    if (tkeNeeded) {
+      // PInv[0][5] = beta*n[0];
+      // PInv[1][5] = beta*n[1];
+      // PInv[2][5] = beta*n[2];
+      // PInv[3][5] = -Gamma_Minus_One;
+      // PInv[4][5] = -Gamma_Minus_One;
 
-    //   PInv[5][0] = -alpha*phi2*(*k);
-    //   PInv[5][1] = beta*(*k)*v[0];
-    //   PInv[5][2] = beta*(*k)*v[1];
-    //   PInv[5][3] = beta*(*k)*v[2];
-    //   PInv[5][4] = -beta*(*k);
-    //   PInv[5][5] = beta*(*k)+1.0;
-    // }
+      PInv[5][0] = -alpha*phi2*(*k);
+      PInv[5][1] = beta*(*k)*v[0];
+      PInv[5][2] = beta*(*k)*v[1];
+      PInv[5][3] = beta*(*k)*v[2];
+      PInv[5][4] = -beta*(*k);
+      PInv[5][5] = beta*(*k)+1.0;
+    }
   }
 }
 
