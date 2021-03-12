@@ -151,7 +151,12 @@ public:
   void UpdateDesignVariable();
 
   /*!
-   * \brief Compute the inverse preconditioner matrix (BCheck^(-1)) for the multiplier update.
+   * \brief Compute the combined function value and update multipliers.
+   */
+  su2double ComputeCombFunction();
+
+  /*!
+   * \brief Compute the preconditioner matrix B for the multiplier update.
    */
   void ComputePreconditioner();
 
@@ -163,7 +168,7 @@ public:
   /*!
    * \brief Write information about the OneShot optimization process to the history file.
    */
-  void WriteOneShotHistory(su2double& funcValue);
+  void WriteOneShotHistory(su2double& combFuncValue);
 
   /*!
    * \brief Output the current design.
