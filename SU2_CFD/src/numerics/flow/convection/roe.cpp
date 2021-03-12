@@ -238,10 +238,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   Conservatives_i[nDim+1] = Density_i*Energy_i;
   Conservatives_j[nDim+1] = Density_j*Energy_j;
-  // if (tkeNeeded) {
-  //   Conservatives_i[nDim+2] = Density_i*turb_ke_i;
-  //   Conservatives_j[nDim+2] = Density_j*turb_ke_j;
-  // }
+  if (tkeNeeded) {
+    Conservatives_i[nDim+2] = Density_i*turb_ke_i;
+    Conservatives_j[nDim+2] = Density_j*turb_ke_j;
+  }
 
   /*--- Compute left and right fluxes ---*/
 
