@@ -789,7 +789,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SurfaceCoeff.CL[iMarker_Monitoring]         += SurfaceViscCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring]         += SurfaceViscCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring]        += SurfaceViscCoeff.CSF[iMarker_Monitoring];

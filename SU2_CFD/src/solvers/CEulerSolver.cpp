@@ -4536,7 +4536,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   const su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
   const su2double RefArea = config->GetRefArea();
   const su2double RefLength = config->GetRefLength();
-  const u2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
@@ -4587,7 +4587,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
     if (Monitoring == YES) {
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag)
