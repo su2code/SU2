@@ -406,7 +406,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   const su2double RefTemp = Temperature_Inf;
   const su2double RefDensity = Density_Inf;
-  const su2double RefPressure = Pressure_Inf;
   su2double RefVel2 = 0.0;
   if (dynamic_grid) {
     const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
@@ -414,7 +413,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
-    RefVel2 = CGeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
   }
 
   const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);

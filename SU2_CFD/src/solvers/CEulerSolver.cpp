@@ -4536,7 +4536,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   const su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
   const su2double RefArea = config->GetRefArea();
   const su2double RefLength = config->GetRefLength();
-  sconst u2double Gas_Constant = config->GetGas_ConstantND();
+  const u2double Gas_Constant = config->GetGas_ConstantND();
   const su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
@@ -4559,7 +4559,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
-    RefVel2 = CGeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
   }
 
   const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
