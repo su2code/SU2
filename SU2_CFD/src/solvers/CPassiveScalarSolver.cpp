@@ -288,48 +288,6 @@ void CPassiveScalarSolver::Postprocessing(CGeometry *geometry, CSolver **solver_
 
 }
 
-
-
-unsigned long CPassiveScalarSolver::SetPrimitive_Variables(CSolver **solver_container,
-                                                           CConfig *config,
-                                                           bool Output) {
-  
-  unsigned long iPoint, ErrorCounter = 0;
-  su2double Density, Temperature, lam_visc = 0.0, eddy_visc = 0.0, Cp, diff;
-  unsigned short iVar, turb_model = config->GetKind_Turb_Model();
-  CFluidModel *FluidModel= solver_container[FLOW_SOL]->GetFluidModel();
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    /*--- Retrieve the density, temperature, Cp, and laminar viscosity. ---*/
-
-    Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
-    Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
-    lam_visc    = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    
-    /*--- Retrieve the value of the kinetic energy (if needed) ---*/
-    
-    if (turb_model != NONE) {
-      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
-    }
-
-    /*--- Compute and store the mass diffusivity. ---*/
-    FluidModel->SetDiffusivityState(Temperature, Density, lam_visc, eddy_visc, Cp);
-
-    // nijso:here, we again set the diffusivity in the entire domain!!! why?
-    for (int i_scalar = 0; i_scalar < nVar; i_scalar++)
-      nodes->SetDiffusivity(iPoint, FluidModel->GetMassDiffusivity(), i_scalar);
-    
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
-  }
-
-  return ErrorCounter;
-  
-}
-
 void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
                                                CSolver ***solver_container,
                                                CConfig *config,
@@ -617,13 +575,13 @@ void CPassiveScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solve
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
 
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+ // SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+ // for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+ //   const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+//    if (geometry->nodes->GetDomain(iPoint)) {
 
       //if (rough_wall) {
 
@@ -655,9 +613,9 @@ void CPassiveScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solve
 //          auto total_index = iPoint*nVar+iVar;
 //          Jacobian.DeleteValsRowi(total_index);
 //        }
-      }
-    }
-  }
+//      }
+//    }
+//  }
 }
 
 void CPassiveScalarSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
