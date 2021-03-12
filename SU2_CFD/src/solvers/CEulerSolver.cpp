@@ -3465,8 +3465,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   su2double RoeSqVel = 0.0;
   for (auto iDim = 0u; iDim < nDim; iDim++) RoeSqVel += pow((R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One,2.0);
 
-  const su2double SqVel_i = GeometryToolbox::SquaredNorm(nDim,primvar_i);
-  const su2double SqVel_j = GeometryToolbox::SquaredNorm(nDim,primvar_j);
+  const su2double SqVel_i = GeometryToolbox::SquaredNorm(nDim,primvar_i+1);
+  const su2double SqVel_j = GeometryToolbox::SquaredNorm(nDim,primvar_j+1);
   
   const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
   const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;

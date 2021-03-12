@@ -730,11 +730,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
   }
   
-  su2double v2_i = 0., v2_j = 0.;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    v2_i += V_i[iDim+1]*V_i[iDim+1];
-    v2_j += V_j[iDim+1]*V_j[iDim+1];
-  }
+  const su2double v2_i = GeometryToolbox::SquaredNorm(nDim,V_i+1);
+  const su2double v2_j = GeometryToolbox::SquaredNorm(nDim,V_j+1);
 
   const su2double T_i = V_i[0], r_i = V_i[nDim+2];
   const su2double T_j = V_j[0], r_j = V_j[nDim+2];
