@@ -3676,7 +3676,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
     }
     // dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-    dVk_dUk[nDim+1][0] = Gamma_Minus_One*(0.5*sq_vel_k-turbNodes->GetPrimitive(kPoint,0))
+    dVk_dUk[nDim+1][0] = Gamma_Minus_One*(0.5*sq_vel_k-turbNodes->GetPrimitive(kPoint,0));
     dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
     // if (tkeNeeded)
     //   dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
