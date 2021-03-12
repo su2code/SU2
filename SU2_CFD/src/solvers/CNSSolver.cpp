@@ -502,7 +502,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         if (QCR) {
           su2double den_aux, c_cr1=0.3, O_ik, O_jk;
-          unsigned short kDim;
 
           /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
