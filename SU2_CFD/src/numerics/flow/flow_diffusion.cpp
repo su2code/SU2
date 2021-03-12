@@ -400,8 +400,8 @@ void CAvgGrad_Base::SetTauJacobian() {
     }
 
     // Jacobian w.r.t. density
-    tau_jacobian_i[iDim][0] = -WF_Factor*ONE3*turb_ke_i*Normal[iDim];
-    tau_jacobian_j[iDim][0] = -WF_Factor*ONE3*turb_ke_j*Normal[iDim];
+    tau_jacobian_i[iDim][0] = 0;
+    tau_jacobian_j[iDim][0] = 0;
     for (auto jDim = 0; jDim < nDim; jDim++) {
       tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*V_i[jDim+1];
       tau_jacobian_j[iDim][0] -= tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
