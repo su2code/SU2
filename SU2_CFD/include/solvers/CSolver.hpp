@@ -1853,6 +1853,11 @@ public:
   inline virtual void Heat_Fluxes(CGeometry *geometry,
                                   CSolver **solver_container,
                                   CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPrimitive_Variables(CSolver **solver_container) { }
   
   /*!
   * \brief A virtual member.

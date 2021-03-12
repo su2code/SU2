@@ -3633,10 +3633,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double Psi[MAXNGRA] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
-    Psi[ind] =  (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+    Psi[ind] = (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
   }
   if (tkeNeeded) {
-    Psi[nVar] =  (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
+    Psi[nVar] = (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/

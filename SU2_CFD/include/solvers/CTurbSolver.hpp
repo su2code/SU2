@@ -90,8 +90,6 @@ protected:
   
 public:
   
-  virtual void SetPrimitive_Variables(CSolver **solver_container) { }
-
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
    * \param[in] config - Definition of the particular problem.
