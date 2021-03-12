@@ -4796,7 +4796,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   if (config->GetComm_Level() == COMM_FULL) {
 
-    int nMarkerMon = config->GetnMarker_Monitoring();
+    const auto nMarkerMon = config->GetnMarker_Monitoring();
 
     /*--- Use the same buffer for all reductions. We could avoid the copy back into
      *    the original variable by swaping pointers, but it is safer this way... ---*/

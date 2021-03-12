@@ -488,7 +488,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
         const su2double wf = nodes->GetTauWallFactor(iPoint);
 
-        su2double div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+        su2double div_vel = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
 
         su2double Tau[MAXNDIM][MAXNDIM] = {0.0};
         for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -728,7 +728,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   if (config->GetComm_Level() == COMM_FULL) {
 
-    int nMarkerMon = config->GetnMarker_Monitoring();
+    const auto nMarkerMon = config->GetnMarker_Monitoring();
 
     /*--- Use the same buffer for all reductions. We could avoid the copy back into
      *    the original variable by swaping pointers, but it is safer this way... ---*/
