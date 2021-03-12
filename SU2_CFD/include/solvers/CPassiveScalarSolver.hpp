@@ -2,7 +2,7 @@
  * \file CPassiveScalarSolver.hpp
  * \brief main declarations for the passive scalar solver.
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,7 +44,7 @@ public:
    * \brief Constructor of the class.
    */
   CPassiveScalarSolver(void);
-  
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -81,20 +81,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Postprocessing(CGeometry *geometry,
                       CSolver **solver_container,
                       CConfig *config,
                       unsigned short iMesh);
 
-  /*!
-   * \brief Compute the primitive variables (diffusivities)
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
   
   /*!
    * \brief Set the initial condition for the scalar transport problem.
@@ -128,6 +121,22 @@ public:
                        CNumerics **numerics_container, 
                        CConfig *config, 
                        unsigned short iMesh) override;
+
+  /*!
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker);
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -178,4 +187,3 @@ public:
                  unsigned short val_marker);
 
 };
-

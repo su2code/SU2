@@ -34,6 +34,7 @@
  * \brief Main class for defining the variables of the passive scalar model.
  * \author T. Economon
  */
+
 class CPassiveScalarVariable final : public CScalarVariable {
 
 private:
@@ -48,12 +49,8 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CPassiveScalarVariable(su2double     *val_scalar_inf,
-                         unsigned long npoint,
-                         unsigned long ndim,
-                         unsigned long nvar,
-                         CConfig       *config);
-  
+  CPassiveScalarVariable(su2double *val_scalar_inf,unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+
   /*!
    * \brief Destructor of the class.
    */

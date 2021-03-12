@@ -2,7 +2,7 @@
  * \file CScalarSolver.hpp
  * \brief Main subroutines for the  transported scalar model.
  * \author D. Mayer, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,9 +49,7 @@ protected:
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
-
-  su2double 
-  //*FlowPrimVar_i, *FlowPrimVar_j,
+  su2double
   *lowerlimit,  /*!< \brief contains lower limits for turbulence variables. */
   *upperlimit;  /*!< \brief contains upper limits for turbulence variables. */
 
@@ -207,7 +205,7 @@ public:
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container,
                         CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker) override;
-    
+
   /*!
    * \brief Impose the Far Field boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.

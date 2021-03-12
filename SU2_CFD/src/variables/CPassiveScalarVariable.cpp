@@ -2,7 +2,7 @@
  * \file CPassiveScalarVariable.cpp
  * \brief Definition of the variable fields for the passive scalar class.
  * \author D. Mayer, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,17 +25,19 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "../../include/variables/CPassiveScalarVariable.hpp"
 
 CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
                                                CConfig *config) : CScalarVariable(npoint, ndim, nvar, config) {
 
-  for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint) {
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+  {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Solution(iPoint,iVar) = val_scalar_inf[iVar];
     }
   }
-  
+
   Solution_Old = Solution;
   
   /*--- Allocate and initialize solution for the dual time strategy ---*/
