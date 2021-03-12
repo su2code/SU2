@@ -1,5 +1,5 @@
 /*!
- * \file turb_sources.cpp
+ * \file scalar_sources.cpp
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
@@ -39,8 +39,9 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
 
   /*--- "Allocate" the Jacobian using the static buffer. ---*/
-  Jacobian_i[0] = Jacobian_Buffer;
-  Jacobian_i[1] = Jacobian_Buffer+2;
+  for (auto iVar = 0; iVar < val_nVar; iVar++)
+    Jacobian_i[0] = Jacobian_Buffer;
+  //Jacobian_i[1] = Jacobian_Buffer+2;
 
 }
 
@@ -50,7 +51,8 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
   //AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
-  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+  AD::SetPreaccIn(Volume); 
+  //AD::SetPreaccIn(dist_i);
   //AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   //AD::SetPreaccIn(Vorticity_i, 3);
@@ -62,24 +64,26 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
 
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];
+    // we do not know if this exists
+    //Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);
 
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];
+    // we do not know if this exists
+    //Eddy_Viscosity_i = V_i[nDim+6];
   }
 
-  Residual[0] = 0.0;       Residual[1] = 0.0;
-  Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
+  for (auto iVar = 0; iVar < nVar; iVar++){
+    Residual[iVar] = 0.0;
+    for (auto jVar = 0; jVar < nVar; jVar++){
+      Jacobian_i[iVar][jVar] = 0.0;  
+    }
+  }
 
    /*--- Add the production terms to the residuals. ---*/
-
-   //Residual[0] += pk*Volume;
-   //Residual[1] += pw*Volume;
 
    /*--- Contribution due to 2D axisymmetric formulation ---*/
    if (axisymmetric) ResidualAxisymmetric();

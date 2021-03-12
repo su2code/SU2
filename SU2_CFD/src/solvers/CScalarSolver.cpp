@@ -2,7 +2,7 @@
  * \file CScalarSolver.cpp
  * \brief Main subroutines for the  transported scalar model.
  * \author D. Mayer, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,24 +31,18 @@
 
 
 CScalarSolver::CScalarSolver(void) : CSolver() {
-  
-  //FlowPrimVar_i    = NULL;
-  //FlowPrimVar_j    = NULL;
+
   lowerlimit       = NULL;
   upperlimit       = NULL;
-  //nVertex          = NULL;
-  //nMarker          = 0;
-  Scalar_Inf       = NULL;  
+  //Scalar_Inf       = NULL;  
 }
 
 CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  //FlowPrimVar_i    = NULL;
-  //FlowPrimVar_j    = NULL;
-  lowerlimit       = NULL;
-  upperlimit       = NULL;
-
-  Scalar_Inf       = NULL;
+ 
+  lowerlimit       = nullptr;
+  upperlimit       = nullptr;
+  //Scalar_Inf       = NULL;
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
@@ -90,12 +84,10 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CScalarSolver::~CScalarSolver(void) {
 
-  //if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
-  //if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
-  if (lowerlimit != NULL)    delete [] lowerlimit;
-  if (upperlimit != NULL)    delete [] upperlimit;
-  //if (nVertex != NULL)       delete [] nVertex;
-  if (Scalar_Inf != NULL)    delete [] Scalar_Inf;
+  if (lowerlimit != nullptr)    delete [] lowerlimit;
+  if (upperlimit != nullptr)    delete [] upperlimit;
+
+  //if (Scalar_Inf != NULL)    delete [] Scalar_Inf;
 
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
@@ -107,9 +99,9 @@ CScalarSolver::~CScalarSolver(void) {
 void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
   
-  su2double *Limiter_i = NULL, *Limiter_j = NULL;
-  su2double **Gradient_i, **Gradient_j;
-  su2double Project_Grad_i, Project_Grad_j;
+  //su2double *Limiter_i = NULL, *Limiter_j = NULL;
+  //su2double **Gradient_i, **Gradient_j;
+  //su2double Project_Grad_i, Project_Grad_j;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Scalar();
@@ -284,8 +276,8 @@ void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, C
   numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint),
                          flowNodes->GetPrimitive(jPoint));
     
-  /*--- Scalar variables w/o reconstruction. ---*/
-    
+  /*--- Scalar variables w/o reconstruction, and its gradients ---*/  
+
   numerics->SetScalarVar(nodes->GetSolution(iPoint),
                          nodes->GetSolution(jPoint));
   numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
@@ -368,12 +360,11 @@ void CScalarSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
 
- const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
 
 /*--- use preconditioner for scalar transport equations ---*/
-
+ const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 //if (incompressible) SetPreconditioner(geometry, solver_container, config);
 
 
@@ -392,8 +383,8 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /// TODO: This could be the SetTime_Step of this solver.
-     // we use a global cfl
-     //Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+     // nijso: we use a global cfl scaling factor
+     ////Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     //su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
     su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
     nodes->SetDelta_Time(iPoint, dt);
@@ -443,8 +434,8 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  su2double *scalar_clipping_min = config->GetScalar_Clipping_Min();
-  su2double *scalar_clipping_max = config->GetScalar_Clipping_Max();
+  
+
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
 
@@ -456,20 +447,26 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
       su2double density = flowNodes->GetDensity(iPoint);
       su2double density_old = density;
 
       if (compressible)
         density_old = flowNodes->GetSolution_Old(iPoint,0);
+
       // nijso: check difference between conservative and regular solution
+      // nijso: conservative solution is for transport of rho*Y, 
       // nijso: check underrelaxation
-      for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+        //nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar),scalar_clipping_min[iVar],scalar_clipping_max[iVar]);
         nodes->AddConservativeSolution(iPoint, iVar,
           nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
-          density, density_old, scalar_clipping_min[iVar], scalar_clipping_max[iVar]);
+          density, density_old, lowerlimit[iVar], upperlimit[iVar]);
       }
     }                
   }
+
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -506,21 +503,11 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
 void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
-  /* Only apply the turbulent under-relaxation to the SA variants. The
-   SA_NEG model is more robust due to allowing for negative nu_tilde,
-   so the under-relaxation is not applied to that variant. */
-
-  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
-                   (config->GetKind_Turb_Model() == SA_E)      ||
-                   (config->GetKind_Turb_Model() == SA_COMP)   ||
-                   (config->GetKind_Turb_Model() == SA_E_COMP));
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-
-  
   const su2double allowableRatio =  0.99;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -556,6 +543,407 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
 }
 
+void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                       unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+
+  const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Flow solution, needed to get density. ---*/
+
+  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  /*--- Store the physical time step ---*/
+
+  const su2double TimeStep = config->GetDelta_UnstTimeND();
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, iMarker, iDim, iNeigh;
+  unsigned long iPoint, jPoint, iVertex, iEdge;
+
+  const su2double *U_time_nM1 = nullptr, *U_time_n = nullptr, *U_time_nP1 = nullptr;
+  su2double Volume_nM1, Volume_nP1;
+  su2double Density_nM1, Density_n, Density_nP1;
+  const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
+  su2double Residual_GCL;
+
+  /*--- Compute the dual time-stepping source term for static meshes ---*/
+
+  if (!dynamic_grid) {
+
+    /*--- Loop over all nodes (excluding halos) ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
+
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
+
+      /*--- CV volume at time n+1. As we are on a static mesh, the volume
+       of the CV will remained fixed for all time steps. ---*/
+
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Compute the dual time-stepping source term based on the chosen
+       time discretization scheme (1st- or 2nd-order).---*/
+ 
+       /*--- If this is the SST model, we need to multiply by the density
+         in order to get the conservative variables. 
+         This is also the case in general for our transported scalars: 
+         we transport rho*Y                                            ---*/
+
+        if (incompressible){
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_n   = flowNodes->GetDensity(iPoint);
+          Density_nP1 = flowNodes->GetDensity(iPoint);
+        }
+        else{
+          Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
+          Density_n   = flowNodes->GetSolution_time_n(iPoint,0);
+          Density_nP1 = flowNodes->GetSolution(iPoint,0);
+        }
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (first_order)
+            LinSysRes(iPoint,iVar) += ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (second_order)
+            LinSysRes(iPoint,iVar) += ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
+                                       +1.0*Density_nM1*U_time_nM1[iVar] ) * Volume_nP1/(2.0*TimeStep);
+        }
+
+
+      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
+      if (implicit) {
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
+      }
+
+    }
+
+  } else {
+
+    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
+     dynamically deforming), the Geometric Conservation Law (GCL) should be
+     satisfied in conjunction with the ALE formulation of the governing
+     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
+     a uniform free-stream should be preserved through a moving grid. First,
+     we will loop over the edges and boundaries to compute the GCL component
+     of the dual time source term that depends on grid velocities. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      U_time_n  = nodes->GetSolution_time_n(iPoint);
+      Density_n = 1.0;
+
+      //if (sst_model) {
+        if (incompressible)
+          Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
+      //  else
+      //    Density_n = flowNodes->GetSolution_time_n(iPoint,0);
+      //}
+
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+
+        iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        Normal = geometry->edges->GetNormal(iEdge);
+
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+        /*--- Determine whether to consider the normal outward or inward. ---*/
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
+
+        Residual_GCL = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+        Residual_GCL *= Density_n;
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
+      }
+    }
+
+    /*--- Loop over the boundary edges ---*/
+
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          /*--- Get the index for node i plus the boundary face normal ---*/
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          /*--- Grid velocities stored at boundary node i ---*/
+
+          GridVel_i = geometry->nodes->GetGridVel(iPoint);
+
+          /*--- Compute the GCL term by dotting the grid velocity with the face
+           normal. The normal is negated to match the boundary convention. ---*/
+
+          Residual_GCL = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+
+          /*--- Compute the GCL component of the source term for node i ---*/
+
+          U_time_n = nodes->GetSolution_time_n(iPoint);
+
+          /*--- Multiply by density at node i for the SST model ---*/
+
+          //if (sst_model) {
+            if (incompressible)
+              Density_n = flowNodes->GetDensity(iPoint); // Temporary fix
+            else
+              Density_n = flowNodes->GetSolution_time_n(iPoint,0);
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              LinSysRes(iPoint,iVar) += Density_n*U_time_n[iVar]*Residual_GCL;
+          //}
+          //else {
+          //  for (iVar = 0; iVar < nVar; iVar++)
+          //    LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
+          //}
+
+        }
+      }
+    }
+
+    /*--- Loop over all nodes (excluding halos) to compute the remainder
+     of the dual time-stepping source term. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
+
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
+
+      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
+       grids, the volumes will change. On rigidly transforming grids, the
+       volumes will remain constant. ---*/
+
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Compute the dual time-stepping source residual. Due to the
+       introduction of the GCL term above, the remainder of the source residual
+       due to the time discretization has a new form.---*/
+
+      //if (sst_model) {
+
+        /*--- If this is the SST model, we need to multiply by the density
+         in order to get the conservative variables ---*/
+        if (incompressible) {
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_n   = flowNodes->GetDensity(iPoint);
+          Density_nP1 = flowNodes->GetDensity(iPoint);
+        }
+        else {
+          Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
+          Density_n   = flowNodes->GetSolution_time_n(iPoint,0);
+          Density_nP1 = flowNodes->GetSolution(iPoint,0);
+        }
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (first_order)
+            LinSysRes(iPoint,iVar) += (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (second_order)
+            LinSysRes(iPoint,iVar) += (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+                                      + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        }
+
+      //} else {
+      //
+      //  for (iVar = 0; iVar < nVar; iVar++) {
+      //    if (first_order)
+      //      LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+      //    if (second_order)
+      //      LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+      //                                 + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+      //  }
+      //}
+
+      /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
+      if (implicit) {
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
+      }
+    }
+
+  } // end dynamic grid
+
+}
+
+
+void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+
+  unsigned short iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent;
+  const su2double *Solution_Fine = nullptr;
+  //bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+  //                  (config->GetTime_Marching() == DT_STEPPING_2ND));
+  //bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  //unsigned short iZone = config->GetiZone();
+  //unsigned short nZone = config->GetnZone();
+  
+  //string UnstExt, text_line;
+  //ifstream restart_file;
+
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
+  bool turbulent = ((config->GetKind_Solver() == RANS) ||
+                    (config->GetKind_Solver() == INC_RANS) ||
+                    (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
+                    (config->GetKind_Solver() == DISC_ADJ_RANS));
+  
+  unsigned short turbSkip = 0;
+  if (turbulent) turbSkip = solver[MESH_0][TURB_SOL]->GetnVar();
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER
+  {
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Skip flow variables ---*/
+
+  unsigned short skipVars = 0;
+
+  if (nDim == 2) skipVars += 6;
+  if (nDim == 3) skipVars += 8;
+  
+  /*--- Skip turbulent variables if necessary variables ---*/
+
+  if (turbulent) skipVars += turbSkip;
+
+  /*--- Adjust the number of solution variables in the incompressible
+   restart. We always carry a space in nVar for the energy equation in the
+   mean flow solver, but we only write it to the restart if it is active.
+   Therefore, we must reduce skipVars here if energy is inactive so that
+   the turbulent variables are read correctly. ---*/
+
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  unsigned long counter = 0, iPoint_Global = 0;
+  for (; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; ++iVar)
+        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
+
+  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  SU2_OMP_BARRIER
+
+  /*--- MPI solution and compute the scalars ---*/
+
+  solver[MESH_0][SCALAR_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][SCALAR_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][SCALAR_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double Solution_Coarse[MAXNVAR] = {0.0};
+      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
+        Solution_Fine = solver[iMesh-1][SCALAR_SOL]->GetNodes()->GetSolution(Point_Fine);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution_Coarse[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][SCALAR_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
+    }
+    solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    solver[iMesh][SCALAR_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+  }
+
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+  
+}
 
 void CScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CSolver **solver_container,
@@ -717,386 +1105,3 @@ void CScalarSolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
 }
 
 
-
-void CScalarSolver::SetResidual_DualTime(CGeometry      *geometry,
-                                         CSolver       **solver_container,
-                                         CConfig        *config,
-                                         unsigned short  iRKStep,
-                                         unsigned short  iMesh,
-                                         unsigned short  RunTime_EqSystem) {
-  
-  /*--- Local variables ---*/
-  
-  unsigned short iVar, jVar, iMarker, iDim;
-  unsigned long iPoint, jPoint, iEdge, iVertex;
-  
-  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-  su2double Volume_nM1, Volume_nP1, TimeStep;
-  su2double Density_nM1, Density_n, Density_nP1;
-  const su2double *Normal; 
-  su2double *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
-  
-  bool implicit      = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
-  /*--- Store the physical time step ---*/
-  
-  TimeStep = config->GetDelta_UnstTimeND();
-  
-  /*--- Compute the dual time-stepping source term for static meshes ---*/
-  
-  if (!grid_movement) {
-    
-    /*--- Loop over all nodes (excluding halos) ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
-      
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n   = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
-      
-      /*--- CV volume at time n+1. As we are on a static mesh, the volume
-       of the CV will remained fixed for all time steps. ---*/
-      
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-      
-      /*--- Compute the dual time-stepping source term based on the chosen
-       time discretization scheme (1st- or 2nd-order).---*/
-      
-       /*--- Get the density to compute the conservative variables. ---*/
-      
-        if (incompressible){
-          /*--- This is temporary and only valid for constant-density problems:
-           density could also be temperature dependent, but as it is not a part
-           of the solution vector it's neither stored for previous time steps
-           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        }
-        else{
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
-        }
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
-                              +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
-        }
-      
-      
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
-      
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-    }
-    
-  } else {
-    
-    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
-     dynamically deforming), the Geometric Conservation Law (GCL) should be
-     satisfied in conjunction with the ALE formulation of the governing
-     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
-     a uniform free-stream should be preserved through a moving grid. First,
-     we will loop over the edges and boundaries to compute the GCL component
-     of the dual time source term that depends on grid velocities. ---*/
-    
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
-      /*--- Get indices for nodes i & j plus the face normal ---*/
-      
-      iPoint = geometry->edges->GetNode(iEdge, 0);
-      jPoint = geometry->edges->GetNode(iEdge, 1);
-      Normal = geometry->edges->GetNormal(iEdge);
-      
-      /*--- Grid velocities stored at nodes i & j ---*/
-      
-      GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      
-      /*--- Compute the GCL term by averaging the grid velocities at the
-       edge mid-point and dotting with the face normal. ---*/
-      
-      Residual_GCL = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-      
-      /*--- Compute the GCL component of the source term for node i ---*/
-      
-      U_time_n = nodes->GetSolution_time_n(iPoint);
-      
-      /*--- Multiply by density at node i  ---*/
-      
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Compute the GCL component of the source term for node j ---*/
-      
-      U_time_n = nodes->GetSolution_time_n(jPoint);
-      
-      /*--- Multiply by density at node j ---*/
-      
-        if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint); // Temporary fix
-        else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(jPoint)[0];
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
-      LinSysRes.SubtractBlock(jPoint, Residual);
-      
-    }
-    
-    /*---  Loop over the boundary edges ---*/
-    
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          
-          /*--- Get the index for node i plus the boundary face normal ---*/
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          
-          /*--- Grid velocities stored at boundary node i ---*/
-          
-          GridVel_i = geometry->nodes->GetGridVel(iPoint);
-          
-          /*--- Compute the GCL term by dotting the grid velocity with the face
-           normal. The normal is negated to match the boundary convention. ---*/
-          
-          Residual_GCL = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
-          
-          /*--- Compute the GCL component of the source term for node i ---*/
-          
-          U_time_n = nodes->GetSolution_time_n(iPoint);
-          
-          /*--- Multiply by density at node i  ---*/
-          
-            if (incompressible) Density_n = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint); // Temporary fix
-            else Density_n = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-            for (iVar = 0; iVar < nVar; iVar++)
-              Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
-          LinSysRes.AddBlock(iPoint, Residual);
-        }
-    }
-    
-    /*--- Loop over all nodes (excluding halos) to compute the remainder
-     of the dual time-stepping source term. ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
-      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
-       previous solutions that are stored in memory. ---*/
-      
-      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n   = nodes->GetSolution_time_n(iPoint);
-      U_time_nP1 = nodes->GetSolution(iPoint);
-      
-      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
-       grids, the volumes will change. On rigidly transforming grids, the
-       volumes will remain constant. ---*/
-      
-      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
-      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
-
-        if (incompressible){
-          /*--- This is temporary and only valid for constant-density problems:
-           density could also be temperature dependent, but as it is not a part
-           of the solution vector it's neither stored for previous time steps
-           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        }
-        else{
-          Density_nM1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint)[0];
-          Density_n   = solver_container[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint)[0];
-          Density_nP1 = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint)[0];
-        }
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
-        }
-      
-      /*--- Store the residual and compute the Jacobian contribution due
-       to the dual time source term. ---*/
-      
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) {  // TDE density in Jacobian
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
-        }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      }
-    }
-  }
-  
-}
-
-void CScalarSolver::LoadRestart(CGeometry **geometry,
-                                CSolver ***solver,
-                                CConfig *config,
-                                int val_iter,
-                                bool val_update_geo) {
-  
-  /*--- Restart the solution from file information ---*/
-  
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-  
-  string UnstExt, text_line;
-  ifstream restart_file;
-
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
-  bool turbulent = ((config->GetKind_Solver() == RANS) ||
-                    (config->GetKind_Solver() == INC_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-                    (config->GetKind_Solver() == DISC_ADJ_RANS));
-  
-  unsigned short turbSkip = 0;
-  if (turbulent) turbSkip = solver[MESH_0][TURB_SOL]->GetnVar();
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-  
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
-  
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-  
-  /*--- Skip flow variables ---*/
-  
-  unsigned short skipVars = 0;
-  
-  if (nDim == 2) skipVars += 6;
-  if (nDim == 3) skipVars += 8;
-  
-  /*--- Skip turbulent variables if necessary variables ---*/
-
-  if (turbulent) skipVars += turbSkip;
-  
-  /*--- Load data from the restart into correct containers. ---*/
-  
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
-    
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
-    
-    if (iPoint_Local > -1) {
-      
-      /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
-      
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
-      
-      /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
-    }
-    
-  }
-  
-  /*--- Detect a wrong solution file ---*/
-  
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-  
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1,
-                     MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
-  
-  /*--- MPI solution ---*/
-
-  solver[MESH_0][SCALAR_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][SCALAR_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-  
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  solver[MESH_0][SCALAR_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
-  
-  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][SCALAR_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][SCALAR_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-    }
-    solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    solver[iMesh][SCALAR_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
-  }
-  
-  /*--- Delete the class memory that is used to load the restart. ---*/
-  
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
-  
-}

@@ -9406,6 +9406,17 @@ public:
    * \return Minimum value for scalar clipping
    */
   su2double *GetScalar_Clipping_Min(void) { return Scalar_Clipping_Min; }
+  /*!
+   * \brief Get the maximum bound for scalar transport clipping
+   * \return Maximum value for scalar clipping
+   */
+  su2double GetScalar_Clipping_Max(unsigned short iVal) { return Scalar_Clipping_Max[iVal]; }
+  
+  /*!
+   * \brief Get the minimum bound for scalar transport clipping
+   * \return Minimum value for scalar clipping
+   */
+  su2double GetScalar_Clipping_Min(unsigned short iVal) { return Scalar_Clipping_Min[iVal]; }
 
   /*!
    * \brief Get the minimum bound for scalar transport clipping
