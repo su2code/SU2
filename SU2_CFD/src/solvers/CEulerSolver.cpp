@@ -4529,45 +4529,40 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
 void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iVertex, iPoint;
-  unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double Pressure = 0.0, factor, NFPressOF, RefVel2,
-  RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion;
-  const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
   su2double AxiFactor;
 
-  su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefArea = config->GetRefArea();
-  su2double RefLength = config->GetRefLength();
-  su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
+  const su2double RefArea = config->GetRefArea();
+  const su2double RefLength = config->GetRefLength();
+  sconst u2double Gas_Constant = config->GetGas_ConstantND();
   const su2double *Origin = nullptr;
   if (config->GetnMarker_Monitoring() != 0){
     Origin = config->GetRefOriginMoment(0);
   }
-  bool axisymmetric = config->GetAxisymmetric();
+
+  const bool axisymmetric = config->GetAxisymmetric();
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream
    values, which is the standard convention. ---*/
 
-  RefTemp = Temperature_Inf;
-  RefDensity = Density_Inf;
-  RefPressure = Pressure_Inf;
+  const su2double RefTemp = Temperature_Inf;
+  const su2double RefDensity = Density_Inf;
+  const su2double RefPressure = Pressure_Inf;
+  su2double RefVel2 = 0.0;
   if (dynamic_grid) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    Mach_Motion = config->GetMach_Motion();
+    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
+    const su2double Mach_Motion = config->GetMach_Motion();
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
   }
   else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+    RefVel2 = CGeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
   }
 
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
+  const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
   /*-- Variables initialization ---*/
 
@@ -4584,10 +4579,10 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
 
-    Boundary   = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    const auto Boundary   = config->GetMarker_All_KindBC(iMarker);
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
@@ -4616,15 +4611,15 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
       su2double ForceInviscid[MAXNDIM] = {0.0}, MomentInviscid[MAXNDIM] = {0.0};
       su2double MomentX_Force[MAXNDIM] = {0.0}, MomentY_Force[MAXNDIM] = {0.0}, MomentZ_Force[MAXNDIM] = {0.0};
 
-      NFPressOF = 0.0;
+      su2double NFPressOF = 0.0;
 
       /*--- Loop over the vertices to compute the forces ---*/
 
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        Pressure = nodes->GetPressure(iPoint);
+        const su2double Pressure = nodes->GetPressure(iPoint);
 
         CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefArea;
 
@@ -4633,8 +4628,8 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
         if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
 
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Coord = geometry->node[iPoint]->GetCoord();
+          const auto Coord = geometry->node[iPoint]->GetCoord();
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           /*--- Quadratic objective function for the near-field.
            This uses the infinity pressure regardless of Mach number. ---*/
@@ -4642,20 +4637,18 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           NFPressOF += 0.5*(Pressure - Pressure_Inf)*(Pressure - Pressure_Inf)*Normal[nDim-1];
 
           su2double MomentDist[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            MomentDist[iDim] = Coord[iDim] - Origin[iDim];
-          }
+          GeometryToolbox::Distance(nDim,Coord,Origin,MomentDist);
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
           else AxiFactor = 1.0;
 
           /*--- Force computation, note the minus sign due to the
            orientation of the normal (outward) ---*/
 
           su2double Force[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
             Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
             ForceInviscid[iDim] += Force[iDim];
           }
@@ -4733,7 +4726,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Compute the coefficients per surface ---*/
 
-          for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
             Marker_Tag = config->GetMarker_All_TagBound(iMarker);
             if (Marker_Tag == Monitoring_Tag) {
@@ -4819,7 +4812,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CD);
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CSF);
 
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; iMarker_Monitoring++)
+    for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < nMarkerMon; iMarker_Monitoring++)
       SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
 
     Allreduce_inplace(nMarkerMon, SurfaceInvCoeff.CFx);
@@ -4858,7 +4851,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SurfaceCoeff.CL[iMarker_Monitoring]      = SurfaceInvCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring]      = SurfaceInvCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring]     = SurfaceInvCoeff.CSF[iMarker_Monitoring];

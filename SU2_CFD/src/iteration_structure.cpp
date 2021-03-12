@@ -405,38 +405,48 @@ void CFluidIteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) {
-  unsigned long InnerIter, TimeIter;
 
-  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
-                     (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
-  TimeIter = config[val_iZone]->GetTimeIter();
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
+                        (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
 
-  bool turb = (config[val_iZone]->GetKind_Solver() == RANS ||
+  const bool turb = (config[val_iZone]->GetKind_Solver() == RANS ||
                config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
                config[val_iZone]->GetKind_Solver() == INC_RANS ||
                config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ) && !frozen_visc;
-  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-  bool rads = config[val_iZone]->AddRadiation();
+  const bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
+  const bool rads = config[val_iZone]->AddRadiation();
+  const bool disc_adj = disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
 
-  /* --- Setcting up iteration values depending on if this is a
+  /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
 
-  InnerIter = config[val_iZone]->GetInnerIter();
+  const auto TimeIter = config[val_iZone]->GetTimeIter();
+  const auto InnerIter = config[val_iZone]->GetInnerIter();
 
   /*--- Update global parameters ---*/
 
-  switch( config[val_iZone]->GetKind_Solver() ) {
+  switch (config[val_iZone]->GetKind_Solver()) {
+    case EULER:
+    case DISC_ADJ_EULER:
+    case INC_EULER:
+    case DISC_ADJ_INC_EULER:
+      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
+      break;
 
-    case EULER: case DISC_ADJ_EULER: case INC_EULER: case DISC_ADJ_INC_EULER:
-      config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS); break;
+    case NAVIER_STOKES:
+    case DISC_ADJ_NAVIER_STOKES:
+    case INC_NAVIER_STOKES:
+    case DISC_ADJ_INC_NAVIER_STOKES:
+      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
+      break;
 
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
-      config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS); break;
-
-    case RANS: case DISC_ADJ_RANS: case INC_RANS: case DISC_ADJ_INC_RANS:
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS); break;
-
+    case RANS:
+    case DISC_ADJ_RANS:
+    case INC_RANS:
+    case DISC_ADJ_INC_RANS:
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS);
+      break;
   }
 
   /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
@@ -498,7 +508,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!config[val_iZone]->GetDiscrete_Adjoint())) {
+  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone], RUNTIME_FLOW_SYS);

@@ -381,50 +381,43 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
 void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iVertex, iPoint, iPointNormal;
-  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0, 0.0, 0.0},
-  Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2, RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
-  Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
-  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Cp, thermal_conductivity, MaxNorm = 8.0,
-  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
-  delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-  su2double AxiFactor;
-  const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  const su2double MaxNorm = 8.0, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
+  su2double AxiFactor;
   string Marker_Tag, Monitoring_Tag;
 
-  su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
-  su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefArea = config->GetRefArea();
-  su2double RefLength = config->GetRefLength();
-  su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
+  const su2double RefArea = config->GetRefArea();
+  const su2double RefLength = config->GetRefLength();
+  const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double *Origin = nullptr;
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 
-  bool QCR = config->GetQCR();
-  bool axisymmetric = config->GetAxisymmetric();
+  const bool QCR = config->GetQCR();
+  const bool axisymmetric = config->GetAxisymmetric();
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
    which is the standard convention. ---*/
 
-  RefTemp = Temperature_Inf;
-  RefDensity = Density_Inf;
+  const su2double RefTemp = Temperature_Inf;
+  const su2double RefDensity = Density_Inf;
+  const su2double RefPressure = Pressure_Inf;
+  su2double RefVel2 = 0.0;
   if (dynamic_grid) {
-    Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    Mach_Motion = config->GetMach_Motion();
+    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
+    const su2double Mach_Motion = config->GetMach_Motion();
     RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  } else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+  else {
+    RefVel2 = CGeometryToolbox::SquaredNorm(nDim,Velocity_Inf);
   }
 
-  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
+  const su2double factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
   /*--- Variables initialization ---*/
 
@@ -433,21 +426,21 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   AllBound_HF_Visc = 0.0;  AllBound_MaxHF_Visc = 0.0;
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_HF_Visc[iMarker_Monitoring]  = 0.0; Surface_MaxHF_Visc[iMarker_Monitoring]   = 0.0;
   }
 
   /*--- Loop over the Navier-Stokes markers ---*/
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
 
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    const auto Boundary = config->GetMarker_All_KindBC(iMarker);
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
     if (Monitoring == YES) {
-      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag)
@@ -468,41 +461,39 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
       /*--- Loop over the vertices to compute the forces ---*/
 
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->node[iPoint]->GetCoord();
-        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+        const auto Coord = geometry->node[iPoint]->GetCoord();
+        const auto Coord_Normal = geometry->node[iPointNormal]->GetCoord();
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        su2double UnitNormal[MAXNDIM] = {0.0}; 
+        for (iDim = 0; iDim < nDim; iDim++) {UnitNormal[iDim] = Normal[iDim]/Area;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
+        su2double Grad_Vel[MAXNDIM][MAXNDIM] = {0.0}, Grad_Temp[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint,iDim+1, jDim);
           }
           Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint,0, iDim);
         }
 
-        Viscosity = nodes->GetLaminarViscosity(iPoint);
-        Density = nodes->GetDensity(iPoint);
-
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim]/Area;
-        }
+        const su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
+        const su2double Density = nodes->GetDensity(iPoint);
 
         /*--- Evaluate Tau ---*/
         
         const su2double wf = nodes->GetTauWallFactor(iPoint);
 
-        div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+        su2double div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
+        su2double Tau[MAXNDIM][MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u ; jDim < nDim; jDim++) {
             Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
             Tau[iDim][jDim] *= wf;
           }
@@ -517,16 +508,16 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
           den_aux = 0.0;
-          for (iDim = 0 ; iDim < nDim; iDim++)
-            for (jDim = 0 ; jDim < nDim; jDim++)
+          for (auto iDim = 0u ; iDim < nDim; iDim++)
+            for (auto jDim = 0u ; jDim < nDim; jDim++)
               den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
           den_aux = sqrt(max(den_aux,1E-10));
 
           /*--- Adding the QCR contribution ---*/
 
-          for (iDim = 0 ; iDim < nDim; iDim++){
-            for (jDim = 0 ; jDim < nDim; jDim++){
-              for (kDim = 0 ; kDim < nDim; kDim++){
+          for (auto iDim = 0u ; iDim < nDim; iDim++){
+            for (auto jDim = 0u ; jDim < nDim; jDim++){
+              for (auto kDim = 0u ; kDim < nDim; kDim++){
                 O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim])/ den_aux;
                 O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim])/ den_aux;
                 Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
@@ -537,43 +528,38 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         /*--- Project Tau in each surface element ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++) {
-            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
-          }
-        }
+        su2double TauElem[MAXNDIM] = {0.0}; 
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          TauElem[iDim] = GeometryToolbox::DotProduct(nDim,Tau[iDim],UnitNormal);
 
         /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
 
-        TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+        const su2double TauNormal = GeometryToolbox::DotProduct(nDim,TauElem,UnitNormal);
 
-        WallShearStress = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        su2double TauTangent[MAXNDIM] = {0.0}; 
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
           TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
           CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-          WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
-        WallShearStress = sqrt(WallShearStress);
+        const su2double WallShearStress = GeometryToolbox::Norm(nDim,TauTangent);
 
-        for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-        WallDistMod = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim];
+        su2double WallDist[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+        su2double WallDistMod = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]*UnitNormal[iDim]*UnitNormal[iDim];
         WallDistMod = sqrt(WallDistMod);
 
         /*--- Compute y+ and non-dimensional velocity ---*/
 
-        FrictionVel = sqrt(fabs(WallShearStress)/Density);
+        const su2double FrictionVel = sqrt(fabs(WallShearStress)/Density);
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
 
         /*--- Compute total and maximum heat flux on the wall ---*/
 
-        GradTemperature = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          GradTemperature -= Grad_Temp[iDim]*UnitNormal[iDim];
+        const su2double GradTemperature = - GeometryToolbox::DotProduct(nDim,Grad_Temp,UnitNormal);
 
-        Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-        thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
+        const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+        const su2double thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
         HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
 
         /*--- Note that y+, and heat are computed at the
@@ -583,13 +569,13 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Axisymmetric simulations ---*/
 
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*Coord[1];
           else AxiFactor = 1.0;
 
           /*--- Force computation ---*/
 
           su2double Force[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
             Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
             ForceViscous[iDim] += Force[iDim];
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
@@ -672,7 +658,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         /*--- Compute the coefficients per surface ---*/
 
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
           Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
@@ -760,7 +746,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CD);
     Allreduce_inplace(nMarkerMon, SurfaceViscCoeff.CSF);
 
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarkerMon; iMarker_Monitoring++)
+    for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < nMarkerMon; iMarker_Monitoring++)
       SurfaceViscCoeff.CEff[iMarker_Monitoring] = SurfaceViscCoeff.CL[iMarker_Monitoring] /
                                                  (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
 
