@@ -471,7 +471,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
         su2double UnitNormal[MAXNDIM] = {0.0}; 
-        for (iDim = 0; iDim < nDim; iDim++) {UnitNormal[iDim] = Normal[iDim]/Area;
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
 
         su2double Grad_Vel[MAXNDIM][MAXNDIM] = {0.0}, Grad_Temp[MAXNDIM] = {0.0};
         for (auto iDim = 0u; iDim < nDim; iDim++) {

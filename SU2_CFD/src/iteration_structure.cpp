@@ -416,7 +416,7 @@ void CFluidIteration::Iterate(COutput *output,
                config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ) && !frozen_visc;
   const bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
   const bool rads = config[val_iZone]->AddRadiation();
-  const bool disc_adj = disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
+  const bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
 
   /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
