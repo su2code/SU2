@@ -28,6 +28,7 @@
 #include "../../include/geometry/CPhysicalGeometry.hpp"
 #include "../../include/adt_structure.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
