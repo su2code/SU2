@@ -596,8 +596,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         }
 
-        HF_Visc[iMarker]          += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker]       += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+        HF_Visc[iMarker]    += HeatFlux[iMarker][iVertex]*Area;
+        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
       }
 
@@ -605,54 +605,54 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
       if (Monitoring == YES) {
         if (nDim == 2) {
-          ViscCoeff.CD[iMarker]          =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
-          ViscCoeff.CL[iMarker]          = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
-          ViscCoeff.CEff[iMarker]        = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker]+EPS);
-          ViscCoeff.CFx[iMarker]         = ForceViscous[0];
-          ViscCoeff.CFy[iMarker]         = ForceViscous[1];
-          ViscCoeff.CMz[iMarker]         = MomentViscous[2];
-          ViscCoeff.CoPx[iMarker]        = MomentZ_Force[1];
-          ViscCoeff.CoPy[iMarker]        = -MomentZ_Force[0];
-          ViscCoeff.CT[iMarker]          = -ViscCoeff.CFx[iMarker];
-          ViscCoeff.CQ[iMarker]          = -ViscCoeff.CMz[iMarker];
-          ViscCoeff.CMerit[iMarker]      = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker]+EPS);
-          MaxHF_Visc[iMarker]            = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
+          ViscCoeff.CD[iMarker]     =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
+          ViscCoeff.CL[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
+          ViscCoeff.CEff[iMarker]   = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker]+EPS);
+          ViscCoeff.CFx[iMarker]    = ForceViscous[0];
+          ViscCoeff.CFy[iMarker]    = ForceViscous[1];
+          ViscCoeff.CMz[iMarker]    = MomentViscous[2];
+          ViscCoeff.CoPx[iMarker]   = MomentZ_Force[1];
+          ViscCoeff.CoPy[iMarker]   = -MomentZ_Force[0];
+          ViscCoeff.CT[iMarker]     = -ViscCoeff.CFx[iMarker];
+          ViscCoeff.CQ[iMarker]     = -ViscCoeff.CMz[iMarker];
+          ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker]+EPS);
+          MaxHF_Visc[iMarker]       = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
         }
         if (nDim == 3) {
-          ViscCoeff.CD[iMarker]          =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
-          ViscCoeff.CL[iMarker]          = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
-          ViscCoeff.CSF[iMarker]         = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
-          ViscCoeff.CEff[iMarker]        = ViscCoeff.CL[iMarker]/(ViscCoeff.CD[iMarker] + EPS);
-          ViscCoeff.CFx[iMarker]         = ForceViscous[0];
-          ViscCoeff.CFy[iMarker]         = ForceViscous[1];
-          ViscCoeff.CFz[iMarker]         = ForceViscous[2];
-          ViscCoeff.CMx[iMarker]         = MomentViscous[0];
-          ViscCoeff.CMy[iMarker]         = MomentViscous[1];
-          ViscCoeff.CMz[iMarker]         = MomentViscous[2];
-          ViscCoeff.CoPx[iMarker]        = -MomentY_Force[0];
-          ViscCoeff.CoPz[iMarker]        = MomentY_Force[2];
-          ViscCoeff.CT[iMarker]          = -ViscCoeff.CFz[iMarker];
-          ViscCoeff.CQ[iMarker]          = -ViscCoeff.CMz[iMarker];
-          ViscCoeff.CMerit[iMarker]      = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
-          MaxHF_Visc[iMarker]            = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
+          ViscCoeff.CD[iMarker]     =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
+          ViscCoeff.CL[iMarker]     = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+          ViscCoeff.CSF[iMarker]    = -ForceViscous[0]*sin(Beta)*cos(Alpha) + ForceViscous[1]*cos(Beta) - ForceViscous[2]*sin(Beta)*sin(Alpha);
+          ViscCoeff.CEff[iMarker]   = ViscCoeff.CL[iMarker]/(ViscCoeff.CD[iMarker] + EPS);
+          ViscCoeff.CFx[iMarker]    = ForceViscous[0];
+          ViscCoeff.CFy[iMarker]    = ForceViscous[1];
+          ViscCoeff.CFz[iMarker]    = ForceViscous[2];
+          ViscCoeff.CMx[iMarker]    = MomentViscous[0];
+          ViscCoeff.CMy[iMarker]    = MomentViscous[1];
+          ViscCoeff.CMz[iMarker]    = MomentViscous[2];
+          ViscCoeff.CoPx[iMarker]   = -MomentY_Force[0];
+          ViscCoeff.CoPz[iMarker]   = MomentY_Force[2];
+          ViscCoeff.CT[iMarker]     = -ViscCoeff.CFz[iMarker];
+          ViscCoeff.CQ[iMarker]     = -ViscCoeff.CMz[iMarker];
+          ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
+          MaxHF_Visc[iMarker]       = pow(MaxHF_Visc[iMarker], 1.0/MaxNorm);
         }
 
-        AllBoundViscCoeff.CD          += ViscCoeff.CD[iMarker];
-        AllBoundViscCoeff.CL          += ViscCoeff.CL[iMarker];
-        AllBoundViscCoeff.CSF         += ViscCoeff.CSF[iMarker];
-        AllBoundViscCoeff.CFx         += ViscCoeff.CFx[iMarker];
-        AllBoundViscCoeff.CFy         += ViscCoeff.CFy[iMarker];
-        AllBoundViscCoeff.CFz         += ViscCoeff.CFz[iMarker];
-        AllBoundViscCoeff.CMx         += ViscCoeff.CMx[iMarker];
-        AllBoundViscCoeff.CMy         += ViscCoeff.CMy[iMarker];
-        AllBoundViscCoeff.CMz         += ViscCoeff.CMz[iMarker];
-        AllBoundViscCoeff.CoPx        += ViscCoeff.CoPx[iMarker];
-        AllBoundViscCoeff.CoPy        += ViscCoeff.CoPy[iMarker];
-        AllBoundViscCoeff.CoPz        += ViscCoeff.CoPz[iMarker];
-        AllBoundViscCoeff.CT          += ViscCoeff.CT[iMarker];
-        AllBoundViscCoeff.CQ          += ViscCoeff.CQ[iMarker];
-        AllBound_HF_Visc              += HF_Visc[iMarker];
-        AllBound_MaxHF_Visc           += pow(MaxHF_Visc[iMarker], MaxNorm);
+        AllBoundViscCoeff.CD   += ViscCoeff.CD[iMarker];
+        AllBoundViscCoeff.CL   += ViscCoeff.CL[iMarker];
+        AllBoundViscCoeff.CSF  += ViscCoeff.CSF[iMarker];
+        AllBoundViscCoeff.CFx  += ViscCoeff.CFx[iMarker];
+        AllBoundViscCoeff.CFy  += ViscCoeff.CFy[iMarker];
+        AllBoundViscCoeff.CFz  += ViscCoeff.CFz[iMarker];
+        AllBoundViscCoeff.CMx  += ViscCoeff.CMx[iMarker];
+        AllBoundViscCoeff.CMy  += ViscCoeff.CMy[iMarker];
+        AllBoundViscCoeff.CMz  += ViscCoeff.CMz[iMarker];
+        AllBoundViscCoeff.CoPx += ViscCoeff.CoPx[iMarker];
+        AllBoundViscCoeff.CoPy += ViscCoeff.CoPy[iMarker];
+        AllBoundViscCoeff.CoPz += ViscCoeff.CoPz[iMarker];
+        AllBoundViscCoeff.CT   += ViscCoeff.CT[iMarker];
+        AllBoundViscCoeff.CQ   += ViscCoeff.CQ[iMarker];
+        AllBound_HF_Visc       += HF_Visc[iMarker];
+        AllBound_MaxHF_Visc    += pow(MaxHF_Visc[iMarker], MaxNorm);
 
         /*--- Compute the coefficients per surface ---*/
 
@@ -660,18 +660,18 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
-            SurfaceViscCoeff.CL[iMarker_Monitoring]      += ViscCoeff.CL[iMarker];
-            SurfaceViscCoeff.CD[iMarker_Monitoring]      += ViscCoeff.CD[iMarker];
-            SurfaceViscCoeff.CSF[iMarker_Monitoring]     += ViscCoeff.CSF[iMarker];
-            SurfaceViscCoeff.CEff[iMarker_Monitoring]    += ViscCoeff.CEff[iMarker];
-            SurfaceViscCoeff.CFx[iMarker_Monitoring]     += ViscCoeff.CFx[iMarker];
-            SurfaceViscCoeff.CFy[iMarker_Monitoring]     += ViscCoeff.CFy[iMarker];
-            SurfaceViscCoeff.CFz[iMarker_Monitoring]     += ViscCoeff.CFz[iMarker];
-            SurfaceViscCoeff.CMx[iMarker_Monitoring]     += ViscCoeff.CMx[iMarker];
-            SurfaceViscCoeff.CMy[iMarker_Monitoring]     += ViscCoeff.CMy[iMarker];
-            SurfaceViscCoeff.CMz[iMarker_Monitoring]     += ViscCoeff.CMz[iMarker];
-            Surface_HF_Visc[iMarker_Monitoring]          += HF_Visc[iMarker];
-            Surface_MaxHF_Visc[iMarker_Monitoring]       += pow(MaxHF_Visc[iMarker],MaxNorm);
+            SurfaceViscCoeff.CL[iMarker_Monitoring]   += ViscCoeff.CL[iMarker];
+            SurfaceViscCoeff.CD[iMarker_Monitoring]   += ViscCoeff.CD[iMarker];
+            SurfaceViscCoeff.CSF[iMarker_Monitoring]  += ViscCoeff.CSF[iMarker];
+            SurfaceViscCoeff.CEff[iMarker_Monitoring] += ViscCoeff.CEff[iMarker];
+            SurfaceViscCoeff.CFx[iMarker_Monitoring]  += ViscCoeff.CFx[iMarker];
+            SurfaceViscCoeff.CFy[iMarker_Monitoring]  += ViscCoeff.CFy[iMarker];
+            SurfaceViscCoeff.CFz[iMarker_Monitoring]  += ViscCoeff.CFz[iMarker];
+            SurfaceViscCoeff.CMx[iMarker_Monitoring]  += ViscCoeff.CMx[iMarker];
+            SurfaceViscCoeff.CMy[iMarker_Monitoring]  += ViscCoeff.CMy[iMarker];
+            SurfaceViscCoeff.CMz[iMarker_Monitoring]  += ViscCoeff.CMz[iMarker];
+            Surface_HF_Visc[iMarker_Monitoring]       += HF_Visc[iMarker];
+            Surface_MaxHF_Visc[iMarker_Monitoring]    += pow(MaxHF_Visc[iMarker],MaxNorm);
           }
         }
 
@@ -767,38 +767,38 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
 
-  TotalCoeff.CD          += AllBoundViscCoeff.CD;
-  TotalCoeff.CL          += AllBoundViscCoeff.CL;
-  TotalCoeff.CSF         += AllBoundViscCoeff.CSF;
-  TotalCoeff.CEff         = TotalCoeff.CL / (TotalCoeff.CD + EPS);
-  TotalCoeff.CFx         += AllBoundViscCoeff.CFx;
-  TotalCoeff.CFy         += AllBoundViscCoeff.CFy;
-  TotalCoeff.CFz         += AllBoundViscCoeff.CFz;
-  TotalCoeff.CMx         += AllBoundViscCoeff.CMx;
-  TotalCoeff.CMy         += AllBoundViscCoeff.CMy;
-  TotalCoeff.CMz         += AllBoundViscCoeff.CMz;
-  TotalCoeff.CoPx        += AllBoundViscCoeff.CoPx;
-  TotalCoeff.CoPy        += AllBoundViscCoeff.CoPy;
-  TotalCoeff.CoPz        += AllBoundViscCoeff.CoPz;
-  TotalCoeff.CT          += AllBoundViscCoeff.CT;
-  TotalCoeff.CQ          += AllBoundViscCoeff.CQ;
-  TotalCoeff.CMerit       = AllBoundViscCoeff.CT / (AllBoundViscCoeff.CQ + EPS);
-  Total_Heat         = AllBound_HF_Visc;
-  Total_MaxHeat      = AllBound_MaxHF_Visc;
+  TotalCoeff.CD    += AllBoundViscCoeff.CD;
+  TotalCoeff.CL    += AllBoundViscCoeff.CL;
+  TotalCoeff.CSF   += AllBoundViscCoeff.CSF;
+  TotalCoeff.CEff   = TotalCoeff.CL / (TotalCoeff.CD + EPS);
+  TotalCoeff.CFx   += AllBoundViscCoeff.CFx;
+  TotalCoeff.CFy   += AllBoundViscCoeff.CFy;
+  TotalCoeff.CFz   += AllBoundViscCoeff.CFz;
+  TotalCoeff.CMx   += AllBoundViscCoeff.CMx;
+  TotalCoeff.CMy   += AllBoundViscCoeff.CMy;
+  TotalCoeff.CMz   += AllBoundViscCoeff.CMz;
+  TotalCoeff.CoPx  += AllBoundViscCoeff.CoPx;
+  TotalCoeff.CoPy  += AllBoundViscCoeff.CoPy;
+  TotalCoeff.CoPz  += AllBoundViscCoeff.CoPz;
+  TotalCoeff.CT    += AllBoundViscCoeff.CT;
+  TotalCoeff.CQ    += AllBoundViscCoeff.CQ;
+  TotalCoeff.CMerit = AllBoundViscCoeff.CT / (AllBoundViscCoeff.CQ + EPS);
+  Total_Heat        = AllBound_HF_Visc;
+  Total_MaxHeat     = AllBound_MaxHF_Visc;
 
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
 
   for (auto iMarker_Monitoring = 0u; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    SurfaceCoeff.CL[iMarker_Monitoring]         += SurfaceViscCoeff.CL[iMarker_Monitoring];
-    SurfaceCoeff.CD[iMarker_Monitoring]         += SurfaceViscCoeff.CD[iMarker_Monitoring];
-    SurfaceCoeff.CSF[iMarker_Monitoring]        += SurfaceViscCoeff.CSF[iMarker_Monitoring];
-    SurfaceCoeff.CEff[iMarker_Monitoring]        = SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
-    SurfaceCoeff.CFx[iMarker_Monitoring]        += SurfaceViscCoeff.CFx[iMarker_Monitoring];
-    SurfaceCoeff.CFy[iMarker_Monitoring]        += SurfaceViscCoeff.CFy[iMarker_Monitoring];
-    SurfaceCoeff.CFz[iMarker_Monitoring]        += SurfaceViscCoeff.CFz[iMarker_Monitoring];
-    SurfaceCoeff.CMx[iMarker_Monitoring]        += SurfaceViscCoeff.CMx[iMarker_Monitoring];
-    SurfaceCoeff.CMy[iMarker_Monitoring]        += SurfaceViscCoeff.CMy[iMarker_Monitoring];
-    SurfaceCoeff.CMz[iMarker_Monitoring]        += SurfaceViscCoeff.CMz[iMarker_Monitoring];
+    SurfaceCoeff.CL[iMarker_Monitoring]  += SurfaceViscCoeff.CL[iMarker_Monitoring];
+    SurfaceCoeff.CD[iMarker_Monitoring]  += SurfaceViscCoeff.CD[iMarker_Monitoring];
+    SurfaceCoeff.CSF[iMarker_Monitoring] += SurfaceViscCoeff.CSF[iMarker_Monitoring];
+    SurfaceCoeff.CEff[iMarker_Monitoring] = SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
+    SurfaceCoeff.CFx[iMarker_Monitoring] += SurfaceViscCoeff.CFx[iMarker_Monitoring];
+    SurfaceCoeff.CFy[iMarker_Monitoring] += SurfaceViscCoeff.CFy[iMarker_Monitoring];
+    SurfaceCoeff.CFz[iMarker_Monitoring] += SurfaceViscCoeff.CFz[iMarker_Monitoring];
+    SurfaceCoeff.CMx[iMarker_Monitoring] += SurfaceViscCoeff.CMx[iMarker_Monitoring];
+    SurfaceCoeff.CMy[iMarker_Monitoring] += SurfaceViscCoeff.CMy[iMarker_Monitoring];
+    SurfaceCoeff.CMz[iMarker_Monitoring] += SurfaceViscCoeff.CMz[iMarker_Monitoring];
   }
 
 }

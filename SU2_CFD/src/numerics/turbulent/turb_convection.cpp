@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/turbulent/turb_convection.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
@@ -74,18 +75,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  a_ij = 0.0;
-  if (dynamic_grid) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
-      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
-      a_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
-    }
-  }
-  else {
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
-  }
+  a_ij = 0.5*(GeometryToolbox::DotProduct(nDim,V_i+1,Normal)
+            + GeometryToolbox::DotProduct(nDim,V_j+1,Normal));
+  if (dynamic_grid)
+    a_ij -= 0.5*(GeometryToolbox::DotProduct(nDim,GridVel_i,Normal)
+               + GeometryToolbox::DotProduct(nDim,GridVel_j,Normal));
 
   a_i = 0.5*(a_ij+fabs(a_ij));
   a_j = 0.5*(a_ij-fabs(a_ij));

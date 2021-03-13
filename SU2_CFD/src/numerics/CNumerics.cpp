@@ -339,11 +339,8 @@ void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const
                                    const su2double *n, const su2double scale, su2double **J) const {
   const bool wasActive = AD::BeginPassive();
 
-  su2double sq_vel = 0.0, proj_vel = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    sq_vel   += v[iDim]*v[iDim];
-    proj_vel += v[iDim]*n[iDim];
-  }
+  const su2double sq_vel = GeometryToolbox::SquaredNorm(nDim,v);
+  const su2double proj_vel = GeometryToolbox::DotProduct(nDim,v,n);
 
   const su2double phi = 0.5*Gamma_Minus_One*sq_vel;
   const su2double a1 = Gamma*(*e)-phi-Gamma_Minus_One*(*k);
@@ -548,12 +545,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   const su2double c2    = pow(*c,2.0);
   const su2double alpha = 0.5/c2;
     
-  su2double q2 = 0.0, theta = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    q2    += pow(v[iDim],2);
-    theta += v[iDim]*n[iDim];
-  }
-  q2 *= 0.5;
+  const su2double q2 = 0.5*GeometryToolbox::SquaredNorm(nDim,v);
+  const su2double theta = GeometryToolbox::DotProduct(nDim,v,n);
 
   const su2double h = c2/Gamma_Minus_One + q2 + (*k);
 
@@ -694,12 +687,8 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   const su2double alpha = pow(*c,-2.0);
   const su2double beta  = Gamma_Minus_One*alpha;
 
-  su2double phi2 = 0.0, theta = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    phi2  += pow(v[iDim],2);
-    theta += v[iDim]*n[iDim];
-  }
-  phi2 *= 0.5*Gamma_Minus_One;
+  const su2double q2 = 0.5*Gamma_Minus_One*GeometryToolbox::SquaredNorm(nDim,v);
+  const su2double theta = GeometryToolbox::DotProduct(nDim,v,n);
 
   if (nDim == 2) {
     PInv[0][0] = (1.0-phi2*alpha);
