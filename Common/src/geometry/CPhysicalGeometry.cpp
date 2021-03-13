@@ -8775,7 +8775,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
-  su2double Area, *NormalFace = NULL;
+  su2double Area;
 
   /*--- Update values of faces of the edge ---*/
 
@@ -8843,10 +8843,9 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
 
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-      Area = sqrt(Area);
-      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = numeric_limits<passivedouble>::epsilon();
+      const auto NormalFace = vertex[iMarker][iVertex]->GetNormal();
+      const auto Area2 = GeometryToolbox::SquaredNorm(nDim,NormalFace)
+      if (Area2 == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = numeric_limits<passivedouble>::epsilon();
     }
 
 }
@@ -9682,7 +9681,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   long iEdge;
   unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
   su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint, *Coord_FacejPoint, Area,
-  Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
+  Volume, DomainVolume, my_DomainVolume;
   bool change_face_orientation;
 
   /*--- Update values of faces of the edge ---*/
@@ -9764,10 +9763,9 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
   /*--- Check if there is a normal with null area ---*/
   for (iEdge = 0; iEdge < (long)nEdge; iEdge++) {
-    NormalFace = edge[iEdge]->GetNormal();
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-    Area = sqrt(Area);
-    if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+    const auto NormalFace = edge[iEdge]->GetNormal();
+    const auto Area2 = GeometryToolbox::SquaredNorm(nDim,NormalFace);
+    if (Area2 == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
   }
 
 
