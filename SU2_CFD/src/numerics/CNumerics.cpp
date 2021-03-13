@@ -688,7 +688,7 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   const su2double alpha = pow(*c,-2.0);
   const su2double beta  = Gamma_Minus_One*alpha;
 
-  const su2double q2 = 0.5*Gamma_Minus_One*GeometryToolbox::SquaredNorm(nDim,v);
+  const su2double phi2 = 0.5*Gamma_Minus_One*GeometryToolbox::SquaredNorm(nDim,v);
   const su2double theta = GeometryToolbox::DotProduct(nDim,v,n);
 
   if (nDim == 2) {
