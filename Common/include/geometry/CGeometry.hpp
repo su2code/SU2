@@ -470,9 +470,10 @@ public:
    * \brief Get the edge index from using the nodes of the edge.
    * \param[in] first_point - First point of the edge.
    * \param[in] second_point - Second point of the edge.
+   * \param[in] error - Throw error if edge does not exist.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point) const;
+  long FindEdge(unsigned long first_point, unsigned long second_point, bool error = true) const;
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
