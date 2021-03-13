@@ -8845,7 +8845,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       const auto NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      const auto Area2 = GeometryToolbox::SquaredNorm(nDim,NormalFace)
+      const auto Area2 = GeometryToolbox::SquaredNorm(nDim,NormalFace);
       if (Area2 == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = numeric_limits<passivedouble>::epsilon();
     }
 
