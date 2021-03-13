@@ -179,6 +179,8 @@ private:
     const unsigned long *ptr = nullptr;
     unsigned long nEdge = 0;
 
+    operator bool() { return nEdge != 0; }
+
     inline unsigned long operator() (unsigned long edge, unsigned long node) const {
       return ptr[2*edge+node];
     }

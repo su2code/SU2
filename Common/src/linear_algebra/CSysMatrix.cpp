@@ -48,6 +48,7 @@ CSysMatrix<ScalarType>::CSysMatrix() :
   row_ptr           = nullptr;
   dia_ptr           = nullptr;
   col_ind           = nullptr;
+  col_ptr           = nullptr;
 
   ILU_matrix        = nullptr;
   row_ptr_ilu       = nullptr;
@@ -1326,8 +1327,10 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
     /*--- a=b', b=a' ---*/
     for (auto i=0ul; i<n; ++i) {
       for (auto j=0ul; j<i; ++j) {
-        std::swap(a[i*n+j], b[j*n+i]);
-        std::swap(a[j*n+i], b[i*n+j]);
+        const auto lo = i*n+j;
+        const auto up = j*n+i;
+        std::swap(a[lo], b[up]);
+        std::swap(a[up], b[lo]);
       }
       std::swap(a[i*n+i], b[i*n+i]);
     }
@@ -1335,7 +1338,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
   /*--- Swap ij with ji and transpose them. ---*/
 
-  if (edge_ptr.nEdge) {
+  if (edge_ptr) {
     /*--- The FV way. ---*/
     SU2_OMP_FOR_DYN(omp_light_size)
     for (auto iEdge = 0ul; iEdge < edge_ptr.nEdge; ++iEdge) {
@@ -1365,6 +1368,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
         const auto jPoint = col_ind[k];
         auto bij = &matrix[k*nVar*nVar];
         auto bji = GetBlock(jPoint,iPoint);
+        assert(bji && "Pattern is not symmetric.");
 
         swapAndTransp(nVar, bij, bji);
       }
