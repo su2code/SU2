@@ -30,6 +30,7 @@
 
 #include "../../include/numerics/CNumerics.hpp"
 #include "../../include/fluid_model.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CNumerics::CNumerics(void) {
 
