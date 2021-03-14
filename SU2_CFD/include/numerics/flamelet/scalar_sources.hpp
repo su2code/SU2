@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../CNumerics.hpp"
+#include "../../solvers/CScalarSolver.hpp"
 
 /*!
  * \class CSourcePieceWise_transportedScalar_general
@@ -37,10 +38,10 @@
  * \author A. Campos.
  */
 class CSourcePieceWise_transportedScalar_general final : public CNumerics {
+
 private:
-  su2double Residual[2],
-  *Jacobian_i[2] = {nullptr},
-  Jacobian_Buffer[4] = {0.0}; /// Static storage for the Jacobian (which needs to be pointer for return type).
+  su2double *Residual = nullptr;
+  su2double **Jacobian_i = nullptr;
 
   bool incompressible;
   bool viscous;
@@ -57,6 +58,9 @@ private:
     AD::SetPreaccIn(Coord_i[1]);
 
     yinv = 1.0/Coord_i[1];
+
+    /*--- the incompressible density. Note that this is different for compressible flows ---*/
+
     Density_i = V_i[nDim+2];
 
     /*--- Set primitive variables at points iPoint. ---*/
@@ -102,12 +106,7 @@ private:
     }
     
   }
-//    k = ScalarVar_i[0];
-//    w = ScalarVar_i[1];
-//
-//    /*--- Add terms to the residuals ---*/
-//    Residual[0] += yinv*Volume*(pk_axi-cdk_axi);
-//    Residual[1] += yinv*Volume*(pw_axi-cdw_axi);
+
 
   }
 

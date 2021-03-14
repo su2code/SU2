@@ -38,40 +38,37 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   viscous = config->GetViscous();
   implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
 
-  /*--- "Allocate" the Jacobian using the static buffer. ---*/
-  for (auto iVar = 0; iVar < val_nVar; iVar++)
-    Jacobian_i[0] = Jacobian_Buffer;
-  //Jacobian_i[1] = Jacobian_Buffer+2;
+  Residual = new su2double [nVar];
+  Jacobian_i = new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar] ();
+  }
 
 }
 
 CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  //AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); 
-  //AD::SetPreaccIn(dist_i);
-  //AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
-  //AD::SetPreaccIn(Vorticity_i, 3);
 
-  unsigned short iDim;
+  //unsigned short iDim;
 
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
 
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
+    //Density_i = V_i[nDim+2];
+    //Laminar_Viscosity_i = V_i[nDim+4];
     // we do not know if this exists
     //Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);
 
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
+    //Density_i = V_i[nDim+2];
+    //Laminar_Viscosity_i = V_i[nDim+5];
     // we do not know if this exists
     //Eddy_Viscosity_i = V_i[nDim+6];
   }

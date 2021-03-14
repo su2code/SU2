@@ -32,8 +32,8 @@
 
 CScalarSolver::CScalarSolver(void) : CSolver() {
 
-  lowerlimit       = NULL;
-  upperlimit       = NULL;
+  lowerlimit       = nullptr;
+  upperlimit       = nullptr;
   //Scalar_Inf       = NULL;  
 }
 
@@ -98,10 +98,6 @@ CScalarSolver::~CScalarSolver(void) {
 
 void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-  
-  //su2double *Limiter_i = NULL, *Limiter_j = NULL;
-  //su2double **Gradient_i, **Gradient_j;
-  //su2double Project_Grad_i, Project_Grad_j;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Scalar();
@@ -384,9 +380,9 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
     /// TODO: This could be the SetTime_Step of this solver.
      // nijso: we use a global cfl scaling factor
-     ////Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
-    //su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
+    //Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
+    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    //su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
     nodes->SetDelta_Time(iPoint, dt);
 
     /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
@@ -416,6 +412,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
       }
     }
   }
+
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Residual_RMS[iVar] += resRMS[iVar];
@@ -434,7 +431,7 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-  
+
 
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
@@ -457,15 +454,15 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
       // nijso: check difference between conservative and regular solution
       // nijso: conservative solution is for transport of rho*Y, 
       // nijso: check underrelaxation
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-        //nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar),scalar_clipping_min[iVar],scalar_clipping_max[iVar]);
+      for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
+        //nodes->AddSolution(iPoint,iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         nodes->AddConservativeSolution(iPoint, iVar,
           nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
           density, density_old, lowerlimit[iVar], upperlimit[iVar]);
       }
     }                
   }
+
 
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -491,6 +488,8 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
+  //cout << "iter = " << iter << endl;
+  
   SU2_OMP_MASTER {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
@@ -508,7 +507,11 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-  const su2double allowableRatio =  0.99;
+  
+  /*--- We could use the relaxationfactor from the config file and use it, as an allowableratio  ---*/
+  //const su2double allowableRatio =  1.0 - config->GetRelaxation_Factor_Scalar();
+
+  const su2double allowableRatio = 0.90;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -519,7 +522,7 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
         /* We impose a limit on the maximum percentage that the
          scalar variables can change over a nonlinear iteration. */
-
+        
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {

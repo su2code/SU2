@@ -30,7 +30,6 @@
 # ----------------------------------------------------------------------
 
 import os, copy
-import sys
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad

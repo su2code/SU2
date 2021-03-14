@@ -2207,10 +2207,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable) {
         numerics[iMGlevel][SCALAR_SOL][source_first_term]  = new CSourcePieceWise_transportedScalar_general(nDim, nVar_Scalar, config);
-   //if (config->GetAxisymmetric() == YES)
-      //    numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceAxisymmetric_Scalar(nDim, nVar_Scalar, config);
-      //else  
-        numerics[iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Scalar, config);
+        numerics[iMGlevel][SCALAR_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Scalar, config);
       }
     }
     
