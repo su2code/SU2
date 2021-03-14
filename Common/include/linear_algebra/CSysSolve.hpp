@@ -369,9 +369,10 @@ public:
    * \param[in,out] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] directCall - If this method is called directly, or in AD context.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, const CConfig *config);
+                        CGeometry *geometry, const CConfig *config, const bool directCall = true);
 
   /*!
    * \brief Get the number of iterations.

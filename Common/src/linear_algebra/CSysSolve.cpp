@@ -935,12 +935,14 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         Jacobian.BuildILUPreconditioner();
         break;
       case JACOBI:
+      case LINELET:
         Jacobian.BuildJacobiPreconditioner();
         break;
-      case LU_SGS: case LINELET:
+      case LU_SGS:
+        /*--- Nothing to build. ---*/
         break;
       case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond);
+        /*--- It was already built. ---*/
         break;
       default:
         SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -955,7 +957,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, const CSysVector<su2double> & LinSysRes,
-                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config) {
+                                             CSysVector<su2double> & LinSysSol, CGeometry *geometry, const CConfig *config,
+                                             const bool directCall) {
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
@@ -992,8 +995,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
-  /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
-  if (config->GetKind_SU2() == SU2_DOT) {
+  /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
+  if (directCall) {
     Jacobian.TransposeInPlace();
     precond->Build();
   }
@@ -1035,7 +1038,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
       break;
     case PASTIX_LDLT : case PASTIX_LU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+      if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
       Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
       IterLinSol = 1;
       Residual = 1e-20;

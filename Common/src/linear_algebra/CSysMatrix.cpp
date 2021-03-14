@@ -632,52 +632,12 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                                           CGeometry *geometry, const CConfig *config) const {
-
-  /// TODO: The transpose product requires a different thread-parallel strategy.
-  SU2_OMP_MASTER
-  {
-
-  /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
-#ifndef NDEBUG
-  if ((nVar != vec.GetNVar()) || (nEqn != prod.GetNVar())) {
-    SU2_OMP_MASTER
-    SU2_MPI::Error("nVar values incompatible.", CURRENT_FUNCTION);
-  }
-  if (nPoint != vec.GetNBlk()) {
-    SU2_OMP_MASTER
-    SU2_MPI::Error("nPoint and nBlk values incompatible.", CURRENT_FUNCTION);
-  }
-#endif
-
-  prod = ScalarType(0.0); // set all entries of prod to zero
-  for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-    auto vec_begin = row_i*nVar; // offset to beginning of block col_ind[index]
-    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      auto prod_begin = col_ind[index]*nEqn; // offset to beginning of block row_i
-      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
-      MatrixVectorProductTransp(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
-    }
-  }
-
-  }
-  SU2_OMP_BARRIER
-
-  /*--- MPI Parallelization ---*/
-
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIXTRANS);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIXTRANS);
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::BuildJacobiPreconditioner(bool transpose) {
+void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
 
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP(for schedule(dynamic,omp_heavy_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]), transpose);
+    InverseDiagonalBlock(iPoint, &(invM[iPoint*nVar*nVar]));
 
 }
 
@@ -698,36 +658,29 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::BuildILUPreconditioner(bool transposed) {
+void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
   /*--- Copy block matrix to compute factorization in-place. ---*/
 
-  if ((ilu_fill_in == 0) && !transposed) {
+  if (ilu_fill_in == 0) {
     /*--- ILU0, direct copy. ---*/
     SU2_OMP_FOR_STAT(omp_light_size)
     for (auto iVar = 0ul; iVar < nnz*nVar*nVar; ++iVar)
       ILU_matrix[iVar] = matrix[iVar];
   }
   else {
-    /*--- ILUn clear the ILU matrix first, for ILU0^T
-     *    the copy takes care of the clearing. ---*/
-    if (ilu_fill_in > 0) {
-      SU2_OMP_FOR_STAT(omp_light_size)
-      for (auto iVar = 0ul; iVar < nnz_ilu*nVar*nVar; iVar++)
-        ILU_matrix[iVar] = 0.0;
-    }
+    /*--- ILUn clear the ILU matrix first. ---*/
+    SU2_OMP_FOR_STAT(omp_light_size)
+    for (auto iVar = 0ul; iVar < nnz_ilu*nVar*nVar; iVar++)
+      ILU_matrix[iVar] = 0.0;
 
-    /*--- Transposed or ILUn, traverse matrix to access its blocks
+    /*--- ILUn, traverse matrix to access its blocks
      *    sequentially and set them in the ILU matrix. ---*/
     SU2_OMP_FOR_DYN(omp_heavy_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
         auto jPoint = col_ind[index];
-        if (transposed) {
-          SetBlockTransposed_ILUMatrix(jPoint, iPoint, &matrix[index*nVar*nVar]);
-        } else {
-          SetBlock_ILUMatrix(iPoint, jPoint, &matrix[index*nVar*nVar]);
-        }
+        SetBlock_ILUMatrix(iPoint, jPoint, &matrix[index*nVar*nVar]);
       }
     }
   }
@@ -1384,6 +1337,10 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
       for (auto j=0ul; j<i; ++j)
         std::swap(bii[i*nVar+j], bii[j*nVar+i]);
   }
+
+#ifdef HAVE_PASTIX
+  pastix_wrapper.SetTransposedSolve();
+#endif
 }
 
 template<class ScalarType>
@@ -1407,13 +1364,13 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config,
-                                                       unsigned short kind_fact, bool transposed) {
+                                                       unsigned short kind_fact) {
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
   SU2_OMP_MASTER
   {
     pastix_wrapper.SetMatrix(nVar,nPoint,nPointDomain,row_ptr,col_ind,matrix);
-    pastix_wrapper.Factorize(geometry, config, kind_fact, transposed);
+    pastix_wrapper.Factorize(geometry, config, kind_fact);
   }
   SU2_OMP_BARRIER
 #else

@@ -47,15 +47,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_
 
   auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
   if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij, false);
-}
-
-template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
-
-  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
-  if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij, true);
+  MatrixCopy(val_block, ilu_ij);
 }
 
 template<class T, bool alpha, bool beta, bool transp>
@@ -157,21 +149,21 @@ FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *m
 #undef __MATVECPROD_SIGNATURE__
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed) const {
+FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const {
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block, transposed);
+  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block);
 
   Gauss_Elimination(block, rhs);
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transposed) const {
+FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock) const {
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block, transposed);
+  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block);
 
   MatrixInverse(block, invBlock);
 }
@@ -181,7 +173,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i]*nVar*nVar], block, false);
+  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i]*nVar*nVar], block);
 
   MatrixInverse(block, invBlock);
 }
