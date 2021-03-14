@@ -499,6 +499,30 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 }
 
 template<class ScalarType>
+unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
+                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
+                                                       ScalarType tol, unsigned long MaxIter, ScalarType & residual, bool monitoring, const CConfig *config) const {
+
+  const auto restartIter = config->GetLinear_Solver_Restart_Frequency();
+
+  SU2_OMP_MASTER {
+    xIsZero = false;
+    tol_type = LinearToleranceType::ABSOLUTE;
+  }
+
+  const ScalarType norm0 = b.norm(); // <- Has a barrier
+
+  for (auto totalIter = 0ul; totalIter < MaxIter;) {
+    /*--- Enforce a hard limit on total number of iterations ---*/
+    auto iterLimit = min(restartIter, MaxIter-totalIter);
+    auto iter = FGMRES_LinSolver(b, x, mat_vec, precond, tol, iterLimit, residual, monitoring, config);
+    totalIter += iter;
+    if (residual <= tol*norm0 || iter < iterLimit) return totalIter;
+  }
+  return 0;
+}
+
+template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
                                                        ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
@@ -789,7 +813,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   ---*/
 
   unsigned short KindSolver, KindPrecond;
-  unsigned long MaxIter, RestartIter;
+  unsigned long MaxIter;
   ScalarType SolverTol;
   bool ScreenOutput;
 
@@ -800,7 +824,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     KindSolver   = config->GetKind_Linear_Solver();
     KindPrecond  = config->GetKind_Linear_Solver_Prec();
     MaxIter      = config->GetLinear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
     ScreenOutput = false;
   }
@@ -812,7 +835,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
     MaxIter      = config->GetDeform_Linear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
     ScreenOutput = config->GetDeform_Output();
   }
@@ -834,12 +856,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 #endif
   }
 
-  SU2_OMP_MASTER
-  if (KindSolver == RESTARTED_FGMRES) {
-    xIsZero = false;
-    tol_type = LinearToleranceType::ABSOLUTE;
-  }
-
   /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
@@ -857,7 +873,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   /*--- Solve system. ---*/
 
   unsigned long IterLinSol = 0;
-  ScalarType residual = 0.0, norm0 = 0.0;
+  ScalarType residual = 0.0;
 
   switch (KindSolver) {
     case BCGSTAB:
@@ -866,18 +882,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     case FGMRES:
       IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
+    case RESTARTED_FGMRES:
+      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
+      break;
     case CONJUGATE_GRADIENT:
       IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
-      break;
-    case RESTARTED_FGMRES:
-      norm0 = LinSysRes_ptr->norm();
-      while (IterLinSol < MaxIter) {
-        /*--- Enforce a hard limit on total number of iterations ---*/
-        auto IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        auto iter = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        IterLinSol += iter;
-        if (residual <= SolverTol*norm0 || iter < IterLimit) break;
-      }
       break;
     case SMOOTHER:
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
@@ -932,11 +941,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 
     switch(KindPrecond) {
       case ILU:
-        Jacobian.BuildILUPreconditioner();
+        if (RequiresTranspose) Jacobian.BuildILUPreconditioner();
         break;
       case JACOBI:
       case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
+        if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
         break;
       case LU_SGS:
         /*--- Nothing to build. ---*/
@@ -961,8 +970,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
                                              const bool directCall) {
 
   unsigned short KindSolver, KindPrecond;
-  unsigned long MaxIter, RestartIter, IterLinSol = 0;
-  ScalarType SolverTol, Norm0 = 0.0;
+  unsigned long MaxIter, IterLinSol = 0;
+  ScalarType SolverTol;
   bool ScreenOutput;
 
   /*--- Normal mode ---*/
@@ -972,7 +981,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
     KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
     MaxIter      = config->GetLinear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
     ScreenOutput = false;
   }
@@ -984,7 +992,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     KindSolver   = config->GetKind_Deform_Linear_Solver();
     KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
     MaxIter      = config->GetDeform_Linear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
     ScreenOutput = config->GetDeform_Output();
   }
@@ -1005,34 +1012,20 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Solve the system ---*/
 
-  SU2_OMP_MASTER
-  if (KindSolver == RESTARTED_FGMRES) {
-    xIsZero = false;
-    tol_type = LinearToleranceType::ABSOLUTE;
-  }
-
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
   switch(KindSolver) {
     case FGMRES:
       IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
       break;
+    case RESTARTED_FGMRES:
+      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
+      break;
     case BCGSTAB:
       IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , MaxIter, Residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
       IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = 0;
-      Norm0 = LinSysRes_ptr->norm();
-      while (IterLinSol < MaxIter) {
-        /*--- Enforce a hard limit on total number of iterations ---*/
-        auto IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        auto iter = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, Residual, ScreenOutput, config);
-        IterLinSol += iter;
-        if (Residual <= SolverTol*Norm0 || iter < IterLimit) break;
-      }
       break;
     case SMOOTHER:
       IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
