@@ -845,28 +845,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
   auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
-  CPreconditioner<ScalarType>* precond = nullptr;
 
-  switch (KindPrecond) {
-    case JACOBI:
-      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, false);
-      break;
-    case ILU:
-      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config, false);
-      break;
-    case LU_SGS:
-      precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
-      break;
-    case LINELET:
-      precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
-      break;
-    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, false);
-      break;
-    default:
-      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, false);
-      break;
-  }
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+
+  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
   /*--- Build preconditioner. ---*/
 
@@ -955,7 +937,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       case JACOBI:
         Jacobian.BuildJacobiPreconditioner();
         break;
-      case LU_SGS:
+      case LU_SGS: case LINELET:
         break;
       case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
         Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond);
@@ -1006,25 +988,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Set up preconditioner and matrix-vector product ---*/
 
-  CPreconditioner<ScalarType>* precond  = nullptr;
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
 
-  switch(KindPrecond) {
-    case ILU:
-      precond = new CILUPreconditioner<ScalarType>(Jacobian, geometry, config, false);
-      break;
-    case JACOBI:
-      precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config, false);
-      break;
-    case LU_SGS:
-      precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
-      break;
-    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config, KindPrecond, false);
-      break;
-    default:
-      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-      break;
-  }
+  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
   /*--- In SU2_DOT there is no call to Solve, preconditioner needs to be built here. ---*/
   if (config->GetKind_SU2() == SU2_DOT) {

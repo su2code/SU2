@@ -59,6 +59,12 @@ public:
    * \brief Generic "preprocessing" hook derived classes may implement to build the preconditioner.
    */
   virtual void Build() {}
+
+  /*!
+   * \brief Factory method.
+   */
+  static CPreconditioner* Create(ENUM_LINEAR_SOLVER_PREC kind, CSysMatrix<ScalarType>& jacobian,
+                                 CGeometry* geometry, const CConfig* config);
 };
 template<class ScalarType>
 CPreconditioner<ScalarType>::~CPreconditioner() {}
@@ -323,3 +329,32 @@ public:
     sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact, transp);
   }
 };
+
+
+template<class ScalarType>
+CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOLVER_PREC kind,
+                                                                 CSysMatrix<ScalarType>& jacobian,
+                                                                 CGeometry* geometry,
+                                                                 const CConfig* config) {
+  CPreconditioner<ScalarType>* prec = nullptr;
+
+  switch (kind) {
+    case JACOBI:
+      prec = new CJacobiPreconditioner<ScalarType>(jacobian, geometry, config, false);
+      break;
+    case LINELET:
+      prec = new CLineletPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case LU_SGS:
+      prec = new CLU_SGSPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case ILU:
+      prec = new CILUPreconditioner<ScalarType>(jacobian, geometry, config, false);
+      break;
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      prec = new CPastixPreconditioner<ScalarType>(jacobian, geometry, config, kind, false);
+      break;
+  }
+
+  return prec;
+}
