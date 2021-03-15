@@ -473,7 +473,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   unsigned short T_INDEX, TVE_INDEX, RHOS_INDEX, RHO_INDEX;
   unsigned long iVertex, iPoint, total_index;
   su2double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
-  su2double rho, Ys;
+  su2double eve, hs, rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *V, *dYdn, SdYdn;
   su2double **GradV, **GradY;
@@ -540,12 +540,6 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
       }
 
-      if (catalytic) {
-        cout << "NEED TO IMPLEMENT CATALYTIC BOUNDARIES IN HEATFLUX!!!" << endl;
-        exit(1);
-      }
-      else {
-
         /*--- Rename for convenience ---*/
         rho = V[RHO_INDEX];
         Ds  = nodes->GetDiffusionCoeff(iPoint);
@@ -557,7 +551,6 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++)
             dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
                 Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
-        }
 
         /*--- Calculate supplementary quantities ---*/
         SdYdn = 0.0;
@@ -566,8 +559,8 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           Ys   = V[RHOS_INDEX+iSpecies]/rho;
-          //eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
-          //hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
+          //eve  = nodes->GetEve(iPoint);
+          //hs   = numerics->ComputeSpeciesEnthalpy(config, V[T_INDEX], eve, iSpecies);
           //          Res_Visc[iSpecies] = -rho*Ds[iSpecies]*dYdn[iSpecies] + Ys*SdYdn;
           //          Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
           //          Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
@@ -686,7 +679,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   unsigned short RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -768,9 +761,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
       /*--- Apply to the linear system ---*/
-      Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-                                   (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
-      Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
+      Res_Visc[nSpecies+nDim]   = ((ktr*(Twall-Tj) + kve*(Twall-Tvej))*C)*Area/dij;
+      Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej) *C)*Area/dij;
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
@@ -796,15 +788,13 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CSolver **solution_container,
                                                 CNumerics *conv_numerics,
                                                 CNumerics *sour_numerics,
-                                                CConfig *config,
+                                                CConfig *config,					
                                                 unsigned short val_marker) {
-
-  SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
                                  sour_numerics, config, val_marker);
-
+  
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
   bool implicit;
@@ -813,7 +803,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
   dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
-  const su2double *Yst;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -823,8 +812,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   //su2double pcontrol = 0.6;
 
   /*--- Get species mass fractions at the wall ---*/
-  Yst = config->GetWall_Catalycity();
-
+  auto& Yst = FluidModel->GetWall_Catalycity();
+  	
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
   Ru       = 1000.0*RuSI;
@@ -845,7 +834,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   dVdU = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     dVdU[iVar] = new su2double[nVar];
-
+   	
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -874,7 +863,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Initialize the viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         Res_Visc[iVar] = 0.0;
-
+      
       /*--- Get primitive information ---*/
       Vi   = nodes->GetPrimitive(iPoint);
       Vj   = nodes->GetPrimitive(jPoint);
@@ -886,16 +875,16 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
-
+      
       /*--- Calculate normal derivative of mass fraction ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
-
+      
       /*--- Calculate supplementary quantities ---*/
       SdYdn = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
-
+	
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
                                        +Yst[iSpecies]*SdYdn            )*Area;

@@ -81,7 +81,8 @@ protected:
   ws,                                    /*!< \brief Species net production rates */
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
-  Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
+  Ref_Temperature,                       /*!< \brief Reference temperature for thermodynamic relations */
+  Wall_Catalycity;
 
 public:
 
@@ -240,4 +241,11 @@ public:
    * \brief Get species formation enthalpy.
    */
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
+
+  /*!
+   * \brief Get the wall heat flux on a constant heat flux boundary.
+   * \return The heat flux. 
+   */
+  virtual const vector<su2double>& GetWall_Catalycity() = 0;
+
 };
