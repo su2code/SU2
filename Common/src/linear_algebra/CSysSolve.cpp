@@ -847,6 +847,12 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
 #endif
   }
 
+  SU2_OMP_MASTER
+  if (KindSolver == RESTARTED_FGMRES) {
+    xIsZero = false;
+    tol_type = LinearToleranceType::ABSOLUTE;
+  }
+
   /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
@@ -898,9 +904,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
       norm0 = LinSysRes_ptr->norm();
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
-        unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
-        if ( residual <= SolverTol*norm0 ) break;
+        auto IterLimit = min(RestartIter, MaxIter-IterLinSol);
+        auto iter = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, residual, ScreenOutput, config);
+        IterLinSol += iter;
+        if (residual <= SolverTol*norm0 || iter < IterLimit) break;
       }
       break;
     case SMOOTHER:
@@ -1046,6 +1053,12 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Solve the system ---*/
 
+  SU2_OMP_MASTER
+  if (KindSolver == RESTARTED_FGMRES) {
+    xIsZero = false;
+    tol_type = LinearToleranceType::ABSOLUTE;
+  }
+
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
   switch(KindSolver) {
@@ -1063,10 +1076,14 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       Norm0 = LinSysRes_ptr->norm();
       while (IterLinSol < MaxIter) {
         /*--- Enforce a hard limit on total number of iterations ---*/
-        unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
-        IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol , IterLimit, Residual, ScreenOutput, config);
-        if ( Residual <= SolverTol*Norm0 ) break;
+        auto IterLimit = min(RestartIter, MaxIter-IterLinSol);
+        auto iter = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, IterLimit, Residual, ScreenOutput, config);
+        IterLinSol += iter;
+        if (Residual <= SolverTol*Norm0 || iter < IterLimit) break;
       }
+      break;
+    case SMOOTHER:
+      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, Residual, ScreenOutput, config);
       break;
     case PASTIX_LDLT : case PASTIX_LU:
       Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
@@ -1075,7 +1092,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
       Residual = 1e-20;
       break;
     default:
-      SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Unknown type of linear solver.",CURRENT_FUNCTION);
       break;
   }
 
