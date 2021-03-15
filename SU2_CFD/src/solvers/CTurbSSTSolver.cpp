@@ -1506,8 +1506,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       if (!node_i->GetPhysicalBoundary()) {
         const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*nodes->GetSolution(iPoint,iVar)*flowNodes->GetProjVel(iPoint,Normal)
-                                                : sign*nodes->GetSolution(jPoint,iVar)*flowNodes->GetProjVel(jPoint,Normal);
+          Flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*nodes->GetSolution(iPoint,iVar)*Mean_ProjVel
+                                                : sign*nodes->GetSolution(jPoint,iVar)*Mean_ProjVel;
         }
       }
 
