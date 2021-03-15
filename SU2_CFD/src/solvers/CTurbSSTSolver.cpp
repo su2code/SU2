@@ -1451,6 +1451,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
+  su2double Flux[MAXNVAR] = {0.0};
 
   /*--- Loop domain points. ---*/
 
@@ -1462,6 +1463,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     /*--- Set maximum eigenvalues to zero. ---*/
     nodes->SetMax_Lambda_Inv(iPoint,0.0);
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Flux[iVar] = 0.0;
 
     const auto Vol = geometry->node[iPoint]->GetVolume();
     if (Vol == 0.0) continue;
@@ -1497,6 +1501,16 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
+      /*--- Inviscid flux ---*/
+
+      if (!node_i->GetPhysicalBoundary()) {
+        const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          Flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*nodes->GetSolution(iPoint,iVar)*flowNodes->GetProjVel(iPoint,Normal)
+                                                : sign*nodes->GetSolution(jPoint,iVar)*flowNodes->GetProjVel(jPoint,Normal);
+        }
+      }
+
       /*--- Viscous contribution ---*/
 
       const su2double F1_i = nodes->GetF1blending(iPoint);
@@ -1517,6 +1531,16 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    }
+
+    if (!node_i->GetPhysicalBoundary()) {
+      su2double Max_Lambda_Inv = numeric_limits<passivedouble>::epsilon();
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        if (Flux[iVar] == 0.0) continue;
+        Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/Flux[iVar]);
+      }
+      Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
+      if (Max_Lambda_Inv < nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
     }
   }
 
