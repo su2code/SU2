@@ -2,7 +2,7 @@
  * \file COneShotSinglezoneDriver.cpp
  * \brief The main subroutines for one-shot problems.
  * \author T.Dick
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -257,7 +257,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   /*--- Extract the computed sensitivity values. ---*/
 
   if (RecordingState == SOLUTION_AND_MESH) {
-    solver[ADJFLOW_SOL]->SetSensitivity(geometry, solver, config);
+    solver[MainSolver]->SetSensitivity(geometry, config);
   }
 
   /*--- Monitor the pseudo-time ---*/
@@ -427,7 +427,7 @@ void COneShotSinglezoneDriver::UpdateDesignVariable() {
 void COneShotSinglezoneDriver::ComputePreconditioner() {
 
   /*--- get the sensitivities from the adjoint solver to work with ---*/
-  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
+  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[ADJFLOW_SOL]);
   /*--- precondition gradient and extract thew result. ---*/
   solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();

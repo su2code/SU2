@@ -3,7 +3,7 @@
  * \brief Header to define a driver for OneShot problems.
  *        Logic is based on the CAdjSinglezoneDriver class.
  * \author T.Dick
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -44,7 +44,7 @@
  * \class COneShotSinglezoneDriver
  * \brief Class that extends the AdjSinglezoneDriver class with methods for one-shot optimization
  * \author L. Kusch, T.Dick
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class COneShotSinglezoneDriver : public CDiscAdjSinglezoneDriver {
 

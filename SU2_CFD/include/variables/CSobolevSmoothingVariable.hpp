@@ -2,7 +2,7 @@
  * \file CSobolevSmoothingVariable.hpp
  * \brief Class for defining the variables of the gradient smoothing.
  * \author T.Dick
- * \version 7.0.5 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

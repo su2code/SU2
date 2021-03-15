@@ -4867,56 +4867,24 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
 su2double CEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) {
 
   unsigned int iMarker_Monitoring;
-  unsigned short Kind_ConstrFunc;
-  su2double ConstraintFunction = 0.0;
 
-  /*--- TODO: markers ---*/
+  su2double ConstraintFunction = EvaluateCommonConstrFunc(*config, iConstr);
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < 1; iMarker_Monitoring++) {
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-    Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
-
-    switch(Kind_ConstrFunc) {
+    switch(config->GetKind_ConstrFunc(iConstr)) {
       case DRAG_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CD[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
         if (config->GetFixed_CM_Mode()) ConstraintFunction -= config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;
-      case LIFT_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case SIDEFORCE_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CSF[iMarker_Monitoring]);
-        break;
-      case EFFICIENCY:
-        ConstraintFunction+=(SurfaceCoeff.CEff[iMarker_Monitoring]);
-        break;
+        break;    
       case MOMENT_X_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CMx[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
         break;
       case MOMENT_Y_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CMy[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
         break;
       case MOMENT_Z_COEFFICIENT:
-        ConstraintFunction+=(SurfaceCoeff.CMz[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case FORCE_X_COEFFICIENT:
-        ConstraintFunction+=SurfaceCoeff.CFx[iMarker_Monitoring];
-        break;
-      case FORCE_Y_COEFFICIENT:
-        ConstraintFunction+=SurfaceCoeff.CFy[iMarker_Monitoring];
-        break;
-      case FORCE_Z_COEFFICIENT:
-        ConstraintFunction+=SurfaceCoeff.CFz[iMarker_Monitoring];
-        break;
-      case TOTAL_HEATFLUX:
-        ConstraintFunction+=Surface_HF_Visc[iMarker_Monitoring];
-        break;
-      case MAXIMUM_HEATFLUX:
-        ConstraintFunction+=Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
       default:
         break;
@@ -4928,59 +4896,15 @@ su2double CEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iCon
    placed outside of the loop above. In addition, multi-objective mode is
    also disabled for these objective functions (error thrown at start). ---*/
 
-  Kind_ConstrFunc   = config->GetKind_ConstrFunc(iConstr);
-
-  switch(Kind_ConstrFunc) {
+  switch(config->GetKind_ConstrFunc(iConstr)) {
     case EQUIVALENT_AREA:
       ConstraintFunction+=Total_CEquivArea;
       break;
     case NEARFIELD_PRESSURE:
       ConstraintFunction+=Total_CNearFieldOF;
       break;
-    case INVERSE_DESIGN_PRESSURE:
-      ConstraintFunction+=Total_CpDiff;
-      break;
-    case INVERSE_DESIGN_HEATFLUX:
-      ConstraintFunction+=Total_HeatFluxDiff;
-      break;
-    case THRUST_COEFFICIENT:
-      ConstraintFunction+=TotalCoeff.CT;
-      break;
-    case TORQUE_COEFFICIENT:
-      ConstraintFunction+=TotalCoeff.CQ;
-      break;
-    case FIGURE_OF_MERIT:
-      ConstraintFunction+=TotalCoeff.CMerit;
-      break;
-    case SURFACE_TOTAL_PRESSURE:
-      ConstraintFunction+=config->GetSurface_TotalPressure(0);
-      break;
-    case SURFACE_STATIC_PRESSURE:
-      ConstraintFunction+=config->GetSurface_Pressure(0);
-      break;
-    case SURFACE_MASSFLOW:
-      ConstraintFunction+=config->GetSurface_MassFlow(0);
-      break;
     case SURFACE_MACH:
       ConstraintFunction+=config->GetSurface_Mach(0);
-      break;
-    case SURFACE_UNIFORMITY:
-      ConstraintFunction+=config->GetSurface_Uniformity(0);
-      break;
-    case SURFACE_SECONDARY:
-      ConstraintFunction+=config->GetSurface_SecondaryStrength(0);
-      break;
-    case SURFACE_MOM_DISTORTION:
-      ConstraintFunction+=config->GetSurface_MomentumDistortion(0);
-      break;
-    case SURFACE_SECOND_OVER_UNIFORM:
-      ConstraintFunction+=config->GetSurface_SecondOverUniform(0);
-      break;
-    case TOTAL_AVG_TEMPERATURE:
-      ConstraintFunction+=config->GetSurface_Temperature(0);
-      break;
-    case CUSTOM_OBJFUNC:
-      ConstraintFunction+=Total_Custom_ObjFunc;
       break;
     default:
       break;

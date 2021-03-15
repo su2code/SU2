@@ -302,13 +302,13 @@ su2double CNSSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr
   unsigned short Kind_ConstrFunc;
   su2double ConstraintFunction=0.0;
 
-  /*--- Evaluate objective functions common to Euler and NS solvers ---*/
+  /*--- Evaluate constraint functions common to Euler and NS solvers ---*/
 
   ConstraintFunction = CEulerSolver::Evaluate_ConstrFunc(config, iConstr);
 
-  /*--- TODO: markers ---*/
+  /*--- Evaluate constraint functions specific to NS solver ---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < 1; iMarker_Monitoring++) {
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
     Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
 

@@ -939,6 +939,8 @@ void CConfig::SetPointersNull(void) {
 
   Weight_ObjFunc = nullptr;
 
+  /*--- One Shot constraint function pointers ---*/
+
   Kind_ConstrFunc = nullptr;
   ConstrFuncTarget = nullptr;
   ConstrFuncScale = nullptr;
@@ -1956,6 +1958,18 @@ void CConfig::SetConfig_Options() {
   addBoolOption("DIRICHLET_SURFACE_BOUNDARY",DirichletSurfaceBound, false);
   /* DESCRIPTION: Switch to activate somecode pieces for debbuging */
   addEnumOption("SOBOLEV_MODE",NumMode, Sobolev_Modus_Map,NO_MODUS);
+  /*!\brief HESS_OBJFUNC_FILENAME
+   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
+  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
+
+  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -2009,9 +2023,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief GRAD_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function gradient  \ingroup Config*/
   addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
-  /*!\brief HESS_OBJFUNC_FILENAME
-   *  \n DESCRIPTION: Output objective function hessian  \ingroup Config*/
-  addStringOption("HESS_OBJFUNC_FILENAME", ObjFunc_Hess_FileName, string("of_hess.dat"));
   /*!\brief VALUE_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function  \ingroup Config*/
   addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
@@ -2026,6 +2037,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
+  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
@@ -2225,15 +2237,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
-
-  /*  DESCRIPTION: Linear solver for the gradient smoothing\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
-  addEnumOption("GRAD_LINEAR_SOLVER", Kind_Grad_Linear_Solver, Linear_Solver_Map, FGMRES);
-  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
-  addEnumOption("GRAD_LINEAR_SOLVER_PREC", Kind_Grad_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
-  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  addDoubleOption("GRAD_LINEAR_SOLVER_ERROR", Grad_Linear_Solver_Error, 1E-14);
-  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
-  addUnsignedLongOption("GRAD_LINEAR_SOLVER_ITER", Grad_Linear_Solver_Iter, 1000);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/

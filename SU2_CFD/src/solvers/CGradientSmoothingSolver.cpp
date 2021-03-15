@@ -2,7 +2,7 @@
  * \file CSolverGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 7.0.5 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -325,8 +325,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     if (config->GetSmoothOnSurface()) {
 
       /// perform MPI communication
-      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
 
       /// compute the matrix vector product
       /// MatrixVector product operator does mpi comm at the end
@@ -347,8 +347,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
       ReadVector2Geometry(geometry,config, helperVecIn);
 
       /// perform MPI communication
-      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
 
       /// compute the matrix vector product
       /// MatrixVector product operator does mpi comm at the end
@@ -398,7 +398,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 
   unsigned long iElem, iNode;
   unsigned int iDim, nNodes = 0, NelNodes, jNode;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  unsigned long indexNode[MAXNNODE];
   su2double val_Coord;
   int EL_KIND = 0;
 
@@ -472,8 +472,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
   unsigned long iElem, iPoint, iVertex, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
-  std::vector<unsigned long> indexNode(8, 0.0);
-  std::vector<unsigned long> indexVertex(8, 0.0);
+  std::vector<unsigned long> indexNode(MAXNNODE, 0.0);
+  std::vector<unsigned long> indexVertex(MAXNNODE, 0.0);
   int EL_KIND = 0;
 
   bool* visited = new bool[geometry->GetnPoint()];
@@ -561,7 +561,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
   unsigned long iElem;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  std::vector<unsigned long> indexNode(8, 0.0);
+  std::vector<unsigned long> indexNode(MAXNNODE, 0.0);
   su2double Weight, Jac_X;
 
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -645,8 +645,8 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   unsigned long iElem, iPoint, iVertex;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
-  std::vector<unsigned long> indexNode(8, 0.0);
-  std::vector<unsigned long> indexVertex(8, 0.0);
+  std::vector<unsigned long> indexNode(MAXNNODE, 0.0);
+  std::vector<unsigned long> indexVertex(MAXNNODE, 0.0);
   su2double Weight, Jac_X, normalSens = 0.0, norm;
   su2double* normal = NULL;
   su2activematrix Coord;
@@ -741,7 +741,7 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numeri
 void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
 
   unsigned long iPoint, iVertex;
-  const su2double zeros[nDim] = {0.0};
+  const su2double zeros[MAXNDIM] = {0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -761,7 +761,7 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned int val_marker) {
 
   unsigned long iPoint, iVertex;
-  const su2double zeros[nDim] = {0.0};
+  const su2double zeros[MAXNDIM] = {0.0};
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
   if (val_marker!=NOT_AVAILABLE) {
@@ -787,10 +787,10 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
   unsigned long IterLinSol = 0;
 
   /*--- For MPI prescribe vector entries across the ranks before solving the system. ---*/
-  Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-  Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-  Jacobian.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
-  Jacobian.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(LinSysSol, geometry, config);
+  CSysMatrixComms::Complete(LinSysSol, geometry, config);
+  CSysMatrixComms::Initiate(LinSysRes, geometry, config);
+  CSysMatrixComms::Complete(LinSysRes, geometry, config);
 
   // elimination shedule
   Set_VertexEliminationSchedule(geometry, config);
@@ -1023,23 +1023,23 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
 }
 
 
-void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
+      nodes->SetSensitivity(iPoint,iDim, solver->GetNodes()->GetSensitivity(iPoint,iDim));
     }
   }
 }
 
 
-void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
+      solver->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
     }
   }
 }

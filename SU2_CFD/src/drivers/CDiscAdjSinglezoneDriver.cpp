@@ -602,7 +602,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
 
   /*--- get the sensitivities from the adjoint solver to work with ---*/
-  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
+  solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[MainSolver]);
 
   /*--- Apply the smoothing procedure on the mesh level. ---*/
   if (config->GetSobMode()==MESH_LEVEL || config->GetSobMode()==DEBUG ) {
@@ -617,20 +617,20 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
           dvMarker = iMarker;
         }
       }
-      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, dvMarker);
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config, dvMarker);
 
     } else {
-      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], config);
     }
 
     /// After appling the solver write the results back
-    solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,solver,config);
+    solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,config,solver[ADJFLOW_SOL]);
 
   /*--- Apply the smoothing procedure on the DV level. ---*/
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
 
     /// new layout for this
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
 
   /*--- in some OneShot applications we might only need the original gradient. ---*/
   } else if (config->GetSobMode()==ONLY_GRAD) {

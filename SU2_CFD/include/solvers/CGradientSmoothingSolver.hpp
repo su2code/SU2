@@ -2,7 +2,7 @@
  * \file CGradientSmoothingSolver.hpp
  * \brief SOlver class for Sobolev smoothing of sensitivities.
  * \author T. Dick
- * \version 7.0.5 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 
 /** Introduction of a new data type to allow compilation with forward mode.
@@ -49,6 +50,8 @@
  */
 class CGradientSmoothingSolver : public CSolver {
 public:
+  enum : size_t {MAXNNODE = 8};
+  enum : size_t {MAXNDIM = 3};
 
   unsigned long nElement;
 
@@ -260,8 +263,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry,
-                      CSolver **solver,
-                      CConfig *config);
+                      CConfig *config,
+                      CSolver *solver);
 
   /*!
    * \brief Store smoothed sensitivties back into the adjoint solver.
@@ -270,8 +273,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void OutputSensitivity(CGeometry *geometry,
-                         CSolver **solver,
-                         CConfig *config);
+                         CConfig *config,
+                         CSolver *solver);
 
   /*!
    * \brief Write the solution of the linear solver into the sensitivities of the nodes

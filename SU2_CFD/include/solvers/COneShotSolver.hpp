@@ -2,7 +2,7 @@
  * \file COneShotSolver.hpp
  * \brief Main header for defining the OneShot solver.
  * \author L. Kusch, T.Dick
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

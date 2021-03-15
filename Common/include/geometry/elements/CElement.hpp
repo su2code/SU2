@@ -558,11 +558,11 @@ template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
 private:
 
-  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][1], su2double[][1]) {
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][1], su2double ad[][1]) {
     /*--- Adjoint to Jacobian, we put 1.0 here so that ad/detJac is the inverse later ---*/
     ad[0][0] = 1.0;
     /*--- Determinant of Jacobian ---*/
-    detJac = Jacobian[0][0];
+    return Jacobian[0][0];
   }
 
 

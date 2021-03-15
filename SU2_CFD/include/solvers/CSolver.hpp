@@ -848,7 +848,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config) {}
 
   /*!
    * \brief A virtual member
@@ -4378,8 +4378,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void OutputSensitivity(CGeometry *geometry,
-                                 CSolver **solver,
-                                 CConfig *config) { }
+                                 CConfig *config,
+                                 CSolver *solver) { }
 
   /*!
    * \brief A virtual member.

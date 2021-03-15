@@ -1,8 +1,8 @@
 /*!
- * \file output_adj_flow_comp.cpp
- * \brief Main subroutines for flow discrete adjoint output
- * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \file COneShotOutput.cpp
+ * \brief Main subroutines for One Shot output
+ * \author T. Dick
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

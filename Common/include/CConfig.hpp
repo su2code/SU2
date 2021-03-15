@@ -430,14 +430,20 @@ private:
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
-  bool SmoothGradient; /*!< \brief Flag for enabling gradient smoothing. */
-  su2double SmoothingParam; /*!< \brief Parameter for the Laplace part in gradient smoothing. */
+  /* Gradient smoothing options */
+  bool SmoothGradient;            /*!< \brief Flag for enabling gradient smoothing. */
+  su2double SmoothingParam;       /*!< \brief Parameter for the Laplace part in gradient smoothing. */
   su2double SmoothingParamSecond; /*!< \brief Parameter for the identity part in gradient smoothing. */
-  bool SepDim; /*!< \brief Flag for enabling separated calculation for every dimension. */
-  bool SecOrdQuad; /*!< \brief Flag for using second order quadrature rules in numerical integration. */
-  bool SmoothOnSurface; /*!< \brief Flag for assembling the system only on the surface. */
-  bool DirichletSurfaceBound; /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
-  unsigned short NumMode; /*!< \brief temporary flag for some debuging stuff */
+  bool SepDim;                    /*!< \brief Flag for enabling separated calculation for every dimension. */
+  bool SecOrdQuad;                /*!< \brief Flag for using second order quadrature rules in numerical integration. */
+  bool SmoothOnSurface;           /*!< \brief Flag for assembling the system only on the surface. */
+  bool DirichletSurfaceBound;     /*!< \brief Flag for using zero Dirichlet boundary in the surface case. */
+  unsigned short NumMode;         /*!< \brief temporary flag for some debuging stuff */
+
+  unsigned short  Kind_Grad_Linear_Solver,  /*!< Numerical method to smooth the gradient */
+  Kind_Grad_Linear_Solver_Prec;             /*!< \brief Preconditioner of the linear solver. */
+  su2double Grad_Linear_Solver_Error;      /*!< \brief Min error of the linear solver for the gradient smoothing. */
+  unsigned long Grad_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
@@ -489,8 +495,6 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
-  Kind_Grad_Linear_Solver, /*!< Numerical method to smoothen the gradient */
-  Kind_Grad_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_AdjTurb_Linear_Solver,            /*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
@@ -581,11 +585,9 @@ private:
   bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
-  su2double Grad_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the gradient smoothing. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
-  unsigned long Grad_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the gradient smoothing. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
@@ -772,7 +774,7 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName;	     /*!< \brief Hessian of the objective function. */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian of the objective function. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -2687,53 +2689,6 @@ public:
    * \return    <code>TRUE</code> means that elements can be reoriented if suspected unhealthy
    */
   bool GetReorientElements(void) const { return ReorientElements; }
-  /*!
-   * \brief Check if the gradient smoothing is active
-   * \return true means that smoothing is applied to the sensitivities
-   */
-  bool GetSmoothGradient(void) const {return SmoothGradient; }
-
-  /*!
-   * \brief Gets the factor epsilon in front of the Laplace term
-   * \return epsilon
-   */
-  su2double GetSmoothingParam(void) const { return SmoothingParam; }
-
-  /*!
-   * \brief Gets the factor zeta in front of the identity term
-   * \return zeta
-   */
-  su2double GetSmoothingParamSecond(void) const { return SmoothingParamSecond; }
-
-  /*!
-   * \brief Check if we split in the dimensions
-   * \return true means that smoothing is for each dimension separate
-   */
-  bool GetSepDim(void) const { return SepDim; }
-
-  /*!
-   * \brief Check if we assemble the operator on the surface
-   * \return true means that smoothing is done on the surface level
-   */
-  bool GetSmoothOnSurface(void) const { return SmoothOnSurface; }
-
-  /*!
-   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
-   * \return true means that we use zero Dirichlet boundary
-   */
-  bool GetDirichletSurfaceBound(void) const { return DirichletSurfaceBound; }
-
-  /*!
-   * \brief The modus of operation for the solver
-   * \return returns on what level we operate
-   */
-  unsigned short GetSobMode(void) const { return NumMode; }
-
-  /*!
-   * \brief Check if we use second order numerical integration in FE
-   * \return true means that we use second order accurate methods
-   */
-  bool GetSecOrdQuad(void) const { return SecOrdQuad; }
 
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
@@ -4051,36 +4006,6 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetDeform_Linear_Solver_Iter(void) const { return Deform_Linear_Solver_Iter; }
-
-  /*!
-   * \brief Get min error of the linear solver for the gradient smoothing.
-   * \return Min error of the linear solver for the gradient smoothing.
-   */
-  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
-
-  /*!
-   * \brief Get the kind of solver for the gradient smoothing.
-   * \return Numerical solver for the gradient smoothing.
-   */
-  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
-
-    /*!
-   * \brief Get the kind of preconditioner for the gradient smoothing.
-   * \return Numerical preconditioner for the gradient smoothing.
-   */
-  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
-
-    /*!
-   * \brief Set the kind of preconditioner for the gradient smoothing.
-   * \return Numerical preconditioner for the gradient smoothing.
-   */
-  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
-
-    /*!
-   * \brief Get max number of iterations of the for the gradient smoothing.
-   * \return Max number of iterations of the linear solver for the gradient smoothing.
-   */
-  unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
 
   /*!
    * \brief Get the ILU fill-in level for the linear solver.
@@ -5460,12 +5385,6 @@ public:
    * \return Name of the file with the appropriate objective function extension.
    */
   string GetObjFunc_Extension(string val_filename) const;
-
-  /*!
-   * \brief Get the name of the file with the hessian of the objective function.
-   * \return Name of the file with the hessian of the objective function.
-   */
-  string GetObjFunc_Hess_FileName(void) const { return ObjFunc_Hess_FileName; }
 
   /*!
    * \brief Get the criteria for structural residual (relative/absolute).
@@ -9426,6 +9345,94 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /** Config functions related to the gradient smoothing solver. **/
+
+  /*!
+   * \brief Check if the gradient smoothing is active
+   * \return true means that smoothing is applied to the sensitivities
+   */
+  bool GetSmoothGradient(void) const {return SmoothGradient; }
+
+  /*!
+   * \brief Gets the factor epsilon in front of the Laplace term
+   * \return epsilon
+   */
+  su2double GetSmoothingParam(void) const { return SmoothingParam; }
+
+  /*!
+   * \brief Gets the factor zeta in front of the identity term
+   * \return zeta
+   */
+  su2double GetSmoothingParamSecond(void) const { return SmoothingParamSecond; }
+
+  /*!
+   * \brief Check if we split in the dimensions
+   * \return true means that smoothing is for each dimension separate
+   */
+  bool GetSepDim(void) const { return SepDim; }
+
+  /*!
+   * \brief Check if we assemble the operator on the surface
+   * \return true means that smoothing is done on the surface level
+   */
+  bool GetSmoothOnSurface(void) const { return SmoothOnSurface; }
+
+  /*!
+   * \brief Check if we use zero Dirichlet boundarys on the bound of the surface
+   * \return true means that we use zero Dirichlet boundary
+   */
+  bool GetDirichletSurfaceBound(void) const { return DirichletSurfaceBound; }
+
+  /*!
+   * \brief The modus of operation for the solver
+   * \return returns on what level we operate
+   */
+  unsigned short GetSobMode(void) const { return NumMode; }
+
+  /*!
+   * \brief Check if we use second order numerical integration in FE
+   * \return true means that we use second order accurate methods
+   */
+  bool GetSecOrdQuad(void) const { return SecOrdQuad; }
+
+  /*!
+   * \brief Get the name of the file with the hessian of the objective function.
+   * \return Name of the file with the hessian of the objective function.
+   */
+  string GetObjFunc_Hess_FileName(void) const { return ObjFunc_Hess_FileName; }
+
+  /*!
+   * \brief Get min error of the linear solver for the gradient smoothing.
+   * \return Min error of the linear solver for the gradient smoothing.
+   */
+  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get the kind of solver for the gradient smoothing.
+   * \return Numerical solver for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
+
+    /*!
+   * \brief Get the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
+
+    /*!
+   * \brief Set the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
+
+    /*!
+   * \brief Get max number of iterations of the for the gradient smoothing.
+   * \return Max number of iterations of the linear solver for the gradient smoothing.
+   */
+  unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
+
+  /** Config functions related to the One Shot driver. **/
 
   /*!
    * \brief Check if a One-Shot modus is specified in the config file.

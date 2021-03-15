@@ -66,10 +66,6 @@ void CSU2MeshFileWriter::Write_Data() {
     output_file.close();
   }
 
-  output_file.open(cstr, ios::out | ios::app);
-  output_file.precision(15);
-  output_file << std::scientific;
-
   unsigned long nElem = 0, offset = 0;
 
   for (int iProcessor = 0; iProcessor < size; iProcessor++) {

@@ -2,7 +2,7 @@
  * \file eigen_structure.hpp
  * \brief Header to include the Eigen linear algebra package into certain solvers.
  * \author T. Dick
- * \version 7.0.5 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
