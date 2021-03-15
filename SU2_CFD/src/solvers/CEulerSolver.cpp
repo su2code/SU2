@@ -1521,6 +1521,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
 
+    case MUTATIONPP: case SU2_NONEQ:
+      SU2_MPI::Error("This fluid model can only be used with the nonequilibrium NEMO solver.", CURRENT_FUNCTION);
+      break;  
+
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
       break;

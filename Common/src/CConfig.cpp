@@ -3597,6 +3597,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+    if ((GetKind_FluidModel() != SU2_NONEQ) || (GetKind_FluidModel() != MUTATIONPP) )
+      SU2_MPI::Error("Only FLUID_MODEL = SU2_NONEQ or FLUID_MODEL = MUTATIONPP can be used with a NEMO solver.", CURRENT_FUNCTION);
   }
 
   if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
