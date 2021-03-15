@@ -1451,7 +1451,12 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time;
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
-  su2double Flux[MAXNVAR] = {0.0};
+
+  const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
+
+  su2double flux[MAXNVAR] = {0.0};
+  su2double turbPrimVar_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNFLO] = {0.0};
+  su2double turbPrimVar_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNFLO] = {0.0};
 
   /*--- Loop domain points. ---*/
 
@@ -1465,7 +1470,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
     for (auto iVar = 0u; iVar < nVar; iVar++)
-      Flux[iVar] = 0.0;
+      flux[iVar] = 0.0;
 
     const auto Vol = geometry->node[iPoint]->GetVolume();
     if (Vol == 0.0) continue;
@@ -1504,10 +1509,18 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       /*--- Inviscid flux ---*/
 
       if (!node_i->GetPhysicalBoundary()) {
+        bool good_i, good_j;
+        solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
+                                           turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
+
+        const su2double Mean_ProjVel_2 = 0.5*(GeometryToolbox::DotProduct(nDim,flowPrimVar_i+1,Normal)
+                                            + GeometryToolbox::DotProduct(nDim,flowPrimVar_j+1,Normal));
         const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*nodes->GetSolution(iPoint,iVar)*Mean_ProjVel
-                                                : sign*nodes->GetSolution(jPoint,iVar)*Mean_ProjVel;
+          const su2double turbSol_i = turbPrimVar_i[iVar]*flowPrimVar_i[nDim+2];
+          const su2double turbSol_j = turbPrimVar_j[iVar]*flowPrimVar_j[nDim+2];
+          flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*(turbSol_i*Mean_ProjVel_2-nodes->GetSolution(iPoint,iVar)*Mean_ProjVel)
+                                                : sign*(turbSol_j*Mean_ProjVel_2-nodes->GetSolution(jPoint,iVar)*Mean_ProjVel);
         }
       }
 
@@ -1536,10 +1549,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     if (!node_i->GetPhysicalBoundary()) {
       su2double Max_Lambda_Inv = numeric_limits<passivedouble>::epsilon();
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        if (Flux[iVar] == 0.0) continue;
-        Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/Flux[iVar]);
+        if (flux[iVar] == 0.0) continue;
+        Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/flux[iVar]);
       }
-      Max_Lambda_Inv = nodes->GetLocalCFL(iPoint)/Max_Lambda_Inv;
+      Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
       if (Max_Lambda_Inv < nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
     }
   }
