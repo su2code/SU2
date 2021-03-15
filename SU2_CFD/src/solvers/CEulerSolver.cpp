@@ -3624,80 +3624,80 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*---         gradient projection (0.5*Psi*gradV_i*dist_ij).           ---*/
   /*--------------------------------------------------------------------------*/
 
-  // const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
-  // su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0}, vel_k[MAXNDIM] = {0.0};
-  // GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
+  const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0}, vel_k[MAXNDIM] = {0.0};
+  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
 
-  // /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
+  /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  // su2double Psi[MAXNGRA] = {0.0};
-  // for (auto iVar = 1; iVar <= nVar; iVar++) {
-  //   const auto ind = iVar%(nDim+2);
-  //   Psi[ind] = (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-  // }
-  // if (tkeNeeded) {
-  //   Psi[nVar] = (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
-  // }
+  su2double Psi[MAXNGRA] = {0.0};
+  for (auto iVar = 1; iVar <= nVar; iVar++) {
+    const auto ind = iVar%(nDim+2);
+    Psi[ind] = (nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+  }
+  if (tkeNeeded) {
+    Psi[nVar] = (turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
+  }
 
-  // /*--- Green-Gauss surface terms ---*/
+  /*--- Green-Gauss surface terms ---*/
   
-  // if (gg && node_i->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
 
-  //   SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-  //   const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-  //   for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
-  //     dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-  //   for (auto iVar = 0u; iVar < nVar; iVar++)
-  //     for (auto jVar = 0u; jVar < nVar; jVar++)
-  //       for (auto kVar = 0u; kVar < nPrimVarTot; kVar++)
-  //         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
-  // }
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
+        for (auto kVar = 0u; kVar < nPrimVarTot; kVar++)
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
+  }
 
-  // /*--- Neighbor node terms ---*/
+  /*--- Neighbor node terms ---*/
 
-  // for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
-  //   /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
+    /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
 
-  //   const auto kPoint = node_i->GetPoint(iNeigh);
-  //   const auto primvar_k = nodes->GetPrimitive(kPoint);
+    const auto kPoint = node_i->GetPoint(iNeigh);
+    const auto primvar_k = nodes->GetPrimitive(kPoint);
 
-  //   const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
-  //   for (auto iDim = 0u; iDim < nDim; iDim++) vel_k[iDim] = primvar_k[iDim+1];
-  //   const su2double sq_vel_k = GeometryToolbox::SquaredNorm(nDim,vel_k);
+    const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
+    for (auto iDim = 0u; iDim < nDim; iDim++) vel_k[iDim] = primvar_k[iDim+1];
+    const su2double sq_vel_k = GeometryToolbox::SquaredNorm(nDim,vel_k);
 
-  //   dVk_dUk[0][0] = 1.0;
-  //   for (auto iDim = 0u; iDim < nDim; iDim++) {
-  //     dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
-  //     dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
-  //     dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
-  //   }
-  //   dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-  //   dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
-  //   if (tkeNeeded)
-  //     dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+    dVk_dUk[0][0] = 1.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
+      dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
+      dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
+    }
+    dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
+    dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
+    if (tkeNeeded)
+      dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 
-  //   SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
+    SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
-  //   const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-  //   for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
-  //     dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-  //   for (auto iVar = 0u; iVar < nVar; iVar++) {
-  //     for (auto jVar = 0u; jVar < nVar; jVar++) {
-  //       Jacobian_j[iVar][jVar] = 0.0;
-  //       for (auto kVar = 0u; kVar < nPrimVarTot; kVar++) {
-  //         Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
-  //         Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
-  //       }
-  //     }
-  //   }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
+        Jacobian_j[iVar][jVar] = 0.0;
+        for (auto kVar = 0u; kVar < nPrimVarTot; kVar++) {
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
+          Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
+        }
+      }
+    }
 
-  //   Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
-  //   Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
-  // }
+    Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
+  }
 
   Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
@@ -3712,29 +3712,29 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
                                           const unsigned long jPoint,
                                           const su2double     *Normal) {
 
-  // const bool wasActive = AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
-  // su2double EdgVec[MAXNDIM] = {0.0};
-  // GeometryToolbox::Distance(nDim,geometry->node[jPoint]->GetCoord(),geometry->node[iPoint]->GetCoord(),EdgVec);
+  su2double EdgVec[MAXNDIM] = {0.0};
+  GeometryToolbox::Distance(nDim,geometry->node[jPoint]->GetCoord(),geometry->node[iPoint]->GetCoord(),EdgVec);
 
-  // /*--- Get norm of projection and distance vectors ---*/
+  /*--- Get norm of projection and distance vectors ---*/
 
-  // su2double ProjVec = 0.0, Dist2 = (iPoint == jPoint)? 1.0 : 0.0;
-  // if (iPoint != jPoint) {
-  //   ProjVec = GeometryToolbox::DotProduct(nDim,Normal,EdgVec);
-  //   Dist2   = GeometryToolbox::SquaredNorm(nDim,EdgVec);
-  // }
+  su2double ProjVec = 0.0, Dist2 = (iPoint == jPoint)? 1.0 : 0.0;
+  if (iPoint != jPoint) {
+    ProjVec = GeometryToolbox::DotProduct(nDim,Normal,EdgVec);
+    Dist2   = GeometryToolbox::SquaredNorm(nDim,EdgVec);
+  }
 
-  // /*--- Get vector to be multiplied by Jacobian weights ---*/
+  /*--- Get vector to be multiplied by Jacobian weights ---*/
 
-  // su2double Vec[MAXNDIM] = {0.0};
-  // for (auto iDim = 0u; iDim < nDim; iDim++)
-  //   Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+  su2double Vec[MAXNDIM] = {0.0};
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
-  // StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
-  // HeatFluxJacobian(solver, geometry, config, iPoint, jPoint, Vec);
+  StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
+  HeatFluxJacobian(solver, geometry, config, iPoint, jPoint, Vec);
 
-  // AD::EndPassive(wasActive);
+  AD::EndPassive(wasActive);
 }
 
 void CEulerSolver::StressTensorJacobian(CSolver             **solver,

@@ -433,60 +433,60 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*---         gradient projection (0.5*Psi*gradV_i*dist_ij).           ---*/
   /*--------------------------------------------------------------------------*/
 
-  // const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
-  // su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
-  // GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
+  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
+  GeometryToolbox::Distance(nDim,node_j->GetCoord(),node_i->GetCoord(),dist_ij);
 
-  //  /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
+   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  // su2double Psi[MAXNVAR] = {0.0};
-  // for (auto iVar = 0u; iVar < nVar; iVar++) {
-  //   Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
-  // }
+  su2double Psi[MAXNVAR] = {0.0};
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    Psi[iVar] =  (nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+  }
 
-  // /*--- Green-Gauss surface terms ---*/
+  /*--- Green-Gauss surface terms ---*/
 
-  // if (gg && node_i->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
 
-  //   SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-  //   const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-  //   for (auto iVar = 0u; iVar < nVar; iVar++)
-  //     dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-  //   for (auto iVar = 0u; iVar < nVar; iVar++)
-  //     for (auto jVar = 0u; jVar < nVar; jVar++)
-  //       Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
-  // }
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto jVar = 0u; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
+  }
 
-  // /*--- Neighbor node terms ---*/
+  /*--- Neighbor node terms ---*/
 
-  // for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
-  //   /*--- d{k,o,r,v}/dU, evaluated at neighbor node ---*/
+    /*--- d{k,o,r,v}/dU, evaluated at neighbor node ---*/
 
-  //   const auto kPoint = node_i->GetPoint(iNeigh);
-  //   const auto primvar_k = flowNodes->GetPrimitive(kPoint);
+    const auto kPoint = node_i->GetPoint(iNeigh);
+    const auto primvar_k = flowNodes->GetPrimitive(kPoint);
 
-  //   const su2double dVk_dUk = 1.0/primvar_k[nDim+2];
+    const su2double dVk_dUk = 1.0/primvar_k[nDim+2];
 
-  //   SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
+    SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
-  //   const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
-  //   for (auto iVar = 0u; iVar < nVar; iVar++)
-  //     dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
+    const su2double gradWeightDotDist = GeometryToolbox::DotProduct(nDim,gradWeight,dist_ij);
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      dVl_dVi[iVar] = gradWeightDotDist*Psi[iVar];
 
-  //   for (auto iVar = 0u; iVar < nVar; iVar++) {
-  //     for (auto jVar = 0u; jVar < nVar; jVar++) {
-  //       Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
-  //       Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
-  //     }
-  //   }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      for (auto jVar = 0u; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
+        Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
+      }
+    }
 
-  //   Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
-  //   Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
-  // }
+    Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
+  }
 
   Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
@@ -501,67 +501,67 @@ void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
                                          const unsigned long jPoint,
                                          const su2double     *const *const jacobianWeights_i) {
 
-  // const bool wasActive = AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
-  // const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
 
-  // const auto node_i = geometry->node[iPoint];
+  const auto node_i = geometry->node[iPoint];
 
-  // CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
+  CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-  // const su2double sign  = (iPoint < jPoint)? 1.0 : -1.0;
-  // const su2double sign_grad_i = gg? 1.0 : -1.0;
+  const su2double sign  = (iPoint < jPoint)? 1.0 : -1.0;
+  const su2double sign_grad_i = gg? 1.0 : -1.0;
 
-  // for (auto iVar = 0u; iVar < nVar; iVar++) {
-  //   for (auto jVar = 0u; jVar < nVar; jVar++) {
-  //     Jacobian_i[iVar][jVar] = 0.0;
-  //     Jacobian_j[iVar][jVar] = 0.0;
-  //   }
-  // }
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    for (auto jVar = 0u; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_j[iVar][jVar] = 0.0;
+    }
+  }
 
-  // /*--------------------------------------------------------------------------*/
-  // /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
-  // /*---         In Green-Gauss, the weight of the surface node             ---*/
-  // /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
-  // /*---         gradients do not have a surface term.                      ---*/
-  // /*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
+  /*---         In Green-Gauss, the weight of the surface node             ---*/
+  /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
+  /*---         gradients do not have a surface term.                      ---*/
+  /*--------------------------------------------------------------------------*/
 
   
-  // su2double gradWeight[MAXNDIM] = {0.0};
-  // if (gg && node_i->GetPhysicalBoundary()) {
-  //   SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
+  su2double gradWeight[MAXNDIM] = {0.0};
+  if (gg && node_i->GetPhysicalBoundary()) {
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-  //   for (auto iVar = 0u; iVar < nVar; iVar++)
-  //     Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight);
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Jacobian_i[iVar][iVar] = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight);
 
-  // }// physical boundary
+  }// physical boundary
 
-  // /*--------------------------------------------------------------------------*/
-  // /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
-  // /*---         To prevent extra communication overhead, we only consider  ---*/
-  // /*---         neighbors on the current rank. Note that jacobianWeights_i ---*/
-  // /*---         is already weighted by 0.5.                                ---*/
-  // /*--------------------------------------------------------------------------*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
+  /*---         To prevent extra communication overhead, we only consider  ---*/
+  /*---         neighbors on the current rank. Note that jacobianWeights_i ---*/
+  /*---         is already weighted by 0.5.                                ---*/
+  /*--------------------------------------------------------------------------*/
 
-  // for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
-  //   const auto kPoint = node_i->GetPoint(iNeigh);
-  //   const su2double ratio_k = nodesFlo->GetDensity(iPoint)/nodesFlo->GetDensity(kPoint);
+  for (auto iNeigh = 0u; iNeigh < node_i->GetnPoint(); iNeigh++) {
+    const auto kPoint = node_i->GetPoint(iNeigh);
+    const su2double ratio_k = nodesFlo->GetDensity(iPoint)/nodesFlo->GetDensity(kPoint);
 
-  //   SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
+    SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
-  //   for (auto iVar = 0u; iVar < nVar; iVar++) {
-  //     Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*sign_grad_i;
-  //     Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*ratio_k;
-  //   }
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      Jacobian_i[iVar][iVar] += sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*sign_grad_i;
+      Jacobian_j[iVar][iVar]  = sign*GeometryToolbox::DotProduct(nDim,jacobianWeights_i[iVar],gradWeight)*ratio_k;
+    }
 
-  //   Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-  //   if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-  // }// iNeigh
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+  }// iNeigh
 
-  // Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-  // if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+  Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+  if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
-  // AD::EndPassive(wasActive);
+  AD::EndPassive(wasActive);
   
 }
 

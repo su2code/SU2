@@ -924,23 +924,23 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Add secondary neighbors if we need them for exact Jacobians. ---*/
 
-  // if (GetSecondNeighbors) {
-  //   vector<vector<unsigned long> > SecondNeighbors;
-  //   SecondNeighbors.resize(Point_Map.size());
-  //   for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
-  //     for (iNode = 0; iNode < Neighbors[iPoint].size(); iNode++) {
-  //       jPoint = Global2Local[Neighbors[iPoint][iNode]];
-  //       for (jNode = 0; jNode < Neighbors[jPoint].size(); jNode++) {
-  //         SecondNeighbors[iPoint].push_back(Neighbors[jPoint][jNode]);
-  //       }
-  //     }
-  //   }
-  //   for (iPoint = 0; iPoint < Point_Map.size(); iPoint++)
-  //     for (iNode = 0; iNode < SecondNeighbors[iPoint].size(); iNode++)
-  //       Neighbors[iPoint].push_back(SecondNeighbors[iPoint][iNode]);
+  if (GetSecondNeighbors) {
+    vector<vector<unsigned long> > SecondNeighbors;
+    SecondNeighbors.resize(Point_Map.size());
+    for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
+      for (iNode = 0; iNode < Neighbors[iPoint].size(); iNode++) {
+        jPoint = Global2Local[Neighbors[iPoint][iNode]];
+        for (jNode = 0; jNode < Neighbors[jPoint].size(); jNode++) {
+          SecondNeighbors[iPoint].push_back(Neighbors[jPoint][jNode]);
+        }
+      }
+    }
+    for (iPoint = 0; iPoint < Point_Map.size(); iPoint++)
+      for (iNode = 0; iNode < SecondNeighbors[iPoint].size(); iNode++)
+        Neighbors[iPoint].push_back(SecondNeighbors[iPoint][iNode]);
 
-  //   vector<vector<unsigned long> >().swap(SecondNeighbors);
-  // }
+    vector<vector<unsigned long> >().swap(SecondNeighbors);
+  }
 
   /*--- Post-process the neighbor lists. ---*/
 

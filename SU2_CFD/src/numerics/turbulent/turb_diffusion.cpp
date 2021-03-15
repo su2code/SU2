@@ -139,13 +139,13 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   
   /*--- Add contributions of nodal gradients ---*/
  
-  // for (auto iDim = 0u; iDim < nDim; iDim++) {
-  //   const su2double weight = 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim]);
-  //   for (auto iVar= 0; iVar < nVar; iVar++) {
-  //     jacobianWeights_i[iVar][iDim] = -weight*Jacobian_i[iVar][iVar];      
-  //     jacobianWeights_j[iVar][iDim] =  weight*Jacobian_j[iVar][iVar];
-  //   }
-  // }
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    const su2double weight = 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim]);
+    for (auto iVar= 0; iVar < nVar; iVar++) {
+      jacobianWeights_i[iVar][iDim] = -weight*Jacobian_i[iVar][iVar];      
+      jacobianWeights_j[iVar][iDim] =  weight*Jacobian_j[iVar][iVar];
+    }
+  }
 }
 
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
