@@ -130,8 +130,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, VelInf);
 
-  kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+  su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
+  su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+
+  Solution_Inf = new su2double[2];
+  Solution_Inf[0] = kine_Inf;
+  Solution_Inf[1] = omega_Inf;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
@@ -289,6 +293,15 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- If floor values apply, there is no need to compute the source term. ---*/
+    if(config->GetTurb_Floor_Values()){
+      su2double* velocity_inf = config->GetVelocity_FreeStreamND();
+      su2double sp =
+        GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), velocity_inf)
+        / GeometryToolbox::Norm(nDim, velocity_inf);
+      if(sp < config->GetTurb_Floor_Values_MaxScalarProd()) continue;
+    }
 
     /*--- Conservative variables w/o reconstruction ---*/
 
@@ -473,9 +486,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      su2double solution_j[] = {kine_Inf, omega_Inf};
-
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -959,8 +970,8 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-    Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+    Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+    Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
   }
 
 }

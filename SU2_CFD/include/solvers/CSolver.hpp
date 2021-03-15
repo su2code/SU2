@@ -1363,6 +1363,12 @@ public:
                                               CNumerics *visc_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) { }
+  /*!
+   * \brief Impose floor values to turbulence quantities.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Impose_Floor_Values(CGeometry *geometry, CConfig *config) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.

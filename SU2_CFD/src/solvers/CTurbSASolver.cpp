@@ -113,10 +113,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
-  nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   if (config->GetKind_Trans_Model() == BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
+
+  Solution_Inf = new su2double[1];
+  Solution_Inf[0] = nu_tilde_Inf;
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
@@ -513,7 +516,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde_Inf);
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -1957,7 +1960,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+    Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
   }
 
 }
+
+

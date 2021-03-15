@@ -55,6 +55,8 @@ protected:
   Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
+  su2double* Solution_Inf = nullptr; /*!< \brief Far-field solution. */
+
   /*--- Sliding meshes variables. ---*/
 
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
@@ -248,6 +250,22 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config) final;
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void SetFreeStream_Solution(const CConfig *config) final {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+      nodes->SetSolution(iPoint, Solution_Inf);
+    }
+  }
+
+  /*!
+   * \brief Impose floor values.
+   */
+  void Impose_Floor_Values(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Prepare an implicit iteration.
