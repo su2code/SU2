@@ -5505,8 +5505,8 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-    if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
-    else  nodes->SetNon_Physical(iPoint, false);
+    // if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+    // else  nodes->SetNon_Physical(iPoint, false);
 
   }
 
