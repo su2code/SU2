@@ -235,7 +235,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[ZONE_0]->GetBoolTurbomachinery() || config[val_iZone]->GetSinglezone_Driver()){
     output->SetTurboPerformance_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                              config[val_iZone]->GetInnerIter());
+                              config[val_iZone]->GetInnerIter(), val_iZone);
   }
 
   /*--- If convergence was reached --*/

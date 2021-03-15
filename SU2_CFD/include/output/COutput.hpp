@@ -302,7 +302,7 @@ public:
    * \param[in] InnerIter - Value of the inner iteration index
    */
   void SetTurboPerformance_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
 
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.

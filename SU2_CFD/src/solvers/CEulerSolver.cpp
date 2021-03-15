@@ -10199,6 +10199,6 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
       bladesPrimitives.push_back(bladePrimitives);
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    auto performances = TurbomachineryPerformance->GetBladesPerformances();
+    // auto performances = TurbomachineryPerformance->GetBladesPerformances().at(0).at(0)->GetEntropyGen();
   }
 }

@@ -2185,7 +2185,8 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
                                   CConfig *config,
                                   unsigned long TimeIter,
                                   unsigned long OuterIter,
-                                  unsigned long InnerIter) {
+                                  unsigned long InnerIter,
+                                  unsigned short val_iZone) {
 
   curTimeIter  = TimeIter;
   curAbsTimeIter = TimeIter - config->GetRestart_Iter();
@@ -2195,18 +2196,21 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
-  if(curInnerIter%10 == 0 && rank == MASTER_NODE && false){
-    auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
+  if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
+    auto BladePerformance = solver_container[FLOW_SOL]->GetTurbomachineryPerformance()->GetBladesPerformances();
     auto nSpan = config->GetnSpan_iZones(ZONE_0);
 
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
-    TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
-    TurboInOut.AddColumn("Properties", 25);
-    TurboInOut.AddColumn("Inlet", 25);
-    TurboInOut.AddColumn("Outlet", 25);
-    TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    TurboInOut.PrintHeader();
+
+    if (val_iZone == val_iZone){
+      TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
+      TurboInOut.AddColumn("Properties", 25);
+      TurboInOut.AddColumn("Inlet", 25);
+      TurboInOut.AddColumn("Outlet", 25);
+      TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      TurboInOut.PrintHeader();
+    }
 
     // TODO: Blade Wise Printing
     TurboInOut << "Entropy"     << BladePerformance.at(0).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(nSpan)->GetOutletState().GetEntropy();
@@ -2219,16 +2223,16 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     cout<<TurboInOutTable.str();
 
     /*-- Table for Turbomachinery Inlet and Outlet Values --*/
-    PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
-    TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
-    TurboPerformance.AddColumn("Property", 32);
-    TurboPerformance.AddColumn("Values", 32);
-    TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    TurboPerformance.PrintHeader();
-    TurboPerformance << "EntropyGen " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetEntropyGen();
-    TurboPerformance << "KineEnergyLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetKineticEnergyLoss();
-    TurboPerformance << "TotPressLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetTotalPressureLoss();
-    TurboPerformance.PrintFooter();
-    cout<<TurboPerfTable.str();
+    // PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
+    // TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
+    // TurboPerformance.AddColumn("Property", 32);
+    // TurboPerformance.AddColumn("Values", 32);
+    // TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    // TurboPerformance.PrintHeader();
+    // TurboPerformance << "EntropyGen " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetEntropyGen();
+    // TurboPerformance << "KineEnergyLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetKineticEnergyLoss();
+    // TurboPerformance << "TotPressLoss " << solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(nSpan)->GetTotalPressureLoss();
+    // TurboPerformance.PrintFooter();
+    // cout<<TurboPerfTable.str();
   }
 }

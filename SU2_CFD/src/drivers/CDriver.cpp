@@ -2754,7 +2754,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
-  mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
+  mixingplane = true; //config[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
