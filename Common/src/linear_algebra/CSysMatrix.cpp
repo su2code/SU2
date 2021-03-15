@@ -620,8 +620,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   /*--- MPI Parallelization. ---*/
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
 }
 
@@ -646,8 +646,8 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
     MatrixVectorProduct(&(invM[iPoint*nVar*nVar]), &vec[iPoint*nVar], &prod[iPoint*nVar]);
 
   /*--- MPI Parallelization ---*/
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
 }
 
@@ -807,8 +807,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 
   /*--- MPI Parallelization ---*/
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
 }
 
@@ -845,8 +845,8 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
   /*--- MPI Parallelization ---*/
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
 
@@ -874,8 +874,8 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
   /*--- MPI Parallelization ---*/
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
 }
 
@@ -1146,8 +1146,8 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 
   /*--- MPI Parallelization ---*/
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 
 }
 
@@ -1382,8 +1382,8 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   pastix_wrapper.Solve(vec,prod);
   SU2_OMP_BARRIER
 
-  CSysMatrixComms::Initiate(prod, geometry, config, SOLUTION_MATRIX);
-  CSysMatrixComms::Complete(prod, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
 #else
   SU2_OMP_MASTER
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
