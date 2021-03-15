@@ -1553,7 +1553,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/flux[iVar]);
       }
       Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
-      if (Max_Lambda_Inv > nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
+      if (Max_Lambda_Inv < nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
     }
   }
 
