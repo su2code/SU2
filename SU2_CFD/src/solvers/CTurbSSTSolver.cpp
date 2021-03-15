@@ -1519,8 +1519,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           const su2double turbSol_i = turbPrimVar_i[iVar]*flowPrimVar_i[nDim+2];
           const su2double turbSol_j = turbPrimVar_j[iVar]*flowPrimVar_j[nDim+2];
-          flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*(turbSol_i*Mean_ProjVel_2-nodes->GetSolution(iPoint,iVar)*Mean_ProjVel)
-                                                : sign*(turbSol_j*Mean_ProjVel_2-nodes->GetSolution(jPoint,iVar)*Mean_ProjVel);
+          flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*(turbSol_i*Mean_ProjVel_2)
+                                                : sign*(turbSol_j*Mean_ProjVel_2);
         }
       }
 
@@ -1553,7 +1553,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/flux[iVar]);
       }
       Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
-      if (Max_Lambda_Inv < nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
+      if (Max_Lambda_Inv > nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
     }
   }
 
