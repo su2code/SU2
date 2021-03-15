@@ -1508,21 +1508,21 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       /*--- Inviscid flux ---*/
 
-      if (!node_i->GetPhysicalBoundary()) {
-        bool good_i, good_j;
-        solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                           turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
+      // if (!node_i->GetPhysicalBoundary()) {
+      //   bool good_i, good_j;
+      //   solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
+      //                                      turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
 
-        const su2double Mean_ProjVel_2 = 0.5*(GeometryToolbox::DotProduct(nDim,flowPrimVar_i+1,Normal)
-                                            + GeometryToolbox::DotProduct(nDim,flowPrimVar_j+1,Normal));
-        const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          const su2double turbSol_i = turbPrimVar_i[iVar]*flowPrimVar_i[nDim+2];
-          const su2double turbSol_j = turbPrimVar_j[iVar]*flowPrimVar_j[nDim+2];
-          flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*(turbSol_i*Mean_ProjVel_2)
-                                                : sign*(turbSol_j*Mean_ProjVel_2);
-        }
-      }
+      //   const su2double Mean_ProjVel_2 = 0.5*(GeometryToolbox::DotProduct(nDim,flowPrimVar_i+1,Normal)
+      //                                       + GeometryToolbox::DotProduct(nDim,flowPrimVar_j+1,Normal));
+      //   const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
+      //   for (auto iVar = 0u; iVar < nVar; iVar++) {
+      //     const su2double turbSol_i = turbPrimVar_i[iVar]*flowPrimVar_i[nDim+2];
+      //     const su2double turbSol_j = turbPrimVar_j[iVar]*flowPrimVar_j[nDim+2];
+      //     flux[iVar] += (sign*Mean_ProjVel >= 0)? sign*(turbSol_i*Mean_ProjVel_2)
+      //                                           : sign*(turbSol_j*Mean_ProjVel_2);
+      //   }
+      // }
 
       /*--- Viscous contribution ---*/
 
@@ -1546,15 +1546,15 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
     }
 
-    if (!node_i->GetPhysicalBoundary()) {
-      su2double Max_Lambda_Inv = numeric_limits<passivedouble>::epsilon();
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        if (flux[iVar] == 0.0) continue;
-        Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/flux[iVar]);
-      }
-      Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
-      if (Max_Lambda_Inv > nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
-    }
+    // if (!node_i->GetPhysicalBoundary()) {
+    //   su2double Max_Lambda_Inv = numeric_limits<passivedouble>::epsilon();
+    //   for (auto iVar = 0u; iVar < nVar; iVar++) {
+    //     if (flux[iVar] == 0.0) continue;
+    //     Max_Lambda_Inv = max(Max_Lambda_Inv, nodes->GetSolution(iPoint,iVar)/flux[iVar]);
+    //   }
+    //   Max_Lambda_Inv = 1.0/Max_Lambda_Inv;
+    //   if (Max_Lambda_Inv > nodes->GetMax_Lambda_Inv(iPoint)) nodes->SetMax_Lambda_Inv(iPoint,Max_Lambda_Inv);
+    // }
   }
 
   /*--- Loop boundary edges ---*/
