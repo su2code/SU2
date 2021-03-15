@@ -851,6 +851,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
       nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
+      if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+      else  nodes->SetNon_Physical(iPoint, false);
+
     }
   }
 

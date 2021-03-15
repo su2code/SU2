@@ -3107,7 +3107,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_i = true, good_j = true;
+    bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
     bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -5505,6 +5505,8 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+    if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+    else  nodes->SetNon_Physical(iPoint, false);
 
   }
 
