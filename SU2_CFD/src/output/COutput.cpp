@@ -2195,7 +2195,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
-  if(curInnerIter%10 == 0 && rank == MASTER_NODE ){
+  if(curInnerIter%10 == 0 && rank == MASTER_NODE && false){
     auto BladePerformance = solver_container[ZONE_0]->GetTurbomachineryPerformance()->GetBladesPerformances();
     auto nSpan = config->GetnSpan_iZones(ZONE_0);
 
@@ -2208,7 +2208,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     TurboInOut.PrintHeader();
 
-    // TODO: Error is assessing boundary state values.
+    // TODO: Blade Wise Printing
     TurboInOut << "Entropy"     << BladePerformance.at(0).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(nSpan)->GetOutletState().GetEntropy();
     TurboInOut << "TotEnthalpy" << BladePerformance.at(0).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(0).at(nSpan)->GetOutletState().GetTotalEnthalpy();
     TurboInOut << "TotPressure" << BladePerformance.at(0).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(0).at(nSpan)->GetOutletState().GetTotalPressure();
