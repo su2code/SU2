@@ -295,13 +295,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- BCM: Reset non-physical ---*/
                             
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    nodes->SetNon_Physical(iPoint, false);
-    // for (auto iVar = 0; iVar < nVar; iVar++) {
-    //   const su2double sol = max(min(nodes->GetSolution(iPoint, iVar), upperlimit[iVar]), lowerlimit[iVar]);
-    //   nodes->SetSolution(iPoint, iVar, sol);
-    // }
-  }
+  // for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+  //   nodes->SetNon_Physical(iPoint, false);
+  //   // for (auto iVar = 0; iVar < nVar; iVar++) {
+  //   //   const su2double sol = max(min(nodes->GetSolution(iPoint, iVar), upperlimit[iVar]), lowerlimit[iVar]);
+  //   //   nodes->SetSolution(iPoint, iVar, sol);
+  //   // }
+  // }
   
   SetPrimitive_Variables(solver);
   
