@@ -164,8 +164,6 @@ private:
   gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
   void * MatrixVectorProductJitterAlphaMinusOne; /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
   gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
-  void * MatrixVectorProductTranspJitterBetaOne; /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
-  gemm_t MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
 #endif
 
 #ifdef HAVE_PASTIX
@@ -227,14 +225,6 @@ private:
    * \param[in,out] product
    */
   void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
-
-  /*!
-   * \brief Calculates the matrix-vector product: product += matrix^T * vector
-   * \param[in] matrix
-   * \param[in] vector
-   * \param[in,out] product
-   */
-  void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
    * \brief Calculates the matrix-matrix product

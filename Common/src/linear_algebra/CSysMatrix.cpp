@@ -62,7 +62,6 @@ CSysMatrix<ScalarType>::CSysMatrix() :
   MatrixVectorProductJitterBetaOne       = nullptr;
   MatrixVectorProductJitterBetaZero      = nullptr;
   MatrixVectorProductJitterAlphaMinusOne = nullptr;
-  MatrixVectorProductTranspJitterBetaOne = nullptr;
 #endif
 
 }
@@ -80,7 +79,6 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
   mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
   mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
   mkl_jit_destroy( MatrixVectorProductJitterAlphaMinusOne );
-  mkl_jit_destroy( MatrixVectorProductTranspJitterBetaOne );
 #endif
 
 }
@@ -219,10 +217,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   mkl::create_gemm(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
                    MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
   MatrixVectorProductKernelAlphaMinusOne = mkl::get_gemm(MatrixVectorProductJitterAlphaMinusOne);
-
-  mkl::create_gemm(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
-                   MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
-  MatrixVectorProductTranspKernelBetaOne = mkl::get_gemm(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
 }
@@ -1293,7 +1287,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
   if (edge_ptr) {
     /*--- The FV way. ---*/
-    SU2_OMP_FOR_DYN(omp_light_size)
+    SU2_OMP_FOR_DYN(omp_light_size/2)
     for (auto iEdge = 0ul; iEdge < edge_ptr.nEdge; ++iEdge) {
       auto bij = &matrix[edge_ptr(iEdge,0)*nVar*nVar];
       auto bji = &matrix[edge_ptr(iEdge,1)*nVar*nVar];

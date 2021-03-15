@@ -50,6 +50,8 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_
   MatrixCopy(val_block, ilu_ij);
 }
 
+namespace {
+
 template<class T, bool alpha, bool beta, bool transp>
 FORCEINLINE void gemv_impl(unsigned long n, unsigned long m, const T *a, const T *b, T *c) {
   /*---
@@ -83,6 +85,7 @@ FORCEINLINE void gemm_impl(unsigned long n, const T *a, const T *b, T *c) {
     }
   }
 }
+} // namespace
 
 #define __MATVECPROD_SIGNATURE__(TYPE,NAME) \
 FORCEINLINE void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product) const
@@ -106,10 +109,6 @@ MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
   gemv_impl<ScalarType,false,true,false>(nVar, nEqn, matrix, vector, product);
 }
 
-MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
-  gemv_impl<ScalarType,true,true,true>(nVar, nEqn, matrix, vector, product);
-}
-
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a,
                                                              const ScalarType *matrix_b, ScalarType *product) const {
@@ -130,11 +129,6 @@ MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
 MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
   MatrixVectorProductKernelAlphaMinusOne(MatrixVectorProductJitterAlphaMinusOne, const_cast<ScalarType*>(vector),
                                          const_cast<ScalarType*>(matrix), product );
-}
-
-MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
-  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
-                                         const_cast<ScalarType*>(vector), product );
 }
 
 template<class ScalarType>
