@@ -144,10 +144,7 @@ void COneShotSinglezoneDriver::RunOneShot(){
     PiggyBack();
 
     /// get the function value, gradient, hessian
-    CombinedFunc = ObjFunc;
-    for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
-      CombinedFunc+=multiplier[iConstr]*ConstrFunc[iConstr];
-    }
+    CombinedFunc = ComputeCombFunction();
     ComputePreconditioner();
 
     /// do a linesearch and design update
@@ -334,22 +331,18 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
   unsigned short Kind_ConstrFunc, nConstr=config->GetnConstr();
   su2double FunctionValue = 0.0;
 
-  if (rank == MASTER_NODE && nConstr != 0) { std::cout << "Constraint Function Value: "; }
-
   for (auto iConstr=0; iConstr < nConstr; iConstr++){
 
     ConstrFunc[iConstr] = 0.0;
     Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
     FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
-    // The sign in this equation is a matter of cenvention, just ensure, that you choose the multiplier accordingly.
+    // The sign in this equation is a matter of convention, just ensure, that you choose the multiplier accordingly.
     ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
-    if (rank == MASTER_NODE){
-      std::cout << FunctionValue << ", " << config->GetConstrFuncScale(iConstr) << ", " << multiplier[iConstr] << "; ";
+    if (rank == MASTER_NODE) {
       AD::RegisterOutput(ConstrFunc[iConstr]);
     }
   }
 
-  if (rank == MASTER_NODE && nConstr != 0) { std::cout<<std::endl; }
 }
 
 void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
@@ -424,6 +417,20 @@ void COneShotSinglezoneDriver::UpdateDesignVariable() {
   }
 }
 
+su2double COneShotSinglezoneDriver::ComputeCombFunction() {
+
+  su2double CombinedFunc = ObjFunc;
+  for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
+    // adapt the multiplier sign
+    if ((ConstrFunc[iConstr]>=0 && multiplier[iConstr]<0) ||
+         (ConstrFunc[iConstr]<0 && multiplier[iConstr]>=0)) {
+      multiplier[iConstr] = -multiplier[iConstr];
+    }
+    CombinedFunc+=multiplier[iConstr]*ConstrFunc[iConstr];
+  }
+  return CombinedFunc;
+}
+
 void COneShotSinglezoneDriver::ComputePreconditioner() {
 
   /*--- get the sensitivities from the adjoint solver to work with ---*/
@@ -437,34 +444,47 @@ void COneShotSinglezoneDriver::WriteOneShotHistoryHeader() {
 
   std::ofstream outfile;
   outfile.open("historyoneshot.txt", std::ios_base::out); // overwrite earlier history
-  outfile << "function value; " << "function gradient; " << "current design; "  << "delta design; " << "constraint value" << endl;
+  outfile << "comb function value; " << "comb function gradient; " << "current design; "  << "delta design; " << "obj function value; " << "constraint value; " << "multiplier; " << endl;
   outfile.close();
 
 }
 
-void COneShotSinglezoneDriver::WriteOneShotHistory(su2double &funcValue) {
+void COneShotSinglezoneDriver::WriteOneShotHistory(su2double &combFuncValue) {
 
   std::ofstream outfile;
   outfile.open("historyoneshot.txt", std::ios_base::app); // append instead of overwrite
   outfile.precision(15);
   outfile << std::scientific;
 
-  outfile << funcValue << "; ";
+  outfile << combFuncValue << "; ";
+
   for (auto iDV = 0; iDV < gradient.size(); iDV++) {
     outfile << gradient[iDV] << ", ";
   }
-  outfile << funcValue << "; ";
+  outfile << "; ";
+
   for (auto iDV = 0; iDV < design.size(); iDV++) {
     outfile << design[iDV] << ", ";
   }
-  outfile << funcValue << "; ";
+  outfile << "; ";
+
   for (auto iDV = 0; iDV < delta_design.size(); iDV++) {
     outfile << delta_design[iDV] << ", ";
   }
-  outfile << funcValue << "; ";
+  outfile << "; ";
+
+  outfile << ObjFunc << "; ";
+
   for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
     outfile << ConstrFunc[iConstr] << ", ";
   }
+  outfile << "; ";
+
+  for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
+    outfile << multiplier[iConstr] << ", ";
+  }
+  outfile << "; ";
+
   outfile << endl;
   outfile.close();
 
