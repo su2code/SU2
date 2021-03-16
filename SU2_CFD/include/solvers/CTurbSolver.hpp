@@ -263,7 +263,9 @@ public:
   }
 
   /*!
-   * \brief Impose fixed values to turbulence quantities in a specified upstream half-plane.
+   * \brief Impose fixed values to turbulence quantities.
+   * \details Turbulence quantities are set to far-field values in an upstream half-plane
+   * in order to keep them from decaying.
    */
   void Impose_Fixed_Values(CGeometry *geometry, CConfig *config) final;
 

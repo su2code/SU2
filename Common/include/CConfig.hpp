@@ -8061,7 +8061,10 @@ public:
   bool GetTurb_Fixed_Values(void) const { return Turb_Fixed_Values; }
 
   /*!
-   * \brief Value of the location ath which the gust begins.
+   * \brief Get shift of the upstream half-plane where fixed values for turbulence quantities are applied.
+   * \details This half-plane is given by the condition that the dot product between the
+   * coordinate vector and the normalized far-field velocity vector is less than what this
+   * function returns.
    */
   su2double GetTurb_Fixed_Values_MaxScalarProd(void) const { return Turb_Fixed_Values_MaxScalarProd; }
 

@@ -1964,5 +1964,3 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   }
 
 }
-
-
