@@ -1494,6 +1494,7 @@ enum ENUM_OBJECTIVE {
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
+  SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
@@ -1545,6 +1546,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+  MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
