@@ -294,13 +294,13 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- If floor values apply, there is no need to compute the source term. ---*/
-    if(config->GetTurb_Floor_Values()){
+    /*--- If fixed values apply, there is no need to compute the source term. ---*/
+    if(config->GetTurb_Fixed_Values()){
       su2double* velocity_inf = config->GetVelocity_FreeStreamND();
       su2double sp =
         GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), velocity_inf)
         / GeometryToolbox::Norm(nDim, velocity_inf);
-      if(sp < config->GetTurb_Floor_Values_MaxScalarProd()) continue;
+      if(sp < config->GetTurb_Fixed_Values_MaxScalarProd()) continue;
     }
 
     /*--- Conservative variables w/o reconstruction ---*/

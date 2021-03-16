@@ -263,9 +263,9 @@ public:
   }
 
   /*!
-   * \brief Impose floor values.
+   * \brief Impose fixed values to turbulence quantities in a specified upstream half-plane.
    */
-  void Impose_Floor_Values(CGeometry *geometry, CConfig *config) final;
+  void Impose_Fixed_Values(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Prepare an implicit iteration.

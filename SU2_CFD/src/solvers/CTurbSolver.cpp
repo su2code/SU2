@@ -511,7 +511,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CTurbSolver::Impose_Floor_Values(CGeometry *geometry, CConfig *config){
+void CTurbSolver::Impose_Fixed_Values(CGeometry *geometry, CConfig *config){
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     if (geometry->nodes->GetDomain(iPoint)) {
@@ -519,7 +519,7 @@ void CTurbSolver::Impose_Floor_Values(CGeometry *geometry, CConfig *config){
       su2double sp =
         GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), velocity_inf)
         / GeometryToolbox::Norm(nDim, velocity_inf);
-      if(sp < config->GetTurb_Floor_Values_MaxScalarProd()){
+      if(sp < config->GetTurb_Fixed_Values_MaxScalarProd()){
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint, Solution_Inf);
         nodes->SetSolution(iPoint, Solution_Inf);

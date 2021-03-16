@@ -146,9 +146,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     }
   }
 
-  /*--- Floor values for turbulence quantities. ---*/
-  if(config->GetTurb_Floor_Values()){
-    solver_container[MainSolver]->Impose_Floor_Values(geometry, config);
+  /*--- Fixed values for turbulence quantities. ---*/
+  if(config->GetTurb_Fixed_Values()){
+    solver_container[MainSolver]->Impose_Fixed_Values(geometry, config);
   }
 
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
