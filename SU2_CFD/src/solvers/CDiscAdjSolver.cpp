@@ -521,7 +521,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       if (fabs(nodes->GetSolution(iPoint,iVar)) > 1.0e10) {
 
-        cout << "Sol[iPoint=" << iPoint << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
+        cout << "Sol[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
         for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
           const auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             for (auto jVar = 0u; jVar < nVar; jVar++) {
