@@ -517,6 +517,20 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       AddRes_RMS(iVar,pow(residual,2));
       AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
     }
+
+    if (fabs(nodes->GetSolution(iPoint,iVar)) > 1.0e10) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        cout << "Res[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar <<"]= " << direct_solver->LinSysRes(iPoint,iVar) << endl;   
+      }
+      for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
+        const auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][jPoint=" << geometry->node[jPoint]->GetGlobalIndex() << "][iVar=" << iVar <<"][jVar=" << jVar << "]= " << direct_solver->Jacobian->GetBlock(iPoint,jPoint,iVar,jVar) << endl;   
+          }
+        }
+      }
+    }
   }
 
   SetResidual_RMS(geometry, config);
