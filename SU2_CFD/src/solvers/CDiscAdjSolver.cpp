@@ -536,7 +536,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
         //         cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][jPoint=" << geometry->node[jPoint]->GetGlobalIndex() << "][iVar=" << jVar <<"][jVar=" << kVar << "]= " << direct_solver->Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << endl;   
         //     }
         //   }
-        }
+        // }
       }
     }
   }
