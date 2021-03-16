@@ -520,7 +520,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       if (fabs(nodes->GetSolution(iPoint,iVar)) > 1.0e10 || SolverName == "ADJ.FLOW") {
-        if (SolverName == "ADJ.FLOW") {
+        if (SolverName == "ADJ.FLOW" && geometry->node[iPoint]->GetGlobalIndex() == 25165) {
           cout << "EULER::Sol[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
         }
         else {
