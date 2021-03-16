@@ -4370,6 +4370,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
+  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==-numeric_limits<su2double>::max()){
+    SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
