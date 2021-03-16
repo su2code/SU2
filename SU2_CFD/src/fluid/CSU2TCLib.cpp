@@ -765,16 +765,17 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
         Ev = Ru/MolarMass[iSpecies] * CharVibTemp[iSpecies] / (exp(CharVibTemp[iSpecies]/val_T)-1.0);
       else
         Ev = 0.0;
+
       /*--- Calculate electronic energy ---*/
       num = 0.0;
-      denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/val_T);
+      denom = ElDegeneracy[iSpecies][0] * exp(CharElTemp[iSpecies][0]/val_T);
       for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
         num   += ElDegeneracy[iSpecies][iEl] * CharElTemp[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
         denom += ElDegeneracy[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
+
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-
     eves[iSpecies] = Ev + Eel;
   }
 
@@ -918,20 +919,19 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
+  su2double mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus;
   vector<su2double> MolarFrac, eve_eq, eve;
 
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
 
-  omegaVT = 0.0;
-  omegaCV = 0.0;
-
+  su2double omegaVT = 0.0;
+  su2double omegaCV = 0.0;
 
   /*--- Calculate mole fractions ---*/
-  N    = 0.0;
-  conc = 0.0;
+  su2double N    = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     conc += rhos[iSpecies] / MolarMass[iSpecies];
     N    += rhos[iSpecies] / MolarMass[iSpecies] * AVOGAD_CONSTANT;
@@ -978,7 +978,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       omegaCV += ws[iSpecies]*eve[iSpecies];
   }
-
   omega = omegaVT + omegaCV;
 
   return omega;
@@ -1212,10 +1211,20 @@ void CSU2TCLib::DiffusionCoeffD(){
 
 void CSU2TCLib::ViscosityD(){
   
-
-  su2double Mu_ref = 1.716E-5;
+  //AIR-5
+  //su2double Mu_ref = 1.716E-5;
+  //su2double T_ref  = 273.15;
+  //su2double S_ref  = 111;
+  
+  //N2
+  su2double Mu_ref = 1.663E-5;
   su2double T_ref  = 273.15;
-  su2double S_ref  = 111;
+  su2double S_ref  = 107;
+
+  //ARGON
+  //su2double Mu_ref = 2.125E-5;
+  //su2double T_ref  = 273.15;
+  //su2double S_ref  = 114;
 
   su2double T_nd = T / T_ref;
 
@@ -1481,7 +1490,6 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
-
   rhoE_f   = 0.0;
   rhoE_ref = 0.0;
   rhoCvtr  = 0.0;
@@ -1532,7 +1540,7 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
 
   temperatures[0] = T;
   temperatures[1] = Tve;
-
+  
   return temperatures;
 
 }

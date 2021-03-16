@@ -260,7 +260,12 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
     rhos[iSpecies]=V_i[RHOS_INDEX+iSpecies];
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
-
+  cout <<"rho1:  "<<rhos[0]<<endl;
+  cout <<"rho2:  "<<rhos[1]<<endl;
+  cout <<"delete me T:   "<<T<<endl;
+  cout <<"delete me Tve: "<<Tve<<endl;
+  cout <<"Vol:  "<< Volume<<endl;
+  cout << fluidmodel->ComputeEveSourceTerm() <<endl;
   residual[nSpecies+nDim+1] = fluidmodel->ComputeEveSourceTerm() * Volume;
 
   //  if (implicit) {

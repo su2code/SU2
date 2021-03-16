@@ -494,11 +494,11 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == NEMO_RANS || config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
-  }
+  
 
- SetVolumeOutputValue("THERMAL_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
+  SetVolumeOutputValue("THERMAL_TR", iPoint, Node_Flow->GetThermalConductivity(iPoint));
   SetVolumeOutputValue("THERMAL_VE", iPoint, Node_Flow->GetThermalConductivity_ve(iPoint));
-
+  }
   if (config->GetKind_Solver() == NEMO_RANS) {
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }

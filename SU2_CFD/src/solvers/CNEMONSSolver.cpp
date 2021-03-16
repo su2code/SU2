@@ -769,10 +769,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
       /*--- Apply to the linear system ---*/
-      Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-                                   (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
-      Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
-
+      //Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+      //                             (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
+      //Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;       
+      
+      Res_Visc[nSpecies+nDim]   = ((ktr*(Twall-Tj) + kve*(Twall-Tvej)))*Area/dij;
+      Res_Visc[nSpecies+nDim+1] = (kve*(Twall-Tvej))*Area/dij;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
       //if (implicit) {
