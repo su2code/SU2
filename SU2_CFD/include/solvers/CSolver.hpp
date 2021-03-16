@@ -1364,7 +1364,9 @@ public:
                                               CConfig *config,
                                               unsigned short val_marker) { }
   /*!
-   * \brief Impose fixed values to turbulence quantities in a specified upstream half-plane.
+   * \brief Virtual function to apply something like a strong BC to the whole domain.
+   * \details Overridden in CTurbSolver to impose fixed values to turbulence quantities
+   * in a specified upstream half-plane.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
