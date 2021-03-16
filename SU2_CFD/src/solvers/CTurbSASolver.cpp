@@ -118,7 +118,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
-  Solution_Inf = new su2double[1];
   Solution_Inf[0] = nu_tilde_Inf;
 
   /*--- Factor_nu_Engine ---*/

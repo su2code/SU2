@@ -133,7 +133,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
-  Solution_Inf = new su2double[2];
   Solution_Inf[0] = kine_Inf;
   Solution_Inf[1] = omega_Inf;
 
@@ -296,7 +295,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- If fixed values apply, there is no need to compute the source term. ---*/
     if(config->GetTurb_Fixed_Values()){
-      su2double* velocity_inf = config->GetVelocity_FreeStreamND();
+      const su2double* velocity_inf = config->GetVelocity_FreeStreamND();
       su2double sp =
         GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), velocity_inf)
         / GeometryToolbox::Norm(nDim, velocity_inf);

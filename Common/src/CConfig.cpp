@@ -2109,7 +2109,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Use fixed values for turbulence quantities. */
   addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
   /* DESCRIPTION: Maximal scalar product of the normed far-field velocity vector and a space coordinate. */
-  addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, -numeric_limits<su2double>::max());
+  addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
 
   /* Harmonic Balance config */
   /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
@@ -4370,7 +4370,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
-  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==-numeric_limits<su2double>::max()){
+  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==numeric_limits<su2double>::lowest()){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
 

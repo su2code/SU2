@@ -55,7 +55,7 @@ protected:
   Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
-  su2double* Solution_Inf = nullptr; /*!< \brief Far-field solution. */
+  su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 
   /*--- Sliding meshes variables. ---*/
 
@@ -267,7 +267,7 @@ public:
    * \details Turbulence quantities are set to far-field values in an upstream half-plane
    * in order to keep them from decaying.
    */
-  void Impose_Fixed_Values(CGeometry *geometry, CConfig *config) final;
+  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Prepare an implicit iteration.

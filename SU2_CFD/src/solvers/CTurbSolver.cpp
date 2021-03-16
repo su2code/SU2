@@ -75,8 +75,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CTurbSolver::~CTurbSolver(void) {
 
-  delete [] Solution_Inf;
-
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
@@ -511,19 +509,30 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CTurbSolver::Impose_Fixed_Values(CGeometry *geometry, CConfig *config){
+void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  /*--- Form normalized far-field velocity ---*/
+  const su2double* velocity_inf = config->GetVelocity_FreeStreamND();
+  su2double velmag_inf = GeometryToolbox::Norm(nDim, velocity_inf);
+  if(velmag_inf==0)
+    SU2_MPI::Error("Far-field velocity is zero, cannot fix turbulence quantities to inflow values.", CURRENT_FUNCTION);
+  su2double unit_velocity_inf[MAXNDIM];
+  for(unsigned short iDim=0; iDim<nDim; iDim++)
+    unit_velocity_inf[iDim] = velocity_inf[iDim] / velmag_inf;
+
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->nodes->GetDomain(iPoint)) {
-      su2double* velocity_inf = config->GetVelocity_FreeStreamND();
-      su2double sp =
-        GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), velocity_inf)
-        / GeometryToolbox::Norm(nDim, velocity_inf);
-      if(sp < config->GetTurb_Fixed_Values_MaxScalarProd()){
-        /*--- Set the solution values and zero the residual ---*/
-        nodes->SetSolution_Old(iPoint, Solution_Inf);
-        nodes->SetSolution(iPoint, Solution_Inf);
-        LinSysRes.SetBlock_Zero(iPoint);
+    if( GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), unit_velocity_inf)
+      < config->GetTurb_Fixed_Values_MaxScalarProd() ) {
+      /*--- Set the solution values and zero the residual ---*/
+      nodes->SetSolution_Old(iPoint, Solution_Inf);
+      nodes->SetSolution(iPoint, Solution_Inf);
+      LinSysRes.SetBlock_Zero(iPoint);
+      if (implicit) {
+        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+        for(unsigned long iVar=0; iVar<nVar; iVar++)
+          Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
       }
     }
   }

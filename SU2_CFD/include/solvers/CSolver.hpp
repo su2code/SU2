@@ -1368,7 +1368,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Impose_Fixed_Values(CGeometry *geometry, CConfig *config) { }
+  virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.
