@@ -519,18 +519,22 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      if (fabs(nodes->GetSolution(iPoint,iVar)) > 1.0e10) {
-
-        cout << "Sol[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
-        for (auto jVar = 0u; jVar < nVar; jVar++) {
-          for (auto kVar = 0u; kVar < nVar; kVar++)
-          cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iPoint][iVar=" << jVar <<"][jVar=" << kVar << "]= " << direct_solver->Jacobian.GetBlock(iPoint,iPoint,iVar,jVar) << endl;
+      if (fabs(nodes->GetSolution(iPoint,iVar)) > 1.0e10 || SolverName == "ADJ.FLOW") {
+        if (SolverName = "ADJ.FLOW") {
+          cout << "EULER::Sol[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
         }
-        for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
-          const auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            for (auto jVar = 0u; jVar < nVar; jVar++) {
-              for (auto kVar = 0u; kVar < nVar; kVar++)
-              cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][jPoint=" << geometry->node[jPoint]->GetGlobalIndex() << "][iVar=" << jVar <<"][jVar=" << kVar << "]= " << direct_solver->Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << endl;   
+        else {
+          cout << "Sol[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iVar=" << iVar << "]= " << direct_solver->GetNodes()->GetSolution(iPoint,iVar) << ", Res= " << direct_solver->LinSysRes(iPoint,iVar) << ", Domain= " << isdomain << endl;
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            for (auto kVar = 0u; kVar < nVar; kVar++)
+            cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][iPoint][iVar=" << jVar <<"][jVar=" << kVar << "]= " << direct_solver->Jacobian.GetBlock(iPoint,iPoint,iVar,jVar) << endl;
+          }
+          for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnNeighbor(); iNeigh++) {
+            const auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+              for (auto jVar = 0u; jVar < nVar; jVar++) {
+                for (auto kVar = 0u; kVar < nVar; kVar++)
+                cout << "Jac[iPoint=" << geometry->node[iPoint]->GetGlobalIndex() << "][jPoint=" << geometry->node[jPoint]->GetGlobalIndex() << "][iVar=" << jVar <<"][jVar=" << kVar << "]= " << direct_solver->Jacobian.GetBlock(iPoint,jPoint,iVar,jVar) << endl;   
+            }
           }
         }
       }
