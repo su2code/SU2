@@ -549,6 +549,7 @@ void CNEMOTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       LinSysSol[total_index] = 0.0;
 
       su2double Res = fabs(LinSysRes[total_index]);
+      cout <<"delete me euler int. Res: "<<Res<<endl;
       resRMS[iVar] += Res*Res;
       if (Res > resMax[iVar]) {
         resMax[iVar] = Res;

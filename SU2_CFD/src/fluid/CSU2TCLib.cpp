@@ -742,7 +742,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
 }
 
-vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   su2double Ev, Eel, Ef, num, denom;
   unsigned short iElectron = nSpecies-1;
@@ -776,7 +776,8 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-    eves[iSpecies] = Ev + Eel;
+    if (vibe_only == true) {eves[iSpecies] = Ev;}
+    else {eves[iSpecies] = Ev + Eel;}
   }
 
   return eves;
@@ -938,9 +939,10 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
-
-  eve_eq = ComputeSpeciesEve(T);
-  eve    = ComputeSpeciesEve(Tve);
+  
+  // This needs to be looked at.  Eve leads to no good
+  eve_eq = ComputeSpeciesEve(T, true);
+  eve    = ComputeSpeciesEve(Tve, true);
 
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -967,6 +969,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
     /*--- Species relaxation time ---*/
     taus = tauMW + tauP;
+    if (iSpecies == 0) {cout <<"delete me tau "<<taus<<endl;}
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
@@ -1217,14 +1220,14 @@ void CSU2TCLib::ViscosityD(){
   //su2double S_ref  = 111;
   
   //N2
-  su2double Mu_ref = 1.663E-5;
-  su2double T_ref  = 273.15;
-  su2double S_ref  = 107;
+  //su2double Mu_ref = 1.663E-5;
+  //su2double T_ref  = 273.15;
+  //su2double S_ref  = 107;
 
   //ARGON
-  //su2double Mu_ref = 2.125E-5;
-  //su2double T_ref  = 273.15;
-  //su2double S_ref  = 114;
+  su2double Mu_ref = 2.125E-5;
+  su2double T_ref  = 273.15;
+  su2double S_ref  = 114;
 
   su2double T_nd = T / T_ref;
 

@@ -327,7 +327,10 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     su2double muT = rho*fv1*nu_hat;
 
     if (neg_spalart_allmaras) muT = max(muT,0.0);
-
+    cout <<"delete me Postproc.  mu:     "<<mu<<endl;
+    cout <<"delete me Postproc.  rho:    "<<rho<<endl;
+    cout <<"delete me Postproc.  nu_hat: "<<nu_hat<<endl;
+    cout <<"delete me Postproc.  muT:    "<<muT<<endl;
     nodes->SetmuT(iPoint,muT);
 
   }

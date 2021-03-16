@@ -119,7 +119,7 @@ vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){
   return energies; 
 }
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   SetTDStateRhosTTv(rhos, T, val_T);
 
