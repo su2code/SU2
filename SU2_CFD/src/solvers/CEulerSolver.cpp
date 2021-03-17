@@ -10188,6 +10188,7 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
 
   if (rank == MASTER_NODE){
     for (iBlade = 0; iBlade < nBladesRow; iBlade++ ){
+      /* Blade Primitive initialized per blade */
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
       auto nSpan = config->GetnSpan_iZones(iBlade);
       for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
@@ -10199,6 +10200,6 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
       bladesPrimitives.push_back(bladePrimitives);
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    // auto performances = TurbomachineryPerformance->GetBladesPerformances().at(0).at(0)->GetEntropyGen();
+    auto performances = TurbomachineryPerformance->GetBladesPerformances().at(1).at(0)->GetEntropyGen();
   }
 }

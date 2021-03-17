@@ -626,12 +626,15 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
       /* --- transfer the average value from the donorZone to the targetZone*/
       for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-        for (targetZone = 0; targetZone < nZone; targetZone++) {
-          if (targetZone != donorZone){
             interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                 geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                 config_container[donorZone], config_container[targetZone], iMarkerInt );
-          }
+      }
+
+      if(targetZone==nZone-1){
+        for (donorZone = 0; donorZone < nZone-1; donorZone++) {
+          interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+          interface_container[donorZone][targetZone]->GatherAverageTurboGeoValues(geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0], donorZone);
         }
       }
       break;

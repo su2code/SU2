@@ -2537,6 +2537,9 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
         const bool fluid_donor = config[donor]->GetFluidProblem();
         const bool structural_donor = config[donor]->GetStructuralProblem();
 
+        /*--- Turbomachinery Bool for MIXING PLANE ---*/
+        const bool turbo = config[donor]->GetBoolTurbomachinery();
+
         /*--- Initialize the appropriate transfer strategy. ---*/
 
         if (rank == MASTER_NODE) cout << " Transferring ";
@@ -2562,10 +2565,10 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-          interface_type = SLIDING_INTERFACE;
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-          interface[donor][target] = new CSlidingInterface(nVar, 0);
-          if (rank == MASTER_NODE) cout << "sliding interface." << endl;
+            interface_type = SLIDING_INTERFACE;
+            interface[donor][target] = new CSlidingInterface(nVar, 0);
+            if (rank == MASTER_NODE) cout << "sliding interface." << endl;
         }
         else if (heat_donor || heat_target) {
           if (heat_donor && heat_target)
@@ -2754,7 +2757,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
-  mixingplane = true; //config[ZONE_0]->GetBoolMixingPlaneInterface();
+  mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
   su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
@@ -2769,7 +2772,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
         nSpanMax = config[iZone]->GetnSpanWiseSections();
       }
 
-      config[ZONE_0]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
+      config[nZone-1]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
 
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
       geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);

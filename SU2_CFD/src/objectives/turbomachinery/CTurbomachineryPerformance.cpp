@@ -200,27 +200,27 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
       // TODO: THis needs to be fixed
       switch (config.GetKind_TurboPerf(iBladeRow)) {
         
-      case TURBINE:
-        bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut));
-        break;
+        case TURBINE:
+          bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                      radiusOut));
+          break;
 
-      case COMPRESSOR:
-        bladeSpanPerformances.push_back(make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut));
-        break;
+        case COMPRESSOR:
+          bladeSpanPerformances.push_back(make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                      radiusOut));
+          break;
 
-      case PROPELLOR:
-        bladeSpanPerformances.push_back(make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut));
-        break;
+        case PROPELLOR:
+          bladeSpanPerformances.push_back(make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                      radiusOut));
+          break;
 
-      default:
-        bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
-                                                                    radiusOut));
-        break;
+        default:
+          bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
+                                                                      radiusOut));
+          break;
+        }
       }
-    }
     }
     BladesPerformances.push_back(bladeSpanPerformances);
   }

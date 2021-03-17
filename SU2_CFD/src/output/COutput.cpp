@@ -2198,19 +2198,19 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
   // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
     auto BladePerformance = solver_container[FLOW_SOL]->GetTurbomachineryPerformance()->GetBladesPerformances();
-    auto nSpan = config->GetnSpan_iZones(ZONE_0);
+    auto nSpan = config->GetnSpan_iZones(config->GetnZone()-1);
 
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
 
-    if (val_iZone == val_iZone){
+    if (val_iZone == config->GetnZone()-1){
       TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
       TurboInOut.AddColumn("Properties", 25);
       TurboInOut.AddColumn("Inlet", 25);
       TurboInOut.AddColumn("Outlet", 25);
       TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       TurboInOut.PrintHeader();
-    }
+    
 
     // TODO: Blade Wise Printing
     TurboInOut << "Entropy"     << BladePerformance.at(0).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(0).at(nSpan)->GetOutletState().GetEntropy();
@@ -2221,7 +2221,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(0).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
     TurboInOut.PrintFooter();
     cout<<TurboInOutTable.str();
-
+    }
     /*-- Table for Turbomachinery Inlet and Outlet Values --*/
     // PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
     // TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
