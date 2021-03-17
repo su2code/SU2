@@ -468,7 +468,7 @@ void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
 
   const bool heat = config->GetWeakly_Coupled_Heat();
   const bool turb = config->GetKind_Turb_Model() != NONE;
-  const bool rads = config[val_iZone]->AddRadiation();
+  const bool rads = config->AddRadiation();
   const bool frozen_visc = config->GetFrozen_Visc_Disc();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
@@ -496,7 +496,7 @@ void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
 
   const bool heat = config->GetWeakly_Coupled_Heat();
   const bool turb = config->GetKind_Turb_Model() != NONE;
-  const bool rads = config[val_iZone]->AddRadiation();
+  const bool rads = config->AddRadiation();
   const bool frozen_visc = config->GetFrozen_Visc_Disc();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
