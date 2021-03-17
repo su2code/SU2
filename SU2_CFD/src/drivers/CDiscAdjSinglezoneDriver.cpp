@@ -167,7 +167,17 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
+      if (geometry->node[iPoint]->GetGlobalIndex() == 25165) {
+        cout << "Before ComputeAdjoint: Res= " << solver[TURB_SOL]->LinSysRes(iPoint,0) << endl;
+      }
+    }
     AD::ComputeAdjoint();
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
+      if (geometry->node[iPoint]->GetGlobalIndex() == 25165) {
+        cout << "After ComputeAdjoint: Res= " << solver[TURB_SOL]->LinSysRes(iPoint,0) << endl;
+      }
+    }
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
