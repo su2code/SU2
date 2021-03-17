@@ -163,7 +163,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     SetAdj_ObjFunction();
 
-    SetDirectResiduals();
+    GetDirectResiduals();
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
