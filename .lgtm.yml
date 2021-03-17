@@ -1,7 +1,7 @@
 path_classifiers:
   test:
-    - TestCases
+    - TestCases/*
   library:
-    - externals
+    - externals/*
   legacy:
     - preconfigure.py
