@@ -39,7 +39,7 @@
 
 class CTurbSASolver final : public CTurbSolver {
 private:
-  su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
+  su2double nu_tilde_Engine, nu_tilde_ActDisk;
 
   /*!
    * \brief A virtual member.
@@ -366,17 +366,6 @@ public:
                   bool val_inlet_surface) override;
 
   /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetFreeStream_Solution(const CConfig *config) override {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
-    END_SU2_OMP_FOR
-  }
-
-  /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
@@ -417,6 +406,6 @@ public:
    * \brief Get the value of nu tilde at the far-field.
    * \return Value of nu tilde at the far-field.
    */
-  inline su2double GetNuTilde_Inf(void) const override { return nu_tilde_Inf; }
+  inline su2double GetNuTilde_Inf(void) const override { return Solution_Inf[0]; }
 
 };

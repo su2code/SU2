@@ -1364,6 +1364,14 @@ public:
                                               CNumerics *visc_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) { }
+  /*!
+   * \brief Virtual function to apply something like a strong BC to the whole domain.
+   * \details Overridden in CTurbSolver to impose fixed values to turbulence quantities
+   * in a specified upstream half-plane.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.

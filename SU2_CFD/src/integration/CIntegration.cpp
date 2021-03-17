@@ -146,6 +146,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     }
   }
 
+  /*--- Modification of the system on the whole domain, like for a strong BC. ---*/
+  solver_container[MainSolver]->Impose_Fixed_Values(geometry, config);
+
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)

@@ -38,9 +38,7 @@
 class CTurbSSTSolver final : public CTurbSolver {
 private:
   su2double
-  constants[10] = {0.0}, /*!< \brief Constants for the model. */
-  kine_Inf,              /*!< \brief Free-stream turbulent kinetic energy. */
-  omega_Inf;             /*!< \brief Free-stream specific dissipation. */
+  constants[10] = {0.0}; /*!< \brief Constants for the model. */
 
 public:
   /*!
@@ -236,19 +234,6 @@ public:
   inline const su2double* GetConstants() const override { return constants; }
 
   /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetFreeStream_Solution(const CConfig *config) override {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-      nodes->SetSolution(iPoint, 0, kine_Inf);
-      nodes->SetSolution(iPoint, 1, omega_Inf);
-    }
-    END_SU2_OMP_FOR
-  }
-
-  /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
@@ -288,12 +273,12 @@ public:
    * \brief Get the value of the turbulent kinetic energy.
    * \return Value of the turbulent kinetic energy.
    */
-  inline su2double GetTke_Inf(void) const override { return kine_Inf; }
+  inline su2double GetTke_Inf(void) const override { return Solution_Inf[0]; }
 
   /*!
    * \brief Get the value of the turbulent frequency.
    * \return Value of the turbulent frequency.
    */
-  inline su2double GetOmega_Inf(void) const override { return omega_Inf; }
+  inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
 };
