@@ -499,36 +499,38 @@ void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
   const bool rads = config->AddRadiation();
   const bool frozen_visc = config->GetFrozen_Visc_Disc();
 
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+  // AD::StartExtFunc(false, false);
 
-  for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
-  //   solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes;
-  //   solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol;
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes);
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol);
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->Jacobian);
-    AD::FuncHelper->addUserData(solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->System);
-  }
-  if (turb && !frozen_visc) {
-  //   solver[TURB_SOL]->LinSysRes = solver[ADJTURB_SOL]->LinSysRes;
-  //   solver[TURB_SOL]->LinSysSol = solver[ADJTURB_SOL]->LinSysSol;
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->LinSysRes);
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->LinSysSol);
-    AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->Jacobian);
-    AD::FuncHelper->addUserData(solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->System);
-  }
-  // if (heat) {
-  //   solver[HEAT_SOL]->LinSysRes = solver[ADJHEAT_SOL]->LinSysRes;
-  //   solver[HEAT_SOL]->LinSysSol = solver[ADJHEAT_SOL]->LinSysSol;
-  // }
-  // if (rads) {
-  //   solver[RAD_SOL]->LinSysRes = solver[ADJRAD_SOL]->LinSysRes;
-  //   solver[RAD_SOL]->LinSysSol = solver[ADJRAD_SOL]->LinSysSol;
-  // }
+  // /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  AD::FuncHelper->addUserData(geometry);
-  AD::FuncHelper->addUserData(config);
-  AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
+  // for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
+  // //   solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes;
+  // //   solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol;
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->Jacobian);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->System);
+  // }
+  // if (turb && !frozen_visc) {
+  // //   solver[TURB_SOL]->LinSysRes = solver[ADJTURB_SOL]->LinSysRes;
+  // //   solver[TURB_SOL]->LinSysSol = solver[ADJTURB_SOL]->LinSysSol;
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->LinSysRes);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->LinSysSol);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->Jacobian);
+  //   AD::FuncHelper->addUserData(&solver_container[ZONE_0][INST_0][iMesh][ADJTURB_SOL]->System);
+  // }
+  // // if (heat) {
+  // //   solver[HEAT_SOL]->LinSysRes = solver[ADJHEAT_SOL]->LinSysRes;
+  // //   solver[HEAT_SOL]->LinSysSol = solver[ADJHEAT_SOL]->LinSysSol;
+  // // }
+  // // if (rads) {
+  // //   solver[RAD_SOL]->LinSysRes = solver[ADJRAD_SOL]->LinSysRes;
+  // //   solver[RAD_SOL]->LinSysSol = solver[ADJRAD_SOL]->LinSysSol;
+  // // }
+
+  // AD::FuncHelper->addUserData(geometry);
+  // AD::FuncHelper->addUserData(config);
+  // AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
 
 }
 
