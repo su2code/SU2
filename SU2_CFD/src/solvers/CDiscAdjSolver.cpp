@@ -118,6 +118,13 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       CSensitivity[iMarker][iVertex] = 0.0;
   }
 
+  /*--- Initialize the solution and right hand side vectors for storing
+   the direct residuals and updating the solution (always needed even for
+   explicit schemes). ---*/
+
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
   nodes = new CDiscAdjVariable(Solution, nPoint, nDim, nVar, config);
