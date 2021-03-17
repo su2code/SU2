@@ -1050,7 +1050,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
     if (geometry->node[iPoint]->GetGlobalIndex() == 25165) {
-      cout << "Before FGMRES_B: Res= " << solver[TURB_SOL]->LinSysRes(iPoint,0) << endl;
+      cout << "Before FGMRES_B: Res= " << LinSysRes(iPoint,0) << endl;
     }
   }
 
@@ -1090,7 +1090,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++) {
     if (geometry->node[iPoint]->GetGlobalIndex() == 25165) {
-      cout << "After FGMRES_B: Res= " << solver[TURB_SOL]->LinSysRes(iPoint,0) << endl;
+      cout << "After FGMRES_B: Res= " << LinSysRes(iPoint,0) << endl;
     }
   }
 
