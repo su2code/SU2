@@ -365,7 +365,7 @@ def main():
 
     # NACA0012 (SST, fixed values for turbulence quantities)
     turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
-    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/fixed_values"
+    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
     turb_naca0012_sst_fixedvalues.test_vals = [-9.562435, -1.566603, 1.022029, 0.040549]
