@@ -2106,9 +2106,9 @@ void CConfig::SetConfig_Options() {
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
   /* Fixed values for turbulence quantities to keep them at inflow conditions. */
-  /* DESCRIPTION: Fix turbulence quantities to far-field values at some upstream half-space. */
+  /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
   addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
-  /* DESCRIPTION: Shift of the fixed values half-space in unit far-field velocity vectors. */
+  /* DESCRIPTION: Shift of the fixed values half-space, in space units in the direction of far-field velocity. */
   addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
 
   /* Harmonic Balance config */
