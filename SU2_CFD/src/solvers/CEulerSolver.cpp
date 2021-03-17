@@ -1757,67 +1757,47 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2);
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
-
-  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
-    SU2_OMP_MASTER
-    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
-
   /*--- Set the primitive variables ---*/
 
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  ompMasterAssignBarrier(ErrorCounter, 0);
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
+  SU2_OMP_BARRIER
 
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+
+    if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
 
-  /*--- Compute the engine properties ---*/
+    /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
-  if (engine) {
-    SU2_OMP_MASTER
-    GetPower_Properties(geometry, config, iMesh, Output);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
+    if (fixed_cl && !disc_adjoint && !cont_adjoint) {
+      SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
+    }
 
-  /*--- Compute the actuator disk properties and distortion levels ---*/
+    /*--- Compute the engine properties ---*/
 
-  if (actuator_disk) {
-    SU2_OMP_MASTER
-    {
+    if (engine) GetPower_Properties(geometry, config, iMesh, Output);
+
+    /*--- Compute the actuator disk properties and distortion levels ---*/
+
+    if (actuator_disk) {
       Set_MPI_ActDisk(solver_container, geometry, config);
       GetPower_Properties(geometry, config, iMesh, Output);
       SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
     }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
 
-  /*--- Compute NearField MPI ---*/
+    /*--- Compute NearField MPI ---*/
 
-  if (nearfield) {
-    SU2_OMP_MASTER
-    Set_MPI_Nearfield(geometry, config);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    if (nearfield) Set_MPI_Nearfield(geometry, config);
+
   }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Artificial dissipation ---*/
 

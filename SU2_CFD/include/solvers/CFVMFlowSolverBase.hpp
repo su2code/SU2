@@ -34,6 +34,15 @@ class CNumericsSIMD;
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
+ private:
+  static void recursiveAssign() {}
+
+  template<class U, class V, class... Ts>
+  static void recursiveAssign(U& d, const V& s, Ts&&... otherPairs) {
+    d = s;
+    recursiveAssign(otherPairs...);
+  }
+
  protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
@@ -42,6 +51,18 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  /*!
+   * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
+   * \param[in] lhsRhsPairs - Pairs of destination and source e.g. a,0,b,-1.
+   */
+  template<class... Ts>
+  static void ompMasterAssignBarrier(Ts&&... lhsRhsPairs) {
+    SU2_OMP_MASTER
+    recursiveAssign(lhsRhsPairs...);
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
 
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
   su2double Density_Inf = 0.0;       /*!< \brief Density at the infinity. */
@@ -318,14 +339,7 @@ class CFVMFlowSolverBase : public CSolver {
      *    Critical sections are used for this instead of reduction
      *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
 
-    SU2_OMP_MASTER
-    {
-      Min_Delta_Time = 1e30;
-      Max_Delta_Time = 0.0;
-      Global_Delta_UnstTimeND = 1e30;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    ompMasterAssignBarrier(Min_Delta_Time,1e30, Max_Delta_Time,0.0, Global_Delta_UnstTimeND,1e30);
 
     /*--- Loop domain points. ---*/
 
@@ -981,12 +995,7 @@ class CFVMFlowSolverBase : public CSolver {
     const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
     auto& StrainMag = nodes->GetStrainMag();
 
-    SU2_OMP_MASTER {
-      StrainMag_Max = 0.0;
-      Omega_Max = 0.0;
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
 
     su2double strainMax = 0.0, omegaMax = 0.0;
 

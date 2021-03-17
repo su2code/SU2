@@ -825,10 +825,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Set the primitive variables ---*/
 
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  ompMasterAssignBarrier(ErrorCounter, 0);
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);

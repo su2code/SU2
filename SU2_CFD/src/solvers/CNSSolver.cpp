@@ -86,13 +86,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
    turbulence solver, and post) only temperature and velocity are needed ---*/
 
   const auto nPrimVarGrad_bak = nPrimVarGrad;
-  if (Output) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    nPrimVarGrad = 1+nDim;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
+  if (Output) ompMasterAssignBarrier(nPrimVarGrad, 1+nDim);
 
   if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
@@ -114,12 +108,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  if (Output) {
-    SU2_OMP_MASTER
-    nPrimVarGrad = nPrimVarGrad_bak;
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
-  }
+  if (Output) ompMasterAssignBarrier(nPrimVarGrad, nPrimVarGrad_bak);
 
   /*--- Compute the limiters ---*/
 
