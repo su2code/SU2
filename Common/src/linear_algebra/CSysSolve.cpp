@@ -755,7 +755,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 }
 
 template<>
-void CSysSolve<su2double>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol, const bool value) {
+void CSysSolve<su2double>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is the same the temporaties are not required ---*/
   /*--- Set the pointers ---*/
@@ -782,12 +782,12 @@ void CSysSolve<su2double>::HandleTemporariesOut(CSysVector<su2double> & LinSysSo
 
 #ifdef CODI_REVERSE_TYPE
 template<>
-void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol, const bool value) {
+void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol) {
 
   /*--- When the type is different we need to copy data to the temporaries ---*/
   /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
-  LinSysRes_tmp.PassiveCopy(LinSysRes, value);
-  LinSysSol_tmp.PassiveCopy(LinSysSol, value);
+  LinSysRes_tmp.PassiveCopy(LinSysRes);
+  LinSysSol_tmp.PassiveCopy(LinSysSol);
 
   /*--- Set the pointers ---*/
   SU2_OMP_MASTER
@@ -1054,7 +1054,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     }
   }
 
-  HandleTemporariesIn(LinSysRes, LinSysSol, false);
+  HandleTemporariesIn(LinSysRes, LinSysSol);
 
   switch(KindSolver) {
     case FGMRES:
