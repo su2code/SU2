@@ -176,6 +176,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
+    /*--- To keep legacy behavior ---*/
+    System.SetToleranceType(LinearToleranceType::RELATIVE);
+
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/

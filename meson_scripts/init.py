@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, shutil, urllib.request, zipfile, time
+import sys, os, subprocess, urllib.request, zipfile, time
 
 def remove_file(path, retries=3, sleep=0.1):
   for i in range(retries):

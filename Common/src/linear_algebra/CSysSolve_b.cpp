@@ -67,7 +67,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
-  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
+  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
   SU2_OMP_BARRIER
   SU2_OMP_MASTER

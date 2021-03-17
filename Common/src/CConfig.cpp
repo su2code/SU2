@@ -1115,7 +1115,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
-  
+
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -4603,7 +4603,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
-  
+
   /*--- Check feassbility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != NONE) {
     if (Kind_Regime != INCOMPRESSIBLE)
@@ -4796,6 +4796,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
                    CURRENT_FUNCTION);
   }
+
+  /* Force the lowest memory preconditioner when direct solvers are used. */
+
+  auto isPastix = [](unsigned short kindSolver) {
+    return kindSolver == PASTIX_LDLT || kindSolver == PASTIX_LU;
+  };
+
+  if (isPastix(Kind_Linear_Solver)) Kind_Linear_Solver_Prec = LU_SGS;
+  if (isPastix(Kind_DiscAdj_Linear_Solver)) Kind_DiscAdj_Linear_Prec = LU_SGS;
+  if (isPastix(Kind_Deform_Linear_Solver)) Kind_Deform_Linear_Solver_Prec = LU_SGS;
+
 
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE

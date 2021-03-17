@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
   else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
 
     /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
-    if (nZone != 1 )
+    if (nZone != 1)
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
 
     if (disc_adj) {

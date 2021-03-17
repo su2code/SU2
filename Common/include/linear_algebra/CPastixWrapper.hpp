@@ -167,9 +167,18 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] kind_fact - Type of factorization.
-   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed);
+  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact);
+
+  /*!
+   * \brief Request solves with the transposed matrix.
+   * \param[in] transposed - Yes or no.
+   */
+  void SetTransposedSolve(bool transposed = true) {
+    using namespace PaStiX;
+    if (iparm[IPARM_SYM] == API_SYM_NO)
+      iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+  }
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []
