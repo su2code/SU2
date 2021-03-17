@@ -1243,7 +1243,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \ingroup Config*/
   addDoubleOption("SCHMIDT_LAM", Schmidt_Lam, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.90 \ingroup Config*/
-  addDoubleOption("SCHMIDT_TURB", Schmidt_Turb, 1.0);
+  addDoubleOption("SCHMIDT_TURB", Schmidt_Turb, 0.7);
   
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -1777,7 +1777,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the scalar transport equations solver for the implicit formulation */
-  addDoubleOption("RELAXATION_FACTOR_SCALAR", Relaxation_Factor_Scalar, 1.0);
+  addDoubleOption("RELAXATION_FACTOR_SCALAR", Relaxation_Factor_Scalar, 0.9);
   /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -5099,7 +5099,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Smoluchowski_Maxwell,
   iMarker_Isothermal,iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
-  iMarker_Inlet_Scalar,
+  //iMarker_Inlet_Scalar, nijso
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
@@ -5614,7 +5614,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity,
-  iMarker_Inlet_Scalar,
+  //iMarker_Inlet_Scalar, //nijso: not needed?
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
 
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));

@@ -38,7 +38,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
                                            unsigned short iMesh)
 : CScalarSolver(geometry, config) {
   unsigned short nLineLets;
-  
+   unsigned long iPoint; 
   bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
@@ -67,21 +67,22 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   FluidModel = nullptr;
   
-  /*--- Define some auxiliar vector related with the residual ---*/
-  
-  Residual_RMS.resize(nVar,0.0);
-  Residual_Max.resize(nVar,0.0);
-  Point_Max.resize(nVar,0);
-  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
+  /*--- Single grid simulation ---*/
 
   /*--- Define some auxiliary vector related with the solution ---*/
   Solution = new su2double[nVar];
   Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
 
-  /*--- Define some auxiliary vector related with the geometry ---*/
+  /*--- do not see a reason to use only single grid ---*/
+  //if (iMesh == MESH_0) {
 
-  //Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
+    /*--- Define some auxiliary vector related with the residual ---*/
+
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
@@ -107,6 +108,8 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
       Point_Max_BGS.resize(nVar,0);
       Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
     }
+
+  //} //iMESH_0
 
   /*--- Initialize lower and upper limits---*/
 
@@ -209,19 +212,20 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   implicit flag in case we have periodic BCs. ---*/
 
   SetImplicitPeriodic(true);
+
+  /*--- Store the initial CFL number for all grid points. ---*/
  
-  // nijso: still need to add this
-  //const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
-  //for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //  nodes->SetLocalCFL(iPoint, CFL);
-  //}
-  //Min_CFL_Local = CFL;
-  //Max_CFL_Local = CFL;
-  //Avg_CFL_Local = CFL;
+  const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Scalar();
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
 
   /*--- Add the solver name (max 8 characters) ---*/
   SolverName = "SCALAR";
- 
+
 }
 
 CPassiveScalarSolver::~CPassiveScalarSolver(void) {
@@ -244,7 +248,8 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
-  if (!ReducerStrategy) {
+  // nijso: this makes the residuals unavailable for output
+  if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER}
@@ -274,16 +279,6 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 void CPassiveScalarSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
 
-
-  /*--- Compute scalar gradients. ---*/
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
-  }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
-  }
-
 /*--- your postprocessing goes here ---*/
 
 }
@@ -302,7 +297,7 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
       cout << "initialization = " << nVar << " " << config->GetScalar_Init(0)<<endl;
     }  
 
-    su2double scalar_init[nVar]={};
+    su2double* scalar_init = new su2double[nVar];
     CFluidModel *fluid_model_local;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
@@ -333,7 +328,9 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
     }
 
 
+  delete[] scalar_init;
   }
+
 
 }
 
@@ -570,52 +567,8 @@ void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_conta
 void CPassiveScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-
- // SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
- // for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
- //   const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//    if (geometry->nodes->GetDomain(iPoint)) {
-
-      //if (rough_wall) {
-
-      //} else {
-        /*--- distance to closest neighbor ---*/
-        //const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        //su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
-        //                                                     geometry->nodes->GetCoord(iPoint),
-        //                                                     geometry->nodes->GetCoord(jPoint));
-        /*--- Set wall values ---*/
-
-        //su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-        //su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
-
-//        su2double solution[1];
-//        solution[0] = 1.0;
-        //solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
-
-        /*--- Set the solution values and zero the residual ---*/
-//        nodes->SetSolution_Old(iPoint,solution);
-//        nodes->SetSolution(iPoint,solution);
-//        LinSysRes.SetBlock_Zero(iPoint);
-      //}
-
-//      if (implicit) {
-//        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-//        for (auto iVar = 0u; iVar < nVar; iVar++) {
-//          auto total_index = iPoint*nVar+iVar;
-//          Jacobian.DeleteValsRowi(total_index);
-//        }
-//      }
-//    }
-//  }
 }
 
 void CPassiveScalarSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,

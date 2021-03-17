@@ -6573,10 +6573,11 @@ public:
   su2double GetInlet_Ttotal(string val_index) const;
 
     /*!
-   * \brief Get the scalar values at an inlet boundary.
+   * \brief Get the scalar values at an inlet boundary
    * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet scalar values.
+   * \return The inlet scalar values. 
    */
+  // nijso: TODO we do not need inlet enthalpy, it is computed from temperature!
   su2double* GetInlet_ScalarVal(string val_index) const;
   
   /*!

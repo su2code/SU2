@@ -213,6 +213,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddHistoryOutput("BGS_PASSIVE_SCALAR", "bgs[c]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("LINSOL_ITER_SCALAR", "LinSolIter[c]", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear scalar solver.");
+      AddHistoryOutput("LINSOL_RESIDUAL_SCALAR", "LinSolRes[c]", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear scalar solver.");
       break;
     case PROGRESS_VARIABLE:
       AddHistoryOutput("BGS_PROGRESS_VARIABLE" , "bgs[PV]"    , ScreenOutputFormat::FIXED , "BGS_RES", "BGS residual of the progress variable equation." , HistoryFieldType::RESIDUAL);
@@ -284,8 +286,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
-
   CSolver* scalar_solver = solver[SCALAR_SOL];
+
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
@@ -309,7 +311,8 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetHistoryOutputValue("RMS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_RMS(0)));
-      break;
+      SetHistoryOutputValue("LINSOL_ITER_SCALAR", scalar_solver->GetIterLinSolver());
+      SetHistoryOutputValue("LINSOL_RESIDUAL_SCALAR", log10(scalar_solver->GetResLinSolver()));      break;
     case PROGRESS_VARIABLE:
       SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(scalar_solver->GetRes_RMS(I_PROG_VAR)));
       SetHistoryOutputValue("RMS_ENTHALPY"         , log10(scalar_solver->GetRes_RMS(I_ENTHALPY)));
@@ -668,7 +671,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Heat = nullptr;
   CVariable* Node_Turb = nullptr;
   CVariable* Node_Rad = nullptr;
-  CVariable* Node_Scalar = NULL;
+  CVariable* Node_Scalar = nullptr;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();

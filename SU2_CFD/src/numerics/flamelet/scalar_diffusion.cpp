@@ -69,6 +69,8 @@ CAvgGrad_transportedScalar::~CAvgGrad_transportedScalar(void) {
 
 CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CConfig* config) {
 
+ const bool inc_rans = (config->GetKind_Solver() == INC_RANS);
+
   unsigned short iVar, iDim;
 
   AD::StartPreacc();
@@ -86,14 +88,14 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
 
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+    if (inc_rans) {Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];}
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
 
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+    if (inc_rans) {Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];}
   }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -149,16 +151,26 @@ void CAvgGrad_transportedScalar_general::ExtraADPreaccIn() {
 
 void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* config) {
 
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    
-    /*--- Get the diffusion coefficient(s). ---*/
-    
-    //Mean_Diffusivity[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+ const su2double Sc_t = config->GetSchmidt_Turb();
+ const bool inc_rans = (config->GetKind_Solver() == INC_RANS);
+
+ for (auto iVar = 0u; iVar < nVar; iVar++) {
 
     /*--- Compute the viscous residual. ---*/
+    
+   /* the general diffusion term for species transport is given by: 
+      (rho * D_{i,m} + mu_t/Sc_t ) * grad(Y_i))
+      with D_{i,m} the mass diffusion coefficient of species i into the mixture m
+    */
+    su2double Mass_Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
-    //val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
-    Flux[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*Proj_Mean_GradScalarVar[iVar];
+    su2double Mass_Diffusivity_Tur = 0.0;
+    if (inc_rans) 
+      Mass_Diffusivity_Tur = 0.5 * (Eddy_Viscosity_i/Sc_t + Eddy_Viscosity_j/Sc_t);
+
+    su2double Mass_Diffusivity = Mass_Diffusivity_Lam + Mass_Diffusivity_Tur;
+
+    Flux[iVar] = Mass_Diffusivity *Proj_Mean_GradScalarVar[iVar];
     
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
@@ -167,8 +179,8 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
         if (iVar == jVar) {
           //Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
           //Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
-          Jacobian_i[iVar][jVar] = -0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*proj_vector_ij;
-          Jacobian_j[iVar][jVar] =  0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar])*proj_vector_ij;
+          Jacobian_i[iVar][jVar] = -Mass_Diffusivity*proj_vector_ij;
+          Jacobian_j[iVar][jVar] =  Mass_Diffusivity*proj_vector_ij;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;

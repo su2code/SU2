@@ -224,19 +224,21 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   if (rank == MASTER_NODE && !noWriting) {
 
     /*--- Write the history file ---------------------------------------------------------------------------*/
+
     write_history = WriteHistoryFile_Output(config);
     if (write_history) SetHistoryFile_Output(config);
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
+
     write_header = WriteScreen_Header(config);
     if (write_header) SetScreen_Header(config);
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
+
     write_screen = WriteScreen_Output(config);
     if (write_screen) SetScreen_Output(config);
 
   }
-
 }
 
 void COutput::SetHistory_Output(CGeometry *geometry,

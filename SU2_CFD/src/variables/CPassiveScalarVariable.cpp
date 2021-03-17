@@ -33,7 +33,7 @@ CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsign
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
       Solution(iPoint,iVar) = val_scalar_inf[iVar];
     }
   }

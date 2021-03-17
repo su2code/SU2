@@ -122,4 +122,3 @@ public:
   inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
 };
-
