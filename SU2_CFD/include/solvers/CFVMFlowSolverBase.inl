@@ -2444,7 +2444,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool axisymmetric = config->GetAxisymmetric();
   bool roughwall = (config->GetnRoughWall() > 0);
   bool nemo = config->GetNEMOProblem();
-  bool wallfunctions=false;
 
   /*--- Get the locations of the primitive variables for NEMO ---*/
   if (nemo) {

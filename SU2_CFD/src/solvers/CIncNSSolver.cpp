@@ -607,10 +607,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   /*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
    At this moment, the wall function is only available for adiabatic flows.
    ---*/
-  su2double RefDensity,RefVel2; 
+  su2double RefDensity=Density_Inf, RefVel2=0.0; 
   if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-    RefDensity = Density_Inf;
-    RefVel2 = 0.0;
     for (auto iDim = 0u; iDim < nDim; iDim++) 
       RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
   } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
@@ -625,9 +623,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double Eddy_Visc;
-  constexpr unsigned short max_iter = 50;
-  const su2double tol = 1e-12; // 1e-10 is too large
-  const su2double relax = 0.5; 
+  constexpr unsigned short max_iter = 50; /*--- maximum number of iterations for the Newton Solver---*/
+  const su2double tol = 1e-12;            /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
   
     /*--- Compute the recovery factor ---*/
   // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
@@ -635,8 +633,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = 0.41; // put model constants in config file
-  const su2double B = 5.5;
+  const su2double kappa = config->GetwallModelKappa(); 
+  const su2double B = config->GetwallModelB();
 
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {

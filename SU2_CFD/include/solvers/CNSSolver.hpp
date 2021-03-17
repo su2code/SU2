@@ -124,7 +124,7 @@ private:
                                     CSolver **solver_container,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics,
-                                    CConfig *config,
+                                    const CConfig *config,
                                     unsigned short val_marker) ;
 public:
   /*!

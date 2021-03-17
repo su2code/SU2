@@ -816,21 +816,23 @@ private:
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
-  SecondaryFlow_ActDisk,      /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Initial_BCThrust,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Pressure_FreeStream,        /*!< \brief Total pressure of the fluid. */
-  Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
-  Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
-  Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-  Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
-  Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
-  Temperature_ve_Ref,  /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
-  Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
-  Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
+  SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
+  Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
+  Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
+  Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  su2double Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
+  Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
+  wallModelkappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
+  Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
+  Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
+  Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
+  Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
+  Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
@@ -1661,6 +1663,18 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
+
+  /*!
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
+   */
+  su2double GetwallModelKappa(void) const { return wallModelKappa; }
+
+  /*!
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
+   */
+  su2double GetwallModelB(void) const { return wallModelB; }
 
   /*!
    * \brief Get the value of the thermal conductivity for solids.

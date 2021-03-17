@@ -1574,9 +1574,10 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, const CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, 
+                                  const CConfig *config, unsigned short val_marker) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   constexpr unsigned short max_iter = 100;
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
@@ -1584,8 +1585,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  //const su2double kappa = 0.4;
-  //const su2double B = 5.5;
+ 
   const su2double cv1_3 = 7.1*7.1*7.1;
 
   CVariable* flow_nodes = solver_container[FLOW_SOL]->GetNodes();

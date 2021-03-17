@@ -466,8 +466,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 
-void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, 
+                                  const CConfig *config, unsigned short val_marker) {
 
   const unsigned short max_iter = 100;
 
@@ -476,7 +476,7 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = 0.4;
+  const su2double kappa = config->GetwallModelKappa();
   //const su2double B = 5.5;
   //const su2double cv1_3 = 7.1*7.1*7.1;
 
