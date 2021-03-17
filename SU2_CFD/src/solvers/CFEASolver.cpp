@@ -1881,9 +1881,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     SU2_OMP_BARRIER
 
     /*--- Compute the root mean square residual. ---*/
-    SU2_OMP_MASTER
     SetResidual_RMS(geometry, config);
-    END_SU2_OMP_MASTER
 
     }
     END_SU2_OMP_PARALLEL

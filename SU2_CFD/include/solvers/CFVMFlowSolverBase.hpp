@@ -825,17 +825,11 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, SOLUTION);
 
     if (!adjoint) {
-      SU2_OMP_MASTER {
-        /*--- Compute the root mean square residual ---*/
+      /*--- Compute the root mean square residual ---*/
+      SetResidual_RMS(geometry, config);
 
-        SetResidual_RMS(geometry, config);
-
-        /*--- For verification cases, compute the global error metrics. ---*/
-
-        ComputeVerificationError(geometry, config);
-      }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
+      /*--- For verification cases, compute the global error metrics. ---*/
+      ComputeVerificationError(geometry, config);
     }
 
   }
@@ -941,10 +935,7 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_BARRIER
 
     /*--- Compute the root mean square residual ---*/
-    SU2_OMP_MASTER
     SetResidual_RMS(geometry, config);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
   }
 
   /*!
@@ -977,10 +968,7 @@ class CFVMFlowSolverBase : public CSolver {
     CompleteComms(geometry, config, SOLUTION);
 
     /*--- For verification cases, compute the global error metrics. ---*/
-    SU2_OMP_MASTER
     ComputeVerificationError(geometry, config);
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
   }
 
   /*!

@@ -570,10 +570,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   SU2_OMP_BARRIER
 
   /*--- Compute the root mean square residual ---*/
-  SU2_OMP_MASTER
   SetResidual_RMS(geometry, config);
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
 }
 
 void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {

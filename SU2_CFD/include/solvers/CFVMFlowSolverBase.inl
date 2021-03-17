@@ -465,6 +465,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
+
   /*--- The errors only need to be computed on the finest grid. ---*/
   if (MGLevel != MESH_0) return;
 
@@ -478,6 +479,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
       ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
        (config->GetInnerIter() == 1));
   if (!write_heads) return;
+
+  SU2_OMP_MASTER {
 
   /*--- Check if there actually is an exact solution for this
         verification case, if computed at all. ---*/
@@ -518,6 +521,10 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 
     PrintVerificationError(config);
   }
+
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 template <class V, ENUM_REGIME R>
