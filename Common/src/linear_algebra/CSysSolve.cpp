@@ -501,7 +501,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                        const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                       ScalarType tol, unsigned long MaxIter, ScalarType & residual, bool monitoring, const CConfig *config) const {
+                                                       ScalarType tol, unsigned long MaxIter, ScalarType & residual, bool monitoring, const CConfig *config) {
 
   const auto restartIter = config->GetLinear_Solver_Restart_Frequency();
 

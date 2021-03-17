@@ -99,8 +99,8 @@ private:
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
-  mutable LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
-  mutable bool xIsZero = false;   /*!< \brief If true assume the initial solution is always 0. */
+  LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
+  bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
   bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
   unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
 
@@ -321,7 +321,7 @@ public:
 
   unsigned long RFGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                   const PrecondType & precond, ScalarType tol, unsigned long m,
-                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
+                                  ScalarType & residual, bool monitoring, const CConfig *config);
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
