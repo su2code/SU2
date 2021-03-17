@@ -824,7 +824,7 @@ private:
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   su2double Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
   Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
-  wallModelkappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */

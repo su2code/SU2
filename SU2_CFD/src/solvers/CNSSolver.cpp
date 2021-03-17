@@ -954,10 +954,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
     
         if (counter > max_iter) {
           notConvergedCounter++;
-          //cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
-          //cout << "diff = " << endl;
+          // cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
+          // cout << "diff = " << endl;
           // do not break, use some safe values for convergence
-          //break;
+          // break;
           Y_Plus = 30.0;
           Eddy_Visc = 1.0;
           U_Tau = 1.0;

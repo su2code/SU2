@@ -419,7 +419,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    SetNuTilde_WF(geometry, solver_container, config, val_marker);
     SU2_OMP_BARRIER
     return;
   }
@@ -1582,6 +1582,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
+  const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1618,21 +1619,20 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
       su2double func_prim = 4.0 * nu_til_old*nu_til_old*nu_til_old - 3.0*(Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old);
 
       // damped Newton method
-      nu_til = nu_til_old - 0.5*(func/func_prim);
+      nu_til = nu_til_old - relax*(func/func_prim);
 
       diff = fabs(nu_til-nu_til_old);
       nu_til_old = nu_til;
 
       // sometimes we get negative values when the solution has not converged yet, we just reset the nu_tilde in that case.
       if (nu_til_old<tol) {
-        //cout <<"nu_tilde =0, resetting!"<<endl;
         nu_til_old = 0.001;
         nu_til=0.002;
       }
 
       counter++;
       if (counter > max_iter) {
-        cout << "WARNING: Nu_tilde evaluation has not converged." << endl;
+        cout << "WARNING: Nu_tilde evaluation did not converge in" <<max_iter << "iterations. " << endl;
         break;
       }
     }

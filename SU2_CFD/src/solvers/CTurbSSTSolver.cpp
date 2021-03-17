@@ -380,7 +380,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    SetNuTilde_WF(geometry, solver_container, config, val_marker);
     SU2_OMP_BARRIER
     return;
   }
@@ -469,17 +469,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, 
                                   const CConfig *config, unsigned short val_marker) {
 
-  const unsigned short max_iter = 100;
-
-  /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
-  const su2double tol = 1e-12;
-
-  /*--- Typical constants from boundary layer theory ---*/
+  /*--- von Karman constant from boundary layer theory ---*/
 
   const su2double kappa = config->GetwallModelKappa();
-  //const su2double B = 5.5;
-  //const su2double cv1_3 = 7.1*7.1*7.1;
-
+  const su2double relax = 0.5;            /*--- relaxation factor for k-omega values ---*/
  
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -487,16 +480,11 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    su2double Lam_Visc_Normal = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint_Neighbor);
-    su2double Density_Normal = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint_Neighbor);
-    su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
-     
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
 
     /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
 
-     
-    su2double omega1,omega0,y_plus,y,k_new,omega_new;
+    su2double omega1,omega0,y,k_new,omega_new;
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);
     su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
 
@@ -506,18 +494,17 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
     su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
 
-
     y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
 
     omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19 
     omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20 
     omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
     k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson 
-                                                            // (is this the correct density? paper says rho and not rho_w)
+                                                          // (is this the correct density? paper says rho and not rho_w)
 
-    // put some relaxation factor on the k-omega values
-    k += 0.5*(k_new - k);       
-    omega += 0.5*(omega_new - omega);       
+    /*--- put some relaxation factor on the k-omega values ---*/
+    k += relax*(k_new - k);       
+    omega += relax*(omega_new - omega);       
 
     su2double solution[MAXNVAR];
     solution[0] = k;
