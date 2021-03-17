@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1526,16 +1526,29 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CConfig *config) { }
+  inline virtual void PrepareImplicitIteration(CGeometry *geometry,
+                                               CSolver **solver_container,
+                                               CConfig *config) { }
 
   /*!
    * \brief A virtual member.
-   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
+  inline virtual void CompleteImplicitIteration(CGeometry *geometry,
+                                                CSolver **solver_container,
+                                                CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ImplicitEuler_Iteration(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -4436,6 +4449,13 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  /*!
+   * \brief Get values for streamwise periodc flow: delta P, m_dot, inlet T, integrated heat.
+   * \return Struct holding 4 su2doubles.
+   */
+  virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
+
 
 protected:
   /*!

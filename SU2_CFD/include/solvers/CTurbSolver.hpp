@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -106,6 +106,13 @@ private:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config);
 
 public:
 
@@ -243,6 +250,22 @@ public:
                           CConfig *config) final;
 
   /*!
+   * \brief Prepare an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) final;
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -251,6 +274,7 @@ public:
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
                                CConfig *config) override;
+
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -266,13 +290,6 @@ public:
                             unsigned short iRKStep,
                             unsigned short iMesh,
                             unsigned short RunTime_EqSystem) final;
-
-  /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear iteration for stability.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.

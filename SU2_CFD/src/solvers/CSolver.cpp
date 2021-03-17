@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2011,7 +2011,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-    resetCFL = linRes > 1.0;
+    resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
     canIncrease = linRes < linTol;
 
@@ -2391,7 +2391,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
       const su2double* GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
       /*--- Determine whether to consider the normal outward or inward. ---*/
-      su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+      su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
       su2double Flux = 0.0;
       for (auto iDim = 0u; iDim < nDim; iDim++)

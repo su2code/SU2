@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2960,7 +2960,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
-void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   struct LowMachPrec {
     const CEulerSolver* solver;
@@ -2978,8 +2978,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   } precond(this, config->Low_Mach_Preconditioning() || (config->GetKind_Upwind_Flow() == TURKEL), nVar);
 
-  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, true);
+  PrepareImplicitIteration_impl(precond, geometry, config);
+}
 
+void CEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  CompleteImplicitIteration_impl<true>(geometry, config);
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
