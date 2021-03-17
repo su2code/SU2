@@ -2203,7 +2203,7 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
 
-    if (val_iZone == config->GetnZone()-1){
+    if (val_iZone == config->GetnZone()-1 && OuterIter%10==0){
       TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
       TurboInOut.AddColumn("Properties", 25);
       TurboInOut.AddColumn("Inlet", 25);
@@ -2219,6 +2219,13 @@ void COutput::SetTurboPerformance_Output(CGeometry *geometry,
     TurboInOut << "Mass Flow"   << BladePerformance.at(0).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(0).at(nSpan)->GetOutletState().GetMassFlow();
     TurboInOut << "Mach No."    << BladePerformance.at(0).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(0).at(nSpan)->GetOutletState().GetMachValue();
     TurboInOut << "Flow Angle"  << BladePerformance.at(0).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(0).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+    
+    TurboInOut << "Entropy"     << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetEntropy();
+    TurboInOut << "TotEnthalpy" << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetTotalEnthalpy();
+    TurboInOut << "TotPressure" << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetTotalPressure();
+    TurboInOut << "Mass Flow"   << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetMassFlow();
+    TurboInOut << "Mach No."    << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetMachValue();
+    TurboInOut << "Flow Angle"  << BladePerformance.at(val_iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(val_iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
     TurboInOut.PrintFooter();
     cout<<TurboInOutTable.str();
     }

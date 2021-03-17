@@ -637,6 +637,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           interface_container[donorZone][targetZone]->GatherAverageTurboGeoValues(geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0], donorZone);
         }
       }
+      return UpdateMesh;
       break;
     }
     case NO_TRANSFER:
