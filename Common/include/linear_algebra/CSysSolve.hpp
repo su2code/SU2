@@ -212,7 +212,7 @@ private:
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  void HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol);
+  void HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol, const bool value = true);
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
