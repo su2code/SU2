@@ -163,6 +163,8 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     SetAdj_ObjFunction();
 
+    SetDirectResiduals();
+
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
     AD::ComputeAdjoint();
@@ -275,6 +277,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
   /*--- Do one iteration of the direct solver ---*/
 
   DirectRun(kind_recording);
+
+  /*--- Store residual ---*/
+
+  if (kind_recording == MainVariables) {
+    SetDirectResiduals();
+  }
 
   // NOTE: The inverse design calls were moved to DirectRun() - postprocess
 
@@ -443,6 +451,62 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
   /*--- Print the direct residual to screen ---*/
 
   Print_DirectResidual(kind_recording);
+
+}
+
+void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
+
+  const bool heat = config->GetWeakly_Coupled_Heat();
+  const bool turb = config->GetKind_Turb_Model() != NONE;
+  const bool rads = config[val_iZone]->AddRadiation();
+  const bool frozen_visc = config->GetFrozen_Visc_Disc();
+
+  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+
+  if (solver[ADJFEA_SOL]) {
+    
+  }
+
+  for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
+    solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysResDirect.PassiveCopy(solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes);
+  }
+  if (turbulent && !frozen_visc) {
+    solve[ADJTURB_SOL]->LinSysResDirect.PassiveCopy(solver[TURB_SOL]->LinSysRes);
+  }
+  if (heat) {
+    solve[ADJHEAT_SOL]->LinSysResDirect.PassiveCopy(solver[HEAT_SOL]->LinSysRes);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solve[ADJRAD_SOL]->LinSysResDirect.PassiveCopy(solver[RAD_SOL]->LinSysRes);
+  }
+
+}
+
+void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
+
+  const bool heat = config->GetWeakly_Coupled_Heat();
+  const bool turb = config->GetKind_Turb_Model() != NONE;
+  const bool rads = config[val_iZone]->AddRadiation();
+  const bool frozen_visc = config->GetFrozen_Visc_Disc();
+
+  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+
+  if (solver[ADJFEA_SOL]) {
+    
+  }
+
+  for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
+    solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysResDirect.PassiveCopy(solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes);
+  }
+  if (turbulent && !frozen_visc) {
+    solve[TURB_SOL]->LinSysResDirect.PassiveCopy(solver[ADJTURB_SOL]->LinSysRes);
+  }
+  if (heat) {
+    solve[HEAT_SOL]->LinSysResDirect.PassiveCopy(solver[ADJHEAT_SOL]->LinSysRes);
+  }
+  if (config[iZone]->AddRadiation()) {
+    solve[RAD_SOL]->LinSysResDirect.PassiveCopy(solver[ADJRAD_SOL]->LinSysRes);
+  }
 
 }
 

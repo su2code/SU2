@@ -103,6 +103,16 @@ public:
   void DirectRun(unsigned short kind_recording);
 
   /*!
+   * \brief Store the residual of the direct linear solversolver.
+   */
+  void SetDirectResiduals(void);
+
+  /*!
+   * \brief Copy the residual of the direct linear solver to the adjoint linear solver.
+   */
+  void GetDirectResiduals(void);
+
+  /*!
    * \brief Set the objective function.
    */
   void SetObjFunction(void);
