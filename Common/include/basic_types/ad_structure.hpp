@@ -483,87 +483,59 @@ namespace AD{
   }
 
   FORCEINLINE void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){
-    SU2_OMP_MASTER
-    {
-      FuncHelper = new ExtFuncHelper(true);
-      if (!storePrimalInput){
-        FuncHelper->disableInputPrimalStore();
-      }
-      if (!storePrimalOutput){
-        FuncHelper->disableOutputPrimalStore();
-      }
+    FuncHelper = new ExtFuncHelper(true);
+    if (!storePrimalInput){
+      FuncHelper->disableInputPrimalStore();
     }
-    END_SU2_OMP_MASTER
+    if (!storePrimalOutput){
+      FuncHelper->disableOutputPrimalStore();
+    }
   }
 
   FORCEINLINE void SetExtFuncIn(const su2double &data) {
-    SU2_OMP_MASTER
-    {
-      FuncHelper->addInput(data);
-    }
-    END_SU2_OMP_MASTER
+    FuncHelper->addInput(data);
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncIn(const T& data, const int size) {
-    SU2_OMP_MASTER
-    {
-      for (int i = 0; i < size; i++) {
-        FuncHelper->addInput(data[i]);
-      }
+    for (int i = 0; i < size; i++) {
+      FuncHelper->addInput(data[i]);
     }
-    END_SU2_OMP_MASTER
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncIn(const T& data, const int size_x, const int size_y) {
-    SU2_OMP_MASTER
-    {
-      for (int i = 0; i < size_x; i++) {
-        for (int j = 0; j < size_y; j++) {
-          FuncHelper->addInput(data[i][j]);
-        }
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        FuncHelper->addInput(data[i][j]);
       }
     }
-    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE void SetExtFuncOut(su2double& data) {
-    SU2_OMP_MASTER
-    {
-      if (AD::getGlobalTape().isActive()) {
-        FuncHelper->addOutput(data);
-      }
+    if (AD::getGlobalTape().isActive()) {
+      FuncHelper->addOutput(data);
     }
-    END_SU2_OMP_MASTER
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncOut(T&& data, const int size) {
-    SU2_OMP_MASTER
-    {
-      for (int i = 0; i < size; i++) {
-        if (AD::getGlobalTape().isActive()) {
-          FuncHelper->addOutput(data[i]);
-        }
+    for (int i = 0; i < size; i++) {
+      if (AD::getGlobalTape().isActive()) {
+        FuncHelper->addOutput(data[i]);
       }
     }
-    END_SU2_OMP_MASTER
   }
 
   template<class T>
   FORCEINLINE void SetExtFuncOut(T&& data, const int size_x, const int size_y) {
-    SU2_OMP_MASTER
-    {
-      for (int i = 0; i < size_x; i++) {
-        for (int j = 0; j < size_y; j++) {
-          if (AD::getGlobalTape().isActive()) {
-            FuncHelper->addOutput(data[i][j]);
-          }
+    for (int i = 0; i < size_x; i++) {
+      for (int j = 0; j < size_y; j++) {
+        if (AD::getGlobalTape().isActive()) {
+          FuncHelper->addOutput(data[i][j]);
         }
       }
     }
-    END_SU2_OMP_MASTER
   }
 
   FORCEINLINE void delete_handler(void *handler) {
@@ -571,13 +543,7 @@ namespace AD{
     checkpoint->clear();
   }
 
-  FORCEINLINE void EndExtFunc() {
-    SU2_OMP_MASTER
-    {
-      delete FuncHelper;
-    }
-    END_SU2_OMP_MASTER
-  }
+  FORCEINLINE void EndExtFunc() { delete FuncHelper; }
 
   FORCEINLINE bool BeginPassive() {
     if(AD::getGlobalTape().isActive()) {

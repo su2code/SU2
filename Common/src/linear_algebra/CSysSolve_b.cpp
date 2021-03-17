@@ -57,27 +57,20 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
   SU2_OMP_BARRIER
-  SU2_OMP_MASTER
-  {
-    for (unsigned long i = 0; i < n; i++) {
-      (*LinSysRes_b)[i] = y_b[i];
-      (*LinSysSol_b)[i] = 0.0;
-    }
+  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
+  for (unsigned long i = 0; i < n; i++) {
+    (*LinSysRes_b)[i] = y_b[i];
+    (*LinSysSol_b)[i] = 0.0;
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_FOR
 
   solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
-  SU2_OMP_BARRIER
-  SU2_OMP_MASTER
-  {
-    for (unsigned long i = 0; i < n; i ++) {
-      x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
-    }
+  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
+  for (unsigned long i = 0; i < n; i ++) {
+    x_b[i] = SU2_TYPE::GetValue((*LinSysSol_b)[i]);
   }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  END_SU2_OMP_FOR
 }
 
 template class CSysSolve_b<su2mixedfloat>;
