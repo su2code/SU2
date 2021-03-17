@@ -1619,7 +1619,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
       }
     }
 
-    su2double Sol[nVar];
+    su2double Sol[MAXNVAR];
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Sol[iVar] = nu_til;
     

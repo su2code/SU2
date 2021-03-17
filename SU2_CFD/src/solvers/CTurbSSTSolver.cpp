@@ -514,7 +514,7 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
     k += 0.5*(k_new - k);       
     omega += 0.5*(omega_new - omega);       
 
-    su2double solution[nVar];
+    su2double solution[MAXNVAR];
     solution[0] = k;
     solution[1] = omega;
 
