@@ -786,8 +786,8 @@ void CSysSolve<passivedouble>::HandleTemporariesIn(const CSysVector<su2double> &
 
   /*--- When the type is different we need to copy data to the temporaries ---*/
   /*--- Copy data, the solution is also copied because it serves as initial conditions ---*/
-  LinSysRes_tmp.PassiveCopy(LinSysRes);
-  LinSysSol_tmp.PassiveCopy(LinSysSol);
+  LinSysRes_tmp.PassiveCopy(LinSysRes, false);
+  LinSysSol_tmp.PassiveCopy(LinSysSol, false);
 
   /*--- Set the pointers ---*/
   SU2_OMP_MASTER

@@ -86,7 +86,7 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
 template<class ScalarType>
 template<class T>
-void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
+void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other, const bool value) {
 
   /*--- This is a method and not the overload of an operator to make sure who
    calls it knows the consequence to the derivative information (lost) ---*/
@@ -99,8 +99,12 @@ void CSysVector<ScalarType>::PassiveCopy(const CSysVector<T>& other) {
   SU2_OMP_BARRIER
 
   PARALLEL_FOR
-  for(auto i=0ul; i<nElm; i++)
-    vec_val[i] = SU2_TYPE::GetValue(other[i]);
+  for(auto i=0ul; i<nElm; i++) {
+    if (value)
+      vec_val[i] = SU2_TYPE::GetValue(other[i]);
+    else
+      vec_val[i] = SU2_TYPE::GetDerivative(other[i]);
+  }
 }
 
 template<class ScalarType>
@@ -240,10 +244,10 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
 
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2double>;
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<su2double>&, const bool value);
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;
-template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&);
-template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&);
+template void CSysVector<su2double>::PassiveCopy(const CSysVector<passivedouble>&, const bool value);
+template void CSysVector<passivedouble>::PassiveCopy(const CSysVector<su2double>&, const bool value);
 #endif

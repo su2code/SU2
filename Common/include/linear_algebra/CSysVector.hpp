@@ -132,7 +132,7 @@ public:
    * \param[in] other - source CSysVector
    */
   template<class T>
-  void PassiveCopy(const CSysVector<T>& other);
+  void PassiveCopy(const CSysVector<T>& other, const bool value=true);
 
   /*!
    * \brief class destructor
