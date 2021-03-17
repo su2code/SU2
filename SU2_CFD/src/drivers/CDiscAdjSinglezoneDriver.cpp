@@ -474,16 +474,16 @@ void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
   for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol;
+    solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes;
   }
   if (turb && !frozen_visc) {
-    solver[ADJTURB_SOL]->LinSysSol = solver[TURB_SOL]->LinSysSol;
+    solver[ADJTURB_SOL]->LinSysRes = solver[TURB_SOL]->LinSysRes;
   }
   if (heat) {
-    solver[ADJHEAT_SOL]->LinSysSol = solver[HEAT_SOL]->LinSysSol;
+    solver[ADJHEAT_SOL]->LinSysRes = solver[HEAT_SOL]->LinSysRes;
   }
   if (rads) {
-    solver[ADJRAD_SOL]->LinSysSol = solver[RAD_SOL]->LinSysSol;
+    solver[ADJRAD_SOL]->LinSysRes = solver[RAD_SOL]->LinSysRes;
   }
 
 }
@@ -498,16 +498,16 @@ void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
   for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol;
+    solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes;
   }
   if (turb && !frozen_visc) {
-    solver[TURB_SOL]->LinSysSol = solver[ADJTURB_SOL]->LinSysSol;
+    solver[TURB_SOL]->LinSysRes = solver[ADJTURB_SOL]->LinSysRes;
   }
   if (heat) {
-    solver[HEAT_SOL]->LinSysSol = solver[ADJHEAT_SOL]->LinSysSol;
+    solver[HEAT_SOL]->LinSysRes = solver[ADJHEAT_SOL]->LinSysRes;
   }
   if (rads) {
-    solver[RAD_SOL]->LinSysSol = solver[ADJRAD_SOL]->LinSysSol;
+    solver[RAD_SOL]->LinSysRes = solver[ADJRAD_SOL]->LinSysRes;
   }
 
 }
