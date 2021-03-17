@@ -4054,6 +4054,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     Residual_BGS[iVar] = 0.0;
     Residual_Max_BGS[iVar] = 0.0;
   }
+  END_SU2_OMP_MASTER
 
   vector<su2double> resMax(nVar,0.0), resRMS(nVar,0.0);
   vector<const su2double*> coordMax(nVar,nullptr);
@@ -4077,6 +4078,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
       }
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Reduce residual information over all threads in this rank. ---*/
   SU2_OMP_CRITICAL
@@ -4084,11 +4086,14 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     Residual_BGS[iVar] += resRMS[iVar];
     AddRes_Max_BGS(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   SU2_OMP_MASTER
   SetResidual_BGS(geometry, config);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }

@@ -852,6 +852,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     xIsZero = false;
     tol_type = LinearToleranceType::ABSOLUTE;
   }
+  END_SU2_OMP_MASTER
 
   /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
@@ -1058,6 +1059,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     xIsZero = false;
     tol_type = LinearToleranceType::ABSOLUTE;
   }
+  END_SU2_OMP_MASTER
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
