@@ -486,7 +486,7 @@ void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
   if (heat) {
     solver[ADJHEAT_SOL]->LinSysResDirect.PassiveCopy(solver[HEAT_SOL]->LinSysRes);
   }
-  if (config[iZone]->AddRadiation()) {
+  if (rads) {
     solver[ADJRAD_SOL]->LinSysResDirect.PassiveCopy(solver[RAD_SOL]->LinSysRes);
   }
 
@@ -514,7 +514,7 @@ void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
   if (heat) {
     solver[HEAT_SOL]->LinSysResDirect.PassiveCopy(solver[ADJHEAT_SOL]->LinSysRes);
   }
-  if (config[iZone]->AddRadiation()) {
+  if (rads) {
     solver[RAD_SOL]->LinSysResDirect.PassiveCopy(solver[ADJRAD_SOL]->LinSysRes);
   }
 
