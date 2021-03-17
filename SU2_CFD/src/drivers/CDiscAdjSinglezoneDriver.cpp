@@ -480,14 +480,14 @@ void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
   for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
     solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysResDirect.PassiveCopy(solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes);
   }
-  if (turbulent && !frozen_visc) {
-    solve[ADJTURB_SOL]->LinSysResDirect.PassiveCopy(solver[TURB_SOL]->LinSysRes);
+  if (turb && !frozen_visc) {
+    solver[ADJTURB_SOL]->LinSysResDirect.PassiveCopy(solver[TURB_SOL]->LinSysRes);
   }
   if (heat) {
-    solve[ADJHEAT_SOL]->LinSysResDirect.PassiveCopy(solver[HEAT_SOL]->LinSysRes);
+    solver[ADJHEAT_SOL]->LinSysResDirect.PassiveCopy(solver[HEAT_SOL]->LinSysRes);
   }
   if (config[iZone]->AddRadiation()) {
-    solve[ADJRAD_SOL]->LinSysResDirect.PassiveCopy(solver[RAD_SOL]->LinSysRes);
+    solver[ADJRAD_SOL]->LinSysResDirect.PassiveCopy(solver[RAD_SOL]->LinSysRes);
   }
 
 }
@@ -508,14 +508,14 @@ void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
   for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
     solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysResDirect.PassiveCopy(solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes);
   }
-  if (turbulent && !frozen_visc) {
-    solve[TURB_SOL]->LinSysResDirect.PassiveCopy(solver[ADJTURB_SOL]->LinSysRes);
+  if (turb && !frozen_visc) {
+    solver[TURB_SOL]->LinSysResDirect.PassiveCopy(solver[ADJTURB_SOL]->LinSysRes);
   }
   if (heat) {
-    solve[HEAT_SOL]->LinSysResDirect.PassiveCopy(solver[ADJHEAT_SOL]->LinSysRes);
+    solver[HEAT_SOL]->LinSysResDirect.PassiveCopy(solver[ADJHEAT_SOL]->LinSysRes);
   }
   if (config[iZone]->AddRadiation()) {
-    solve[RAD_SOL]->LinSysResDirect.PassiveCopy(solver[ADJRAD_SOL]->LinSysRes);
+    solver[RAD_SOL]->LinSysResDirect.PassiveCopy(solver[ADJRAD_SOL]->LinSysRes);
   }
 
 }
