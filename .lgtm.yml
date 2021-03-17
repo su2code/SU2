@@ -1,0 +1,10 @@
+path_classifiers:
+  template:
+    - exclude: *.inl
+  test:
+    - TestCases
+  library:
+    - exclude: *.inl
+    - externals
+  legacy:
+    - preconfigure.py
