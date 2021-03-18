@@ -70,220 +70,119 @@ public:
   }
 };
 
-class COptionDouble : public COptionBase {
-  su2double & field; // Reference to the fieldname
-  su2double def; // Default value
-  string name; // identifier for the option
+template<typename Scalar>
+class COptionScalar : public COptionBase {
+protected:
+  Scalar& field; // Reference to the fieldname
+  const Scalar def; // Default value
+  const string name; // identifier for the option
+  const string typeName; // name for the scalar type
 
 public:
-  COptionDouble(string option_field_name, su2double & option_field, su2double default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
+  COptionScalar() = delete;
+
+  COptionScalar(const string& type_name,
+                const string& option_field_name,
+                Scalar& option_field,
+                Scalar default_value) :
+    field(option_field),
+    def(default_value),
+    name(option_field_name),
+    typeName(type_name) {
   }
 
-  ~COptionDouble() override {};
+  ~COptionScalar() = default;
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    su2double val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "su2double", this->name);
+
+    string out = optionCheckMultipleValues(option_value, typeName, name);
+    if (!out.empty()) return out;
+
+    istringstream is(option_value.front());
+    if (is >> field) return "";
+
+    return badValue(option_value, typeName, name);
   }
+
   void SetDefault() override {
-    this->field = this->def;
+    field = def;
   }
 };
 
-class COptionString : public COptionBase {
-  string & field; // Reference to the fieldname
-  string def; // Default value
-  string name; // identifier for the option
-
+class COptionDouble : public COptionScalar<su2double> {
 public:
-  COptionString(string option_field_name, string & option_field, string default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionString() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "su2double", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    this->field.assign(option_value[0]);
-    return "";
-  }
-  void SetDefault() override {
-    this->field = this->def;
+  template<class... Ts>
+  COptionDouble(Ts&&... args) :
+    COptionScalar<su2double>("su2double", args...) {
   }
 };
 
-class COptionInt : public COptionBase {
-  int & field; // Reference to the feildname
-  int def; // Default value
-  string name; // identifier for the option
-
+class COptionInt : public COptionScalar<int> {
 public:
-  COptionInt(string option_field_name, int & option_field, int default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionInt() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "int", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    int val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "int", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
+  template<class... Ts>
+  COptionInt(Ts&&... args) :
+    COptionScalar<int>("int", args...) {
   }
 };
 
-class COptionULong : public COptionBase {
-  unsigned long & field; // Reference to the feildname
-  unsigned long def; // Default value
-  string name; // identifier for the option
-
+class COptionULong : public COptionScalar<unsigned long> {
 public:
-  COptionULong(string option_field_name, unsigned long & option_field, unsigned long default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionULong() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    unsigned long val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "unsigned long", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
+  template<class... Ts>
+  COptionULong(Ts&&... args) :
+    COptionScalar<unsigned long>("unsigned long", args...) {
   }
 };
 
-class COptionUShort : public COptionBase {
-  unsigned short & field; // Reference to the feildname
-  unsigned short def; // Default value
-  string name; // identifier for the option
-
+class COptionUShort : public COptionScalar<unsigned short> {
 public:
-  COptionUShort(string option_field_name, unsigned short & option_field, unsigned short default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionUShort() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    unsigned short val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "unsigned short", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
+  template<class... Ts>
+  COptionUShort(Ts&&... args) :
+    COptionScalar<unsigned short>("unsigned short", args...) {
   }
 };
 
-class COptionLong : public COptionBase {
-  long & field; // Reference to the feildname
-  long def; // Default value
-  string name; // identifier for the option
-
+class COptionLong : public COptionScalar<long> {
 public:
-  COptionLong(string option_field_name, long & option_field, long default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-
-  ~COptionLong() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "long", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    istringstream is(option_value[0]);
-    long val;
-    if (is >> val) {
-      this->field = val;
-      return "";
-    }
-    return badValue(option_value, "long", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
+  template<class... Ts>
+  COptionLong(Ts&&... args) :
+    COptionScalar<long>("long", args...) {
   }
 };
 
-class COptionBool : public COptionBase {
-  bool & field; // Reference to the feildname
-  bool def; // Default value
-  string name; // identifier for the option
-
+class COptionString : public COptionScalar<string> {
 public:
-  COptionBool(string option_field_name, bool & option_field, bool default_value) : field(option_field) {
-    this->def = default_value;
-    this->name = option_field_name;
+  template<class... Ts>
+  COptionString(Ts&&... args) :
+    COptionScalar<string>("string", args...) {
+  }
+};
+
+class COptionBool : public COptionScalar<bool> {
+public:
+  template<class... Ts>
+  COptionBool(Ts&&... args) :
+    COptionScalar<bool>("bool", args...) {
   }
 
-  ~COptionBool() override {};
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
-    // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "bool", this->name);
-    if (out.compare("") != 0) {
-      return out;
-    }
-    if (option_value[0].compare("YES") == 0) {
-      this->field = true;
+
+    string result;
+    auto msg = COptionScalar<string>("bool",name,result,"").SetValue(option_value);
+
+    if (!msg.empty()) return msg;
+
+    if (result.compare("YES") == 0) {
+      field = true;
       return "";
     }
-    if (option_value[0].compare("NO") == 0) {
-      this->field = false;
+    if (result.compare("NO") == 0) {
+      field = false;
       return "";
     }
-    return badValue(option_value, "bool", this->name);
-  }
-  void SetDefault() override {
-    this->field = this->def;
+
+    return badValue(option_value, "bool", name);
   }
 };
 
@@ -378,165 +277,86 @@ public:
   void SetDefault() override {}
 };
 
-class COptionDoubleList : public COptionBase {
-  su2double * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
+template<typename Scalar>
+class COptionScalarList : public COptionBase {
+  Scalar*& field; // reference to the field
+  const string name; // identifier for the option
+  unsigned short& mySize; // size of the list
+  const string typeName; // name of the scalar type
 
 public:
-  COptionDoubleList(string option_field_name, unsigned short & list_size, su2double * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
+  COptionScalarList() = delete;
+
+  COptionScalarList(const string& type_name,
+                    const string& option_field_name,
+                    unsigned short& list_size,
+                    Scalar*& option_field) :
+    field(option_field),
+    name(option_field_name),
+    mySize(list_size),
+    typeName(type_name) {
   }
 
-  ~COptionDoubleList() override {};
+  ~COptionScalarList() override = default;
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
+    mySize = option_value.size();
+    if (mySize == 1 && option_value[0].compare("NONE") == 0) {
       // No options
-      this->size = 0;
+      mySize = 0;
       return "";
     }
 
-    this->size = option_size;
-
     // Parse all of the options
-    su2double * vals = new su2double[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
+    field = new Scalar[mySize];
+    for (unsigned short i = 0; i < mySize; i++) {
       istringstream is(option_value[i]);
-      su2double val;
+      Scalar val;
       if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "su2double list", this->name);
+        delete [] field;
+        return badValue(option_value, typeName+" list", name);
       }
-      vals[i] = val;
+      field[i] = std::move(val);
     }
-    this->field = vals;
     return "";
   }
 
   void SetDefault() override {
-    this->size = 0; // There is no default value for list
+    mySize = 0; // There is no default value for list
   }
 };
 
-class COptionShortList : public COptionBase {
-  short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionDoubleList : public COptionScalarList<su2double> {
 public:
-  COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-  }
-
-  ~COptionShortList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      // No options
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    short * vals = new  short[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      istringstream is(option_value[i]);
-      unsigned short val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "short", this->name);
-      }
-      vals[i] = val;
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+  template<class... Ts>
+  COptionDoubleList(Ts&&... args) :
+    COptionScalarList<su2double>("su2double", args...) {
   }
 };
 
-class COptionUShortList : public COptionBase {
-  unsigned short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionShortList : public COptionScalarList<short> {
 public:
-  COptionUShortList(string option_field_name, unsigned short & list_size, unsigned short * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-  }
-
-  ~COptionUShortList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      // No options
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    unsigned short * vals = new unsigned short[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      istringstream is(option_value[i]);
-      unsigned short val;
-      if (!(is >> val)) {
-        delete [] vals;
-        return badValue(option_value, "unsigned short", this->name);
-      }
-      vals[i] = val;
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+  template<class... Ts>
+  COptionShortList(Ts&&... args) :
+    COptionScalarList<short>("short", args...) {
   }
 };
 
-class COptionStringList : public COptionBase {
-  string * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
-
+class COptionUShortList : public COptionScalarList<unsigned short> {
 public:
-  COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size) {
-    this->name = option_field_name;
+  template<class... Ts>
+  COptionUShortList(Ts&&... args) :
+    COptionScalarList<unsigned short>("unsigned short", args...) {
   }
+};
 
-  ~COptionStringList() override {};
-  string SetValue(vector<string> option_value) override {
-    COptionBase::SetValue(option_value);
-    // The size is the length of option_value
-    unsigned short option_size = option_value.size();
-    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
-      this->size = 0;
-      return "";
-    }
-    this->size = option_size;
-
-    // Parse all of the options
-    string * vals = new string[option_size];
-    for (unsigned long i  = 0; i < option_size; i++) {
-      vals[i].assign(option_value[i]);
-    }
-    this->field = vals;
-    return "";
-  }
-
-  void SetDefault() override {
-    this->size = 0; // There is no default value for list
+class COptionStringList : public COptionScalarList<string> {
+public:
+  template<class... Ts>
+  COptionStringList(Ts&&... args) :
+    COptionScalarList<string>("string", args...) {
   }
 };
 
