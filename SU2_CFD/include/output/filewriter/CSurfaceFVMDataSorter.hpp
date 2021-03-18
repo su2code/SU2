@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -93,7 +93,7 @@ public:
    */
   unsigned long GetNodeBegin(unsigned short rank) const override {
     return nPoint_Recv[rank];
-  } 
+  }
 
   /*!
    * \brief Get the Processor ID a Point belongs to.
@@ -118,7 +118,7 @@ public:
   unsigned long GetnPointCumulative(unsigned short rank) const override {
     return GetNodeBegin(rank);
   }
-  
+
 private:
 
   /*!
