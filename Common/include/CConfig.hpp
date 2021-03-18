@@ -117,6 +117,7 @@ private:
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,       /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Wind_Gust,                /*!< \brief Flag to know if there is a wind gust. */
+  Turb_Fixed_Values,        /*!< \brief Flag to know if there are fixed values for turbulence quantities in one half-plane. */
   Aeroelastic_Simulation,   /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Weakly_Coupled_Heat,      /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
   Rotating_Frame,           /*!< \brief Flag to know if there is a rotating frame. */
@@ -921,6 +922,8 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
+  /*! \brief Maximal scalar product of the normed far-field velocity vector and a space coordinate where fixed turbulence quantities are set. */
+  su2double Turb_Fixed_Values_MaxScalarProd;
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
@@ -8050,6 +8053,20 @@ public:
    * \brief Value of the location ath which the gust begins.
    */
   su2double GetGust_Begin_Loc(void) const { return Gust_Begin_Loc; }
+
+  /*!
+   * \brief Get whether fixed values for turbulence quantities are applied.
+   * \return <code>TRUE</code> if fixed values are applied; otherwise <code>FALSE</code>.
+   */
+  bool GetTurb_Fixed_Values(void) const { return Turb_Fixed_Values; }
+
+  /*!
+   * \brief Get shift of the upstream half-plane where fixed values for turbulence quantities are applied.
+   * \details This half-plane is given by the condition that the dot product between the
+   * coordinate vector and the normalized far-field velocity vector is less than what this
+   * function returns.
+   */
+  su2double GetTurb_Fixed_Values_MaxScalarProd(void) const { return Turb_Fixed_Values_MaxScalarProd; }
 
   /*!
    * \brief Get the number of iterations to evaluate the parametric coordinates.
