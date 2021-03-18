@@ -1,7 +1,6 @@
 /*!
  * \file CSolver.hpp
- * \brief Headers of the CSolver class which is inherited by all of the other
- *        solvers
+ * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
  *
