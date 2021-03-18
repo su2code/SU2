@@ -682,12 +682,12 @@ protected:
       const su2double JTJ = Jacobian[0]*Jacobian[0]+Jacobian[1]*Jacobian[1];
       const su2double volJacobian = sqrt(JTJ);
 
-      for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+      for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
 
         GaussPoint[iGauss].SetJ_X(volJacobian);
 
-        for (iNode = 0; iNode < nNodes; iNode++) {
-          for (iDim=0; iDim<2; iDim++) {
+        for (iNode = 0; iNode < NNODE; iNode++) {
+          for (iDim=0; iDim<NDIM+1; iDim++) {
             val_grad = Jacobian[iDim]*dNiXj[iGauss][iNode][0]/JTJ;
             GaussPoint[iGauss].SetGradNi_Xj( val_grad, iDim, iNode);
           }
@@ -696,25 +696,32 @@ protected:
 
     } else if (NDIM==2) {
 
-      su2double Jacobian[3][2], JTJ[2][2];
+      su2double Jacobian[NDIM+1][NDIM], JTJ[NDIM][NDIM];
       su2double volJacobian, GradN_Xi;
       unsigned short iShape, iDim, jDim, jVertex, kDim, iGauss;
 
-      for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+      for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
 
         /*--- Jacobian transformation ---*/
         /*--- This does dX/dXi transpose ---*/
-
-        for (iDim = 0; iDim < 3; iDim++) {
-          for (jVertex = 0; jVertex < 2; jVertex++) {
+        if(NNODE==3) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
+            for (jVertex = 0; jVertex < NDIM; jVertex++) {
               Jacobian[iDim][jVertex] = Coord[jVertex+1][iDim] - Coord[0][iDim];
+            }
+          }
+        }
+        if (NNODE==4) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
+            Jacobian[iDim][0] = (Coord[1][iDim] - Coord[0][iDim])/2;
+            Jacobian[iDim][1] = (Coord[3][iDim] - Coord[0][iDim])/2;
           }
         }
 
-        for (iDim = 0; iDim < 2; iDim++) {
-          for (jDim = 0; jDim < 2; jDim++) {
+        for (iDim = 0; iDim < NDIM; iDim++) {
+          for (jDim = 0; jDim < NDIM; jDim++) {
             JTJ[iDim][jDim] = 0.0;
-            for (kDim = 0; kDim < 3; kDim++) {
+            for (kDim = 0; kDim < NDIM+1; kDim++) {
               JTJ[iDim][jDim] += Jacobian[kDim][iDim]*Jacobian[kDim][jDim];
             }
           }
@@ -737,20 +744,20 @@ protected:
 
         su2double Jdagger[2][3];
 
-        for (iDim = 0; iDim < 2; iDim++) {
-          for (jDim = 0; jDim < 3; jDim++) {
+        for (iDim = 0; iDim < NDIM; iDim++) {
+          for (jDim = 0; jDim < NDIM+1; jDim++) {
             Jdagger[iDim][jDim] = 0.0;
-            for (kDim = 0; kDim < 2; kDim++) {
+            for (kDim = 0; kDim < NDIM; kDim++) {
               Jdagger[iDim][jDim] += JTJinv[iDim][kDim]*Jacobian[jDim][kDim];
             }
           }
         }
 
-        su2double GradOut[3];
-        for (iShape = 0; iShape < nNodes; iShape++) {
-          for (iDim = 0; iDim < 3; iDim++) {
+        su2double GradOut[NDIM+1];
+        for (iShape = 0; iShape < NNODE; iShape++) {
+          for (iDim = 0; iDim < NDIM+1; iDim++) {
             GradOut[iDim] = 0.0;
-            for (jDim = 0; jDim < 2; jDim++) {
+            for (jDim = 0; jDim < NDIM; jDim++) {
               GradOut[iDim] += Jdagger[jDim][iDim]*dNiXj[iGauss][iShape][jDim];
             }
             GaussPoint[iGauss].SetGradNi_Xj(GradOut[iDim], iDim, iShape);

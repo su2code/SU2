@@ -50,9 +50,9 @@ CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
 
     /*--- dN/d xi, dN/d eta ---*/
 
-    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;
-    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;
-    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;
+    dNiXj[iGauss][0][0] =  -1.0;  dNiXj[iGauss][0][1] =  -1.0;
+    dNiXj[iGauss][1][0] =   1.0;  dNiXj[iGauss][1][1] =   0.0;
+    dNiXj[iGauss][2][0] =   0.0;  dNiXj[iGauss][2][1] =   1.0;
 
   }
 

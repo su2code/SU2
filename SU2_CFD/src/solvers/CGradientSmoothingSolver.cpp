@@ -786,11 +786,10 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 
   unsigned long IterLinSol = 0;
 
-  /*--- For MPI prescribe vector entries across the ranks before solving the system. ---*/
+  /* For MPI prescribe vector entries across the ranks before solving the system.
+   * Analog to FEA solver this is only done for the solution */
   CSysMatrixComms::Initiate(LinSysSol, geometry, config);
   CSysMatrixComms::Complete(LinSysSol, geometry, config);
-  CSysMatrixComms::Initiate(LinSysRes, geometry, config);
-  CSysMatrixComms::Complete(LinSysRes, geometry, config);
 
   // elimination shedule
   Set_VertexEliminationSchedule(geometry, config);
@@ -1052,41 +1051,38 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry *geometry, CSolver *so
   su2double* normal;
   su2double norm;
 
-  if ( config->GetSmoothOnSurface() && val_marker!=NOT_AVAILABLE) {
-
-    for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
-
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-      normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      norm = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        norm += normal[iDim]*normal[iDim];
-      }
-      norm = sqrt(norm);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        normal[iDim] = normal[iDim] / norm;
-      }
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
+  /*--- split between surface and volume first, to avoid mpi ranks with no part of the marker to write back nonphysical solutions in the surface case ---*/
+  if ( config->GetSmoothOnSurface() ) {
+    if( val_marker!=NOT_AVAILABLE ) {
+      for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
+        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+        normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        norm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          norm += normal[iDim]*normal[iDim];
+        }
+        norm = sqrt(norm);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          normal[iDim] = normal[iDim] / norm;
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
+        }
       }
     }
-
-  } else if ( config->GetSepDim() ) {
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      this->GetNodes()->SetSensitivity(iPoint, dir, LinSysSol[iPoint]);
-    }
-
   } else {
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+    if ( config->GetSepDim() ) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        this->GetNodes()->SetSensitivity(iPoint, dir, LinSysSol[iPoint]);
+      }
+    } else {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          this->GetNodes()->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+        }
       }
     }
-
   }
 }
 
