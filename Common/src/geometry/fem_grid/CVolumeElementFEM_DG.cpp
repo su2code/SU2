@@ -101,6 +101,14 @@ ColMajorMatrix<su2double> &CVolumeElementFEM_DG::ComputeSolIntPoints(void) {
   return standardElemFlow->workSolInt[thread];
 }
 
+void CVolumeElementFEM_DG::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt) {
+  standardElemFlow->ResidualBasisFunctions(scalarDataInt, resDOFs);
+}
+
+void CVolumeElementFEM_DG::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt){
+  standardElemFlow->ResidualGradientBasisFunctions(vectorDataInt, resDOFs);
+}
+
 void CVolumeElementFEM_DG::SetConstantSolution(const su2double *sol,
                                                unsigned short  nVar,
                                                unsigned short  startInd) {

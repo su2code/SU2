@@ -80,8 +80,8 @@ void CFEMStandardQuadPartition::CoorIntPoints(const bool                LGLDistr
           call is nDim, which corresponds to the number of Cartesian coordinates (3 for a
           surface element and 2 for a volume element). ---*/
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, nDim, nDOFs1D, nInt1D,
-		                lagBasisLineIntLGL, lagBasisLineIntLGL, matCoorDOF,
-                                matCoorInt, nullptr);
+		                    lagBasisLineIntLGL, lagBasisLineIntLGL, matCoorDOF,
+                                matCoorInt, true, nullptr);
   }
   else {
 
@@ -91,7 +91,7 @@ void CFEMStandardQuadPartition::CoorIntPoints(const bool                LGLDistr
           surface element and 2 for a volume element). ---*/
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, nDim, nDOFs1D, nInt1D,
                                 lagBasisLineIntEqui, lagBasisLineIntEqui, matCoorDOF,
-                                matCoorInt, nullptr);
+                                matCoorInt, true, nullptr);
   }
 }
 
@@ -108,10 +108,10 @@ void CFEMStandardQuadPartition::DerivativesCoorIntPoints(const bool             
           coordinates (3 for a surface element and 2 for a volume element). ---*/
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints,nDim, nDOFs1D, nInt1D,
                                 derLagBasisLineIntLGL, lagBasisLineIntLGL, matCoor,
-                                matDerCoor[0], nullptr);
+                                matDerCoor[0], true, nullptr);
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, nDim, nDOFs1D, nInt1D,
                                 lagBasisLineIntLGL, derLagBasisLineIntLGL, matCoor,
-                                matDerCoor[1], nullptr);
+                                matDerCoor[1], true, nullptr);
   }
   else {
 
@@ -121,10 +121,10 @@ void CFEMStandardQuadPartition::DerivativesCoorIntPoints(const bool             
           coordinates (3 for a surface element and 2 for a volume element). ---*/
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, nDim, nDOFs1D, nInt1D,
                                 derLagBasisLineIntEqui, lagBasisLineIntEqui, matCoor,
-                                matDerCoor[0], nullptr);
+                                matDerCoor[0], true, nullptr);
     TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, nDim, nDOFs1D, nInt1D,
                                 lagBasisLineIntEqui, derLagBasisLineIntEqui, matCoor,
-                                matDerCoor[1], nullptr);
+                                matDerCoor[1], true, nullptr);
   }
 }
 

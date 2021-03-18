@@ -70,9 +70,9 @@ CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPolyGrid,
 
   /*--- Set up the jitted gemm calls, if supported. ---*/
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs, nIntegrationPad, nDOFs,
-                  nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
+                  nIntegrationPad, true, jitterDOFs2Int, gemmDOFs2Int);
   SetUpJittedGEMM(lagBasisSolDOFs.rows(), 3, nDOFs, lagBasisSolDOFs.rows(), nDOFs,
-                  lagBasisSolDOFs.rows(), jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+                  lagBasisSolDOFs.rows(), true, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
 }
 
 CFEMStandardTetGrid::~CFEMStandardTetGrid() {
@@ -96,7 +96,7 @@ void CFEMStandardTetGrid::CoorIntPoints(const bool                notUsed,
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-          nIntegrationPad, nDOFs, nIntegrationPad,
+          nIntegrationPad, nDOFs, nIntegrationPad, true,
           lagBasisInt, matCoorDOF, matCoorInt, nullptr);
 }
 
@@ -108,7 +108,7 @@ void CFEMStandardTetGrid::DerivativesCoorIntPoints(const bool                   
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   for(unsigned short nn=0; nn<3; ++nn)
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             derLagBasisInt[nn], matCoor, matDerCoor[nn], nullptr);
 }
 
@@ -119,7 +119,7 @@ void CFEMStandardTetGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double> 
         the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
   for(unsigned short nn=0; nn<6; ++nn)
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             hesLagBasisInt[nn], matCoor, matDer2ndCoor[nn], nullptr);
 }
 
@@ -129,7 +129,7 @@ void CFEMStandardTetGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
   OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 3, nDOFs,
-          nSolDOFs, nDOFs, nSolDOFs,
+          nSolDOFs, nDOFs, nSolDOFs, true,
           lagBasisSolDOFs, matCoorDOF, matCoorSolDOF, nullptr);
 }
 
@@ -140,7 +140,7 @@ void CFEMStandardTetGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>      
   const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
   for(unsigned short nn=0; nn<3; ++nn)
     OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 3, nDOFs,
-            nSolDOFs, nDOFs, nSolDOFs,
+            nSolDOFs, nDOFs, nSolDOFs, true,
             derLagBasisSolDOFs[nn], matCoor, matDerCoor[nn], nullptr);
 }
 

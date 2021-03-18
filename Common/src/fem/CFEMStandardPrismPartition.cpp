@@ -69,7 +69,7 @@ CFEMStandardPrismPartition::CFEMStandardPrismPartition(const unsigned short val_
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivative of the coordinates are computed, which is 3. ---*/
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs, nIntegrationPad, nDOFs,
-                  nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
+                  nIntegrationPad, true, jitterDOFs2Int, gemmDOFs2Int);
 }
 
 CFEMStandardPrismPartition::~CFEMStandardPrismPartition() {
@@ -92,7 +92,7 @@ void CFEMStandardPrismPartition::CoorIntPoints(const bool                LGLDist
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
@@ -100,7 +100,7 @@ void CFEMStandardPrismPartition::CoorIntPoints(const bool                LGLDist
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
@@ -116,7 +116,7 @@ void CFEMStandardPrismPartition::DerivativesCoorIntPoints(const bool            
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
     for(unsigned short nn=0; nn<3; ++nn)
       OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-              nIntegrationPad, nDOFs, nIntegrationPad,
+              nIntegrationPad, nDOFs, nIntegrationPad, true,
               derLagBasisIntLGL[nn], matCoor, matDerCoor[nn], nullptr);
   }
   else {
@@ -125,7 +125,7 @@ void CFEMStandardPrismPartition::DerivativesCoorIntPoints(const bool            
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
     for(unsigned short nn=0; nn<3; ++nn)
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             derLagBasisIntEqui[nn], matCoor, matDerCoor[nn], nullptr);
   }
 }

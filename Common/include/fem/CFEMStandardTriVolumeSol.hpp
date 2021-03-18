@@ -137,6 +137,29 @@ public:
   void SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
                     ColMajorMatrix<su2double> &matSolInt) override;
 
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        product of the given scalar data and the basis function. The integral is
+   *        approximated by the weighted sum of the data in the integration points.
+   * \param[in]     scalarDataInt - The scalar data in the integration points that must
+   *                                be multiplied by the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                              ColMajorMatrix<su2double> &resDOFs) override;
+
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        dot product of the given vector data and the gradient of the basis function.
+   *        The integral is approximated by the weighted sum of the data in the integration points.
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]     vectorDataInt - The vector data in the integration points that must
+   *                                be multiplied by the gradient of the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                      ColMajorMatrix<su2double>          &resDOFs) override;
+
 private:
   passivedouble factInviscidRad = -1.0;  /*!< \brief Correction factor for the inviscid spectral radius
                                                      for the high order element. */
@@ -166,6 +189,9 @@ private:
                                                                          DOFs. It is a vector, because there
                                                                          are derivatives in two directions. */
 
+  ColMajorMatrix<passivedouble> legBasisIntTranspose;             /*!< \brief Transpose of legBasisInt. */
+  vector<ColMajorMatrix<passivedouble> > derLegBasisIntTranspose; /*!< \brief Transpose of derLegBasisInt. */
+
   void *jitterDOFs2Int = nullptr;      /*!< \brief Pointer to the data for the jitted gemm function
                                                    to compute data in the integration points. */
   dgemm_jit_kernel_t gemmDOFs2Int;     /*!< \brief Pointer to the function to carry out jitterDOFs2Int. */
@@ -173,4 +199,8 @@ private:
   void *jitterDOFs2SolDOFs = nullptr;  /*!< \brief Pointer to the data for the jitted gemm function
                                                    to compute data in the solution DOFs. */
   dgemm_jit_kernel_t gemmDOFs2SolDOFs; /*!< \brief Pointer to the function to carry out jitterDOFs2SolDOFs. */
+
+  void *jitterInt2DOFs = nullptr;      /*!< \brief Pointer to the data for the jitted gemm function to
+                                                   compute data in the DOFs from the integration points. */
+  dgemm_jit_kernel_t gemmInt2DOFs;     /*!< \brief Pointer to the function to carry out jitterInt2DOFs. */
 };

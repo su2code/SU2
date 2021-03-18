@@ -107,9 +107,9 @@ void TensorProductVolumeIntPoints3D_5_5(const int           N,
               tmpI[i] += ai[ii][i] * tmpJ[k][ii][j];
           }
 
-          /*--- Copy the values to the appropriate location in c. ---*/
+          /*--- Add the values to the appropriate location in c. ---*/
           for(int i=0; i<5; ++i)
-            c[k][j][i] = tmpI[i];
+            c[k][j][i] += tmpI[i];
         }
       }
     }
@@ -121,8 +121,6 @@ void TensorProductVolumeIntPoints3D_5_5(const int           N,
             points in i-direction can be stored in c directly. ---*/
       for(int k=0; k<5; ++k) {
         for(int j=0; j<5; ++j) {
-          SU2_OMP_SIMD
-          for(int i=0; i<MP; ++i) c[k][j][i] = 0.0;
           for(int ii=0; ii<5; ++ii) {
             SU2_OMP_SIMD_IF_NOT_AD
             for(int i=0; i<MP; ++i)

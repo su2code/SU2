@@ -52,6 +52,18 @@ CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nP
   derLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  derLegBasisLineInt.setConstant(0.0);
   hesLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  hesLegBasisLineInt.setConstant(0.0);
 
+  /*--- Create the transpose of legBasisLineInt and derLegBasisLineInt. ---*/
+  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
+  legBasisLineIntTranspose.resize(nDOFs1DPad, nInt1D);    legBasisLineIntTranspose.setConstant(0.0);
+  derLegBasisLineIntTranspose.resize(nDOFs1DPad, nInt1D); derLegBasisLineIntTranspose.setConstant(0.0);
+
+  for(unsigned short j=0; j<nInt1D; ++j) {
+    for(unsigned short i=0; i<nDOFs1D; ++i) {
+      legBasisLineIntTranspose(i,j)    = legBasisLineInt(j,i);
+      derLegBasisLineIntTranspose(i,j) = derLegBasisLineInt(j,i);
+    }
+  }
+
   Vandermonde1D(nPoly, rLineInt, legBasisLineInt);
   GradVandermonde1D(nPoly, rLineInt, derLegBasisLineInt);
   HesVandermonde1D(nPoly, rLineInt, hesLegBasisLineInt);
@@ -63,7 +75,6 @@ CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nP
 
   /*--- Store the contents of Vtmp in legBasisLineSolDOFs. Note that
         the first dimension of legBasisLineSolDOFs is padded. ---*/
-  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
   legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);
   legBasisLineSolDOFs.setConstant(0.0);
 
@@ -173,7 +184,7 @@ void CFEMStandardQuadVolumeSol::ModalToNodal(ColMajorMatrix<su2double> &solDOFs)
 
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D,
                              nDOFs1D, legBasisLineSolDOFs, legBasisLineSolDOFs,
-                             tmp, solDOFs, nullptr);
+                             tmp, solDOFs, true, nullptr);
 }
 
 void CFEMStandardQuadVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
@@ -184,7 +195,7 @@ void CFEMStandardQuadVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs)
 
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D,
                               nDOFs1D, legBasisLineSolDOFsInv, legBasisLineSolDOFsInv,
-                              tmp, solDOFs, nullptr);
+                              tmp, solDOFs, true, nullptr);
 }
 
 void CFEMStandardQuadVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -193,9 +204,11 @@ void CFEMStandardQuadVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>      
   /*--- Call the function TensorProductVolumeDataHex 2 times to compute the derivatives
         of the solution coordinates w.r.t. the two parametric coordinates. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
-                              derLegBasisLineInt, legBasisLineInt, matSolDOF, matGradSolInt[0], nullptr);
+                              derLegBasisLineInt, legBasisLineInt, matSolDOF, matGradSolInt[0],
+                              true, nullptr);
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
-                              legBasisLineInt, derLegBasisLineInt, matSolDOF, matGradSolInt[1], nullptr);
+                              legBasisLineInt, derLegBasisLineInt, matSolDOF, matGradSolInt[1],
+                              true, nullptr);
 
   /*--- Fill the padded data to avoid problems. ---*/
   for(unsigned short j=0; j<matSolDOF.cols(); ++j) {
@@ -212,12 +225,35 @@ void CFEMStandardQuadVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDO
   /*--- Call TensorProductVolumeDataQuad with the appropriate arguments
         to carry out the actual job. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
-                              legBasisLineInt, legBasisLineInt, matSolDOF, matSolInt, nullptr);
+                              legBasisLineInt, legBasisLineInt, matSolDOF, matSolInt, true, nullptr);
 
   /*--- Fill the padded data to avoid problems. ---*/
   for(unsigned short j=0; j<matSolInt.cols(); ++j)
     for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
       matSolInt(i,j) = matSolInt(0,j);
+}
+
+void CFEMStandardQuadVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                                                       ColMajorMatrix<su2double> &resDOFs) {
+
+  /*--- Call TensorProductVolumeDataQuad with the appropriate arguments
+        to carry out the actual job. ---*/
+  TensorProductVolumeDataQuad(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                              legBasisLineIntTranspose, legBasisLineIntTranspose,
+                              scalarDataInt, resDOFs, false, nullptr);
+}
+
+void CFEMStandardQuadVolumeSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                               ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call TensorProductVolumeDataHex 2 times with the appropriate arguments
+        to carry out the actual job. ---*/
+  TensorProductVolumeDataQuad(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                              derLegBasisLineIntTranspose, legBasisLineIntTranspose,
+                              vectorDataInt[0], resDOFs, false, nullptr);
+  TensorProductVolumeDataQuad(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                              legBasisLineIntTranspose, derLegBasisLineIntTranspose,
+                              vectorDataInt[1], resDOFs, false, nullptr);
 }
 
 passivedouble CFEMStandardQuadVolumeSol::ValBasis0(void) {

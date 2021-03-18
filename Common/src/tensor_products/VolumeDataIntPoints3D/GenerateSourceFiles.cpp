@@ -55,10 +55,13 @@
       1D integration points, respectively, for the 1st pair, K2 and M2 for
       the second pair, etc. So the number of DOFs and integration points are
       separated by - and the pairs by a _. ---*/
-const std::string Pairs = "1-2_1-3_1-4_1-5_2-2_2-3_2-4_2-5_3-3_3-4_3-5_3-6_"
-                          "3-7_3-8_4-4_4-5_4-6_4-7_4-8_5-5_5-6_5-7_5-8_6-6_"
-                          "6-7_6-8_6-9_7-7_7-8_7-9_7_12_8-8_8-12_8-13_9-9_"
-                          "9-13_9-14_10-10_10-14";
+const std::string Pairs = "1-2_1-3_1-4_1-5_2-1_2-2_2-3_2-4_2-5_3-1_3-2_3-3_"
+                          "3-4_3-5_3-6_3-7_3-8_4-1_4-2_4-3_4-4_4-5_4-6_4-7_"
+                          "4-8_5-1_5-2_5-3_5-4_5-5_5-6_5-7_5-8_6-3_6-4_6-5_"
+                          "6-6_6-7_6-8_6-9_7-3_7-4_7-5_7-6_7-7_7-8_7-9_7_12_"
+                          "8-3_8-4_8-5_8-6_8-7_8-8_8-12_8-13_9-6_9-7_9-9_"
+                          "9-13_9-14_10-10_10-14_12-7_12-8_13-8_13-9_14-9_"
+                          "14-10";
 
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
@@ -471,9 +474,9 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "              tmpI[i] += ai[ii][i] * tmpJ[k][ii][j];" << std::endl;
   sourceFile << "          }" << std::endl << std::endl;
 
-  sourceFile << "          /*--- Copy the values to the appropriate location in c. ---*/" << std::endl;
+  sourceFile << "          /*--- Add the values to the appropriate location in c. ---*/" << std::endl;
   sourceFile << "          for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
-  sourceFile << "            c[k][j][i] = tmpI[i];" << std::endl;
+  sourceFile << "            c[k][j][i] += tmpI[i];" << std::endl;
   sourceFile << "        }" << std::endl;
   sourceFile << "      }" << std::endl;
   sourceFile << "    }" << std::endl;
@@ -485,8 +488,6 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "            points in i-direction can be stored in c directly. ---*/" << std::endl;
   sourceFile << "      for(int k=0; k<" << nInt1D << "; ++k) {" << std::endl;
   sourceFile << "        for(int j=0; j<" << nInt1D << "; ++j) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
-  sourceFile << "          for(int i=0; i<MP; ++i) c[k][j][i] = 0.0;" << std::endl;
   sourceFile << "          for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
   sourceFile << "            SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
   sourceFile << "            for(int i=0; i<MP; ++i)" << std::endl;

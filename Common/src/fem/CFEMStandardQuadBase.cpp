@@ -333,6 +333,7 @@ void CFEMStandardQuadBase::TensorProductVolumeDataQuad(TPI2D                    
                                                        const ColMajorMatrix<passivedouble> &Aj,
                                                        const ColMajorMatrix<su2double>     &B,
                                                        ColMajorMatrix<su2double>           &C,
+                                                       const bool                          initZero,
                                                        const CConfig                       *config) {
 
   /*--- Call the function to which TPVolData points to carry out the
@@ -342,6 +343,7 @@ void CFEMStandardQuadBase::TensorProductVolumeDataQuad(TPI2D                    
   if( config ) config->TensorProduct_Tick(&timeGemm);
 #endif
 
+  if( initZero ) C.setConstant(0.0);
   TPVolData(N, B.rows(), C.rows(), Ai.data(), Aj.data(), B.data(), C.data());
 
 #ifdef PROFILE

@@ -56,6 +56,18 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
   GradVandermonde1D(nPoly, rLineInt, derLegBasisLineInt);
   HesVandermonde1D(nPoly, rLineInt, hesLegBasisLineInt);
 
+  /*--- Create the transpose of legBasisLineInt and derLegBasisLineInt. ---*/
+  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
+  legBasisLineIntTranspose.resize(nDOFs1DPad, nInt1D);    legBasisLineIntTranspose.setConstant(0.0);
+  derLegBasisLineIntTranspose.resize(nDOFs1DPad, nInt1D); derLegBasisLineIntTranspose.setConstant(0.0);
+
+  for(unsigned short j=0; j<nInt1D; ++j) {
+    for(unsigned short i=0; i<nDOFs1D; ++i) {
+      legBasisLineIntTranspose(i,j)    = legBasisLineInt(j,i);
+      derLegBasisLineIntTranspose(i,j) = derLegBasisLineInt(j,i);
+    }
+  }
+
   /*--- Compute the 1D Legendre basis functions in the solution DOFs.
         Store it in a square matrix as also the inverse is needed. ---*/
   CSquareMatrixCM Vtmp(nDOFs1D);
@@ -63,7 +75,6 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
 
   /*--- Store the contents of Vtmp in legBasisLineSolDOFs. Note that
         the first dimension of legBasisLineSolDOFs is padded. ---*/
-  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
   legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);
   legBasisLineSolDOFs.setConstant(0.0);
 
@@ -98,6 +109,10 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
         nodal solution DOFs. ---*/
   SetFunctionPointerVolumeDataHex(nDOFs1D, nInt1D, TensorProductDataVolIntPoints);
   SetFunctionPointerVolumeDataHex(nDOFs1D, nDOFs1D, TensorProductDataVolSolDOFs);
+
+  /*--- Set the function pointer for the tensor product multiplication to
+        update the residual of the DOFs for a volume integration term. ---*/
+  SetFunctionPointerVolumeDataHex(nInt1D, nDOFs1D, TensorProductResVolDOFs);
 
   /*--- Determine the correction factors for the inviscid and viscous
         spectral radii for the high order element. These factors depend
@@ -175,7 +190,7 @@ void CFEMStandardHexVolumeSol::ModalToNodal(ColMajorMatrix<su2double> &solDOFs) 
 
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D, nDOFs1D,
                              legBasisLineSolDOFs, legBasisLineSolDOFs, legBasisLineSolDOFs,
-                             tmp, solDOFs, nullptr);
+                             tmp, solDOFs, true, nullptr);
 }
 
 void CFEMStandardHexVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
@@ -186,7 +201,7 @@ void CFEMStandardHexVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) 
 
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D, nDOFs1D,
                              legBasisLineSolDOFsInv, legBasisLineSolDOFsInv,
-                             legBasisLineSolDOFsInv, tmp, solDOFs, nullptr);
+                             legBasisLineSolDOFsInv, tmp, solDOFs, true, nullptr);
 }
 
 void CFEMStandardHexVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -196,13 +211,13 @@ void CFEMStandardHexVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>       
         of the solution coordinates w.r.t. the three parametric coordinates. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
                              derLegBasisLineInt, legBasisLineInt, legBasisLineInt, matSolDOF,
-                             matGradSolInt[0], nullptr);
+                             matGradSolInt[0], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
                              legBasisLineInt, derLegBasisLineInt, legBasisLineInt, matSolDOF,
-                             matGradSolInt[1], nullptr);
+                             matGradSolInt[1], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
                              legBasisLineInt, legBasisLineInt, derLegBasisLineInt, matSolDOF,
-                             matGradSolInt[2], nullptr);
+                             matGradSolInt[2], true, nullptr);
 
   /*--- Fill the padded data to avoid problems. ---*/
   for(unsigned short j=0; j<matSolDOF.cols(); ++j) {
@@ -221,12 +236,42 @@ void CFEMStandardHexVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF
         to carry out the actual job. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, matSolDOF.cols(), nDOFs1D, nInt1D,
                              legBasisLineInt, legBasisLineInt, legBasisLineInt, matSolDOF,
-                             matSolInt, nullptr);
+                             matSolInt, true, nullptr);
 
   /*--- Fill the padded data to avoid problems. ---*/
   for(unsigned short j=0; j<matSolInt.cols(); ++j)
     for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
       matSolInt(i,j) = matSolInt(0,j);
+}
+
+void CFEMStandardHexVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                                                      ColMajorMatrix<su2double> &resDOFs) {
+
+  /*--- Call TensorProductVolumeDataHex with the appropriate arguments
+        to carry out the actual job. ---*/
+  TensorProductVolumeDataHex(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                             legBasisLineIntTranspose, legBasisLineIntTranspose,
+                             legBasisLineIntTranspose, scalarDataInt, resDOFs,
+                             false, nullptr);
+}
+
+void CFEMStandardHexVolumeSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                              ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call TensorProductVolumeDataHex 3 times with the appropriate arguments
+        to carry out the actual job. ---*/
+  TensorProductVolumeDataHex(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                             derLegBasisLineIntTranspose, legBasisLineIntTranspose,
+                             legBasisLineIntTranspose, vectorDataInt[0], resDOFs,
+                             false, nullptr);
+  TensorProductVolumeDataHex(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                             legBasisLineIntTranspose, derLegBasisLineIntTranspose,
+                             legBasisLineIntTranspose, vectorDataInt[1], resDOFs,
+                             false, nullptr);
+  TensorProductVolumeDataHex(TensorProductResVolDOFs, resDOFs.cols(), nInt1D, nDOFs1D,
+                             legBasisLineIntTranspose, legBasisLineIntTranspose,
+                             derLegBasisLineIntTranspose, vectorDataInt[2], resDOFs,
+                             false, nullptr);
 }
 
 passivedouble CFEMStandardHexVolumeSol::ValBasis0(void) {

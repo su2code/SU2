@@ -106,6 +106,6 @@ void CGemmStandard::DOFs2Int(ColMajorMatrix<passivedouble> &basis,
 
   /*--- Use the interface to the more standard BLAS functionality. ---*/
   blasFunctions.gemm(MP, nVar, K, basis.rows(), dataDOFs.rows(), dataInt.rows(),
-                     basis.data(), dataDOFs.data(), dataInt.data(), config);
+                     true, basis.data(), dataDOFs.data(), dataInt.data(), config);
 #endif
 }

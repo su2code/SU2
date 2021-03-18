@@ -150,6 +150,7 @@ protected:
    * \param[in]  Aj        - 1D matrix for the j-component of the A tensor.
    * \param[in]  B         - B tensor stored as a matrix.
    * \param[out] C         - C tensor stored as a matrix.
+   * \param[in]  initZero  - Whether or not to initialize C to zero.
    * \param[out] config    - Object used for the timing of the tensor product call.
    */
   void TensorProductVolumeDataQuad(TPI2D                               &TPVolData,
@@ -160,5 +161,6 @@ protected:
                                    const ColMajorMatrix<passivedouble> &Aj,
                                    const ColMajorMatrix<su2double>     &B,
                                    ColMajorMatrix<su2double>           &C,
+                                   const bool                          initZero,
                                    const CConfig                       *config);
 };

@@ -87,9 +87,9 @@ void TensorProductVolumeIntPoints2D_8_12(const int           N,
             tmpI[i] += ai[ii][i] * tmpJ[ii][j];
         }
 
-        /*--- Copy the values to the appropriate location in c. ---*/
+        /*--- Add the values to the appropriate location in c. ---*/
         for(int i=0; i<12; ++i)
-          c[j][i] = tmpI[i];
+          c[j][i] += tmpI[i];
       }
     }
     else {
@@ -99,8 +99,6 @@ void TensorProductVolumeIntPoints2D_8_12(const int           N,
             i-direction to obtain the solution in the integration
             points in i-direction can be stored in c directly. ---*/
       for(int j=0; j<12; ++j) {
-        SU2_OMP_SIMD
-        for(int i=0; i<MP; ++i) c[j][i] = 0.0;
         for(int ii=0; ii<8; ++ii) {
           SU2_OMP_SIMD_IF_NOT_AD
           for(int i=0; i<MP; ++i)

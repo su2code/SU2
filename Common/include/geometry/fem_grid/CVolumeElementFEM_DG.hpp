@@ -127,6 +127,22 @@ public:
   ColMajorMatrix<su2double> &ComputeSolIntPoints(void);
 
   /*!
+   * \brief Function, which adds to the residual the contribution coming
+   *        from the multiplication with the basis functions.
+   * \param[in] scalarDataInt - The scalar data in the integration points
+   *                            to be multiplied by the basis functions.
+   */
+  void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt);
+
+  /*!
+   * \brief Function, which adds to the residual the contribution coming
+   *        from the multiplication with the divergence of the basis functions.
+   * \param[in] vectorDataInt - The vector data in the integration points to be
+   *                            multiplied by the gradient of the basis functions.
+   */
+  void ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt);
+
+  /*!
    * \brief Function, which sets the solution in this element
    *        to a constant solution.
    * \param[in] sol      - Solution to be set for this element.

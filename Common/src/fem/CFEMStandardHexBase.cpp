@@ -220,6 +220,7 @@ void CFEMStandardHexBase::TensorProductVolumeDataHex(TPI3D                      
                                                      const ColMajorMatrix<passivedouble> &Ak,
                                                      const ColMajorMatrix<su2double>     &B,
                                                      ColMajorMatrix<su2double>           &C,
+                                                     const bool                          initZero,
                                                      const CConfig                       *config) {
 
   /*--- Call the function to which TPVolData points to carry out the
@@ -229,6 +230,7 @@ void CFEMStandardHexBase::TensorProductVolumeDataHex(TPI3D                      
   if( config ) config->TensorProduct_Tick(&timeGemm);
 #endif
 
+  if( initZero ) C.setConstant(0.0);
   TPVolData(N, B.rows(), C.rows(), Ai.data(), Aj.data(), Ak.data(), B.data(), C.data());
 
 #ifdef PROFILE

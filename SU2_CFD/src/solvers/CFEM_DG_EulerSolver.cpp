@@ -3274,25 +3274,16 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /*---         integration over the volume element.                     ---*/
     /*------------------------------------------------------------------------*/
 
+    /*--- Initialize the residual to zero. ---*/
+    volElem[l].resDOFs.setConstant(0.0);
+
+    /*--- Add the contribution from the fluxes. ---*/
+    volElem[l].ResidualGradientBasisFunctions(fluxes);
+
+    /*--- Add the contribution from the source terms, if needed.
+          The source terms are stored in solInt. ---*/
+    if( addSourceTerms ) volElem[l].ResidualBasisFunctions(solInt);
   }
-
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 bool CFEM_DG_EulerSolver::VolumeSourceTerms(CConfig                  *config,

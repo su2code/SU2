@@ -48,6 +48,9 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
   nDOFsAndInt.short0 = 1; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_1_5);
 
+  nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 1;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_2_1);
+
   nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 2;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_2_2);
 
@@ -59,6 +62,12 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
 
   nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_2_5);
+
+  nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 1;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_3_1);
+
+  nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 2;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_3_2);
 
   nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 3;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_3_3);
@@ -78,6 +87,15 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
   nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_3_8);
 
+  nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 1;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_4_1);
+
+  nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 2;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_4_2);
+
+  nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_4_3);
+
   nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 4;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_4_4);
 
@@ -93,6 +111,18 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
   nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_4_8);
 
+  nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 1;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_1);
+
+  nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 2;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_2);
+
+  nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_3);
+
+  nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 4;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_4);
+
   nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_5);
 
@@ -104,6 +134,15 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
 
   nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_5_8);
+
+  nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_6_3);
+
+  nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 4;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_6_4);
+
+  nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 5;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_6_5);
 
   nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 6;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_6_6);
@@ -117,6 +156,18 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
   nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_6_9);
 
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_3);
+
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 4;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_4);
+
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 5;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_5);
+
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 6;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_6);
+
   nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 7;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_7);
 
@@ -126,14 +177,35 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
   nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_9);
 
-  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 8;
-  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_8);
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_7_3);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 4;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_4);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 5;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_5);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 6;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_6);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 7;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_7);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 8;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_8);
 
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 12;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_12);
 
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 13;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_8_13);
+
+  nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 6;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_9_6);
+
+  nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 7;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_9_7);
 
   nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_9_9);
@@ -149,4 +221,22 @@ void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFu
 
   nDOFsAndInt.short0 = 10; nDOFsAndInt.short1 = 14;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_10_14);
+
+  nDOFsAndInt.short0 = 12; nDOFsAndInt.short1 = 7;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_12_7);
+
+  nDOFsAndInt.short0 = 12; nDOFsAndInt.short1 = 8;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_12_8);
+
+  nDOFsAndInt.short0 = 13; nDOFsAndInt.short1 = 8;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_13_8);
+
+  nDOFsAndInt.short0 = 13; nDOFsAndInt.short1 = 9;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_13_9);
+
+  nDOFsAndInt.short0 = 14; nDOFsAndInt.short1 = 9;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_14_9);
+
+  nDOFsAndInt.short0 = 14; nDOFsAndInt.short1 = 10;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductVolumeIntPoints2D_14_10);
 }

@@ -73,7 +73,7 @@ void CFEMStandardHexPartition::CoorIntPoints(const bool                LGLDistri
           Cartesian coordinates in the integration points. ---*/
    TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                               lagBasisLineIntLGL, lagBasisLineIntLGL, lagBasisLineIntLGL,
-                              matCoorDOF, matCoorInt, nullptr);
+                              matCoorDOF, matCoorInt, true, nullptr);
   }
   else {
 
@@ -81,7 +81,7 @@ void CFEMStandardHexPartition::CoorIntPoints(const bool                LGLDistri
           Cartesian coordinates in the integration points. ---*/
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                lagBasisLineIntEqui, lagBasisLineIntEqui, lagBasisLineIntEqui,
-                               matCoorDOF, matCoorInt, nullptr);
+                               matCoorDOF, matCoorInt, true, nullptr);
   }
 }
 
@@ -96,13 +96,13 @@ void CFEMStandardHexPartition::DerivativesCoorIntPoints(const bool              
           derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D, 
                                derLagBasisLineIntLGL, lagBasisLineIntLGL, lagBasisLineIntLGL,
-                               matCoor, matDerCoor[0], nullptr);
+                               matCoor, matDerCoor[0], true, nullptr);
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                lagBasisLineIntLGL, derLagBasisLineIntLGL, lagBasisLineIntLGL,
-                               matCoor, matDerCoor[1], nullptr);
+                               matCoor, matDerCoor[1], true, nullptr);
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                lagBasisLineIntLGL, lagBasisLineIntLGL, derLagBasisLineIntLGL,
-                               matCoor, matDerCoor[2], nullptr);
+                               matCoor, matDerCoor[2], true, nullptr);
   }
   else {
 
@@ -110,13 +110,13 @@ void CFEMStandardHexPartition::DerivativesCoorIntPoints(const bool              
           derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                derLagBasisLineIntEqui, lagBasisLineIntEqui, lagBasisLineIntEqui,
-                               matCoor, matDerCoor[0], nullptr);
+                               matCoor, matDerCoor[0], true, nullptr);
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                lagBasisLineIntEqui, derLagBasisLineIntEqui, lagBasisLineIntEqui,
-                               matCoor, matDerCoor[1], nullptr);
+                               matCoor, matDerCoor[1], true, nullptr);
     TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                                lagBasisLineIntEqui, lagBasisLineIntEqui, derLagBasisLineIntEqui,
-                               matCoor, matDerCoor[2], nullptr);
+                               matCoor, matDerCoor[2], true, nullptr);
   }
 }
 

@@ -80,7 +80,7 @@ void CFEMStandardHexGrid::CoorIntPoints(const bool                notUsed,
         Cartesian coordinates in the integration points. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, lagBasisLineInt, lagBasisLineInt,
-                             matCoorDOF, matCoorInt, nullptr);
+                             matCoorDOF, matCoorInt, true, nullptr);
 }
 
 void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -91,13 +91,13 @@ void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                   
         of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              derLagBasisLineInt, lagBasisLineInt, lagBasisLineInt,
-                             matCoor, matDerCoor[0], nullptr);
+                             matCoor, matDerCoor[0], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, derLagBasisLineInt, lagBasisLineInt,
-                             matCoor, matDerCoor[1], nullptr);
+                             matCoor, matDerCoor[1], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, lagBasisLineInt, derLagBasisLineInt,
-                             matCoor, matDerCoor[2], nullptr);
+                             matCoor, matDerCoor[2], true, nullptr);
 }
 
 void CFEMStandardHexGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>          &matCoor,
@@ -107,23 +107,23 @@ void CFEMStandardHexGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double> 
         of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              hesLagBasisLineInt, lagBasisLineInt, lagBasisLineInt,
-                             matCoor, matDer2ndCoor[0], nullptr);
+                             matCoor, matDer2ndCoor[0], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, hesLagBasisLineInt, lagBasisLineInt,
-                             matCoor, matDer2ndCoor[1], nullptr);
+                             matCoor, matDer2ndCoor[1], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, lagBasisLineInt, hesLagBasisLineInt,
-                             matCoor, matDer2ndCoor[2], nullptr);
+                             matCoor, matDer2ndCoor[2], true, nullptr);
 
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              derLagBasisLineInt, derLagBasisLineInt, lagBasisLineInt,
-                             matCoor, matDer2ndCoor[3], nullptr);
+                             matCoor, matDer2ndCoor[3], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              derLagBasisLineInt, lagBasisLineInt, derLagBasisLineInt,
-                             matCoor, matDer2ndCoor[4], nullptr);
+                             matCoor, matDer2ndCoor[4], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolIntPoints, 3, nDOFs1D, nInt1D,
                              lagBasisLineInt, derLagBasisLineInt, derLagBasisLineInt,
-                             matCoor, matDer2ndCoor[5], nullptr);
+                             matCoor, matDer2ndCoor[5], true, nullptr);
 }
 
 void CFEMStandardHexGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
@@ -133,7 +133,7 @@ void CFEMStandardHexGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
         the Cartesian coordinates in the solution DOFs. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, 3, nDOFs1D, rLineSolDOFs.size(),
                              lagBasisLineSolDOFs, lagBasisLineSolDOFs, lagBasisLineSolDOFs,
-                             matCoorDOF, matCoorSolDOF, nullptr);
+                             matCoorDOF, matCoorSolDOF, true, nullptr);
 }
 
 void CFEMStandardHexGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
@@ -143,13 +143,13 @@ void CFEMStandardHexGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>      
         the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, 3, nDOFs1D, rLineSolDOFs.size(),
                              derLagBasisLineSolDOFs, lagBasisLineSolDOFs, lagBasisLineSolDOFs,
-                             matCoor, matDerCoor[0], nullptr);
+                             matCoor, matDerCoor[0], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, 3, nDOFs1D, rLineSolDOFs.size(),
                              lagBasisLineSolDOFs, derLagBasisLineSolDOFs, lagBasisLineSolDOFs,
-                             matCoor, matDerCoor[1], nullptr);
+                             matCoor, matDerCoor[1], true, nullptr);
   TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, 3, nDOFs1D, rLineSolDOFs.size(),
                              lagBasisLineSolDOFs, lagBasisLineSolDOFs, derLagBasisLineSolDOFs,
-                             matCoor, matDerCoor[2], nullptr);
+                             matCoor, matDerCoor[2], true, nullptr);
 }
 
 void CFEMStandardHexGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,

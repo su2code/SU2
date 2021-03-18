@@ -102,6 +102,23 @@ CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_
     }
   }
 
+  /*--- Create the transpose of legBasisInt and derLegBasisInt. ---*/
+  legBasisIntTranspose.resize(nDOFsPad, nIntegration); legBasisIntTranspose.setConstant(0.0);
+
+  derLegBasisIntTranspose.resize(3);
+  derLegBasisIntTranspose[0].resize(nDOFsPad, nIntegration); derLegBasisIntTranspose[0].setConstant(0.0);
+  derLegBasisIntTranspose[1].resize(nDOFsPad, nIntegration); derLegBasisIntTranspose[1].setConstant(0.0);
+  derLegBasisIntTranspose[2].resize(nDOFsPad, nIntegration); derLegBasisIntTranspose[2].setConstant(0.0);
+
+  for(unsigned short j=0; j<nIntegration; ++j) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      legBasisIntTranspose(i,j)       = legBasisInt(j,i);
+      derLegBasisIntTranspose[0](i,j) = derLegBasisInt[0](j,i);
+      derLegBasisIntTranspose[1](i,j) = derLegBasisInt[1](j,i);
+      derLegBasisIntTranspose[2](i,j) = derLegBasisInt[2](j,i);
+    }
+  }
+
   /*--- Compute the Legendre basis functions in the solution DOFs.
         Store it in a square matrix as also the inverse is needed. ---*/
   CSquareMatrixCM Vtmp(nDOFs);
@@ -138,9 +155,11 @@ CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_
 
   /*--- Set up the jitted gemm calls, if supported. ---*/
   SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, nIntegrationPad,
-                  nDOFs, nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
+                  nDOFs, nIntegrationPad, true, jitterDOFs2Int, gemmDOFs2Int);
   SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, nDOFs, nDOFs,
-                  nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+                  nDOFs, true, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+  SetUpJittedGEMM(nDOFsPad, val_nVar, nIntegration, nDOFsPad, nIntegrationPad,
+                  nDOFsPad, false, jitterInt2DOFs, gemmInt2DOFs);
 
   /*--- Determine the correction factors for the inviscid and viscous
         spectral radii for the high order element. These factors depend
@@ -198,6 +217,11 @@ if( jitterDOFs2Int ) {
     mkl_jit_destroy(jitterDOFs2SolDOFs);
     jitterDOFs2SolDOFs = nullptr;
   }
+
+  if( jitterInt2DOFs ) {
+    mkl_jit_destroy(jitterInt2DOFs);
+    jitterInt2DOFs = nullptr;
+  }
 #endif
 }
 
@@ -220,7 +244,7 @@ void CFEMStandardPrismVolumeSol::ModalToNodal(ColMajorMatrix<su2double> &solDOFs
   ColMajorMatrix<su2double> tmp = solDOFs;
 
   OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nDOFs, tmp.cols(), nDOFs,
-          nDOFs, nDOFs, nDOFs, legBasisSolDOFs, tmp, solDOFs, nullptr);
+          nDOFs, nDOFs, nDOFs, true, legBasisSolDOFs, tmp, solDOFs, nullptr);
 }
 
 void CFEMStandardPrismVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
@@ -230,7 +254,7 @@ void CFEMStandardPrismVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs
   ColMajorMatrix<su2double> tmp = solDOFs;
 
   OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nDOFs, tmp.cols(), nDOFs,
-          nDOFs, nDOFs, nDOFs, legBasisSolDOFsInv, tmp, solDOFs, nullptr);
+          nDOFs, nDOFs, nDOFs, true, legBasisSolDOFsInv, tmp, solDOFs, nullptr);
 }
 
 void CFEMStandardPrismVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -239,7 +263,7 @@ void CFEMStandardPrismVolumeSol::GradSolIntPoints(ColMajorMatrix<su2double>     
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   for(unsigned short nn=0; nn<3; ++nn)
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, matSolDOF.cols(), nDOFs,
-            nIntegrationPad, nDOFs, nIntegrationPad,
+            nIntegrationPad, nDOFs, nIntegrationPad, true,
             derLegBasisInt[nn], matSolDOF, matGradSolInt[nn], nullptr);
 }
 
@@ -248,8 +272,30 @@ void CFEMStandardPrismVolumeSol::SolIntPoints(ColMajorMatrix<su2double> &matSolD
 
   /*--- Call OwnGemm with the appropriate arguments to carry out the actual job. ---*/
   OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, matSolDOF.cols(), nDOFs,
-          nIntegrationPad, nDOFs, nIntegrationPad,
+          nIntegrationPad, nDOFs, nIntegrationPad, true,
           legBasisInt, matSolDOF, matSolInt, nullptr);
-
 }
 
+void CFEMStandardPrismVolumeSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                                                        ColMajorMatrix<su2double> &resDOFs) {
+
+  /*--- Call OwnGemm with the appropriate arguments to carry out the actual job. ---*/
+  OwnGemm(gemmInt2DOFs, jitterInt2DOFs, nDOFsPad, resDOFs.cols(), nIntegration,
+          nDOFsPad, nIntegrationPad, nDOFsPad, false,
+          legBasisIntTranspose, scalarDataInt, resDOFs, nullptr);
+} 
+
+void CFEMStandardPrismVolumeSol::ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                                                ColMajorMatrix<su2double>          &resDOFs) {
+
+  /*--- Call OwnGemm 3 times with the appropriate arguments to carry out the actual job. ---*/
+  OwnGemm(gemmInt2DOFs, jitterInt2DOFs, nDOFsPad, resDOFs.cols(), nIntegration,
+          nDOFsPad, nIntegrationPad, nDOFsPad, false,
+          derLegBasisIntTranspose[0], vectorDataInt[0], resDOFs, nullptr);
+  OwnGemm(gemmInt2DOFs, jitterInt2DOFs, nDOFsPad, resDOFs.cols(), nIntegration,
+          nDOFsPad, nIntegrationPad, nDOFsPad, false,
+          derLegBasisIntTranspose[1], vectorDataInt[1], resDOFs, nullptr);
+  OwnGemm(gemmInt2DOFs, jitterInt2DOFs, nDOFsPad, resDOFs.cols(), nIntegration,
+          nDOFsPad, nIntegrationPad, nDOFsPad, false,
+          derLegBasisIntTranspose[2], vectorDataInt[2], resDOFs, nullptr);
+}

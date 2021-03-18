@@ -78,7 +78,7 @@ void CFEMStandardQuadGrid::CoorIntPoints(const bool                notUsed,
   /*--- Call the function TensorProductVolumeDataQuad to compute the
         Cartesian coordinates in the integration points. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, lagBasisLineInt,
-                              lagBasisLineInt, matCoorDOF, matCoorInt, nullptr);
+                              lagBasisLineInt, matCoorDOF, matCoorInt, true, nullptr);
 }
 
 void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -88,9 +88,9 @@ void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                  
   /*--- Call the function TensorProductVolumeDataQuad 2 times to compute the
         derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, derLagBasisLineInt,
-                              lagBasisLineInt, matCoor, matDerCoor[0], nullptr);
+                              lagBasisLineInt, matCoor, matDerCoor[0], true, nullptr);
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, lagBasisLineInt,
-                              derLagBasisLineInt, matCoor, matDerCoor[1], nullptr);
+                              derLagBasisLineInt, matCoor, matDerCoor[1], true, nullptr);
 }
 
 void CFEMStandardQuadGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>          &matCoor,
@@ -99,11 +99,11 @@ void CFEMStandardQuadGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>
   /*--- Call the function TensorProductVolumeDataQuad 3 times to compute the 2nd
         derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, hesLagBasisLineInt,
-                              lagBasisLineInt, matCoor, matDer2ndCoor[0], nullptr);
+                              lagBasisLineInt, matCoor, matDer2ndCoor[0], true, nullptr);
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, lagBasisLineInt,
-                              hesLagBasisLineInt, matCoor, matDer2ndCoor[1], nullptr);
+                              hesLagBasisLineInt, matCoor, matDer2ndCoor[1], true, nullptr);
   TensorProductVolumeDataQuad(TensorProductDataVolIntPoints, 2, nDOFs1D, nInt1D, derLagBasisLineInt,
-                              derLagBasisLineInt, matCoor, matDer2ndCoor[2], nullptr);
+                              derLagBasisLineInt, matCoor, matDer2ndCoor[2], true, nullptr);
 }
 
 void CFEMStandardQuadGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
@@ -112,7 +112,8 @@ void CFEMStandardQuadGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
   /*--- Call the function TensorProductVolumeDataQuad to compute
         the Cartesian coordinates in the solution DOFs. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, 2, nDOFs1D, rLineSolDOFs.size(),
-                              lagBasisLineSolDOFs, lagBasisLineSolDOFs, matCoorDOF, matCoorSolDOF, nullptr);
+                              lagBasisLineSolDOFs, lagBasisLineSolDOFs, matCoorDOF, matCoorSolDOF,
+                              true, nullptr);
 }
 
 void CFEMStandardQuadGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
@@ -121,9 +122,11 @@ void CFEMStandardQuadGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>     
   /*--- Call the function TensorProductVolumeDataQuad 2 times to compute the derivatives
         of the Cartesian coordinates w.r.t. the two parametric coordinates. ---*/
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, 2, nDOFs1D, rLineSolDOFs.size(),
-		              derLagBasisLineSolDOFs, lagBasisLineSolDOFs, matCoor, matDerCoor[0], nullptr);
+		                  derLagBasisLineSolDOFs, lagBasisLineSolDOFs, matCoor, matDerCoor[0],
+                              true, nullptr);
   TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, 2, nDOFs1D, rLineSolDOFs.size(),
-		              lagBasisLineSolDOFs, derLagBasisLineSolDOFs, matCoor, matDerCoor[1], nullptr);
+		                  lagBasisLineSolDOFs, derLagBasisLineSolDOFs, matCoor, matDerCoor[1],
+                              true, nullptr);
 }
 
 void CFEMStandardQuadGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,

@@ -131,6 +131,29 @@ public:
                     ColMajorMatrix<su2double> &matSolInt) override;
 
   /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        product of the given scalar data and the basis function. The integral is
+   *        approximated by the weighted sum of the data in the integration points.
+   * \param[in]     scalarDataInt - The scalar data in the integration points that must
+   *                                be multiplied by the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                              ColMajorMatrix<su2double> &resDOFs) override;
+
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        dot product of the given vector data and the gradient of the basis function.
+   *        The integral is approximated by the weighted sum of the data in the integration points.
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]     vectorDataInt - The vector data in the integration points that must
+   *                                be multiplied by the gradient of the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualGradientBasisFunctions(vector<ColMajorMatrix<su2double> > &vectorDataInt,
+                                      ColMajorMatrix<su2double>          &resDOFs) override;
+
+  /*!
    * \brief Function that makes available the value of the first (constant)
    *        basis function of this element.
    * \return - The value of the first (constant) basis function.
@@ -152,6 +175,9 @@ private:
   ColMajorMatrix<passivedouble> hesLegBasisLineInt; /*!< \brief The values of the 2nd derivatives of the 1D Legendre
                                                                 basis functions in the integration points. */
 
+  ColMajorMatrix<passivedouble> legBasisLineIntTranspose;    /*!< \brief Transpose of legBasisLineInt. */
+  ColMajorMatrix<passivedouble> derLegBasisLineIntTranspose; /*!< \brief Transpose of derLegBasisLineInt. */
+
   ColMajorMatrix<passivedouble> legBasisLineSolDOFs;    /*!< \brief The values of the 1D Legendre basis functions
                                                                     in the solution DOFs. */
   ColMajorMatrix<passivedouble> legBasisLineSolDOFsInv; /*!< \brief The inverse of legBasisLineSolDOFs. */
@@ -163,4 +189,6 @@ private:
                                                              to compute the data in the volume integration points. */
   TPI2D TensorProductDataVolSolDOFs   = nullptr; /*!< \brief Function pointer to carry out the tensor product
                                                              to compute the data in the volume nodal solution DOFs. */
+  TPI2D TensorProductResVolDOFs       = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to update the residual of the DOFs for the volume term. */
 };
