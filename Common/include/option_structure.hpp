@@ -2024,18 +2024,6 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
 };
 
 /*!
- * \brief Types of criteria to determine when the solution is converged
- */
-enum ENUM_CONVERGE_CRIT {
-  CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
-  RESIDUAL = 2      /*!< \brief Residual criteria to establish the convergence of the code. */
-};
-static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
-  MakePair("CAUCHY", CAUCHY)
-  MakePair("RESIDUAL", RESIDUAL)
-};
-
-/*!
  * \brief Types of element stiffnesses imposed for FEA mesh deformation
  */
 enum ENUM_DEFORM_STIFFNESS {

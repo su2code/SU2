@@ -1727,9 +1727,6 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  /*!\brief CONV_CRITERIA
-   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
-  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -2887,6 +2884,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          if (!option_name.compare("CONV_CRITERIA"))
+            newString.append("CONV_CRITERIA is deprecated.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -3380,6 +3379,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case FIGURE_OF_MERIT:
         case SURFACE_TOTAL_PRESSURE:
         case SURFACE_STATIC_PRESSURE:
+        case SURFACE_STATIC_TEMPERATURE:
         case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
@@ -3393,7 +3393,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -4453,7 +4453,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Fixed_CM_Mode) {
       nInnerIter += Iter_dCL_dAlpha;
-      ConvCriteria = RESIDUAL;
       MinLogResidual = -24;
     }
   }
