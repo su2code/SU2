@@ -2108,7 +2108,7 @@ void CConfig::SetConfig_Options() {
   /* Fixed values for turbulence quantities to keep them at inflow conditions. */
   /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
   addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
-  /* DESCRIPTION: Shift of the fixed values half-space, in space units in the direction of far-field velocity. */
+  /* DESCRIPTION: Shift of the fixed values half-space, in length units in the direction of far-field velocity. */
   addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
 
   /* Harmonic Balance config */
@@ -4370,7 +4370,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
-  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==numeric_limits<su2double>::lowest()){
+  if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
 

@@ -368,7 +368,7 @@ def main():
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
-    turb_naca0012_sst_fixedvalues.test_vals = [-9.562435, -1.566603, 1.022029, 0.040549]
+    turb_naca0012_sst_fixedvalues.test_vals = [-9.562435, -1.566603, -3.483576, 1.022029, 0.040549]
     turb_naca0012_sst_fixedvalues.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_fixedvalues.timeout   = 3200
     turb_naca0012_sst_fixedvalues.tol       = 0.00001
