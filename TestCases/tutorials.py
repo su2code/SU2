@@ -42,6 +42,20 @@ def main():
     ### RUN TUTORIAL CASES             ###
     ######################################
 
+
+    # CHT incompressible unsteady
+    cht_incompressible_unsteady           = TestCase('cht_incompressible_unsteady')
+    cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
+    cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_incompressible_unsteady.test_iter = 2
+    cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450,  0.0000e+00, 0.0000e+00, 2.3824e+02] #last 9 columns
+    cht_incompressible_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
+    cht_incompressible_unsteady.timeout   = 1600
+    cht_incompressible_unsteady.multizone = True
+    cht_incompressible_unsteady.unsteady  = True
+    cht_incompressible_unsteady.tol       = 0.00001
+    test_list.append(cht_incompressible_unsteady)
+
     ### Incompressible Flow
 
     # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
