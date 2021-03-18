@@ -381,11 +381,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
         ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
       }
     }
-    if (config->GetEnergy_Equation() && false) {
-      if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
-        ObjFunc += solver[FLOW_SOL]->GetTotal_AvgTemperature();
-      }
-    }
 
     /*--- This calls to be moved to a generic framework at a next stage         ---*/
     /*--- Some things that are currently hacked into output must be reorganized ---*/
