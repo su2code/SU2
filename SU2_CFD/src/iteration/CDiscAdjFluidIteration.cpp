@@ -442,9 +442,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     }
   }
 
-  }
-  END_SU2_OMP_PARALLEL
-
   if (kind_recording == MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
@@ -459,6 +456,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     /*--- Boundary displacements ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
+
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,

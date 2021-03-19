@@ -497,8 +497,10 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
+  SU2_OMP_PARALLEL {
+
   const bool time_stepping = (config->GetTime_Marching() != STEADY);
-  const su2double eps = config->GetVenkat_LimiterCoeff()*config->GetAdjSharp_LimiterCoeff();
+  const su2double eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -537,6 +539,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   SetSurface_Sensitivity(geometry, config);
 
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {

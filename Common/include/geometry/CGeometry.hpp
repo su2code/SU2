@@ -1252,13 +1252,7 @@ public:
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config) const;
-
-  /*!
-   * \brief Register the coordinates of the mesh nodes as output.
-   * \param[in] config
-   */
-  void RegisterOutput_Coordinates(CConfig *config) const;
+  void RegisterCoordinates(const CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.

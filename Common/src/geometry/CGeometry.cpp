@@ -2492,43 +2492,23 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(CConfig *config) const {
-  unsigned short iDim;
-  unsigned long iPoint;
-  bool input = true;
-  bool push_index = config->GetMultizone_Problem()? false : true;
+void CGeometry::RegisterCoordinates(const CConfig *config) const {
+  const bool input = true;
+  const bool push_index = config->GetMultizone_Problem()? false : true;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
     }
     if(!push_index) {
       nodes->SetIndex(iPoint, input);
     }
   }
-}
-
-void CGeometry::RegisterOutput_Coordinates(CConfig *config) const{
-  unsigned short iDim;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if(config->GetMultizone_Problem()) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-    else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-  }
+  END_SU2_OMP_FOR
 }
 
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
-
-  unsigned short iMesh;
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
@@ -2541,7 +2521,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
