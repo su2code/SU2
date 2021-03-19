@@ -1727,6 +1727,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -2884,9 +2886,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
-          if (!option_name.compare("CONV_CRITERIA"))
+          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+          /*if (!option_name.compare("CONV_CRITERIA"))
             newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));
+                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -4983,6 +4986,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
   if (GetGasModel() == "ARGON") monoatomic = true;
+
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  if(OptionIsSet("CONV_CRITERIA")) {
+    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  }
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
