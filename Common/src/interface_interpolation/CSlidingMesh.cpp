@@ -854,9 +854,9 @@ int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned lon
     /*--- Returns the number of points included in the element ---*/
 
     unsigned long iNode, jNode, kNode, ElementIndex, iPoint, jPoint, kPoint, nOuterNodes, nTriNodes;
-    unsigned short nDim = 3, iDim, nTmp;
-    const unsigned long *OuterNodes, *ptr;
-    int NodeIndex;
+    unsigned short nDim = 3, iDim, niPointNeighbours;
+    const unsigned long *OuterNodes, *iPointNeighbours;
+    int LocalElementIndex;
     unsigned long **DualElement;
 
     nTriNodes = 3;
@@ -885,38 +885,44 @@ int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned lon
         }
     }
 
-    NodeIndex = 0;
+    LocalElementIndex = 0;
 
     /* --- Build and order tri segments of a hexa dual element --- */
-    while ((nOuterNodes - NodeIndex) > 0) {
 
-        for (iNode = 0; iNode < nOuterNodes && ((nOuterNodes - NodeIndex) > 0); iNode++) {
+    bool isFound = false;
+
+    while ((nOuterNodes - LocalElementIndex) > 0) {
+        
+        for (iNode = 0; iNode < nOuterNodes && ((nOuterNodes - LocalElementIndex) > 0); iNode++) {
             iPoint = OuterNodes[iNode];
-            ptr = &map[startIndex[iPoint]];
-            nTmp = nNeighbor[iPoint];
+            iPointNeighbours = &map[startIndex[iPoint]];
+            niPointNeighbours = nNeighbor[iPoint];
+            isFound = false;
 
-            for (jNode = 0; jNode < nTmp && ((nOuterNodes - NodeIndex) > 0); jNode++) {
-                jPoint = ptr[jNode];
+            for (jNode = 0; jNode < niPointNeighbours && !isFound; jNode++) {
+                jPoint = iPointNeighbours[jNode];
 
-                for (kNode = 0; kNode < nOuterNodes && ((nOuterNodes - NodeIndex) > 0); kNode++) {
+                for (kNode = 0; kNode < nOuterNodes; kNode++) {
                     kPoint = OuterNodes[kNode];
 
                     /*--- Find the shared outer nodes in order ---*/
                     if (jPoint == kPoint) {
 
-                        if (NodeIndex == 0) {
-                            DualElement[NodeIndex][0] = centralNode;
-                            DualElement[NodeIndex][1] = iPoint;
-                            DualElement[NodeIndex][2] = jPoint;
-                            NodeIndex++;
+                        if (LocalElementIndex == 0) {
+                            DualElement[LocalElementIndex][0] = centralNode;
+                            DualElement[LocalElementIndex][1] = iPoint;
+                            DualElement[LocalElementIndex][2] = jPoint;
+                            LocalElementIndex++;
+                            isFound = true;
                             break;
                         }
 
-                        if (iPoint == DualElement[NodeIndex - 1][2] && jPoint != DualElement[NodeIndex - 1][1]) {
-                            DualElement[NodeIndex][0] = centralNode;
-                            DualElement[NodeIndex][1] = iPoint;
-                            DualElement[NodeIndex][2] = jPoint;
-                            NodeIndex++;
+                        if (iPoint == DualElement[LocalElementIndex - 1][2] && jPoint != DualElement[LocalElementIndex - 1][1]) {
+                            DualElement[LocalElementIndex][0] = centralNode;
+                            DualElement[LocalElementIndex][1] = iPoint;
+                            DualElement[LocalElementIndex][2] = jPoint;
+                            LocalElementIndex++;
+                            isFound = true;
                             break;
                         }
 
@@ -926,26 +932,26 @@ int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned lon
         }
     }
 
-    NodeIndex = 0;
+    LocalElementIndex = 0;
     ElementIndex = 1;
 
     /* --- Build array containing the quad dual element by finding the mid point of each edge and the baricenter of each face.
      * Each quad is split through its diagonal connecting the central node, baricenter and 4th node.   --- */
-    while ((nOuterNodes - NodeIndex) > 0) {
+    while ((nOuterNodes - LocalElementIndex) > 0) {
         for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[NodeIndex][1] * nDim + iDim]) / 2;
+            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex][1] * nDim + iDim]) / 2;
         }
         ElementIndex++;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[NodeIndex][1] * nDim + iDim] + coord[DualElement[NodeIndex][2] * nDim + iDim]) / 3;
+            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex][1] * nDim + iDim] + coord[DualElement[LocalElementIndex][2] * nDim + iDim]) / 3;
         }
         ElementIndex++;
-        NodeIndex++;
+        LocalElementIndex++;
     }
 
     // This is a closed element, so add again element 1 to the end of the structure, useful later
-    if(DualElement[NodeIndex - 1][2] == DualElement[0][1]){
+    if(DualElement[LocalElementIndex - 1][2] == DualElement[0][1]){
 
         for (iDim = 0; iDim < nDim; iDim++) {
             element[ElementIndex][iDim] = element[1][iDim];
@@ -954,7 +960,7 @@ int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned lon
     }
     else {
         for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[NodeIndex - 1][2] * nDim + iDim]) / 2;
+            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex - 1][2] * nDim + iDim]) / 2;
         }
         ElementIndex++;
     }
