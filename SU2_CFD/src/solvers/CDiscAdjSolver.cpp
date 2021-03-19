@@ -79,6 +79,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
+  su2double Solution[MAXNVAR] = {1e-16};
+
   nodes = new CDiscAdjVariable(Solution, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
@@ -624,20 +626,12 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine, counter;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
-  string restart_filename, filename;
-
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool rans = ((config->GetKind_Solver() == DISC_ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS)) ;
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetSolution_AdjFileName();
-  restart_filename = config->GetObjFunc_Extension(filename);
-
+  auto filename = config->GetSolution_AdjFileName();
+  auto restart_filename = config->GetObjFunc_Extension(filename);
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
 
@@ -653,52 +647,43 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
-  /*--- Read all lines in the restart file ---*/
-
-  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
-    if (compressible) {
-      skipVars += nDim + 2;
-    }
-    if (incompressible) {
-      skipVars += nDim + 2;
-    }
+    skipVars += nDim + 2;
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/
   if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
-    if (compressible) skipVars += nDim + 2;
-    if (incompressible) skipVars += nDim + 2;
+    skipVars += nDim + 2;
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  unsigned long iPoint_Global_Local = 0;
+
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
 
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
 
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      nodes->SetSolution(iPoint_Local,Solution);
-      iPoint_Global_Local++;
+      const auto index = iPoint_Global_Local*Restart_Vars[1] + skipVars;
 
-      /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+      }
+
+      iPoint_Global_Local++;
     }
 
   }
@@ -710,20 +695,21 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. ---*/
+  /*--- Interpolate solution on coarse grids ---*/
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+    const auto& fineSol = solver[iMesh-1][ADJFLOW_SOL]->GetNodes()->GetSolution();
+
+    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      su2double Solution[MAXNVAR] = {0.0};
+      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+
+      for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        const su2double weight = geometry[iMesh-1]->nodes->GetVolume(Point_Fine) / Area_Parent;
+
+        for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] += weight * fineSol(Point_Fine, iVar);
       }
       solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
     }
