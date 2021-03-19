@@ -1,7 +1,6 @@
 /*!
  * \file CSolver.hpp
- * \brief Headers of the CSolver class which is inherited by all of the other
- *        solvers
+ * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
  *
@@ -10,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1363,6 +1362,14 @@ public:
                                               CNumerics *visc_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) { }
+  /*!
+   * \brief Virtual function to apply something like a strong BC to the whole domain.
+   * \details Overridden in CTurbSolver to impose fixed values to turbulence quantities
+   * in a specified upstream half-plane.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.
