@@ -351,8 +351,11 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
                                      CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                      CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
                                      CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
+  const bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -372,12 +375,17 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
 
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
+
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                                unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
@@ -389,7 +397,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -400,13 +408,17 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
   if (config[iZone]->GetFluidProblem()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
+
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
 
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  const bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
@@ -420,7 +432,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     if (turbulent && !frozen_visc) {
       solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
-    if (heat) {
+    if (config[iZone]->GetWeakly_Coupled_Heat()) {
       solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
     if (config[iZone]->AddRadiation()) {
@@ -429,6 +441,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
       solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
   }
+
+  }
+  END_SU2_OMP_PARALLEL
 
   if (kind_recording == MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
@@ -448,7 +463,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  SU2_OMP_PARALLEL {
+
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
@@ -475,7 +491,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              unsigned short kind_recording) {
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][FLOW_SOL]->GetHasHybridParallel())) {
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
@@ -522,8 +538,10 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                             COutput* output, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
+
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
+
+  const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   /*--- Register conservative variables as output of the iteration ---*/
 
@@ -533,7 +551,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (turbulent && !frozen_visc) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (config[iZone]->AddRadiation()) {
@@ -542,6 +560,9 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->GetFluidProblem()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
+
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDiscAdjFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,

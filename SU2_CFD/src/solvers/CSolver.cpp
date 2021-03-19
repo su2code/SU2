@@ -3971,6 +3971,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     /*--- Loop over the vertices ---*/
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       /*--- Recover the point index ---*/
@@ -3984,6 +3985,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config
         AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -4000,6 +4002,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     /*--- Loop over the vertices ---*/
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       /*--- Recover the point index ---*/
@@ -4014,6 +4017,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
                                 SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }

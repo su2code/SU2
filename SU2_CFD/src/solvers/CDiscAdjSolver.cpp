@@ -580,18 +580,22 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     for (size_t iMarker_Mon = 0; iMarker_Mon < Sens_Geo.size(); iMarker_Mon++) {
       if (Marker_Tag == config->GetMarker_Monitoring_TagBound(iMarker_Mon)) {
-        atomicAdd(Sens_Geo[iMarker_Mon], Sens);
+        atomicAdd(Sens, Sens_Geo[iMarker_Mon]);
         break;
       }
     }
   }
 
+  SU2_OMP_BARRIER
   SU2_OMP_MASTER {
     auto local = Sens_Geo;
     SU2_MPI::Allreduce(local.data(), Sens_Geo.data(), Sens_Geo.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     Total_Sens_Geo = 0.0;
-    for (auto x : Sens_Geo) Total_Sens_Geo += x;
+    for (auto& x : Sens_Geo) {
+      x = sqrt(x);
+      Total_Sens_Geo += x;
+    }
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
