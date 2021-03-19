@@ -7,10 +7,10 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,26 +33,26 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
                                                      unsigned short val_iZone,
                                                      unsigned short val_nZone)
 : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
-  
+
   /* The rectangular mesh is always 2D. */
   dimension = 2;
-  
+
   /* Set the VTK type for the interior elements and the boundary elements. */
   KindElem  = QUADRILATERAL;
   KindBound = LINE;
-  
+
   /* The number of nodes in the i and j directions. */
   nNode = config->GetMeshBoxSize(0);
   mNode = config->GetMeshBoxSize(1);
-  
+
   /* Lengths for non-square domains. */
   Lx = config->GetMeshBoxLength(0);
   Ly = config->GetMeshBoxLength(1);
-  
+
   /* Offsets in x and y directions from 0.0. */
   Ox = config->GetMeshBoxOffset(0);
   Oy = config->GetMeshBoxOffset(1);
-  
+
   /* Compute and store the points, interior elements, and surface elements.
    In these routines, we use a simple analytic formula to compute the
    coordinates and the node numbering. We store only the points and interior
@@ -61,16 +61,16 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(CConfig        *val_config,
   ComputeRectangularPointCoordinates();
   ComputeRectangularVolumeConnectivity();
   ComputeRectangularSurfaceConnectivity();
-  
+
 }
 
 CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM(void) { }
 
 void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
-  
+
   /* Set the global count of points based on the grid dimensions. */
   numberOfGlobalPoints = (nNode)*(mNode);
-  
+
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
 
@@ -90,11 +90,11 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   for (unsigned long jNode = 0; jNode < mNode; jNode++) {
     for (unsigned long iNode = 0; iNode < nNode; iNode++) {
       if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
-        
+
         /* Store the coordinates more clearly. */
         const passivedouble x = SU2_TYPE::GetValue(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox);
         const passivedouble y = SU2_TYPE::GetValue(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
-        
+
         /* Load into the coordinate class data structure. */
         localPointCoordinates[0].push_back(x);
         localPointCoordinates[1].push_back(y);
@@ -102,17 +102,17 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
       globalIndex++;
     }
   }
-  
+
 }
 
 void CRectangularMeshReaderFVM::ComputeRectangularVolumeConnectivity() {
-  
+
   /* Set the global count of elements based on the grid dimensions. */
   numberOfGlobalElements = (nNode-1)*(mNode-1);
-  
+
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
-  
+
   /* Loop over our analytically defined of elements and store only those
    that contain a node within our linear partition of points. */
   numberOfLocalElements  = 0;
@@ -120,13 +120,13 @@ void CRectangularMeshReaderFVM::ComputeRectangularVolumeConnectivity() {
   unsigned long globalIndex = 0;
   for (unsigned long jNode = 0; jNode < mNode-1; jNode++) {
     for (unsigned long iNode = 0; iNode < nNode-1; iNode++) {
-      
+
       /* Compute connectivity based on the i,j index. */
       connectivity[0] = jNode*nNode + iNode;
       connectivity[1] = jNode*nNode + iNode + 1;
       connectivity[2] = (jNode + 1)*nNode + (iNode + 1);
       connectivity[3] = (jNode + 1)*nNode + iNode;
-      
+
       /* Check whether any of the points is in our linear partition. */
       bool isOwned = false;
       for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
@@ -134,7 +134,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularVolumeConnectivity() {
           isOwned = true;
         }
       }
-      
+
       /* If so, we need to store the element locally. */
       if (isOwned) {
         localVolumeElementConnectivity.push_back(globalIndex);
@@ -147,16 +147,16 @@ void CRectangularMeshReaderFVM::ComputeRectangularVolumeConnectivity() {
       globalIndex++;
     }
   }
-  
+
 }
 
 void CRectangularMeshReaderFVM::ComputeRectangularSurfaceConnectivity() {
-  
+
   /* The rectangle alays has 4 markers. */
   numberOfMarkers = 4;
   surfaceElementConnectivity.resize(numberOfMarkers);
   markerNames.resize(numberOfMarkers);
-  
+
   /* Compute and store the 4 sets of connectivity. */
   markerNames[0] = "y_minus";
   if (rank == MASTER_NODE) {
@@ -169,7 +169,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularSurfaceConnectivity() {
       surfaceElementConnectivity[0].push_back(0);
     }
   }
-  
+
   markerNames[1] = "x_plus";
   if (rank == MASTER_NODE) {
     for (unsigned long jNode = 0; jNode < mNode-1; jNode++) {
@@ -181,7 +181,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularSurfaceConnectivity() {
       surfaceElementConnectivity[1].push_back(0);
     }
   }
-  
+
   markerNames[2] = "y_plus";
   if (rank == MASTER_NODE) {
     for (unsigned long iNode = 0; iNode < nNode-1; iNode++) {
@@ -193,7 +193,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularSurfaceConnectivity() {
       surfaceElementConnectivity[2].push_back(0);
     }
   }
-  
+
   markerNames[3] = "x_minus";
   if (rank == MASTER_NODE) {
     for (unsigned long jNode = 0; jNode < mNode-1; jNode++) {
