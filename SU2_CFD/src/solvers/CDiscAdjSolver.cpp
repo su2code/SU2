@@ -325,8 +325,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
 
-    const su2double isdomain = (iPoint < nPointDomain)? 1.0 : 0.0;
-
     /*--- Extract the adjoint solution ---*/
 
     if(config->GetMultizone_Problem()) {
@@ -342,16 +340,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
-      residual *= isdomain;
-      Residual_RMS[iVar] += pow(residual,2);
-      AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
-
-      /*--- Update residual information for current thread. ---*/
-      resRMS[iVar] += residual*residual;
-      if (fabs(residual) > resMax[iVar]) {
-        resMax[iVar] = fabs(residual);
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+      if (iPoint < nPointDomain) {
+        /*--- Update residual information for current thread. ---*/
+        resRMS[iVar] += residual*residual;
+        if (fabs(residual) > resMax[iVar]) {
+          resMax[iVar] = fabs(residual);
+          idxMax[iVar] = iPoint;
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+        }
       }
     }
   }
