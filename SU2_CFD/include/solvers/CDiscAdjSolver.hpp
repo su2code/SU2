@@ -257,4 +257,12 @@ public:
                    int val_iter,
                    bool val_update_geo) override;
 
+  /*!
+   * \brief Depends on the direct solver.
+   */
+  inline bool GetHasHybridParallel() const override {
+    if (direct_solver) return direct_solver->GetHasHybridParallel();
+    return false;
+  }
+
 };

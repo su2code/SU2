@@ -258,13 +258,3 @@ bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integratio
 
   return output->GetConvergence();
 }
-
-void CDiscAdjHeatIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                   unsigned long InnerIter, bool StopCalc, unsigned short val_iZone,
-                                   unsigned short val_iInst) {}
-
-void CDiscAdjHeatIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-}

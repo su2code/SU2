@@ -37,10 +37,22 @@ class CFEAIteration;
  * \brief Class for driving an iteration of the discrete adjoint FEM system.
  * \author R. Sanchez
  */
-class CDiscAdjFEAIteration : public CIteration {
+class CDiscAdjFEAIteration final : public CIteration {
  private:
   CFEAIteration* fem_iteration;    /*!< \brief Pointer to the primal iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
+
+  /*!
+   * \brief load solution for dynamic problems
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instance.
+   * \param[in] val_DirectIter - Direct iteration to load.
+   */
+  void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                            unsigned short val_iInst, int val_DirectIter);
 
  public:
   /*!
@@ -189,7 +201,6 @@ class CDiscAdjFEAIteration : public CIteration {
    * \param[in] val_iInst - Index of the instance.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-
   void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
                     unsigned short val_iInst, unsigned short kind_recording) override;
 
@@ -206,15 +217,4 @@ class CDiscAdjFEAIteration : public CIteration {
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                        unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
 
-  /*!
-   * \brief load solution for dynamic problems
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] val_DirectIter - Direct iteration to load.
-   */
-  void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
-                            unsigned short val_iInst, int val_DirectIter) override;
 };
