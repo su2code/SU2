@@ -3658,25 +3658,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
    * \brief  A virtual member.
@@ -3859,14 +3844,6 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   inline virtual void SetRecording(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] kind_recording - Kind of AD recording.
-   */
-  inline virtual void SetMesh_Recording(CGeometry **geometry,
-                                        CVolumetricMovement *grid_movement,
-                                        CConfig *config) {}
 
   /*!
    * \brief A virtual member.
