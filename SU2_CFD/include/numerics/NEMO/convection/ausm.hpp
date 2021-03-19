@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@ private:
   su2double ProjVel_i, ProjVel_j;
   su2double sq_vel;
   //su2double  Proj_ModJac_Tensor_ij;
- 
+
 public:
 
   /*!
