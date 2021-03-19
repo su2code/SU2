@@ -2,7 +2,7 @@
  * \file CIntegration.hpp
  * \brief Declaration of the main routines to orchestrate space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -108,14 +108,12 @@ public:
    */
   inline void SetConvergence(bool value) { Convergence = value; }
 
-
   /*!
    * \brief Set the indicator of the convergence for FSI.
    * \param[in] valueFSI - <code>TRUE</code> means that the convergence criteria for FSI is satisfied;
    *            otherwise <code>FALSE</code>.
    */
   inline void SetConvergence_FSI(bool valueFSI) { Convergence_FSI = valueFSI; }
-
 
   /*!
    * \brief Get the indicator of the convergence for the full multigrid problem.

@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -84,27 +84,18 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iVar;
-  unsigned long iMarker;
-
   /*--- Define some auxiliar vector related with the residual ---*/
 
-  Residual_RMS = new su2double[nVar]();
-  Residual_Max = new su2double[nVar]();
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar]();
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
   if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
-    iPoint_UndLapl = new su2double[nPointDomain];
-    jPoint_UndLapl = new su2double[nPointDomain];
+    iPoint_UndLapl.resize(nPointDomain);
+    jPoint_UndLapl.resize(nPointDomain);
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -114,16 +105,19 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  /*--- LinSysSol will always be init to 0. ---*/
+  System.SetxIsZero(true);
+
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
@@ -176,7 +170,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
       SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
       SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
@@ -194,9 +188,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Skin friction in all the markers ---*/
 
-  CSkinFriction.resize(nMarker);
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    CSkinFriction[iMarker].resize(nDim, nVertex[iMarker]) = su2double(0.0);
+  Alloc3D(nMarker, nVertex, nDim, CSkinFriction);
 
   /*--- Wall Shear Stress in all the markers ---*/
 
@@ -211,14 +203,14 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   if (MGLevel == MESH_0) {
     VertexTraction.resize(nMarker);
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config.GetSolid_Wall(iMarker))
         VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
     }
 
     if (config.GetDiscrete_Adjoint()) {
       VertexTractionAdjoint.resize(nMarker);
-      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
         if (config.GetSolid_Wall(iMarker))
           VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
       }
@@ -227,19 +219,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config.GetMultizone_Residual()) {
-    Residual_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar] = 1.0;
-
-    Residual_Max_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar] = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 }
 
@@ -538,7 +521,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -571,6 +554,30 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, nullptr, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, nullptr, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -1649,7 +1656,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2385,8 +2392,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
+            GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2416,6 +2423,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   }
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
+  const su2double factorFric = config->GetRefArea() * factor;
 
   /*--- Variables initialization ---*/
 
@@ -2519,7 +2527,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);

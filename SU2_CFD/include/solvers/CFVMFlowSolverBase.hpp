@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -266,6 +266,12 @@ class CFVMFlowSolverBase : public CSolver {
   void Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                              CNumerics *numerics, CConfig *config);
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
+   * iteration for stability.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig* config);
 
   /*!
    * \brief General implementation to load a flow solution from a restart file.
@@ -724,12 +730,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Set shared residual variables to 0 and declare
      *    local ones for current thread to work on. ---*/
 
-    SU2_OMP_MASTER
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
-    SU2_OMP_BARRIER
+    SetResToZero();
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
     const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -794,7 +795,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Reduce residual information over all threads in this rank. ---*/
       SU2_OMP_CRITICAL
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        AddRes_RMS(iVar, resRMS[iVar]);
+        Residual_RMS[iVar] += resRMS[iVar];
         AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
       }
       SU2_OMP_BARRIER
@@ -836,68 +837,65 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Generic implementation of implicit Euler iteration with an optional preconditioner applied to the diagonal.
-   * \param[in] compute_ur - Whether to use automatic under-relaxation for the update.
+   * \brief Generic implementation to prepare an implicit iteration with an optional preconditioner applied to the diagonal.
    * \tparam DiagonalPrecond - A function object implementing:
    *         - active: A boolean variable to determine if the preconditioner should be used.
    *         - (config, iPoint, delta): Compute and return a matrix type compatible with the Jacobian matrix,
    *           where "delta" is V/dt.
    */
   template<class DiagonalPrecond>
-  void ImplicitEuler_Iteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry,
-                                    CSolver **solver_container, CConfig *config, bool compute_ur) {
+  void PrepareImplicitIteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry, CConfig *config) {
 
-    const bool adjoint = config->GetContinuous_Adjoint();
+    const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-    /*--- Set shared residual variables to 0 and declare
-     *    local ones for current thread to work on. ---*/
+    /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
 
-    SU2_OMP_MASTER
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
-    SU2_OMP_BARRIER
+    SetResToZero();
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
     const su2double* coordMax[MAXNVAR] = {nullptr};
     unsigned long idxMax[MAXNVAR] = {0};
 
-    /*--- Build implicit system ---*/
+    /*--- Add pseudotime term to Jacobian. ---*/
+
+    if (implicit) {
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
+
+        if (nodes->GetDelta_Time(iPoint) != 0.0) {
+
+          su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+          su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+          if (preconditioner.active)
+            Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
+          else
+            Jacobian.AddVal2Diag(iPoint, Delta);
+        }
+        else {
+          Jacobian.SetVal2Diag(iPoint, 1.0);
+        }
+      }
+    }
+
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Read the residual ---*/
+      /*--- Multigrid contribution to residual. ---*/
 
       su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
-      /*--- Read the volume ---*/
-
-      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-
-      /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-      if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
-        su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
-
-        if (preconditioner.active) {
-          Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
-        }
-        else {
-          Jacobian.AddVal2Diag(iPoint, Delta);
-        }
-      }
-      else {
-        Jacobian.SetVal2Diag(iPoint, 1.0);
+      if (nodes->GetDelta_Time(iPoint) == 0.0) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           LinSysRes(iPoint,iVar) = 0.0;
           local_Res_TruncError[iVar] = 0.0;
         }
       }
-
-      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         unsigned long total_index = iPoint*nVar + iVar;
@@ -915,38 +913,29 @@ class CFVMFlowSolverBase : public CSolver {
     }
     SU2_OMP_CRITICAL
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      AddRes_RMS(iVar, resRMS[iVar]);
+      Residual_RMS[iVar] += resRMS[iVar];
       AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-    }
-
-    /*--- Initialize residual and solution at the ghost points ---*/
-
-    SU2_OMP(sections nowait)
-    {
-      SU2_OMP(section)
-      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-        LinSysRes.SetBlock_Zero(iPoint);
-
-      SU2_OMP(section)
-      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-        LinSysSol.SetBlock_Zero(iPoint);
-    }
-
-    /*--- Solve or smooth the linear system. ---*/
-
-    auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-    SU2_OMP_MASTER
-    {
-      SetIterLinSolver(iter);
-      SetResLinSolver(System.GetResidual());
     }
     SU2_OMP_BARRIER
 
-    if (compute_ur) ComputeUnderRelaxationFactor(solver_container, config);
+    /*--- Compute the root mean square residual ---*/
+    SU2_OMP_MASTER
+    SetResidual_RMS(geometry, config);
+    SU2_OMP_BARRIER
+  }
 
-    /*--- Update solution (system written in terms of increments) ---*/
+  /*!
+   * \brief Generic implementation to complete an implicit iteration, i.e. update the solution.
+   * \tparam compute_ur - Whether to use automatic under-relaxation for the update.
+   */
+  template<bool compute_ur>
+  void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
 
-    if (!adjoint) {
+    if (compute_ur) ComputeUnderRelaxationFactor(config);
+
+    /*--- Update solution with under-relaxation and communicate it. ---*/
+
+    if (!config->GetContinuous_Adjoint()) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -960,23 +949,13 @@ class CFVMFlowSolverBase : public CSolver {
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
 
-    /*--- MPI solution ---*/
-
     InitiateComms(geometry, config, SOLUTION);
     CompleteComms(geometry, config, SOLUTION);
 
+    /*--- For verification cases, compute the global error metrics. ---*/
     SU2_OMP_MASTER
-    {
-      /*--- Compute the root mean square residual ---*/
-
-      SetResidual_RMS(geometry, config);
-
-      /*--- For verification cases, compute the global error metrics. ---*/
-
-      ComputeVerificationError(geometry, config);
-    }
+    ComputeVerificationError(geometry, config);
     SU2_OMP_BARRIER
-
   }
 
   /*!
@@ -1128,11 +1107,9 @@ class CFVMFlowSolverBase : public CSolver {
   void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
   /*!
-   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
-   * iteration for stability. \param[in] solver - Container vector with all the solutions. \param[in] config -
-   * Definition of the particular problem.
+   * \brief Implementation of implicit Euler iteration.
    */
-  void ComputeUnderRelaxationFactor(CSolver** solver, const CConfig* config) final;
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -2426,7 +2403,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
-    return CSkinFriction[val_marker][val_dim][val_vertex];
+    return CSkinFriction[val_marker](val_vertex,val_dim);
   }
 
   /*!

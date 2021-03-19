@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -333,5 +333,8 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *c
 template class CPastixWrapper<su2double>;
 #else
 template class CPastixWrapper<su2mixedfloat>;
+#ifdef USE_MIXED_PRECISION
+template class CPastixWrapper<passivedouble>;
+#endif
 #endif
 #endif

@@ -4,7 +4,7 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -103,7 +103,7 @@ void computeGradientsGreenGauss(CSolver* solver,
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
 
-      su2double dir = (iPoint == geometry.edges->GetNode(iEdge,0))? 1.0 : -1.0;
+      su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
       su2double weight = dir * halfOnVol;
 
       const auto area = geometry.edges->GetNormal(iEdge);

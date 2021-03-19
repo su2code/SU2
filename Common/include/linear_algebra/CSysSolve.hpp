@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -81,7 +81,6 @@ private:
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
-  mutable bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
   mutable bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
   mutable VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
@@ -101,6 +100,9 @@ private:
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
   LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
+  bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
+  bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
+  unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
 
   /*!
    * \brief sign transfer function
@@ -387,5 +389,20 @@ public:
    * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).
    */
   inline void SetToleranceType(LinearToleranceType type) {tol_type = type;}
+
+  /*!
+   * \brief Assume the initial solution is 0 to save one product, or don't.
+   */
+  inline void SetxIsZero(bool isZero) {xIsZero = isZero;}
+
+  /*!
+   * \brief Set whether to recompute residuals at the end (while monitoring only).
+   */
+  inline void SetRecomputeResidual(bool recompRes) {recomputeRes = recompRes;}
+
+  /*!
+   * \brief Set the screen output frequency during monitoring.
+   */
+  inline void SetMonitoringFrequency(bool frequency) {monitorFreq = frequency;}
 
 };
