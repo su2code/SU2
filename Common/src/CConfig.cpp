@@ -2885,7 +2885,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("CONV_CRITERIA"))
-            newString.append("CONV_CRITERIA is deprecated.\n\n");
+            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));
           errorString.append(newString);
           err_count++;
           line_count++;
