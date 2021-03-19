@@ -443,10 +443,6 @@ void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geo
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  if (solver[iZone][iInst][MESH_0][ADJFEA_SOL]) {
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-
   for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
     solver[iZone][iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[iZone][iInst][iMesh], config[iZone]);
   }

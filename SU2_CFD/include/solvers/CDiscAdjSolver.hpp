@@ -78,13 +78,6 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   */
-  CDiscAdjSolver(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Initialize the discrete adjoint solver with the corresponding direct solver.
    * \param[in] Kind_Solver - The kind of direct solver.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

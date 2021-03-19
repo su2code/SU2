@@ -29,8 +29,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver() {}
-
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   adjoint = true;
