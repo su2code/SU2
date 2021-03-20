@@ -482,8 +482,6 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
 
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
 
-    /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
-
     su2double omega1,omega0,y,k_new,omega_new;
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);
     su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
@@ -506,7 +504,7 @@ void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_contain
     k += relax*(k_new - k);       
     omega += relax*(omega_new - omega);       
 
-    su2double solution[MAXNVAR];
+    su2double solution[2];
     solution[0] = k;
     solution[1] = omega;
 

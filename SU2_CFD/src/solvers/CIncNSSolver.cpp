@@ -622,8 +622,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   su2double U_Tau, Y_Plus;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  su2double Eddy_Visc;
-  constexpr unsigned short max_iter = 50; /*--- maximum number of iterations for the Newton Solver---*/
+  su2double Eddy_Visc = 1.0e-6;             /*--- nonzero starting value for eddy viscosity---*/
+  constexpr unsigned short max_iter =200; /*--- maximum number of iterations for the Newton Solver---*/
   const su2double tol = 1e-12;            /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
   const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
   
@@ -671,194 +671,193 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
         if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          /*--- Get coordinates of the current vertex and nearest normal point ---*/
+        /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
-          const auto Coord = geometry->nodes->GetCoord(iPoint);
-          const auto Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
+        const auto Coord = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
 
-          /*--- Compute dual-grid area and boundary normal ---*/
+        /*--- Compute dual-grid area and boundary normal ---*/
 
-          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-          su2double UnitNormal[MAXNDIM] = {0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            UnitNormal[iDim] = -Normal[iDim]/Area;
+        su2double UnitNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          UnitNormal[iDim] = -Normal[iDim]/Area;
 
-          /*--- Get the velocity, pressure, and temperature at the nearest
-           (normal) interior point. ---*/
+        /*--- Get the velocity, pressure, and temperature at the nearest
+         (normal) interior point. ---*/
 
-          su2double Vel[MAXNDIM] = {0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
+        su2double Vel[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
 
-         // su2double P_Normal = nodes->GetPressure(Point_Normal);
-         // su2double T_Normal = nodes->GetTemperature(Point_Normal);
+        // su2double P_Normal = nodes->GetPressure(Point_Normal);
+        // su2double T_Normal = nodes->GetTemperature(Point_Normal);
 
-          /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+        /*--- Compute the wall-parallel velocity at first point off the wall ---*/
              
-          su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
+        su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
 
-          su2double VelTang[MAXNDIM] = {0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+        su2double VelTang[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
 
-          su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
+        su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
-          /*--- Compute normal distance of the interior point from the wall ---*/
+        /*--- Compute normal distance of the interior point from the wall ---*/
 
-          su2double WallDist[MAXNDIM] = {0.0};
-          GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
+        su2double WallDist[MAXNDIM] = {0.0};
+        GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
   
-          su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+        su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-          /*--- Compute mach number ---*/
+        /*--- Compute mach number ---*/
 
-          // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+        // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
 
-          /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+        /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
 
-          //T_Normal = T_Wall * (1.0 + 0.5*Gamma_Minus_One*Recovery*u_normal*u_normal);
-          // this means that T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*u_normal*u_normal)
-          //T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*VelTangMod*VelTangMod);
-          // in incompressible flows, we can assume that there is no velocity-related temperature change
-          // Prandtl: T+ = Pr*y+
-          su2double T_Wall = nodes->GetTemperature(iPoint); 
+        //T_Normal = T_Wall * (1.0 + 0.5*Gamma_Minus_One*Recovery*u_normal*u_normal);
+        // this means that T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*u_normal*u_normal)
+        //T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*VelTangMod*VelTangMod);
+        // in incompressible flows, we can assume that there is no velocity-related temperature change
+        // Prandtl: T+ = Pr*y+
+        su2double T_Wall = nodes->GetTemperature(iPoint); 
 
-          /*--- Extrapolate the pressure from the interior & compute the
-           wall density using the equation of state ---*/
+        /*--- Extrapolate the pressure from the interior & compute the
+        wall density using the equation of state ---*/
 
-          /*--- incompressible formulation ---*/
-          //su2double P_Wall = nodes->GetPressure(iPoint);
-          su2double Density_Wall = nodes->GetDensity(iPoint);
-          su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
-          //su2double Density_Normal = nodes->GetDensity(Point_Normal);
-          su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
+        /*--- incompressible formulation ---*/
+        //su2double P_Wall = nodes->GetPressure(iPoint);
+        su2double Density_Wall = nodes->GetDensity(iPoint);
+        su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
+        //su2double Density_Normal = nodes->GetDensity(Point_Normal);
+        su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
+        /*--- Compute the shear stress at the wall in the regular fashion
+        by using the stress tensor on the surface ---*/
 
-          /*--- Compute the shear stress at the wall in the regular fashion
-           by using the stress tensor on the surface ---*/
+        su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
+        su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+        //su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
+        // do we need the total viscosity for the stress tensor?
+        //su2double total_viscosity = (Lam_Visc_Wall + Eddy_Visc_Wall);
+        CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
-          su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
-          su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
-          CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
+        }
 
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
-          }
+        /*--- Compute wall shear stress as the magnitude of the wall-tangential
+         component of the shear stress tensor---*/
 
-          /*--- Compute wall shear stress as the magnitude of the wall-tangential
-           component of the shear stress tensor---*/
+        su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
 
-          su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
+        su2double TauTangent[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
-          su2double TauTangent[MAXNDIM] = {0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-          su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+        su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
 
-          /*--- Calculate the quantities from boundary layer theory and
-           iteratively solve for a new wall shear stress. Use the current wall
-           shear stress as a starting guess for the wall function. ---*/
+        /*--- Calculate the quantities from boundary layer theory and
+         iteratively solve for a new wall shear stress. Use the current wall
+         shear stress as a starting guess for the wall function. ---*/
 
-          unsigned long counter = 0; su2double diff = 1.0;
-          U_Tau = sqrt(WallShearStress/Density_Wall);
-          Y_Plus = 0.0; // to avoid warning
+        unsigned long counter = 0; su2double diff = 1.0;
+        U_Tau = sqrt(WallShearStress/Density_Wall);
+        Y_Plus = 1.0; // to avoid warning
+        su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
-          su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
+        /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
-          /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
+        if (Y_Plus_Start < 5.0) {
+          /*--- impose a minimum y+ for stability reasons---*/
+          Eddy_Visc = 1.0e-6;
+          U_Tau = 1.0e-6;
+          Y_Plus_Start = 1.0;
+          continue;
+        }
 
-          if (Y_Plus_Start < 5.0) {
-            continue;
-          }
+        while (fabs(diff) > tol) {
 
-          while (fabs(diff) > tol) {
+          /*--- Friction velocity and u+ ---*/
 
-            /*--- Friction velocity and u+ ---*/
+          su2double U_Plus = VelTangMod/U_Tau;
 
-            su2double U_Plus = VelTangMod/U_Tau;
+          /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
 
-            /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
+          su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+          /*--- nijso: heated wall needs validation testcase! ---*/
+          su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
+          su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+          su2double Phi  = asin(-1.0*Beta/Q);
 
-            su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-            /*--- nijso: heated wall needs validation testcase! ---*/
-            su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
-            su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-            su2double Phi  = asin(-1.0*Beta/Q);
+          /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
-            /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
+          su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
-            su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+          /*--- Spalding's universal form for the BL velocity with the
+           outer velocity form of White & Christoph above. ---*/
 
-            /*--- Spalding's universal form for the BL velocity with the
-             outer velocity form of White & Christoph above. ---*/
+          su2double kUp = kappa*U_Plus;
+          Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
-            su2double kUp = kappa*U_Plus;
-            su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
-
-            su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+          su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
  
-            Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                             (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                             - Lam_Visc_Normal/Lam_Visc_Wall);
-            Eddy_Visc = max(1.0e-6, Eddy_Visc);
+          Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                           (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                           - Lam_Visc_Normal/Lam_Visc_Wall);
+          Eddy_Visc = max(1.0e-6, Eddy_Visc);
 
-            /* --- Define function for Newton method to zero --- */
+          /* --- Define function for Newton method to zero --- */
 
-            diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
+          diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-            /* --- Gradient of function defined above --- */
+          /* --- Gradient of function defined above --- */
 
-            grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                      kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                      exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                      pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                    kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                    exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
-            /* --- Newton Step --- */
+          /* --- Newton Step --- */
 
-            U_Tau = U_Tau - relax*(diff / grad_diff);
+          U_Tau = U_Tau - relax*(diff / grad_diff);
 
-            counter++;
+          counter++;
 
-
-            if (counter > max_iter) {
-              notConvergedCounter++;
-              //cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
-              //cout << "diff = " << endl;
-              // do not break, use some safe values for convergence
-              //break;
-              Y_Plus = 30.0;
-              Eddy_Visc = 1.0;
-              U_Tau = 1.0;
-            }
-
+          if (counter > max_iter) {
+            notConvergedCounter++;
+            cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
+            cout << counter <<", U_tau = "<<U_Tau << " "<< diff/grad_diff << ", Y+ = "<<Y_Plus << ", diff = "<<diff <<endl;
+            break;
           }
 
-          /*--- Calculate an updated value for the wall shear stress
-            using the y+ value, the definition of y+, and the definition of
-            the friction velocity. ---*/
-          
-          YPlus[iMarker][iVertex] = Y_Plus;
-          EddyViscWall[iMarker][iVertex] = Eddy_Visc;
-          UTau[iMarker][iVertex] = U_Tau;
+        }
 
-          // wall model value
-          su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+        /*--- Calculate an updated value for the wall shear stress
+         using the y+ value, the definition of y+, and the definition of
+         the friction velocity. ---*/
+        YPlus[iMarker][iVertex] = Y_Plus;
+        EddyViscWall[iMarker][iVertex] = Eddy_Visc;
+        UTau[iMarker][iVertex] = U_Tau;
 
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            CSkinFriction[iMarker][iVertex][iDim] = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        // wall model value
+        su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          CSkinFriction[iMarker][iVertex][iDim] = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
 
 
-          nodes->SetTauWall(iPoint, Tau_Wall);
-          // for compressible flow:
-          //nodes->SetTemperature(iPoint,T_Wall);
-          //nodes->SetSolution(iPoint, 0, Density_Wall);
-          //nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
-          // for incompressible flow:
-          // ...? 
+        nodes->SetTauWall(iPoint, Tau_Wall);
+        // for compressible flow:
+        //nodes->SetTemperature(iPoint,T_Wall);
+        //nodes->SetSolution(iPoint, 0, Density_Wall);
+        //nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
+        // for incompressible flow:
+        // ...? 
 
       }
     }

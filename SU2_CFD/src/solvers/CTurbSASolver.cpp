@@ -1578,7 +1578,10 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  constexpr unsigned short max_iter = 100;
+  
+  
+  /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
+  constexpr unsigned short max_iter = 200;
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
@@ -1632,14 +1635,15 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
       counter++;
       if (counter > max_iter) {
-        cout << "WARNING: Nu_tilde evaluation did not converge in" <<max_iter << "iterations. " << endl;
+        cout << "WARNING: Nu_tilde evaluation did not converge in " <<max_iter << " iterations. " << endl;
+        cout << nu_til << " " << diff << endl;
         break;
       }
     }
 
-    su2double Sol[MAXNVAR];
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      Sol[iVar] = nu_til;
+    su2double Sol[1];
+    //for (auto iVar = 0u; iVar < nVar; iVar++)
+    Sol[0] = nu_til;
     
     nodes->SetSolution_Old(iPoint_Neighbor,Sol);
     LinSysRes.SetBlock_Zero(iPoint_Neighbor);
