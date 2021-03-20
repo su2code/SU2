@@ -102,15 +102,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDiscAdjFEASolver(void);
-
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  CDiscAdjFEASolver(CGeometry *geometry, CConfig *config);
+  CDiscAdjFEASolver() = default;
 
   /*!
    * \overload
@@ -124,7 +116,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEASolver(void) override;
+  ~CDiscAdjFEASolver() override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -158,13 +150,6 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Set the surface sensitivity.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.

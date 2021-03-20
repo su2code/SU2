@@ -49,5 +49,3 @@ namespace AD {
 
 #endif
 }
-
-#include "../../include/parallelization/omp_structure.cpp"

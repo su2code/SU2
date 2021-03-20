@@ -63,6 +63,7 @@ lib_sources = \
   ../src/grid_movement/CVolumetricMovement.cpp \
   ../src/grid_movement/CSurfaceMovement.cpp \
   ../include/parallelization/mpi_structure.cpp \
+  ../include/parallelization/omp_structure.cpp \
   ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \

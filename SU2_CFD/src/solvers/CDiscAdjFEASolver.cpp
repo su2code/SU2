@@ -25,13 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
 #include "../../include/variables/CDiscAdjFEAVariable.hpp"
-
-CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver() { }
-
-CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver() { }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
                                      unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
@@ -776,11 +771,6 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
       nodes->SetSensitivity(iPoint, iDim, Sensitivity);
     }
   }
-  SetSurface_Sensitivity(geometry, config);
-}
-
-void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
-
 }
 
 void CDiscAdjFEASolver::ReadDV(CConfig *config) {
