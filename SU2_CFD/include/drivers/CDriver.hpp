@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -699,8 +699,9 @@ public:
    * \param[in] iZone - Index of the zone.
    * \param[in] adjoint - True to consider adjoint solvers instead of primal.
    * \param[in] solution - Solution object with interface (iPoint,iVar).
+   * \tparam Old - If true set "old solutions" instead.
    */
-  template<class Container>
+  template<class Container, bool Old = false>
   void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
@@ -708,9 +709,18 @@ public:
       if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
-          solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint,offset+iVar));
+          if (!Old) solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint,offset+iVar));
+          else solver->GetNodes()->SetSolution_Old(iPoint, iVar, solution(iPoint,offset+iVar));
       offset += solver->GetnVar();
     }
+  }
+
+  /*!
+   * \brief Set the "old solution" of all solvers (adjoint or primal) in a zone.
+   */
+  template<class Container>
+  void SetAllSolutionsOld(unsigned short iZone, bool adjoint, const Container& solution) {
+    SetAllSolutions<Container,true>(iZone, adjoint, solution);
   }
 
   /*!
@@ -767,7 +777,7 @@ class CFluidDriver : public CDriver {
 protected:
    unsigned long Max_Iter;
 
-public:
+protected:
 
   /*!
    * \brief Constructor of the class.
@@ -780,6 +790,7 @@ public:
                unsigned short val_nZone,
                SU2_Comm MPICommunicator);
 
+public:
   /*!
    * \brief Destructor of the class.
    */

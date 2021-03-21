@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -441,12 +441,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if(config->GetSolid_Wall(iMarker))
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
-    }
   }
 
   /*--- Allocate the vectors to hold boundary node coordinates
@@ -460,10 +456,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if (config->GetSolid_Wall(iMarker)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1810,11 +1803,7 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     }
   } else if (Kind_SU2 == SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
-         (config->GetMarker_All_DV(iMarker) == YES)) {
+      if(config->GetSolid_Wall(iMarker) || (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {

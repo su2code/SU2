@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,7 +69,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   SU2_MPI::Status status;
   int ind;
 #endif
-  
+
   const unsigned long nElemLine = GetnElem(LINE);
   const unsigned long nElemTria = GetnElem(TRIANGLE);
   const unsigned long nElemQuad = GetnElem(QUADRILATERAL);
@@ -438,9 +438,9 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we can allocate the new data structure to hold these points alone. Here,
    we also copy the data for those points from our volume data structure. ---*/
 
-  
+
     delete [] passiveDoubleBuffer;
-  
+
 
   passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
@@ -826,7 +826,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                     &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
-  
+
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
    the counters into cumulative storage format to make the
@@ -1093,7 +1093,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   }
 
   /*--- Call the sort connectivity routine ---*/
-  
+
   SortConnectivity(config, geometry, markerList);
 
 }
@@ -1107,7 +1107,7 @@ void CSurfaceFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
   /*--- Sort volumetric grid connectivity. ---*/
 
   nElemPerType.fill(0);
-  
+
   SortSurfaceConnectivity(config, geometry, LINE         , markerList);
   SortSurfaceConnectivity(config, geometry, TRIANGLE     , markerList);
   SortSurfaceConnectivity(config, geometry, QUADRILATERAL, markerList);

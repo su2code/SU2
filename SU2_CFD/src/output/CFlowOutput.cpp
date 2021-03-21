@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -736,10 +736,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           /*--- The Pressure file uses the global numbering ---*/
@@ -793,10 +790,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1270,7 +1264,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
     Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file << "-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2020, SU2 Contributors                                 |" << "\n";
+    Breakdown_file << "| Copyright 2012-2021, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
