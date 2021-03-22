@@ -45,7 +45,7 @@
  * run the FP, store its result ("FPresult"), compute new solution, use it
  * as the new input of the FP, run the FP, etc.
  */
-template<class Scalar_t>
+template<class Scalar_t, bool WithMPI = true>
 class CQuasiNewtonInvLeastSquares {
 public:
   using Scalar = Scalar_t;
@@ -90,7 +90,7 @@ private:
     }
 
     /*--- MPI reduction of the dot products. ---*/
-    if (nPtDomain < work.rows()) {
+    if (WithMPI) {
       const auto type = (sizeof(Scalar) < sizeof(double))? MPI_FLOAT : MPI_DOUBLE;
 
       su2vector<Scalar> tmp(mat.size());
@@ -156,7 +156,7 @@ public:
    * \param[in] nsample - Number of samples used to build the FP history.
    * \param[in] npt - Size of the solution including any halos.
    * \param[in] nvar - Number of solution variables.
-   * \param[in] nptdomain - Local size (< npt), if 0 (default), MPI parallelization is skipped.
+   * \param[in] nptdomain - Local size (<= npt), if 0 it defaults to npt.
    */
   void resize(Index nsample, Index npt, Index nvar, Index nptdomain = 0) {
     if (nptdomain > npt || nsample < 2)
