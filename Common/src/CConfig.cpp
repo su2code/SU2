@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1115,7 +1115,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
-  
+
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -2105,6 +2105,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Fixed values for turbulence quantities to keep them at inflow conditions. */
+  /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
+  addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
+  /* DESCRIPTION: Shift of the fixed values half-space, in space units in the direction of far-field velocity. */
+  addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
+
   /* Harmonic Balance config */
   /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
   addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
@@ -3063,7 +3069,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2020, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2021, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -4364,6 +4370,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
+  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==numeric_limits<su2double>::lowest()){
+    SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
@@ -4599,7 +4609,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
-  
+
   /*--- Check feassbility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != NONE) {
     if (Kind_Regime != INCOMPRESSIBLE)
