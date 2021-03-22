@@ -1727,9 +1727,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  /*!\brief CONV_CRITERIA
-   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
-  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -2887,6 +2886,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+          /*if (!option_name.compare("CONV_CRITERIA"))
+            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -3274,6 +3277,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
     }
 
+    /*--- Inc CHT simulation, but energy equation of fluid is inactive. ---*/
+    if (Multizone_Problem && (nMarker_CHTInterface > 0) && !Energy_Equation)
+      SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
@@ -3377,6 +3383,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case FIGURE_OF_MERIT:
         case SURFACE_TOTAL_PRESSURE:
         case SURFACE_STATIC_PRESSURE:
+        case SURFACE_STATIC_TEMPERATURE:
         case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
@@ -3390,7 +3397,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -3421,7 +3428,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
     if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
 
-    if (Restart == NO) { Restart_Iter = 0; }
+    if (Restart == NO) {
+      Restart_Iter = 0;
+    } else {
+      if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
+    }
 
     if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
   } else {
@@ -4450,7 +4461,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Fixed_CM_Mode) {
       nInnerIter += Iter_dCL_dAlpha;
-      ConvCriteria = RESIDUAL;
       MinLogResidual = -24;
     }
   }
@@ -4980,6 +4990,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
   if (GetGasModel() == "ARGON") monoatomic = true;
+
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  if(OptionIsSet("CONV_CRITERIA")) {
+    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  }
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -6013,6 +6029,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case BUFFET_SENSOR:              cout << "Buffet sensor objective function." << endl; break;
         case SURFACE_TOTAL_PRESSURE:     cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:    cout << "Average static pressure objective function." << endl; break;
+        case SURFACE_STATIC_TEMPERATURE: cout << "Average static temperature objective function." << endl; break;
         case SURFACE_MASSFLOW:           cout << "Mass flow rate objective function." << endl; break;
         case SURFACE_MACH:               cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:             cout << "Custom objective function." << endl; break;
@@ -7916,6 +7933,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
+        case SURFACE_STATIC_TEMPERATURE:  AdjExt = "_T";        break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
         case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
