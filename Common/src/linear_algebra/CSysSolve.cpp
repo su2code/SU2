@@ -348,6 +348,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool flexible = !precond.IsIdentity();
 
   /*---  Check the subspace size ---*/
 
@@ -365,13 +366,15 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Allocate if not allocated yet ---*/
 
-  if (W.size() <= m) {
+  if (W.size() <= m || (flexible && Z.size() <= m)) {
     SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       W.resize(m+1);
-      Z.resize(m+1);
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
-      for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+      if (flexible) {
+        Z.resize(m+1);
+        for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+      }
     }
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
@@ -443,13 +446,18 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     if (beta < tol*norm0) break;
 
-    /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
+    if (flexible) {
+      /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
 
-    precond(W[i], Z[i]);
+      precond(W[i], Z[i]);
 
-    /*---  Add to Krylov subspace ---*/
+      /*---  Add to Krylov subspace ---*/
 
-    mat_vec(Z[i], W[i+1]);
+      mat_vec(Z[i], W[i+1]);
+    }
+    else {
+      mat_vec(W[i], W[i+1]);
+    }
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
@@ -476,8 +484,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*---  Solve the least-squares system and update solution ---*/
 
   SolveReduced(i, H, g, y);
+
+  const auto& basis = flexible? Z : W;
+
   for (unsigned long k = 0; k < i; k++) {
-    x += y[k] * Z[k];
+    x += y[k] * basis[k];
   }
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
@@ -700,6 +711,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
                                                         ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool fix_iter_mode = tol < eps;
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
@@ -794,13 +806,15 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     /*--- Only compute the residuals in full communication mode. ---*/
     /*--- Check if solution has converged, else output the relative residual if necessary. ---*/
 
-    if (config->GetComm_Level() == COMM_FULL) {
+    if (!fix_iter_mode && config->GetComm_Level() == COMM_FULL) {
       norm_r = r.norm();
       if (norm_r < tol*norm0) break;
       if (((monitoring) && (master)) && ((i+1) % monitorFreq == 0))
         WriteHistory(i+1, norm_r/norm0);
     }
   }
+
+  if (fix_iter_mode) norm_r = r.norm();
 
   if ((monitoring) && (master) && (config->GetComm_Level() == COMM_FULL)) {
     WriteFinalResidual("Smoother", i, norm_r/norm0);

@@ -377,7 +377,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const auto Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
   if (Wall_Function != NO_WALL_FUNCTION)
-    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 

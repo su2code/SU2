@@ -328,6 +328,13 @@ public:
                                   ScalarType & residual, bool monitoring, const CConfig *config);
 
   /*!
+   * \brief Flexible Generalized Minimal Residual method with restarts (frequency comes from config).
+   */
+  unsigned long RFGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
+                                  const PrecondType & precond, ScalarType tol, unsigned long m,
+                                  ScalarType & residual, bool monitoring, const CConfig *config);
+
+  /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
    * \param[in] b - the right hand size vector
    * \param[in,out] x - on entry the intial guess, on exit the solution

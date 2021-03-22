@@ -1494,6 +1494,7 @@ enum ENUM_OBJECTIVE {
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
+  SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
@@ -1545,6 +1546,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+  MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
@@ -2013,18 +2015,6 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
   MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
   MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
   MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
-};
-
-/*!
- * \brief Types of criteria to determine when the solution is converged
- */
-enum ENUM_CONVERGE_CRIT {
-  CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
-  RESIDUAL = 2      /*!< \brief Residual criteria to establish the convergence of the code. */
-};
-static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
-  MakePair("CAUCHY", CAUCHY)
-  MakePair("RESIDUAL", RESIDUAL)
 };
 
 /*!

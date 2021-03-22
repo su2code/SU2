@@ -60,6 +60,11 @@ public:
   virtual void Build() {}
 
   /*!
+   * \brief Return true to identify the identity preconditioner, may allow some solvers to be more efficient.
+   */
+  virtual bool IsIdentity() const { return false; }
+
+  /*!
    * \brief Factory method.
    */
   static CPreconditioner* Create(ENUM_LINEAR_SOLVER_PREC kind, CSysMatrix<ScalarType>& jacobian,
