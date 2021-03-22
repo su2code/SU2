@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,9 +112,9 @@ void CSTLFileWriter::Write_Data(){
 
 void CSTLFileWriter::ReprocessElementConnectivity(){
 
-  
+
   const vector<string>& fieldNames = dataSorter->GetFieldNames();
-  
+
   /*--- Re-process the element connectivity information and store that appropriatly such that
     this information can be accessed in step 2. It is copied from CTecplotBinaryFileWriter.cpp +162 and mildly modified. ---*/
 

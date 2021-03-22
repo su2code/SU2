@@ -7,10 +7,10 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,32 +42,32 @@
 class CCGNSMeshReaderFVM final: public CCGNSMeshReaderBase {
   
 private:
-  
+
 #ifdef HAVE_CGNS
   /*!
    * \brief Reads the interior volume elements from one section of a CGNS zone into linear partitions across all ranks.
    * \param[in] val_section - CGNS section index.
    */
   void ReadCGNSVolumeSection(int val_section);
-  
+
   /*!
    * \brief Reads the surface (boundary) elements from the CGNS zone. Only the master rank currently reads and stores the connectivity, which is linearly partitioned later.
    * \param[in] val_section - CGNS section index.
    */
   void ReadCGNSSurfaceSection(int val_section);
-  
+
   /*!
    * \brief Reformats the CGNS volume connectivity from file into the standard base class data structures.
    */
   void ReformatCGNSVolumeConnectivity();
-  
+
   /*!
    * \brief Reformats the CGNS volume connectivity from file into the standard base class data structures.
    */
   void ReformatCGNSSurfaceConnectivity();
   
 #endif
-  
+
   /*!
    * \brief Routine to launch non-blocking sends and recvs amongst all processors.
    * \param[in] bufSend - Buffer of data to be sent.
@@ -86,7 +86,7 @@ private:
                         SU2_MPI::Request *recvReq,
                         unsigned short countPerElem,
                         unsigned short commType);
-  
+
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
    * \param[in] nSends - Number of sends to be completed.
@@ -98,20 +98,20 @@ private:
                         SU2_MPI::Request *sendReq,
                         int nRecvs,
                         SU2_MPI::Request *recvReq);
-  
-  
+
+
 public:
-  
+
   /*!
    * \brief Constructor of the CCGNSMeshReaderFVM class.
    */
   CCGNSMeshReaderFVM(CConfig        *val_config,
                      unsigned short val_iZone,
                      unsigned short val_nZone);
-  
+
   /*!
    * \brief Destructor of the CCGNSMeshReaderFVM class.
    */
   ~CCGNSMeshReaderFVM(void);
-  
+
 };

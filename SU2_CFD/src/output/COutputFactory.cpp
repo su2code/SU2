@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
       break;
     case NEMO_EULER: case NEMO_NAVIER_STOKES:
       output = new CNEMOCompOutput(config, nDim);
-      break;  
+      break;
     case HEAT_EQUATION:
       output = new CHeatOutput(config, nDim);
       break;
