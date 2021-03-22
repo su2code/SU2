@@ -491,8 +491,6 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              unsigned short kind_recording) {
 
-  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
-
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)) {
@@ -502,6 +500,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
     CGeometry::ComputeWallDistance(config, geometry);
   }
+
+  SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Compute coupling between flow and turbulent equations ---*/
   solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
