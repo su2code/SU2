@@ -319,6 +319,9 @@ public:
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
 
+  /*!
+   * \brief Flexible Generalized Minimal Residual method with restarts (frequency comes from config).
+   */
   unsigned long RFGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                   const PrecondType & precond, ScalarType tol, unsigned long m,
                                   ScalarType & residual, bool monitoring, const CConfig *config);
