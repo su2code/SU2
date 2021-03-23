@@ -350,7 +350,7 @@ template <class Tenum>
 void CConfig::addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
+  COptionBase* val = new COptionEnum<Tenum, unsigned short>(name, enum_map, option_field, default_value);
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
@@ -361,7 +361,7 @@ template <class Tenum>
 void CConfig::addEnumClassOption(const string name, Tenum & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionEnumClass<Tenum>(name, enum_map, option_field, default_value);
+  COptionBase* val = new COptionEnum<Tenum, Tenum>(name, enum_map, option_field, default_value);
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
