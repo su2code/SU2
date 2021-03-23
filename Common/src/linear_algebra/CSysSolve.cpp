@@ -130,9 +130,7 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 
   if ((nrm <= 0.0) || (nrm != nrm)) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
-    SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   /*--- Begin main Gram-Schmidt loop ---*/
@@ -210,9 +208,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   /*--- Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet, only one thread can
@@ -353,15 +349,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*---  Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   if (m > 5000) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES subspace is too large.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet ---*/
@@ -552,9 +544,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate if not allocated yet ---*/
@@ -719,9 +709,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   const ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
-    END_SU2_OMP_MASTER
   }
 
   /*--- Allocate vectors for residual (r), solution increment (z), and matrix-vector
@@ -994,7 +982,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     SU2_OMP_MASTER
     AD::EndExtFunc();
     END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
 #endif
   }
 

@@ -29,7 +29,8 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
+                               unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   adjoint = true;
 
@@ -77,9 +78,12 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
-  su2double Solution[MAXNVAR] = {1e-16};
+  if (nVar > MAXNVAR) {
+    SU2_MPI::Error("Oops! The CDiscAdjSolver static array sizes are not large enough.",CURRENT_FUNCTION);
+  }
 
-  nodes = new CDiscAdjVariable(Solution, nPoint, nDim, nVar, config);
+  vector<su2double> Solution(nVar,1e-16);
+  nodes = new CDiscAdjVariable(Solution.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   switch(KindDirect_Solver){
