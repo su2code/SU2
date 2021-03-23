@@ -191,7 +191,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.797872, -5.863656, 1.049989, 0.019163]
+    turb_naca0012_sst.test_vals = [-11.451011, -12.798258, -5.863895, 1.049989, 0.019163, -1.925028]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -199,8 +199,16 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.640670, -5.746919, 1.005233, 0.019017]
+    turb_naca0012_sst_sust.test_vals = [-11.367386, -12.640857, -5.747260, 1.005233, 0.019017, -1.985871]
     test_list.append(turb_naca0012_sst_sust)
+
+    # NACA0012 (SST, fixed values for turbulence quantities)
+    turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
+    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
+    turb_naca0012_sst_fixedvalues.test_iter = 10
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.206744, -9.562435, -1.566603, 1.022029, 0.040549, -3.483576]
+    test_list.append(turb_naca0012_sst_fixedvalues)
 
     # PROPELLER
     propeller           = TestCase('propeller')

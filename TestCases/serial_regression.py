@@ -368,7 +368,7 @@ def main():
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
-    turb_naca0012_sst_fixedvalues.test_vals = [-5.206744, -9.562435, -1.566603, -3.483576, 1.022029, 0.040549, -3.483576]
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.206744, -9.562435, -1.566603, 1.022029, 0.040549, -3.483576]
     turb_naca0012_sst_fixedvalues.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_fixedvalues.timeout   = 3200
     turb_naca0012_sst_fixedvalues.tol       = 0.00001
@@ -1834,7 +1834,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-12.798258, -5.863895, 1.049989, 0.019163]
+    pywrapper_turb_naca0012_sst.test_vals = [-11.451011, -12.798258, -5.863895, 1.049989, 0.019163, -1.925028]
     pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200
