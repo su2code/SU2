@@ -1116,7 +1116,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
             if (FlowRegime == COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
+              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS || config->GetKind_FluidModel() == THERMALLY_PERFECT)) {
                 auto Secondary_i = nodes->GetSecondary(iPoint);
 
                 P_static = PrimVar_j[nDim + 1];

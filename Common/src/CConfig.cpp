@@ -3217,7 +3217,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
-                    (Kind_FluidModel == CONSTANT_DENSITY));
+                    (Kind_FluidModel == CONSTANT_DENSITY) ||
+                    (Kind_FluidModel == THERMALLY_PERFECT));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));

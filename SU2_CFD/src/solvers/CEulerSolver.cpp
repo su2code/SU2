@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CIdealGas.hpp"
+#include "../../include/fluid/CThermallyPerfectGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
@@ -1509,6 +1510,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
       break;
 
+    case THERMALLY_PERFECT:
+
+      auxFluidModel = new CThermallyPerfectGas(config, Gamma, config->GetGas_Constant());
+      break;      
+
     case VW_GAS:
 
       auxFluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(),
@@ -1739,6 +1745,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         FluidModel[thread] = new CIdealGas(Gamma, Gas_ConstantND);
         break;
 
+      case THERMALLY_PERFECT:
+        FluidModel[thread] = new CThermallyPerfectGas(config, Gamma, Gas_ConstantND);
+        break;        
+
       case VW_GAS:
         FluidModel[thread] = new CVanDerWaalsGas(Gamma, Gas_ConstantND,
                                                  config->GetPressure_Critical() / config->GetPressure_Ref(),
@@ -1884,6 +1894,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     case IDEAL_GAS:
       ModelTable << "IDEAL_GAS";
       break;
+    case THERMALLY_PERFECT:
+      ModelTable << "THERMALLY_PERFECT";
+      break;      
     case VW_GAS:
       ModelTable << "VW_GAS";
       break;
