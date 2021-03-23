@@ -119,6 +119,6 @@ using su2mixedfloat = passivedouble;
 #define HAVE_OPDI
 #endif
 
-#if _OPENMP >= 201811
+#if (_OPENMP >= 201811 && !defined(FORCE_OPDI_MACRO_BACKEND)) || defined(FORCE_OPDI_OMPT_BACKEND)
 #define HAVE_OMPT
 #endif
