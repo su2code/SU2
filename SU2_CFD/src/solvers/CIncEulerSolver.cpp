@@ -1265,7 +1265,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool vol_heat       = config->GetHeatSource();
   const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
-  const bool streamwise_periodic             = config->GetKind_Streamwise_Periodic();
+  const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   if (body_force) {

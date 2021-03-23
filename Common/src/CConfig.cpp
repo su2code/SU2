@@ -1117,7 +1117,7 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
 
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
-  addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
+  addEnumClassOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, ENUM_STREAMWISE_PERIODIC::NONE);
   /* DESCRIPTION: Use real periodicity for temperature \n Options: NO, YES \n DEFAULT: NO \ingroup Config */
   addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
   /* DESCRIPTION: Heatflux boundary at streamwise periodic 'outlet', choose heat [W] such that net domain heatflux is zero. Only active if STREAMWISE_PERIODIC_TEMPERATURE is active. \n DEFAULT: 0.0 \ingroup Config */
@@ -4632,7 +4632,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Check feassbility for Streamwise Periodic flow ---*/
-  if (Kind_Streamwise_Periodic != NONE) {
+  if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
     if (Kind_Regime != INCOMPRESSIBLE)
       SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
     if (Kind_Solver == INC_EULER)
@@ -4641,7 +4641,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible in the moment.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
-    if (DiscreteAdjoint && Kind_Streamwise_Periodic == MASSFLOW)
+    if (DiscreteAdjoint && Kind_Streamwise_Periodic == ENUM_STREAMWISE_PERIODIC::MASSFLOW)
       SU2_MPI::Error("Discrete Adjoint currently not validated for prescribed MASSFLOW.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);

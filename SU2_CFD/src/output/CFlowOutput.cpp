@@ -126,7 +126,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
   const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
-  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
+  const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();

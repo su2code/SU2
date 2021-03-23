@@ -702,7 +702,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
       }
 
       /*--- For Streamwise Periodic flow, find a unique reference node on the dedicated inlet marker. ---*/
-      if (config->GetKind_Streamwise_Periodic() != NONE)
+      if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
         geometry[iMesh]->FindUniqueNode_PeriodicBound(config);
 
       /*--- Initialize the communication framework for the periodic BCs. ---*/
@@ -1834,7 +1834,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
       }
-      else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) {
+      else if (incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);
       }
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ)) {
@@ -1867,7 +1867,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
       if (config->AddRadiation())
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
-      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) &&
+      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) &&
                (config->GetEnergy_Equation() && !config->GetStreamwise_Periodic_Temperature()))
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
       else
