@@ -632,26 +632,13 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  const bool rans = (config->GetKind_Turb_Model() != NONE);
-
   /*--- Restart the solution from file information ---*/
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
-
-  /*--- Read and store the restart metadata. ---*/
-
-//  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
@@ -667,39 +654,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
-  /*--- Load data from the restart into correct containers. ---*/
-
-  unsigned long iPoint_Global_Local = 0;
-
-  for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
-
-    const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
-
-    if (iPoint_Local > -1) {
-
-      /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
-
-      const auto index = iPoint_Global_Local*Restart_Vars[1] + skipVars;
-
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
-      }
-
-      iPoint_Global_Local++;
-    }
-
-  }
-
-  /*--- Detect a wrong solution file ---*/
-
-  if (iPoint_Global_Local != nPointDomain) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  BasicLoadRestart(geometry[MESH_0], config, restart_filename, skipVars);
 
   /*--- Interpolate solution on coarse grids ---*/
 
@@ -720,10 +675,4 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       solver[iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution(iPoint, Solution);
     }
   }
-
-  /*--- Delete the class memory that is used to load the restart. ---*/
-
-  delete [] Restart_Vars;  Restart_Vars = nullptr;
-  delete [] Restart_Data;  Restart_Data = nullptr;
-
 }

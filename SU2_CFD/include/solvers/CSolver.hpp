@@ -3489,6 +3489,18 @@ public:
                                            CConfig *config) { }
 
   /*!
+   * \brief Loads the solution from the restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] filename - Name of the restart file.
+   * \param[in] skipVars - Number of variables preceeding the solution.
+   */
+  void BasicLoadRestart(CGeometry *geometry,
+                        const CConfig *config,
+                        const string& filename,
+                        unsigned long skipVars);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
