@@ -1193,6 +1193,9 @@ private:
   template <class Tenum>
   void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
 
+  template <class Tenum>
+  void addEnumClassOption(const string name, Tenum & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
+
   // input_size is the number of options read in from the config file
   template <class Tenum>
   void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);

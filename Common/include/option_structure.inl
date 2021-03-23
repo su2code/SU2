@@ -30,7 +30,7 @@ template <class Tenum>
 class COptionEnum : public COptionBase {
 
   map<string, Tenum> m;
-  unsigned short & field; // Reference to the feildname
+  unsigned short & field; // Reference to the fieldname
   Tenum def; // Default value
   string name; // identifier for the option
 
@@ -42,6 +42,51 @@ public:
   }
 
   ~COptionEnum() override {};
+  string SetValue(vector<string> option_value) override {
+    COptionBase::SetValue(option_value);
+    // Check if there is more than one string
+    string out = optionCheckMultipleValues(option_value, "enum", this->name);
+    if (out.compare("") != 0) {
+      return out;
+    }
+
+    // Check to see if the enum value is in the map
+    if (this->m.find(option_value[0]) == m.end()) {
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value[0]);
+      str.append(". Check current SU2 options in config_template.cfg.");
+      return str;
+    }
+    // If it is there, set the option value
+    Tenum val = this->m[option_value[0]];
+    this->field = val;
+    return "";
+  }
+
+  void SetDefault() override {
+    this->field = this->def;
+  }
+};
+
+
+template <class Tenum>
+class COptionEnumClass : public COptionBase {
+
+  map<string, Tenum> m;
+  Tenum & field; // Reference to the fieldname
+  Tenum def; // Default value
+  string name; // identifier for the option
+
+public:
+  COptionEnumClass(string option_field_name, const map<string, Tenum> m, Tenum & option_field, Tenum default_value) : field(option_field) {
+    this->m = m;
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+
+  ~COptionEnumClass() override {};
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check if there is more than one string

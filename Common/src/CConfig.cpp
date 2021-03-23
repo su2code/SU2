@@ -355,6 +355,17 @@ void CConfig::addEnumOption(const string name, unsigned short & option_field, co
   return;
 }
 
+// enum types work differently than all of the others because there are a small number of valid
+// string entries for the type. One must also provide a list of all the valid strings of that type.
+template <class Tenum>
+void CConfig::addEnumClassOption(const string name, Tenum & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionEnumClass<Tenum>(name, enum_map, option_field, default_value);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+  return;
+}
+
 // input_size is the number of options read in from the config file
 template <class Tenum>
 void CConfig::addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
