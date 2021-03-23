@@ -398,13 +398,13 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                 /* Compute the wall shear stress and heat flux vector using
                    the wall model. */
                 su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-
+                bool converged;
                 boundaries[iMarker].wallModel->WallShearStressAndHeatFlux(Temperature, velTan,
                                                                           LaminarViscosity, Pressure, dPds,
                                                                           Wall_HeatFlux, HeatFlux_Prescribed,
                                                                           Wall_Temperature, Temperature_Prescribed,
                                                                           FluidModel, tauWall, qWall,
-                                                                          ViscosityWall, kOverCvWall);
+                                                                          ViscosityWall, kOverCvWall, converged);
 
                 /* Update the viscous forces and moments. Note that the force direction
                    is the direction of the tangential velocity. */
@@ -6381,12 +6381,12 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         /* Compute the wall shear stress and heat flux vector using
            the wall model. */
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-
+        bool converged;
         wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure, dPds,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
                                               FluidModel, tauWall, qWall, ViscosityWall,
-                                              kOverCvWall);
+                                              kOverCvWall, converged);
 
         /* Compute the wall velocity in tangential direction. */
         const su2double *solWallInt = solIntL + NPad*ii + llNVar;

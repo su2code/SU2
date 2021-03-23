@@ -390,7 +390,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute the wall shear stress from the wall model ---*/
 
-  if (wall_models && (iRKStep==0)){
+  if (wall_models && (iRKStep==0) && (iMesh == MESH_0)){
     SU2_OMP_MASTER
     SetTauWallHeatFlux_WMLES1stPoint(geometry, solver_container, config, iRKStep);
     SU2_OMP_BARRIER
@@ -1780,7 +1780,7 @@ void CNSSolver::BC_WallModel(CGeometry      *geometry,
       /*-------------------------------------------------------*/
       /*-------------------------------------------------------*/
 
-      if (config->GetWall_Models() && nodes->GetTauWall_Flag(iPoint)){
+      if (nodes->GetTauWall_Flag(iPoint)){
 
         /*--- Weakly enforce the WM heat flux for the energy equation---*/
         su2double velWall_tan = 0.;
@@ -2699,6 +2699,9 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
   su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
   su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
 
+  su2double Yplus_Max_Local = 0.0;
+  su2double Yplus_Min_Local = 1e9;
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
@@ -2748,6 +2751,25 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
        if (!geometry->node[iPoint]->GetDomain()) continue;
+
+       /*--- Check if the node has all boundary neighbors ---*/
+       const auto nNeigh = geometry->node[iPoint]->GetnPoint();
+       bool found_fluid = false;
+       for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+       
+         auto jPoint = iPoint;
+         if (iNeigh < nNeigh) jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+         bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+         if (!boundary_j){
+           found_fluid = true;
+           break;
+         }
+       }
+
+       if(!found_fluid){
+        nodes->SetTauWall_Flag(iPoint,false);
+        continue;
+       }
 
        /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -2893,12 +2915,32 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+       bool converged;
        WallModel->UpdateExchangeLocation(WallDistMod);
        WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal, GradP_TangMod,
                                              Wall_HeatFlux, HeatFlux_Prescribed,
                                              Wall_Temperature, Temperature_Prescribed,
                                              GetFluidModel(), tauWall, qWall, ViscosityWall,
-                                             kOverCvWall);
+                                             kOverCvWall, converged);
+
+       if (!converged || std::isnan(tauWall)){
+         nodes->SetTauWall_Flag(iPoint,false);
+         continue;
+       }
+       
+       su2double rho    = nodes->GetDensity(iPoint) * config->GetDensity_Ref();
+       su2double u_tau  = sqrt(tauWall/rho);
+       su2double y_plus = rho * u_tau * WallDistMod / ViscosityWall; 
+
+       if (config->GetWMLES_Monitoring()){
+        if(y_plus < 0.1){
+         nodes->SetTauWall_Flag(iPoint,false);
+         continue;          
+        }
+       }
+       
+       Yplus_Max_Local = max(Yplus_Max_Local, y_plus);
+       Yplus_Min_Local = min(Yplus_Min_Local, y_plus);
 
        /*--- Compute the non-dimensional values if necessary. ---*/
        tauWall /= config->GetPressure_Ref();
@@ -2923,4 +2965,16 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
      }
    }
  }
+ su2double Yplus_Max_Global = Yplus_Max_Local;
+ su2double Yplus_Min_Global = Yplus_Min_Local;
+
+ SU2_MPI::Allreduce(&Yplus_Max_Local, &Yplus_Max_Global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+ SU2_MPI::Allreduce(&Yplus_Min_Local, &Yplus_Min_Global, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+ if ((rank == MASTER_NODE) && (config->GetInnerIter()==0)){
+  cout << endl   << "------------------------ WMLES -----------------------" << endl;
+  cout << "Y+ (Max): " << setprecision(6) << Yplus_Max_Global << endl;
+  cout << "Y+ (Min): " << setprecision(6) << Yplus_Min_Global << endl;
+ }
+
 }

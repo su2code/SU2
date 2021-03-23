@@ -70,7 +70,8 @@ void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                             su2double       &tauWall,
                                             su2double       &qWall,
                                             su2double       &ViscosityWall,
-                                            su2double       &kOverCvWall) {}
+                                            su2double       &kOverCvWall,
+                                            bool            &converged) {}
 
 CWallModel1DEQ::CWallModel1DEQ(CConfig      *config,
                                const string &Marker_Tag)
@@ -128,7 +129,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
                                                 su2double       &tauWall,
                                                 su2double       &qWall,
                                                 su2double       &ViscosityWall,
-                                                su2double       &kOverCvWall) {
+                                                su2double       &kOverCvWall,
+                                                bool            &converged) {
 
   /* Set the wall temperature, depending whether or not the temperature
      was prescribed and initialize the fluid model. */
@@ -161,7 +163,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
 
   /* Set parameters for control
    */
-  bool converged = false;
+  converged = false;
   unsigned short iter = 0, max_iter = 25;
   su2double tauWall_prev = 0.0, tol = 1e-3,  aux_rhs=0.0;
   su2double qWall_prev=0.0;
@@ -170,7 +172,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   while (converged == false){
 
     iter += 1;
-    if (iter == max_iter) converged = true;
+    if (iter == max_iter) break;
 
     tauWall_prev = tauWall;
     qWall_prev = qWall;
@@ -380,7 +382,8 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   su2double       &tauWall,
                                                   su2double       &qWall,
                                                   su2double       &ViscosityWall,
-                                                  su2double       &kOverCvWall) {
+                                                  su2double       &kOverCvWall,
+                                                  bool            &converged) {
 
   /* Set the wall temperature, depending whether or not the temperature
      was prescribed and initialize the fluid model. */
@@ -398,14 +401,14 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
   su2double u_tau = max(0.01*velExchange, 1.e-5);
 
   /* Set parameters for control of the Newton iteration. */
-  bool converged = false;
+  converged = false;
   unsigned short iter = 0, max_iter = 50;
   const su2double tol=1e-3;
 
   while (converged == false){
 
     iter += 1;
-    if (iter == max_iter) converged = true;
+    if (iter == max_iter) break;
 
     const su2double u_tau0 = u_tau;
     const su2double y_plus = u_tau0*h_wm/nu_wall;
@@ -479,7 +482,8 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   su2double       &tauWall,
                                                   su2double       &qWall,
                                                   su2double       &ViscosityWall,
-                                                  su2double       &kOverCvWall) {
+                                                  su2double       &kOverCvWall,
+                                                  bool            &converged) {
 
   /* Set the wall temperature, depending whether or not the temperature
      was prescribed and initialize the fluid model. */
@@ -497,7 +501,7 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
   su2double u_tau = max(0.01*velExchange, 1.e-5);
 
   /* Set parameters for control of the Newton iteration. */
-  bool converged = false;
+  converged = false;
   unsigned short iter = 0, max_iter = 50;
   const su2double tol=1e-3;
   const su2double y_star = 23.0;
@@ -506,7 +510,7 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
   while (converged == false){
 
     iter += 1;
-    if (iter == max_iter) converged = true;
+    if (iter == max_iter) break;
 
     const su2double u_tau0 = u_tau;
     const su2double y_plus = u_tau0*h_wm/nu_wall;
@@ -582,7 +586,8 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   su2double       &tauWall,
                                                   su2double       &qWall,
                                                   su2double       &ViscosityWall,
-                                                  su2double       &kOverCvWall) {
+                                                  su2double       &kOverCvWall,
+                                                  bool            &converged) {
 
   /* Set the wall temperature, depending whether or not the temperature
      was prescribed and initialize the fluid model. */
@@ -600,7 +605,7 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
   su2double u_tau = max(0.01*velExchange, 1.e-5);
 
   /* Set parameters for control of the Newton iteration. */
-  bool converged = false;
+  converged = false;
   unsigned short iter = 0, max_iter = 50;
   const su2double tol=1e-3;
 
@@ -616,11 +621,7 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
   while (converged == false){
 
     iter += 1;
-    if (iter == max_iter){
-      converged = true;
-      if (monitor > 0.5)
-        SU2_MPI::Error("APGLL Wall Model did not converge", CURRENT_FUNCTION);
-    }
+    if (iter == max_iter) break;
 
     const su2double u_tau0 = u_tau;
     const su2double y_plus = u_tau0*h_wm/nu_wall;
@@ -649,9 +650,6 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
     monitor = fabs(1.0 - u_tau/u_tau0);
     if ( monitor < tol) converged = true;
 
-    if (std::isnan(u_tau)){
-      SU2_MPI::Error("u_tau is nan at APGLL Wall Model", CURRENT_FUNCTION);
-    }
   }
 
   tauWall = rho_wall * pow(u_tau,2.0);
@@ -828,7 +826,8 @@ void CWallModelTemplate::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   su2double       &tauWall,
                                                   su2double       &qWall,
                                                   su2double       &ViscosityWall,
-                                                  su2double       &kOverCvWall) {
+                                                  su2double       &kOverCvWall,
+                                                  bool            &converged) {
 
   /* Set the wall temperature, depending whether or not the temperature
      was prescribed and initialize the fluid model. */
@@ -850,7 +849,7 @@ void CWallModelTemplate::WallShearStressAndHeatFlux(const su2double tExchange,
   su2double u_c = u_p + u_tau;
   
   /* Set parameters for control of the Newton iteration. */
-  bool converged = false;
+  converged = false;
   unsigned short iter = 0, max_iter = 50;
   const su2double tol    = 1e-3;
   
@@ -859,7 +858,6 @@ void CWallModelTemplate::WallShearStressAndHeatFlux(const su2double tExchange,
 
     iter += 1;
     if (iter == max_iter){
-      converged = true;
       cout << monitor << endl;
       SU2_MPI::Error("Max iter reached at Template Wall Model", CURRENT_FUNCTION);
     }

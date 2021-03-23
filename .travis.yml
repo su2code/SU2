@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - molinaedu85@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_WallModelLES
 
 virtualenv:
   system_site_packages: true
@@ -30,19 +30,19 @@ virtualenv:
 env:
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tecio=false"
           TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-tecio=false"
           TEST_SCRIPT=parallel_regression.py
 
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true -Denable-tecio=false"
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-tecio=false"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
@@ -72,7 +72,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone --depth=1 -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone --depth=1 -b feature_WallModelLES https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
