@@ -3385,11 +3385,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  inline virtual void ReadDV(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
    */
   inline virtual su2double GetVal_EField(unsigned short iVal) const { return 0.0; }
