@@ -2174,36 +2174,36 @@ static const MapType<string, COMM_LEVEL> Comm_Map = {
   MakePair("FULL",    COMM_FULL)
 };
 
-/*
+/*!
  * \brief Types of filter kernels, initially intended for structural topology optimization applications
  */
-enum ENUM_FILTER_KERNEL {
-  CONSTANT_WEIGHT_FILTER = 0,      /*!< \brief Uniform weight. */
-  CONICAL_WEIGHT_FILTER  = 1,      /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
-  GAUSSIAN_WEIGHT_FILTER = 2,      /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
-  DILATE_MORPH_FILTER    = 3,      /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
-  ERODE_MORPH_FILTER     = 4,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
+enum class ENUM_FILTER_KERNEL {
+  CONSTANT_WEIGHT,  /*!< \brief Uniform weight. */
+  CONICAL_WEIGHT,   /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
+  GAUSSIAN_WEIGHT,  /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
+  DILATE_MORPH,     /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
+  ERODE_MORPH,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
 };
 static const MapType<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
-  MakePair("CONSTANT", CONSTANT_WEIGHT_FILTER)
-  MakePair("CONICAL" , CONICAL_WEIGHT_FILTER)
-  MakePair("GAUSSIAN", GAUSSIAN_WEIGHT_FILTER)
-  MakePair("DILATE"  , DILATE_MORPH_FILTER)
-  MakePair("ERODE"   , ERODE_MORPH_FILTER)
+  MakePair("CONSTANT", ENUM_FILTER_KERNEL::CONSTANT_WEIGHT)
+  MakePair("CONICAL", ENUM_FILTER_KERNEL::CONICAL_WEIGHT)
+  MakePair("GAUSSIAN", ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT)
+  MakePair("DILATE", ENUM_FILTER_KERNEL::DILATE_MORPH)
+  MakePair("ERODE", ENUM_FILTER_KERNEL::ERODE_MORPH)
 };
 
 /*!
  * \brief Types of projection function, initially intended for structural topology optimization applications
  */
-enum ENUM_PROJECTION_FUNCTION {
-  NO_PROJECTION  = 0,      /*!< \brief No projection. */
-  HEAVISIDE_UP   = 1,      /*!< \brief Project values towards 1. */
-  HEAVISIDE_DOWN = 2,      /*!< \brief Project values towards 0. */
+enum class ENUM_PROJECTION_FUNCTION {
+  NONE,           /*!< \brief No projection. */
+  HEAVISIDE_UP,   /*!< \brief Project values towards 1. */
+  HEAVISIDE_DOWN, /*!< \brief Project values towards 0. */
 };
 static const MapType<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
-  MakePair("NO_PROJECTION" , NO_PROJECTION)
-  MakePair("HEAVISIDE_UP"  , HEAVISIDE_UP)
-  MakePair("HEAVISIDE_DOWN", HEAVISIDE_DOWN)
+  MakePair("NO_PROJECTION", ENUM_PROJECTION_FUNCTION::NONE)
+  MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
+  MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
 };
 
 /*!

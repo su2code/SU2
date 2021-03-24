@@ -1012,14 +1012,14 @@ private:
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
   su2double simp_minimum_stiffness;     /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
-  unsigned short top_optim_nKernel,        /*!< \brief Number of kernels specified. */
-                *top_optim_kernels,        /*!< \brief The kernels to use. */
-                 top_optim_nKernelParams,  /*!< \brief Number of kernel parameters specified. */
-                 top_optim_nRadius,        /*!< \brief Number of radius values specified. */
-                 top_optim_search_lim;     /*!< \brief Limit the maximum "logical radius" considered during filtering. */
-  su2double *top_optim_kernel_params,  /*!< \brief The kernel parameters. */
-            *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
-  unsigned short top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
+  ENUM_FILTER_KERNEL* top_optim_kernels;   /*!< \brief The kernels to use. */
+  unsigned short top_optim_nKernel;        /*!< \brief Number of kernels specified. */
+  unsigned short top_optim_nKernelParams;  /*!< \brief Number of kernel parameters specified. */
+  unsigned short top_optim_nRadius;        /*!< \brief Number of radius values specified. */
+  unsigned short top_optim_search_lim;     /*!< \brief Limit the maximum "logical radius" considered during filtering. */
+  su2double *top_optim_kernel_params;  /*!< \brief The kernel parameters. */
+  su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
@@ -1190,15 +1190,12 @@ private:
 
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
-  template <class Tenum>
-  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
-
-  template <class Tenum>
-  void addEnumClassOption(const string name, Tenum & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
+  template <class Tenum, class Tfield>
+  void addEnumOption(const string name, Tfield& option_field, const map<string,Tenum>& enum_map, Tenum default_value);
 
   // input_size is the number of options read in from the config file
-  template <class Tenum>
-  void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
+  template <class Tenum, class Tfield>
+  void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
   void addDoubleArrayOption(const string name, const int size, su2double* option_field);
 
@@ -8885,7 +8882,7 @@ public:
   /*!
    * \brief Get the i'th kernel to use, its parameter, and the radius.
    */
-  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, ENUM_FILTER_KERNEL &type,
                                 su2double &param, su2double &radius) const {
     type = top_optim_kernels[iKernel];
     param = top_optim_kernel_params[iKernel];
@@ -8900,7 +8897,7 @@ public:
   /*!
    * \brief Get the type and parameter for the projection function used in topology optimization
    */
-  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
+  void GetTopology_Optim_Projection(ENUM_PROJECTION_FUNCTION &type, su2double &param) const {
     type = top_optim_proj_type;  param = top_optim_proj_param;
   }
 

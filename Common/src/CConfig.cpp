@@ -346,33 +346,22 @@ void CConfig::addBoolOption(const string name, bool & option_field, bool default
 
 // enum types work differently than all of the others because there are a small number of valid
 // string entries for the type. One must also provide a list of all the valid strings of that type.
-template <class Tenum>
-void CConfig::addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
+template <class Tenum, class TField>
+void CConfig::addEnumOption(const string name, TField& option_field, const map<string,Tenum>& enum_map, Tenum default_value) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionEnum<Tenum, unsigned short>(name, enum_map, option_field, default_value);
-  option_map.insert(pair<string, COptionBase *>(name, val));
-  return;
-}
-
-// enum types work differently than all of the others because there are a small number of valid
-// string entries for the type. One must also provide a list of all the valid strings of that type.
-template <class Tenum>
-void CConfig::addEnumClassOption(const string name, Tenum & option_field, const map<string, Tenum> & enum_map, Tenum default_value) {
-  assert(option_map.find(name) == option_map.end());
-  all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionEnum<Tenum, Tenum>(name, enum_map, option_field, default_value);
+  COptionBase* val = new COptionEnum<Tenum, TField>(name, enum_map, option_field, default_value);
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
 
 // input_size is the number of options read in from the config file
-template <class Tenum>
-void CConfig::addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
+template <class Tenum, class TField>
+void CConfig::addEnumListOption(const string name, unsigned short& input_size, TField*& option_field, const map<string, Tenum>& enum_map) {
   input_size = 0;
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+  COptionBase* val = new COptionEnumList<Tenum,TField>(name, enum_map, option_field, input_size);
   option_map.insert( pair<string, COptionBase*>(name, val) );
 }
 
@@ -1117,7 +1106,7 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
 
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
-  addEnumClassOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, ENUM_STREAMWISE_PERIODIC::NONE);
+  addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, ENUM_STREAMWISE_PERIODIC::NONE);
   /* DESCRIPTION: Use real periodicity for temperature \n Options: NO, YES \n DEFAULT: NO \ingroup Config */
   addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
   /* DESCRIPTION: Heatflux boundary at streamwise periodic 'outlet', choose heat [W] such that net domain heatflux is zero. Only active if STREAMWISE_PERIODIC_TEMPERATURE is active. \n DEFAULT: 0.0 \ingroup Config */
@@ -2367,7 +2356,7 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("TOPOL_OPTIM_FILTER_RADIUS", top_optim_nRadius, top_optim_filter_radius);
   addDoubleListOption("TOPOL_OPTIM_KERNEL_PARAM", top_optim_nKernelParams, top_optim_kernel_params);
   addUnsignedShortOption("TOPOL_OPTIM_SEARCH_LIMIT", top_optim_search_lim, 0);
-  addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, NO_PROJECTION);
+  addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, ENUM_PROJECTION_FUNCTION::NONE);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
 
   /* CONFIG_CATEGORY: FSI solver */
@@ -4737,8 +4726,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (topology_optimization && top_optim_nKernel==0) {
     top_optim_nKernel = 1;
-    top_optim_kernels = new unsigned short [1];
-    top_optim_kernels[0] = CONICAL_WEIGHT_FILTER;
+    top_optim_kernels = new ENUM_FILTER_KERNEL [1];
+    top_optim_kernels[0] = ENUM_FILTER_KERNEL::CONICAL_WEIGHT;
   }
 
   if (top_optim_nKernel != 0) {
