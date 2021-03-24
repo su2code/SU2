@@ -1347,7 +1347,7 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
       for (iVar = 0; iVar < nVar; iVar++) {
 
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
-        nodes->AddSolution(iPoint, iVar, -Res*Delta);
+	nodes->AddSolution(iPoint, iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
 
@@ -1384,7 +1384,7 @@ void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry,CSolver **solver
 
     Res_TruncError = nodes->GetResTruncError(iPoint);
     Residual = LinSysRes.GetBlock(iPoint);
-
+    
     for (iVar = 0; iVar < nVar; iVar++) {
       Res = Residual[iVar] + Res_TruncError[iVar];
       nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
@@ -2165,7 +2165,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   T_INDEX       = nodes->GetTIndex();
   TVE_INDEX     = nodes->GetTveIndex();
   H_INDEX       = nodes->GetHIndex();
-
+  
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2220,7 +2220,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         Gamma = rhoR/(V_domain[RHOCVTR_INDEX]+
                       V_domain[RHOCVVE_INDEX])+1;
         Gamma_Minus_One = Gamma-1.0;
-
+        
         /*--- Store primitives and set some variables for clarity. ---*/
         //TODO NEED TO RECOMPUTE GAS_CONSTANT?
         Density = V_domain[RHO_INDEX];
@@ -2305,7 +2305,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         U_inlet[nVar-2] = Energy*Density;
         U_inlet[nVar-1] = U_domain[nVar-1];
 
-        /*--- Primitive variables, using the derived quantities ---*/
+	/*--- Primitive variables, using the derived quantities ---*/
         //TODO, 1species only
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
           V_inlet[iSpecies] = 1.0*Density;
@@ -2319,9 +2319,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         V_inlet[A_INDEX] = sqrt(SoundSpeed2);
         V_inlet[RHOCVTR_INDEX] = V_domain[RHOCVTR_INDEX];
         V_inlet[RHOCVVE_INDEX] = V_domain[RHOCVVE_INDEX];
-
+	
 	break;
-      /*--- Mass flow has been specified at the inlet. ---*/
+      
+        /*--- Mass flow has been specified at the inlet. ---*/
 //      case MASS_FLOW:
 
 //        SU2_MPI::Error("BC_INLET: If you somehow got here....you are very special..", CURRENT_FUNCTION);
@@ -2378,13 +2379,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       }
 
       /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetEve(nodes->GetEve(iPoint),nodes->GetEve(iPoint));
+      conv_numerics->SetEve(node_infty->GetEve(0),nodes->GetEve(iPoint));
       conv_numerics->SetConservative(U_domain, U_inlet);
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
-
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
@@ -2891,7 +2891,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
-
+  
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -2931,6 +2931,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
+
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/

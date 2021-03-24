@@ -2626,7 +2626,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
-
+  
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -2787,7 +2787,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);
-
+    
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
     if ((kind_dissipation != NO_ROELOWDISS) && (MGLevel != MESH_0)) {
@@ -3461,8 +3461,8 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_cont
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
         su2double Res = Residual[iVar] + Res_TruncError[iVar];
-
-        /*--- "Static" switch which should be optimized at compile time. ---*/
+        
+	/*--- "Static" switch which should be optimized at compile time. ---*/
         switch(IntegrationType) {
 
           case EULER_EXPLICIT:
@@ -7778,7 +7778,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -7846,7 +7845,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
           SoundSpeed2 = Gamma*Pressure/Density;
 
-          /*--- Compute the acoustic Riemann invariant that is extrapolated
+	  /*--- Compute the acoustic Riemann invariant that is extrapolated
              from the domain interior. ---*/
 
           Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
@@ -7992,11 +7991,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
-
       auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
-
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
@@ -8144,7 +8141,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Pressure   = P_Exit;
         SoundSpeed = sqrt(Gamma*P_Exit/Density);
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-        Velocity2  = 0.0;
+	Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
@@ -8386,7 +8383,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
-
+  
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -8434,7 +8431,6 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
-
       auto residual = conv_numerics->ComputeResidual(config);
 
       LinSysRes.AddBlock(iPoint, residual);

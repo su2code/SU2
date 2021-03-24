@@ -91,6 +91,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   a0 = 0.5*(q_ij+fabs(q_ij));
   a1 = 0.5*(q_ij-fabs(q_ij));
 
+
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);

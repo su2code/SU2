@@ -920,12 +920,14 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  su2double mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus;
+  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus;
   vector<su2double> MolarFrac, eve_eq, eve;
+  su2activematrix mu;
 
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
+  mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
   su2double omegaVT = 0.0;
   su2double omegaCV = 0.0;
@@ -951,9 +953,9 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     num   = 0.0;
     denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      mu     = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
-      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(CharVibTemp[iSpecies], 4.0/3.0);
-      B_sr   = 0.015 * pow(mu, 0.25);
+      mu(iSpecies,jSpecies)     = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
+      A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
+      B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
       tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;
@@ -962,9 +964,10 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauMW = num / denom;
 
     /*--- Park limiting cross section ---*/
-    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
-    sig_s = 1E-20*(5E4*5E4)/(T*T);
-
+    //delete me ..this needs to be looped.
+    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*mu(iSpecies,0)));
+    //sig_s = 1E-20*(5E4*5E4)/(T*T);
+    sig_s= 3E-21*(2.5E9)/(T*T);
     tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
@@ -1244,11 +1247,15 @@ void CSU2TCLib::ThermalConductivitiesD(){
   su2double rho = 0.0;
   for (unsigned short ii=0; ii<nSpecies; ii++)
   {
-    mass += rhos[ii]*MolarMass[ii];
     rho  += rhos[ii];
   } 
+  for (unsigned short ii=0; ii<nSpecies; ii++)
+  {
+    mass += rhos[ii]/rho*MolarMass[ii];
+  }
 
   su2double Cvtr = ComputerhoCvtr()/rho;
+  
   su2double Cvve = ComputerhoCvve()/rho;
    
 
@@ -1256,7 +1263,6 @@ void CSU2TCLib::ThermalConductivitiesD(){
    
   su2double Cptr = Cvtr + Ru/mass;
   su2double Cpve = scl*Cptr;
-  
   
   ThermalConductivities[0] = Mu*Cptr/Pr_lam;
   ThermalConductivities[1] = 0; //  todo check me Mu*Cpve/Pr_lam;

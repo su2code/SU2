@@ -321,8 +321,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
-    Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+    Mass += V[iSpecies]/V[RHO_INDEX]*Ms[iSpecies];
+  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
   tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
   scl  = tmp1/ktr;
   ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);

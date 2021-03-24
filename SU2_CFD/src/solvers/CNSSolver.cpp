@@ -608,7 +608,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
     su2double Res_Conv = 0.0;
     su2double Res_Visc = Wall_HeatFlux * Area;
-
+    
     /*--- Impose the value of the velocity as a strong boundary
      condition (Dirichlet). Fix the velocity and remove any
      contribution to the residual at this node. ---*/
@@ -642,7 +642,6 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     }
 
     /*--- Convective and viscous contributions to the residual at the wall ---*/
-
     LinSysRes(iPoint, nDim+1) += Res_Conv - Res_Visc;
 
     /*--- Enforce the no-slip boundary condition in a strong way by
