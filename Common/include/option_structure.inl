@@ -29,20 +29,21 @@
 template <class Tenum, class TFieldType>
 class COptionEnum : public COptionBase {
 
-  const map<string, Tenum> & m;
+  map<string, Tenum> m;
   TFieldType & field; // Reference to the fieldname
   Tenum def; // Default value
   string name; // identifier for the option
 
 public:
-  COptionEnum(string option_field_name, const map<string, Tenum> & m, TFieldType & option_field, Tenum default_value) : m(m), field(option_field) {
+  COptionEnum(string option_field_name, const map<string, Tenum> m, TFieldType & option_field, Tenum default_value) : field(option_field) {
+    this->m = m;
     this->def = default_value;
     this->name = option_field_name;
   }
 
   ~COptionEnum() override {};
 
-  string SetValue(vector<string> option_value) const {
+  string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check if there is more than one string
     string out = optionCheckMultipleValues(option_value, "enum", this->name);
