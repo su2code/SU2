@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   
 #ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
+  SU2_MPI::Comm MPICommunicator(SU2_MPI::GetComm());
 #else
   SU2_Comm MPICommunicator(0);
 #endif

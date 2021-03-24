@@ -66,7 +66,7 @@ void CSU2FileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- All processors open the file. ---*/
@@ -102,7 +102,7 @@ void CSU2FileWriter::Write_Data(){
     /*--- Flush the file and wait for all processors to arrive. ---*/
     restart_file.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   }

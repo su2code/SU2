@@ -392,7 +392,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   vector<int> sizeRecv(size, 1);
 
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
@@ -541,11 +541,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     int dest = MI->first;
     SU2_MPI::Isend(shortSendBuf[i].data(), shortSendBuf[i].size(), MPI_SHORT,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[3*i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[3*i]);
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[3*i+1]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[3*i+1]);
     SU2_MPI::Isend(doubleSendBuf[i].data(), doubleSendBuf[i].size(), MPI_DOUBLE,
-                   dest, dest+2, MPI_COMM_WORLD, &commReqs[3*i+2]);
+                   dest, dest+2, SU2_MPI::GetComm(), &commReqs[3*i+2]);
   }
 
   /* Loop over the number of ranks from which I receive data. */
@@ -554,7 +554,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -563,24 +563,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_SHORT,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    SU2_MPI::Probe(source, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(source, rank+1, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     /* Idem for the message with doubles. */
-    SU2_MPI::Probe(source, rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(source, rank+2, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
-                  source, rank+2, MPI_COMM_WORLD, &status);
+                  source, rank+2, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -588,7 +588,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -774,7 +774,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&maxTimeLevelLoc, &maxTimeLevelGlob,
-                     1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+                     1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   const unsigned short nTimeLevels = maxTimeLevelGlob+1;
@@ -836,7 +836,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /* Loop over the local halo elements to fill the communication buffers. */
@@ -881,7 +881,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankSend; ++i, ++MI) {
     int dest = MI->first;
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Loop over the number of ranks from which I receive data. */
@@ -890,7 +890,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -898,7 +898,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -968,7 +968,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
     int dest = sourceRank[i];
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[i]);
 #endif
   }
 
@@ -987,7 +987,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -996,13 +996,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the long receive buffer and receive the message. */
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends and synchronize the ranks, because
      wild cards have been used. */
   SU2_MPI::Waitall(nRankRecv, commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -1073,7 +1073,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /* Copy the data to be sent to the send buffers. */
@@ -1103,7 +1103,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankSend; ++i, ++MI) {
     int dest = MI->first;
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Resize the vector to store the ranks from which the message came. */
@@ -1115,7 +1115,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with longs arrives from any processor.
        Determine the source and the size of the message and receive it. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1123,13 +1123,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     longSecondRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(longSecondRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends and synchronize the ranks,
      because wild cards have been used. */
   SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -1288,7 +1288,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   unsigned long nRanksTooManyPartChunks = tooManyPartChunksLoc;
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&tooManyPartChunksLoc, &nRanksTooManyPartChunks, 1,
-                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
   if((rank == MASTER_NODE) && (nRanksTooManyPartChunks != 0) && (size > 1)) {
@@ -1477,7 +1477,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   unsigned long nEmptyPartitions = 0;
 
   SU2_MPI::Reduce(&thisPartitionEmpty, &nEmptyPartitions, 1,
-                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   if(rank == MASTER_NODE && nEmptyPartitions) {
     cout << endl << "         WARNING" << endl;
@@ -1744,11 +1744,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #ifdef HAVE_MPI
     int dest = sourceRank[i];
     SU2_MPI::Isend(shortSendBuf[i].data(), shortSendBuf[i].size(), MPI_SHORT,
-                   dest, dest+1, MPI_COMM_WORLD, &commReqs[3*i]);
+                   dest, dest+1, SU2_MPI::GetComm(), &commReqs[3*i]);
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
-                   dest, dest+2, MPI_COMM_WORLD, &commReqs[3*i+1]);
+                   dest, dest+2, SU2_MPI::GetComm(), &commReqs[3*i+1]);
     SU2_MPI::Isend(doubleSendBuf[i].data(), doubleSendBuf[i].size(), MPI_DOUBLE,
-                   dest, dest+3, MPI_COMM_WORLD, &commReqs[3*i+2]);
+                   dest, dest+3, SU2_MPI::GetComm(), &commReqs[3*i+2]);
 #endif
   }
 
@@ -1773,7 +1773,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Block until a message with shorts arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1782,24 +1782,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_SHORT,
-                  sourceRank[i], rank+1, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+1, SU2_MPI::GetComm(), &status);
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    SU2_MPI::Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(sourceRank[i], rank+2, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+2, SU2_MPI::GetComm(), &status);
 
     /* Idem for the message with doubles. */
-    SU2_MPI::Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(sourceRank[i], rank+3, SU2_MPI::GetComm(), &status);
     SU2_MPI::Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
-                  sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+3, SU2_MPI::GetComm(), &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -1807,7 +1807,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 
@@ -2493,7 +2493,7 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
 #ifdef HAVE_MPI
   su2double locArea = PositiveZArea;
-  SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
   /*---------------------------------------------------------------------------*/
@@ -3567,7 +3567,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   vector<int> sizeReduce(size, 1);
 
   SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /* Resize ranksSend and the first index of entitiesSend to the number of
      ranks to which this rank has to send data. */
@@ -3580,7 +3580,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
     int dest = ranksRecv[i];
     SU2_MPI::Isend(longBuf[i].data(), longBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &commReqs[i]);
   }
 
   /* Loop over the number of ranks from which I receive data about the
@@ -3589,7 +3589,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
     /* Block until a message arrivesi and determine the source. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     ranksSend[i] = status.MPI_SOURCE;
 
     /* Determine the size of the message, allocate the memory for the
@@ -3599,7 +3599,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
     entitiesSend[i].resize(sizeMess);
     SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
-                  ranksSend[i], rank, MPI_COMM_WORLD, &status);
+                  ranksSend[i], rank, SU2_MPI::GetComm(), &status);
 
     /* Convert the global indices currently stored in entitiesSend[i]
        to local indices. */
@@ -3617,7 +3617,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /* Complete the non-blocking sends and synchronize the rank, because
      wild cards have been used. */
   SU2_MPI::Waitall(ranksRecv.size(), commReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
   /* Sequential mode. Resize ranksSend and the first index of entitiesSend to
@@ -5241,7 +5241,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Send the data. */
       SU2_MPI::Isend(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
-                     ranksRecv[i], ranksRecv[i]+10, MPI_COMM_WORLD,
+                     ranksRecv[i], ranksRecv[i]+10, SU2_MPI::GetComm(),
                      &recvRequests[nRecvRequests++]);
     }
   }
@@ -5256,7 +5256,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
       sendBuf[i].resize(entitiesSend[i].size());
 
       SU2_MPI::Irecv(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
-                     ranksSend[i], rank+10, MPI_COMM_WORLD,
+                     ranksSend[i], rank+10, SU2_MPI::GetComm(),
                      &sendRequests[nSendRequests++]);
     }
   }
@@ -5359,7 +5359,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Send the data. */
       SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
-                     ranksSend[i], ranksSend[i]+20, MPI_COMM_WORLD,
+                     ranksSend[i], ranksSend[i]+20, SU2_MPI::GetComm(),
                      &sendRequests[nSendRequests++]);
     }
   }
@@ -5372,7 +5372,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
       /* Post the nonblocking receive. */
       SU2_MPI::Irecv(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
-                     ranksRecv[i], rank+20, MPI_COMM_WORLD,
+                     ranksRecv[i], rank+20, SU2_MPI::GetComm(),
                      &recvRequests[nRecvRequests++]);
     }
   }

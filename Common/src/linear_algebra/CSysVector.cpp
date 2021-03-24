@@ -230,7 +230,7 @@ ScalarType CSysVector<ScalarType>::dot(const CSysVector<ScalarType> & u) const {
   SU2_OMP_MASTER
   {
     sum = dotRes;
-    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 #endif
   /*--- Make view of result consistent across threads. ---*/

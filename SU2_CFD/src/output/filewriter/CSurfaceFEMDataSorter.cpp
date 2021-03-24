@@ -58,7 +58,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
   }
 
   SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Create the linear partitioner --- */
 
@@ -154,7 +154,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   vector<unsigned long> nDOFRecv(size);
 
   SU2_MPI::Alltoall(nDOFSend.data(), 1, MPI_UNSIGNED_LONG,
-                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /* Determine the number of messages this rank will receive. */
   int nRankRecv = 0;
@@ -172,7 +172,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Isend(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, rank, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, rank, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }
@@ -184,7 +184,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
     if(nDOFRecv[i] && (i != rank)) {
       recvBuf[i].resize(nDOFRecv[i]);
       SU2_MPI::Irecv(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, i, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, i, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -238,7 +238,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /*--- Reduce the total number of surf points we have. This will be
         needed for writing the surface solution files later. ---*/
   SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*-------------------------------------------------------------------*/
   /*--- Step 3: Modify the surface connectivities, such that only   ---*/
@@ -253,7 +253,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   SU2_MPI::Allgather(&nPoints, 1, MPI_UNSIGNED_LONG,
                      nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 
   for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
 #endif
@@ -283,7 +283,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFRecv[i] && (i != rank)) {
       SU2_MPI::Isend(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, rank+1, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, rank+1, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -294,7 +294,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Irecv(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, i+1, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, i+1, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }

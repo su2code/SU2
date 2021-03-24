@@ -313,7 +313,7 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
   }
 
   su2double minEff = 1.0;
-  SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&parallelEff, &minEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
   if (minEff < COLORING_EFF_THRESH) {
     cout << "WARNING: The element coloring efficiency was " << minEff << ", a fallback strategy is in use.\n"
@@ -584,7 +584,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
       /*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, nullptr);
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, SU2_MPI::GetComm(), nullptr);
 
       /*--- Deallocate send buffer ---*/
       delete [] Buffer_Send_U;
@@ -730,7 +730,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
 
   vector<unsigned long> numPoints(size);
   unsigned long num = myPoints.size();
-  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
   unordered_map<unsigned long, unsigned long> Global2Local;
@@ -744,13 +744,13 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
   for (int i = 0; i < size; ++i) {
     /*--- Send our point list. ---*/
     if (rank == i) {
-      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, MPI_COMM_WORLD);
+      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, SU2_MPI::GetComm());
       continue;
     }
 
     /*--- Receive point list. ---*/
     vector<unsigned long> theirPoints(numPoints[i]);
-    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, SU2_MPI::GetComm());
 
     for (auto iPointGlobal : theirPoints) {
       /*--- Check if the rank has the point. ---*/
@@ -1482,7 +1482,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   } // end SU2_OMP_PARALLEL
 
   su2double tmp = MaxVonMises_Stress;
-  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
 
@@ -2918,8 +2918,8 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
 
       }
 
-      SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
       WAitkDyn = GetWAitken_Dyn();
 
@@ -3069,7 +3069,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
   atomicAdd(obj_fun_local, objective_function);
   }
 
-  SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   Total_OFRefGeom *= config->GetRefGeom_Penalty() / geometry->GetGlobal_nPointDomain();
   Total_OFRefGeom += PenaltyValue;
 
@@ -3115,7 +3115,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
     }
   }
 
-  SU2_MPI::Allreduce(dist, dist_reduce, MAXNVAR, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(dist, dist_reduce, MAXNVAR, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   Total_OFRefNode = config->GetRefNode_Penalty() * Norm(int(MAXNVAR),dist_reduce) + PenaltyValue;
 
@@ -3171,11 +3171,11 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
   }
 
   su2double tmp;
-  SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
   total_volume = tmp;
-  SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
   integral = tmp;
-  SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
   discreteness = tmp;
 
   if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
@@ -3236,7 +3236,7 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config
   atomicAdd(comp_local, compliance);
   }
 
-  SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
 
   /*--- To be accessible from the output. ---*/
   Total_OFCombo = Total_OFCompliance;
@@ -3312,8 +3312,8 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
   // Reduce value across processors for parallelization
 
-  SU2_MPI::Allreduce(&weightedValue, &weightedValue_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&totalVolume, &totalVolume_reduce, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&weightedValue, &weightedValue_reduce, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&totalVolume, &totalVolume_reduce, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   su2double ratio = 1.0 - weightedValue_reduce/totalVolume_reduce;
 
@@ -3451,7 +3451,7 @@ void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
 #ifdef HAVE_MPI
   if (rank == MASTER_NODE) rec_buf = new float[nElemDomain];
   /*--- Need to use this version of Reduce instead of the wrapped one because we use float ---*/
-  MPI_Reduce(send_buf,rec_buf,nElemDomain,MPI_FLOAT,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+  MPI_Reduce(send_buf,rec_buf,nElemDomain,MPI_FLOAT,MPI_SUM,MASTER_NODE,SU2_MPI::GetComm());
 #else
   rec_buf = send_buf;
 #endif

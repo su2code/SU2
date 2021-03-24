@@ -1035,7 +1035,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
      parallel. Therefore gather the number of DOFs of all the ranks. */
   vector<unsigned long> nDOFsPerRank(size);
   SU2_MPI::Allgather(&nDOFsLoc, 1, MPI_UNSIGNED_LONG, nDOFsPerRank.data(), 1,
-                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /* Determine the offset for the DOFs on this rank. */
   unsigned long offsetRank = 0;
@@ -1196,7 +1196,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   int nRankRecv;
   vector<int> sizeRecv(size, 1);
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Send out the messages with the global node numbers. Use nonblocking
         sends to avoid deadlock. ---*/
@@ -1205,7 +1205,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   for(int i=0; i<size; ++i) {
     if( nodeBuf[i].size() ) {
       SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG,
-                     i, i, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+                     i, i, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
       ++nRankSend;
     }
   }
@@ -1222,7 +1222,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     /* Block until a message arrives. Determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1235,7 +1235,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Receive the message using a blocking receive. */
     SU2_MPI::Recv(nodeRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /*--- Loop over the nodes just received and fill the return communication
           buffer with the coordinates of the requested nodes. ---*/
@@ -1252,7 +1252,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     /* Send the buffer just filled back to the requesting rank.
        Use a non-blocking send to avoid deadlock. */
     SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE,
-                   source, source+1, MPI_COMM_WORLD, &returnReqs[i]);
+                   source, source+1, SU2_MPI::GetComm(), &returnReqs[i]);
   }
 
   /* Loop over the ranks from which this rank has requested coordinates. */
@@ -1260,7 +1260,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Block until a message arrives. Determine the source of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     /* Allocate the memory for the coordinate receive buffer. */
@@ -1268,7 +1268,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Receive the message using a blocking receive. */
     SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     /*--- Make a distinction between 2D and 3D to store the data of the nodes.
           This data is created by taking the offset of the source rank into
@@ -1305,7 +1305,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
   /* Wild cards have been used in the communication,
      so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
   /*--- Sequential mode. Create the data for the points. The global
@@ -1409,7 +1409,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   }
 
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
   sendReqs.resize(nRankSend);
@@ -1417,7 +1417,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   for(int i=0; i<size; ++i) {
     if( faceBuf[i].size() ) {
       SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG,
-                     i, i+4, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+                     i, i+4, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
       ++nRankSend;
     }
   }
@@ -1428,7 +1428,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     /* Block until a message arrives and determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+4, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+4, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -1438,7 +1438,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
        message using a non-blocking receive. */
     vector<unsigned long> faceRecvBuf(sizeMess);
     SU2_MPI::Recv(faceRecvBuf.data(), faceRecvBuf.size(), MPI_UNSIGNED_LONG,
-                  source, rank+4, MPI_COMM_WORLD, &status);
+                  source, rank+4, SU2_MPI::GetComm(), &status);
 
     /* Loop to extract the data from the receive buffer. */
     int ii = 0;
@@ -1469,7 +1469,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /* Complete the non-blocking sends. Afterwards, synchronize the ranks,
      because wild cards have been used. */
   SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -1718,7 +1718,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     }
 
     SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                            MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -1726,7 +1726,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     for(int i=0; i<size; ++i) {
       if( faceBuf[i].size() ) {
         SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG,
-                       i, i+5, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+                       i, i+5, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
         ++nRankSend;
       }
     }
@@ -1742,7 +1742,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Block until a message arrives. Determine the source and size
          of the message. */
       SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+5, MPI_COMM_WORLD, &status);
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+5, SU2_MPI::GetComm(), &status);
       int source = status.MPI_SOURCE;
 
       int sizeMess;
@@ -1752,7 +1752,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
          using a blocking send. */
       vector<unsigned long> boundElemRecvBuf(sizeMess);
       SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                    source, rank+5, MPI_COMM_WORLD, &status);
+                    source, rank+5, SU2_MPI::GetComm(), &status);
 
       /* Loop to extract the data from the receive buffer. */
       int ii = 0;
@@ -1820,7 +1820,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     }
 
     SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                            MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
     sendReqs.resize(nRankSend);
@@ -1828,7 +1828,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     for(int i=0; i<size; ++i) {
       if( nodeBuf[i].size() ) {
         SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG,
-                       i, i+6, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+                       i, i+6, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
         ++nRankSend;
       }
     }
@@ -1840,7 +1840,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
       /* Block until a message arrives. Determine the source and size
          of the message. */
       SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+6, MPI_COMM_WORLD, &status);
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank+6, SU2_MPI::GetComm(), &status);
       int source = status.MPI_SOURCE;
 
       int sizeMess;
@@ -1850,7 +1850,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
          using a blocking send. */
       vector<unsigned long> boundElemRecvBuf(sizeMess);
       SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                    source, rank+6, MPI_COMM_WORLD, &status);
+                    source, rank+6, SU2_MPI::GetComm(), &status);
 
       /* Loop to extract the data from the receive buffer. */
       int ii = 0;
@@ -1890,7 +1890,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
        because wild cards have been used. */
     SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
 
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
     /*--- Sequential mode. All boundary elements read must be stored on this
@@ -2096,7 +2096,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   unsigned long maxPointID;
   SU2_MPI::Allreduce(&maxPointIDLoc, &maxPointID, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
+                     MPI_MAX, SU2_MPI::GetComm());
   ++maxPointID;
 
   /*--- Create a vector with a linear distribution over the ranks for
@@ -2163,7 +2163,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   unsigned long nMessRecv;
   SU2_MPI::Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(),
-                          MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Send the data using nonblocking sends. ---*/
   vector<SU2_MPI::Request> commReqs(max(nMessSend,nMessRecv));
@@ -2174,7 +2174,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     if( nFacesComm[i] ) {
       unsigned long count = 9*nFacesComm[i];
       SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
-                     MPI_COMM_WORLD, &commReqs[nMessSend]);
+                     SU2_MPI::GetComm(), &commReqs[nMessSend]);
       ++nMessSend;
       indSend += count;
     }
@@ -2188,14 +2188,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   nFacesRecv[0] = 0;
   for(unsigned long i=0; i<nMessRecv; ++i) {
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     rankRecv[i] = status.MPI_SOURCE;
     int sizeMess;
     SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  rankRecv[i], rank, MPI_COMM_WORLD, &status);
+                  rankRecv[i], rank, SU2_MPI::GetComm(), &status);
 
     nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/9;
     facesRecv.resize(nFacesRecv[i+1]);
@@ -2274,7 +2274,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     unsigned long count = ii - indSend;
     SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, rankRecv[i],
-                   rankRecv[i]+1, MPI_COMM_WORLD, &commReqs[i]);
+                   rankRecv[i]+1, SU2_MPI::GetComm(), &commReqs[i]);
     indSend = ii;
   }
 
@@ -2283,13 +2283,13 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         The return data contains information about the neighboring element. ---*/
   for(unsigned long i=0; i<nMessSend; ++i) {
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int sizeMess;
     SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+                  status.MPI_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
 
     sizeMess /= 9;
     unsigned long jj = 0;
@@ -2315,7 +2315,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Wild cards have been used in the communication, so
         synchronize the ranks to avoid problems.          ---*/
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -2347,7 +2347,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG,
-                  MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #endif
   if(rank == MASTER_NODE && nNonMatchingFaces) {
     cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
@@ -2605,7 +2605,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   int nRankRecv;
   vector<int> sizeSend(size, 1);
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /* Send the data using non-blocking sends. */
   vector<SU2_MPI::Request> sendReqs(nRankSend);
@@ -2613,7 +2613,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(int i=0; i<size; ++i) {
     if( sendToRank[i] )
       SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(),
-                     MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD,
+                     MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(),
                      &sendReqs[nRankSend++]);
   }
 
@@ -2623,7 +2623,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     /* Block until a message with unsigned longs arrives from any processor.
        Determine the source and the size of the message.   */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -2633,7 +2633,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
        using a blocking receive. */
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                   source, rank, MPI_COMM_WORLD, &status);
+                   source, rank, SU2_MPI::GetComm(), &status);
 
     /* Loop over the contents of the receive buffer and update the
        graph accordingly. */
@@ -2647,7 +2647,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /* Complete the non-blocking sends amd synchronize the ranks, because
      wild cards have been used in the above communication. */
   SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -2724,7 +2724,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
 
     idx_t edgecut;
-    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm comm = SU2_MPI::GetComm();
     ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(),
                          vwgtPar.data(), adjwgtPar.data(), &wgtflag, &numflag,
                          &ncon, &nparts, tpwgts.data(), ubvec, options,
@@ -2880,7 +2880,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
         int sizeLocal = facesDonor.size();
 
         SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
-                           MPI_INT, MPI_COMM_WORLD);
+                           MPI_INT, SU2_MPI::GetComm());
 
         /*--- Create the data for the vector displs from the known values of
               recvCounts. Also determine the total size of the data.   ---*/
@@ -2935,7 +2935,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         SU2_MPI::Allgatherv(longLocBuf.data(), longLocBuf.size(), MPI_UNSIGNED_LONG,
                             longGlobBuf.data(), recvCounts.data(), displs.data(),
-                            MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                            MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
         for(int i=0; i<size; ++i) {
           recvCounts[i] *= 5; displs[i] *= 5;
@@ -2943,7 +2943,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         SU2_MPI::Allgatherv(shortLocBuf.data(), shortLocBuf.size(), MPI_UNSIGNED_SHORT,
                             shortGlobBuf.data(), recvCounts.data(), displs.data(),
-                            MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+                            MPI_UNSIGNED_SHORT, SU2_MPI::GetComm());
 
         for(int i=0; i<size; ++i) {
           recvCounts[i] /=  5; displs[i] /=  5;
@@ -2952,7 +2952,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *co
 
         SU2_MPI::Allgatherv(doubleLocBuf.data(), doubleLocBuf.size(), MPI_DOUBLE,
                             doubleGlobBuf.data(), recvCounts.data(), displs.data(),
-                            MPI_DOUBLE, MPI_COMM_WORLD);
+                            MPI_DOUBLE, SU2_MPI::GetComm());
 
         /*--- Copy the data back into facesDonor, which will contain the
               global information after the copies. ---*/
@@ -3826,7 +3826,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   int nLocalSearchPoints = (int) markerIDGlobalSearch.size();
 
   SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1,
-                     MPI_INT, MPI_COMM_WORLD);
+                     MPI_INT, SU2_MPI::GetComm());
   displs[0] = 0;
   for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
 
@@ -3848,21 +3848,21 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
     SU2_MPI::Allgatherv(markerIDGlobalSearch.data(), nLocalSearchPoints,
                         MPI_UNSIGNED_SHORT, bufMarkerIDGlobalSearch.data(),
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT,
-                        MPI_COMM_WORLD);
+                        SU2_MPI::GetComm());
 
 
     vector<unsigned long> bufBoundaryElemIDGlobalSearch(nGlobalSearchPoints);
     SU2_MPI::Allgatherv(boundaryElemIDGlobalSearch.data(), nLocalSearchPoints,
                         MPI_UNSIGNED_LONG, bufBoundaryElemIDGlobalSearch.data(),
                         recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
-                        MPI_COMM_WORLD);
+                        SU2_MPI::GetComm());
 
     for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
     vector<su2double> bufCoorExGlobalSearch(nDim*nGlobalSearchPoints);
     SU2_MPI::Allgatherv(coorExGlobalSearch.data(), nDim*nLocalSearchPoints,
                         MPI_DOUBLE, bufCoorExGlobalSearch.data(),
                         recvCounts.data(), displs.data(), MPI_DOUBLE,
-                        MPI_COMM_WORLD);
+                        SU2_MPI::GetComm());
 
     /* Buffers to store the return information. */
     vector<unsigned short> markerIDReturn;
@@ -3915,7 +3915,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
     int nRankRecv;
     SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecv, displs.data(),
-                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                            MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
     /* Send the data using nonblocking sends to avoid deadlock. */
     vector<SU2_MPI::Request> commReqs(3*nRankSend);
@@ -3924,13 +3924,13 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       if( recvCounts[i] ) {
         const int sizeMessage = nSearchPerRank[i+1] - nSearchPerRank[i];
         SU2_MPI::Isend(markerIDReturn.data() + nSearchPerRank[i],
-                       sizeMessage, MPI_UNSIGNED_SHORT, i, i, MPI_COMM_WORLD,
+                       sizeMessage, MPI_UNSIGNED_SHORT, i, i, SU2_MPI::GetComm(),
                        &commReqs[nRankSend++]);
         SU2_MPI::Isend(boundaryElemIDReturn.data() + nSearchPerRank[i],
-                       sizeMessage, MPI_UNSIGNED_LONG, i, i+1, MPI_COMM_WORLD,
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i+1, SU2_MPI::GetComm(),
                        &commReqs[nRankSend++]);
         SU2_MPI::Isend(volElemIDDonorReturn.data() + nSearchPerRank[i],
-                       sizeMessage, MPI_UNSIGNED_LONG, i, i+2, MPI_COMM_WORLD,
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i+2, SU2_MPI::GetComm(),
                        &commReqs[nRankSend++]);
       }
     }
@@ -3941,7 +3941,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       /* Block until a message with unsigned shorts arrives from any processor.
          Determine the source and the size of the message.   */
       SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
       int source = status.MPI_SOURCE;
 
       int sizeMess;
@@ -3954,13 +3954,13 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
       /* Receive the three messages using blocking receives. */
       SU2_MPI::Recv(bufMarkerIDReturn.data(), sizeMess, MPI_UNSIGNED_SHORT,
-                    source, rank, MPI_COMM_WORLD, &status);
+                    source, rank, SU2_MPI::GetComm(), &status);
 
       SU2_MPI::Recv(bufBoundaryElemIDReturn.data(), sizeMess, MPI_UNSIGNED_LONG,
-                    source, rank+1, MPI_COMM_WORLD, &status);
+                    source, rank+1, SU2_MPI::GetComm(), &status);
 
       SU2_MPI::Recv(bufVolElemIDDonorReturn.data(), sizeMess, MPI_UNSIGNED_LONG,
-                    source, rank+2, MPI_COMM_WORLD, &status);
+                    source, rank+2, SU2_MPI::GetComm(), &status);
 
       /* Loop over the data just received and add it to the wall function
          donor information of the corresponding boundary element. */
@@ -3978,7 +3978,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
     /* Wild cards have been used in the communication,
        so synchronize the ranks to avoid problems. */
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 
     /* Loop again over the boundary elements of the marker for which a wall
        function treatment must be used and make remove the multiple entries
@@ -4094,7 +4094,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   int nRankRecv;
   vector<int> sizeSend(size, 1);
   SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankRecv, sizeSend.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /* Determine the number of messages this rank will send. */
   int nRankSend = 0;
@@ -4112,7 +4112,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
       sendBufAddExternals[i].erase(lastElem, sendBufAddExternals[i].end());
 
       SU2_MPI::Isend(sendBufAddExternals[i].data(), sendBufAddExternals[i].size(),
-                     MPI_UNSIGNED_LONG, i, i, MPI_COMM_WORLD, &sendReqs[nRankSend++]);
+                     MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(), &sendReqs[nRankSend++]);
     }
   }
 
@@ -4123,7 +4123,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Block until a message arrives and determine the source and size
        of the message. Allocate the memory for a receive buffer. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -4131,7 +4131,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     vector<unsigned long> recvBuf(sizeMess);
 
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /* Loop over the entries of recvBuf and add them to
        mapExternalElemIDToTimeLevel, if not present already. */
@@ -4146,7 +4146,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   /* Complete the non-blocking sends. Synchronize the processors afterwards,
      because wild cards have been used in the communication. */
   SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -4222,7 +4222,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
        Only needed for a parallel implementation. */
 #ifdef HAVE_MPI
     su2double locVal = minDeltaT;
-    SU2_MPI::Allreduce(&locVal, &minDeltaT, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&locVal, &minDeltaT, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 #endif
 
     /* Initial estimate of the time level of the owned elements. */
@@ -4281,7 +4281,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
      which I will send data. */
   nRankRecv = mapRankToIndRecv.size();
   SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Create the vector of vectors of the global element ID's that
         will be received from other ranks. ---*/
@@ -4319,7 +4319,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     recvElem[i].erase(lastElem, recvElem[i].end());
 
     SU2_MPI::Isend(recvElem[i].data(), recvElem[i].size(), MPI_UNSIGNED_LONG,
-                   MRI->first, MRI->first, MPI_COMM_WORLD, &sendReqs[i]);
+                   MRI->first, MRI->first, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /*--- Receive the messages in arbitrary sequence and store the requested
@@ -4331,7 +4331,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   for(int i=0; i<nRankSend; ++i) {
 
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     sendRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
@@ -4339,7 +4339,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     sendElem[i].resize(sizeMess);
 
     SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,
-                  sendRank[i], rank, MPI_COMM_WORLD, &status);
+                  sendRank[i], rank, SU2_MPI::GetComm(), &status);
 
     for(int j=0; j<sizeMess; ++j)
       sendElem[i][j] -= beg_node[rank];
@@ -4348,7 +4348,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   /* Complete the non-blocking sends. Synchronize the processors afterwards,
      because wild cards have been used in the communication. */
   SU2_MPI::Waitall(nRankRecv, sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
 
@@ -4378,7 +4378,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     }
 
     SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
-                   sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
+                   sendRank[i], sendRank[i], SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /*--- Receive the data for the externals. As this data is needed immediately,
@@ -4391,7 +4391,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     returnBuf[i].resize(2*recvElem[i].size());
     SU2_MPI::Status status;
     SU2_MPI::Recv(returnBuf[i].data(), returnBuf[i].size(), MPI_UNSIGNED_SHORT,
-                  MRI->first, rank, MPI_COMM_WORLD, &status);
+                  MRI->first, rank, SU2_MPI::GetComm(), &status);
 
     for(unsigned long j=0; j<recvElem[i].size(); ++j) {
       MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
@@ -4571,7 +4571,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
 #ifdef HAVE_MPI
       SU2_MPI::Allreduce(&localSituationChanged, &globalSituationChanged,
-                         1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+                         1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
       if( !globalSituationChanged ) break;
 
@@ -4588,7 +4588,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
           sendBuf[i][j] = elem[sendElem[i][j]]->GetTimeLevel();
 
         SU2_MPI::Isend(sendBuf[i].data(), sendElem[i].size(), MPI_UNSIGNED_SHORT,
-                       sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
+                       sendRank[i], sendRank[i], SU2_MPI::GetComm(), &sendReqs[i]);
       }
 
       /*--- Receive the data for the externals. As this data is needed
@@ -4605,7 +4605,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
         SU2_MPI::Status status;
         SU2_MPI::Recv(returnBuf[i].data(), recvElem[i].size(), MPI_UNSIGNED_SHORT,
-                      MRI->first, rank, MPI_COMM_WORLD, &status);
+                      MRI->first, rank, SU2_MPI::GetComm(), &status);
 
         for(unsigned long j=0; j<recvElem[i].size(); ++j) {
           MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
@@ -4616,7 +4616,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
         }
 
         SU2_MPI::Isend(returnBuf[i].data(), recvElem[i].size(), MPI_UNSIGNED_SHORT,
-                       MRI->first, MRI->first+1, MPI_COMM_WORLD, &returnReqs[i]);
+                       MRI->first, MRI->first+1, SU2_MPI::GetComm(), &returnReqs[i]);
       }
 
       /* Complete the first round of nonblocking sends, such that the
@@ -4631,7 +4631,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
         SU2_MPI::Status status;
         SU2_MPI::Recv(sendBuf[i].data(), sendElem[i].size(), MPI_UNSIGNED_SHORT,
-                      sendRank[i], rank+1, MPI_COMM_WORLD, &status);
+                      sendRank[i], rank+1, SU2_MPI::GetComm(), &status);
 
         for(unsigned long j=0; j<sendElem[i].size(); ++j)
           elem[sendElem[i][j]]->SetTimeLevel(sendBuf[i][j]);
@@ -4662,7 +4662,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 #ifdef HAVE_MPI
      SU2_MPI::Reduce(nLocalElemPerLevel.data(), nGlobalElemPerLevel.data(),
                      nTimeLevels, MPI_UNSIGNED_LONG, MPI_SUM,
-                     MASTER_NODE, MPI_COMM_WORLD);
+                     MASTER_NODE, SU2_MPI::GetComm());
 #endif
 
     /* Write the output. */
@@ -4692,7 +4692,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 #ifdef HAVE_MPI
   unsigned short maxTimeLevelLocal = maxTimeLevel;
   SU2_MPI::Allreduce(&maxTimeLevelLocal, &maxTimeLevel, 1,
-                     MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
   /*--------------------------------------------------------------------------*/
@@ -4928,7 +4928,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 
 #ifdef HAVE_MPI
   su2double locminvwgt = minvwgt;
-  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 #endif
 
   /*--- Scale the workload of the elements, the 1st vertex weight, with the

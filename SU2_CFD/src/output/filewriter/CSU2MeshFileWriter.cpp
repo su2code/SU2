@@ -148,8 +148,8 @@ void CSU2MeshFileWriter::Write_Data(){
     }
     output_file.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -194,8 +194,8 @@ void CSU2MeshFileWriter::Write_Data(){
     /*--- Flush the file and wait for all processors to arrive. ---*/
     output_file.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 

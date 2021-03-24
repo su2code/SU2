@@ -33,7 +33,7 @@ void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geom
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   /* --- Initialize boundary conditions customization, this is achieve through the Python wrapper --- */
@@ -885,7 +885,7 @@ void CFluidDriver::StaticMeshUpdate() {
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   for(iZone = 0; iZone < nZone; iZone++) {
@@ -966,7 +966,7 @@ void CFluidDriver::BoundaryConditionsUpdate(){
   unsigned short iZone;
 
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(SU2_MPI::GetComm(), &rank);
 #endif
 
   if(rank == MASTER_NODE) cout << "Updating boundary conditions." << endl;
