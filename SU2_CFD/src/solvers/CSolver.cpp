@@ -5203,7 +5203,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
 
   /*--- Density, laminar viscosity, tau_wall, and normal of each node of wall element. ---*/
 
-  unsigned short countPerElem = 16;
+  unsigned short countPerElem = (nDim+4)*4;
 
   int *nElemSend = new int[size+1]; nElemSend[0] = 0;
   int *nElemRecv = new int[size+1]; nElemRecv[0] = 0;
@@ -5324,7 +5324,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     /*--- Variables ---*/
     else if (i == 2) {
       commType = COMM_TYPE_DOUBLE;
-      countPerElem = 16;
+      countPerElem = (nDim+4)*4;
 
       /*--- Fill send buffers with variables based on received
             markers and elements. ---*/
@@ -5338,16 +5338,21 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
             const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
             const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
             for (auto kNode = 0; kNode < nNodeElem; kNode++) {
+              const unsigned long totalOffset = offset+kNode*(nDim+4);
               const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
-              bufDSend[offset+kNode*4]   = flowNodes->GetDensity(kPoint);
-              bufDSend[offset+kNode*4+1] = flowNodes->GetLaminarViscosity(kPoint);
+              bufDSend[totalOffset]   = flowNodes->GetDensity(kPoint);
+              bufDSend[totalOffset+1] = flowNodes->GetLaminarViscosity(kPoint);
               su2double U_Tau;
               if (flowNodes->GetTauWall(kPoint) > 0)
                 U_Tau = sqrt(flowNodes->GetTauWall(kPoint) / flowNodes->GetDensity(kPoint));
               else
                 U_Tau = -1.;
-              bufDSend[offset+kNode*4+2] = U_Tau;
-              bufDSend[offset+kNode*4+3] = flowNodes->GetTemperature(kPoint);
+              bufDSend[totalOffset+2] = U_Tau;
+              bufDSend[totalOffset+3] = flowNodes->GetTemperature(kPoint);
+              const auto kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+              for (auto iDim = 0; iDim < nDim; iDim++){
+                bufDSend[totalOffset+4+iDim] = geometry->vertex[MarkerID][kVertex]->GetNormal(iDim);
+              }
             }
           }
         }
@@ -5506,10 +5511,14 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
               (geometry->node[iPoint]->GetWall_Element() == (long) ElemID)) {
             const unsigned short nNodeElem = geometry->node[iPoint]->GetWall_nNode();
             for (auto kNode = 0; kNode < nNodeElem; kNode++) {
-              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
-              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+1]);
-              flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
-              flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+3]);
+              const unsigned long totalOffset = countPerElem*offset+kNode*(nDim+4);
+              flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[totalOffset]);
+              flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[totalOffset+1]);
+              flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[totalOffset+2]);
+              flowNodes->SetWallTemp(iPoint, kNode, bufDRecv[totalOffset+3]);
+              for (auto iDim = 0; iDim < nDim; iDim++) {
+                flowNodes->SetWallNormal(iPoint, kNode, iDim, bufDRecv[totalOffset+4+iDim]);
+              }
             }
             break;
           }
@@ -5529,6 +5538,10 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
             U_Tau = -1.;
           flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
           flowNodes->SetWallTemp(iPoint, kNode, flowNodes->GetTemperature(kPoint));
+          const auto kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+          for (auto iDim = 0; iDim < nDim; iDim++){
+            flowNodes->SetWallNormal(iPoint, kNode, iDim, geometry->vertex[MarkerID][kVertex]->GetNormal(iDim));
+          }
         }
       }
     }
@@ -5563,6 +5576,10 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
           U_Tau = -1.;
         flowNodes->SetWallUTau(iPoint, kNode, U_Tau);
         flowNodes->SetWallTemp(iPoint, kNode, flowNodes->GetTemperature(kPoint));
+        const auto kVertex = geometry->node[kPoint]->GetVertex(MarkerID);
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          flowNodes->SetWallNormal(iPoint, kNode, iDim, geometry->vertex[MarkerID][kVertex]->GetNormal(iDim));
+        }
       }
     }
   }

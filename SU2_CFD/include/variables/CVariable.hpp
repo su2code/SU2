@@ -517,6 +517,8 @@ public:
   
   virtual inline void SetWallTemp(unsigned long iPoint, unsigned short jNode, su2double temp) { }
 
+  virtual inline void SetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim, su2double normal_i) { }
+
   virtual inline su2double GetWallDensity(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
   virtual inline su2double GetWallLamVisc(unsigned long iPoint, unsigned short jNode) { return 0.; }
@@ -524,6 +526,8 @@ public:
   virtual inline su2double GetWallUTau(unsigned long iPoint, unsigned short jNode) { return 0.; }
   
   virtual inline su2double GetWallTemp(unsigned long iPoint, unsigned short jNode) { return 0.; }
+
+  virtual inline su2double GetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim) { return 0.0; }
 
   inline virtual bool GetUseWallFunction(unsigned long iPoint) { return false; }
 

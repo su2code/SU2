@@ -658,7 +658,7 @@ void CAvgGrad_Flow::SetTKEFluxVector(const su2double* val_gradturbvar,
   sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
   sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
 
-  const su2double viscosity = val_laminar_viscosity + 0.5*(Eddy_Viscosity_i/sigma_k_i+sigma_k_j*Eddy_Viscosity_j/sigma_k_j);
+  const su2double viscosity = val_laminar_viscosity + 0.5*(Eddy_Viscosity_i/sigma_k_i+Eddy_Viscosity_j/sigma_k_j);
 
   /*--- Gradient of TKE ---*/
 

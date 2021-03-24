@@ -48,10 +48,11 @@ private:
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
   
-  MatrixType WallDensity; /*!< \brief Density at the wall, needed for wall functions. */
-  MatrixType WallLamVisc; /*!< \brief Viscosity at the wall, needed for wall functions. */
+  MatrixType WallDensity;  /*!< \brief Density at the wall, needed for wall functions. */
+  MatrixType WallLamVisc;  /*!< \brief Viscosity at the wall, needed for wall functions. */
   MatrixType WallUTau;     /*!< \brief Friction velocity at the wall, needed for wall functions. */
   MatrixType WallTemp;     /*!< \brief Temperature at the wall, needed for wall functions. */
+  MatrixType WallNormal;   /*!< \brief Temperature at the wall, needed for wall functions. */
 
   su2vector<long> WallMap; /*!< \brief Node indices corresponding to wall value matrix entries. */
 
@@ -264,6 +265,7 @@ public:
     WallLamVisc.resize(nWallNeigh,4) = su2double(0.0);
     WallUTau.resize(nWallNeigh,4)    = su2double(0.0);
     WallTemp.resize(nWallNeigh,4)    = su2double(0.0);
+    WallNormal.resize(nWallNeigh,12) = su2double(0.0);
   }
 
   /*!
@@ -301,6 +303,11 @@ public:
     WallTemp(WallMap(iPoint),jNode) = temp;
   }
 
+  inline void SetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim, su2double normal_i) { 
+    WallNormal(WallMap(iPoint),3*jNode+iDim) = normal_i;
+  }
+
+
   inline bool GetUseWallFunction(unsigned long iPoint) override {
     bool UseWallFunction = true;
     for (auto iNode = 0u; iNode < 4; iNode++) {
@@ -331,5 +338,7 @@ public:
    * \brief Get the temperature at a DOF of the nearest wall element.
    */
   inline su2double GetWallTemp(unsigned long iPoint, unsigned short jNode) override { return WallTemp(WallMap(iPoint),jNode); }
+
+  inline su2double GetWallNormal(unsigned long iPoint, unsigned short jNode, unsigned short iDim) { return WallNormal[WallMap(iPoint)][3*jNode+iDim]; }
 
 };

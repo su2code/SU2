@@ -13265,7 +13265,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
   /*--- First store neighbors of wall nodes ---*/
-  for (auto iPoint=0ul; iPoint<GetnPointDomain(); ++iPoint) {
+  for (auto iPoint=0ul; iPoint<GetnPoint(); ++iPoint) {
     if (!node[iPoint]->GetSolidBoundary()) {
       for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
         if(config->GetViscous_Wall(iMarker)) {
@@ -13285,7 +13285,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
 
   /*--- Next store neighbors of neighbors ---*/
   vector<unsigned long> secondWallNeighbors;
-  for (auto iPoint=0ul; iPoint<GetnPointDomain(); ++iPoint) {
+  for (auto iPoint=0ul; iPoint<GetnPoint(); ++iPoint) {
     if ((!node[iPoint]->GetSolidBoundary())  && (!node[iPoint]->GetBool_Wall_Neighbor())) {
       for (auto iNode = 0u; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);

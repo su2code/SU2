@@ -217,7 +217,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     }
 
     su2double Epsilon = max((Lambda[iVar]-Wave_i), (Wave_j-Lambda[iVar]));
-    Epsilon = max(4.0*Epsilon, 0.0);
+    Epsilon = max(4.0*config->GetEntropyFix_Coeff()*Epsilon, 0.0);
 
     Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
                                                    : su2double(fabs(Lambda[iVar]));

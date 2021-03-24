@@ -695,7 +695,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       const auto node_i = geometry->node[iPoint];
       if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
-
         LinSysRes.SetBlock_Zero(iPoint);
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           const unsigned long total_index = iPoint*nVar+iVar;
@@ -845,7 +844,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
        a very small value. This helps avoid catastrophic crashes due
        to non-realizable states by canceling the update. */
 
-      // if (localUnderRelaxation < 0.1) localUnderRelaxation = 0.0;
+      // if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
 
       /* Store the under-relaxation factor for this point. */
 
