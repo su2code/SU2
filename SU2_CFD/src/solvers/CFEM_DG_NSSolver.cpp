@@ -1104,6 +1104,48 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                                      const unsigned long indFaceBeg,
                                      const unsigned long indFaceEnd,
                                      CNumerics           *numerics) {
+ 
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nFaces = indFaceEnd - indFaceBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the given face range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
+
+    /*--- Abbreviate the number of padded integration points
+          and the integration weights. ---*/
+    const unsigned short nIntPad = matchingInternalFaces[l].standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights = matchingInternalFaces[l].standardElemFlow->GetIntegrationWeights();
+
+    /*----------------------------------------------------------------------*/
+    /*--- Step 1: Compute the sum of the inviscid, viscous and penalty   ---*/
+    /*---         fluxes in the integration points of the faces,         ---*/
+    /*---         multiplied by the integration weights.                 ---*/
+    /*----------------------------------------------------------------------*/
+
+    /*--- Compute the primitive variables of the left and right state
+          in the integration point of the face. ---*/
+    ColMajorMatrix<su2double> &solIntLeft  = matchingInternalFaces[l].ComputeSolSide0IntPoints(volElem);
+    ColMajorMatrix<su2double> &solIntRight = matchingInternalFaces[l].ComputeSolSide1IntPoints(volElem);
+
+    EntropyToPrimitiveVariables(solIntLeft);
+    EntropyToPrimitiveVariables(solIntRight);
+
+    /*--- Compute the gradients of the entropy variables of the left
+          and right state in the integration point of the face. ---*/
+    vector<ColMajorMatrix<su2double> > &gradSolIntLeft  = matchingInternalFaces[l].ComputeGradSolSide0IntPoints(volElem);
+    vector<ColMajorMatrix<su2double> > &gradSolIntRight = matchingInternalFaces[l].ComputeGradSolSide1IntPoints(volElem);
+
+    /*--- Compute the invisid fluxes in the integration points of the face. ---*/
+    const unsigned int indFlux = omp_get_num_threads() + omp_get_thread_num();
+    ColMajorMatrix<su2double> &fluxes = matchingInternalFaces[l].standardElemFlow->elem0->workSolInt[indFlux];
+    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].metricNormalsFace,
+                              matchingInternalFaces[l].gridVelocities, numerics, fluxes);
+  }
+
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {

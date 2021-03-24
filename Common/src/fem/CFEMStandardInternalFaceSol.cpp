@@ -32,7 +32,7 @@
 /*----------------------------------------------------------------------------------*/
 
 CFEMStandardInternalFaceSol::CFEMStandardInternalFaceSol(CFEMStandardElementBase *val_elem0,
-		                                         CFEMStandardElementBase *val_elem1) {
+		                                                     CFEMStandardElementBase *val_elem1) {
   elem0 = val_elem0;
   elem1 = val_elem1;
 }

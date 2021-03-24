@@ -3501,34 +3501,54 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
                                         const unsigned long indFaceEnd,
                                         CNumerics           *numerics) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nFaces = indFaceEnd - indFaceBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
 
-    if(i == rank) {
+  /*--- Loop over the given face range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
+    /*--- Abbreviate the number of padded integration points
+          and the integration weights. ---*/
+    const unsigned short nIntPad = matchingInternalFaces[l].standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights = matchingInternalFaces[l].standardElemFlow->GetIntegrationWeights();
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Compute the inviscid fluxes in the integration points of ---*/
+    /*---         this matching face multiplied by the integration weight. ---*/
+    /*------------------------------------------------------------------------*/
+
+    /*--- Compute the primitive variables of the left and right state
+          in the integration point of the face. ---*/
+    ColMajorMatrix<su2double> &solIntLeft  = matchingInternalFaces[l].ComputeSolSide0IntPoints(volElem);
+    ColMajorMatrix<su2double> &solIntRight = matchingInternalFaces[l].ComputeSolSide1IntPoints(volElem);
+
+    EntropyToPrimitiveVariables(solIntLeft);
+    EntropyToPrimitiveVariables(solIntRight);
+
+    /*--- Compute the invisid fluxes in the integration points of the face. ---*/
+    const unsigned int indFlux = omp_get_num_threads() + omp_get_thread_num();
+    ColMajorMatrix<su2double> &fluxes = matchingInternalFaces[l].standardElemFlow->elem0->workSolInt[indFlux];
+    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].metricNormalsFace,
+                              matchingInternalFaces[l].gridVelocities, numerics, fluxes);
+
+    /*--- Multiply the fluxes with the integration weight of the
+          corresponding integration point. ---*/
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i)
+        fluxes(i,j) *= weights[i];
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the contribution to the residuals of the DOFs of ---*/
+    /*---         the elements on the left and right side of the face.     ---*/
+    /*------------------------------------------------------------------------*/
+
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
-void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
-                                              CConfig              *config,
-                                              const unsigned long  lBeg,
-                                              const unsigned long  lEnd,
-                                              const unsigned short NPad,
-                                              su2double            *solIntL,
-                                              su2double            *solIntR,
-                                              su2double            *fluxes,
-                                              CNumerics            *numerics) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4159,16 +4179,13 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
-void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config,
-                                                    const unsigned short nFaceSimul,
-                                                    const unsigned short NPad,
-                                                    const unsigned long  nPoints,
-                                                    const su2double      *normalsFace[],
-                                                    const su2double      *gridVelsFace[],
-                                                    const su2double      *solL,
-                                                    const su2double      *solR,
-                                                    su2double            *fluxes,
-                                                    CNumerics            *numerics) {
+void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *config,
+                                                    ColMajorMatrix<su2double> &solLeft,
+                                                    ColMajorMatrix<su2double> &solRight,
+                                                    ColMajorMatrix<su2double> &normalsFace,
+                                                    ColMajorMatrix<su2double> &gridVelocities,
+                                                    CNumerics                 *numerics,
+                                                    ColMajorMatrix<su2double> &fluxes) {
 
   for(int i=0; i<size; ++i) {
 

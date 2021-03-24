@@ -39,7 +39,7 @@
  * \version 7.1.1 "Blackbird"
  */
 class CFEMStandardInternalFaceSol final {
-private:
+public:
   CFEMStandardElementBase *elem0;  /*!< \brief Standard element on side 0 of the internal matching face. */
   CFEMStandardElementBase *elem1;  /*!< \brief Standard element on side 1 of the internal matching face. */
 
@@ -66,6 +66,28 @@ public:
    * \brief Destructor. Nothing to be done.
    */
   ~CFEMStandardInternalFaceSol() = default;
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which makes available the integration weights of the element.
+   * \return  The pointer to the integration weights.
+   */
+  inline const passivedouble *GetIntegrationWeights(void) const {return elem0->GetIntegrationWeights();}
+
+  /*!
+   * \brief Function, which makes available the number of total integration points of the element.
+   * \return  The number of total integration points.
+   */
+  inline unsigned short GetNIntegration(void) const {return elem0->GetNIntegration();}
+
+  /*!
+   * \brief Function, which makes available the padded number of total integration points of the element.
+   * \return  The padded number of total integration points.
+   */
+  inline unsigned short GetNIntegrationPad(void) const {return elem0->GetNIntegrationPad();}
 
 private:
 

@@ -690,54 +690,22 @@ protected:
 
   /*!
    * \brief Function, which computes the inviscid fluxes in face points.
-   * \param[in]  config       - Definition of the particular problem.
-   * \param[in]  nFaceSimul   - Number of faces that are treated simultaneously
-                                to improve performance.
-   * \param[in]  NPad         - Value of the padding parameter to obtain optimal
-                                performance in the gemm computations.
-   * \param[in]  nPoints      - Number of points per face for which the fluxes
-                                must be computed.
-   * \param[in]  normalsFace  - The normals in the points for the faces.
-   * \param[in]  gridVelsFace - The grid velocities in the points for the faces.
-   * \param[in]  solL         - Solution in the left state of the points.
-   * \param[in]  solR         - Solution in the right state of the points.
-   * \param[out] fluxes       - Inviscid fluxes in the points.
-   * \param[in]  numerics     - Object, which contains the Riemann solver.
+   * \param[in]  config         - Definition of the particular problem.
+   * \param[in]  solLeft        - Left solution in the points.
+   * \param[in]  solRight       - Right solution in the points.
+   * \param[in]  normalsFace    - The normals of the face.
+   * \param[in]  gridVelocities - The grid velocities of the face.
+   * \param[in]  numerics       - Object, which contains the Riemann solver.
+   * \param[out] fluxes         - The fluxes to be computed.
    */
-  void ComputeInviscidFluxesFace(CConfig              *config,
-                                 const unsigned short nFaceSimul,
-                                 const unsigned short NPad,
-                                 const unsigned long  nPoints,
-                                 const su2double      *normalsFace[],
-                                 const su2double      *gridVelsFace[],
-                                 const su2double      *solL,
-                                 const su2double      *solR,
-                                 su2double            *fluxes,
-                                 CNumerics            *numerics);
+  void ComputeInviscidFluxesFace(CConfig                   *config,
+                                 ColMajorMatrix<su2double> &solLeft,
+                                 ColMajorMatrix<su2double> &solRight,
+                                 ColMajorMatrix<su2double> &normalsFace,
+                                 ColMajorMatrix<su2double> &gridVelocities,
+                                 CNumerics                 *numerics,
+                                 ColMajorMatrix<su2double> &fluxes);
 
-  /*!
-   * \brief Function, which computes the inviscid fluxes in the face integration
-            points of a chunk of matching internal faces.
-   * \param[in]  config   - Definition of the particular problem.
-   * \param[in]  lBeg     - Start index in matchingInternalFaces for which
-                            the inviscid fluxes should be computed.
-   * \param[in]  lEnd     - End index (not included) in matchingInternalFaces
-                            for which the inviscid fluxes should be computed.
-   * \param[in]  NPad     - Value of the padding parameter to obtain optimal
-                            performance in the gemm computations.
-   * \param[out] solIntL  - Solution in the left state of the integration points.
-   * \param[out] solIntR  - Solution in the right state of the integration points.
-   * \param[out] fluxes   - Inviscid fluxes in the integration points.
-   * \param[in]  numerics - Object, which contains the Riemann solver.
-   */
-  void InviscidFluxesInternalMatchingFace(CConfig              *config,
-                                          const unsigned long  lBeg,
-                                          const unsigned long  lEnd,
-                                          const unsigned short NPad,
-                                          su2double            *solIntL,
-                                          su2double            *solIntR,
-                                          su2double            *fluxes,
-                                          CNumerics            *numerics);
   /*!
    * \brief Function, which computes the left state of a boundary face.
    * \param[in]  config     - Definition of the particular problem.

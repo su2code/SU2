@@ -603,11 +603,13 @@ public:
 
   /*!
    * \brief Function, which allocates the memory for the working variables.
-   * \param[in] val_nDim - Number of space dimensions.
-   * \param[in] val_nVar - Number of variables for the allocation.
+   * \param[in] val_nDim     - Number of space dimensions.
+   * \param[in] val_nVar     - Number of variables for the allocation.
+   * \param[in] val_surfElem - Whether or not this is a surface element.
    */
   void AllocateWorkingVariables(const unsigned short val_nDim,
-                                const unsigned short val_nVar);
+                                const unsigned short val_nVar,
+                                const bool           val_surfElem);
 
   /*!
    * \brief Function, which computes the data and/or derivatives in the

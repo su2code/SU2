@@ -78,6 +78,27 @@ public:
    */
   ~CFEMStandardQuadAdjacentPrismSol() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, that computes the gradient of the solution in integration points.
+   * \param[in]  matSolDOF     - Matrix that contains the modal solution DOFs.
+   * \param[out] matGradSolInt - Vector of matrices the contains the gradients of the
+   *                             solution in the integration points.
+   */
+  void GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                        vector<ColMajorMatrix<su2double> > &matGradSolInt) override;
+
+  /*!
+   * \brief Function that computes the solution in integration points.
+   * \param[in]  matSolDOF - Matrix that contains the modal solution DOFs.
+   * \param[out] matSolInt - Matrix that contains the solution in the integration points.
+   */
+  void SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                    ColMajorMatrix<su2double> &matSolInt) override;
+
 private:
 
   unsigned short faceID_Elem;   /*!< \brief Face ID of the adjacent prism, which corresponds to this face. */

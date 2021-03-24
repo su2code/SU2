@@ -70,6 +70,38 @@ public:
                                                                         pressure for an incompressible flow. */
 
   /*!
+   * \brief Function, which computes the gradients w.r.t. the parametric coordinates
+   *        of the solution on side 0 in the integration points.
+   * \param[in] volElem - Pointer to the local volume elements.
+   * \return  A reference to the gradients of the solution on side 0
+   *          in the integration points.
+   */
+  vector<ColMajorMatrix<su2double> > &ComputeGradSolSide0IntPoints(CVolumeElementFEM_DG *volElem);
+
+  /*!
+   * \brief Function, which computes the gradients w.r.t. the parametric coordinates
+   *        of the solution on side 1 in the integration points.
+   * \param[in] volElem - Pointer to the local volume elements.
+   * \return  A reference to the gradients of the solution on side 1
+   *          in the integration points.
+   */
+  vector<ColMajorMatrix<su2double> > &ComputeGradSolSide1IntPoints(CVolumeElementFEM_DG *volElem);
+
+  /*!
+   * \brief Function, which computes the solution on side 0 in the integration points.
+   * \param[in] volElem - Pointer to the local volume elements.
+   * \return  A reference to the solution on side 0 in the integration points.
+   */
+  ColMajorMatrix<su2double> &ComputeSolSide0IntPoints(CVolumeElementFEM_DG *volElem);
+
+  /*!
+   * \brief Function, which computes the solution on side 1 in the integration points.
+   * \param[in] volElem - Pointer to the local volume elements.
+   * \return  A reference to the solution on side 1 in the integration points.
+   */
+  ColMajorMatrix<su2double> &ComputeSolSide1IntPoints(CVolumeElementFEM_DG *volElem);
+
+  /*!
    * \brief Function, which computes the wall distances.
    * \param[in] WallADT - The ADT to compute the wall distances.
    * \param[in] nDim    - Number of spatial dimensions.

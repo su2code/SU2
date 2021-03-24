@@ -93,3 +93,22 @@ CFEMStandardLineAdjacentQuadSol::CFEMStandardLineAdjacentQuadSol(const unsigned 
     tensorDSolDs[0] = legN;    tensorDSolDs[1] = derLegT;
   }
 }
+
+void CFEMStandardLineAdjacentQuadSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                                       vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the solution in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(tensorDSolDr, faceID_Elem, matSolDOF.cols(), matSolDOF, matGradSolInt[0]);
+  gemmDOFs2Int->DOFs2Int(tensorDSolDs, faceID_Elem, matSolDOF.cols(), matSolDOF, matGradSolInt[1]);
+}
+
+void CFEMStandardLineAdjacentQuadSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                                                   ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the solution in the integration points
+        of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, matSolDOF.cols(), matSolDOF, matSolInt);
+}

@@ -73,3 +73,23 @@ CFEMStandardTriAdjacentPyraSol::CFEMStandardTriAdjacentPyraSol(const unsigned sh
   GradVandermondePyramid(nPoly, rInt, sInt, tInt, derLegBasisInt[0],
                          derLegBasisInt[1], derLegBasisInt[2]);
 }
+
+void CFEMStandardTriAdjacentPyraSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                                      vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the gradient of the solution in the integration
+        points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLegBasisInt[0], matSolDOF.cols(), matSolDOF, matGradSolInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLegBasisInt[1], matSolDOF.cols(), matSolDOF, matGradSolInt[1], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLegBasisInt[2], matSolDOF.cols(), matSolDOF, matGradSolInt[2], nullptr);
+}
+
+void CFEMStandardTriAdjacentPyraSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                                                  ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the solution in the integration points
+        of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(legBasisInt, matSolDOF.cols(), matSolDOF, matSolInt, nullptr);
+}

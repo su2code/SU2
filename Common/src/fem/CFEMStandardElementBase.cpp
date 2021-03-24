@@ -36,7 +36,12 @@
 /*----------------------------------------------------------------------------------*/
 
 void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_nDim,
-                                                       const unsigned short val_nVar) {
+                                                       const unsigned short val_nVar,
+                                                       const bool           val_surfElem) {
+
+  /*--- Determine the number of variables to be allocated in
+        the integration points. ---*/
+  const int nVarInt = val_surfElem ? 2 : 1;
 
   /*--- Start of the parallel region, such that the correct number
         of threads can be obtained. ---*/
@@ -46,13 +51,16 @@ void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_
           This must be done by only one thread. ---*/
     SU2_OMP_SINGLE
     {
-      workSolInt.resize(omp_get_num_threads());
+      workSolInt.resize(nVarInt*omp_get_num_threads());
       workGradSolInt.resize(omp_get_num_threads());
     }
 
     /*--- Every thread allocates its own memory. ---*/
     const int thread = omp_get_thread_num();
-    workSolInt[thread].resize(nIntegrationPad, val_nVar);
+    for(int i=0; i<nVarInt; ++i) {
+      const int ind = thread + i*omp_get_num_threads();
+      workSolInt[ind].resize(nIntegrationPad, val_nVar);
+    }
 
     workGradSolInt[thread].resize(val_nDim);
     for(unsigned short i=0; i<val_nDim; ++i)

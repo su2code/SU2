@@ -69,3 +69,22 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
   VandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, legBasisInt);
   GradVandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, derLegBasisInt[0], derLegBasisInt[1]);
 }
+
+void CFEMStandardLineAdjacentTriSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
+                                                      vector<ColMajorMatrix<su2double> > &matGradSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the solution in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLegBasisInt[0], matSolDOF.cols(), matSolDOF, matGradSolInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLegBasisInt[1], matSolDOF.cols(), matSolDOF, matGradSolInt[1], nullptr);
+}
+
+void CFEMStandardLineAdjacentTriSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
+                                                  ColMajorMatrix<su2double> &matSolInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the solution in the integration points
+        of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(legBasisInt, matSolDOF.cols(), matSolDOF, matSolInt, nullptr);
+}

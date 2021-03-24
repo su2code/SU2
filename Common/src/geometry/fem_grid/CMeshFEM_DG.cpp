@@ -3222,6 +3222,10 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
   const unsigned short nSolVar  = 1;
 #endif
 
+  /*--- Determine the number of variables for which memory must be
+        allocated for the working variables. ---*/
+  const unsigned short nAllocVar = incompressible ? nDim : nDim+2;
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the types of surface standard elements needed    ---*/
   /*---         for the handling of the boundary conditions. This data is  ---*/
@@ -3923,6 +3927,9 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         SU2_MPI::Error(string("Unknown surface element. This should not happen."),
                        CURRENT_FUNCTION);
     }
+
+    /*--- Allocate the memory for the working variables. ---*/
+    standardSurfaceElementsSolution[i]->AllocateWorkingVariables(nDim, nAllocVar, true);
   }
 
   /*--------------------------------------------------------------------------*/
@@ -4025,7 +4032,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
                            typesFaceSol[i].short7, typesFaceSol[i].short8,
                            typesFaceSol[i].short9, typesFaceSol[i].short10);
 
-    /*--- Correct the number of variables of the adjacent element is a
+    /*--- Correct the number of variables if the adjacent element is a
           quadrilateral or hexahedron, because this value does not matter. ---*/
     if((surf0.short2 == HEXAHEDRON) || (surf0.short2 == QUADRILATERAL)) surf0.short6 = 1;
     if((surf1.short2 == HEXAHEDRON) || (surf1.short2 == QUADRILATERAL)) surf1.short6 = 1;
@@ -4137,7 +4144,7 @@ void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedSho
     }
 
     /*--- Allocate the memory for the working variables. ---*/
-    standardVolumeElementsSolution[i]->AllocateWorkingVariables(nDim, nAllocVar);
+    standardVolumeElementsSolution[i]->AllocateWorkingVariables(nDim, nAllocVar, false);
   }
 }
 
