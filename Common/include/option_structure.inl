@@ -65,11 +65,11 @@ public:
       return str;
     }
     // If it is there, set the option value
-    field = static_cast<TField>(it->second);
+    field = it->second;
     return "";
   }
 
-  void SetDefault() override { field = static_cast<TField>(def); }
+  void SetDefault() override { field = def; }
 };
 
 template<typename Scalar>
@@ -231,7 +231,7 @@ public:
         return str;
       }
       // If it is there, set the option value
-      field[i] = static_cast<TField>(it->second);
+      field[i] = it->second;
     }
     return "";
   }
