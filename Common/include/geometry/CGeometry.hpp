@@ -1168,16 +1168,6 @@ public:
   inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
 
   /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config);
-
-  /*!
-   * \brief Get geometrical planes in the mesh
-   */
-  inline vector<su2double> GetGeometryPlanes() const {return XCoordList;}
-
-  /*!
    * \brief Get x coords of geometrical planes in the mesh
    */
   inline vector<vector<su2double> > GetXCoord() const {return Xcoord_plane;}

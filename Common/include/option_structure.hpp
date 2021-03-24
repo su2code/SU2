@@ -1528,6 +1528,7 @@ enum ENUM_OBJECTIVE {
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
+  SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
@@ -1579,6 +1580,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+  MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
@@ -1909,21 +1911,15 @@ static const MapType<string, ENUM_FFD_BLENDING> Blending_Map = {
  * \brief Types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {
-  STEEPEST_DESCENT = 1,     /*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
-  NEWTON = 2,               /*!< \brief Newton method for point inversion algorithm (Free-Form). */
-  QUASI_NEWTON = 3,         /*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-  CONJUGATE_GRADIENT = 4,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES = 5,               /*!< \brief Flexible Generalized Minimal Residual method. */
-  BCGSTAB = 6,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RESTARTED_FGMRES = 7,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER = 8,             /*!< \brief Iterative smoother. */
-  PASTIX_LDLT = 9,          /*!< \brief PaStiX LDLT (complete) factorization. */
-  PASTIX_LU = 10,           /*!< \brief PaStiX LU (complete) factorization. */
+  CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
+  BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  SMOOTHER,             /*!< \brief Iterative smoother. */
+  PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
-  MakePair("STEEPEST_DESCENT", STEEPEST_DESCENT)
-  MakePair("NEWTON", NEWTON)
-  MakePair("QUASI_NEWTON", QUASI_NEWTON)
   MakePair("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
@@ -1983,13 +1979,13 @@ static const MapType<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
-  JACOBI = 1,        /*!< \brief Jacobi preconditioner. */
-  LU_SGS = 2,        /*!< \brief LU SGS preconditioner. */
-  LINELET = 3,       /*!< \brief Line implicit preconditioner. */
-  ILU = 4,           /*!< \brief ILU(k) preconditioner. */
-  PASTIX_ILU= 5,     /*!< \brief PaStiX ILU(k) preconditioner. */
-  PASTIX_LU_P= 6,    /*!< \brief PaStiX LU as preconditioner. */
-  PASTIX_LDLT_P= 7,  /*!< \brief PaStiX LDLT as preconditioner. */
+  JACOBI,         /*!< \brief Jacobi preconditioner. */
+  LU_SGS,         /*!< \brief LU SGS preconditioner. */
+  LINELET,        /*!< \brief Line implicit preconditioner. */
+  ILU,            /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("JACOBI", JACOBI)
@@ -2053,18 +2049,6 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
   MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
   MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
   MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
-};
-
-/*!
- * \brief Types of criteria to determine when the solution is converged
- */
-enum ENUM_CONVERGE_CRIT {
-  CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
-  RESIDUAL = 2      /*!< \brief Residual criteria to establish the convergence of the code. */
-};
-static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
-  MakePair("CAUCHY", CAUCHY)
-  MakePair("RESIDUAL", RESIDUAL)
 };
 
 /*!

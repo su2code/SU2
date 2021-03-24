@@ -60,6 +60,7 @@ protected:
 
   class Identity : public CPreconditioner<Scalar> {
   public:
+    inline bool IsIdentity() const override { return true; }
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
   };
 

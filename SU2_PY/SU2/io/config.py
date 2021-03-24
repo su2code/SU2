@@ -576,6 +576,7 @@ def read_config(filename):
                       raise SystemExit('Multiple occurrences of the same objective in the OPT_OBJECTIVE definition are not currently supported. To evaluate one objective over multiple surfaces, list the objective once.')
                     # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
                     this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'VALUE':this_val} })
+                    # OPT_OBJECTIVE has to appear after MARKER_MONITORING in the .cfg, maybe catch that here
                     if (len(data_dict['MARKER_MONITORING'])>1):
                         this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
                     else:

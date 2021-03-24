@@ -2851,6 +2851,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case SURFACE_STATIC_PRESSURE:
       objFun += weight * config.GetSurface_Pressure(0);
       break;
+    case SURFACE_STATIC_TEMPERATURE:
+      objFun += weight * config.GetSurface_Temperature(0);
+      break;
     case SURFACE_MASSFLOW:
       objFun += weight * config.GetSurface_MassFlow(0);
       break;
