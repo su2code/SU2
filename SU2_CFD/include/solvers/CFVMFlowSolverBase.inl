@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2900,6 +2900,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case SURFACE_STATIC_PRESSURE:
       objFun += weight * config.GetSurface_Pressure(0);
+      break;
+    case SURFACE_STATIC_TEMPERATURE:
+      objFun += weight * config.GetSurface_Temperature(0);
       break;
     case SURFACE_MASSFLOW:
       objFun += weight * config.GetSurface_MassFlow(0);

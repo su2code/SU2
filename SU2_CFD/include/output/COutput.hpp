@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -426,6 +426,12 @@ public:
   bool GetConvergence() const {return convergence;}
 
   /*!
+   * \brief Set the value of the convergence flag.
+   * \param[in] conv - New value of the convergence flag.
+   */
+  void SetConvergence(const bool conv) {convergence = conv;}
+
+  /*!
      * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
      * \param[in] config - Definition of the particular problem.
      * \param[in] Iteration - Index of the current iteration.
@@ -434,17 +440,11 @@ public:
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
 
   /*!
-   * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
+   * \brief Get time convergence of the specified windowed-time-averaged ouput of the problem.
+   * Indicates, if the time loop is converged. COnvergence criterion: Windowed time average
    * \return Boolean indicating whether the problem is converged.
    */
-  bool GetTimeConvergence()const {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
-
-
-  /*!
-   * \brief Set the value of the convergence flag.
-   * \param[in] conv - New value of the convergence flag.
-   */
-  void SetConvergence(bool conv) {convergence = conv;}
+  bool GetTimeConvergence() const {return TimeConvergence;}
 
   /*!
    * \brief Print a list of all history output fields to screen.
