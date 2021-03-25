@@ -191,29 +191,29 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      // if (muscl && kappa) {
-      //   su2double *primvar_i = good_i? flowPrimVar_i : V_i,
-      //             *primvar_j = good_j? flowPrimVar_j : V_j,
-      //             *turbvar_i = good_i? turbPrimVar_i : T_i,
-      //             *turbvar_j = good_j? turbPrimVar_j : T_j;
-      //   SetExtrapolationJacobian(solver, geometry, config,
-      //                            primvar_i, primvar_j,
-      //                            turbvar_i, turbvar_j,
-      //                            residual.jacobian_i, 
-      //                            residual.jacobian_j,
-      //                            good_i, good_j,
-      //                            iPoint, jPoint);
-      //   SetExtrapolationJacobian(solver, geometry, config,
-      //                            primvar_j, primvar_i,
-      //                            turbvar_j, turbvar_i,
-      //                            residual.jacobian_j, 
-      //                            residual.jacobian_i,
-      //                            good_j, good_i,
-      //                            jPoint, iPoint);
-      // }
-      // else {
+      if (muscl && kappa) {
+        su2double *primvar_i = good_i? flowPrimVar_i : V_i,
+                  *primvar_j = good_j? flowPrimVar_j : V_j,
+                  *turbvar_i = good_i? turbPrimVar_i : T_i,
+                  *turbvar_j = good_j? turbPrimVar_j : T_j;
+        SetExtrapolationJacobian(solver, geometry, config,
+                                 primvar_i, primvar_j,
+                                 turbvar_i, turbvar_j,
+                                 residual.jacobian_i, 
+                                 residual.jacobian_j,
+                                 good_i, good_j,
+                                 iPoint, jPoint);
+        SetExtrapolationJacobian(solver, geometry, config,
+                                 primvar_j, primvar_i,
+                                 turbvar_j, turbvar_i,
+                                 residual.jacobian_j, 
+                                 residual.jacobian_i,
+                                 good_j, good_i,
+                                 jPoint, iPoint);
+      }
+      else {
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-      // }
+      }
     }
 
     /*--- Viscous contribution. ---*/
