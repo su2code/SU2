@@ -681,19 +681,14 @@ public:
   inline su2double *GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
 
   /*!
-   * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord_old - Value of the coordinates.
+   * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
    */
-  inline void SetCoord_Old(unsigned long iPoint, const su2double *coord_old) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Coord_Old(iPoint,iDim) = coord_old[iDim];
-  }
+  void SetCoord_Old();
 
   /*!
    * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
    */
-  void SetCoord_Old();
+  void GetCoord_Old();
 
   /*!
    * \brief Get the value of the summed coordinates for implicit smoothing.

@@ -176,9 +176,6 @@ void COneShotSinglezoneDriver::RunOneShot(){
 
 void COneShotSinglezoneDriver::PiggyBack() {
 
-  // Record start time
-  auto start = std::chrono::high_resolution_clock::now();
-
   // note: use inherited iteration count from the adjoint driver for now.
   nPiggyIter = nAdjoint_Iter;
 
@@ -205,11 +202,6 @@ void COneShotSinglezoneDriver::PiggyBack() {
     if (StopCalc) break;
 
   }
-
-  // Record end time
-  auto finish = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = finish - start;
-  std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
 }
 
@@ -385,26 +377,59 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& deltaVector, CC
 void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double> funcGrad, CConfig *config) {
 
   su2double length, maxLength=config->GetMaxOneShotStepsize();
-  bool isDescent=false;
+  bool isDescend=false;
+  su2double factor=-1.0;
 
-  /// Reduce to max length and change the sign (gradient descend!)
-  length = L2Norm(funcGrad);
-  if (length > maxLength) {
-    for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-      delta_design[iDV] = -(maxLength/length)*funcGrad[iDV];
+  /*! Just scale the design step to avoid to large steps. */
+  if (!config->GetCheckAndReset()) {
+
+    /// Reduce to max length and change the sign (gradient descend!)
+    length = L2Norm(funcGrad);
+    if (length > maxLength) {
+      factor = -(maxLength/length);
     }
+    for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
+      delta_design[iDV] = factor*funcGrad[iDV];
+    }
+
+    /// Deform the geometry
+    DeformGeometry(delta_design, config);
+
+  /*! Check wether or not we have descend. */
+  } else {
+
+    /// get original design change
+    for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
+      delta_design[iDV] = factor*funcGrad[iDV];
+    }
+
+    /// Store geometry and solution
+    StoreSolutionAndMesh();
+
+    /// backtracking loop
+    while (!isDescend) {
+
+      /// update the design
+      DeformGeometry(delta_design, config);
+
+      /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
+       * are removed for future runs. */
+      SetRecording(NONE);
+
+      /// call to Piggyback
+      PiggyBack();
+
+      /// Check descend
+      isDescend = CheckDescent();
+      if (isDescend) { break; }
+
+      /// reduce size of design change
+      for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
+        delta_design[iDV] = delta_design[iDV]/10;
+      }
+    }
+
   }
-
-  /// Store geometry and solution
-
-  /// Deform the geometry
-  DeformGeometry(delta_design, config);
-
-  /// Update the function
-
-  /// Check descend
-  isDescent = CheckDescent();
-
 }
 
 bool COneShotSinglezoneDriver::CheckDescent(){
@@ -413,7 +438,7 @@ bool COneShotSinglezoneDriver::CheckDescent(){
 
 void COneShotSinglezoneDriver::UpdateDesignVariable() {
   for (auto iDV=0; iDV<config->GetnDV_Total(); iDV++) {
-    design[iDV] += delta_design[iDV];
+    design[iDV] = BoundProjection(design[iDV] + delta_design[iDV]);
   }
 }
 
@@ -508,4 +533,35 @@ su2double COneShotSinglezoneDriver::L2Norm(vector<su2double>& vector) {
     norm+=vector[i]*vector[i];
   }
   return sqrt(norm);
+}
+
+su2double COneShotSinglezoneDriver::BoundProjection(su2double value) {
+  if(value<-config->GetDVBound()) value = -config->GetDVBound();
+  if(value> config->GetDVBound()) value =  config->GetDVBound();
+  return value;
+}
+
+void COneShotSinglezoneDriver::StoreSolutionAndMesh() {
+  solver[FLOW_SOL]->GetNodes()->SetSolution_Store();
+  if (config->GetKind_Turb_Model() != NONE){
+    solver[TURB_SOL]->GetNodes()->SetSolution_Store();
+  }
+  solver[MainSolver]->GetNodes()->SetSolution_Store();
+  if (config->GetKind_Turb_Model() != NONE){
+    solver[ADJTURB_SOL]->GetNodes()->SetSolution_Store();
+  }
+  solver[MainSolver]->StoreMeshPoints(geometry, config);
+}
+
+void COneShotSinglezoneDriver::LoadSolutionAndMesh() {
+  solver[FLOW_SOL]->GetNodes()->GetSolution_Store();
+  if (config->GetKind_Turb_Model() != NONE){
+    solver[TURB_SOL]->GetNodes()->GetSolution_Store();
+  }
+  solver[MainSolver]->GetNodes()->GetSolution_Store();
+  if (config->GetKind_Turb_Model() != NONE){
+    solver[ADJTURB_SOL]->GetNodes()->GetSolution_Store();
+  }
+  solver[MainSolver]->LoadMeshPoints(geometry, config);
+  solver[MainSolver]->UpdateAuxiliaryGeometryVariables(geometry_container[ZONE_0][INST_0],grid_movement[ZONE_0][INST_0],config);
 }

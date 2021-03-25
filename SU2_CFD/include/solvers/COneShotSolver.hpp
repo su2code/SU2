@@ -77,4 +77,26 @@ public:
    */
   void SetRecording(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief Store the coordinates for the optimization process.
+   * \param[in] geometry - geometry class object
+   * \param[in] config - config class object
+   */
+  void StoreMeshPoints(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Load the stored coordinates for resetting the optimization process.
+   * \param[in] geometry - geometry class object
+   * \param[in] config - config class object
+   */
+  void LoadMeshPoints(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief After resetting the mesh coordinates do the post processing from mesh deformation.
+   * \param[in] geometry_container - we need the geometry on all multigrid mesh levels
+   * \param[in] grid_movement - need the class that was used for the original deformation
+   * \param[in] config - config class object
+   */
+  void UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config);
+
 };

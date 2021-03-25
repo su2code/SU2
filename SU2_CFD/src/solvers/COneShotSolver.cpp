@@ -92,3 +92,63 @@ void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 }
 
 
+void COneShotSolver::StoreMeshPoints(CGeometry *geometry, CConfig *config){
+    unsigned long iVertex;
+    unsigned short iMarker;
+
+    geometry->nodes->SetCoord_Old();
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          geometry->vertex[iMarker][iVertex]->SetNormal_Old(geometry->vertex[iMarker][iVertex]->GetNormal());
+        }
+    }
+}
+
+
+void COneShotSolver::LoadMeshPoints(CGeometry *geometry, CConfig *config){
+    unsigned long iVertex, iPoint;
+    unsigned short iMarker;
+
+    geometry->nodes->GetCoord_Old();
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          geometry->vertex[iMarker][iVertex]->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal_Old());
+        }
+    }
+}
+
+
+void  COneShotSolver::UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config) {
+
+  su2double MinVolume, MaxVolume;
+
+  /*--- Communicate the updated mesh coordinates. ---*/
+
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+
+  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
+   dual mesh control volumes in the domain and on the boundaries. ---*/
+
+  grid_movement->UpdateDualGrid(geometry_container[MESH_0], config);
+
+  /*--- Update the multigrid structure after moving the finest grid,
+   including computing the grid velocities on the coarser levels
+   when the problem is solved in unsteady conditions. ---*/
+
+  grid_movement->UpdateMultiGrid(geometry_container, config);
+
+  /*--- do we need to update the elemnt volumes, etc.??? ---*/
+
+  grid_movement->ComputeDeforming_Element_Volume(geometry_container[MESH_0], MinVolume, MaxVolume, true);
+  grid_movement->ComputenNonconvexElements(geometry_container[MESH_0], true);
+
+  if (rank == MASTER_NODE) {
+    cout << "Resetting mesh coordinates for linesearch: " << endl;
+    cout << "Min. volume: " << MinVolume << ", Max. volume: " << MaxVolume << "." << endl;
+  }
+
+}

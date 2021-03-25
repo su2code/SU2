@@ -59,6 +59,10 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
+  if (config->GetCheckAndReset()) {
+    Solution_Store.resize(nPoint,nVar) = su2double(0.0);
+  }
+
   if (config->GetTime_Marching() != NO) {
     Solution_time_n.resize(nPoint,nVar);
     Solution_time_n1.resize(nPoint,nVar);
@@ -143,4 +147,14 @@ void CVariable::RegisterSolution_time_n1() {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+}
+
+void CVariable::SetSolution_Store() {
+  assert(Solution_Store.size() == Solution.size());
+  parallelCopy(Solution.size(), Solution.data(), Solution_Store.data());
+}
+
+void CVariable::GetSolution_Store() {
+  assert(Solution.size() == Solution_Store.size());
+  parallelCopy(Solution_Store.size(), Solution_Store.data(), Solution.data());
 }

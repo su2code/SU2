@@ -1162,6 +1162,8 @@ private:
   su2double *ConstrFuncScale;           /*!< \brief Kind of constraint function. */
   su2double *InitialMultiplier;         /*!< \brief Initial multiplier value. */
   su2double MaxOneShotStepsize;         /*!< \brief Maximum stepsize for design updates. */
+  su2double DV_Bound;                   /*!< \brief Lower/upper bound for the design variables. */
+  bool CheckAndReset;                   /*!< \brief Reload solution and mesh for linesearches. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9444,7 +9446,7 @@ public:
    * \brief Get the kind of One Shot method from the config file.
    * \return type of iteration to run.
    */
-  unsigned short GetOneShotMode(void) { return OneShotMode; }
+  unsigned short GetOneShotMode(void) const { return OneShotMode; }
 
   /*!
    * \brief Get the number of Piggyback steps between line searches.
@@ -9502,5 +9504,19 @@ public:
    * \return max stepsize for design updates
    */
   su2double GetMaxOneShotStepsize(void) { return MaxOneShotStepsize; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the lower/upper bound for the design variables.
+   * \return bound value
+   */
+  su2double GetDVBound(void) { return DV_Bound; }
+
+  /*!
+   * \author T. Dick
+   * \brief Check if the One Shot linesearch needs to store and reload solution and mesh for linesearches.
+   * \return Flag wether resets are needed.
+   */
+  bool GetCheckAndReset(void) const { return CheckAndReset; }
 
 };

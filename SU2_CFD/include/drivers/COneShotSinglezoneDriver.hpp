@@ -180,4 +180,19 @@ public:
    */
   su2double L2Norm(vector<su2double>& vector);
 
+  /*!
+   * \brief Project a design value onto the bounds.
+   */
+  su2double BoundProjection(su2double value);
+
+  /*!
+   * \brief Store the solver solutions and geometry coordinates.
+   */
+  void StoreSolutionAndMesh();
+
+  /*!
+   * \brief Load the solver solutions and geometry coordinates.
+   */
+  void LoadSolutionAndMesh();
+
 };

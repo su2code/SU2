@@ -55,6 +55,7 @@ protected:
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
+  MatrixType Solution_Store; /*!< \brief Store solution from previous design */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
@@ -2634,5 +2635,15 @@ public:
    * \brief return wether a point is a boundary of a boundary
    */
   virtual bool IsBoundaryPoint(unsigned long iPoint) { return false;}
+
+  /*!
+   * \brief Get the stored solution of the old design.
+   */
+  void GetSolution_Store();
+
+  /*!
+   * \brief Set the value of the stored solution.
+   */
+  void SetSolution_Store();
 
 };

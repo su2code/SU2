@@ -4392,6 +4392,25 @@ public:
   virtual void GetHessianMatrix() {}
 
   /*!
+   * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  virtual void StoreMeshPoints(CGeometry *geometry, CConfig *config) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - config class object
+   * \param[in] geometry - geometry class object
+   */
+  virtual void LoadMeshPoints(CGeometry *geometry, CConfig *config) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config) {}
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */

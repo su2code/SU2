@@ -2851,6 +2851,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: max stepsize for design updates */
   addDoubleOption("MAX_ONESHOT_STEPSIZE", MaxOneShotStepsize, 1.0);
 
+  /*!\brief DESCRIPTION: Lower and upper bound of design variables \ingroup Config*/
+  addDoubleOption("DV_BOUND", DV_Bound, 1000);
+
+  /* DESCRIPTION: Reload solution and mesh needed for linesearches.  */
+  addBoolOption("CHECK_AND_RESET", CheckAndReset, false);
+
   /* END_CONFIG_OPTIONS */
 
 }
