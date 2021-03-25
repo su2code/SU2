@@ -327,10 +327,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     su2double muT = rho*fv1*nu_hat;
 
     if (neg_spalart_allmaras) muT = max(muT,0.0);
-    //cout <<"delete me Postproc.  mu:     "<<mu<<endl;
-    //cout <<"delete me Postproc.  rho:    "<<rho<<endl;
-    //cout <<"delete me Postproc.  nu_hat: "<<nu_hat<<endl;
-    //cout <<"delete me Postproc.  muT:    "<<muT<<endl;
+
     nodes->SetmuT(iPoint,muT);
 
   }
@@ -416,7 +413,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the source term ---*/
 
-    //auto residual = numerics->ComputeResidual(config);
+    auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the intermittency ---*/
 
@@ -425,10 +422,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     }
 
     /*--- Subtract residual and the Jacobian ---*/
-    //delete me
-    //LinSysRes.SubtractBlock(iPoint, residual);
+    
+    LinSysRes.SubtractBlock(iPoint, residual);
 
-    //Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
 
@@ -518,13 +515,13 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
          su2double Res_Wall;// = new su2double [nVar];
          Res_Wall = coeff*RoughWallBC*Area;
-         //delete me
-	 //LinSysRes.SubtractBlock(iPoint, &Res_Wall);
+	       
+         LinSysRes.SubtractBlock(iPoint, &Res_Wall);
 
          su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
          Jacobian_i += 2.0*RoughWallBC*Area/sigma;
          Jacobian_i = -Jacobian_i;
-         //Jacobian.AddVal2Diag(iPoint, Jacobian_i);
+         Jacobian.AddVal2Diag(iPoint, Jacobian_i);
       }
     }
   }
@@ -576,13 +573,13 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       conv_numerics->SetNormal(Normal);
 
       /*--- Compute residuals and Jacobians ---*/
-      //delete me
-      //auto residual = conv_numerics->ComputeResidual(config);
+      
+      auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Add residuals and Jacobians ---*/
 
-      //LinSysRes.AddBlock(iPoint, residual);
-      //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      LinSysRes.AddBlock(iPoint, residual);
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
   }
@@ -715,13 +712,12 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
                                   geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
-      //delete me
-      //auto residual = conv_numerics->ComputeResidual(config);
-      //LinSysRes.AddBlock(iPoint, residual);
+      auto residual = conv_numerics->ComputeResidual(config);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
 
-      //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
 //
