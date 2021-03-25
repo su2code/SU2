@@ -380,7 +380,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, config, val_marker);
+    SetTurbVars_WF(geometry, solver_container, config, val_marker);
     SU2_OMP_BARRIER
     return;
   }
@@ -466,39 +466,46 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 
-void CTurbSSTSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, 
+void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container, 
                                   const CConfig *config, unsigned short val_marker) {
 
   /*--- von Karman constant from boundary layer theory ---*/
 
   const su2double kappa = config->GetwallModelKappa();
   const su2double relax = 0.5;            /*--- relaxation factor for k-omega values ---*/
- 
+  const su2double beta_1 = constants[4];      
+  su2double k,omega;
+
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
-
-    su2double omega1,omega0,y,k_new,omega_new;
-    su2double k = nodes->GetSolution(iPoint_Neighbor,0);
-    su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
-
-    su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
+    su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+
+    /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
+
+    if (Y_Plus < 5.0) {
+    
+    /* --- use zero flux (Neumann) conditions --- */
+
+    continue;
+    }
+
+    su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
+    k = nodes->GetSolution(iPoint_Neighbor,0);
+    omega = nodes->GetSolution(iPoint_Neighbor,1);
+    su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
+    su2double y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
 
-    y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
-
-    omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19 
-    omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20 
-    omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
-    k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson 
-                                                          // (is this the correct density? paper says rho and not rho_w)
+    su2double omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19 
+    su2double omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20 
+    su2double omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
+    su2double k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson 
+                                           // (is this the correct density? paper says rho and not rho_w)
 
     /*--- put some relaxation factor on the k-omega values ---*/
     k += relax*(k_new - k);       

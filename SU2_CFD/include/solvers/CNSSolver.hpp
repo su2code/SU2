@@ -120,7 +120,7 @@ private:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetNuTilde_WF(CGeometry *geometry,
+  void SetTurbVars_WF(CGeometry *geometry,
                                     CSolver **solver_container,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics,

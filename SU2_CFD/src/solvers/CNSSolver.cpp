@@ -754,9 +754,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   su2double Eddy_Visc,Y_Plus,U_Tau;
 
-  constexpr unsigned short max_iter = 50; /*--- maximum number of iterations for the Newton Solver---*/
-  const su2double tol = 1e-12;            /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
-  const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+  constexpr unsigned short max_iter = 200; /*--- maximum number of iterations for the Newton Solver---*/
+  const su2double tol = 1e-12;             /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const su2double relax = 0.5;             /*--- relaxation factor for the Newton solver ---*/
 
   /*--- Compute the recovery factor ---*/
   // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
@@ -787,8 +787,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
     /*--- Get the specified wall heat flux from config ---*/
       // note that we can get the heat flux from the temperature gradient
-    su2double q_w = config->GetWall_HeatFlux(Marker_Tag);
-      // heat flux from temperature: q_w = h*(T_wall - T_fluid)
+    su2double q_w = 0.0;
+    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) 
+      q_w = config->GetWall_HeatFlux(Marker_Tag);
+
+    // heat flux from temperature: q_w = h*(T_wall - T_fluid)
 
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -900,6 +903,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
       if (Y_Plus_Start < 5.0) {
+        cout << "skipping stress due to wall model" << endl;
         continue;
       }
 

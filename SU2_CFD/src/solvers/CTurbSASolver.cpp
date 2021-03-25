@@ -419,7 +419,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, config, val_marker);
+    SetTurbVars_WF(geometry, solver_container, config, val_marker);
     SU2_OMP_BARRIER
     return;
   }
@@ -1574,7 +1574,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, 
+void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container, 
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1585,7 +1585,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1599,61 +1599,79 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
-    su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
-    su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
+    if (geometry->nodes->GetDomain(iPoint)) {
 
-    /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
+      const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    // start with positive value of nu_til_old
-    su2double nu_til = 0.0; 
-    su2double nu_til_old = nodes->GetSolution(iPoint,0);
+      su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-    unsigned short counter = 0;
-    su2double diff = 1.0;
+      /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
-    while (diff > tol) {
-      // note the error in Nichols and Nelson 
-      su2double func = nu_til_old*nu_til_old*nu_til_old*nu_til_old - (Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old*nu_til_old + Kin_Visc_Normal*Kin_Visc_Normal*Kin_Visc_Normal*cv1_3);
-      su2double func_prim = 4.0 * nu_til_old*nu_til_old*nu_til_old - 3.0*(Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old);
+      if (Y_Plus < 5.0) {
 
-      // damped Newton method
-      nu_til = nu_til_old - relax*(func/func_prim);
-
-      diff = fabs(nu_til-nu_til_old);
-      nu_til_old = nu_til;
-
-      // sometimes we get negative values when the solution has not converged yet, we just reset the nu_tilde in that case.
-      if (nu_til_old<tol) {
-        nu_til_old = 0.001;
-        nu_til=0.002;
+        /* --- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition --- */
+         
+        continue;
       }
 
-      counter++;
-      if (counter > max_iter) {
-        cout << "WARNING: Nu_tilde evaluation did not converge in " <<max_iter << " iterations. " << endl;
-        cout << nu_til << " " << diff << endl;
-        break;
-      }
-    }
+      su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
+      su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
+      su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
-    su2double Sol[1];
-    //for (auto iVar = 0u; iVar < nVar; iVar++)
-    Sol[0] = nu_til;
+      su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
+
+      /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
+
+      // start with positive value of nu_til_old
+      su2double nu_til = 0.0; 
+      su2double nu_til_old = nodes->GetSolution(iPoint,0);
+
+      unsigned short counter = 0;
+      su2double diff = 1.0;
+      relax = 0.5;
+      while (diff > tol) {
+        // note the error in Nichols and Nelson 
+        su2double func = nu_til_old*nu_til_old*nu_til_old*nu_til_old - (Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old*nu_til_old + Kin_Visc_Normal*Kin_Visc_Normal*Kin_Visc_Normal*cv1_3);
+        su2double func_prim = 4.0 * nu_til_old*nu_til_old*nu_til_old - 3.0*(Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old);
+
+        // damped Newton method
+        nu_til = nu_til_old - relax*(func/func_prim);
+
+        diff = fabs(nu_til-nu_til_old);
+        nu_til_old = nu_til;
+
+        // sometimes we get negative values when the solution has not converged yet, we just reset the nu_tilde in that case.
+        if (nu_til_old<tol) {
+          //cout << "warning: resetting nu_tilde for point " << iPoint << " during computation. If this warning persists, there might be something wrong" << endl;
+          //cout << Y_Plus <<" "<<nodes->GetSolution(iPoint,0)<<" , nutilde="<<nu_til<<", eddy visc = " << Eddy_Visc << " , dens = "<<Density_Normal<<" "<<Lam_Visc_Normal<<" "<<func <<" " <<func_prim<<" "<<diff<<endl;
+          relax = relax/2.0;
+          nu_til_old = nodes->GetSolution(iPoint,0)/relax;
+        }
+
+        counter++;
+        if (counter > max_iter) {
+          cout << "WARNING: Nu_tilde evaluation did not converge in " <<max_iter << " iterations. " << endl;
+          //cout << nu_til << " " << diff << endl;
+          break;
+        }
+      }
+
+      su2double solution[1];
+      //for (auto iVar = 0u; iVar < nVar; iVar++)
+      solution[0] = nu_til;
     
-    nodes->SetSolution_Old(iPoint_Neighbor,Sol);
-    LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+      nodes->SetSolution_Old(iPoint_Neighbor,solution);
+      LinSysRes.SetBlock_Zero(iPoint_Neighbor);
 
-    /*--- includes 1 in the diagonal ---*/
+      /*--- includes 1 in the diagonal ---*/
 
-    if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
+      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
 
+    }
   }
-
 }
 
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
