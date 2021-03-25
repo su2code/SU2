@@ -4044,17 +4044,6 @@ public:
   }
 
   /*!
-   * \brief Get the fill-in level for the linear solver.
-   * \return Fill in level of the linear solver.
-   */
-  unsigned short GetLinear_Solver_Turb_Fill_In(void) const { 
-    if (Use_Accurate_Visc_Jacobians || Use_Accurate_Kappa_Jacobians)
-      return 1; 
-    else
-      return 0;
-  }
-
-  /*!
    * \brief Get the ILU fill-in level for the linear solver.
    * \return Fill in level of the ILU preconditioner for the linear solver.
    */
