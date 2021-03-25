@@ -484,10 +484,10 @@ void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
 
 void CDiscAdjSinglezoneDriver::GetDirectResiduals(){
 
-  const bool heat = config->GetWeakly_Coupled_Heat();
-  const bool turb = config->GetKind_Turb_Model() != NONE;
-  const bool rads = config->AddRadiation();
-  const bool frozen_visc = config->GetFrozen_Visc_Disc();
+  // const bool heat = config->GetWeakly_Coupled_Heat();
+  // const bool turb = config->GetKind_Turb_Model() != NONE;
+  // const bool rads = config->AddRadiation();
+  // const bool frozen_visc = config->GetFrozen_Visc_Disc();
 
   // AD::StartExtFunc(false, false);
 

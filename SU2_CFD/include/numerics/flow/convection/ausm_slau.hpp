@@ -43,6 +43,9 @@ protected:
   bool HasAnalyticalDerivatives;
   su2double FinDiffStep;
 
+  const bool UseKappaJacobian = false;
+  unsigned short nPrimVarTot;
+
   su2double MassFlux, DissFlux, Pressure;
   su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
   su2double *psi_i = nullptr, *psi_j = nullptr;

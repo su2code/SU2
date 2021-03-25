@@ -8776,7 +8776,6 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
   unsigned long Neighbor_Point, iVertex, iPoint, iElem;
   long iEdge;
-  su2double Area;
 
   /*--- Update values of faces of the edge ---*/
 

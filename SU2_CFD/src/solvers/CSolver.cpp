@@ -6062,7 +6062,7 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  CVariable *varTur, *varAdjTur;
+  CVariable *varTur = nullptr, *varAdjTur = nullptr;
   if (turb) {
     varTur    = solver[TURB_SOL]->GetNodes();
     varAdjTur = solver[ADJTURB_SOL]->GetNodes();
@@ -6210,7 +6210,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
-  CVariable *varTur, *varAdjTur;
+  CVariable *varTur = nullptr, *varAdjTur = nullptr;
   if (turb) {
     varTur    = solver[TURB_SOL]->GetNodes();
     varAdjTur = solver[ADJTURB_SOL]->GetNodes();

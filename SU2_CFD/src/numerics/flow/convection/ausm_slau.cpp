@@ -28,7 +28,8 @@
 #include "../../../../include/numerics/flow/convection/ausm_slau.hpp"
 
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                             CNumerics(val_nDim, val_nVar, config) {
+                             CNumerics(val_nDim, val_nVar, config),
+                             UseKappaJacobian(config->GetUse_Accurate_Kappa_Jacobians()) {
 
   if (config->GetDynamic_Grid() && (SU2_MPI::GetRank() == MASTER_NODE))
     cout << "WARNING: Grid velocities are NOT yet considered in AUSM-type schemes." << endl;
@@ -38,6 +39,12 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   HasAnalyticalDerivatives = false;
   FinDiffStep = 1e-4;
 
+  tkeNeeded = ((config->GetKind_Turb_Model() == SST) || 
+               (config->GetKind_Turb_Model() == SST_SUST)) &&
+               (UseKappaJacobian);
+
+  nPrimVarTot = nVar + tkeNeeded;
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 
@@ -45,18 +52,21 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   psi_j = new su2double [nVar];
 
   Flux = new su2double [nVar];
-  Lambda = new su2double [nVar];
+  Lambda = new su2double [nPrimVarTot];
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    P_Tensor[iVar] = new su2double [nPrimVarTot];
+    // invP_Tensor[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nPrimVarTot];
+    Jacobian_j[iVar] = new su2double [nPrimVarTot];
   }
+
+  for (auto iVar = 0u; iVar < nPrimVarTot; iVar++)
+    invP_Tensor[iVar] = new su2double [nPrimVarTot] ();
 }
 
 CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {

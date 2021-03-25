@@ -979,11 +979,9 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */
-  su2double weights[4] = {0.};
-  Dist2ToElement(jj, coor, dist, weights);
+  Dist2ToElement(jj, coor, dist, weightsInterpol);
   dist = sqrt(dist);
   vtkID = elemVTK_Type[jj];
-  memcpy(weightsInterpol, weights, 4*sizeof(su2double));
 
 }
 

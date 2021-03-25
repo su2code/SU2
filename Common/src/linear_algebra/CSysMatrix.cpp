@@ -126,7 +126,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    *    the data is managed by CGeometry to allow re-use. ---*/
 
   const bool turb = (nVar < 3);
-  const unsigned short fill_in = turb? config->GetLinear_Solver_Turb_Fill_In() : config->GetLinear_Solver_Flow_Fill_In();
+  // const unsigned short fill_in = turb? config->GetLinear_Solver_Turb_Fill_In() : config->GetLinear_Solver_Flow_Fill_In();
+  const unsigned short fill_in = config->GetLinear_Solver_Flow_Fill_In();
   const auto& csr = geometry->GetSparsePattern(type, fill_in);
 
   nnz = csr.getNumNonZeros();

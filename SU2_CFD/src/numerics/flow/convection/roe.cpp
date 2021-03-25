@@ -42,7 +42,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
-  nPrimVarTot = nVar + tkeNeeded*exact_jacobian;
+  nPrimVarTot = nVar + tkeNeeded;
 
   Flux = new su2double [nVar] ();
   Diff_U = new su2double [nPrimVarTot] ();
