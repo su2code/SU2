@@ -186,6 +186,14 @@ if get_option('enable-mpp')
   su2_cpp_args += '-DHAVE_MPP'
 endif
 
+if omp and get_option('enable-autodiff')
+  py = find_program('python3','python')
+  p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
+endif
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
