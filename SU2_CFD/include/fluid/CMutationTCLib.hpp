@@ -45,8 +45,7 @@ private:
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
-  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
-  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+  omega_vec;                              /*!< \brief Dummy vector for vibrational energy source term. */
 
   su2double Tref;                         /*!< \brief Reference temperature. */
 
@@ -79,7 +78,7 @@ public:
    * \brief Compute species V-E specific heats at constant volume.
    */
   vector<su2double>& ComputeSpeciesCvVibEle() final;
-    
+
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
@@ -89,7 +88,7 @@ public:
    * \brief Compute vector of species V-E energy.
    */
   vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) final;
-  
+
   /*!
    * \brief Compute species net production rates.
    */
@@ -99,7 +98,7 @@ public:
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
-  
+
   /*!
    * \brief Compute species enthalpies.
    */
@@ -115,17 +114,17 @@ public:
    */
   su2double GetViscosity() final;
 
-  
+
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
   vector<su2double>& GetThermalConductivities() final;
-  
+
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
   vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
-   
+
   /*!
    * \brief Get species molar mass.
    */

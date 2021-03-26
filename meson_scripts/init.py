@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, shutil, urllib.request, zipfile, time
+import sys, os, subprocess, urllib.request, zipfile, time
 
 def remove_file(path, retries=3, sleep=0.1):
   for i in range(retries):
@@ -46,14 +46,14 @@ def init_submodules(method = 'auto'):
   # The sha tag must be maintained manually to point to the correct commit
   sha_version_codi = '1b8d3f5f03de560fb63a2a76ad91ab7bb3fa67d8'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = 'b84cef4272ab8bad981c0d0386d855daa8fbd340'
+  sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
   sha_version_meson = '29ef4478df6d3aaca40c7993f125b29409be1de2'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = '52649de2c56b63f42bc59513d51286531c595b44'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_mpp = '5ff579f43781cae07411e5ab46291c9971536be6'
-  github_repo_mpp = 'https://github.com/mutationpp/Mutationpp.git'
+  github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'

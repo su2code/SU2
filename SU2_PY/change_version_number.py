@@ -44,8 +44,8 @@ if not options.version:
 
 #oldvers = '2012-2018'
 #newvers = '2012-2019'
-oldvers  = '7.1.0 "Blackbird"'
-oldvers_q= r'7.1.0 \"Blackbird\"'
+oldvers  = '7.1.1 "Blackbird"'
+oldvers_q= r'7.1.1 \"Blackbird\"'
 newvers  = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q= str(options.version) + ' \\"' + str(options.releasename) + '\\"'
 

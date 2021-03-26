@@ -103,6 +103,32 @@ public:
   }
 
   /*!
+   * \brief Set the velocity vector from the old solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Solution_Old(iPoint,iDim+1) = val_velocity[iDim]*Solution(iPoint,0);
+  }
+
+  /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = GetDensity(iPoint) * val_vector[iDim];
+  }
+
+  /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */

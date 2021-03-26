@@ -59,37 +59,37 @@ void CSU2BinaryFileWriter::Write_Data(){
   int var_buf[5] = {535532, nVar, (int)nPoint_Global, 0, 0};
 
   /*--- Open the file using MPI I/O ---*/
-  
+
   OpenMPIFile();
-  
+
   /*--- First, write the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, write the
    variable string names here. Only the master rank writes the header. ---*/
-  
+
   WriteMPIBinaryData(var_buf, var_buf_size*sizeof(int), MASTER_NODE);
-  
+
   /*--- Write the variable names to the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
    needed for when we read the strings later. ---*/
-  
+
   for (iVar = 0; iVar < nVar; iVar++) {
     strncpy(str_buf, fieldNames[iVar].c_str(), CGNS_STRING_SIZE);
     WriteMPIBinaryData(str_buf, CGNS_STRING_SIZE*sizeof(char), MASTER_NODE);
   }
-    
+
   /*--- Compute various data sizes --- */
-  
+
   unsigned long sizeInBytesPerPoint = sizeof(passivedouble)*nVar;
   unsigned long sizeInBytesLocal    = sizeInBytesPerPoint*nParallel_Poin;
   unsigned long sizeInBytesGlobal   = sizeInBytesPerPoint*nPoint_Global;
   unsigned long offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
-  
+
   /*--- Collectively write the actual data to file ---*/
-  
+
   WriteMPIBinaryDataAll(dataSorter->GetData(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
   /*--- Close the file ---*/
-  
+
   CloseMPIFile();
 
 }

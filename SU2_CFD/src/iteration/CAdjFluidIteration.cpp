@@ -181,6 +181,11 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Solver(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL], config[val_iZone],
           iMesh);
+
+      integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetDualTime_Geometry(
+          geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh][MESH_SOL], config[val_iZone],
+          iMesh);
+
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
     }
 

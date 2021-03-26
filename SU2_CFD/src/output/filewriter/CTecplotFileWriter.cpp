@@ -66,7 +66,7 @@ void CTecplotFileWriter::Write_Data(){
                 nParallel_Hexa = dataSorter->GetnElem(HEXAHEDRON),
                 nParallel_Pris = dataSorter->GetnElem(PRISM),
                 nParallel_Pyra = dataSorter->GetnElem(PYRAMID);
-  
+
   unsigned long nTot_Line = dataSorter->GetnElemGlobal(LINE),
                 nTot_Tria = dataSorter->GetnElemGlobal(TRIANGLE),
                 nTot_Quad = dataSorter->GetnElemGlobal(QUADRILATERAL),
@@ -118,7 +118,7 @@ void CTecplotFileWriter::Write_Data(){
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -142,7 +142,7 @@ void CTecplotFileWriter::Write_Data(){
 
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -204,7 +204,7 @@ void CTecplotFileWriter::Write_Data(){
     }
     Tecplot_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 

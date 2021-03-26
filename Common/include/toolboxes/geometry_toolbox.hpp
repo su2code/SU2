@@ -50,6 +50,13 @@ inline void Distance(Int nDim, const T* a, const T* b, T* d) {
   for(Int i = 0; i < nDim; i++) d[i] = a[i] - b[i];
 }
 
+/*! \brief Reflect a at b: c = 2*b - a
+ */
+template<class T, typename Int>
+inline void PointPointReflect(Int nDim, const T* a, const T* b, T* d){
+  for(Int i = 0; i < nDim; i++) d[i] = 2 * b[i] - a[i];
+}
+
 /*! \return a.b */
 template<class T, typename Int>
 inline T DotProduct(Int nDim, const T* a, const T* b) {

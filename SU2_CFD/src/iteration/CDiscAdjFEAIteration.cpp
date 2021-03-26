@@ -364,12 +364,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
       break;
   }
 
-  /*--- FSI specific dependencies. ---*/
-  if (fsi) {
-    /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
-    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
-  }
-
   /*--- MPI dependencies. ---*/
 
   dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
@@ -378,6 +372,12 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   if (kind_recording == MESH_COORDS) {
     structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
     structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  }
+
+  /*--- FSI specific dependencies. ---*/
+  if (fsi) {
+    /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
+    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
   }
 
   /*--- Topology optimization dependencies. ---*/

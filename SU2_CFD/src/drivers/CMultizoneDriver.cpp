@@ -81,7 +81,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
       break;
     case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
       fluid_zone = true;
-      break;  
+      break;
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
@@ -173,7 +173,7 @@ void CMultizoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
+      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() << "." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -263,9 +263,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     }
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++) {

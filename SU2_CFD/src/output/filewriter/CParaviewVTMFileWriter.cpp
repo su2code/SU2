@@ -48,7 +48,7 @@ CParaviewVTMFileWriter::CParaviewVTMFileWriter(string valFileName, string valFol
     mkdir((this->folderName + "/zone_" + to_string(valiZone)).c_str(), 0777);
 #endif
   }
-    
+
   nWrittenDatasets = 0;
   accumulatedBandwidth = 0;
 }
@@ -109,11 +109,11 @@ void CParaviewVTMFileWriter::AddDataset(string name, string file, CParallelDataS
   /*--- Add the dataset to the vtm file ---*/
 
   AddDataset(name, fullFilename + CParaviewXMLFileWriter::fileExt);
-  
+
   /*--- Update the bandwidth ---*/
-  
-  nWrittenDatasets++;  
-  
+
+  nWrittenDatasets++;
+
   accumulatedBandwidth += XMLWriter.Get_Bandwidth();
 
   bandwidth = accumulatedBandwidth/nWrittenDatasets;

@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CTurbSolver::CTurbSolver(void) : CSolver() { }
@@ -39,7 +40,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
-  nVertex = new unsigned long[nMarker];
+  nVertex.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
@@ -74,24 +75,18 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
 CTurbSolver::~CTurbSolver(void) {
 
-  if (Inlet_TurbVars != nullptr) {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (Inlet_TurbVars[iMarker] != nullptr) {
-        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          delete [] Inlet_TurbVars[iMarker][iVertex];
-        }
-        delete [] Inlet_TurbVars[iMarker];
-      }
-    }
-    delete [] Inlet_TurbVars;
+  for (auto& mat : SlidingState) {
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;
+
 }
 
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
@@ -221,12 +216,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
-      Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+      if (implicit) Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
     /*--- Viscous contribution. ---*/
@@ -238,13 +233,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
-    Jacobian.SetDiagonalAsColumnSum();
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
 }
 
 void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *numerics, CConfig *config) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Points in edge ---*/
@@ -286,12 +282,12 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 }
 
@@ -478,7 +474,10 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       /*--- Set the normal vector and the coordinates ---*/
 
       visc_numerics->SetNormal(Normal);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
       /*--- Primitive variables ---*/
 
@@ -510,22 +509,49 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
 
-  const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
+  if(config->GetTurb_Fixed_Values()){
 
-  CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+    /*--- Form normalized far-field velocity ---*/
+    const su2double* velocity_inf = config->GetVelocity_FreeStreamND();
+    su2double velmag_inf = GeometryToolbox::Norm(nDim, velocity_inf);
+    if(velmag_inf==0)
+      SU2_MPI::Error("Far-field velocity is zero, cannot fix turbulence quantities to inflow values.", CURRENT_FUNCTION);
+    su2double unit_velocity_inf[MAXNDIM];
+    for(unsigned short iDim=0; iDim<nDim; iDim++)
+      unit_velocity_inf[iDim] = velocity_inf[iDim] / velmag_inf;
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if( GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), unit_velocity_inf)
+        < config->GetTurb_Fixed_Values_MaxScalarProd() ) {
+        /*--- Set the solution values and zero the residual ---*/
+        nodes->SetSolution_Old(iPoint, Solution_Inf);
+        nodes->SetSolution(iPoint, Solution_Inf);
+        LinSysRes.SetBlock_Zero(iPoint);
+        if (implicit) {
+          /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+          for(unsigned long iVar=0; iVar<nVar; iVar++)
+            Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        }
+      }
+    }
+  }
+
+}
+
+void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
-  SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
+  SetResToZero();
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -536,14 +562,20 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Read the volume ---*/
+    /// TODO: This could be the SetTime_Step of this solver.
+    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
 
-    su2double Vol = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+    /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
 
-    /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-
-    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
-    Jacobian.AddVal2Diag(iPoint, Delta);
+    if (dt != 0.0) {
+      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Vol / dt);
+    }
+    else {
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      LinSysRes.SetBlock_Zero(iPoint);
+    }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
@@ -564,35 +596,24 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   }
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
+    Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  SU2_OMP(sections)
-  {
-    SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
-
-    SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysSol.SetBlock_Zero(iPoint);
-  }
-
-  /*--- Solve or smooth the linear system ---*/
-
-  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  SU2_OMP_MASTER
-  {
-    SetIterLinSolver(iter);
-    SetResLinSolver(System.GetResidual());
   }
   SU2_OMP_BARRIER
 
+  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  SetResidual_RMS(geometry, config);
+  SU2_OMP_BARRIER
+}
 
-  ComputeUnderRelaxationFactor(solver_container, config);
+void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  ComputeUnderRelaxationFactor(config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
@@ -637,19 +658,36 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  /*--- MPI solution ---*/
-
   InitiateComms(geometry, config, SOLUTION_EDDY);
   CompleteComms(geometry, config, SOLUTION_EDDY);
 
-  /*--- Compute the root mean square residual ---*/
-  SU2_OMP_MASTER
-  SetResidual_RMS(geometry, config);
+}
+
+void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, solver_container, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
   SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, solver_container, config);
 
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
+void CTurbSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
   /* Only apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -831,7 +869,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (geometry->edges->GetNode(iEdge,0) == iPoint)? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)

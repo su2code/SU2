@@ -32,7 +32,7 @@ CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  unsigned short iDim, iVar, nLineLets;
+  unsigned short nLineLets;
 
   adjoint = true;
 
@@ -58,14 +58,14 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  Residual   = new su2double [nVar]; Residual_RMS = new su2double[nVar];
-  Residual_i = new su2double [nVar]; Residual_j = new su2double [nVar];
-  Residual_Max = new su2double [nVar]; Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
+
+  Residual   = new su2double [nVar];
+  Residual_i = new su2double [nVar];
+  Residual_j = new su2double [nVar];
 
   Solution   = new su2double [nVar];
   Solution_i = new su2double [nVar];
@@ -161,7 +161,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 #ifndef HAVE_MPI
     rbuf_NotMatching = sbuf_NotMatching;
 #else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (rbuf_NotMatching != 0) {
         SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
@@ -476,10 +476,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Build implicit system ---*/
 
@@ -501,7 +498,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 

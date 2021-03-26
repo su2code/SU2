@@ -59,7 +59,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
 
   eves_st_i.resize(nSpecies,0.0);
   eves_st_j.resize(nSpecies,0.0);
-  
+
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {

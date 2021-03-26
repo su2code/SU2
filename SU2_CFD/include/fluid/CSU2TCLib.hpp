@@ -44,7 +44,7 @@ private:
   vector<unsigned short> nElStates; /*!< \brief Number of electron states. */
 
   C3DIntMatrix Reactions;           /*!</brief reaction map for chemically reacting flows */
-  
+
   vector<su2double>
   ArrheniusCoefficient,             /*!< \brief Arrhenius reaction coefficient */
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
@@ -68,7 +68,7 @@ private:
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
   Blottner,                      /*!< \brief Blottner viscosity coefficients */
   Dij;                           /*!< \brief Binary diffusion coefficients. */
-  
+
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
@@ -211,7 +211,7 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }
 
   };
 

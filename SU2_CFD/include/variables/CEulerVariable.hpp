@@ -57,6 +57,10 @@ protected:
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
 
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -425,6 +429,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
@@ -468,6 +480,28 @@ public:
   inline void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGustDer) final {
     for (unsigned long iDim = 0; iDim < nDim+1; iDim++)
       WindGustDer(iPoint,iDim) = val_WindGustDer[iDim];
+  }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = GetDensity(iPoint) * val_vector[iDim];
   }
 
 };

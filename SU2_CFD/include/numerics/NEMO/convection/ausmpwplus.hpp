@@ -44,7 +44,7 @@ private:
   su2double ProjVel_i, ProjVel_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
 
- 
+
 public:
 
   /*!

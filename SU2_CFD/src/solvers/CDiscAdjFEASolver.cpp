@@ -60,32 +60,20 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
-  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
-  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
 
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar]();
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
+  Residual_RMS.resize(nVar,1.0);
+  Residual_Max.resize(nVar,1.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
   if (config->GetMultizone_Residual()) {
 
-    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
-
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
   /*--- Define some auxiliary vectors related to the solution ---*/
@@ -473,10 +461,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Set Residuals to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++){
-    SetRes_RMS(iVar,0.0);
-    SetRes_Max(iVar,0.0,0);
-  }
+  SetResToZero();
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
@@ -587,20 +572,20 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     for (iVar = 0; iVar < nVar; iVar++){
       residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
 
-      AddRes_RMS(iVar,residual*residual);
+      Residual_RMS[iVar] += residual*residual;
       AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
     }
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         residual = nodes->GetSolution_Accel(iPoint, iVar) - nodes->GetSolution_Old_Accel(iPoint, iVar);
 
-        AddRes_RMS(iVar,residual*residual);
+        Residual_RMS[iVar] += residual*residual;
         AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
       }
       for (iVar = 0; iVar < nVar; iVar++){
         residual = nodes->GetSolution_Vel(iPoint, iVar) - nodes->GetSolution_Old_Vel(iPoint, iVar);
 
-        AddRes_RMS(iVar,residual*residual);
+        Residual_RMS[iVar] += residual*residual;
         AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
       }
     }
@@ -639,10 +624,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       }
     }
 
-    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Extract the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
 
@@ -651,7 +636,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_EField[iVar] = AD::GetDerivative(AD_Idx_EField[iVar]);
         else             Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     if (fea_dv) {
@@ -659,7 +644,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_DV[iVar] = AD::GetDerivative(AD_Idx_DV_Val[iVar]);
         else             Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     /*--- Extract the flow traction sensitivities ---*/

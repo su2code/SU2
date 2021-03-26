@@ -67,7 +67,6 @@ enum SU2_COMPONENT {
   SU2_CFD = 1,  /*!< \brief Running the SU2_CFD software. */
   SU2_DEF = 2,  /*!< \brief Running the SU2_DEF software. */
   SU2_DOT = 3,  /*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 4,  /*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 5,  /*!< \brief Running the SU2_GEO software. */
   SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
 };
@@ -78,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -177,7 +176,6 @@ enum ENUM_MAIN_SOLVER {
   INC_NAVIER_STOKES =5,             /*!< \brief Definition of the incompressible Navier-Stokes' solver. */
   INC_RANS = 6,                     /*!< \brief Definition of the incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
   HEAT_EQUATION = 7,                /*!< \brief Definition of the finite volume heat solver. */
-  FLUID_STRUCTURE_INTERACTION = 8,  /*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 9,               /*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 10,                   /*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 11,           /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
@@ -246,7 +244,7 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 };
 
 /*!
- * \brief different solver types for the multizone environment component
+ * \brief Different solver types for multizone problems
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
@@ -450,7 +448,6 @@ static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
@@ -710,7 +707,6 @@ enum ENUM_SURFACEMOVEMENT {
   MOVING_WALL = 2,               /*!< \brief Simulation with moving wall. */
   AEROELASTIC = 3,               /*!< \brief Simulation with aeroelastic motion. */
   AEROELASTIC_RIGID_MOTION = 4,  /*!< \brief Simulation with rotation and aeroelastic motion. */
-  FLUID_STRUCTURE = 5,           /*!< \brief Fluid structure deformation. */
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
 };
@@ -719,7 +715,6 @@ static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
   MakePair("AEROELASTIC", AEROELASTIC)
-  MakePair("FLUID_STRUCTURE", FLUID_STRUCTURE)
   MakePair("EXTERNAL", EXTERNAL)
   MakePair("EXTERNAL_ROTATION", EXTERNAL_ROTATION)
 };
@@ -1510,6 +1505,7 @@ enum ENUM_OBJECTIVE {
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
+  SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
@@ -1534,7 +1530,8 @@ enum ENUM_OBJECTIVE {
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
-  TOPOL_COMPLIANCE = 64         /*!< \brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
+  STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
 };
 static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -1560,6 +1557,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+  MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
@@ -1585,6 +1583,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
+  MakePair("STRESS_PENALTY", STRESS_PENALTY)
 };
 
 /*!
@@ -1625,40 +1624,6 @@ static const MapType<string, ENUM_SENS> Sens_Map = {
   MakePair("SENS_MACH", SENS_MACH)
   MakePair("SENS_AOA", SENS_AOA)
   MakePair("SENS_AOS", SENS_AOS)
-};
-
-/*!
- * \brief Types of grid adaptation/refinement
- */
-enum ENUM_ADAPT {
-  NO_ADAPT = 0,           /*!< \brief No grid adaptation. */
-  FULL = 1,               /*!< \brief Do a complete grid refinement of all the computational grids. */
-  FULL_FLOW = 2,          /*!< \brief Do a complete grid refinement of the flow grid. */
-  FULL_ADJOINT = 3,       /*!< \brief Do a complete grid refinement of the adjoint grid. */
-  GRAD_FLOW = 5,          /*!< \brief Do a gradient based grid adaptation of the flow grid. */
-  GRAD_ADJOINT = 6,       /*!< \brief Do a gradient based grid adaptation of the adjoint grid. */
-  GRAD_FLOW_ADJ = 7,      /*!< \brief Do a gradient based grid adaptation of the flow and adjoint grid. */
-  COMPUTABLE = 9,         /*!< \brief Apply a computable error grid adaptation. */
-  REMAINING = 10,         /*!< \brief Apply a remaining error grid adaptation. */
-  WAKE = 12,              /*!< \brief Do a grid refinement on the wake. */
-  SMOOTHING = 14,         /*!< \brief Do a grid smoothing of the geometry. */
-  SUPERSONIC_SHOCK = 15,  /*!< \brief Do a grid smoothing. */
-  PERIODIC = 17           /*!< \brief Add the periodic halo cells. */
-};
-static const MapType<string, ENUM_ADAPT> Adapt_Map = {
-  MakePair("NONE", NO_ADAPT)
-  MakePair("FULL", FULL)
-  MakePair("FULL_FLOW", FULL_FLOW)
-  MakePair("FULL_ADJOINT", FULL_ADJOINT)
-  MakePair("GRAD_FLOW", GRAD_FLOW)
-  MakePair("GRAD_ADJOINT", GRAD_ADJOINT)
-  MakePair("GRAD_FLOW_ADJ", GRAD_FLOW_ADJ)
-  MakePair("COMPUTABLE", COMPUTABLE)
-  MakePair("REMAINING", REMAINING)
-  MakePair("WAKE", WAKE)
-  MakePair("SMOOTHING", SMOOTHING)
-  MakePair("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-  MakePair("PERIODIC", PERIODIC)
 };
 
 /*!
@@ -1923,21 +1888,15 @@ static const MapType<string, ENUM_FFD_BLENDING> Blending_Map = {
  * \brief Types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {
-  STEEPEST_DESCENT = 1,     /*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
-  NEWTON = 2,               /*!< \brief Newton method for point inversion algorithm (Free-Form). */
-  QUASI_NEWTON = 3,         /*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-  CONJUGATE_GRADIENT = 4,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES = 5,               /*!< \brief Flexible Generalized Minimal Residual method. */
-  BCGSTAB = 6,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RESTARTED_FGMRES = 7,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER = 8,             /*!< \brief Iterative smoother. */
-  PASTIX_LDLT = 9,          /*!< \brief PaStiX LDLT (complete) factorization. */
-  PASTIX_LU = 10,           /*!< \brief PaStiX LU (complete) factorization. */
+  CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
+  BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  SMOOTHER,             /*!< \brief Iterative smoother. */
+  PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
-  MakePair("STEEPEST_DESCENT", STEEPEST_DESCENT)
-  MakePair("NEWTON", NEWTON)
-  MakePair("QUASI_NEWTON", QUASI_NEWTON)
   MakePair("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
@@ -1997,13 +1956,13 @@ static const MapType<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
-  JACOBI = 1,        /*!< \brief Jacobi preconditioner. */
-  LU_SGS = 2,        /*!< \brief LU SGS preconditioner. */
-  LINELET = 3,       /*!< \brief Line implicit preconditioner. */
-  ILU = 4,           /*!< \brief ILU(k) preconditioner. */
-  PASTIX_ILU= 5,     /*!< \brief PaStiX ILU(k) preconditioner. */
-  PASTIX_LU_P= 6,    /*!< \brief PaStiX LU as preconditioner. */
-  PASTIX_LDLT_P= 7,  /*!< \brief PaStiX LDLT as preconditioner. */
+  JACOBI,         /*!< \brief Jacobi preconditioner. */
+  LU_SGS,         /*!< \brief LU SGS preconditioner. */
+  LINELET,        /*!< \brief Line implicit preconditioner. */
+  ILU,            /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("JACOBI", JACOBI)
@@ -2067,18 +2026,6 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
   MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
   MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
   MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
-};
-
-/*!
- * \brief Types of criteria to determine when the solution is converged
- */
-enum ENUM_CONVERGE_CRIT {
-  CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
-  RESIDUAL = 2      /*!< \brief Residual criteria to establish the convergence of the code. */
-};
-static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
-  MakePair("CAUCHY", CAUCHY)
-  MakePair("RESIDUAL", RESIDUAL)
 };
 
 /*!
@@ -2199,8 +2146,6 @@ enum MPI_QUANTITIES {
   SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
   SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
-  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
   SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
   PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
   PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
@@ -2220,7 +2165,6 @@ enum MPI_QUANTITIES {
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
@@ -2305,6 +2249,30 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("MMS_INC_EULER",            MMS_INC_EULER)
   MakePair("MMS_INC_NS",               MMS_INC_NS)
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+};
+
+/*!
+ * \brief Types of streamwise periodicity.
+ */
+enum ENUM_STREAMWISE_PERIODIC {
+  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
+  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
+  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
+};
+static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
+  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
+  MakePair("PRESSURE_DROP", PRESSURE_DROP)
+  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
+};
+
+/*!
+ * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.
+ */
+struct StreamwisePeriodicValues {
+  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 };
 
 #undef MakePair

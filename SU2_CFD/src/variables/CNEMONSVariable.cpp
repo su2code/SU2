@@ -197,6 +197,3 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   
   return nonPhys;
 }
-
-
-

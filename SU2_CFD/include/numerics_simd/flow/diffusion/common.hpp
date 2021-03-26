@@ -71,7 +71,7 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
  */
 template<size_t nVar, size_t nDim>
 FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
-                                         const MatrixDbl<nVar,nDim> grad) {
+                                         const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -154,7 +154,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
  */
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
-                                                      const VectorDbl<nDim> normal,
+                                                      const VectorDbl<nDim>& normal,
                                                       Double dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);

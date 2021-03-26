@@ -93,7 +93,7 @@ public:
    */
   unsigned long GetNodeBegin(unsigned short rank) const override {
     return nPoint_Recv[rank];
-  } 
+  }
 
   /*!
    * \brief Get the Processor ID a Point belongs to.
@@ -118,7 +118,7 @@ public:
   unsigned long GetnPointCumulative(unsigned short rank) const override {
     return GetNodeBegin(rank);
   }
-  
+
 private:
 
   /*!

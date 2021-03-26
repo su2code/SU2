@@ -71,7 +71,7 @@ protected:
    * \param[in] flow_solver - The container holding all solution data.
    */
   void SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver);
-  
+
   /*!
    * \brief  Set the value of the rotating frame coefficients (CT, CQ and CMerit).
    * \param[in] config - Definition of the particular problem.

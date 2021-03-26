@@ -1,7 +1,7 @@
 /*!
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
- * \author O. Burghardt, T. Albring, R. Sanchez
+ * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,7 +31,6 @@
 #include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
-#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -46,6 +45,12 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
     nInnerIter[iZone] = config_container[iZone]->GetnInner_Iter();
 
   Has_Deformation.resize(nZone) = false;
+
+
+  FixPtCorrector.resize(nZone);
+  LinSolver.resize(nZone);
+  AdjRHS.resize(nZone);
+  AdjSol.resize(nZone);
 
   direct_iteration = new CIteration**[nZone];
   direct_output = new COutput*[nZone];
@@ -158,11 +163,47 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 }
 
+bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
+
+  config_container[iZone]->SetInnerIter(iInnerIter);
+
+  /*--- Evaluate the tape section belonging to solvers in iZone.
+   *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
+
+  eval_transfer = (eval_transfer || (iInnerIter == nInnerIter[iZone]-1)) && !KrylovMode;
+
+  ComputeAdjoints(iZone, eval_transfer);
+
+  /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
+
+  iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                              solver_container, numerics_container, config_container,
+                                              surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+  /*--- Use QN driver to improve the solution. ---*/
+
+  if (FixPtCorrector[iZone].size()) {
+    GetAllSolutions(iZone, true, FixPtCorrector[iZone].FPresult());
+    FixPtCorrector[iZone].compute();
+    if(iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
+  }
+
+  /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
+   *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
+
+  if (!KrylovMode) Set_SolutionOld_To_Solution(iZone);
+
+  /*--- Print out the convergence data to screen and history file. ---*/
+
+  return iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container, geometry_container,
+                                                     solver_container, numerics_container, config_container,
+                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
+}
+
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
-  vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -177,13 +218,20 @@ void CDiscAdjMultizoneDriver::Run() {
 
     Set_BGSSolution_k_To_Solution(iZone);
 
-    /*--- Prepare quasi-Newton drivers. ---*/
+    /*--- Prepare Krylov or quasi-Newton methods. ---*/
 
-    if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
-      fixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
-                                   geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
-                                   GetTotalNumberOfVariables(iZone, true),
-                                   geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    const auto nPointDomain = geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain();
+    const auto nVar = GetTotalNumberOfVariables(iZone, true);
+
+    if (config_container[iZone]->GetNewtonKrylov() &&
+        config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
+      AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
+      AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
+      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
+    }
+    else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
+      FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
     }
   }
 
@@ -199,7 +247,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
-   su2double rhs_norm = 0.0;
+  su2double rhs_norm = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -271,66 +319,88 @@ void CDiscAdjMultizoneDriver::Run() {
 
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
-      bool eval_transfer = false;
       const bool restart = config_container[iZone]->GetRestart();
       const bool no_restart = (iOuterIter > 0) || !restart;
+      eval_transfer = false;
 
       /*--- Reset QN driver for new inner iterations. ---*/
 
-      if (fixPtCorrector[iZone].size()) {
-        fixPtCorrector[iZone].reset();
-        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+      if (FixPtCorrector[iZone].size()) {
+        FixPtCorrector[iZone].reset();
+        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, FixPtCorrector[iZone]);
       }
 
-      for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
+      if (!config_container[iZone]->GetNewtonKrylov() || !no_restart || nInnerIter[iZone] < KrylovMinIters) {
 
-        config_container[iZone]->SetInnerIter(iInnerIter);
+        /*--- Regular fixed-point, possibly with quasi-Newton method. ---*/
 
-        /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
+        for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
-        if (no_restart || (iInnerIter > 0)) {
-          Add_External_To_Solution(iZone);
+          /*--- Add off-diagonal contribution (including the OF gradient) to Solution. ---*/
+
+          if (no_restart || (iInnerIter > 0)) {
+            Add_External_To_Solution(iZone);
+          }
+          else {
+            /*--- If we restarted, Solution already has all contributions,
+             *    we run only one inner iter to compute the cross terms. ---*/
+            eval_transfer = true;
+          }
+
+          const bool converged = Iterate(iZone, iInnerIter);
+
+          if (eval_transfer) break;
+
+          eval_transfer = converged;
         }
-        else {
-          /*--- If we restarted, Solution already has all contributions,
-           *    we run only one inner iter to compute the cross terms. ---*/
-          eval_transfer = true;
+      }
+      else {
+        /*--- Use FGMRES to solve the adjoint system, the RHS is -External,
+         * the solution are the iZone adjoint variables + External,
+         * Recall that External also contains the OF gradient. ---*/
+
+        GetAdjointRHS(iZone, AdjRHS[iZone]);
+
+        Add_External_To_Solution(iZone);
+
+        GetAllSolutions(iZone, true, AdjSol[iZone]);
+
+        const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
+        const auto product = AdjointProduct(this, iZone);
+
+        /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
+        const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
+        config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
+        LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
+
+        Scalar eps = 1.0;
+        for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
+          Scalar eps_l = 0.0;
+          Scalar tol_l = KrylovTol / eps;
+          auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
+          iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                                   tol_l, iter, eps_l, monitor, config_container[iZone]);
+          totalIter -= iter+1;
+          eps *= eps_l;
         }
 
-        /*--- Evaluate the tape section belonging to solvers in iZone.
-         *    Only evaluate TRANSFER terms on the last iteration or after convergence. ---*/
+        /*--- Store the solution and restore user settings. ---*/
+        SetAllSolutions(iZone, true, AdjSol[iZone]);
+        config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
 
-        eval_transfer = eval_transfer || (iInnerIter == nInnerIter[iZone]-1);
+        /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
+        AdjSol[iZone] += AdjRHS[iZone];
+        SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
 
-        ComputeAdjoints(iZone, eval_transfer);
+        /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
+         * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
+        eval_transfer = true;
+        Iterate(iZone, product.iInnerIter);
 
-        /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-
-        iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                    solver_container, numerics_container, config_container,
-                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-        /*--- Use QN driver to improve the solution. ---*/
-
-        if (fixPtCorrector[iZone].size()) {
-          GetAllSolutions(iZone, true, fixPtCorrector[iZone].FPresult());
-          fixPtCorrector[iZone].compute();
-          if(iInnerIter) SetAllSolutions(iZone, true, fixPtCorrector[iZone]);
-        }
-
-        /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
-         *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/
-
-        Set_SolutionOld_To_Solution(iZone);
-
-        /*--- Print out the convergence data to screen and history file. ---*/
-
-        bool converged = iteration_container[iZone][INST_0]->Monitor(output_container[iZone], integration_container,
-                                                    geometry_container, solver_container, numerics_container,
-                                                    config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-        if (eval_transfer) break;
-        eval_transfer = converged;
-
+        /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
+         * This is set without the "External" (by adding RHS above) so that it can be added
+         * again in the next outer iteration with new contributions from other zones. ---*/
+        SetAllSolutions(iZone, true, AdjSol[iZone]);
       }
 
       /*--- Off-diagonal (coupling term) BGS update. ---*/
@@ -365,7 +435,8 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Check for convergence. ---*/
 
-    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1);
+    StopCalc = driver_output->GetConvergence() || (iOuterIter == nOuterIter-1) ||
+               ((nZone==1) && output_container[ZONE_0]->GetConvergence());
 
     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
@@ -572,7 +643,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
       su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
-      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
         cout << "-------------------------------------\n";

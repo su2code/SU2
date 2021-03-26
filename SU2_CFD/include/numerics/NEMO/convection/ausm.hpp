@@ -45,7 +45,7 @@ private:
   su2double ProjVel_i, ProjVel_j;
   su2double sq_vel;
   //su2double  Proj_ModJac_Tensor_ij;
- 
+
 public:
 
   /*!

@@ -266,9 +266,9 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
   /*--- Final reduction of statistics. ---*/
   su2double tmp = MaxDistance;
   unsigned long tmp1 = ErrorCounter, tmp2 = nGlobalVertexTarget;
-  SU2_MPI::Allreduce(&tmp, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&tmp1, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&tmp2, &nGlobalVertexTarget, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&tmp1, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&tmp2, &nGlobalVertexTarget, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   ErrorRate = 100*su2double(ErrorCounter) / nGlobalVertexTarget;
 

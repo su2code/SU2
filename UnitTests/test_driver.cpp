@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,13 +37,12 @@
 int main(int argc, char *argv[]) {
 
   /*--- Startup MPI, if supported ---*/
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 
   /*--- Run the test driver supplied by Catch ---*/
   int result = Catch::Session().run(argc, argv);
