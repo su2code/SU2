@@ -158,22 +158,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   /*--- Allocate data. ---*/
-#define ALLOC_AND_INIT(ptr,num) {\
-  ptr = MemoryAllocation::aligned_alloc<ScalarType>(64,num*sizeof(ScalarType));\
-  for(size_t k=0; k<num; ++k) ptr[k]=0.0; }
+  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = MemoryAllocation::aligned_alloc<ScalarType,true>(64, num*sizeof(ScalarType));
+  };
 
-  ALLOC_AND_INIT(matrix, nnz*nVar*nEqn)
+  allocAndInit(matrix, nnz*nVar*nEqn);
 
   /*--- Preconditioners. ---*/
 
-  if (ilu_needed) {
-    ALLOC_AND_INIT(ILU_matrix, nnz_ilu*nVar*nEqn)
-  }
+  if (ilu_needed) allocAndInit(ILU_matrix, nnz_ilu*nVar*nEqn);
 
-  if (diag_needed) {
-    ALLOC_AND_INIT(invM, nPointDomain*nVar*nEqn);
-  }
-#undef ALLOC_AND_INIT
+  if (diag_needed) allocAndInit(invM, nPointDomain*nVar*nEqn);
 
   /*--- Thread parallel initialization. ---*/
 
