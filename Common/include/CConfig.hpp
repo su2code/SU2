@@ -1035,6 +1035,7 @@ private:
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
 
   array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
+  bool RampFreestreamVel; /*!< \brief Indicating whether freestream vel is ramped for unsteady inc cases. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
   vel_inf[3],            /*!< \brief freestream velocity array for the COption class. */
   eng_cyl[7],            /*!< \brief engine box array for the COption class. */
@@ -9275,5 +9276,11 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /*!
+   * \brief Get bool indicating whether freestream vel is ramped for unsteady inc cases.
+   * \return Bool if freestream vel is ramped.
+   */
+  bool GetRampFreestreamVel() const { return RampFreestreamVel; }
 
 };

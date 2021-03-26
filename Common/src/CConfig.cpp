@@ -1260,6 +1260,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief INC_VELOCITY_INIT \n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \ingroup Config*/
   vel_init[0] = 1.0; vel_init[1] = 0.0; vel_init[2] = 0.0;
   addDoubleArrayOption("INC_VELOCITY_INIT", 3, vel_init);
+  /*!\brief RAMP_FREESTREAM_VEL \n DESCRIPTION: Indicating whether freestream vel is ramped for unsteady inc cases. \ingroup Config*/
+  addBoolOption("RAMP_FREESTREAM_VEL", RampFreestreamVel, false);
   /*!\brief INC_TEMPERATURE_INIT \n DESCRIPTION: Initial temperature for incompressible flows with the energy equation (288.15 K by default) \ingroup Config*/
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/

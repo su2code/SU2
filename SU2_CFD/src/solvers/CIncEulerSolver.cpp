@@ -166,6 +166,19 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
+
+  // Set the initial vel to zero in case of ramped freestream vel.
+  vector<su2double> FakeVelInf{ Velocity_Inf[0], Velocity_Inf[1], Velocity_Inf[2] };
+  if(config->GetRampFreestreamVel()){
+    if(nDim==2) {
+      //vector<su2double> FakeVelInf{ 0.01*Velocity_Inf[0], 0.01* Velocity_Inf[1] };
+      FakeVelInf[0] = 0.0; FakeVelInf[1] = 0.0;
+     } else {
+      //vector<su2double> FakeVelInf{ 0.01*Velocity_Inf[0], 0.01* Velocity_Inf[1], 0.01* Velocity_Inf[2] };
+      FakeVelInf[0] = 0.0; FakeVelInf[1] = 0.0; FakeVelInf[2] = 0.0;
+     }
+  }
+
   Temperature_Inf = config->GetTemperature_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
@@ -195,7 +208,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncNSVariable(Pressure_Inf, FakeVelInf.data(), Temperature_Inf, nPoint, nDim, nVar, config);
   } else {
     nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   }
@@ -1893,6 +1906,11 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   su2double Normal[MAXNDIM] = {0.0};
 
+  // compute freestream vel ramp factor.
+  su2double rampFactor = 1.0;
+  if(config->GetRampFreestreamVel())
+    rampFactor = (static_cast<su2double>(config->GetTimeIter()) / config->GetnTime_Iter());
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -1924,7 +1942,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-      V_infty[iDim+1] = GetVelocity_Inf(iDim);
+      V_infty[iDim+1] = GetVelocity_Inf(iDim) * rampFactor;
 
     /*--- Far-field pressure set to static pressure (0.0). ---*/
 
