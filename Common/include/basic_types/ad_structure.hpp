@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "datatype_structure.hpp"
+#include "../code_config.hpp"
 #include "../parallelization/omp_structure.hpp"
 
 /*!
