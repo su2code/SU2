@@ -1547,11 +1547,13 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_GRADIENT:
-      COUNT_PER_POINT  = nVar*nDim*2;
+    case SOLUTION_GRAD_REC:
+      COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_GRADIENT:
-      COUNT_PER_POINT  = nPrimVarGrad*nDim*2;
+    case PRIMITIVE_GRAD_REC:
+      COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE_LIMITER:
@@ -1681,20 +1683,20 @@ void CSolver::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
-                bufDSend[buf_offset+iVar*nDim+iDim+nDim*nVar] = base_nodes->GetGradient_Reconstruction(iPoint, iVar, iDim);
-              }
-            }
             break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-                bufDSend[buf_offset+iVar*nDim+iDim+nDim*nPrimVarGrad] = base_nodes->GetGradient_Reconstruction(iPoint, iVar, iDim);
-              }
-            }
+            break;
+          case SOLUTION_GRAD_REC:
+          case PRIMITIVE_GRAD_REC:
+            for (iVar = 0; iVar < (commType==SOLUTION_GRAD_REC? nVar : nPrimVarGrad); iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Reconstruction(iPoint, iVar, iDim);
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -1841,20 +1843,20 @@ void CSolver::CompleteComms(CGeometry *geometry,
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 base_nodes->SetGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-                base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim+nDim*nVar]);
-              }
-            }
             break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
                 base_nodes->SetGradient_Primitive(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-                base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim+nDim*nPrimVarGrad]);
-              }
-            }
+            break;
+          case SOLUTION_GRAD_REC:
+          case PRIMITIVE_GRAD_REC:
+            for (iVar = 0; iVar < (commType==SOLUTION_GRAD_REC? nVar : nPrimVarGrad); iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2312,28 +2314,36 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
+  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
 
-  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nVar, gradient);
+  /// TODO: There is no periodic comm for reconstruction GG.
+  const auto commPer = reconstruction? PERIODIC_NONE : PERIODIC_SOL_GG;
+
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
+  PERIODIC_QUANTITIES commPer;
 
-  if (reconstruction)
+  if (reconstruction) {
     weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
+    /// TODO: There is no periodic comm for reconstruction LS.
+    commPer = PERIODIC_NONE;
+  }
+  else {
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+    commPer = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
+  }
 
   const auto& solution = base_nodes->GetSolution();
   auto& rmatrix = base_nodes->GetRmatrix();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
+  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, solution, 0, nVar, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {

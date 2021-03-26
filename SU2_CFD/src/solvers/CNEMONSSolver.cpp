@@ -133,6 +133,10 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+
+  /// TODO: There is no periodic comm for reconstruction GG.
+  const auto commPer = reconstruction? PERIODIC_NONE : PERIODIC_PRIM_GG;
 
   /*--- Get indices of species & mixture density ---*/
   RHOS_INDEX = nodes->GetRhosIndex();
@@ -151,29 +155,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   const auto& primitives = nodes->GetPrimitive_Aux();
 
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
-                             *config, primitives, 0, nPrimVarGrad, gradient);
-}
-
-void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-
-  const auto& primitives = nodes->GetPrimitive();
-
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
 unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {

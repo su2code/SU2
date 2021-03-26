@@ -2131,33 +2131,32 @@ enum PERIODIC_QUANTITIES {
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
 enum MPI_QUANTITIES {
-  SOLUTION             =  0,  /*!< \brief Conservative solution communication. */
-  SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
-  SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
-  SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
-  PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
-  PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
-  UNDIVIDED_LAPLACIAN  = 10,  /*!< \brief Undivided Laplacian communication. */
-  MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
-  SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
-  AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
-  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
-  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
-  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
-  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
-  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
-  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
-  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
-  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
-  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
-  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
-  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
-  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
-  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
+  SOLUTION             ,  /*!< \brief Conservative solution communication. */
+  SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
+  SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_GRAD_REC    ,  /*!< \brief Conservative solution reconstruction gradient communication. */
+  SOLUTION_LIMITER     ,  /*!< \brief Conservative solution limiter communication. */
+  SOLUTION_GEOMETRY    ,  /*!< \brief Geometry solution communication. */
+  PRIMITIVE_GRADIENT   ,  /*!< \brief Primitive gradient communication. */
+  PRIMITIVE_GRAD_REC   ,  /*!< \brief Primitive reconstruction gradient communication. */
+  PRIMITIVE_LIMITER    ,  /*!< \brief Primitive limiter communication. */
+  UNDIVIDED_LAPLACIAN  ,  /*!< \brief Undivided Laplacian communication. */
+  MAX_EIGENVALUE       ,  /*!< \brief Maximum eigenvalue communication. */
+  SENSOR               ,  /*!< \brief Dissipation sensor communication. */
+  AUXVAR_GRADIENT      ,  /*!< \brief Auxiliary variable gradient communication. */
+  COORDINATES          ,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      ,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
+  SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         ,  /*!< \brief FEA solution communication. */
+  MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  PRIMITIVE               /*!< \brief Primitive solution communication. */
 };
 
 /*!

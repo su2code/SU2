@@ -4935,6 +4935,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
 
+  if (ReconstructionGradientRequired && GetFluidProblem() && Kind_ConvNumScheme_Flow == SPACE_CENTERED)
+    SU2_MPI::Error("For centered schemes the option NUM_METHOD_GRAD_RECON should not be set.", CURRENT_FUNCTION);
+
   /* Simpler boolean to control allocation of least-squares memory. */
 
   LeastSquaresRequired = false;
@@ -4954,21 +4957,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
 
-  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
-                   (Kind_Solver == INC_NAVIER_STOKES) ||
-                   (Kind_Solver == INC_RANS) ||
-                   (Kind_Solver == EULER) ||
-                   (Kind_Solver == NAVIER_STOKES) ||
-                   (Kind_Solver == NEMO_EULER) ||
-                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
-                   (Kind_Solver == RANS) ||
-                   (Kind_Solver == DISC_ADJ_EULER) ||
-                   (Kind_Solver == DISC_ADJ_RANS) ||
-                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
-                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
-                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
-  if (CFL_Adapt && !fvm_flow) {
+  if (CFL_Adapt && !GetFluidProblem()) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
