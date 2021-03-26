@@ -2,14 +2,14 @@
  * \file sgs_model.hpp
  * \brief Headers of the LES subgrid scale models of the SU2 solvers.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@ using namespace std;
  * \class CSGSModel
  * \brief Base class for defining the LES subgrid scale model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CSGSModel {
 
@@ -224,7 +224,7 @@ public:
  * \class CSmagorinskyModel
  * \brief Derived class for defining the Smagorinsky SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CSmagorinskyModel : public CSGSModel {
 
@@ -413,7 +413,7 @@ public:
  * \class CWALEModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CWALEModel : public CSGSModel {
 
@@ -601,7 +601,7 @@ public:
  * \class CVremanModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk, E. Molina
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CVremanModel : public CSGSModel {
 

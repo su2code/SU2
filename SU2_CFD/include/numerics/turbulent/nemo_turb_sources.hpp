@@ -3,14 +3,14 @@
  * \brief Delarations of numerics classes for integration of source
  *        terms in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -165,7 +165,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CNEMOSourcePieceWise_TurbSA_COMP final : public CNEMOSourceBase_TurbSA {
 private:
@@ -204,7 +204,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CNEMOSourcePieceWise_TurbSA_E final : public CNEMOSourceBase_TurbSA {
 private:
@@ -241,7 +241,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CNEMOSourcePieceWise_TurbSA_E_COMP : public CNEMOSourceBase_TurbSA {
 private:
