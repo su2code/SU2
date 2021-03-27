@@ -1753,14 +1753,6 @@ public:
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
    * \return Value of the primitive gradient for MUSCL reconstruction.
    */
   inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }

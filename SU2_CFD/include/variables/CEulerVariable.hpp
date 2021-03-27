@@ -152,17 +152,6 @@ public:
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
 
   /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
-
-  /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
