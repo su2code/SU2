@@ -940,7 +940,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              ensures that the correct minimum value of the limiter is
              found for a node on a periodic face and stores it. ---*/
 
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
               bufDSend[buf_offset+iVar] = (*field)(iPoint, iVar);
             }
 
