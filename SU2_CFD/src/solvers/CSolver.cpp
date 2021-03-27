@@ -282,6 +282,56 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
   }
 }
 
+namespace PeriodicCommHelpers {
+  CVectorOfMatrix& selectGradient(CVariable* nodes, unsigned short commType) {
+    switch(commType) {
+      case PERIODIC_PRIM_GG:
+      case PERIODIC_PRIM_LS:
+      case PERIODIC_PRIM_ULS:
+        return nodes->GetGradient_Primitive();
+        break;
+      case PERIODIC_SOL_GG:
+      case PERIODIC_SOL_LS:
+      case PERIODIC_SOL_ULS:
+        return nodes->GetGradient();
+        break;
+      default:
+        return nodes->GetGradient_Reconstruction();
+        break;
+    }
+  }
+
+  const su2activematrix& selectField(CVariable* nodes, unsigned short commType) {
+    switch(commType) {
+      case PERIODIC_PRIM_GG:
+      case PERIODIC_PRIM_LS:
+      case PERIODIC_PRIM_ULS:
+      case PERIODIC_PRIM_GG_R:
+      case PERIODIC_PRIM_LS_R:
+      case PERIODIC_PRIM_ULS_R:
+      case PERIODIC_LIM_PRIM_1:
+      case PERIODIC_LIM_PRIM_2:
+        return nodes->GetPrimitive();
+        break;
+      default:
+        return nodes->GetSolution();
+        break;
+    }
+  }
+
+  su2activematrix& selectLimiter(CVariable* nodes, unsigned short commType) {
+    switch(commType) {
+      case PERIODIC_LIM_PRIM_1:
+      case PERIODIC_LIM_PRIM_2:
+        return nodes->GetLimiter_Primitive();
+        break;
+      default:
+        return nodes->GetLimiter();
+        break;
+    }
+  }
+}
+
 void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     const CConfig *config,
                                     unsigned short val_periodic_index,
@@ -356,50 +406,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  auto gradient = &base_nodes->GetGradient_Reconstruction();
-
-  switch(commType) {
-    case PERIODIC_PRIM_GG:
-    case PERIODIC_PRIM_LS:
-    case PERIODIC_PRIM_ULS:
-      gradient = &base_nodes->GetGradient_Primitive();
-      break;
-    case PERIODIC_SOL_GG:
-    case PERIODIC_SOL_LS:
-    case PERIODIC_SOL_ULS:
-      gradient = &base_nodes->GetGradient();
-      break;
-    default:
-      break;
-  }
-
-  auto field = &base_nodes->GetSolution();
-
-  switch(commType) {
-    case PERIODIC_PRIM_GG:
-    case PERIODIC_PRIM_LS:
-    case PERIODIC_PRIM_ULS:
-    case PERIODIC_PRIM_GG_R:
-    case PERIODIC_PRIM_LS_R:
-    case PERIODIC_PRIM_ULS_R:
-    case PERIODIC_LIM_PRIM_1:
-    case PERIODIC_LIM_PRIM_2:
-      field = &base_nodes->GetPrimitive();
-      break;
-    default:
-      break;
-  }
-
-  auto limiter = &base_nodes->GetLimiter();
-
-  switch(commType) {
-    case PERIODIC_LIM_PRIM_1:
-    case PERIODIC_LIM_PRIM_2:
-      limiter = &base_nodes->GetLimiter_Primitive();
-      break;
-    default:
-      break;
-  }
+  auto& gradient = PeriodicCommHelpers::selectGradient(base_nodes, commType);
+  auto& limiter = PeriodicCommHelpers::selectLimiter(base_nodes, commType);
+  auto& field = PeriodicCommHelpers::selectField(base_nodes, commType);
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -714,7 +723,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                jacBlock[iVar][iDim] = (*gradient)(iPoint, iVar, iDim);
+                jacBlock[iVar][iDim] = gradient(iPoint, iVar, iDim);
               }
             }
 
@@ -774,10 +783,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Get conservative solution and rotate if necessary. ---*/
 
             for (iVar = 0; iVar < ICOUNT; iVar++)
-              rotPrim_i[iVar] = (*field)(iPoint, iVar);
+              rotPrim_i[iVar] = field(iPoint, iVar);
 
             if (rotate_periodic) {
-              Rotate(zeros, &(*field)(iPoint,1), &rotPrim_i[1]);
+              Rotate(zeros, &field(iPoint,1), &rotPrim_i[1]);
             }
 
             /*--- Inizialization of variables ---*/
@@ -809,10 +818,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Get conservative solution and rotte if necessary. ---*/
 
                 for (iVar = 0; iVar < ICOUNT; iVar++)
-                  rotPrim_j[iVar] = (*field)(jPoint,iVar);
+                  rotPrim_j[iVar] = field(jPoint,iVar);
 
                 if (rotate_periodic) {
-                  Rotate(zeros, &(*field)(jPoint,1), &rotPrim_j[1]);
+                  Rotate(zeros, &field(jPoint,1), &rotPrim_j[1]);
                 }
 
                 if (weighted) {
@@ -904,8 +913,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               for (iVar = 0; iVar < ICOUNT; iVar++) {
-                Sol_Min[iVar] = min(Sol_Min[iVar], (*field)(jPoint, iVar));
-                Sol_Max[iVar] = max(Sol_Max[iVar], (*field)(jPoint, iVar));
+                Sol_Min[iVar] = min(Sol_Min[iVar], field(jPoint, iVar));
+                Sol_Max[iVar] = max(Sol_Max[iVar], field(jPoint, iVar));
               }
             }
 
@@ -931,11 +940,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              found for a node on a periodic face and stores it. ---*/
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
-              bufDSend[buf_offset+iVar] = (*limiter)(iPoint, iVar);
+              bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             }
 
             if (rotate_periodic) {
-              Rotate(zeros, &(*limiter)(iPoint,1), &bufDSend[buf_offset+1]);
+              Rotate(zeros, &limiter(iPoint,1), &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -1008,33 +1017,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  auto gradient = &base_nodes->GetGradient_Reconstruction();
-
-  switch(commType) {
-    case PERIODIC_PRIM_GG:
-    case PERIODIC_PRIM_LS:
-    case PERIODIC_PRIM_ULS:
-      gradient = &base_nodes->GetGradient_Primitive();
-      break;
-    case PERIODIC_SOL_GG:
-    case PERIODIC_SOL_LS:
-    case PERIODIC_SOL_ULS:
-      gradient = &base_nodes->GetGradient();
-      break;
-    default:
-      break;
-  }
-
-  auto limiter = &base_nodes->GetLimiter();
-
-  switch(commType) {
-    case PERIODIC_LIM_PRIM_1:
-    case PERIODIC_LIM_PRIM_2:
-      limiter = &base_nodes->GetLimiter_Primitive();
-      break;
-    default:
-      break;
-  }
+  auto& gradient = PeriodicCommHelpers::selectGradient(base_nodes, commType);
+  auto& limiter = PeriodicCommHelpers::selectLimiter(base_nodes, commType);
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1227,7 +1211,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               for (iVar = 0; iVar < ICOUNT; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
-                  (*gradient)(iPoint, iVar, iDim) += bufDRecv[buf_offset+iVar*nDim+iDim];
+                  gradient(iPoint, iVar, iDim) += bufDRecv[buf_offset+iVar*nDim+iDim];
 
               break;
 
@@ -1248,7 +1232,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               }
               for (iVar = 0; iVar < ICOUNT; iVar++) {
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  (*gradient)(iPoint, iVar, iDim) +=  bufDRecv[buf_offset];
+                  gradient(iPoint, iVar, iDim) += bufDRecv[buf_offset];
                   buf_offset++;
                 }
               }
@@ -1286,7 +1270,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                faces for the limiter, and store the proper min value. ---*/
 
               for (iVar = 0; iVar < ICOUNT; iVar++)
-                (*limiter)(iPoint, iVar) = min((*limiter)(iPoint, iVar), bufDRecv[buf_offset+iVar]);
+                limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
 
@@ -1388,6 +1372,18 @@ void CSolver::GetCommCountAndType(const CConfig* config,
   }
 }
 
+namespace CommHelpers {
+  CVectorOfMatrix& selectGradient(CVariable* nodes, unsigned short commType) {
+    switch(commType) {
+      case SOLUTION_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
+      case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
+      default: return nodes->GetGradient();
+    }
+  }
+}
+
 void CSolver::InitiateComms(CGeometry *geometry,
                             const CConfig *config,
                             unsigned short commType) {
@@ -1419,25 +1415,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  auto gradient = &base_nodes->GetGradient();
   const auto nVarGrad = COUNT_PER_POINT / nDim;
-
-  switch(commType) {
-    case SOLUTION_GRAD_REC:
-      gradient = &base_nodes->GetGradient_Reconstruction();
-      break;
-    case PRIMITIVE_GRADIENT:
-      gradient = &base_nodes->GetGradient_Primitive();
-      break;
-    case PRIMITIVE_GRAD_REC:
-      gradient = &base_nodes->GetGradient_Reconstruction();
-      break;
-    case AUXVAR_GRADIENT:
-      gradient = &base_nodes->GetAuxVarGradient();
-      break;
-    default:
-      break;
-  }
+  auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
 
   auto limiter = &base_nodes->GetLimiter();
   if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
@@ -1509,7 +1488,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = (*gradient)(iPoint, iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1574,25 +1553,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  auto gradient = &base_nodes->GetGradient();
   const auto nVarGrad = COUNT_PER_POINT / nDim;
-
-  switch(commType) {
-    case SOLUTION_GRAD_REC:
-      gradient = &base_nodes->GetGradient_Reconstruction();
-      break;
-    case PRIMITIVE_GRADIENT:
-      gradient = &base_nodes->GetGradient_Primitive();
-      break;
-    case PRIMITIVE_GRAD_REC:
-      gradient = &base_nodes->GetGradient_Reconstruction();
-      break;
-    case AUXVAR_GRADIENT:
-      gradient = &base_nodes->GetAuxVarGradient();
-      break;
-    default:
-      break;
-  }
+  auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
 
   auto limiter = &base_nodes->GetLimiter();
   if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
@@ -1677,7 +1639,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                (*gradient)(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
+                gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
