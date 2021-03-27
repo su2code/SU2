@@ -115,8 +115,8 @@ public:
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
-  inline const MatrixType& GetLimiter_Primitive(void) const {return Limiter_Primitive; }
+  inline MatrixType& GetLimiter_Primitive() final {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive() const final {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -124,15 +124,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {return Limiter_Primitive(iPoint,iVar); }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) final {
-    Limiter_Primitive(iPoint,iVar) = value;
-  }
 
   /*!
    * \brief Get the primitive variable gradients for all points.

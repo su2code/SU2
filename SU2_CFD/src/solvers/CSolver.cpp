@@ -258,18 +258,22 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
     case PERIODIC_LIM_PRIM_1:
       COUNT_PER_POINT  = nPrimVarGrad*2;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nPrimVarGrad;
       break;
     case PERIODIC_LIM_PRIM_2:
       COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nPrimVarGrad;
       break;
     case PERIODIC_LIM_SOL_1:
       COUNT_PER_POINT  = nVar*2;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nVar;
       break;
     case PERIODIC_LIM_SOL_2:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nVar;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -350,7 +354,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   unsigned short *bufSSend = geometry->bufS_PeriodicSend;
 
-  /*--- Handle the different types of gradient. ---*/
+  /*--- Handle the different types of gradient and limiter. ---*/
 
   auto gradient = &base_nodes->GetGradient_Reconstruction();
 
@@ -376,6 +380,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
     case PERIODIC_PRIM_ULS:
     case PERIODIC_PRIM_LS_R:
     case PERIODIC_PRIM_ULS_R:
+    case PERIODIC_LIM_PRIM_1:
+    case PERIODIC_LIM_PRIM_2:
       field = &base_nodes->GetPrimitive();
       break;
     default:
@@ -893,55 +899,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
 
           case PERIODIC_LIM_PRIM_1:
-
-            /*--- The first phase of the periodic limiter calculation
-             ensures that the proper min and max of the solution are found
-             among all nodes adjacent to periodic faces. ---*/
-
-            /*--- We send the min and max over "our" neighbours. ---*/
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
-              Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
-            }
-
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
-                Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
-              }
-            }
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              bufDSend[buf_offset+iVar]              = Sol_Min[iVar];
-              bufDSend[buf_offset+nPrimVarGrad+iVar] = Sol_Max[iVar];
-            }
-
-            /*--- Rotate the momentum components of the min/max. ---*/
-
-            if (rotate_periodic) {
-              Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
-              Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+nPrimVarGrad+1]);
-            }
-
-            break;
-
-          case PERIODIC_LIM_PRIM_2:
-
-            /*--- The second phase of the periodic limiter calculation
-             ensures that the correct minimum value of the limiter is
-             found for a node on a periodic face and stores it. ---*/
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              bufDSend[buf_offset+iVar] = base_nodes->GetLimiter_Primitive(iPoint, iVar);
-            }
-
-            if (rotate_periodic) {
-              Rotate(zeros, &base_nodes->GetLimiter_Primitive(iPoint)[1], &bufDSend[buf_offset+1]);
-            }
-
-            break;
-
           case PERIODIC_LIM_SOL_1:
 
             /*--- The first phase of the periodic limiter calculation
@@ -950,44 +907,45 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- We send the min and max over "our" neighbours. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Sol_Min[iVar] = base_nodes->GetSolution_Min(iPoint, iVar);
-              Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
+              Sol_Min[iVar] = base_nodes->GetSolution_Min()(iPoint, iVar);
+              Sol_Max[iVar] = base_nodes->GetSolution_Max()(iPoint, iVar);
             }
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
-                Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
+              for (iVar = 0; iVar < ICOUNT; iVar++) {
+                Sol_Min[iVar] = min(Sol_Min[iVar], (*field)(jPoint, iVar));
+                Sol_Max[iVar] = max(Sol_Max[iVar], (*field)(jPoint, iVar));
               }
             }
 
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar]      = Sol_Min[iVar];
-              bufDSend[buf_offset+nVar+iVar] = Sol_Max[iVar];
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
+              bufDSend[buf_offset+iVar]        = Sol_Min[iVar];
+              bufDSend[buf_offset+ICOUNT+iVar] = Sol_Max[iVar];
             }
 
             /*--- Rotate the momentum components of the min/max. ---*/
 
             if (rotate_periodic) {
               Rotate(zeros, &Sol_Min[1], &bufDSend[buf_offset+1]);
-              Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+nVar+1]);
+              Rotate(zeros, &Sol_Max[1], &bufDSend[buf_offset+ICOUNT+1]);
             }
 
             break;
 
+          case PERIODIC_LIM_PRIM_2:
           case PERIODIC_LIM_SOL_2:
 
             /*--- The second phase of the periodic limiter calculation
              ensures that the correct minimum value of the limiter is
              found for a node on a periodic face and stores it. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar] = base_nodes->GetLimiter(iPoint, iVar);
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              bufDSend[buf_offset+iVar] = (*field)(iPoint, iVar);
             }
 
             if (rotate_periodic) {
-              Rotate(zeros, &base_nodes->GetLimiter(iPoint)[1], &bufDSend[buf_offset+1]);
+              Rotate(zeros, &(*field)(iPoint,1), &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -1043,7 +1001,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   su2double *Diff = new su2double[nVar];
 
-  su2double Time_Step, Volume, Solution_Min, Solution_Max, Limiter_Min;
+  su2double Time_Step, Volume, Solution_Min, Solution_Max;
 
   su2double **Jacobian_i = nullptr;
   if ((commType == PERIODIC_RESIDUAL) && implicit_periodic) {
@@ -1058,7 +1016,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   const unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
 
-  /*--- Handle the different types of gradient. ---*/
+  /*--- Handle the different types of gradient and limiter. ---*/
 
   auto gradient = &base_nodes->GetGradient_Reconstruction();
 
@@ -1076,6 +1034,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
     default:
       break;
   }
+
+  auto limiter = &base_nodes->GetLimiter();
+  if (commType == PERIODIC_LIM_PRIM_2) limiter = &base_nodes->GetLimiter_Primitive();
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1297,75 +1258,37 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
             case PERIODIC_LIM_PRIM_1:
-
-              /*--- Update solution min/max with min/max between "us" and
-               the periodic match plus its neighbors, computation will need to
-               be concluded on "our" side to account for "our" neighbors. ---*/
-
-              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-
-                /*--- Solution minimum. ---*/
-
-                Solution_Min = min(base_nodes->GetSolution_Min(iPoint, iVar),
-                                   bufDRecv[buf_offset+iVar]);
-                base_nodes->SetSolution_Min(iPoint, iVar, Solution_Min);
-
-                /*--- Solution maximum. ---*/
-
-                Solution_Max = max(base_nodes->GetSolution_Max(iPoint, iVar),
-                                   bufDRecv[buf_offset+nPrimVarGrad+iVar]);
-                base_nodes->SetSolution_Max(iPoint, iVar, Solution_Max);
-              }
-
-              break;
-
-            case PERIODIC_LIM_PRIM_2:
-
-              /*--- Check the min values found on the matching periodic
-               faces for the limiter, and store the proper min value. ---*/
-
-              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                Limiter_Min = min(base_nodes->GetLimiter_Primitive(iPoint, iVar),
-                                  bufDRecv[buf_offset+iVar]);
-                base_nodes->SetLimiter_Primitive(iPoint, iVar, Limiter_Min);
-              }
-
-              break;
-
             case PERIODIC_LIM_SOL_1:
 
               /*--- Update solution min/max with min/max between "us" and
                the periodic match plus its neighbors, computation will need to
                be concluded on "our" side to account for "our" neighbors. ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++) {
+              for (iVar = 0; iVar < ICOUNT; iVar++) {
 
                 /*--- Solution minimum. ---*/
 
-                Solution_Min = min(base_nodes->GetSolution_Min(iPoint, iVar),
+                Solution_Min = min(base_nodes->GetSolution_Min()(iPoint, iVar),
                                    bufDRecv[buf_offset+iVar]);
-                base_nodes->SetSolution_Min(iPoint, iVar, Solution_Min);
+                base_nodes->GetSolution_Min()(iPoint, iVar) = Solution_Min;
 
                 /*--- Solution maximum. ---*/
 
-                Solution_Max = max(base_nodes->GetSolution_Max(iPoint, iVar),
-                                   bufDRecv[buf_offset+nVar+iVar]);
-                base_nodes->SetSolution_Max(iPoint, iVar, Solution_Max);
-
+                Solution_Max = max(base_nodes->GetSolution_Max()(iPoint, iVar),
+                                   bufDRecv[buf_offset+ICOUNT+iVar]);
+                base_nodes->GetSolution_Max()(iPoint, iVar) = Solution_Max;
               }
 
               break;
 
+            case PERIODIC_LIM_PRIM_2:
             case PERIODIC_LIM_SOL_2:
 
               /*--- Check the min values found on the matching periodic
                faces for the limiter, and store the proper min value. ---*/
 
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Limiter_Min = min(base_nodes->GetLimiter_Primitive(iPoint, iVar),
-                                  bufDRecv[buf_offset+iVar]);
-                base_nodes->SetLimiter_Primitive(iPoint, iVar, Limiter_Min);
-              }
+              for (iVar = 0; iVar < ICOUNT; iVar++)
+                (*limiter)(iPoint, iVar) = min((*limiter)(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
 
@@ -1496,7 +1419,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   su2double *bufDSend = geometry->bufD_P2PSend;
 
-  /*--- Handle the different types of gradient. ---*/
+  /*--- Handle the different types of gradient and limiter. ---*/
 
   auto gradient = &base_nodes->GetGradient();
   const auto nVarGrad = COUNT_PER_POINT / nDim;
@@ -1517,6 +1440,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
     default:
       break;
   }
+
+  auto limiter = &base_nodes->GetLimiter();
+  if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -1568,8 +1494,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = base_nodes->GetUndivided_Laplacian(iPoint, iVar);
             break;
           case SOLUTION_LIMITER:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetLimiter(iPoint, iVar);
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
+              bufDSend[buf_offset+iVar] = (*limiter)(iPoint, iVar);
             break;
           case MAX_EIGENVALUE:
             bufDSend[buf_offset] = base_nodes->GetLambda(iPoint);
@@ -1585,10 +1512,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = (*gradient)(iPoint, iVar, iDim);
-            break;
-          case PRIMITIVE_LIMITER:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetLimiter_Primitive(iPoint, iVar);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1651,7 +1574,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   const su2double *bufDRecv = geometry->bufD_P2PRecv;
 
-  /*--- Handle the different types of gradient. ---*/
+  /*--- Handle the different types of gradient and limiter. ---*/
 
   auto gradient = &base_nodes->GetGradient();
   const auto nVarGrad = COUNT_PER_POINT / nDim;
@@ -1672,6 +1595,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
     default:
       break;
   }
+
+  auto limiter = &base_nodes->GetLimiter();
+  if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1736,8 +1662,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case SOLUTION_LIMITER:
-            for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetLimiter(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
+              (*limiter)(iPoint,iVar) = bufDRecv[buf_offset+iVar];
             break;
           case MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
@@ -1753,10 +1680,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 (*gradient)(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
-            break;
-          case PRIMITIVE_LIMITER:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              base_nodes->SetLimiter_Primitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {

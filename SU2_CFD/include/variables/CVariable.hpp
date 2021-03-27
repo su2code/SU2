@@ -728,43 +728,10 @@ public:
   /*!
    * \brief Set the value of the limiter.
    * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
-   */
-  inline void SetLimiter(unsigned long iPoint, unsigned long iVar, su2double val_limiter) { Limiter(iPoint,iVar) = val_limiter; }
-
-  /*!
-   * \brief Set the value of the limiter.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_species - Index of the species .
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
-   */
-  inline virtual void SetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar, su2double val_limiter) {}
-
-  /*!
-   * \brief Set the value of the limiter.
-   * \param[in] iPoint - Point index.
    * \param[in] val_species - Index of the species .
    * \param[in] iVar - Index of the variable.
    */
   inline virtual su2double GetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the max solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the max solution for the index <i>iVar</i>.
-   */
-  inline void SetSolution_Max(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Max(iPoint,iVar) = solution; }
-
-  /*!
-   * \brief Set the value of the min solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the min solution for the index <i>iVar</i>.
-   */
-  inline void SetSolution_Min(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Min(iPoint,iVar) = solution; }
 
   /*!
    * \brief Get the slope limiter.
@@ -788,33 +755,18 @@ public:
   inline su2double GetLimiter(unsigned long iPoint, unsigned long iVar) const { return Limiter(iPoint,iVar); }
 
   /*!
-   * \brief Get the value of the min solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the min solution for the variable <i>iVar</i>.
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
    */
-  inline su2double GetSolution_Max(unsigned long iPoint, unsigned long iVar) const { return Solution_Max(iPoint,iVar); }
+  inline MatrixType& GetSolution_Max() { return Solution_Max; }
+  inline const MatrixType& GetSolution_Max() const { return Solution_Max; }
 
   /*!
    * \brief Get the min solution.
    * \return Value of the min solution for the domain.
    */
-  inline MatrixType& GetSolution_Max(void) { return Solution_Max; }
-
-  /*!
-   * \brief Set the value of the preconditioner Beta.
-   * \param[in] val_Beta - Value of the low Mach preconditioner variable Beta
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the min solution for the variable <i>iVar</i>.
-   */
-  inline su2double GetSolution_Min(unsigned long iPoint, unsigned long iVar) const { return Solution_Min(iPoint,iVar); }
-
-  /*!
-   * \brief Get the min solution.
-   * \return Value of the min solution for the domain.
-   */
-  inline MatrixType& GetSolution_Min(void) { return Solution_Min; }
+  inline MatrixType& GetSolution_Min() { return Solution_Min; }
+  inline const MatrixType& GetSolution_Min() const { return Solution_Min; }
 
   /*!
    * \brief Get the value of the wind gust
@@ -1774,18 +1726,18 @@ public:
   inline virtual const CVectorOfMatrix& GetGradient_Primitive() const { return Gradient; }
 
   /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables limiter for the entire domain.
+   */
+  inline virtual MatrixType& GetLimiter_Primitive() {return Limiter; }
+  inline virtual const MatrixType& GetLimiter_Primitive() const {return Limiter; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
