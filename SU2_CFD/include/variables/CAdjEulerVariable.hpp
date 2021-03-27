@@ -175,6 +175,7 @@ public:
    * \brief Get the reconstruction gradient for variables at all points.
    * \return Reference to reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
 };

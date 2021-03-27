@@ -83,7 +83,8 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
 };
 
