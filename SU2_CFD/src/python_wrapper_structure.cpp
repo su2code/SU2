@@ -243,7 +243,7 @@ vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned 
     ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
     if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
 
-    return ret_Normal_passive:
+    return ret_Normal_passive;
   }
 
   Area = GeometryToolbox::Norm(nDim, Normal);
