@@ -85,7 +85,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver() = default;
+  ~CNEMOTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

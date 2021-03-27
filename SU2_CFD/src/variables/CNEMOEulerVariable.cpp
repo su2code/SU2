@@ -45,8 +45,13 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                          config ),
                                        Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
+
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool viscous   = config->GetViscous();
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+
   vector<su2double> energies;
-  unsigned short iDim, iSpecies;
   su2double soundspeed, sqvel, rho;
 
   /*--- Setting variable amounts ---*/
@@ -77,13 +82,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Allocate & initialize residual vectors ---*/
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
-  /*--- Size Grad_AuxVar for axiysmmetric ---*/
-  if (config->GetAxisymmetric()){
-    nAuxVar = 3;
-    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
-    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
-  }
-
   /*--- Only for residual smoothing (multigrid) ---*/
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
@@ -96,6 +94,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
     Undivided_Laplacian.resize(nPoint,nVar);
+
+
+  /*--- Size Grad_AuxVar for axiysmmetric ---*/
+  if (config->GetAxisymmetric()){
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+  }
 
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/

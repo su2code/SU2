@@ -38,14 +38,9 @@
  * \brief Main class for defining the NEMO Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.1. "Blackbird"
- *
  */
 class CNEMONSSolver final : public CNEMOEulerSolver {
 private:
-
-  su2double Prandtl_Lam,     /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;              /*!< \brief Turbulent Prandtl number. */
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -56,6 +51,19 @@ private:
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                        CConfig *config, bool Output) override;
+
+  /*!
+   * \brief Compute the viscous residuals.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
+
 public:
 
   /*!
@@ -74,28 +82,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CNEMONSSolver() = default;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) override;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -210,17 +196,5 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker) override;
-
-  /*!
-   * \brief Compute the viscous residuals.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
 
 };
