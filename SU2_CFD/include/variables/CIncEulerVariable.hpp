@@ -77,13 +77,15 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive() final { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive() const final { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -197,7 +199,7 @@ public:
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  inline const MatrixType& GetPrimitive() const final { return Primitive; }
 
   /*!
    * \brief Get the primitive variables.

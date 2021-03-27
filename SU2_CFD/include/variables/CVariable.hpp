@@ -1397,6 +1397,12 @@ public:
                                  su2double eddy_visc, su2double turb_ke, CConfig *config) {return true; }
 
   /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline virtual const MatrixType& GetPrimitive() const { return Solution; }
+
+  /*!
    * \brief A virtual member.
    */
   inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
@@ -1787,6 +1793,13 @@ public:
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief Get the primitive variable gradients for all points.
+   * \return Reference to primitive variable gradient.
+   */
+  inline virtual CVectorOfMatrix& GetGradient_Primitive() { return Gradient; }
+  inline virtual const CVectorOfMatrix& GetGradient_Primitive() const { return Gradient; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variables gradient.
@@ -1846,7 +1859,8 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+  inline virtual CVectorOfMatrix& GetGradient_Reconstruction() { return Gradient; }
+  inline virtual const CVectorOfMatrix& GetGradient_Reconstruction() const { return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

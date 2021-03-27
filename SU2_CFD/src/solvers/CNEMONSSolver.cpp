@@ -134,9 +134,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
-
-  /// TODO: There is no periodic comm for reconstruction GG.
-  const auto commPer = reconstruction? PERIODIC_NONE : PERIODIC_PRIM_GG;
+  const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   /*--- Get indices of species & mixture density ---*/
   RHOS_INDEX = nodes->GetRhosIndex();

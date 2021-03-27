@@ -224,24 +224,36 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PERIODIC_SOL_GG:
+    case PERIODIC_SOL_GG_R:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nVar;
       JCOUNT           = nDim;
       break;
     case PERIODIC_PRIM_GG:
+    case PERIODIC_PRIM_GG_R:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
       break;
-    case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
+    case PERIODIC_SOL_LS:
+    case PERIODIC_SOL_ULS:
+    case PERIODIC_SOL_LS_R:
+    case PERIODIC_SOL_ULS_R:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nVar;
+      JCOUNT           = nDim;
       break;
-    case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
+    case PERIODIC_PRIM_LS:
+    case PERIODIC_PRIM_ULS:
+    case PERIODIC_PRIM_LS_R:
+    case PERIODIC_PRIM_ULS_R:
       COUNT_PER_POINT  = nDim*nDim + nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nPrimVarGrad;
+      JCOUNT           = nDim;
       break;
     case PERIODIC_LIM_PRIM_1:
       COUNT_PER_POINT  = nPrimVarGrad*2;
@@ -337,6 +349,38 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double *bufDSend = geometry->bufD_PeriodicSend;
 
   unsigned short *bufSSend = geometry->bufS_PeriodicSend;
+
+  /*--- Handle the different types of gradient. ---*/
+
+  auto gradient = &base_nodes->GetGradient_Reconstruction();
+
+  switch(commType) {
+    case PERIODIC_PRIM_GG:
+    case PERIODIC_PRIM_LS:
+    case PERIODIC_PRIM_ULS:
+      gradient = &base_nodes->GetGradient_Primitive();
+      break;
+    case PERIODIC_SOL_GG:
+    case PERIODIC_SOL_LS:
+    case PERIODIC_SOL_ULS:
+      gradient = &base_nodes->GetGradient();
+      break;
+    default:
+      break;
+  }
+
+  auto field = &base_nodes->GetSolution();
+
+  switch(commType) {
+    case PERIODIC_PRIM_LS:
+    case PERIODIC_PRIM_ULS:
+    case PERIODIC_PRIM_LS_R:
+    case PERIODIC_PRIM_ULS_R:
+      field = &base_nodes->GetPrimitive();
+      break;
+    default:
+      break;
+  }
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -660,54 +704,29 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
 
           case PERIODIC_SOL_GG:
+          case PERIODIC_SOL_GG_R:
+          case PERIODIC_PRIM_GG:
+          case PERIODIC_PRIM_GG_R:
 
             /*--- Access and rotate the partial G-G gradient. These will be
              summed on both sides of the periodic faces before dividing
              by the volume to complete the Green-Gauss gradient calc. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
-                jacBlock[iVar][iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
+                jacBlock[iVar][iDim] = (*gradient)(iPoint, iVar, iDim);
               }
             }
 
             /*--- Rotate the gradients in x,y,z space for all variables. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
               Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
             }
 
             /*--- Store the partial gradient in the buffer. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
-              }
-            }
-
-            break;
-
-          case PERIODIC_PRIM_GG:
-
-            /*--- Access and rotate the partial G-G gradient. These will be
-             summed on both sides of the periodic faces before dividing
-             by the volume to complete the Green-Gauss gradient calc. ---*/
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++){
-                jacBlock[iVar][iDim] = base_nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-              }
-            }
-
-            /*--- Rotate the partial gradients in space for all variables. ---*/
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-              Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
-            }
-
-            /*--- Store the partial gradient in the buffer. ---*/
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
@@ -716,6 +735,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
 
           case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
+          case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
+          case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
+          case PERIODIC_PRIM_LS_R: case PERIODIC_PRIM_ULS_R:
 
             /*--- For L-S gradient calculations with rotational periodicity,
              we will need to rotate the x,y,z components. To make the process
@@ -725,9 +747,16 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Set a flag for unweighted or weighted least-squares. ---*/
 
-            weighted = true;
-            if (commType == PERIODIC_SOL_ULS) {
-              weighted = false;
+            switch(commType) {
+              case PERIODIC_SOL_ULS:
+              case PERIODIC_SOL_ULS_R:
+              case PERIODIC_PRIM_ULS:
+              case PERIODIC_PRIM_ULS_R:
+                weighted = false;
+                break;
+              default:
+                weighted = true;
+                break;
             }
 
             /*--- Get coordinates for the current point. ---*/
@@ -744,16 +773,16 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             /*--- Get conservative solution and rotate if necessary. ---*/
 
-            for (iVar = 0; iVar < nVar; iVar++)
-              rotPrim_i[iVar] = base_nodes->GetSolution(iPoint, iVar);
+            for (iVar = 0; iVar < ICOUNT; iVar++)
+              rotPrim_i[iVar] = (*field)(iPoint, iVar);
 
             if (rotate_periodic) {
-              Rotate(zeros, &base_nodes->GetSolution(iPoint)[1], &rotPrim_i[1]);
+              Rotate(zeros, &(*field)(iPoint,1), &rotPrim_i[1]);
             }
 
             /*--- Inizialization of variables ---*/
 
-            Cvector.resize(nVar,nDim) = su2double(0.0);
+            Cvector.resize(ICOUNT,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -779,11 +808,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Get conservative solution and rotte if necessary. ---*/
 
-                for (iVar = 0; iVar < nVar; iVar++)
-                  rotPrim_j[iVar] = base_nodes->GetSolution(jPoint,iVar);
+                for (iVar = 0; iVar < ICOUNT; iVar++)
+                  rotPrim_j[iVar] = (*field)(jPoint,iVar);
 
                 if (rotate_periodic) {
-                  Rotate(zeros, &base_nodes->GetSolution(jPoint)[1], &rotPrim_j[1]);
+                  Rotate(zeros, &(*field)(jPoint,1), &rotPrim_j[1]);
                 }
 
                 if (weighted) {
@@ -820,7 +849,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                   /*--- Entries of c:= transpose(A)*b ---*/
 
-                  for (iVar = 0; iVar < nVar; iVar++)
+                  for (iVar = 0; iVar < ICOUNT; iVar++)
                   for (iDim = 0; iDim < nDim; iDim++)
                   Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
                                           (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
@@ -854,155 +883,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset] = r33;   buf_offset++;
             }
 
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset] = Cvector(iVar,iDim);
-                buf_offset++;
-              }
-            }
-
-            break;
-
-          case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
-
-            /*--- For L-S gradient calculations with rotational periodicity,
-             we will need to rotate the x,y,z components. To make the process
-             easier, we choose to rotate the initial periodic point and their
-             neighbor points into their location on the donor marker before
-             computing the terms that we need to communicate. ---*/
-
-            /*--- Set a flag for unweighted or weighted least-squares. ---*/
-
-            weighted = true;
-            if (commType == PERIODIC_PRIM_ULS) {
-              weighted = false;
-            }
-
-            /*--- Get coordinates ---*/
-
-            Coord_i = geometry->nodes->GetCoord(iPoint);
-
-            /*--- Get the position vector from rot center to point. ---*/
-
-            GeometryToolbox::Distance(nDim, Coord_i, center, distance);
-
-            /*--- Compute transformed point coordinates. ---*/
-
-            Rotate(translation, distance, rotCoord_i);
-
-            /*--- Get primitives and rotate if necessary. ---*/
-
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              rotPrim_i[iVar] = base_nodes->GetPrimitive(iPoint, iVar);
-
-            if (rotate_periodic) {
-              Rotate(zeros, &base_nodes->GetPrimitive(iPoint)[1], &rotPrim_i[1]);
-            }
-
-            /*--- Inizialization of variables ---*/
-
-            Cvector.resize(nPrimVarGrad,nDim) = su2double(0.0);
-
-            r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
-            r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
-
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-
-              /*--- Avoid periodic boundary points so that we do not
-               duplicate edges on both sides of the periodic BC. ---*/
-
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
-
-                /*--- Get coordinates for the neighbor point. ---*/
-
-                Coord_j = geometry->nodes->GetCoord(jPoint);
-
-                /*--- Get the position vector from rotation center. ---*/
-
-                GeometryToolbox::Distance(nDim, Coord_j, center, distance);
-
-                /*--- Compute transformed point coordinates. ---*/
-
-                Rotate(translation, distance, rotCoord_j);
-
-                /*--- Get primitives from CVariable ---*/
-
-                for (iVar = 0; iVar < nPrimVar; iVar++)
-                  rotPrim_j[iVar] = base_nodes->GetPrimitive(jPoint,iVar);
-
-                if (rotate_periodic) {
-                  Rotate(zeros, &base_nodes->GetPrimitive(jPoint)[1], &rotPrim_j[1]);
-                }
-
-                if (weighted) {
-                  weight = 0.0;
-                  for (iDim = 0; iDim < nDim; iDim++) {
-                    weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                               (rotCoord_j[iDim]-rotCoord_i[iDim]));
-                  }
-                } else {
-                  weight = 1.0;
-                }
-
-                /*--- Sumations for entries of upper triangular matrix R ---*/
-
-                if (weight != 0.0) {
-
-                  r11 += ((rotCoord_j[0]-rotCoord_i[0])*
-                          (rotCoord_j[0]-rotCoord_i[0])/weight);
-                  r12 += ((rotCoord_j[0]-rotCoord_i[0])*
-                          (rotCoord_j[1]-rotCoord_i[1])/weight);
-                  r22 += ((rotCoord_j[1]-rotCoord_i[1])*
-                          (rotCoord_j[1]-rotCoord_i[1])/weight);
-
-                  if (nDim == 3) {
-                    r13   += ((rotCoord_j[0]-rotCoord_i[0])*
-                              (rotCoord_j[2]-rotCoord_i[2])/weight);
-                    r23_a += ((rotCoord_j[1]-rotCoord_i[1])*
-                              (rotCoord_j[2]-rotCoord_i[2])/weight);
-                    r23_b += ((rotCoord_j[0]-rotCoord_i[0])*
-                              (rotCoord_j[2]-rotCoord_i[2])/weight);
-                    r33   += ((rotCoord_j[2]-rotCoord_i[2])*
-                              (rotCoord_j[2]-rotCoord_i[2])/weight);
-                  }
-
-                  /*--- Entries of c:= transpose(A)*b ---*/
-
-                  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-                  for (iDim = 0; iDim < nDim; iDim++)
-                  Cvector(iVar,iDim) += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                                          (rotPrim_j[iVar]-rotPrim_i[iVar])/weight);
-
-                }
-              }
-            }
-
-            /*--- We store and communicate the increments for the matching
-             upper triangular matrix (weights) and the r.h.s. vector.
-             These will be accumulated before completing the L-S gradient
-             calculation for each periodic point. ---*/
-
-            if (nDim == 2) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
-            }
-            if (nDim == 3) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = r13;   buf_offset++;
-
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
-              bufDSend[buf_offset] = r23_a; buf_offset++;
-
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r23_b; buf_offset++;
-              bufDSend[buf_offset] = r33;   buf_offset++;
-            }
-
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+            for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset] = Cvector(iVar,iDim);
                 buf_offset++;
@@ -1176,6 +1057,25 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   const su2double *bufDRecv = geometry->bufD_PeriodicRecv;
 
   const unsigned short *bufSRecv = geometry->bufS_PeriodicRecv;
+
+  /*--- Handle the different types of gradient. ---*/
+
+  auto gradient = &base_nodes->GetGradient_Reconstruction();
+
+  switch(commType) {
+    case PERIODIC_PRIM_GG:
+    case PERIODIC_PRIM_LS:
+    case PERIODIC_PRIM_ULS:
+      gradient = &base_nodes->GetGradient_Primitive();
+      break;
+    case PERIODIC_SOL_GG:
+    case PERIODIC_SOL_LS:
+    case PERIODIC_SOL_ULS:
+      gradient = &base_nodes->GetGradient();
+      break;
+    default:
+      break;
+  }
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1359,50 +1259,23 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               break;
 
             case PERIODIC_SOL_GG:
-
-              /*--- For G-G, we accumulate partial gradients then compute
-               the final value using the entire volume of the periodic cell. ---*/
-
-              for (iVar = 0; iVar < nVar; iVar++)
-                for (iDim = 0; iDim < nDim; iDim++)
-                  base_nodes->AddGradient(iPoint, iVar, iDim,
-                                          bufDRecv[buf_offset+iVar*nDim+iDim]);
-
-              break;
-
+            case PERIODIC_SOL_GG_R:
             case PERIODIC_PRIM_GG:
+            case PERIODIC_PRIM_GG_R:
 
               /*--- For G-G, we accumulate partial gradients then compute
                the final value using the entire volume of the periodic cell. ---*/
 
-              for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iVar = 0; iVar < ICOUNT; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
-                  base_nodes->AddGradient_Primitive(iPoint, iVar, iDim,
-                                                    bufDRecv[buf_offset+iVar*nDim+iDim]);
+                  (*gradient)(iPoint, iVar, iDim) += bufDRecv[buf_offset+iVar*nDim+iDim];
+
               break;
 
             case PERIODIC_SOL_LS: case PERIODIC_SOL_ULS:
-
-              /*--- For L-S, we build the upper triangular matrix and the
-               r.h.s. vector by accumulating from all periodic partial
-               control volumes. ---*/
-
-              for (iDim = 0; iDim < nDim; iDim++) {
-                for (jDim = 0; jDim < nDim; jDim++) {
-                  base_nodes->AddRmatrix(iPoint, iDim,jDim,bufDRecv[buf_offset]);
-                  buf_offset++;
-                }
-              }
-              for (iVar = 0; iVar < nVar; iVar++) {
-                for (iDim = 0; iDim < nDim; iDim++) {
-                  base_nodes->AddGradient(iPoint, iVar, iDim, bufDRecv[buf_offset]);
-                  buf_offset++;
-                }
-              }
-
-              break;
-
+            case PERIODIC_SOL_LS_R: case PERIODIC_SOL_ULS_R:
             case PERIODIC_PRIM_LS: case PERIODIC_PRIM_ULS:
+            case PERIODIC_PRIM_LS_R: case PERIODIC_PRIM_ULS_R:
 
               /*--- For L-S, we build the upper triangular matrix and the
                r.h.s. vector by accumulating from all periodic partial
@@ -1414,9 +1287,9 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                   buf_offset++;
                 }
               }
-              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              for (iVar = 0; iVar < ICOUNT; iVar++) {
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  base_nodes->AddGradient_Primitive(iPoint, iVar, iDim, bufDRecv[buf_offset]);
+                  (*gradient)(iPoint, iVar, iDim) +=  bufDRecv[buf_offset];
                   buf_offset++;
                 }
               }
@@ -1623,6 +1496,28 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   su2double *bufDSend = geometry->bufD_P2PSend;
 
+  /*--- Handle the different types of gradient. ---*/
+
+  auto gradient = &base_nodes->GetGradient();
+  const auto nVarGrad = COUNT_PER_POINT / nDim;
+
+  switch(commType) {
+    case SOLUTION_GRAD_REC:
+      gradient = &base_nodes->GetGradient_Reconstruction();
+      break;
+    case PRIMITIVE_GRADIENT:
+      gradient = &base_nodes->GetGradient_Primitive();
+      break;
+    case PRIMITIVE_GRAD_REC:
+      gradient = &base_nodes->GetGradient_Reconstruction();
+      break;
+    case AUXVAR_GRADIENT:
+      gradient = &base_nodes->GetAuxVarGradient();
+      break;
+    default:
+      break;
+  }
+
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
 
@@ -1683,31 +1578,17 @@ void CSolver::InitiateComms(CGeometry *geometry,
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient(iPoint, iVar, iDim);
-            break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-            break;
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
-            for (iVar = 0; iVar < (commType==SOLUTION_GRAD_REC? nVar : nPrimVarGrad); iVar++)
+          case AUXVAR_GRADIENT:
+            for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Reconstruction(iPoint, iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = (*gradient)(iPoint, iVar, iDim);
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetLimiter_Primitive(iPoint, iVar);
-            break;
-          case AUXVAR_GRADIENT:
-            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++){
-              for (iDim = 0; iDim < nDim; iDim++){
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAuxVarGradient(iPoint, iVar, iDim);
-              }
-            }
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1769,6 +1650,28 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Set some local pointers to make access simpler. ---*/
 
   const su2double *bufDRecv = geometry->bufD_P2PRecv;
+
+  /*--- Handle the different types of gradient. ---*/
+
+  auto gradient = &base_nodes->GetGradient();
+  const auto nVarGrad = COUNT_PER_POINT / nDim;
+
+  switch(commType) {
+    case SOLUTION_GRAD_REC:
+      gradient = &base_nodes->GetGradient_Reconstruction();
+      break;
+    case PRIMITIVE_GRADIENT:
+      gradient = &base_nodes->GetGradient_Primitive();
+      break;
+    case PRIMITIVE_GRAD_REC:
+      gradient = &base_nodes->GetGradient_Reconstruction();
+      break;
+    case AUXVAR_GRADIENT:
+      gradient = &base_nodes->GetAuxVarGradient();
+      break;
+    default:
+      break;
+  }
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1843,31 +1746,17 @@ void CSolver::CompleteComms(CGeometry *geometry,
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
             break;
           case SOLUTION_GRADIENT:
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                base_nodes->SetGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-            break;
           case PRIMITIVE_GRADIENT:
-            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-              for (iDim = 0; iDim < nDim; iDim++)
-                base_nodes->SetGradient_Primitive(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-            break;
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
-            for (iVar = 0; iVar < (commType==SOLUTION_GRAD_REC? nVar : nPrimVarGrad); iVar++)
+          case AUXVAR_GRADIENT:
+            for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                (*gradient)(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
               base_nodes->SetLimiter_Primitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-            break;
-          case AUXVAR_GRADIENT:
-            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++){
-              for (iDim = 0; iDim < nDim; iDim++){
-                base_nodes->SetAuxVarGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
-              }
-            }
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -2315,9 +2204,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
-
-  /// TODO: There is no periodic comm for reconstruction GG.
-  const auto commPer = reconstruction? PERIODIC_NONE : PERIODIC_SOL_GG;
+  const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
 
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
 }
@@ -2330,8 +2217,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 
   if (reconstruction) {
     weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-    /// TODO: There is no periodic comm for reconstruction LS.
-    commPer = PERIODIC_NONE;
+    commPer = weighted? PERIODIC_SOL_LS_R : PERIODIC_SOL_ULS_R;
   }
   else {
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
