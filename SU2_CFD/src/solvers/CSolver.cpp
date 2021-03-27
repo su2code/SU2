@@ -376,13 +376,26 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   auto field = &base_nodes->GetSolution();
 
   switch(commType) {
+    case PERIODIC_PRIM_GG:
     case PERIODIC_PRIM_LS:
     case PERIODIC_PRIM_ULS:
+    case PERIODIC_PRIM_GG_R:
     case PERIODIC_PRIM_LS_R:
     case PERIODIC_PRIM_ULS_R:
     case PERIODIC_LIM_PRIM_1:
     case PERIODIC_LIM_PRIM_2:
       field = &base_nodes->GetPrimitive();
+      break;
+    default:
+      break;
+  }
+
+  auto limiter = &base_nodes->GetLimiter();
+
+  switch(commType) {
+    case PERIODIC_LIM_PRIM_1:
+    case PERIODIC_LIM_PRIM_2:
+      limiter = &base_nodes->GetLimiter_Primitive();
       break;
     default:
       break;
@@ -609,23 +622,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside the domain, or both in the boundary ---*/
+                /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if ((!boundary_i && !boundary_j) ||
-                    ( boundary_i &&  boundary_j)) {
-                  if (geometry->nodes->GetDomain(iPoint)) {
+                if (!(boundary_i && !boundary_j)) {
+                  if (geometry->nodes->GetDomain(iPoint)){
                     for (iVar = 0; iVar< nVar; iVar++)
                     Und_Lapl[iVar] -= Diff[iVar];
                   }
                 }
-
-                /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-                if (!boundary_i && boundary_j)
-                if (geometry->nodes->GetDomain(iPoint)){
-                  for (iVar = 0; iVar< nVar; iVar++)
-                  Und_Lapl[iVar] -= Diff[iVar];
-                }
-
               }
             }
 
@@ -678,22 +682,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
                 /*--- Both points inside domain, or both on boundary ---*/
-
-                if ((!boundary_i && !boundary_j) ||
-                    (boundary_i && boundary_j)) {
-                  if (geometry->nodes->GetDomain(iPoint)) {
-                    Sensor_i += Pressure_j - Pressure_i;
-                    Sensor_j += Pressure_i + Pressure_j;
-                  }
-                }
-
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if (!boundary_i && boundary_j) {
+                if (!(boundary_i && !boundary_j)) {
                   if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
-
                   }
                 }
 
@@ -822,11 +816,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 }
 
                 if (weighted) {
-                  weight = 0.0;
-                  for (iDim = 0; iDim < nDim; iDim++) {
-                    weight += ((rotCoord_j[iDim]-rotCoord_i[iDim])*
-                               (rotCoord_j[iDim]-rotCoord_i[iDim]));
-                  }
+                  weight = GeometryToolbox::SquaredDistance(nDim, rotCoord_j, rotCoord_i);
                 } else {
                   weight = 1.0;
                 }
@@ -941,11 +931,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              found for a node on a periodic face and stores it. ---*/
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
-              bufDSend[buf_offset+iVar] = (*field)(iPoint, iVar);
+              bufDSend[buf_offset+iVar] = (*limiter)(iPoint, iVar);
             }
 
             if (rotate_periodic) {
-              Rotate(zeros, &(*field)(iPoint,1), &bufDSend[buf_offset+1]);
+              Rotate(zeros, &(*limiter)(iPoint,1), &bufDSend[buf_offset+1]);
             }
 
             break;
@@ -1001,7 +991,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   su2double *Diff = new su2double[nVar];
 
-  su2double Time_Step, Volume, Solution_Min, Solution_Max;
+  su2double Time_Step, Volume;
 
   su2double **Jacobian_i = nullptr;
   if ((commType == PERIODIC_RESIDUAL) && implicit_periodic) {
@@ -1036,7 +1026,15 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   }
 
   auto limiter = &base_nodes->GetLimiter();
-  if (commType == PERIODIC_LIM_PRIM_2) limiter = &base_nodes->GetLimiter_Primitive();
+
+  switch(commType) {
+    case PERIODIC_LIM_PRIM_1:
+    case PERIODIC_LIM_PRIM_2:
+      limiter = &base_nodes->GetLimiter_Primitive();
+      break;
+    default:
+      break;
+  }
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1268,14 +1266,14 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
                 /*--- Solution minimum. ---*/
 
-                Solution_Min = min(base_nodes->GetSolution_Min()(iPoint, iVar),
-                                   bufDRecv[buf_offset+iVar]);
+                su2double Solution_Min = min(base_nodes->GetSolution_Min()(iPoint, iVar),
+                                             bufDRecv[buf_offset+iVar]);
                 base_nodes->GetSolution_Min()(iPoint, iVar) = Solution_Min;
 
                 /*--- Solution maximum. ---*/
 
-                Solution_Max = max(base_nodes->GetSolution_Max()(iPoint, iVar),
-                                   bufDRecv[buf_offset+ICOUNT+iVar]);
+                su2double Solution_Max = max(base_nodes->GetSolution_Max()(iPoint, iVar),
+                                             bufDRecv[buf_offset+ICOUNT+iVar]);
                 base_nodes->GetSolution_Max()(iPoint, iVar) = Solution_Max;
               }
 
