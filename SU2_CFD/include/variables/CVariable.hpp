@@ -680,24 +680,6 @@ public:
   }
 
   /*!
-   * \overload
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) = value; }
-
-  /*!
-   * \brief Add <i>value</i> to the solution gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the solution gradient.
-   */
-  inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
-
-  /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
@@ -1780,14 +1762,6 @@ public:
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value to add to the gradient of the primitive variables.
-   */
-  inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
@@ -1805,14 +1779,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
@@ -1840,14 +1806,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.

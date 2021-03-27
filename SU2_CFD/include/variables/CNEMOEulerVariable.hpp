@@ -278,32 +278,6 @@ public:
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_PrimitiveZero();
-
-  /*!
-   * \brief Add <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the gradient of the primitive variables.
-   */
-  inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) += value;
-  }
-
-  /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
@@ -321,16 +295,6 @@ public:
    */
   inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
     return Gradient_Primitive(iPoint,iVar,iDim);
-  }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) = value;
   }
 
   /*!
