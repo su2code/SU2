@@ -1,5 +1,5 @@
 ﻿/*!
- * \file nemor_turb_convection.hpp
+ * \file nemo_turb_convection.hpp
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
@@ -81,7 +81,7 @@ public:
                  unsigned short val_nPrimVarGrad,
                  const CConfig* config);
 
-  /*!cd
+  /*!
    * \brief Destructor of the class.
    */
   ~CNEMOUpwScalar(void) override;
