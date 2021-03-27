@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -96,7 +97,6 @@ private:
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
-  unsigned short ConvCriteria;    /*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter;       /*!< \brief Iteration for the point inversion problem. */
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
@@ -5864,12 +5864,6 @@ public:
    * \return Offset parameter for buffet sensor.
    */
   su2double GetBuffet_lambda(void) const { return Buffet_lambda; }
-
-  /*!
-   * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
-   * \return Kind of convergence criteria.
-   */
-  unsigned short GetConvCriteria(void) const { return ConvCriteria; }
 
   /*!
    * \brief Get the index in the config information of the marker <i>val_marker</i>.

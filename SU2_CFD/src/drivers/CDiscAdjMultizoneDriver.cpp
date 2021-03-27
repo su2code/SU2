@@ -226,7 +226,7 @@ void CDiscAdjMultizoneDriver::Run() {
         config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
       AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
-      LinSolver[iZone].SetRecomputeResidual(false);
+      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);

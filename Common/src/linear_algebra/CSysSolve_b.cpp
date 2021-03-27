@@ -61,7 +61,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
     (*LinSysSol_b)[i] = 0.0;
   }
 
-  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
+  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
   for (unsigned long i = 0; i < n; i ++) {
     x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
