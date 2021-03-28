@@ -135,6 +135,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     Set_BGSSolution_k();
 
   Velocity2.resize(nPoint) = su2double(0.0);
+  Gamma.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
   Lambda.resize(nPoint) = su2double(0.0);
@@ -188,6 +189,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
     SetPressure(iPoint, FluidModel->GetPressure());
     SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
     SetTemperature(iPoint, FluidModel->GetTemperature());
+    SetGamma(iPoint, FluidModel->GetGamma());
 
     RightVol = false;
 

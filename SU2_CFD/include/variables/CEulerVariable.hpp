@@ -57,6 +57,8 @@ protected:
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
 
+  VectorType Gamma;     /*!< \brief Square of the velocity vector. */  
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -342,6 +344,10 @@ public:
     Primitive(iPoint,0) = temperature;
     return temperature <= 0.0;
   }
+  inline bool SetGamma(unsigned long iPoint, su2double g) {
+    Gamma(iPoint) = g;
+    return g <= 0.0;
+  }
 
   /*!
    * \brief Get the norm 2 of the velocity.
@@ -384,6 +390,7 @@ public:
    * \return Value of the temperature of the flow.
    */
   inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,0); }
+    inline su2double GetGamma(unsigned long iPoint) const { return Gamma(iPoint); }
 
   /*!
    * \brief Get the velocity of the flow.
