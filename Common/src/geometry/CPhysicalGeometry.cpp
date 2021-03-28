@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -256,9 +256,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   nLocal_Bound_Elem = nLocal_Line + nLocal_BoundTria + nLocal_BoundQuad;
 
   SU2_MPI::Allreduce(&nLocal_Elem, &nGlobal_Elem, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocal_Bound_Elem, &nGlobal_Bound_Elem, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- With the distribution of all points, elements, and markers based
    on the ParMETIS coloring complete, as a final step, load this data into
@@ -597,7 +597,7 @@ void CPhysicalGeometry::DistributeColoring(const CConfig *config,
    many points it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send colors. First check how many
    messages we will be sending and receiving. Here we also put
@@ -840,7 +840,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig *config,
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -1137,7 +1137,7 @@ void CPhysicalGeometry::DistributePoints(const CConfig *config, CGeometry *geome
    many points it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
-                    &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nPoint_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send colors, ids, and coords. First check how many
    messages we will be sending and receiving. Here we also put
@@ -1444,7 +1444,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Scatter(&(nElem_Send[1]), 1, MPI_INT,
-                   &(nElem_Recv[1]), 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+                   &(nElem_Recv[1]), 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -1816,7 +1816,7 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Recv[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -2086,7 +2086,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
   /*--- Broadcast the global number of markers in the mesh. ---*/
 
   SU2_MPI::Bcast(&nMarker_Global, 1, MPI_UNSIGNED_LONG,
-                 MASTER_NODE, MPI_COMM_WORLD);
+                 MASTER_NODE, SU2_MPI::GetComm());
 
   char *mpi_str_buf = new char[nMarker_Global*MAX_STRING_SIZE]();
   if (rank == MASTER_NODE) {
@@ -2099,7 +2099,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig *config, CGeometry *geometr
   /*--- Broadcast the string names of the variables. ---*/
 
   SU2_MPI::Bcast(mpi_str_buf, (int)nMarker_Global*MAX_STRING_SIZE, MPI_CHAR,
-                 MASTER_NODE, MPI_COMM_WORLD);
+                 MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into our marker tag vector.
    We also need to set the values of all markers into the config. ---*/
@@ -2200,9 +2200,9 @@ void CPhysicalGeometry::LoadPoints(CConfig *config, CGeometry *geometry) {
 
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&Local_nPoint, &Global_nPoint, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   Global_nPoint = Local_nPoint;
   Global_nPointDomain = Local_nPointDomain;
@@ -2498,7 +2498,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
    values are important for merging and writing output later. ---*/
 
   SU2_MPI::Allreduce(&Local_Elem, &Global_nElem, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
@@ -2527,17 +2527,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
   unsigned long Local_nElemPyramid = nelem_pyramid;
 
   SU2_MPI::Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nElemHex, &Global_nelem_hexa, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nElemPrism, &Global_nelem_prism, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   Global_nelem_triangle = nelem_triangle;
   Global_nelem_quad     = nelem_quad;
@@ -2903,37 +2903,37 @@ void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
       switch (commType) {
         case COMM_TYPE_DOUBLE:
           SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]),
-                         count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                         count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_UNSIGNED_LONG:
           SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]),
-                         count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                         count, MPI_UNSIGNED_LONG, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_LONG:
           SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]),
-                         count, MPI_LONG, source, tag, MPI_COMM_WORLD,
+                         count, MPI_LONG, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]),
-                         count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+                         count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_CHAR:
           SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]),
-                         count, MPI_CHAR, source, tag, MPI_COMM_WORLD,
+                         count, MPI_CHAR, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_SHORT:
           SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]),
-                         count, MPI_SHORT, source, tag, MPI_COMM_WORLD,
+                         count, MPI_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         case COMM_TYPE_INT:
           SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]),
-                         count, MPI_INT, source, tag, MPI_COMM_WORLD,
+                         count, MPI_INT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
         default:
@@ -2978,37 +2978,37 @@ void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
       switch (commType) {
         case COMM_TYPE_DOUBLE:
           SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]),
-                         count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_UNSIGNED_LONG:
           SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]),
-                         count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_UNSIGNED_LONG, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_LONG:
           SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]),
-                         count, MPI_LONG, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_LONG, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_UNSIGNED_SHORT:
           SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]),
-                         count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_CHAR:
           SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]),
-                         count, MPI_CHAR, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_CHAR, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_SHORT:
           SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]),
-                         count, MPI_SHORT, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_SHORT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         case COMM_TYPE_INT:
           SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]),
-                         count, MPI_INT, dest, tag, MPI_COMM_WORLD,
+                         count, MPI_INT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
         default:
@@ -3884,7 +3884,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
    the CGNS grid with all ranks. ---*/
 
   auto reduce = [](unsigned long p, unsigned long& t) {
-    SU2_MPI::Allreduce(&p, &t, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&p, &t, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   };
   reduce(nelem_triangle, Global_nelem_triangle);
   reduce(nelem_quad, Global_nelem_quad);
@@ -4318,7 +4318,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      if (checkTetra(iElem,0,1,2,3) < 0.0) {
+      if (checkTetra(iElem,0,1,2,3)) {
         elem[iElem]->Change_Orientation();
         tet_flip++;
       }
@@ -4379,7 +4379,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
   auto reduce = [](unsigned long& val) {
     unsigned long tmp = val;
-    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   };
   reduce(tria_flip); reduce(quad_flip);
   reduce(tet_flip); reduce(pyram_flip);
@@ -4526,7 +4526,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
 
   auto reduce = [](unsigned long& val) {
     unsigned long tmp = val;
-    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   };
   reduce(line_flip); reduce(tria_flip);
   reduce(quad_flip); reduce(quad_error);
@@ -4557,8 +4557,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   TotalMinCoordZ = 1E10, TotalMaxCoordX = -1E10, TotalMaxCoordY = -1E10, TotalMaxCoordZ = -1E10;
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
-  bool axisymmetric = config->GetAxisymmetric();
-  bool fea = ((config->GetKind_Solver() == FEM_ELASTICITY) || (config->GetKind_Solver() == DISC_ADJ_FEM));
+  const bool axisymmetric = config->GetAxisymmetric();
+  const bool fea = config->GetStructuralProblem();
 
   PositiveXArea = 0.0;
   PositiveYArea = 0.0;
@@ -4569,12 +4569,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
-    if ((((Boundary == EULER_WALL)              ||
-          (Boundary == HEAT_FLUX)               ||
-          (Boundary == ISOTHERMAL)              ||
-          (Boundary == LOAD_BOUNDARY)           ||
-          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-        || (fea))
+    if (((config->GetSolid_Wall(iMarker) || Boundary == LOAD_BOUNDARY ||
+          Boundary == DISPLACEMENT_BOUNDARY) && Monitoring == YES) || fea) {
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -4588,8 +4584,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
-          if (nDim == 2) WettedArea = AxiFactor * GeometryToolbox::Norm(nDim, Normal);
-          if (nDim == 3) WettedArea = GeometryToolbox::Norm(nDim, Normal);
+          WettedArea += AxiFactor * GeometryToolbox::Norm(nDim, Normal);
 
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
@@ -4605,102 +4600,75 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
             if (CoordZ < MinCoordZ) MinCoordZ = CoordZ;
             if (CoordZ > MaxCoordZ) MaxCoordZ = CoordZ;
           }
-
         }
       }
-
+    }
   }
 
-  SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-  SU2_MPI::Allreduce(&MinCoordX, &TotalMinCoordX, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinCoordY, &TotalMinCoordY, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinCoordZ, &TotalMinCoordZ, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordX, &TotalMinCoordX, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MinCoordY, &TotalMinCoordY, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MinCoordZ, &TotalMinCoordZ, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
-  SU2_MPI::Allreduce(&MaxCoordX, &TotalMaxCoordX, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxCoordY, &TotalMaxCoordY, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordX, &TotalMaxCoordX, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MaxCoordY, &TotalMaxCoordY, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
-  SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Set a reference area if no value is provided ---*/
 
+  const string L = (config->GetSystemMeasurements() == SI)? " m" : " ft";
+  const string A = (config->GetSystemMeasurements() == SI)? " m^2" : " ft^2";
+  const bool D3 = (nDim == 3);
+
   if (config->GetRefArea() == 0.0) {
 
-    if (nDim == 3) config->SetRefArea(TotalPositiveZArea);
+    if (D3) config->SetRefArea(TotalPositiveZArea);
     else config->SetRefArea(TotalPositiveYArea);
 
     if (rank == MASTER_NODE) {
-      if (nDim == 3) {
-        cout << "Reference area = "<< TotalPositiveZArea;
-        if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl;
-      }
-      else {
-        cout << "Reference length = "<< TotalPositiveYArea;
-        if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
-      }
+      if (D3) cout << "Reference area = "<< TotalPositiveZArea << A << ".\n";
+      else cout << "Reference length = "<< TotalPositiveYArea << L << ".\n";
     }
-
   }
 
   /*--- Set a semi-span value if no value is provided ---*/
 
   if (config->GetSemiSpan() == 0.0) {
 
-    if (nDim == 3) config->SetSemiSpan(fabs(TotalMaxCoordY));
+    if (D3) config->SetSemiSpan(fabs(TotalMaxCoordY));
     else config->SetSemiSpan(1.0);
 
-    if ((nDim == 3) && (rank == MASTER_NODE)) {
-      cout << "Semi-span length = "<< TotalMaxCoordY;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl;
+    if (D3 && (rank == MASTER_NODE)) {
+      cout << "Semi-span length = "<< TotalMaxCoordY << L << ".\n";
     }
-
   }
 
   if (rank == MASTER_NODE) {
 
     if (fea) cout << "Surface area = "<< TotalWettedArea;
     else cout << "Wetted area = "<< TotalWettedArea;
+    if (D3 || axisymmetric) cout << A << ".\n";
+    else cout << L << ".\n";
 
-    if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+    cout << "Area projection in the x-plane = "<< TotalPositiveXArea << (D3? A : L);
+    cout << ", y-plane = "<< TotalPositiveYArea << (D3? A : L);
+    if (D3) cout << ", z-plane = "<< TotalPositiveZArea << A;
+    cout << ".\n";
 
-    cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
+    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX << L;
+    cout << ", y-direction = "<< TotalMaxCoordY << L;
+    if (D3) cout << ", z-direction = "<< TotalMaxCoordZ << L;
+    cout << ".\n";
 
-    cout << " y-plane = "<< TotalPositiveYArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
-
-    if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
-      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
-
-    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
-
-    cout << " y-direction = "<< TotalMaxCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
-
-    if (nDim == 3) {
-      cout << ", z-direction = "<< TotalMaxCoordZ;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
-    }
-    else cout << "." << endl;
-
-    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX;
-    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft";
-
-    cout << " y-direction = "<< TotalMinCoordY;
-    if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
-
-    if (nDim == 3) {
-      cout << ", z-direction = "<< TotalMinCoordZ;
-      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
-    }
-    else cout << "." << endl;
+    cout << "Min. coordinate in the x-direction = "<< TotalMinCoordX << L;
+    cout << ", y-direction = "<< TotalMinCoordY << L;
+    if (D3) cout << ", z-direction = "<< TotalMinCoordZ << L;
+    cout << "." << endl;
 
   }
 
@@ -5066,7 +5034,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan;
   unsigned long iPoint, iVertex;
   long jVertex;
   int nSpan, nSpan_loc;
@@ -5074,12 +5042,9 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   short PeriodicBoundary;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
 
-#ifdef HAVE_MPI
   unsigned short iSize;
   int nSpan_max;
-  int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
-  su2double MyMin, MyMax, *MyTotValueSpan =NULL,*MyValueSpan =NULL;
-#endif
+  su2double MyMin, MyMax;
 
   nSpan = 0;
   nSpan_loc = 0;
@@ -5099,22 +5064,25 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       /*--- loop to find inflow of outflow marker---*/
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
 
-                /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-                 * in order to caount the number of Span ---*/
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                        nSpan++;
-                    }
-                  }
-                }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+           * in order to caount the number of Span ---*/
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                nSpan++;
               }
             }
           }
@@ -5123,14 +5091,8 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
-      /*--- if parallel computing the global number of span---*/
-#ifdef HAVE_MPI
-      nSpan_max = nSpan;
-      My_nSpan  = nSpan; nSpan = 0;
-      My_MaxnSpan = nSpan_max; nSpan_max = 0;
-      SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&My_MaxnSpan, &nSpan_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-#endif
+      SU2_MPI::Allreduce(&nSpan_loc, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&nSpan_loc, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
 
       /*--- initialize the vector that will contain the disordered values span-wise ---*/
       nSpanWiseSections[marker_flag -1] = nSpan;
@@ -5140,53 +5102,56 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         valueSpan[iSpan] = -1001.0;
       }
 
-
       /*--- store the local span-wise value for each processor ---*/
       nSpan_loc = 0;
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
-                      case CENTRIFUGAL:
-                        valueSpan[nSpan_loc] = coord[2];
-                        break;
-                      case CENTRIPETAL:
-                        valueSpan[nSpan_loc] = coord[2];
-                        break;
-                      case AXIAL:
-                        valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        break;
-                      case CENTRIPETAL_AXIAL:
-                        if (marker_flag == OUTFLOW){
-                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        }
-                        else{
-                          valueSpan[nSpan_loc] = coord[2];
-                        }
-                        break;
-                      case AXIAL_CENTRIFUGAL:
-                        if (marker_flag == INFLOW){
-                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        }
-                        else{
-                          valueSpan[nSpan_loc] = coord[2];
-                        }
-                        break;
 
-                      }
-                      nSpan_loc++;
-                    }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                coord = nodes->GetCoord(iPoint);
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case CENTRIPETAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case AXIAL:
+                  valueSpan[nSpan_loc] = radius;
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    valueSpan[nSpan_loc] = radius;
                   }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
+                case AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    valueSpan[nSpan_loc] = radius;
+                  }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
                 }
+                nSpan_loc++;
               }
             }
           }
@@ -5195,27 +5160,16 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
 
       /*--- Gather the span-wise values on all the processor ---*/
 
-#ifdef HAVE_MPI
-      MyTotValueSpan  = new su2double[nSpan_max*size];
-      MyValueSpan     = new su2double[nSpan_max];
-      My_nSpan_loc    = new int[size];
-      for(iSpan = 0; iSpan < nSpan_max; iSpan++){
-        MyValueSpan[iSpan] = -1001.0;
-        for (iSize = 0; iSize< size; iSize++){
-          MyTotValueSpan[iSize*nSpan_max + iSpan] = -1001.0;
-        }
-      }
+      vector<su2double> MyTotValueSpan(nSpan_max*size, -1001.0);
+      vector<su2double> MyValueSpan(nSpan_max, -1001.0);
+      vector<int> My_nSpan_loc(size);
 
-      for(iSpan = 0; iSpan <nSpan_loc; iSpan++){
+      for(iSpan = 0; iSpan<nSpan_loc; iSpan++){
         MyValueSpan[iSpan] = valueSpan[iSpan];
       }
 
-      for(iSpan = 0; iSpan <nSpan; iSpan++){
-        valueSpan[iSpan] = -1001.0;
-      }
-
-      SU2_MPI::Allgather(MyValueSpan, nSpan_max , MPI_DOUBLE, MyTotValueSpan, nSpan_max, MPI_DOUBLE, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(MyValueSpan.data(), nSpan_max , MPI_DOUBLE, MyTotValueSpan.data(), nSpan_max, MPI_DOUBLE, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
       jSpan = 0;
       for (iSize = 0; iSize< size; iSize++){
@@ -5224,46 +5178,15 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
           jSpan++;
         }
       }
+      if (jSpan != nSpan) SU2_MPI::Error("Panic!",CURRENT_FUNCTION);
 
-      delete [] MyTotValueSpan; delete [] MyValueSpan; delete [] My_nSpan_loc;
+      /*--- Terrible stuff to do but so is this entire bloody function goodness me... ---*/
+      SpanWiseValue[marker_flag -1] = valueSpan;
 
-#endif
-
-      // check if the value are gathered correctly
-      //
-      //  for (iSpan = 0; iSpan < nSpan; iSpan++){
-      //    if(rank == MASTER_NODE){
-      //      cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
-      //    }
-      //  }
-
+      sort(SpanWiseValue[marker_flag -1], SpanWiseValue[marker_flag -1]+nSpan);
 
       /*--- Find the minimum value among the span-wise values  ---*/
-      min = 10.0E+06;
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
-        if(valueSpan[iSpan]< min) min = valueSpan[iSpan];
-      }
-
-      /*---Initilize the vector of span-wise values that will be ordered ---*/
-      SpanWiseValue[marker_flag -1] = new su2double[nSpan];
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
-        SpanWiseValue[marker_flag -1][iSpan] = 0;
-      }
-
-      /*---Ordering the vector of span-wise values---*/
-      SpanWiseValue[marker_flag -1][0] = min;
-      for (iSpan = 1; iSpan < nSpan; iSpan++){
-        min = 10.0E+06;
-        for (jSpan = 0; jSpan < nSpan; jSpan++){
-          if((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS){
-            min    = valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1];
-            kSpan = jSpan;
-          }
-        }
-        SpanWiseValue[marker_flag -1][iSpan] = valueSpan[kSpan];
-      }
-
-      delete [] valueSpan;
+      min = SpanWiseValue[marker_flag -1][0];
     }
     /*--- Compute equispaced Span-wise sections using number of section specified by the User---*/
     else{
@@ -5274,56 +5197,59 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         SpanWiseValue[marker_flag -1][iSpan] = 0;
       }
       /*--- Compute maximum and minimum value span-wise---*/
-      min = 10.0E+06;
-      max = -10.0E+06;
+      min = 1E+07;
+      max =-1E+07;
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
-                      case CENTRIFUGAL: case CENTRIPETAL:
-                        if (coord[2] < min) min = coord[2];
-                        if (coord[2] > max) max = coord[2];
-                        break;
-                      case AXIAL:
-                        radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        if (radius < min) min = radius;
-                        if (radius > max) max = radius;
-                        break;
-                      case CENTRIPETAL_AXIAL:
-                        if (marker_flag == OUTFLOW){
-                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          if (radius < min) min = radius;
-                          if (radius > max) max = radius;
-                        }
-                        else{
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                        }
-                        break;
 
-                      case AXIAL_CENTRIFUGAL:
-                        if (marker_flag == INFLOW){
-                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          if (radius < min) min = radius;
-                          if (radius > max) max = radius;
-                        }
-                        else{
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                        }
-                        break;
-                      }
-                    }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+
+                coord = nodes->GetCoord(iPoint);
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL:
+                case CENTRIPETAL:
+                  if (coord[2] < min) min = coord[2];
+                  if (coord[2] > max) max = coord[2];
+                  break;
+                case AXIAL:
+                  if (radius < min) min = radius;
+                  if (radius > max) max = radius;
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    if (radius < min) min = radius;
+                    if (radius > max) max = radius;
                   }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
+                case AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    if (radius < min) min = radius;
+                    if (radius > max) max = radius;
+                  }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
                 }
               }
             }
@@ -5331,15 +5257,11 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         }
       }
       /*--- compute global minimum and maximum value on span-wise ---*/
-#ifdef HAVE_MPI
       MyMin= min;  min = 0;
       MyMax= max;  max = 0;
-      SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
+      SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
-      //  cout <<"min  " <<  min << endl;
-      //  cout <<"max  " << max << endl;
       /*--- compute height value for each spanwise section---*/
       delta = (max - min)/(nSpanWiseSections[marker_flag-1] -1);
       for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
@@ -5347,11 +5269,10 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       }
     }
 
-
     if(marker_flag == OUTFLOW){
       if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
         char buf[100];
-        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW], nSpanWiseSections[OUTFLOW]);
+        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW-1], nSpanWiseSections[OUTFLOW-1]);
         SU2_MPI::Error(string(" At the moment only turbomachinery with the same amount of span-wise section can be simulated\n") + buf, CURRENT_FUNCTION);
       }
       else{
@@ -5362,6 +5283,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   }
 
 }
+
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
@@ -5858,9 +5780,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
     MyIntMin  = minIntAngPitch[iSpan];   minIntAngPitch[iSpan] = 10.0E+6;
     MyMax     = maxAngPitch[iSpan];      maxAngPitch[iSpan]    = -10.0E+6;
 
-    SU2_MPI::Allreduce(&MyMin, &minAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyIntMin, &minIntAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyMax, &maxAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyMin, &minAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyIntMin, &minIntAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyMax, &maxAngPitch[iSpan], 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
 
@@ -5885,7 +5807,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 #ifdef HAVE_MPI
     My_nVert = nVert;nVert = 0;
-    SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 #endif
 
     /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
@@ -5970,11 +5892,11 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
        }
      }
     }
-    SU2_MPI::Gather(y_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, y_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(x_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, x_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(z_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, z_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(angCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, angCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(deltaAngCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, deltaAngCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(y_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, y_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(x_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, x_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(z_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, z_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(angCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, angCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gather(deltaAngCoord_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, deltaAngCoord_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
     if (rank == MASTER_NODE){
       for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
@@ -6348,8 +6270,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
     MyTotalArea            = TotalArea;                 TotalArea            = 0;
     MyTotalRadius          = TotalRadius;               TotalRadius          = 0;
-    SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyTotalRadius, &TotalRadius, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyTotalRadius, &TotalRadius, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     MyTotalTurboNormal     = new su2double[nDim];
     MyTotalNormal          = new su2double[nDim];
@@ -6364,9 +6286,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       TotalGridVel[iDim]        = 0.0;
     }
 
-    SU2_MPI::Allreduce(MyTotalTurboNormal, TotalTurboNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MyTotalTurboNormal, TotalTurboNormal, nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
 
@@ -6606,9 +6528,9 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
       TotMarkerTP[i]    = -1;
     }
 
-    SU2_MPI::Allgather(TurbGeoIn, n1, MPI_DOUBLE, TotTurbGeoIn, n1, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(TurbGeoIn, n1, MPI_DOUBLE, TotTurbGeoIn, n1, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, SU2_MPI::GetComm());
 
     delete [] TurbGeoIn, delete [] TurbGeoOut;
 
@@ -6754,8 +6676,8 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
 
     /*--- Send NearField vertex information --*/
 
-    SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_NearField*nDim];
     unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_NearField];
@@ -6803,11 +6725,11 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
           }
         }
 
-    SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
 
     /*--- Compute the closest point to a Near-Field boundary point ---*/
@@ -6871,7 +6793,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
       }
     }
 
-    SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
     if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
 
@@ -6941,8 +6863,8 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
 
       /*--- Send actuator disk vertex information --*/
 
-      SU2_MPI::Allreduce(&nLocalVertex_ActDisk, &MaxLocalVertex_ActDisk, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&nLocalVertex_ActDisk, &MaxLocalVertex_ActDisk, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
       /*--- Array dimensionalization --*/
 
@@ -6994,11 +6916,11 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         }
       }
 
-      SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-      SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Receive_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Receive_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
       /*--- Compute the closest point to an actuator disk inlet point ---*/
 
@@ -7073,7 +6995,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         }
       }
 
-      SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
       if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
 
@@ -7173,9 +7095,9 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   /*--- Copy our own count in serial or use collective comms with MPI. ---*/
 
   SU2_MPI::Allreduce(&nLocalVertex_Periodic, &MaxLocalVertex_Periodic, 1,
-                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Prepare buffers to send the information for each
    periodic point to all ranks so that we can match pairs. ---*/
@@ -7242,15 +7164,15 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
    repeating the data for each pair on all ranks should be manageable. ---*/
 
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE,
-                     Buffer_Recv_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+                     Buffer_Recv_Coord, nBuffer_Coord, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_Point, nBuffer_Point, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     Buffer_Recv_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /*--- Now that all ranks have the data for all periodic points for
    this pair of periodic markers, we match the individual points
@@ -7446,9 +7368,9 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
   unsigned long nPointMatch_Local = nPointMatch;
   SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG,
-                  MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE,
-                  MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+                  MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Output some information about the matching process. ---*/
 
@@ -7488,6 +7410,99 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   delete [] Buffer_Recv_GlobalIndex;
   delete [] Buffer_Recv_Vertex;
   delete [] Buffer_Recv_Marker;
+}
+
+void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
+  /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
+  /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
+  /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
+  /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
+  /*--- streamwise coordinate vector is perpendicular to that |--->|, the choice of the     ---*/
+  /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
+  /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
+  /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  /*--- Initialize/Allocate variables. ---*/
+  su2double min_norm = numeric_limits<su2double>::max();
+
+  /*--- Communicate Coordinates plus the minimum distance, therefor the nDim+1 ---*/
+  vector<su2double> Buffer_Send_RefNode(nDim+1, numeric_limits<su2double>::max());
+  su2activematrix Buffer_Recv_RefNode(size,nDim+1);
+  unsigned long iPointMin = 0; // Initialisaton, otherwise 'may be uninitialized` warning'
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
+  /*---         each process has the local ref-nodes from every process. Most processes     ---*/
+  /*---         won't have a boundary with the streamwise periodic 'inlet' marker,          ---*/
+  /*---         therefore the default value of the send value is set super high.            ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
+      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if (iPeriodic == 1) {
+
+        for (auto iVertex = 0ul; iVertex < GetnVertex(iMarker); iVertex++) {
+
+          auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Get the squared norm of the current point. sqrt is a monotonic function in [0,R+) so for comparison we dont need Norm. ---*/
+          auto norm = GeometryToolbox::SquaredNorm(nDim, nodes->GetCoord(iPoint));
+
+          /*--- Check if new unique reference node is found and store Point ID. ---*/
+          if (norm < min_norm) {
+            min_norm = norm;
+            iPointMin = iPoint;
+          }
+          /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+        }
+        break; // Actually no more than one streamwise periodic marker pair is allowed
+      } // receiver conditional
+    } // periodic conditional
+  } // marker loop
+
+  /*--- Copy the Coordinates and norm into send buffer. ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin,iDim);
+  Buffer_Send_RefNode[nDim] = min_norm;
+
+  /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
+  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim+1, MPI_DOUBLE,
+                     Buffer_Recv_RefNode.data(), nDim+1, MPI_DOUBLE, SU2_MPI::GetComm());
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
+  /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
+  /*---         geometry container.                                                         ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  min_norm = numeric_limits<su2double>::max();
+
+  for (int iRank = 0; iRank < size; iRank++) {
+
+    auto norm = Buffer_Recv_RefNode(iRank,nDim);
+
+    /*--- Check if new unique reference node is found. ---*/
+    if (norm < min_norm) {
+      min_norm = norm;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode(iRank,iDim);
+    }
+  }
+
+  /*--- Print the reference node to screen. ---*/
+  if (rank == MASTER_NODE) {
+    cout << "Streamwise Periodic Reference Node: [";
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      cout <<  " " << Streamwise_Periodic_RefNode[iDim];
+    cout << " ]" << endl;
+  }
 
 }
 
@@ -7630,7 +7645,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
 
   su2double DomainVolume;
-  SU2_MPI::Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   config->SetDomainVolume(DomainVolume);
 
   if ((rank == MASTER_NODE) && (action == ALLOCATE)) {
@@ -8199,7 +8214,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig *config) {
 
   if (size == SINGLE_NODE) return;
 
-  MPI_Comm comm = MPI_COMM_WORLD;
+  MPI_Comm comm = SU2_MPI::GetComm();
 
   /*--- Linear partitioner object to help prepare parmetis data. ---*/
 
@@ -8532,21 +8547,21 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
 
   su2double Global_Ortho_Min, Global_Ortho_Max;
   SU2_MPI::Allreduce(&orthoMin, &Global_Ortho_Min, 1,
-                     MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&orthoMax, &Global_Ortho_Max, 1,
-                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   su2double Global_AR_Min, Global_AR_Max;
   SU2_MPI::Allreduce(&arMin, &Global_AR_Min, 1,
-                     MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&arMax, &Global_AR_Max, 1,
-                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   su2double Global_VR_Min, Global_VR_Max;
   SU2_MPI::Allreduce(&vrMin, &Global_VR_Min, 1,
-                     MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&vrMax, &Global_VR_Max, 1,
-                     MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Print the summary to the console for the user. ---*/
 
@@ -8624,7 +8639,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   bool *PointInDomain;
 
   nPointLocal = nPoint;
-  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   Point2Vertex = new unsigned long[nPointGlobal][2];
   PointInDomain = new bool[nPointGlobal];
@@ -8903,7 +8918,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -8920,7 +8935,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -8951,7 +8966,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Broadcast the string names of the variables. ---*/
 
     SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
-                   MASTER_NODE, MPI_COMM_WORLD);
+                   MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Now parse the string names and load into the config class in case
      we need them for writing visualization files (SU2_SOL). ---*/
@@ -9038,7 +9053,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Communicate metadata. ---*/
 
-    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Copy to a su2double structure (because of the SU2_MPI::Bcast
               doesn't work with passive data)---*/
@@ -9046,7 +9061,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     for (unsigned short iVar = 0; iVar < 8; iVar++)
       Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-    SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 8, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- All ranks close the file after writing. ---*/
 
@@ -9164,7 +9179,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
@@ -9179,7 +9194,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -9413,7 +9428,7 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
 
     unsigned long myUnmatched = unmatched; unmatched = 0;
     SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1,
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                       MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     if ((unmatched > 0) && (rank == MASTER_NODE)) {
       cout << " Warning: there are " << unmatched;
       cout << " points with a match distance > 1e-10." << endl;
@@ -11028,7 +11043,7 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
   auto sizeLocal = static_cast<int>(nMarker_All); // number of local markers
 
   /*--- Communicate size of local marker array and make an array large enough to hold all data. ---*/
-  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Set the global array of displacements, needed to access the correct roughness element. ---*/
   GlobalMarkerStorageDispl.resize(size);
@@ -11050,5 +11065,5 @@ void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
 
   /*--- Finally, gather the roughness of all markers. ---*/
   SU2_MPI::Allgatherv(localRough.data(), sizeLocal, MPI_DOUBLE, GlobalRoughness_Height.data(),
-                      recvCounts.data(), GlobalMarkerStorageDispl.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+                      recvCounts.data(), GlobalMarkerStorageDispl.data(), MPI_DOUBLE, SU2_MPI::GetComm());
 }

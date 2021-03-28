@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.1.0 "Blackbird"',
+        version: '7.1.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -18,9 +18,11 @@ if build_machine.system() != 'windows'
     default_warning_flags += ['-Wno-empty-body']
   endif
   default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-format-security',
-                            '-Wno-deprecated-declarations',
-                            '-Wno-non-virtual-dtor']
+                            '-Wno-deprecated-declarations']
+
+  if get_option('enable-autodiff') or get_option('enable-directdiff')
+    default_warning_flags += ['-Wno-non-virtual-dtor']
+  endif
 endif
 
 # meson script path
@@ -196,7 +198,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.1.0 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.1.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

@@ -2,14 +2,14 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -363,13 +363,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
       break;
   }
 
-  /*--- FSI specific dependencies. ---*/
-  if (fsi) {
-    /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
-    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
-    if (config[iZone]->GetTime_Domain()) dir_solver->PredictStruct_Velocity(structural_geometry, config[iZone]);
-  }
-
   /*--- MPI dependencies. ---*/
 
   dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
@@ -377,6 +370,13 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
   structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
   structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+
+  /*--- FSI specific dependencies. ---*/
+  if (fsi) {
+    /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
+    dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
+    if (config[iZone]->GetTime_Domain()) dir_solver->PredictStruct_Velocity(structural_geometry, config[iZone]);
+  }
 
   /*--- Topology optimization dependencies. ---*/
 

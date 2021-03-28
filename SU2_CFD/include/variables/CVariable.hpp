@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -294,29 +294,12 @@ public:
   }
 
   /*!
-   * \brief Set to zero the velocity components of the solution.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVelSolutionZero(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint,iDim+1) = 0.0;
-  }
-
-  /*!
-   * \brief Specify a vector to set the velocity components of the solution.
+   * \brief Virtual Member. Specify a vector to set the velocity components of the solution.
+   *        Multiplied by density for compressible cases.
    * \param[in] iPoint - Point index.
    * \param[in] val_vector - Pointer to the vector.
    */
-  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
-  }
-
-  /*!
-   * \brief Set to zero velocity components of the solution.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVelSolutionOldZero(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution_Old(iPoint, iDim+1) = 0.0;
-  }
+  inline virtual void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) { }
 
   /*!
    * \brief Add a value to the solution.
@@ -475,6 +458,7 @@ public:
    * \return Pointer to the External row for iPoint.
    */
   inline const su2double *Get_External(unsigned long iPoint) const { return External[iPoint]; }
+  inline const MatrixType& Get_External() const { return External; }
 
   /*!
    * \brief Get the solution at time n.
@@ -516,12 +500,6 @@ public:
   inline void SetResidualSumZero(unsigned long iPoint) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Residual_Sum(iPoint,iVar) = 0.0;
   }
-
-  /*!
-   * \brief Set the velocity of the truncation error to zero.
-   * \param[in] iPoint - Point index.
-   */
-  inline virtual void SetVel_ResTruncError_Zero(unsigned long iPoint, unsigned long iSpecies) {}
 
   /*!
    * \brief Get the value of the summed residual.
@@ -668,12 +646,10 @@ public:
   inline void SetVal_ResTruncError_Zero(unsigned long iPoint, unsigned long iVar) {Res_TruncError(iPoint, iVar) = 0.0;}
 
   /*!
-   * \brief Set the velocity of the truncation error to zero.
+   * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
-  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
-  }
+  inline virtual void SetVel_ResTruncError_Zero(unsigned long iPoint) { }
 
   /*!
    * \brief Set the velocity of the truncation error to zero.
@@ -1058,26 +1034,6 @@ public:
   inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
-   * \brief Add the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_und_lapl - Value of the undivided solution.
-   */
-  inline void AddUnd_Lapl(unsigned long iPoint, const su2double *val_und_lapl) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Undivided_Laplacian(iPoint, iVar) += val_und_lapl[iVar];
-  }
-
-  /*!
-   * \brief Subtract the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_und_lapl - Value of the undivided solution.
-   */
-  inline void SubtractUnd_Lapl(unsigned long iPoint, const su2double *val_und_lapl) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Undivided_Laplacian(iPoint, iVar) -= val_und_lapl[iVar];
-  }
-
-  /*!
    * \brief Increment the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable of the undivided laplacian.
@@ -1086,11 +1042,6 @@ public:
   inline void AddUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
     Undivided_Laplacian(iPoint, iVar) += val_und_lapl;
   }
-
-  /*!
-   * \brief Set the undivided laplacian of the solution to zero.
-   */
-  void SetUnd_LaplZero();
 
   /*!
    * \brief Set a value to the undivided laplacian.
@@ -1124,13 +1075,6 @@ public:
    * \return Value of the flow density.
    */
   inline virtual su2double GetDensity(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Old value of the flow density.
-   */
-  inline virtual su2double GetDensity_Old(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1830,11 +1774,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetVorticity_StrainMag() { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void SetVelSolutionDVector(unsigned long iPoint) {}
 
   /*!
@@ -2247,11 +2186,6 @@ public:
   inline virtual void Set_OldSolution_Accel() {}
 
   /*!
-   * \brief  A virtual member. Set the value of the solution predictor.
-   */
-  inline virtual void SetSolution_Pred(unsigned long iPoint) {}
-
-  /*!
    * \brief  A virtual member. Set the value of the velocity solution predictor.
    */
   inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
@@ -2263,53 +2197,16 @@ public:
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
 
   /*!
-   * \brief  A virtual member. Set the value of the velocity solution.
-   * \param[in] solution_vel_pred - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *solution_vel_pred) {}
-
-  /*!
-   * \brief  A virtual member. Set the value of the solution predicted.
-   * \param[in] solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_pred) {}
-
-  /*!
-   * \brief  A virtual member. Set the value of the velocity solution predicted.
-   * \param[in] solution__vel_pred - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_vel_pred) {}
-
-  /*!
-   * \brief  A virtual member. Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief  A virtual member. Get the value of the velocity solution predictor.
-   * \param[in] iVar - Index of the variable.
+   * \brief  A virtual member. Get the velocity solution predictor.
    * \return Pointer to the velocity solution vector.
    */
-  inline virtual su2double GetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+  inline virtual const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline virtual su2double *GetSolution_Pred(unsigned long iPoint) {return nullptr; }
-
-  /*!
-   * \brief  A virtual member. Get the velocity solution predictor.
-   * \return Pointer to the velocity solution vector.
-   */
-  inline virtual su2double *GetSolution_Vel_Pred(unsigned long iPoint) {return nullptr; }
-
-  /*!
-   * \brief  A virtual member. Set the value of the solution predictor.
-   */
-  inline virtual void SetSolution_Pred_Old(unsigned long iPoint) {}
+  inline virtual const su2double *GetSolution_Pred(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief  A virtual member. Set the value of the old solution.
@@ -2318,23 +2215,10 @@ public:
   inline virtual void SetSolution_Pred_Old(unsigned long iPoint, const su2double *solution_pred_Old) {}
 
   /*!
-   * \brief  A virtual member. Set the value of the old solution predicted.
-   * \param[in] solution_pred_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar, su2double solution_pred_old) {}
-
-  /*!
-   * \brief  A virtual member. Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline virtual su2double *GetSolution_Pred_Old(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetSolution_Pred_Old(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2344,7 +2228,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetReference_Geometry(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double* GetReference_Geometry(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2360,11 +2244,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetPrestretch(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the value of the undeformed coordinates.
@@ -2734,6 +2613,34 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+   /*!
+   * \brief A virtual member: Set the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_pressure - pressure value.
+   */
+  inline virtual void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint,su2double val_pressure) { }
+
+  /*!
+   * \brief A virtual member: Get the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
+   */
+  inline virtual su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member: Set the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_temperature - temperature value.
+   */
+  inline virtual void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) { }
+
+  /*!
+   * \brief A virtual member: Get the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical temperature for streamwise periodic flow.
+   */
+  inline virtual su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Virtual member: Set the Radiative source term at the node

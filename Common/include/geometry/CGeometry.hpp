@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1169,16 +1169,6 @@ public:
   inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
 
   /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config);
-
-  /*!
-   * \brief Get geometrical planes in the mesh
-   */
-  inline vector<su2double> GetGeometryPlanes() const {return XCoordList;}
-
-  /*!
    * \brief Get x coords of geometrical planes in the mesh
    */
   inline vector<vector<su2double> > GetXCoord() const {return Xcoord_plane;}
@@ -1711,5 +1701,17 @@ public:
    * \param[out] nNonconvexElements- amount of nonconvex elements in the mesh
    */
   unsigned long GetnNonconvexElements() const {return nNonconvexElements;}
+
+  /*!
+   * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void FindUniqueNode_PeriodicBound(const CConfig *config) {}
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  inline virtual const su2double* GetStreamwise_Periodic_RefNode(void) const { return nullptr; }
 };
 

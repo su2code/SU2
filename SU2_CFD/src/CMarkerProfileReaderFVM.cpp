@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -208,8 +208,8 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   /*--- Communicate the total number of nodes on this domain. ---*/
 
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
-                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
@@ -300,15 +300,15 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   /*--- Gather the coordinate data on the master node using MPI. ---*/
 
   SU2_MPI::Gather(Buffer_Send_X, (int)MaxLocalPoint, MPI_DOUBLE,
-                  Buffer_Recv_X, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                  Buffer_Recv_X, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Gather(Buffer_Send_Y, (int)MaxLocalPoint, MPI_DOUBLE,
-                  Buffer_Recv_Y, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                  Buffer_Recv_Y, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   if (dimension == 3) {
     SU2_MPI::Gather(Buffer_Send_Z, (int)MaxLocalPoint, MPI_DOUBLE,
-                    Buffer_Recv_Z, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                    Buffer_Recv_Z, (int)MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   }
   SU2_MPI::Gather(Buffer_Send_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
-                  Buffer_Recv_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, MPI_COMM_WORLD);
+                  Buffer_Recv_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master node unpacks and sorts this variable by marker tag. ---*/
 

@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -700,6 +700,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
       for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
         geometry[iMesh]->MatchPeriodic(config, iPeriodic);
       }
+
+      /*--- For Streamwise Periodic flow, find a unique reference node on the dedicated inlet marker. ---*/
+      if (config->GetKind_Streamwise_Periodic() != NONE)
+        geometry[iMesh]->FindUniqueNode_PeriodicBound(config);
 
       /*--- Initialize the communication framework for the periodic BCs. ---*/
       geometry[iMesh]->PreprocessPeriodicComms(geometry[iMesh], config);
@@ -1834,6 +1838,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
       }
+      else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) {
+        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);
+      }
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       }
@@ -1864,6 +1871,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
       if (config->AddRadiation())
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
+      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) &&
+               (config->GetEnergy_Equation() && !config->GetStreamwise_Periodic_Temperature()))
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
     }
@@ -2961,9 +2971,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
-
   }
-
 
 //  /*--- Read the target pressure ---*/
 
@@ -2981,14 +2989,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  RANS) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_RANS)) {
+      if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++)
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
       }

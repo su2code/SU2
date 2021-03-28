@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  System.SetToleranceType(LinearToleranceType::ABSOLUTE);
 
   /*--- Initialize structures for hybrid-parallel mode. ---*/
 
@@ -129,21 +128,12 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     }
   }
 
-  unsigned short iVar;
-
   /*--- Initialize the BGS residuals in multizone problems. ---*/
   if (config->GetMultizone_Residual()){
-
-    Residual_BGS      = new su2double[nVar]();
-    Residual_Max_BGS  = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,0.0);
+    Residual_Max_BGS.resize(nVar,0.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
 
@@ -249,9 +239,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   SU2_OMP_MASTER
   {
     elCount = ElemCounter; maxVol = MaxVolume; minVol = MinVolume;
-    SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&elCount, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   }
   SU2_OMP_BARRIER
 
@@ -298,7 +288,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   unsigned long nVertex_SolidWall = 0;
   for(auto iMarker=0u; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if(config->GetSolid_Wall(iMarker)) {
+    if(config->GetSolid_Wall(iMarker) && !config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -315,7 +305,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   for (unsigned long iMarker=0, ii=0, jj=0; iMarker<config->GetnMarker_All(); ++iMarker) {
 
-    if (!config->GetSolid_Wall(iMarker)) continue;
+    if (!config->GetSolid_Wall(iMarker) || config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker)) continue;
 
     for (auto iVertex=0u; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -379,8 +369,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     {
       MaxDistance_Local = MaxDistance;
       MinDistance_Local = MinDistance;
-      SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     }
     SU2_OMP_BARRIER
   }

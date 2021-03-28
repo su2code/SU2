@@ -2,14 +2,14 @@
  * \file CStructuralIntegration.cpp
  * \brief Space and time integration for structural problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -189,4 +189,40 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
     }
   }
 
+}
+
+void CStructuralIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+
+  bool fsi = config->GetFSI_Simulation();
+
+  /*--- Update the solution according to the integration scheme used ---*/
+
+  switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      break;
+    case (NEWMARK_IMPLICIT):
+      if (fsi) solver->ImplicitNewmark_Relaxation(geometry, config);
+      break;
+    case (GENERALIZED_ALPHA):
+      solver->GeneralizedAlpha_UpdateSolution(geometry, config);
+      solver->GeneralizedAlpha_UpdateLoads(geometry, config);
+      break;
+  }
+
+  /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
+
+  solver->GetNodes()->Set_Solution_time_n();
+  solver->GetNodes()->SetSolution_Vel_time_n();
+  solver->GetNodes()->SetSolution_Accel_time_n();
+
+  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
+
+  if (fsi) {
+
+    su2double WAitk=0.0;
+
+    WAitk = solver->GetWAitken_Dyn();
+    solver->SetWAitken_Dyn_tn1(WAitk);
+
+  }
 }

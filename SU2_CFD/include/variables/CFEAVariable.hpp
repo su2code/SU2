@@ -2,14 +2,14 @@
  * \file CFEAVariable.hpp
  * \brief Class for defining the variables of the FEM structural problem.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \brief Class for defining the variables of the FEM structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -265,13 +265,6 @@ public:
   inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return Solution_Accel_time_n[iPoint]; }
 
   /*!
-   * \brief Set the value of the solution predictor.
-   */
-  inline void SetSolution_Pred(unsigned long iPoint) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Pred(iPoint,iVar) = Solution(iPoint,iVar);
-  }
-
-  /*!
    * \brief Set the value of the solution velocity predictor.
    */
   inline void SetSolution_Vel_Pred(unsigned long iPoint) final {
@@ -287,63 +280,16 @@ public:
   }
 
   /*!
-   * \brief Set the value of the velocity solution.
-   * \param[in] val_solution_vel_pred - Pointer to the residual vector.
+   * \brief Get the velocity solution.
+   * \return Pointer to velocity solution vector.
    */
-  inline void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_vel_pred) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = val_solution_vel_pred[iVar];
-  }
-
-  /*!
-   * \brief  Set the value of the predicted solution.
-   * \param[in] iVar - Index of the variable
-   * \param[in] val_solution_pred - Value of the predicted solution.
-   */
-  inline void SetSolution_Pred(unsigned long iPoint, unsigned long iVar, su2double val_solution_pred) final {
-    Solution_Pred(iPoint,iVar) = val_solution_pred;
-  }
-
-  /*!
-   * \brief  Set the value of the predicted velocity solution.
-   * \param[in] iVar - Index of the variable
-   * \param[in] val_solution_vel_pred - Value of the predicted solution.
-   */
-  inline void SetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar, su2double val_solution_vel_pred) final {
-    Solution_Vel_Pred(iPoint,iVar) = val_solution_vel_pred;
-  }
-
-  /*!
-   * \brief Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const final { return Solution_Pred(iPoint,iVar); }
-
-  /*!
-   * \brief Get the value of the solution velocity predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the velocity solution vector.
-   */
-  inline su2double GetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar) const final { return Solution_Vel_Pred(iPoint,iVar); }
+  inline const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const final { return Solution_Vel_Pred[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Pred(unsigned long iPoint) final { return Solution_Pred[iPoint]; }
-
-  /*!
-   * \brief Get the velocity solution.
-   * \return Pointer to velocity solution vector.
-   */
-  inline su2double *GetSolution_Vel_Pred(unsigned long iPoint) final { return Solution_Vel_Pred[iPoint]; }
-
-  /*!
-   * \brief Set the value of the solution predictor.
-   */
-  inline void SetSolution_Pred_Old(unsigned long iPoint) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Pred_Old(iPoint,iVar) = Solution_Pred(iPoint,iVar);
-  }
+  inline const su2double *GetSolution_Pred(unsigned long iPoint) const final { return Solution_Pred[iPoint]; }
 
   /*!
    * \brief Set the value of the old solution.
@@ -354,28 +300,10 @@ public:
   }
 
   /*!
-   * \brief  A virtual member. Set the value of the old solution predicted.
-   * \param[in] iVar - Index of the variable
-   * \param[in] val_solution_pred_old - Value of the old predicted solution.
-   */
-  inline void SetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar, su2double val_solution_pred_old) final {
-    Solution_Pred_Old(iPoint,iVar) = val_solution_pred_old;
-  }
-
-  /*!
-   * \brief Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar) const final {
-    return Solution_Pred_Old(iPoint,iVar);
-  }
-
-  /*!
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Pred_Old(unsigned long iPoint) final { return Solution_Pred_Old[iPoint]; }
+  inline const su2double *GetSolution_Pred_Old(unsigned long iPoint) const final { return Solution_Pred_Old[iPoint]; }
 
   /*!
    * \brief A virtual member.
@@ -417,14 +345,7 @@ public:
   /*!
    * \brief Get the pointer to the reference geometry
    */
-  inline su2double *GetReference_Geometry(unsigned long iPoint) final { return Reference_Geometry[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reference geometry for the coordinate iVar
-   */
-  inline su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const final {
-    return Reference_Geometry(iPoint,iVar);
-  }
+  inline const su2double* GetReference_Geometry(unsigned long iPoint) const final { return Reference_Geometry[iPoint]; }
 
   /*!
    * \brief Register the variables in the solution time_n array as input/output variable.
