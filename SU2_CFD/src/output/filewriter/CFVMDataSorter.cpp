@@ -2,14 +2,14 @@
  * \file CFVMDataSorter.cpp
  * \brief Datasorter class for FVM solvers.
  * \author T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -117,14 +117,14 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
 
   nElemPerType.fill(0);
-  
+
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
   SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
   SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
   SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
-  
+
   SetTotalElements();
 
   connectivitySorted = true;
@@ -476,7 +476,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       }
     }
   }
-  
+
   nElemPerType[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,

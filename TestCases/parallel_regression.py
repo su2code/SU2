@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -303,6 +303,17 @@ def main():
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
 
+    # ONERA M6 Wing - Newton-Krylov
+    turb_oneram6_nk           = TestCase('turb_oneram6_nk')
+    turb_oneram6_nk.cfg_dir   = "rans/oneram6"
+    turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
+    turb_oneram6_nk.test_iter = 20
+    turb_oneram6_nk.test_vals = [-4.892257, -4.514011, -11.432312, 0.221025, 0.045570, 2, -0.899459, 3.1384e+01]
+    turb_oneram6_nk.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turb_oneram6_nk.timeout   = 600
+    turb_oneram6_nk.tol       = 0.0001
+    test_list.append(turb_oneram6_nk)
+
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
@@ -451,6 +462,17 @@ def main():
     inc_lam_bend.timeout   = 1600
     inc_lam_bend.tol       = 0.00001
     test_list.append(inc_lam_bend)
+
+    # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
+    sp_pipeSlice_3d_dp_hf_tp           = TestCase('sp_pipeSlice_3d_dp_hf_tp')
+    sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
+    sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
+    sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
+    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -8.694310, -0.000023] #last 4 lines
+    sp_pipeSlice_3d_dp_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pipeSlice_3d_dp_hf_tp.timeout   = 1600
+    sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
+    test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     ############################
     ### Incompressible RANS  ###
@@ -1232,6 +1254,30 @@ def main():
     cht_compressible.tol       = 0.00001
     test_list.append(cht_compressible)
 
+    # 2D CHT case streamwise periodicity
+    sp_pinArray_cht_2d_dp_hf           = TestCase('sp_pinArray_cht_2d_dp_hf')
+    sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
+    sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.247026, -0.811632, -0.982066, -0.753312, 208.023676, 350.180000] #last 7 lines
+    sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_cht_2d_dp_hf.timeout   = 1600
+    sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
+    sp_pinArray_cht_2d_dp_hf.multizone = True
+    test_list.append(sp_pinArray_cht_2d_dp_hf)
+
+    # simple small 3D pin case massflow periodic with heatflux BC
+    sp_pinArray_3d_cht_mf_hf_tp           = TestCase('sp_pinArray_3d_cht_mf_hf_tp')
+    sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
+    sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
+    sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.451732, -0.008477, 214.707868, 365.670000] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
+    sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
+    sp_pinArray_3d_cht_mf_hf_tp.multizone = True
+    test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
+
     ##########################
     ###   Python wrapper   ###
     ##########################
@@ -1584,6 +1630,20 @@ def main():
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
+
+    # 2D FD streamwise periodic cht, avg temp obj func
+    fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"
+    fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
+    fd_sp_pinArray_cht_2d_dp_hf.su2_exec       = "finite_differences.py -z 2 -n 2 -f"
+    fd_sp_pinArray_cht_2d_dp_hf.timeout        = 1600
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf.test_file      = "FINDIFF/of_grad_findiff.csv"
+    fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
+
+    pass_list.append(fd_sp_pinArray_cht_2d_dp_hf.run_filediff())
+    test_list.append(fd_sp_pinArray_cht_2d_dp_hf)
 
 
     # Tests summary

@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -235,7 +235,7 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 };
 
 /*!
- * \brief different solver types for the multizone environment component
+ * \brief Different solver types for multizone problems
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
@@ -439,7 +439,6 @@ static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
@@ -1495,6 +1494,7 @@ enum ENUM_OBJECTIVE {
   BUFFET_SENSOR = 20,           /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28,  /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29, /*!< \brief Static Pressure objective function definition. */
+  SURFACE_STATIC_TEMPERATURE = 57, /*!< \brief Static Temperature objective function definition. */
   SURFACE_MASSFLOW = 30,        /*!< \brief Mass Flow Rate objective function definition. */
   SURFACE_MACH = 51,            /*!< \brief Mach number objective function definition. */
   SURFACE_UNIFORMITY = 52,      /*!< \brief Flow uniformity objective function definition. */
@@ -1546,6 +1546,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
   MakePair("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+  MakePair("SURFACE_STATIC_TEMPERATURE", SURFACE_STATIC_TEMPERATURE)
   MakePair("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
   MakePair("SURFACE_MACH", SURFACE_MACH)
   MakePair("SURFACE_UNIFORMITY", SURFACE_UNIFORMITY)
@@ -1876,21 +1877,15 @@ static const MapType<string, ENUM_FFD_BLENDING> Blending_Map = {
  * \brief Types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {
-  STEEPEST_DESCENT = 1,     /*!< \brief Steepest descent method for point inversion algoritm (Free-Form). */
-  NEWTON = 2,               /*!< \brief Newton method for point inversion algorithm (Free-Form). */
-  QUASI_NEWTON = 3,         /*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
-  CONJUGATE_GRADIENT = 4,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES = 5,               /*!< \brief Flexible Generalized Minimal Residual method. */
-  BCGSTAB = 6,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RESTARTED_FGMRES = 7,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
-  SMOOTHER = 8,             /*!< \brief Iterative smoother. */
-  PASTIX_LDLT = 9,          /*!< \brief PaStiX LDLT (complete) factorization. */
-  PASTIX_LU = 10,           /*!< \brief PaStiX LU (complete) factorization. */
+  CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
+  BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  SMOOTHER,             /*!< \brief Iterative smoother. */
+  PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
-  MakePair("STEEPEST_DESCENT", STEEPEST_DESCENT)
-  MakePair("NEWTON", NEWTON)
-  MakePair("QUASI_NEWTON", QUASI_NEWTON)
   MakePair("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
@@ -1950,13 +1945,13 @@ static const MapType<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
-  JACOBI = 1,        /*!< \brief Jacobi preconditioner. */
-  LU_SGS = 2,        /*!< \brief LU SGS preconditioner. */
-  LINELET = 3,       /*!< \brief Line implicit preconditioner. */
-  ILU = 4,           /*!< \brief ILU(k) preconditioner. */
-  PASTIX_ILU= 5,     /*!< \brief PaStiX ILU(k) preconditioner. */
-  PASTIX_LU_P= 6,    /*!< \brief PaStiX LU as preconditioner. */
-  PASTIX_LDLT_P= 7,  /*!< \brief PaStiX LDLT as preconditioner. */
+  JACOBI,         /*!< \brief Jacobi preconditioner. */
+  LU_SGS,         /*!< \brief LU SGS preconditioner. */
+  LINELET,        /*!< \brief Line implicit preconditioner. */
+  ILU,            /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("JACOBI", JACOBI)
@@ -2020,18 +2015,6 @@ static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
   MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
   MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
   MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
-};
-
-/*!
- * \brief Types of criteria to determine when the solution is converged
- */
-enum ENUM_CONVERGE_CRIT {
-  CAUCHY = 1,       /*!< \brief Cauchy criteria to establish the convergence of the code. */
-  RESIDUAL = 2      /*!< \brief Residual criteria to establish the convergence of the code. */
-};
-static const MapType<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = {
-  MakePair("CAUCHY", CAUCHY)
-  MakePair("RESIDUAL", RESIDUAL)
 };
 
 /*!
@@ -2256,6 +2239,30 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("MMS_INC_EULER",            MMS_INC_EULER)
   MakePair("MMS_INC_NS",               MMS_INC_NS)
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+};
+
+/*!
+ * \brief Types of streamwise periodicity.
+ */
+enum ENUM_STREAMWISE_PERIODIC {
+  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
+  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
+  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
+};
+static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
+  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
+  MakePair("PRESSURE_DROP", PRESSURE_DROP)
+  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
+};
+
+/*!
+ * \brief Container to hold Variables for streamwise Periodic flow as they are often used together in places.
+ */
+struct StreamwisePeriodicValues {
+  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
+  su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 };
 
 #undef MakePair

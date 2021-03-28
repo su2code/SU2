@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -368,7 +368,14 @@ void CConfig::addEnumListOption(const string name, unsigned short & input_size, 
 void CConfig::addDoubleArrayOption(const string name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionDoubleArray(name, size, option_field);
+  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addUShortArrayOption(const string name, const int size, unsigned short* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1097,6 +1104,18 @@ void CConfig::SetConfig_Options() {
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
+
+  /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
+  addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, NO_STREAMWISE_PERIODIC);
+  /* DESCRIPTION: Use real periodicity for temperature \n Options: NO, YES \n DEFAULT: NO \ingroup Config */
+  addBoolOption("STREAMWISE_PERIODIC_TEMPERATURE", Streamwise_Periodic_Temperature, false);
+  /* DESCRIPTION: Heatflux boundary at streamwise periodic 'outlet', choose heat [W] such that net domain heatflux is zero. Only active if STREAMWISE_PERIODIC_TEMPERATURE is active. \n DEFAULT: 0.0 \ingroup Config */
+  addDoubleOption("STREAMWISE_PERIODIC_OUTLET_HEAT", Streamwise_Periodic_OutletHeat, 0.0);
+  /* DESCRIPTION: Delta pressure [Pa] on which basis body force will be computed, serves as initial value if MASSFLOW is chosen. \n DEFAULT: 1.0 \ingroup Config */
+  addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
+  /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
+  addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
+
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -1572,6 +1591,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
+  /* DESCRIPTION: Use a Newton-Krylov method. */
+  addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
+  /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
+
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
@@ -1701,9 +1727,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  /*!\brief CONV_CRITERIA
-   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
-  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -1910,6 +1935,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link TabOutput_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("TABULAR_FORMAT", Tab_FileFormat, TabOutput_Map, TAB_CSV);
+  /*!\brief OUTPUT_PRECISION \n DESCRIPTION: Set <ofstream>.precision(value) to specified value for SU2_DOT and HISTORY output. Useful for exact gradient validation. \n DEFAULT: 6 \ingroup Config */
+  addUnsignedShortOption("OUTPUT_PRECISION", output_precision, 10);
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
@@ -2077,6 +2104,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Fixed values for turbulence quantities to keep them at inflow conditions. */
+  /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
+  addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
+  /* DESCRIPTION: Shift of the fixed values half-space, in space units in the direction of far-field velocity. */
+  addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
+
   /* Harmonic Balance config */
   /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
   addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
@@ -2239,7 +2272,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("REFERENCE_GEOMETRY_PENALTY", RefGeom_Penalty, 1E6);
   /*!\brief REFERENCE_GEOMETRY_FILENAME \n DESCRIPTION: Reference geometry filename \n Default: reference_geometry.dat \ingroup Config */
   addStringOption("REFERENCE_GEOMETRY_FILENAME", RefGeom_FEMFileName, string("reference_geometry.dat"));
-  /*!\brief REFERENCE_GEOMETRY_FORMAT \n DESCRIPTION: Reference geometry format \n DEFAULT: SU2 \ingroup Config*/
+  /*!\brief REFERENCE_GEOMETRY_FORMAT \n DESCRIPTION: Format of the reference geometry file \n OPTIONS: see \link Input_Ref_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("REFERENCE_GEOMETRY_FORMAT", RefGeom_FileFormat, Input_Ref_Map, SU2_REF);
   /*!\brief REFERENCE_GEOMETRY_SURFACE\n DESCRIPTION: If true consider only the surfaces where loads are applied. \ingroup Config*/
   addBoolOption("REFERENCE_GEOMETRY_SURFACE", RefGeomSurf, false);
@@ -2853,6 +2886,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+          /*if (!option_name.compare("CONV_CRITERIA"))
+            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -3018,7 +3055,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.1.0 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3035,7 +3072,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2020, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2021, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3240,6 +3277,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
     }
 
+    /*--- Inc CHT simulation, but energy equation of fluid is inactive. ---*/
+    if (Multizone_Problem && (nMarker_CHTInterface > 0) && !Energy_Equation)
+      SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
@@ -3343,6 +3383,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case FIGURE_OF_MERIT:
         case SURFACE_TOTAL_PRESSURE:
         case SURFACE_STATIC_PRESSURE:
+        case SURFACE_STATIC_TEMPERATURE:
         case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
@@ -3356,7 +3397,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -3387,7 +3428,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
     if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
 
-    if (Restart == NO) { Restart_Iter = 0; }
+    if (Restart == NO) {
+      Restart_Iter = 0;
+    } else {
+      if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
+    }
 
     if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
   } else {
@@ -4142,9 +4187,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Check if the byte alignment of the matrix multiplications is a
      multiple of 64. */
   if( byteAlignmentMatMul%64 ) {
-    if(rank == MASTER_NODE)
-      cout << "ALIGNED_BYTES_MATMUL must be a multiple of 64." << endl;
-    exit(EXIT_FAILURE);
+    SU2_MPI::Error("ALIGNED_BYTES_MATMUL must be a multiple of 64.", CURRENT_FUNCTION);
   }
 
   /* Determine the value of sizeMatMulPadding, which is the matrix size in
@@ -4338,6 +4381,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
+  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==numeric_limits<su2double>::lowest()){
+    SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
@@ -4345,7 +4392,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
@@ -4414,7 +4461,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Fixed_CM_Mode) {
       nInnerIter += Iter_dCL_dAlpha;
-      ConvCriteria = RESIDUAL;
       MinLogResidual = -24;
     }
   }
@@ -4572,6 +4618,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if ((Kind_ObjFunc[iObj] == SURFACE_PRESSURE_DROP) && (nMarker_Analyze != 2)) {
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Check feassbility for Streamwise Periodic flow ---*/
+  if (Kind_Streamwise_Periodic != NONE) {
+    if (Kind_Regime != INCOMPRESSIBLE)
+      SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
+    if (Kind_Solver == INC_EULER)
+      SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
+    if (nMarker_PerBound != 2)
+      SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible in the moment.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
+      SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
+    if (DiscreteAdjoint && Kind_Streamwise_Periodic == MASSFLOW)
+      SU2_MPI::Error("Discrete Adjoint currently not validated for prescribed MASSFLOW.", CURRENT_FUNCTION);
+    if (Ref_Inc_NonDim != DIMENSIONAL)
+      SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
+    if (Axisymmetric)
+      SU2_MPI::Error("Streamwise Periodicity terms does not not have axisymmetric corrections.", CURRENT_FUNCTION);
+    if (!Energy_Equation) Streamwise_Periodic_Temperature = false;
+  } else {
+    /*--- Safety measure ---*/
+    Streamwise_Periodic_Temperature = false;
   }
 
   /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
@@ -4744,6 +4812,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("MESH_BOX_SIZE specified without 3 values.\n"),
                    CURRENT_FUNCTION);
   }
+
+  /* Force the lowest memory preconditioner when direct solvers are used. */
+
+  auto isPastix = [](unsigned short kindSolver) {
+    return kindSolver == PASTIX_LDLT || kindSolver == PASTIX_LU;
+  };
+
+  if (isPastix(Kind_Linear_Solver)) Kind_Linear_Solver_Prec = LU_SGS;
+  if (isPastix(Kind_DiscAdj_Linear_Solver)) Kind_DiscAdj_Linear_Prec = LU_SGS;
+  if (isPastix(Kind_Deform_Linear_Solver)) Kind_Deform_Linear_Solver_Prec = LU_SGS;
+
 
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
@@ -4922,6 +5001,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
   if (GetGasModel() == "ARGON") monoatomic = true;
+
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  if(OptionIsSet("CONV_CRITERIA")) {
+    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  }
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5955,6 +6040,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case BUFFET_SENSOR:              cout << "Buffet sensor objective function." << endl; break;
         case SURFACE_TOTAL_PRESSURE:     cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:    cout << "Average static pressure objective function." << endl; break;
+        case SURFACE_STATIC_TEMPERATURE: cout << "Average static temperature objective function." << endl; break;
         case SURFACE_MASSFLOW:           cout << "Mass flow rate objective function." << endl; break;
         case SURFACE_MACH:               cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:             cout << "Custom objective function." << endl; break;
@@ -7858,6 +7944,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
+        case SURFACE_STATIC_TEMPERATURE:  AdjExt = "_T";        break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
         case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;
@@ -7905,7 +7992,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;

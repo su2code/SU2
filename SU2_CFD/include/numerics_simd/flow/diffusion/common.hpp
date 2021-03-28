@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
  */
 template<size_t nVar, size_t nDim>
 FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
-                                         const MatrixDbl<nVar,nDim> grad) {
+                                         const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -154,7 +154,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
  */
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
-                                                      const VectorDbl<nDim> normal,
+                                                      const VectorDbl<nDim>& normal,
                                                       Double dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);

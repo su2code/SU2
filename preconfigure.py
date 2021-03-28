@@ -3,14 +3,14 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -289,7 +289,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_codi = '1b8d3f5f03de560fb63a2a76ad91ab7bb3fa67d8'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-    sha_version_medi = 'b84cef4272ab8bad981c0d0386d855daa8fbd340'
+    sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
     github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
 
     medi_name = 'MeDiPack'

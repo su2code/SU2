@@ -2,14 +2,14 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -126,6 +126,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
   const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
+  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
@@ -207,6 +208,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
           Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
+          if(streamwisePeriodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -733,10 +736,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           /*--- The Pressure file uses the global numbering ---*/
@@ -790,10 +790,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1256,7 +1253,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.1.0 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -1267,7 +1264,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
     Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file << "-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2020, SU2 Contributors                                 |" << "\n";
+    Breakdown_file << "| Copyright 2012-2021, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";

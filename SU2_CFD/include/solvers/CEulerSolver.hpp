@@ -2,14 +2,14 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,42 +43,38 @@ protected:
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
-  su2double
-  AllBound_CEquivArea_Inv = 0.0, /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  *CEquivArea_Mnt = nullptr,     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CEquivArea_Inv = nullptr;     /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  su2double AllBound_CEquivArea_Inv=0.0; /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
+  vector<su2double> CEquivArea_Mnt;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  vector<su2double> CEquivArea_Inv;      /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 
+  vector<su2double> Inflow_MassFlow;     /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Exhaust_MassFlow;    /*!< \brief Mass flow rate for each boundary. */
+  vector<su2double> Inflow_Pressure;     /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Inflow_Mach;         /*!< \brief Fan face mach number for each boundary. */
+  vector<su2double> Inflow_Area;         /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Area;        /*!< \brief Boundary total area. */
+  vector<su2double> Exhaust_Pressure;    /*!< \brief Fan face pressure for each boundary. */
+  vector<su2double> Exhaust_Temperature; /*!< \brief Fan face mach number for each boundary. */
   su2double
-  *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach = nullptr,        /*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area = nullptr,        /*!< \brief Boundary total area. */
-  *Exhaust_Area = nullptr,       /*!< \brief Boundary total area. */
-  *Exhaust_Pressure = nullptr,   /*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature = nullptr,/*!< \brief Fan face mach number for each boundary. */
   Inflow_MassFlow_Total = 0.0,   /*!< \brief Mass flow rate for each boundary. */
   Exhaust_MassFlow_Total = 0.0,  /*!< \brief Mass flow rate for each boundary. */
   Inflow_Pressure_Total = 0.0,   /*!< \brief Fan face pressure for each boundary. */
   Inflow_Mach_Total = 0.0,       /*!< \brief Fan face mach number for each boundary. */
   InverseDesign = 0.0;           /*!< \brief Inverse design functional for each boundary. */
-  unsigned long
-  **DonorGlobalIndex = nullptr;  /*!< \brief Value of the donor global index. */
-  su2double
-  ***DonorPrimVar = nullptr,     /*!< \brief Value of the donor variables at each boundary. */
-  **ActDisk_DeltaP = nullptr,    /*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT = nullptr;    /*!< \brief Value of the Delta T. */
+  vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
+  vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
+  vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
   ActDisk_R;         /*!< \brief Value of the actuator disk Radius. */
   su2activematrix
   ActDisk_C,         /*!< \brief Value of the actuator disk Center. */
   ActDisk_Axis;      /*!< \brief Value of the actuator disk Axis. */
-  su2double
-  **ActDisk_Fa,        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
-  **ActDisk_Fx,        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fy,        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
-  **ActDisk_Fz;        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -110,50 +106,45 @@ protected:
   unsigned long Iter_Update_AoA = 0; /*!< \brief Iteration at which AoA was updated last */
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
-  unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
-  unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones. */
-  unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*--- Turbomachinery Solver Variables ---*/
 
-  su2double ***AverageFlux = nullptr,
-            ***SpanTotalFlux = nullptr,
-            ***AverageVelocity = nullptr,
-            ***AverageTurboVelocity = nullptr,
-            ***OldAverageTurboVelocity = nullptr,
-            ***ExtAverageTurboVelocity = nullptr,
-             **AveragePressure = nullptr,
-             **OldAveragePressure = nullptr,
-             **RadialEquilibriumPressure = nullptr,
-             **ExtAveragePressure = nullptr,
-             **AverageDensity = nullptr,
-             **OldAverageDensity = nullptr,
-             **ExtAverageDensity = nullptr,
-             **AverageNu = nullptr,
-             **AverageKine = nullptr,
-             **AverageOmega = nullptr,
-             **ExtAverageNu = nullptr,
-             **ExtAverageKine = nullptr,
-             **ExtAverageOmega = nullptr;
+  vector<su2activematrix> AverageFlux;
+  vector<su2activematrix> SpanTotalFlux;
+  vector<su2activematrix> AverageVelocity;
+  vector<su2activematrix> AverageTurboVelocity;
+  vector<su2activematrix> OldAverageTurboVelocity;
+  vector<su2activematrix> ExtAverageTurboVelocity;
+  su2activematrix AveragePressure;
+  su2activematrix OldAveragePressure;
+  su2activematrix RadialEquilibriumPressure;
+  su2activematrix ExtAveragePressure;
+  su2activematrix AverageDensity;
+  su2activematrix OldAverageDensity;
+  su2activematrix ExtAverageDensity;
+  su2activematrix AverageNu;
+  su2activematrix AverageKine;
+  su2activematrix AverageOmega;
+  su2activematrix ExtAverageNu;
+  su2activematrix ExtAverageKine;
+  su2activematrix ExtAverageOmega;
 
-  su2double  **DensityIn = nullptr,
-             **PressureIn = nullptr,
-             ***TurboVelocityIn = nullptr,
-             **DensityOut = nullptr,
-             **PressureOut = nullptr,
-             ***TurboVelocityOut = nullptr,
-             **KineIn = nullptr,
-             **OmegaIn = nullptr,
-             **NuIn = nullptr,
-             **KineOut = nullptr,
-             **OmegaOut = nullptr,
-             **NuOut = nullptr;
+  su2activematrix DensityIn;
+  su2activematrix PressureIn;
+  vector<su2activematrix> TurboVelocityIn;
+  su2activematrix DensityOut;
+  su2activematrix PressureOut;
+  vector<su2activematrix> TurboVelocityOut;
+  su2activematrix KineIn;
+  su2activematrix OmegaIn;
+  su2activematrix NuIn;
+  su2activematrix KineOut;
+  su2activematrix OmegaOut;
+  su2activematrix NuOut;
 
-  complex<su2double> ***CkInflow = nullptr,
-                     ***CkOutflow1 = nullptr,
-                     ***CkOutflow2 = nullptr;
+  vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
@@ -799,14 +790,18 @@ public:
                                CConfig *config) final;
 
   /*!
-   * \brief Update the solution using an implicit Euler scheme.
+   * \brief Prepare an implicit iteration.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config) final;
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Provide the mass flow rate.
@@ -1219,7 +1214,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
+  inline const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
     return AverageTurboVelocity[valMarker][valSpan];
   }
 
@@ -1372,7 +1367,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityIn[inMarkerTP][valSpan];
   }
 
@@ -1399,7 +1394,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityOut[inMarkerTP][valSpan];
   }
 
@@ -1484,12 +1479,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityIn(su2double *value,
+  inline void SetTurboVelocityIn(const su2double *value,
                                  unsigned short inMarkerTP,
                                  unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 
@@ -1520,12 +1513,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityOut(su2double *value,
+  inline void SetTurboVelocityOut(const su2double *value,
                                   unsigned short inMarkerTP,
                                   unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 

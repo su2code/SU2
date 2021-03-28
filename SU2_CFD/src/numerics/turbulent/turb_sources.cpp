@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -891,9 +891,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /*--- Cross diffusion ---*/
 
    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-   
+
    /*--- Contribution due to 2D axisymmetric formulation ---*/
-  
+
    if (axisymmetric) ResidualAxisymmetric(alfa_blended,zeta);
 
    /*--- Implicit part ---*/

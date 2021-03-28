@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4318,7 +4318,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
 
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
 
-      if (checkTetra(iElem,0,1,2,3) < 0.0) {
+      if (checkTetra(iElem,0,1,2,3)) {
         elem[iElem]->Change_Orientation();
         tet_flip++;
       }
@@ -5034,7 +5034,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan;
   unsigned long iPoint, iVertex;
   long jVertex;
   int nSpan, nSpan_loc;
@@ -5042,12 +5042,9 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   short PeriodicBoundary;
   unsigned short SpanWise_Kind = config->GetKind_SpanWise();
 
-#ifdef HAVE_MPI
   unsigned short iSize;
   int nSpan_max;
-  int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
-  su2double MyMin, MyMax, *MyTotValueSpan =NULL,*MyValueSpan =NULL;
-#endif
+  su2double MyMin, MyMax;
 
   nSpan = 0;
   nSpan_loc = 0;
@@ -5067,22 +5064,25 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       /*--- loop to find inflow of outflow marker---*/
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
 
-                /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-                 * in order to caount the number of Span ---*/
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                        nSpan++;
-                    }
-                  }
-                }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+           * in order to caount the number of Span ---*/
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                nSpan++;
               }
             }
           }
@@ -5091,14 +5091,8 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
-      /*--- if parallel computing the global number of span---*/
-#ifdef HAVE_MPI
-      nSpan_max = nSpan;
-      My_nSpan  = nSpan; nSpan = 0;
-      My_MaxnSpan = nSpan_max; nSpan_max = 0;
-      SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&My_MaxnSpan, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
-#endif
+      SU2_MPI::Allreduce(&nSpan_loc, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&nSpan_loc, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
 
       /*--- initialize the vector that will contain the disordered values span-wise ---*/
       nSpanWiseSections[marker_flag -1] = nSpan;
@@ -5108,53 +5102,56 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         valueSpan[iSpan] = -1001.0;
       }
 
-
       /*--- store the local span-wise value for each processor ---*/
       nSpan_loc = 0;
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
-                      case CENTRIFUGAL:
-                        valueSpan[nSpan_loc] = coord[2];
-                        break;
-                      case CENTRIPETAL:
-                        valueSpan[nSpan_loc] = coord[2];
-                        break;
-                      case AXIAL:
-                        valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        break;
-                      case CENTRIPETAL_AXIAL:
-                        if (marker_flag == OUTFLOW){
-                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        }
-                        else{
-                          valueSpan[nSpan_loc] = coord[2];
-                        }
-                        break;
-                      case AXIAL_CENTRIFUGAL:
-                        if (marker_flag == INFLOW){
-                          valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        }
-                        else{
-                          valueSpan[nSpan_loc] = coord[2];
-                        }
-                        break;
 
-                      }
-                      nSpan_loc++;
-                    }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+                coord = nodes->GetCoord(iPoint);
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case CENTRIPETAL:
+                  valueSpan[nSpan_loc] = coord[2];
+                  break;
+                case AXIAL:
+                  valueSpan[nSpan_loc] = radius;
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    valueSpan[nSpan_loc] = radius;
                   }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
+                case AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    valueSpan[nSpan_loc] = radius;
+                  }
+                  else{
+                    valueSpan[nSpan_loc] = coord[2];
+                  }
+                  break;
                 }
+                nSpan_loc++;
               }
             }
           }
@@ -5163,27 +5160,16 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
 
       /*--- Gather the span-wise values on all the processor ---*/
 
-#ifdef HAVE_MPI
-      MyTotValueSpan  = new su2double[nSpan_max*size];
-      MyValueSpan     = new su2double[nSpan_max];
-      My_nSpan_loc    = new int[size];
-      for(iSpan = 0; iSpan < nSpan_max; iSpan++){
-        MyValueSpan[iSpan] = -1001.0;
-        for (iSize = 0; iSize< size; iSize++){
-          MyTotValueSpan[iSize*nSpan_max + iSpan] = -1001.0;
-        }
-      }
+      vector<su2double> MyTotValueSpan(nSpan_max*size, -1001.0);
+      vector<su2double> MyValueSpan(nSpan_max, -1001.0);
+      vector<int> My_nSpan_loc(size);
 
-      for(iSpan = 0; iSpan <nSpan_loc; iSpan++){
+      for(iSpan = 0; iSpan<nSpan_loc; iSpan++){
         MyValueSpan[iSpan] = valueSpan[iSpan];
       }
 
-      for(iSpan = 0; iSpan <nSpan; iSpan++){
-        valueSpan[iSpan] = -1001.0;
-      }
-
-      SU2_MPI::Allgather(MyValueSpan, nSpan_max , MPI_DOUBLE, MyTotValueSpan, nSpan_max, MPI_DOUBLE, SU2_MPI::GetComm());
-      SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(MyValueSpan.data(), nSpan_max , MPI_DOUBLE, MyTotValueSpan.data(), nSpan_max, MPI_DOUBLE, SU2_MPI::GetComm());
+      SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
       jSpan = 0;
       for (iSize = 0; iSize< size; iSize++){
@@ -5192,46 +5178,15 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
           jSpan++;
         }
       }
+      if (jSpan != nSpan) SU2_MPI::Error("Panic!",CURRENT_FUNCTION);
 
-      delete [] MyTotValueSpan; delete [] MyValueSpan; delete [] My_nSpan_loc;
+      /*--- Terrible stuff to do but so is this entire bloody function goodness me... ---*/
+      SpanWiseValue[marker_flag -1] = valueSpan;
 
-#endif
-
-      // check if the value are gathered correctly
-      //
-      //  for (iSpan = 0; iSpan < nSpan; iSpan++){
-      //    if(rank == MASTER_NODE){
-      //      cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
-      //    }
-      //  }
-
+      sort(SpanWiseValue[marker_flag -1], SpanWiseValue[marker_flag -1]+nSpan);
 
       /*--- Find the minimum value among the span-wise values  ---*/
-      min = 10.0E+06;
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
-        if(valueSpan[iSpan]< min) min = valueSpan[iSpan];
-      }
-
-      /*---Initilize the vector of span-wise values that will be ordered ---*/
-      SpanWiseValue[marker_flag -1] = new su2double[nSpan];
-      for (iSpan = 0; iSpan < nSpan; iSpan++){
-        SpanWiseValue[marker_flag -1][iSpan] = 0;
-      }
-
-      /*---Ordering the vector of span-wise values---*/
-      SpanWiseValue[marker_flag -1][0] = min;
-      for (iSpan = 1; iSpan < nSpan; iSpan++){
-        min = 10.0E+06;
-        for (jSpan = 0; jSpan < nSpan; jSpan++){
-          if((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS){
-            min    = valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1];
-            kSpan = jSpan;
-          }
-        }
-        SpanWiseValue[marker_flag -1][iSpan] = valueSpan[kSpan];
-      }
-
-      delete [] valueSpan;
+      min = SpanWiseValue[marker_flag -1][0];
     }
     /*--- Compute equispaced Span-wise sections using number of section specified by the User---*/
     else{
@@ -5242,56 +5197,59 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         SpanWiseValue[marker_flag -1][iSpan] = 0;
       }
       /*--- Compute maximum and minimum value span-wise---*/
-      min = 10.0E+06;
-      max = -10.0E+06;
+      min = 1E+07;
+      max =-1E+07;
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-              for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-                iPoint = vertex[iMarker][iVertex]->GetNode();
-                for (jMarker = 0; jMarker < nMarker; jMarker++){
-                  if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-                    PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                    jVertex = nodes->GetVertex(iPoint, jMarker);
-                    if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                      coord = nodes->GetCoord(iPoint);
-                      switch (config->GetKind_TurboMachinery(val_iZone)){
-                      case CENTRIFUGAL: case CENTRIPETAL:
-                        if (coord[2] < min) min = coord[2];
-                        if (coord[2] > max) max = coord[2];
-                        break;
-                      case AXIAL:
-                        radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                        if (radius < min) min = radius;
-                        if (radius > max) max = radius;
-                        break;
-                      case CENTRIPETAL_AXIAL:
-                        if (marker_flag == OUTFLOW){
-                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          if (radius < min) min = radius;
-                          if (radius > max) max = radius;
-                        }
-                        else{
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                        }
-                        break;
 
-                      case AXIAL_CENTRIFUGAL:
-                        if (marker_flag == INFLOW){
-                          radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-                          if (radius < min) min = radius;
-                          if (radius > max) max = radius;
-                        }
-                        else{
-                          if (coord[2] < min) min = coord[2];
-                          if (coord[2] > max) max = coord[2];
-                        }
-                        break;
-                      }
-                    }
+          if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+
+          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+
+            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+
+              iPoint = vertex[iMarker][iVertex]->GetNode();
+              if (!nodes->GetDomain(iPoint)) continue;
+
+              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+              jVertex = nodes->GetVertex(iPoint, jMarker);
+
+              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+
+                coord = nodes->GetCoord(iPoint);
+                radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+                switch (config->GetKind_TurboMachinery(val_iZone)){
+                case CENTRIFUGAL:
+                case CENTRIPETAL:
+                  if (coord[2] < min) min = coord[2];
+                  if (coord[2] > max) max = coord[2];
+                  break;
+                case AXIAL:
+                  if (radius < min) min = radius;
+                  if (radius > max) max = radius;
+                  break;
+                case CENTRIPETAL_AXIAL:
+                  if (marker_flag == OUTFLOW){
+                    if (radius < min) min = radius;
+                    if (radius > max) max = radius;
                   }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
+                case AXIAL_CENTRIFUGAL:
+                  if (marker_flag == INFLOW){
+                    if (radius < min) min = radius;
+                    if (radius > max) max = radius;
+                  }
+                  else{
+                    if (coord[2] < min) min = coord[2];
+                    if (coord[2] > max) max = coord[2];
+                  }
+                  break;
                 }
               }
             }
@@ -5299,15 +5257,11 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
         }
       }
       /*--- compute global minimum and maximum value on span-wise ---*/
-#ifdef HAVE_MPI
       MyMin= min;  min = 0;
       MyMax= max;  max = 0;
       SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-#endif
 
-      //  cout <<"min  " <<  min << endl;
-      //  cout <<"max  " << max << endl;
       /*--- compute height value for each spanwise section---*/
       delta = (max - min)/(nSpanWiseSections[marker_flag-1] -1);
       for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
@@ -5315,11 +5269,10 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       }
     }
 
-
     if(marker_flag == OUTFLOW){
       if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
         char buf[100];
-        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW], nSpanWiseSections[OUTFLOW]);
+        SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW-1], nSpanWiseSections[OUTFLOW-1]);
         SU2_MPI::Error(string(" At the moment only turbomachinery with the same amount of span-wise section can be simulated\n") + buf, CURRENT_FUNCTION);
       }
       else{
@@ -5330,6 +5283,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   }
 
 }
+
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
   unsigned long  iPoint, **ordered, **disordered, **oldVertex3D, iInternalVertex;
   unsigned long nVert, nVertMax;
@@ -7456,6 +7410,99 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   delete [] Buffer_Recv_GlobalIndex;
   delete [] Buffer_Recv_Vertex;
   delete [] Buffer_Recv_Marker;
+}
+
+void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig *config) {
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
+  /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
+  /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
+  /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
+  /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
+  /*--- streamwise coordinate vector is perpendicular to that |--->|, the choice of the     ---*/
+  /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
+  /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
+  /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  /*--- Initialize/Allocate variables. ---*/
+  su2double min_norm = numeric_limits<su2double>::max();
+
+  /*--- Communicate Coordinates plus the minimum distance, therefor the nDim+1 ---*/
+  vector<su2double> Buffer_Send_RefNode(nDim+1, numeric_limits<su2double>::max());
+  su2activematrix Buffer_Recv_RefNode(size,nDim+1);
+  unsigned long iPointMin = 0; // Initialisaton, otherwise 'may be uninitialized` warning'
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
+  /*---         each process has the local ref-nodes from every process. Most processes     ---*/
+  /*---         won't have a boundary with the streamwise periodic 'inlet' marker,          ---*/
+  /*---         therefore the default value of the send value is set super high.            ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
+      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if (iPeriodic == 1) {
+
+        for (auto iVertex = 0ul; iVertex < GetnVertex(iMarker); iVertex++) {
+
+          auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Get the squared norm of the current point. sqrt is a monotonic function in [0,R+) so for comparison we dont need Norm. ---*/
+          auto norm = GeometryToolbox::SquaredNorm(nDim, nodes->GetCoord(iPoint));
+
+          /*--- Check if new unique reference node is found and store Point ID. ---*/
+          if (norm < min_norm) {
+            min_norm = norm;
+            iPointMin = iPoint;
+          }
+          /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+        }
+        break; // Actually no more than one streamwise periodic marker pair is allowed
+      } // receiver conditional
+    } // periodic conditional
+  } // marker loop
+
+  /*--- Copy the Coordinates and norm into send buffer. ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin,iDim);
+  Buffer_Send_RefNode[nDim] = min_norm;
+
+  /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
+  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim+1, MPI_DOUBLE,
+                     Buffer_Recv_RefNode.data(), nDim+1, MPI_DOUBLE, SU2_MPI::GetComm());
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
+  /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
+  /*---         geometry container.                                                         ---*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  min_norm = numeric_limits<su2double>::max();
+
+  for (int iRank = 0; iRank < size; iRank++) {
+
+    auto norm = Buffer_Recv_RefNode(iRank,nDim);
+
+    /*--- Check if new unique reference node is found. ---*/
+    if (norm < min_norm) {
+      min_norm = norm;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Streamwise_Periodic_RefNode[iDim] = Buffer_Recv_RefNode(iRank,iDim);
+    }
+  }
+
+  /*--- Print the reference node to screen. ---*/
+  if (rank == MASTER_NODE) {
+    cout << "Streamwise Periodic Reference Node: [";
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      cout <<  " " << Streamwise_Periodic_RefNode[iDim];
+    cout << " ]" << endl;
+  }
 
 }
 

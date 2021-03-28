@@ -3,14 +3,14 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -767,15 +767,20 @@ def findiff( config, state=None ):
     else:
         step = 0.001 
 
+    opt_names = []
+    for i in range(config['NZONES']):
+        for key in sorted(su2io.historyOutFields):  
+            if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
+                if (config['NZONES'] == 1):
+                    opt_names.append(key)
+                else: 
+                    opt_names.append(key + '[' + str(i) + ']')
+
     # ----------------------------------------------------
     #  Redundancy Check
     # ----------------------------------------------------    
 
     # master redundancy check
-    opt_names = []
-    for key in sorted(su2io.historyOutFields):  
-        if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
-            opt_names.append(key)
     findiff_todo = all([key in state.GRADIENTS for key in opt_names])
     if findiff_todo:
         grads = state['GRADIENTS']
@@ -827,7 +832,8 @@ def findiff( config, state=None ):
 
     # files to pull
     files = state['FILES']
-    pull = []; link = []    
+    pull = []; link = []
+    pull.extend(config.get('CONFIG_LIST',[]))  
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,konfig)

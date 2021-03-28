@@ -2,14 +2,14 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,11 +37,11 @@
  */
 class CNSSolver final : public CEulerSolver {
 private:
-  su2double
-  *Surface_Buffet_Metric = nullptr, /*!< \brief Integrated separation sensor for each monitoring surface. */
-  *Buffet_Metric = nullptr,         /*!< \brief Integrated separation sensor for each boundary. */
-  **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
-  Total_Buffet_Metric = 0.0;        /*!< \brief Integrated separation sensor for all the boundaries. */
+
+  vector<su2double> Surface_Buffet_Metric;  /*!< \brief Integrated separation sensor for each monitoring surface. */
+  vector<su2double> Buffet_Metric;          /*!< \brief Integrated separation sensor for each boundary. */
+  vector<vector<su2double> > Buffet_Sensor; /*!< \brief Separation sensor for each boundary and vertex. */
+  su2double Total_Buffet_Metric = 0.0;      /*!< \brief Integrated separation sensor for all the boundaries. */
 
   /*!
    * \brief A virtual member.
@@ -131,7 +131,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CNSSolver(void) override;
+  ~CNSSolver() = default;
 
   /*!
    * \brief Provide the buffet metric.
