@@ -106,8 +106,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Set the gamma value ---*/
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
+  Gamma = 0; //config->GetGamma();
+  Gamma_Minus_One = 0; //Gamma - 1.0;
 
   /*--- Define geometry constants in the solver structure
    Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp).
@@ -137,6 +137,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    specified reference values. ---*/
 
   SetNondimensionalization(config, iMesh);
+
+  exit(0);
 
   /*--- Check if we are executing a verification case. If so, the
    VerificationSolution object will be instantiated for a particular
@@ -1449,7 +1451,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0, Gamma_Freestream;
 
   unsigned short iDim;
 
@@ -1512,7 +1514,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     case THERMALLY_PERFECT:
 
-      auxFluidModel = new CThermallyPerfectGas(config, Gamma, config->GetGas_Constant());
+      auxFluidModel = new CThermallyPerfectGas(config, config->GetGas_Constant());
       break;      
 
     case VW_GAS:
@@ -1536,6 +1538,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
     Density_FreeStream = auxFluidModel->GetDensity();
     config->SetDensity_FreeStream(Density_FreeStream);
+    Gamma_Freestream = auxFluidModel->GetGamma();
+    cout << "CATARINA GAMMA=" << Gamma_Freestream << endl;
+    config->SetGamma_FreeStream(Gamma_Freestream);
   }
   else {
     auxFluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
@@ -1544,6 +1549,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   }
 
   Mach2Vel_FreeStream = auxFluidModel->GetSoundSpeed();
+  cout << "CATARINA Mach2Vel_FreeStream=" << Mach2Vel_FreeStream << endl;
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
 
@@ -1746,7 +1752,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
 
       case THERMALLY_PERFECT:
-        FluidModel[thread] = new CThermallyPerfectGas(config, Gamma, Gas_ConstantND);
+        FluidModel[thread] = new CThermallyPerfectGas(config, Gas_ConstantND);
         break;        
 
       case VW_GAS:
@@ -1763,7 +1769,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
     }
 
-    GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+    GetFluidModel()->SetEnergy_Prho(Density_FreeStreamND, Pressure_FreeStreamND, Temperature_FreeStreamND);
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
@@ -1772,6 +1778,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   } // end SU2_OMP_PARALLEL
 
   Energy_FreeStreamND = GetFluidModel()->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+
+  cout << "GetFluidModel()=" << GetFluidModel()<< endl;
+  cout << "GetFluidModel()->GetStaticEnergy()=" << GetFluidModel()->GetStaticEnergy()<< endl;
+  cout << "ModVel_FreeStreamND=" << ModVel_FreeStreamND<< endl;
+  cout << "ModVel_FreeStreamND=" << ModVel_FreeStreamND<< endl;
+  cout << "Energy_FreeStreamND=" << Energy_FreeStreamND<< endl;
 
   if (tkeNeeded) Energy_FreeStreamND += Tke_FreeStreamND;
 
@@ -1884,7 +1896,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << config->GetGamma_FreeStream();
     Unit.str("");
 
     switch(config->GetKind_FluidModel()){
@@ -2911,10 +2923,10 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
     primitive_j[iDim+1] = vel_j_corr;
   }
 
-  fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
+  fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2], 0);
   primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
 
-  fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
+  fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2], 0);
   primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
 
 }

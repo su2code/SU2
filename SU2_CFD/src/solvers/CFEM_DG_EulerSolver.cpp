@@ -1049,24 +1049,24 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     case STANDARD_AIR:
       FluidModel = new CIdealGas(1.4, Gas_ConstantND, config->GetCompute_Entropy());
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, 0);
       break;
 
     case IDEAL_GAS:
       FluidModel = new CIdealGas(Gamma, Gas_ConstantND, config->GetCompute_Entropy());
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, 0);
       break;
 
     case VW_GAS:
       FluidModel = new CVanDerWaalsGas(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                        config->GetTemperature_Critical()/config->GetTemperature_Ref());
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, 0);
       break;
 
     case PR_GAS:
       FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
-      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND, 0);
       break;
 
   }

@@ -30,18 +30,44 @@
 CThermallyPerfectGas::CThermallyPerfectGas(const CConfig* config, su2double R, bool CompEntropy) : CFluidModel() {
   Mutation::MixtureOptions opt(config->GetGasModel());
   opt.setStateModel("ChemNonEq1T");
+  //opt.setStateModel("Equil");
   opt.setMechanism("none");
   mix.reset(new Mutation::Mixture(opt));
   Gas_Constant = R;
   ComputeEntropy = CompEntropy;
+  ns = config->GetnSpecies();
+  cs = config->GetGas_Composition();
+  rhos.resize(ns,0.0);
+  energy.resize(1,0.0);
+  PT.resize(2,0.0);
+  temp.resize(1,0.0);
 }
 
 void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
+
+  for (i = 0; i < ns; i++) rhos[i] = rho* cs[i];
+  energy[0] = e - 300811.74424616753822;
+  for (i = 0; i < ns; i++) cout << "CATARINA rhos[" << i << "]=" << rhos[i] << endl;
+  cout << setprecision(20) << "CATARINA e=" << energy[0] << endl;
+  mix->setState(rhos.data(), energy.data(), 0);
+  Gamma = mix->mixtureFrozenGamma();
+  Cp = mix->mixtureFrozenCpMass();
+  Cv = mix->mixtureFrozenCvMass();
+
+  cout << "CATARINA GAMMA=" << Gamma<< endl;
+  cout << "CATARINA Cp=" << Cp<< endl;
+  cout << "CATARINA Cv=" << Cv<< endl;
+  Gamma_Minus_One = Gamma - 1;
   Density = rho;
   StaticEnergy = e;
+  cout << "CATARINA CThermPerf 1 StaticEnergy=" << StaticEnergy << endl;
   Pressure = Gamma_Minus_One * Density * StaticEnergy;
   Temperature = Gamma_Minus_One * StaticEnergy / Gas_Constant;
+  cout << "CATARINA Gamma=" << Gamma<< endl;
+  cout << "CATARINA Pressure=" << Pressure<< endl;
+  cout << "CATARINA Density=" << Density << endl;
   SoundSpeed2 = Gamma * Pressure / Density;
+  cout << "CATARINA Density=" << Density << endl;
   dPdrho_e = Gamma_Minus_One * StaticEnergy;
   dPde_rho = Gamma_Minus_One * Density;
   dTdrho_e = 0.0;
@@ -51,6 +77,18 @@ void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
 }
 
 void CThermallyPerfectGas::SetTDState_PT(su2double P, su2double T) {
+  PT[0] = P;
+  PT[1] = T;
+  mix->setState(cs, PT.data(), 2);
+  //mix->setState(P, T);
+  Gamma = mix->mixtureFrozenGamma();
+  for (i = 0; i < ns; i++) cout << "CATARINA cs[" << i << "]=" << cs[i] << endl;
+  cout << "CATARINA P=" << P << endl;
+  cout << "CATARINA T=" << T << endl;
+  cout << "CATARINA GAMMA=" << Gamma<< endl;
+  Gamma_Minus_One = Gamma - 1;
+    mix->mixtureEnergies(energy.data());
+  //su2double e = energy[0];
   su2double e = T * Gas_Constant / Gamma_Minus_One;
   su2double rho = P / (T * Gas_Constant);
   SetTDState_rhoe(rho, e);
@@ -61,7 +99,16 @@ void CThermallyPerfectGas::SetTDState_Prho(su2double P, su2double rho) {
   SetTDState_rhoe(rho, e);
 }
 
-void CThermallyPerfectGas::SetEnergy_Prho(su2double P, su2double rho) { StaticEnergy = P / (rho * Gamma_Minus_One); }
+void CThermallyPerfectGas::SetEnergy_Prho(su2double rho, su2double P, su2double T) { 
+
+  temp[0] = T;
+  for (i = 0; i < ns; i++) rhos[i] = rho* cs[i];
+  mix->setState(rhos.data(), temp.data(), 1);
+  Gamma = mix->mixtureFrozenGamma();
+  Gamma_Minus_One = Gamma - 1;
+  StaticEnergy = P / (rho * Gamma_Minus_One); 
+cout << "CATARINA CThermPerf 2 StaticEnergy=" << StaticEnergy << endl;
+}
 
 void CThermallyPerfectGas::SetTDState_hs(su2double h, su2double s) {
   su2double T = h * Gamma_Minus_One / Gas_Constant / Gamma;

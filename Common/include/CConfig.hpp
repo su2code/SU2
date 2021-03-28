@@ -832,6 +832,7 @@ private:
   Density_Solid,                   /*!< \brief Total density in solids. */
   *Velocity_FreeStream,            /*!< \brief Free-stream velocity vector of the fluid.  */
   Energy_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
+  Gamma_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -1673,6 +1674,12 @@ public:
    * \return Freestream temperature.
    */
   su2double GetEnergy_FreeStream(void) const { return Energy_FreeStream; }
+
+  /*!
+   * \brief Get the value of the frestream temperature.
+   * \return Freestream temperature.
+   */
+  su2double GetGamma_FreeStream(void) const { return Gamma_FreeStream; }  
 
   /*!
    * \brief Get the value of the frestream temperature.
@@ -2567,6 +2574,12 @@ public:
    * \return Value of the Froude number.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetGamma_FreeStream(su2double val_gamma_freestream) { Gamma_FreeStream = val_gamma_freestream; }  
 
   /*!
    * \brief Set the thermal diffusivity for solids.

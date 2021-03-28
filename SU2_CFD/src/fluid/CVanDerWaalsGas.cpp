@@ -88,7 +88,7 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
 }
 
 void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
+  SetEnergy_Prho(P, rho, 0);
   SetTDState_rhoe(rho, StaticEnergy);
 }
 
@@ -156,9 +156,9 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho) {
-  su2double T = (P + rho * rho * a) * (1 - rho * b) / (rho * Gas_Constant);
-  StaticEnergy = T * Gas_Constant / Gamma_Minus_One - rho * a;
+void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho, su2double T) {
+  //su2double T = (P + rho * rho * a) * (1 - rho * b) / (rho * Gas_Constant);
+  //StaticEnergy = T * Gas_Constant / Gamma_Minus_One - rho * a;
 }
 
 void CVanDerWaalsGas::SetTDState_rhoT(su2double rho, su2double T) {

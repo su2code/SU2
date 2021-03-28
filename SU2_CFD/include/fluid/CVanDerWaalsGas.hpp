@@ -72,7 +72,7 @@ class CVanDerWaalsGas final : public CIdealGas {
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless state using Enthalpy and Entropy

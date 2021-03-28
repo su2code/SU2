@@ -144,55 +144,55 @@ void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
 }
 
 void CPengRobinson::SetTDState_PT(su2double P, su2double T) {
-  su2double toll = 1e-6;
-  su2double A, B, Z, DZ = 1.0, F, F1, atanh;
-  su2double rho, fv, e;
-  su2double sqrt2 = sqrt(2.0);
-  unsigned short nmax = 20, count = 0;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(P);
-  AD::SetPreaccIn(T);
-
-  A = a * alpha2(T) * P / (T * Gas_Constant) / (T * Gas_Constant);
-  B = b * P / (T * Gas_Constant);
-
-  if (Zed > 0.1)
-    Z = min(Zed, 0.99);
-  else
-    Z = 0.99;
-
-  do {
-    F = Z * Z * Z + Z * Z * (B - 1.0) + Z * (A - 2 * B - 3 * B * B) + (B * B * B + B * B - A * B);
-    F1 = 3 * Z * Z + 2 * Z * (B - 1.0) + (A - 2 * B - 3 * B * B);
-    DZ = F / F1;
-    Z -= DZ;
-  } while (abs(DZ) > toll && count < nmax);
-
-  if (count == nmax) {
-    cout << "Warning Newton-Raphson exceed number of max iteration in PT" << endl;
-    cout << "Compressibility factor  " << Z << " would be substituted with " << Zed << endl;
-  }
-  // check if the solution is physical otherwise uses previous point  solution
-  if (Z <= 1.0001 && Z >= 0.05 && count < nmax) Zed = Z;
-
-  rho = P / (Zed * Gas_Constant * T);
-
-  atanh = (log(1.0 + (rho * b * sqrt2 / (1 + rho * b))) - log(1.0 - (rho * b * sqrt2 / (1 + rho * b)))) / 2.0;
-
-  fv = atanh;
-
-  e = T * Gas_Constant / Gamma_Minus_One - a * (k + 1) * sqrt(alpha2(T)) * fv / (b * sqrt2);
-
-  AD::SetPreaccOut(rho);
-  AD::SetPreaccOut(e);
-  AD::EndPreacc();
-
-  SetTDState_rhoe(rho, e);
+//  su2double toll = 1e-6;
+//  su2double A, B, Z, DZ = 1.0, F, F1, atanh;
+//  su2double rho, fv, e;
+//  su2double sqrt2 = sqrt(2.0);
+//  unsigned short nmax = 20, count = 0;
+//
+//  AD::StartPreacc();
+//  AD::SetPreaccIn(P);
+//  AD::SetPreaccIn(T);
+//
+//  A = a * alpha2(T) * P / (T * Gas_Constant) / (T * Gas_Constant);
+//  B = b * P / (T * Gas_Constant);
+//
+//  if (Zed > 0.1)
+//    Z = min(Zed, 0.99);
+//  else
+//    Z = 0.99;
+//
+//  do {
+//    F = Z * Z * Z + Z * Z * (B - 1.0) + Z * (A - 2 * B - 3 * B * B) + (B * B * B + B * B - A * B);
+//    F1 = 3 * Z * Z + 2 * Z * (B - 1.0) + (A - 2 * B - 3 * B * B);
+//    DZ = F / F1;
+//    Z -= DZ;
+//  } while (abs(DZ) > toll && count < nmax);
+//
+//  if (count == nmax) {
+//    cout << "Warning Newton-Raphson exceed number of max iteration in PT" << endl;
+//    cout << "Compressibility factor  " << Z << " would be substituted with " << Zed << endl;
+//  }
+//  // check if the solution is physical otherwise uses previous point  solution
+//  if (Z <= 1.0001 && Z >= 0.05 && count < nmax) Zed = Z;
+//
+//  rho = P / (Zed * Gas_Constant * T);
+//
+//  atanh = (log(1.0 + (rho * b * sqrt2 / (1 + rho * b))) - log(1.0 - (rho * b * sqrt2 / (1 + rho * b)))) / 2.0;
+//
+//  fv = atanh;
+//
+//  e = T * Gas_Constant / Gamma_Minus_One - a * (k + 1) * sqrt(alpha2(T)) * fv / (b * sqrt2);
+//
+//  AD::SetPreaccOut(rho);
+//  AD::SetPreaccOut(e);
+//  AD::EndPreacc();
+//
+//  SetTDState_rhoe(rho, e);
 }
 
 void CPengRobinson::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
+  SetEnergy_Prho(P, rho, 0);
 
   SetTDState_rhoe(rho, StaticEnergy);
 }
@@ -290,33 +290,33 @@ void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho) {
-  su2double ad;
-  su2double A, B, C, T, vb1, vb2, atanh;
+void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho, su2double T) {
+//su2double ad;
+//su2double A, B, C, T, vb1, vb2, atanh;
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(P);
-  AD::SetPreaccIn(rho);
+//AD::StartPreacc();
+//AD::SetPreaccIn(P);
+//AD::SetPreaccIn(rho);
 
-  vb1 = (1 / rho - b);
-  vb2 = (1 / rho / rho + 2 * b / rho - b * b);
+//vb1 = (1 / rho - b);
+//vb2 = (1 / rho / rho + 2 * b / rho - b * b);
 
-  A = Gas_Constant / vb1 - a * k * k / TstarCrit / vb2;
+//A = Gas_Constant / vb1 - a * k * k / TstarCrit / vb2;
 
-  B = 2 * a * k * (k + 1) / sqrt(TstarCrit) / vb2;
+//B = 2 * a * k * (k + 1) / sqrt(TstarCrit) / vb2;
 
-  C = -P - a * (1 + k) * (1 + k) / vb2;
+//C = -P - a * (1 + k) * (1 + k) / vb2;
 
-  T = (-B + sqrt(B * B - 4 * A * C)) / (2 * A);
-  T *= T;
+//T = (-B + sqrt(B * B - 4 * A * C)) / (2 * A);
+//T *= T;
 
-  atanh = (log(1.0 + (rho * b * sqrt(2.0) / (1 + rho * b))) - log(1.0 - (rho * b * sqrt(2.0) / (1 + rho * b)))) / 2.0;
-  ad = a * (k + 1) * sqrt(alpha2(T)) / (b * sqrt(2.0)) * atanh;
+//atanh = (log(1.0 + (rho * b * sqrt(2.0) / (1 + rho * b))) - log(1.0 - (rho * b * sqrt(2.0) / (1 + rho * b)))) / 2.0;
+//ad = a * (k + 1) * sqrt(alpha2(T)) / (b * sqrt(2.0)) * atanh;
 
-  StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
+//StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
 
-  AD::SetPreaccOut(StaticEnergy);
-  AD::EndPreacc();
+//AD::SetPreaccOut(StaticEnergy);
+//AD::EndPreacc();
 }
 
 void CPengRobinson::SetTDState_rhoT(su2double rho, su2double T) {

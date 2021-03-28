@@ -62,7 +62,7 @@ void CIdealGas::SetTDState_Prho(su2double P, su2double rho) {
   SetTDState_rhoe(rho, e);
 }
 
-void CIdealGas::SetEnergy_Prho(su2double P, su2double rho) { StaticEnergy = P / (rho * Gamma_Minus_One); }
+void CIdealGas::SetEnergy_Prho(su2double P, su2double rho, su2double T) { StaticEnergy = P / (rho * Gamma_Minus_One); }
 
 void CIdealGas::SetTDState_hs(su2double h, su2double s) {
   su2double T = h * Gamma_Minus_One / Gas_Constant / Gamma;

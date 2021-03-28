@@ -67,6 +67,9 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
+  su2double Gamma{0.0};
+  su2double Gamma_Minus_One{0.0};         /*!< \brief Ratio of Specific Heats Minus One. */
+
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
@@ -250,7 +253,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  virtual void SetEnergy_Prho(su2double P, su2double rho) {}
+  virtual void SetEnergy_Prho(su2double P, su2double rho, su2double T) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -297,5 +300,11 @@ class CFluidModel {
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+  /*!
+   * \brief Get fluid specific heat at constant pressure.
+   */
+  su2double GetGamma() const { return Gamma; }
+  su2double GetGammaMinusOne() const { return Gamma_Minus_One; }
 
 };

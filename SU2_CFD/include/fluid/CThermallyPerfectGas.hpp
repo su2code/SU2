@@ -40,10 +40,11 @@
 class CThermallyPerfectGas : public CFluidModel {
  protected:
   std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
-  su2double Gamma{0.0};                   /*!< \brief Ratio of Specific Heats. */
-  su2double Gamma_Minus_One{0.0};         /*!< \brief Ratio of Specific Heats Minus One. */
   su2double Gas_Constant{0.0};            /*!< \brief Gas Constant. */
   bool ComputeEntropy{true};              /*!< \brief Whether or not to compute entropy. */
+  int ns, i;
+  vector<su2double> rhos, energy, PT, temp;
+  const su2double *cs;
 
  public:
   /*!
@@ -77,7 +78,7 @@ class CThermallyPerfectGas : public CFluidModel {
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho, su2double T) override;
 
   /*!
    * \brief Set the Dimensionless State using Enthalpy and Entropy
@@ -110,5 +111,6 @@ class CThermallyPerfectGas : public CFluidModel {
    *
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
+
 };
 #endif
