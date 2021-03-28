@@ -76,34 +76,34 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   /*--- Entries of upper triangular matrix R. ---*/
 
+  if (periodic) {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Rmatrix(iPoint,0,0));
+    AD::SetPreaccIn(Rmatrix(iPoint,0,1));
+    AD::SetPreaccIn(Rmatrix(iPoint,1,1));
+  }
+
   su2double r11 = Rmatrix(iPoint,0,0);
   su2double r12 = Rmatrix(iPoint,0,1);
   su2double r22 = Rmatrix(iPoint,1,1);
   su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
-
-  if (periodic) {
-    AD::StartPreacc();
-    AD::SetPreaccIn(r11);
-    AD::SetPreaccIn(r12);
-    AD::SetPreaccIn(r22);
-  }
 
   r11 = sqrt(max(r11, eps));
   r12 /= r11;
   r22 = sqrt(max(r22 - r12*r12, eps));
 
   if (nDim == 3) {
+    if (periodic) {
+      AD::SetPreaccIn(Rmatrix(iPoint,0,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,1,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,1));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,2));
+    }
+
     r13 = Rmatrix(iPoint,0,2);
     r33 = Rmatrix(iPoint,2,2);
     const auto r23_a = Rmatrix(iPoint,1,2);
     const auto r23_b = Rmatrix(iPoint,2,1);
-
-    if (periodic) {
-      AD::SetPreaccIn(r13);
-      AD::SetPreaccIn(r23_a);
-      AD::SetPreaccIn(r23_b);
-      AD::SetPreaccIn(r33);
-    }
 
     r13 /= r11;
     r23 = r23_a/r22 - r23_b*r12/(r11*r22);
