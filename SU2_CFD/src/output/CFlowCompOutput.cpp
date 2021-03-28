@@ -726,8 +726,9 @@ bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
 
 bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
-
+  return (config->GetTime_Marching() != STEADY &&
+          ((multiZone && ((curOuterIter == config->GetnOuter_Iter() - 1 && curInnerIter == config->GetnInner_Iter() - 1) || convergence)) ||
+           (!multiZone && (curInnerIter == config->GetnInner_Iter() - 1 || convergence))));
 }
 
 

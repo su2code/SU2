@@ -216,7 +216,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   /*--- Output using only the master node ---*/
 
-  if (rank == MASTER_NODE && !noWriting) {
+  if (rank == MASTER_NODE && !noWriting && !config->GetMultizone_Problem()) {
 
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config);
@@ -247,6 +247,25 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   Convergence_Monitoring(config, curInnerIter);
 
   Postprocess_HistoryData(config);
+
+  /*--- Output for multizone problems (using only the master node) ---*/
+
+  bool write_header, write_history, write_screen;
+  if (rank == MASTER_NODE && !noWriting) {
+
+    /*--- Write the history file ---------------------------------------------------------------------------*/
+    write_history = WriteHistoryFile_Output(config);
+    if (write_history) SetHistoryFile_Output(config);
+
+    /*--- Write the screen header---------------------------------------------------------------------------*/
+    write_header = WriteScreen_Header(config);
+    if (write_header) SetScreen_Header(config);
+
+    /*--- Write the screen output---------------------------------------------------------------------------*/
+    write_screen = WriteScreen_Output(config);
+    if (write_screen) SetScreen_Output(config);
+
+  }
 }
 
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
