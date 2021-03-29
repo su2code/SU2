@@ -31,6 +31,7 @@
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 #include <array>
+#include <cassert>
 
 class CGeometry;
 class CConfig;
