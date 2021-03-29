@@ -63,6 +63,8 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
+  if (!std::is_trivial<ScalarType>::value)
+    for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   MemoryAllocation::aligned_free(vec_val);
 }
 

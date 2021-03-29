@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   /*--- AD initialization ---*/
-#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+#ifdef HAVE_OPDI
   AD::getGlobalTape().initialize();
 #endif
 
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   /*--- Finalize AD, if necessary. ---*/
-#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+#ifdef HAVE_OPDI
   AD::getGlobalTape().finalize();
 #endif
 
