@@ -66,14 +66,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
 }
 
-CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
-
-  delete linearPartitioner;
-  delete [] dataBuffer;
-
-}
-
-
+CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter() { delete linearPartitioner; }
 
 void CSurfaceFEMDataSorter::SortOutputData() {
 

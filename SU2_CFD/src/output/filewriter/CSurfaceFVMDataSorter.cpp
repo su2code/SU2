@@ -47,12 +47,7 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 
 }
 
-CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter(){
-
-  delete linearPartitioner;
-  delete [] dataBuffer;
-
-}
+CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter() { delete linearPartitioner; }
 
 void CSurfaceFVMDataSorter::SortOutputData() {
 

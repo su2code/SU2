@@ -91,7 +91,6 @@ CParallelDataSorter::~CParallelDataSorter(){
   delete [] Conn_Pyra_Par;
 
   delete [] connSend;
-
   delete [] dataBuffer;
 }
 
