@@ -29,17 +29,6 @@
 #include <cassert>
 #include <numeric>
 
-
-const map<unsigned short, unsigned short> CParallelDataSorter::TypeMap = {
-  {LINE, 0},
-  {TRIANGLE, 1},
-  {QUADRILATERAL, 2},
-  {TETRAHEDRON, 3},
-  {HEXAHEDRON, 4},
-  {PRISM, 5},
-  {PYRAMID, 6}
-};
-
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   fieldNames(std::move(valFieldNames)){
 
@@ -61,8 +50,6 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
   Index        = nullptr;
   connSend     = nullptr;
   dataBuffer   = nullptr;
-  passiveDoubleBuffer = nullptr;
-  doubleBuffer = nullptr;
   idSend       = nullptr;
   nSends = 0;
   nRecvs = 0;
@@ -110,11 +97,13 @@ CParallelDataSorter::~CParallelDataSorter(){
 
 void CParallelDataSorter::SortOutputData() {
 
+  using MPI_WRAP = SelectMPIWrapper<passivedouble>::W;
+
   int VARS_PER_POINT = GlobalField_Counter;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status status;
+  MPI_WRAP::Request *send_req, *recv_req;
+  MPI_WRAP::Status status;
   int ind;
 #endif
 
@@ -130,8 +119,8 @@ void CParallelDataSorter::SortOutputData() {
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
 
-  send_req = new SU2_MPI::Request[2*nSends];
-  recv_req = new SU2_MPI::Request[2*nRecvs];
+  send_req = new MPI_WRAP::Request[2*nSends];
+  recv_req = new MPI_WRAP::Request[2*nRecvs];
 
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -141,8 +130,8 @@ void CParallelDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(doubleBuffer[ll]), count, MPI_DOUBLE, source, tag,
-                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
+      MPI_WRAP::Irecv(&(dataBuffer[ll]), count, MPI_DOUBLE, source, tag,
+                      SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -157,8 +146,8 @@ void CParallelDataSorter::SortOutputData() {
       int count  = VARS_PER_POINT*kk;
       int dest = ii;
       int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     SU2_MPI::GetComm(), &(send_req[iMessage]));
+      MPI_WRAP::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+                      SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -173,8 +162,8 @@ void CParallelDataSorter::SortOutputData() {
       int count  = kk;
       int source = ii;
       int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
+      MPI_WRAP::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                      SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -189,8 +178,8 @@ void CParallelDataSorter::SortOutputData() {
       int count  = kk;
       int dest   = ii;
       int tag    = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
+      MPI_WRAP::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                      SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -202,7 +191,7 @@ void CParallelDataSorter::SortOutputData() {
   int ll = VARS_PER_POINT*nPoint_Send[rank];
   int kk = VARS_PER_POINT*nPoint_Send[rank+1];
 
-  for (int nn=ll; nn<kk; nn++, mm++) doubleBuffer[mm] = connSend[nn];
+  for (int nn=ll; nn<kk; nn++, mm++) dataBuffer[mm] = connSend[nn];
 
   mm = nPoint_Recv[rank];
   ll = nPoint_Send[rank];
@@ -215,40 +204,25 @@ void CParallelDataSorter::SortOutputData() {
 #ifdef HAVE_MPI
   int number = 2*nSends;
   for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
+    MPI_WRAP::Waitany(number, send_req, &ind, &status);
 
   number = 2*nRecvs;
   for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+    MPI_WRAP::Waitany(number, recv_req, &ind, &status);
 
   delete [] send_req;
   delete [] recv_req;
 #endif
 
-  /*--- Note, passiveDoubleBuffer and doubleBuffer point to the same address.
-   * This is the reason why we have to do the following copy/reordering in two steps. ---*/
-
-  /*--- Step 1: Extract the underlying double value --- */
-
-  if (!std::is_same<su2double, passivedouble>::value){
-    for (int jj = 0; jj < VARS_PER_POINT*nPoint_Recv[size]; jj++){
-      const passivedouble tmpVal = SU2_TYPE::GetValue(doubleBuffer[jj]);
-      passiveDoubleBuffer[jj] = tmpVal;
-      /*--- For some AD datatypes a call of the destructor is
-       *  necessary to properly delete the AD type ---*/
-      doubleBuffer[jj].~su2double();
-    }
-  }
-
-  /*--- Step 2: Reorder the data in the buffer --- */
+  /*--- Reorder the data in the buffer --- */
 
   passivedouble *tmpBuffer = new passivedouble[nPoint_Recv[size]];
   for (int jj = 0; jj < VARS_PER_POINT; jj++){
     for (int ii = 0; ii < nPoint_Recv[size]; ii++){
-      tmpBuffer[idRecv[ii]] = passiveDoubleBuffer[ii*VARS_PER_POINT+jj];
+      tmpBuffer[idRecv[ii]] = dataBuffer[ii*VARS_PER_POINT+jj];
     }
     for (int ii = 0; ii < nPoint_Recv[size]; ii++){
-      passiveDoubleBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
+      dataBuffer[ii*VARS_PER_POINT+jj] = tmpBuffer[ii];
     }
   }
 
@@ -318,18 +292,12 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  connSend = nullptr;
-  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]]();
+  connSend = new passivedouble[VARS_PER_POINT*nPoint_Send[size]] ();
 
   /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough
    * to hold passivedoubles and su2doubles ---*/
-  unsigned short maxSize = max(sizeof(passivedouble), sizeof(su2double));
-  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize] {};
 
-  /*--- doubleBuffer and passiveDouble buffer use the same memory allocated above using the dataBuffer. ---*/
-
-  doubleBuffer = reinterpret_cast<su2double*>(dataBuffer);
-  passiveDoubleBuffer = reinterpret_cast<passivedouble*>(dataBuffer);
+  dataBuffer = new passivedouble[VARS_PER_POINT*nPoint_Recv[size]] ();
 
   /*--- Allocate arrays for sending the global ID. ---*/
 

@@ -71,9 +71,8 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 CFVMDataSorter::~CFVMDataSorter(){
 
   delete [] Local_Halo;
-
-        delete [] Index;
-       delete [] idSend;
+  delete [] Index;
+  delete [] idSend;
   delete linearPartitioner;
 
 }
@@ -106,9 +105,6 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
     }
   }
 }
-
-
-
 
 void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 
@@ -262,14 +258,11 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = nullptr;
-  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
+  auto connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
 
   /*--- Allocate arrays for storing halo flags. ---*/
 
-  unsigned short *haloSend = new unsigned short[nElem_Send[size]]();
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    haloSend[ii] = false;
+  auto haloSend = new unsigned short[nElem_Send[size]]();
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
@@ -356,10 +349,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = nullptr;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
+  auto connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
-  unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
+  auto haloRecv = new unsigned short[nElem_Cum[size]]();
 
 #ifdef HAVE_MPI
 

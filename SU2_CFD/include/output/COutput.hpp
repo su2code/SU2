@@ -581,7 +581,6 @@ protected:
     volumeOutput_List.push_back(name);
   }
 
-
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
