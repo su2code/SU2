@@ -390,7 +390,7 @@ public:
    * \return Value of the temperature of the flow.
    */
   inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint,0); }
-    inline su2double GetGamma(unsigned long iPoint) const { return Gamma(iPoint); }
+    inline su2double GetGamma(unsigned long iPoint) const final{ return Gamma(iPoint); }
 
   /*!
    * \brief Get the velocity of the flow.

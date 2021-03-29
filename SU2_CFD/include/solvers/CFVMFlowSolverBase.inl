@@ -2169,7 +2169,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         if (WallType == ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
       }
       Density = nodes->GetDensity(iPoint);
-
+      Gamma = nodes->GetGamma(iPoint);
+      Gamma_Minus_One = Gamma - 1;
+ 
       if (nemo) {
         thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);

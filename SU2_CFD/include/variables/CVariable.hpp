@@ -1226,6 +1226,8 @@ public:
    * \return Value of the temperature.
    */
   inline virtual su2double GetTemperature(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetGamma(unsigned long iPoint)       const { return 0.0; }
+
 
   /*!
    * \brief A virtual member.

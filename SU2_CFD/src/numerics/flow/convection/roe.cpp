@@ -36,9 +36,6 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   roe_low_dissipation = val_low_dissipation;
 
   Flux = new su2double [nVar];

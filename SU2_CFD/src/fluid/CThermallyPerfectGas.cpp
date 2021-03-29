@@ -47,7 +47,7 @@ CThermallyPerfectGas::CThermallyPerfectGas(const CConfig* config, su2double R, b
 void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
 
   for (i = 0; i < ns; i++) rhos[i] = rho* cs[i];
-  energy[0] = e - 300811.74424616753822;
+  energy[0] = rho*e; //- 300811.74424616753822
   mix->setState(rhos.data(), energy.data(), 0);
   Gamma = mix->mixtureFrozenGamma();
   Gamma_Minus_One = Gamma - 1;
@@ -69,6 +69,7 @@ void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
 void CThermallyPerfectGas::SetTDState_PT(su2double P, su2double T) {
   PT[0] = P;
   PT[1] = T;
+  cout << "P=" << P << " T=" << T << endl;
   mix->setState(cs, PT.data(), 2);
   Gamma = mix->mixtureFrozenGamma();
   Gamma_Minus_One = Gamma - 1;

@@ -225,6 +225,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+  su2double Gamma_i, Gamma_j;
+
 
 public:
   /*!
@@ -1590,7 +1592,7 @@ public:
    * \param[in] val_Gamma_i - Gamma at i.
    * \param[in] val_Gamma_j - Gamma at j.
    */
-  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
+  inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j) {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
 
   /*!
    * \brief Set the points id.

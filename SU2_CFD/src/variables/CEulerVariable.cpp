@@ -167,6 +167,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
   bool check_sos   = SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
   bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature());
+  SetGamma(iPoint, FluidModel->GetGamma());
 
   /*--- Check that the solution has a physical meaning ---*/
 
@@ -189,7 +190,6 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
     SetPressure(iPoint, FluidModel->GetPressure());
     SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
     SetTemperature(iPoint, FluidModel->GetTemperature());
-    SetGamma(iPoint, FluidModel->GetGamma());
 
     RightVol = false;
 

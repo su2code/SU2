@@ -67,6 +67,8 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
 
+  su2double Mean_Gamma;
+
   /*!
    * \brief Scale the stress tensor using a predefined wall stress.
    *
@@ -256,7 +258,8 @@ public:
    */
   void SetHeatFluxVector(const su2double* const *val_gradprimvar,
                          su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity);
+                         su2double val_eddy_viscosity,
+                         su2double val_gamma );
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
