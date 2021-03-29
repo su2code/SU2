@@ -2265,7 +2265,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double Normal[MAXNDIM] = {0.0};
 
-  unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+  INC_OUTLET_TYPE Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -2306,7 +2306,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      case PRESSURE_OUTLET:
+      case INC_OUTLET_TYPE::PRESSURE_OUTLET:
 
         /*--- Retrieve the specified back pressure for this outlet. ---*/
 
@@ -2326,7 +2326,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- A mass flow target has been specified for the outlet. ---*/
 
-      case MASS_FLOW_OUTLET:
+      case INC_OUTLET_TYPE::MASS_FLOW_OUTLET:
 
         /*--- Retrieve the specified target mass flow at the outlet. ---*/
 
@@ -2701,7 +2701,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   bool Evaluate_BC = false;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
-    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
       Evaluate_BC = true;
   }
 

@@ -1506,8 +1506,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
-  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Outlet_Map);
+  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET:. \ingroup Config*/
+  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Inc_Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
@@ -4605,7 +4605,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Outlet types for incompressible problem improperly specified.\n Use INC_OUTLET_TYPE= PRESSURE_OUTLET or MASS_FLOW_OUTLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET MASS_FLOW_OUTLET", CURRENT_FUNCTION);
     }
     for (unsigned short iInlet = 0; iInlet < nInc_Outlet; iInlet++){
-      if ((Kind_Inc_Outlet[iInlet] != PRESSURE_OUTLET) && (Kind_Inc_Outlet[iInlet] != MASS_FLOW_OUTLET)) {
+      if ((Kind_Inc_Outlet[iInlet] != INC_OUTLET_TYPE::PRESSURE_OUTLET) && (Kind_Inc_Outlet[iInlet] != INC_OUTLET_TYPE::MASS_FLOW_OUTLET)) {
         SU2_MPI::Error("Undefined incompressible outlet type. PRESSURE_OUTLET or MASS_FLOW_OUTLET possible.", CURRENT_FUNCTION);
       }
     }
@@ -8468,7 +8468,7 @@ unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) const {
   return Kind_Inc_Inlet[iMarker_Inlet];
 }
 
-unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) const {
+INC_OUTLET_TYPE CConfig::GetKind_Inc_Outlet(string val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;

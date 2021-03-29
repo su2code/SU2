@@ -1396,13 +1396,13 @@ static const MapType<string, INLET_TYPE> Inlet_Map = {
 /*!
  * \brief Types outlet boundary treatments
  */
-enum OUTLET_TYPE {
-  PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
-  MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
+enum class INC_OUTLET_TYPE {
+  PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
+  MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<string, OUTLET_TYPE> Outlet_Map = {
-  MakePair("PRESSURE_OUTLET", PRESSURE_OUTLET)
-  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
+static const MapType<string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+  MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
+  MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
 };
 
 /*!

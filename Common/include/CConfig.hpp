@@ -559,9 +559,9 @@ private:
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow,
   Kind_Inlet, *Kind_Inc_Inlet,
-  *Kind_Inc_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
@@ -4700,7 +4700,7 @@ public:
    * \brief Get the type of incompressible outlet from the list.
    * \return Kind of the incompressible outlet.
    */
-  unsigned short GetKind_Inc_Outlet(string val_marker) const;
+  INC_OUTLET_TYPE GetKind_Inc_Outlet(string val_marker) const;
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
