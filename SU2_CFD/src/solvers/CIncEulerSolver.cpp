@@ -2171,6 +2171,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         break;
 
+      default:
+        SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
+        break;
     }
 
     /*--- Access density at the node. This is either constant by

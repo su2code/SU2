@@ -1913,6 +1913,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         V_inlet[nDim+2] = Density;
 
         break;
+
+      default:
+        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+        break;
       }
 
       /*--- Set various quantities in the solver class ---*/

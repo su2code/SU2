@@ -6980,6 +6980,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
 
           break;
+
+        default:
+          SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+          break;
       }
 
       /*--- Set various quantities in the solver class ---*/

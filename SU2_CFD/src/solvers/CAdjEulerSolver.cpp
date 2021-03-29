@@ -3743,6 +3743,10 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
         Psi_inlet[nVar-1] = -phin*(1.0/bcn);
 
         break;
+
+      default:
+        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+        break;
       }
 
 
