@@ -97,11 +97,11 @@ CParallelDataSorter::~CParallelDataSorter(){
 
 void CParallelDataSorter::SortOutputData() {
 
-  using MPI_WRAP = SelectMPIWrapper<passivedouble>::W;
-
-  int VARS_PER_POINT = GlobalField_Counter;
+  const int VARS_PER_POINT = GlobalField_Counter;
 
 #ifdef HAVE_MPI
+  using MPI_WRAP = SelectMPIWrapper<passivedouble>::W;
+
   MPI_WRAP::Request *send_req, *recv_req;
   MPI_WRAP::Status status;
   int ind;
@@ -111,7 +111,6 @@ void CParallelDataSorter::SortOutputData() {
    values and then cue up the non-blocking receives. Note that
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
-
 
   unsigned long *idRecv = new unsigned long[nPoint_Recv[size]]();
 
