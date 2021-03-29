@@ -2026,7 +2026,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  unsigned short Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+  INLET_TYPE Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2081,7 +2081,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      case VELOCITY_INLET:
+      case INLET_TYPE::VELOCITY_INLET:
 
         /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
 
@@ -2100,7 +2100,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Stagnation pressure has been specified at the inlet. ---*/
 
-      case PRESSURE_INLET:
+      case INLET_TYPE::PRESSURE_INLET:
 
         /*--- Retrieve the specified total pressure for the inlet. ---*/
 

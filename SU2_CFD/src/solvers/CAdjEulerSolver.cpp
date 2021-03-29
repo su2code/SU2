@@ -3650,7 +3650,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
   ProjGridVel, *GridVel;
   su2double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
+  INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -3702,7 +3702,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
       switch (Kind_Inlet) {
 
       /*--- Total properties have been specified at the inlet. ---*/
-      case TOTAL_CONDITIONS:
+      case INLET_TYPE::TOTAL_CONDITIONS:
 
         /*--- Adjoint solution at the inlet. Set to zero for now
              but should be replaced with derived expression for this type of
@@ -3713,7 +3713,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
         break;
 
         /*--- Mass flow has been specified at the inlet. ---*/
-      case MASS_FLOW:
+      case INLET_TYPE::MASS_FLOW:
 
         /*--- Get primitives from current inlet state. ---*/
         for (iDim = 0; iDim < nDim; iDim++)

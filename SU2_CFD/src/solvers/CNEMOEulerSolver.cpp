@@ -1709,7 +1709,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
+  INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
   su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
@@ -1756,7 +1756,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       switch (Kind_Inlet) {
 
       /*--- Total properties have been specified at the inlet. ---*/
-      case TOTAL_CONDITIONS:
+      case INLET_TYPE::TOTAL_CONDITIONS:
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
         P_Total  = config->GetInlet_Ptotal(Marker_Tag);
@@ -1862,7 +1862,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         break;
 
         /*--- Mass flow has been specified at the inlet. ---*/
-      case MASS_FLOW:
+      case INLET_TYPE::MASS_FLOW:
 
         /*--- Retrieve the specified mass flow for the inlet. ---*/
         Density  = config->GetInlet_Ttotal(Marker_Tag);

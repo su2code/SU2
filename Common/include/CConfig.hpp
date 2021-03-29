@@ -558,9 +558,10 @@ private:
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow,
-  Kind_Inlet, *Kind_Inc_Inlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  INLET_TYPE Kind_Inlet;
+  INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
@@ -4652,7 +4653,7 @@ public:
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
    * \return Kind of inlet boundary condition.
    */
-  unsigned short GetKind_Inlet(void) const { return Kind_Inlet; }
+  INLET_TYPE GetKind_Inlet(void) const { return Kind_Inlet; }
 
   /*!
    * \brief Check if the inlet profile(s) are specified in an input file
@@ -4682,7 +4683,7 @@ public:
    * \brief Get the type of incompressible inlet from the list.
    * \return Kind of the incompressible inlet.
    */
-  unsigned short GetKind_Inc_Inlet(string val_marker) const;
+  INLET_TYPE GetKind_Inc_Inlet(string val_marker) const;
 
   /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list

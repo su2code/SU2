@@ -1421,8 +1421,8 @@ void CConfig::SetConfig_Options() {
   addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
-  addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
-  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
+  addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, INLET_TYPE::TOTAL_CONDITIONS);
+  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET, INPUT_FILE. \ingroup Config*/
   addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
@@ -1506,7 +1506,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
-  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET:. \ingroup Config*/
+  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of outlet types for incompressible flows. List length must match number of inlet markers. Options: PRESSURE_OUTLET, MASS_FLOW_OUTLET. \ingroup Config*/
   addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Inc_Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
@@ -4592,7 +4592,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
     }
     for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
-      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET) && (Kind_Inc_Inlet[iInlet] != PRESSURE_INLET)) {
+      if ((Kind_Inc_Inlet[iInlet] != INLET_TYPE::VELOCITY_INLET) && (Kind_Inc_Inlet[iInlet] != INLET_TYPE::PRESSURE_INLET)) {
         SU2_MPI::Error("Undefined incompressible inlet type. VELOCITY_INLET or PRESSURE_INLET possible.", CURRENT_FUNCTION);
       }
     }
@@ -8461,7 +8461,7 @@ su2double CConfig::GetExhaust_Pressure_Target(string val_marker) const {
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
-unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) const {
+INLET_TYPE CConfig::GetKind_Inc_Inlet(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -8665,7 +8665,7 @@ su2double CConfig::GetTotalPressureIn_BC() const {
       tot_pres_in = Riemann_Var1[iMarker_BC];
     }
   }
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet == INLET_TYPE::TOTAL_CONDITIONS){
     tot_pres_in = Inlet_Ptotal[0];
   }
   return tot_pres_in/Pressure_Ref;
@@ -8685,7 +8685,7 @@ su2double CConfig::GetTotalTemperatureIn_BC() const {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet == INLET_TYPE::TOTAL_CONDITIONS){
     tot_temp_in = Inlet_Ttotal[0];
   }
   return tot_temp_in/Temperature_Ref;
@@ -8704,7 +8704,7 @@ void CConfig::SetTotalTemperatureIn_BC(su2double val_temp) {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet == INLET_TYPE::TOTAL_CONDITIONS){
     Inlet_Ttotal[0] = val_temp*Temperature_Ref;
   }
 }
@@ -8723,7 +8723,7 @@ su2double CConfig::GetFlowAngleIn_BC() const {
     }
   }
 
-  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  if(nMarker_Inlet == 1 && Kind_Inlet == INLET_TYPE::TOTAL_CONDITIONS){
     alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
   }
 
@@ -8735,9 +8735,9 @@ su2double CConfig::GetIncInlet_BC() const {
   su2double val_out = 0.0;
 
   if (nMarker_Inlet > 0) {
-    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+    if (Kind_Inc_Inlet[0] == INLET_TYPE::VELOCITY_INLET)
       val_out = Inlet_Ptotal[0]/Velocity_Ref;
-    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+    else if (Kind_Inc_Inlet[0] == INLET_TYPE::PRESSURE_INLET)
       val_out = Inlet_Ptotal[0]/Pressure_Ref;
   }
 
@@ -8747,9 +8747,9 @@ su2double CConfig::GetIncInlet_BC() const {
 void CConfig::SetIncInlet_BC(su2double val_in) {
 
   if (nMarker_Inlet > 0) {
-    if (Kind_Inc_Inlet[0] == VELOCITY_INLET)
+    if (Kind_Inc_Inlet[0] == INLET_TYPE::VELOCITY_INLET)
       Inlet_Ptotal[0] = val_in*Velocity_Ref;
-    else if (Kind_Inc_Inlet[0] == PRESSURE_INLET)
+    else if (Kind_Inc_Inlet[0] == INLET_TYPE::PRESSURE_INLET)
       Inlet_Ptotal[0] = val_in*Pressure_Ref;
   }
 }

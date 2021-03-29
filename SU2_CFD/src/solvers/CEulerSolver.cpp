@@ -6770,7 +6770,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   su2double Gas_Constant       = config->GetGas_ConstantND();
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
+  INLET_TYPE Kind_Inlet= config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double *Normal = new su2double[nDim];
@@ -6818,7 +6818,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Total properties have been specified at the inlet. ---*/
 
-        case TOTAL_CONDITIONS:
+        case INLET_TYPE::TOTAL_CONDITIONS:
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
@@ -6925,7 +6925,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Mass flow has been specified at the inlet. ---*/
 
-        case MASS_FLOW:
+        case INLET_TYPE::MASS_FLOW:
 
           /*--- Retrieve the specified mass flow for the inlet. ---*/
 
