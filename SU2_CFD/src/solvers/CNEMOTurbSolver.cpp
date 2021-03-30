@@ -543,7 +543,7 @@ void CNEMOTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConf
 
 }
 
-void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
+void CNEMOTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 

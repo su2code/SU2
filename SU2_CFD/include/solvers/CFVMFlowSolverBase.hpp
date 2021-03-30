@@ -963,8 +963,9 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Evaluate the vorticity and strain rate magnitude.
    * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
    */
-  template<size_t VelocityOffset>
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  template<size_t VelocityOffsetStatic>
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh, 
+		                    const size_t VelocityOffset = VelocityOffsetStatic) {
 
     const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
     auto& StrainMag = nodes->GetStrainMag();
@@ -980,9 +981,9 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-      constexpr size_t u = VelocityOffset;
-      constexpr size_t v = VelocityOffset+1;
-      constexpr size_t w = VelocityOffset+2;
+      const size_t u = VelocityOffset;
+      const size_t v = VelocityOffset+1;
+      const size_t w = VelocityOffset+2;
 
       /*--- Vorticity ---*/
 

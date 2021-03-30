@@ -1146,7 +1146,7 @@ void CNEMOTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_con
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
-
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   CFluidModel *FluidModel = solver_container[FLOW_SOL]->GetFluidModel();

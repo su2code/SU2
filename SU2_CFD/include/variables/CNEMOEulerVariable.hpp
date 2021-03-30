@@ -75,6 +75,10 @@ protected:
 
   CNEMOGas *fluidmodel;
 
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+
   /*!< \brief Index definition for NEMO pritimive variables. */
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
@@ -355,6 +359,20 @@ public:
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
                     su2double *val_Cvves);
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
+
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

@@ -84,7 +84,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
-
+    
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata ---*/
@@ -224,7 +225,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
+    bool nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
 
     /*--- Set mixture state ---*/
     FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);

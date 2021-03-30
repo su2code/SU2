@@ -161,15 +161,15 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     /*--- Compute necessary quantities ---*/
     rho = fluidmodel->GetDensity();
     soundspeed = fluidmodel->ComputeSoundSpeed();
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
       sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
     }
     energies = fluidmodel->ComputeMixtureEnergies();      
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
       Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
-    for (iDim = 0; iDim < nDim; iDim++) 
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) 
       Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
     
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);

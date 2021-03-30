@@ -37,7 +37,7 @@
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
-  su2double inv_TimeScale   /*!< \brief Inverse of the reference time scale. */
+  su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
 
   VectorType Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
   VectorType Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */

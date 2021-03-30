@@ -33,7 +33,7 @@
 
 CNEMOTurbSSTSolver::CNEMOTurbSSTSolver(void) : CNEMOTurbSolver() { }
 
-CNEMOTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+CNEMOTurbSSTSolver::CNEMOTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CNEMOTurbSolver(geometry, config) {
   unsigned short nLineLets;
   unsigned long iPoint;

@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver() = default;
+  ~CNEMOTurbSSTSolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

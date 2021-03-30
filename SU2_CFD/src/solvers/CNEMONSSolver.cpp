@@ -112,8 +112,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
-
-  ComputeVorticityAndStrainMag<nSpecies+2>(*config, iMesh);
+  const long unsigned int offset=(nSpecies+2); 
+  ComputeVorticityAndStrainMag<1>(*config, iMesh,offset);
 
 }
 
@@ -140,7 +140,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+    bool nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -152,7 +152,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 }
 
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
-                                     CSolver **solution_container,
+                                     CSolver **solver_container,
                                      CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
@@ -238,7 +238,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
-                                                 CSolver **solution_container,
+                                                 CSolver **solver_container,
                                                  CNumerics *conv_numerics,
                                                  CNumerics *sour_numerics,
                                                  CConfig *config,
@@ -285,7 +285,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
 
     /*--- Initialize the convective & viscous residuals to zero ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
+    for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
     /*--- Set the residual on the boundary with the specified heat flux ---*/
     // TODO: Look into this!
@@ -295,7 +295,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     auto GradV  = nodes->GetGradient_Primitive(iPoint);
     su2double dTdn   = 0.0;
     su2double dTvedn = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
       dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
     }
@@ -360,18 +360,17 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
-                                     CSolver **solution_container,
+                                     CSolver **solver_container,
                                      CNumerics *conv_numerics,
                                      CNumerics *sour_numerics,
                                      CConfig *config,
                                      unsigned short val_marker) {
 
   string Marker_Tag, Catalytic_Tag;
-  unsigned short iMarker_Catalytic;
   bool catalytic;
 
   catalytic = false;
-  iMarker_Catalytic = 0;
+  unsigned short iMarker_Catalytic = 0;
 
   Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -382,7 +381,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_HeatFluxCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
                                 sour_numerics, config, val_marker);
       break;
 
@@ -393,14 +392,14 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     }
   }
 
-  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                               sour_numerics, config, val_marker);
 
 
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *sour_numerics,
                                               CConfig *config,
@@ -572,8 +571,6 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
                                        CNumerics *conv_numerics, CNumerics *sour_numerics,
                                        CConfig *config, unsigned short val_marker) {
 
-  unsigned short iMarker_Catalytic;
-  
   bool catalytic = false;
   unsigned short iMarker_Catalytic = 0;
 
@@ -586,7 +583,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_IsothermalCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
                                   sour_numerics, config, val_marker);
       break;
     } else {
@@ -594,12 +591,12 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
     }
   }
 
-  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                                 sour_numerics, config, val_marker);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                                   CSolver **solution_container,
+                                                   CSolver **solver_container,
                                                    CNumerics *conv_numerics,
                                                    CNumerics *sour_numerics,
                                                    CConfig *config,
@@ -623,7 +620,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   su2double C = 5;
 
   /*--- Identify the boundary ---*/
-  const auto string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Retrieve the specified wall temperature ---*/
   su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
@@ -667,12 +664,12 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     nodes->SetVelocity_Old(iPoint, zero);
 
     /*--- Initialize viscous residual to zero ---*/
-    for (iVar = 0; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
+    for (auto iVar = 0u; iVar < nVar; iVar ++) {Res_Visc[iVar] = 0.0;}
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
+    for (auto iDim = 0u; iDim < nDim; iDim++){
       LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-    nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
     /*--- Calculate the gradient of temperature ---*/
     su2double Ti   = nodes->GetTemperature(iPoint);
     su2double Tj   = nodes->GetTemperature(Point_Normal);
@@ -751,7 +748,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
-                                                CSolver **solution_container,
+                                                CSolver **solver_container,
                                                 CNumerics *conv_numerics,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
@@ -760,7 +757,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
-  BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
@@ -938,7 +935,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                            CSolver **solution_container,
+                                            CSolver **solver_container,
                                             CNumerics *conv_numerics,
                                             CNumerics *visc_numerics,
                                             CConfig *config,

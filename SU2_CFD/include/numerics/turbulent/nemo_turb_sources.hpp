@@ -109,7 +109,7 @@ public:
    * \brief  Get the intermittency for the BC trans. model.
    * \return Value of the intermittency.
    */
-  inline su2double GetGammaBC(void) const final { return gamma_BC; }
+  inline su2double GetGammaBC(void) const final { return Gamma_BC; }
 
   /*!
    * \brief  ______________.
