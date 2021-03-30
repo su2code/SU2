@@ -29,12 +29,12 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include <numeric>
 
-CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, CFVMDataSorter* valVolumeSorter) :
+CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometry, const CFVMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
 
-  this->volumeSorter = valVolumeSorter;
+  volumeSorter = valVolumeSorter;
 
   connectivitySorted = false;
 
@@ -43,11 +43,9 @@ CSurfaceFVMDataSorter::CSurfaceFVMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
-
-CSurfaceFVMDataSorter::~CSurfaceFVMDataSorter() { delete linearPartitioner; }
 
 void CSurfaceFVMDataSorter::SortOutputData() {
 
@@ -96,7 +94,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -124,7 +122,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -152,7 +150,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
@@ -211,7 +209,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
 
@@ -245,7 +243,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
 
@@ -279,7 +277,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Load global ID into the buffer for sending ---*/
 
@@ -499,7 +497,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+    iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -559,7 +557,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+    iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
     if (nElem_Flag[iProcessor] != ii) {
 
@@ -718,7 +716,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
 
@@ -739,7 +737,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
 
@@ -760,7 +758,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
       /*--- Search for the processor that owns this point ---*/
 
-      iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+      iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
       /*--- Store the global ID if it is outside our own linear partition. ---*/
 
@@ -795,7 +793,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+    iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -847,7 +845,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
     /*--- Search for the processor that owns this point ---*/
 
-    iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+    iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
     /*--- If we have not visited this element yet, increment our
      number of elements that must be sent to a particular proc. ---*/
@@ -1192,7 +1190,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
             /*--- Search for the processor that owns this point ---*/
 
-            iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+            iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
@@ -1282,7 +1280,7 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
             /*--- Search for the processor that owns this point ---*/
 
-            iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+            iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
 
             /*--- Load connectivity into the buffer for sending ---*/
 

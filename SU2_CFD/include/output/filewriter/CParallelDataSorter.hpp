@@ -42,12 +42,12 @@ protected:
   /*!
    * \brief The MPI rank
    */
-  int rank;
+  const int rank;
 
   /*!
    * \brief The MPI size, aka the number of processors.
    */
-  int size;
+  const int size;
 
   unsigned long nGlobalPointBeforeSort; //!< Global number of points without halos before sorting
   unsigned long nLocalPointsBeforeSort;   //!< Local number of points without halos before sorting on this proc
@@ -89,7 +89,7 @@ protected:
   unsigned long nElem;     //!< Local number of elements
   unsigned long nConn;     //!< Local size of the connectivity array
 
-  CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
+  CLinearPartitioner linearPartitioner;  //!< Linear partitioner based on the global number of points.
 
   unsigned short GlobalField_Counter;  //!< Number of output fields
 
@@ -254,7 +254,7 @@ public:
    * \return The beginning node ID.
    */
   virtual unsigned long GetNodeBegin(unsigned short rank) const {
-    return linearPartitioner->GetFirstIndexOnRank(rank);
+    return linearPartitioner.GetFirstIndexOnRank(rank);
   }
 
   /*!
@@ -263,7 +263,7 @@ public:
    * \return The ending node ID.
    */
   unsigned long GetNodeEnd(unsigned short rank) const {
-    return linearPartitioner->GetLastIndexOnRank(rank);
+    return linearPartitioner.GetLastIndexOnRank(rank);
   }
 
   /*!
@@ -292,14 +292,14 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
+  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner.GetCumulativeSizeBeforeRank(rank);}
 
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner->GetSizeOnRank(rank);}
+  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner.GetSizeOnRank(rank);}
 
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
@@ -319,7 +319,7 @@ public:
     connSend[Index[iPoint] + iField] = SU2_TYPE::GetValue(data);
   }
 
-  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
+  passivedouble GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
 
@@ -329,7 +329,7 @@ public:
    * \return The rank/processor number.
    */
   virtual unsigned short FindProcessor(unsigned long iPoint) const {
-    return linearPartitioner->GetRankContainingIndex(iPoint);
+    return linearPartitioner.GetRankContainingIndex(iPoint);
   }
 
   /*!

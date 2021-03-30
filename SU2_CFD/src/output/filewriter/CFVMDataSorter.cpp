@@ -39,7 +39,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
   nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
   nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
-  Local_Halo = new int[geometry->GetnPoint()]();
+  Local_Halo.resize(geometry->GetnPoint());
 
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 
@@ -60,20 +60,11 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
   PrepareSendBuffers(globalID);
-
-}
-
-CFVMDataSorter::~CFVMDataSorter(){
-
-  delete [] Local_Halo;
-  delete [] Index;
-  delete [] idSend;
-  delete linearPartitioner;
 
 }
 
@@ -214,7 +205,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -301,7 +292,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }

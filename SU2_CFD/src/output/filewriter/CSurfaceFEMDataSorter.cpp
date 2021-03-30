@@ -29,12 +29,12 @@
 #include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, const CFEMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
 
-  this->volumeSorter = valVolumeSorter;
+  volumeSorter = valVolumeSorter;
 
   connectivitySorted = false;
 
@@ -62,11 +62,9 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
-
-CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter() { delete linearPartitioner; }
 
 void CSurfaceFEMDataSorter::SortOutputData() {
 
@@ -129,7 +127,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = linearPartitioner->GetRankContainingIndex(globalSurfaceDOFIDs[i]);
+    unsigned long iProcessor = linearPartitioner.GetRankContainingIndex(globalSurfaceDOFIDs[i]);
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -219,7 +217,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nPoints; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
+    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner.GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
       dataBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
