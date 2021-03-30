@@ -110,7 +110,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   auto prec = config->GetKind_Linear_Solver_Prec();
 
   if ((!EdgeConnect && !config->GetStructuralProblem()) ||
-      (config->GetKind_SU2() == SU2_DEF) || (config->GetKind_SU2() == SU2_DOT)) {
+      (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
   }

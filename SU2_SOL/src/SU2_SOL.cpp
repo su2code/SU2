@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   else { strcpy(config_file_name, "default.cfg"); }
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_SOL);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_SOL);
 
   const auto nZone = config->GetnZone();
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_SOL, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_SOL, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -99,10 +99,10 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_SOL, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_SOL, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_SOL, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_SOL, iZone, nZone, true);
     }
 
     config_container[iZone]->SetMPICommunicator(MPICommunicator);

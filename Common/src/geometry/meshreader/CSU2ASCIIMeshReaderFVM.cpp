@@ -36,8 +36,8 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
 
   actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                      (config->GetnMarker_ActDiskOutlet() != 0)) &&
-                    ((config->GetKind_SU2() == SU2_CFD) ||
-                     ((config->GetKind_SU2() == SU2_DEF) &&
+                    ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) ||
+                     ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) &&
                       (config->GetActDisk_SU2_DEF()))));
   if (config->GetActDisk_DoubleSurface()) actuator_disk = false;
   ActDiskNewPoints = 0;

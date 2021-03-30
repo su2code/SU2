@@ -594,7 +594,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_CFD, false);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -608,10 +608,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     if (driver_config->GetnConfigFiles() > 0){
 
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, true);
+      config[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_CFD, iZone, nZone, true);
     }
     else{
-      config[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
+      config[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_CFD, iZone, nZone, true);
     }
 
     /*--- Set the MPI communicator ---*/

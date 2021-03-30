@@ -111,7 +111,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- Loop over the points element to re-scale the mesh, and plot it (only SU2_CFD) ---*/
 
-  if (config->GetKind_SU2() == SU2_CFD) {
+  if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) {
 
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
 
@@ -127,7 +127,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   /*--- If SU2_DEF then write a file with the boundary information ---*/
 
-  if ((config->GetKind_SU2() == SU2_DEF) && (rank == MASTER_NODE)) {
+  if ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) && (rank == MASTER_NODE)) {
 
     string str = "boundary.dat";
 

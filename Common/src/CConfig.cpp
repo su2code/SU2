@@ -59,7 +59,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, bool verb_high) {
 
   /*--- Set the case name to the base config file name without extension ---*/
 
@@ -104,7 +104,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 }
 
-CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_high) {
+CConfig::CConfig(istream &case_buffer, SU2_COMPONENT val_software, bool verb_high) {
 
   base_config = true;
 
@@ -140,7 +140,7 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
 
 }
 
-CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
+CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
 
   caseName = config->GetCaseName();
 
@@ -186,7 +186,7 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
 }
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software) {
 
   /*--- Set the case name to the base config file name without extension ---*/
 
@@ -3050,7 +3050,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-void CConfig::SetHeader(unsigned short val_software) const{
+void CConfig::SetHeader(SU2_COMPONENT val_software) const{
 
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
@@ -3058,11 +3058,11 @@ void CConfig::SetHeader(unsigned short val_software) const{
     cout << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
-    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
     }
 
     cout << "|                                                                       |" << endl;
@@ -3153,7 +3153,7 @@ void CConfig::SetnZone(){
 
 }
 
-void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
+void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_izone, unsigned short val_nDim) {
 
   unsigned short iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
@@ -3474,7 +3474,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_Regime = NO_FLOW;
   }
 
-  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
+  if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
   }
 
@@ -3634,7 +3634,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    there is no grid motion ---*/
 
   if (GetGrid_Movement()){
-    if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+    if ((Kind_SU2 == SU2_COMPONENT::SU2_CFD || Kind_SU2 == SU2_COMPONENT::SU2_SOL) &&
         (TimeMarching == STEADY && !Time_Domain)){
 
       if((Kind_GridMovement != ROTATING_FRAME) &&
@@ -3652,7 +3652,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- The Line Search should be applied only in the deformation stage. ---*/
 
-  if (Kind_SU2 != SU2_DEF) {
+  if (Kind_SU2 != SU2_COMPONENT::SU2_DEF) {
     Opt_RelaxFactor = 1.0;
   }
 
@@ -4294,7 +4294,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
   }
 
-  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+  if ((Kind_SU2 == SU2_COMPONENT::SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     SU2_MPI::Error("PHYSICAL_PROBLEM must be set in the configuration file", CURRENT_FUNCTION);
   }
 
@@ -4336,7 +4336,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
 
-  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
+  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
 
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
       RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
@@ -4393,7 +4393,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_CFD) {
+      if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
                        CURRENT_FUNCTION);
@@ -4774,7 +4774,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    force the projected surface sensitivity file to be written. ---*/
 
   Wrt_Projected_Sensitivity = false;
-  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == SURFACE_FILE)) {
+  if ((Kind_SU2 == SU2_COMPONENT::SU2_DOT) && (Design_Variable[0] == SURFACE_FILE)) {
     Wrt_Projected_Sensitivity = true;
   }
 
@@ -4826,7 +4826,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
-    if (Kind_SU2 == SU2_CFD) {
+    if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
       SU2_MPI::Error(string("SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!\n") +
                      string("Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)."),
                      CURRENT_FUNCTION);
@@ -5009,7 +5009,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 }
 
-void CConfig::SetMarkers(unsigned short val_software) {
+void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
@@ -5512,7 +5512,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
 }
 
-void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
+void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
@@ -5531,7 +5531,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
 
   cout << endl <<"----------------- Physical Case Definition ( Zone "  << iZone << " ) -------------------" << endl;
-  if (val_software == SU2_CFD) {
+  if (val_software == SU2_COMPONENT::SU2_CFD) {
     if (FSI_Problem)
      cout << "Fluid-Structure Interaction." << endl;
 
@@ -5807,7 +5807,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  if (val_software == SU2_GEO) {
+  if (val_software == SU2_COMPONENT::SU2_GEO) {
     if (nMarker_GeoEval != 0) {
       cout << "Surface(s) where the geometrical based functions is evaluated: ";
       for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++) {
@@ -5821,7 +5821,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
-  if (val_software == SU2_DOT) {
+  if (val_software == SU2_COMPONENT::SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
     }else {
@@ -5829,18 +5829,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
   }
 
-  if (val_software == SU2_DEF) {
+  if (val_software == SU2_COMPONENT::SU2_DEF) {
     cout << endl <<"---------------- Grid deformation parameters ( Zone "  << iZone << " )  ----------------" << endl;
     cout << "Grid deformation using a linear elasticity method." << endl;
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }
 
-  if (val_software == SU2_DOT) {
+  if (val_software == SU2_COMPONENT::SU2_DOT) {
   cout << endl <<"-------------- Surface deformation parameters ( Zone "  << iZone << " ) ----------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
+  if (((val_software == SU2_COMPONENT::SU2_DEF) || (val_software == SU2_COMPONENT::SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -6000,7 +6000,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+  if (((val_software == SU2_COMPONENT::SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_COMPONENT::SU2_DOT)) {
 
     cout << endl <<"---------------- Design problem definition  ( Zone "  << iZone << " ) ------------------" << endl;
     if (nObj==1) {
@@ -6058,7 +6058,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  if (val_software == SU2_CFD) {
+  if (val_software == SU2_COMPONENT::SU2_CFD) {
     cout << endl <<"--------------- Space Numerical Integration ( Zone "  << iZone << " ) ------------------" << endl;
 
     if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
@@ -6578,7 +6578,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << "Euler implicit time integration for the turbulence model." << endl;
   }
 
-  if (val_software == SU2_CFD) {
+  if (val_software == SU2_COMPONENT::SU2_CFD) {
 
     cout << endl <<"------------------ Convergence Criteria  ( Zone "  << iZone << " ) ---------------------" << endl;
 
@@ -6609,7 +6609,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"-------------------- Output Information ( Zone "  << iZone << " ) ----------------------" << endl;
 
-  if (val_software == SU2_CFD) {
+  if (val_software == SU2_COMPONENT::SU2_CFD) {
 
     cout << "Writing solution files every " << VolumeWrtFreq <<" iterations."<< endl;
     cout << "Writing the convergence history file every " << HistoryWrtFreq[2] <<" inner iterations."<< endl;
@@ -6652,7 +6652,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   }
 
-  if (val_software == SU2_SOL) {
+  if (val_software == SU2_COMPONENT::SU2_SOL) {
     switch (Tab_FileFormat) {
       case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
       case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
@@ -6660,7 +6660,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
 
-  if (val_software == SU2_DEF) {
+  if (val_software == SU2_COMPONENT::SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
@@ -6675,7 +6675,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_DOT) {
+  if (val_software == SU2_COMPONENT::SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
@@ -8381,8 +8381,8 @@ bool CConfig::GetVolumetric_Movement() const {
     volumetric_movement = true;
   }
 
-  if (Kind_SU2 == SU2_DEF ||
-      Kind_SU2 == SU2_DOT ||
+  if (Kind_SU2 == SU2_COMPONENT::SU2_DEF ||
+      Kind_SU2 == SU2_COMPONENT::SU2_DOT ||
       DirectDiff)
   { volumetric_movement = true;}
   return volumetric_movement;

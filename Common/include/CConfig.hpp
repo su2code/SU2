@@ -64,7 +64,7 @@ private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;                 /*!< \brief MPI rank and size.*/
   bool base_config;
-  unsigned short Kind_SU2;        /*!< \brief Kind of SU2 software component.*/
+  SU2_COMPONENT Kind_SU2;        /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim;      /*!< \brief Kind of non dimensionalization.*/
   unsigned short Ref_Inc_NonDim;  /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_AverageProcess;            /*!< \brief Kind of mixing process.*/
@@ -1272,22 +1272,22 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, bool verb_high);
 
   /*!
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
-  CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
+  CConfig(istream &case_buffer, SU2_COMPONENT val_software, bool verb_high);
 
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
-  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
+  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
 
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
+  CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software);
 
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1318,7 +1318,7 @@ public:
   * \brief Print the header to screen
   * \param val_software - Kind of software component
   */
-  void SetHeader(unsigned short val_software) const;
+  void SetHeader(SU2_COMPONENT val_software) const;
 
   /*!
    * \brief Get the MPI communicator of SU2.
@@ -4136,7 +4136,7 @@ public:
    * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
-  unsigned short GetKind_SU2(void) const { return Kind_SU2; }
+  SU2_COMPONENT GetKind_SU2(void) const { return Kind_SU2; }
 
   /*!
    * \brief Get the kind of non-dimensionalization.
@@ -4154,7 +4154,7 @@ public:
    * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
-  void SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
+  void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
   /*!
    * \brief Get the kind of the turbulence model.
@@ -7895,17 +7895,17 @@ public:
   /*!
    * \brief Config file postprocessing.
    */
-  void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim);
+  void SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_izone, unsigned short val_nDim);
 
   /*!
    * \brief Config file markers processing.
    */
-  void SetMarkers(unsigned short val_software);
+  void SetMarkers(SU2_COMPONENT val_software);
 
   /*!
    * \brief Config file output.
    */
-  void SetOutput(unsigned short val_software, unsigned short val_izone);
+  void SetOutput(SU2_COMPONENT val_software, unsigned short val_izone);
 
   /*!
    * \brief Value of Aeroelastic solution coordinate at time n+1.
