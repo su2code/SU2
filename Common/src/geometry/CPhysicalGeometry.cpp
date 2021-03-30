@@ -7543,7 +7543,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
     /*--- To make preaccumulation more effective, use as few inputs
      as possible, recomputing intermediate quantities as needed. ---*/
-//    AD::StartPreacc();
+    AD::StartPreacc();
 
     /*--- Get pointers to the coordinates of all the element nodes ---*/
     array<const su2double*, N_POINTS_MAXIMUM> Coord;
@@ -7654,7 +7654,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
       }
     }
 #endif
-//    AD::EndPreacc();
+    AD::EndPreacc();
   }
 
   su2double DomainVolume;
@@ -7700,7 +7700,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
 
       const auto nNodes = bound[iMarker][iElem]->GetnNodes();
 
-//      AD::StartPreacc();
+      AD::StartPreacc();
 
       /*--- Get pointers to the coordinates of all the element nodes ---*/
       array<const su2double*, N_POINTS_MAXIMUM> Coord;
@@ -7752,7 +7752,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
         const auto iVertex = nodes->GetVertex(iPoint, iMarker);
         AD::SetPreaccOut(vertex[iMarker][iVertex]->GetNormal(), nDim);
       }
-//      AD::EndPreacc();
+      AD::EndPreacc();
     }
   }
   END_SU2_OMP_FOR
