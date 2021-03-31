@@ -2107,7 +2107,7 @@ void CConfig::SetConfig_Options() {
   /* Fixed values for turbulence quantities to keep them at inflow conditions. */
   /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
   addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
-  /* DESCRIPTION: Shift of the fixed values half-space, in space units in the direction of far-field velocity. */
+  /* DESCRIPTION: Shift of the fixed values half-space, in length units in the direction of far-field velocity. */
   addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
 
   /* Harmonic Balance config */
@@ -4381,7 +4381,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
-  if(Turb_Fixed_Values && Turb_Fixed_Values_MaxScalarProd==numeric_limits<su2double>::lowest()){
+  if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
     SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
   }
 
@@ -4935,6 +4935,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   }
 
+  if (ReconstructionGradientRequired && GetFluidProblem() && Kind_ConvNumScheme_Flow == SPACE_CENTERED)
+    SU2_MPI::Error("For centered schemes the option NUM_METHOD_GRAD_RECON should not be set.", CURRENT_FUNCTION);
+
   /* Simpler boolean to control allocation of least-squares memory. */
 
   LeastSquaresRequired = false;
@@ -4954,21 +4957,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
 
-  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
-                   (Kind_Solver == INC_NAVIER_STOKES) ||
-                   (Kind_Solver == INC_RANS) ||
-                   (Kind_Solver == EULER) ||
-                   (Kind_Solver == NAVIER_STOKES) ||
-                   (Kind_Solver == NEMO_EULER) ||
-                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
-                   (Kind_Solver == RANS) ||
-                   (Kind_Solver == DISC_ADJ_EULER) ||
-                   (Kind_Solver == DISC_ADJ_RANS) ||
-                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
-                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
-                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
-  if (CFL_Adapt && !fvm_flow) {
+  if (CFL_Adapt && !GetFluidProblem()) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
