@@ -72,12 +72,12 @@ namespace std {
 /*!
  * \brief different software components of SU2
  */
-enum SU2_COMPONENT {
-  SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
-  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
-  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+enum class SU2_COMPONENT {
+  SU2_CFD, /*!< \brief Running the SU2_CFD software. */
+  SU2_DEF, /*!< \brief Running the SU2_DEF software. */
+  SU2_DOT, /*!< \brief Running the SU2_DOT software. */
+  SU2_GEO, /*!< \brief Running the SU2_GEO software. */
+  SU2_SOL  /*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
