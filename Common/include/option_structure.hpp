@@ -1115,8 +1115,6 @@ enum BC_TYPE {
   OUTLET_FLOW = 5,            /*!< \brief Boundary outlet flow definition. */
   PERIODIC_BOUNDARY = 6,      /*!< \brief Periodic boundary definition. */
   NEARFIELD_BOUNDARY = 7,     /*!< \brief Near-Field boundary definition. */
-  ELECTRODE_BOUNDARY = 8,     /*!< \brief Electrode boundary definition. */
-  DIELEC_BOUNDARY = 9,        /*!< \brief Dipoisson boundary definition. */
   CUSTOM_BOUNDARY = 10,       /*!< \brief custom boundary definition. */
   INTERFACE_BOUNDARY = 11,    /*!< \brief Domain interface boundary definition. */
   DIRICHLET = 12,             /*!< \brief Boundary Euler wall definition. */
