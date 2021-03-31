@@ -1382,6 +1382,11 @@ namespace CommHelpers {
       default: return nodes->GetGradient();
     }
   }
+
+  su2activematrix& selectLimiter(CVariable* nodes, unsigned short commType) {
+    if (commType == PRIMITIVE_LIMITER) return nodes->GetLimiter_Primitive();
+    return nodes->GetLimiter();
+  }
 }
 
 void CSolver::InitiateComms(CGeometry *geometry,
@@ -1417,9 +1422,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
-
-  auto limiter = &base_nodes->GetLimiter();
-  if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
+  auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -1473,7 +1476,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_LIMITER:
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
-              bufDSend[buf_offset+iVar] = (*limiter)(iPoint, iVar);
+              bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             break;
           case MAX_EIGENVALUE:
             bufDSend[buf_offset] = base_nodes->GetLambda(iPoint);
@@ -1555,9 +1558,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
-
-  auto limiter = &base_nodes->GetLimiter();
-  if (commType == PRIMITIVE_LIMITER) limiter = &base_nodes->GetLimiter_Primitive();
+  auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -1624,7 +1625,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_LIMITER:
           case PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
-              (*limiter)(iPoint,iVar) = bufDRecv[buf_offset+iVar];
+              limiter(iPoint,iVar) = bufDRecv[buf_offset+iVar];
             break;
           case MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
