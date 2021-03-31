@@ -275,6 +275,7 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
                        nodes->GetTauWall(iPoint));
 
   /*--- Compute and update residual ---*/
+  numerics->SetGamma(nodes->GetGamma(iPoint), nodes->GetGamma(jPoint));
 
   auto residual = numerics->ComputeResidual(config);
 

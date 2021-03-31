@@ -30,7 +30,7 @@
 CThermallyPerfectGas::CThermallyPerfectGas(const CConfig* config, su2double R, bool CompEntropy) : CFluidModel() {
   Mutation::MixtureOptions opt(config->GetGasModel());
   opt.setStateModel("ChemNonEq1T");
-  //opt.setStateModel("Equil");
+  opt.setThermodynamicDatabase("RRHO");
   opt.setMechanism("none");
   mix.reset(new Mutation::Mixture(opt));
   Gas_Constant = R;
@@ -69,7 +69,7 @@ void CThermallyPerfectGas::SetTDState_rhoe(su2double rho, su2double e) {
 void CThermallyPerfectGas::SetTDState_PT(su2double P, su2double T) {
   PT[0] = P;
   PT[1] = T;
-  cout << "P=" << P << " T=" << T << endl;
+  //for (int i = 0; i<ns; i++) cout << "cs[" << i << "]=" << cs[i] <<endl;
   mix->setState(cs, PT.data(), 2);
   Gamma = mix->mixtureFrozenGamma();
   Gamma_Minus_One = Gamma - 1;

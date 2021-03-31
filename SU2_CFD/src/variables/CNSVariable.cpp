@@ -201,6 +201,7 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
   bool check_sos   = SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
   bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature());
+  SetGamma(iPoint, FluidModel->GetGamma());
 
   /*--- Check that the solution has a physical meaning ---*/
 

@@ -234,15 +234,15 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
-    Flux_Tensor[1][0] = tau[0][0];
-    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[1][0] = tau[0][0]; //cout << "Flux_Tensor[1][0]=" << Flux_Tensor[1][0] << endl;
+    Flux_Tensor[2][0] = tau[0][1]; //cout << "Flux_Tensor[2][0]=" << Flux_Tensor[2][0] << endl;
     Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
-        heat_flux_vector[0];
+        heat_flux_vector[0]; //cout << "Flux_Tensor[3][0]=" << Flux_Tensor[3][0] << endl;
     Flux_Tensor[0][1] = 0.0;
-    Flux_Tensor[1][1] = tau[1][0];
-    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[1][1] = tau[1][0]; //cout << "Flux_Tensor[1][1]=" << Flux_Tensor[1][1] << endl;
+    Flux_Tensor[2][1] = tau[1][1]; //cout << "Flux_Tensor[2][1]=" << Flux_Tensor[2][1] << endl;
     Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
-        heat_flux_vector[1];
+        heat_flux_vector[1]; //cout << "Flux_Tensor[3][1]=" << Flux_Tensor[3][1] << endl;
   } else {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -460,6 +460,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
+  //cout << "Mean_Gamma=" << Mean_Gamma << endl;
+
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity, Mean_Gamma);
 
@@ -487,6 +489,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     }
 
   }
+
+ // for (iVar = 0; iVar < nVar; iVar++) cout << "Proj_Flux_Tensor=" << Proj_Flux_Tensor[iVar]<< endl;
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
   AD::EndPreacc();

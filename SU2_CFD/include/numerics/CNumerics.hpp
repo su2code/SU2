@@ -512,11 +512,12 @@ public:
     for (size_t iDim = 0; iDim < nDim; iDim++) {
       divVel += velgrad[iDim][iDim];
     }
+
     Scalar pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
 
     for (size_t iDim = 0; iDim < nDim; iDim++){
       for (size_t jDim = 0; jDim < nDim; jDim++){
-        stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
+        stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]); //cout << "stress[iDim][jDim]=" << stress[iDim][jDim] << endl;
       }
       stress[iDim][iDim] -= pTerm;
     }

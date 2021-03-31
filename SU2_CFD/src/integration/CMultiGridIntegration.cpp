@@ -176,7 +176,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
-
       if (iRKStep == 0) {
 
         /*--- Set the old solution ---*/

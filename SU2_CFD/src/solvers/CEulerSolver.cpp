@@ -1532,6 +1532,21 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
   }
 
+ // std::ofstream outfile;
+ // outfile.open("gamma.txt", std::ios_base::app);
+ // outfile << "T, gamma" << "\n"; 
+ // int np = 30100;
+ // vector<su2double> TT, Gammaa; TT.resize(np); Gammaa.resize(np);
+ // for ( int i = 100; i < np; i++){
+ //   TT[i] = i;
+ //   auxFluidModel->SetTDState_PT(Pressure_FreeStream, TT[i]);
+ //   Gammaa[i] = auxFluidModel->GetGamma();
+ //   outfile << TT[i] << ", " << Gammaa[i] << "\n"; 
+ // }
+//
+ // exit(0);
+
+
   if (free_stream_temp) {
     auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
     Density_FreeStream = auxFluidModel->GetDensity();
@@ -2222,6 +2237,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   SU2_OMP_BARRIER
 
   SU2_OMP_ATOMIC
+
   ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
@@ -5626,7 +5642,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
-  su2double Gamma_Bound, Gamma_Bound_Minus_One, Gamma_Infty, Gamma_Infty_Minus_One;
+  su2double Gamma_Bound, Gamma_Bound_Minus_One, Gamma_Infty, Gamma_Infty_Minus_One, Gamma_Minus, Gamma_Plus;
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
@@ -5690,6 +5706,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure_Bound   = nodes->GetPressure(iPoint);
       Gamma_Bound   = nodes->GetGamma(iPoint);
+      //cout << "iPoint=" << iPoint << " Gamma_Bound =" << Gamma_Bound  << endl;
       Gamma_Bound_Minus_One = Gamma_Bound - 1;
       SoundSpeed_Bound = sqrt(Gamma_Bound*Pressure_Bound/Density_Bound);
       Entropy_Bound    = pow(Density_Bound, Gamma_Bound)/Pressure_Bound;
@@ -5707,6 +5724,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure_Infty   = GetPressure_Inf();
       Gamma_Infty      = config->GetGamma_FreeStream();
+      //cout << "Gamma_Infty =" << Gamma_Infty  << endl;
       Gamma_Infty_Minus_One = Gamma_Infty - 1;
       SoundSpeed_Infty = sqrt(Gamma_Infty*Pressure_Infty/Density_Infty);
       Entropy_Infty    = pow(Density_Infty, Gamma_Infty)/Pressure_Infty;
@@ -5736,9 +5754,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       if (Qn_Infty > -SoundSpeed_Infty) {
         /*--- Subsonic inflow or outflow ---*/
         RiemannPlus = Vn_Bound + 2.0*SoundSpeed_Bound/Gamma_Bound_Minus_One;
+        Gamma_Plus = Gamma_Bound;
+        //cout << "plus Gamma=" << Gamma << endl;
       } else {
         /*--- Supersonic inflow ---*/
         RiemannPlus = Vn_Infty + 2.0*SoundSpeed_Infty/Gamma_Infty_Minus_One;
+        Gamma_Plus = Gamma_Infty;
+        //cout << "plus Gamma=" << Gamma << endl;
       }
 
       /*--- Check whether (u.n-c) is greater or less than zero ---*/
@@ -5746,16 +5768,21 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       if (Qn_Infty > SoundSpeed_Infty) {
         /*--- Supersonic outflow ---*/
         RiemannMinus = Vn_Bound - 2.0*SoundSpeed_Bound/Gamma_Bound_Minus_One;
+        Gamma_Minus = Gamma_Bound;
+        //cout << "minus Gamma=" << Gamma << endl;
       } else {
         /*--- Subsonic outflow ---*/
         RiemannMinus = Vn_Infty - 2.0*SoundSpeed_Infty/Gamma_Infty_Minus_One;
+        Gamma_Minus = Gamma_Infty;
+        //cout << "minus Gamma=" << Gamma << endl;
       }
 
       /*--- Compute a new value for the local normal velocity and speed of
          sound from the Riemann invariants. ---*/
 
       Vn = 0.5 * (RiemannPlus + RiemannMinus);
-      Gamma = 0.5 * (Gamma_Bound + Gamma_Infty);
+      Gamma = 0.5 * (Gamma_Plus + Gamma_Minus);
+      //cout << "average Gamma=" << Gamma << endl;
       Gamma_Minus_One = Gamma - 1;
       SoundSpeed = 0.25 * (RiemannPlus - RiemannMinus)*Gamma_Minus_One;
 
@@ -5772,16 +5799,27 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
         Entropy = Entropy_Bound;
+        Gamma = Gamma_Bound;
+        //cout << "bound Gamma=" << Gamma << endl;
+        Gamma_Minus_One = Gamma - 1;
       } else  {
         /*--- Inflow conditions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
         Entropy = Entropy_Infty;
+        Gamma = Gamma_Infty;
+        //cout << "infty Gamma=" << Gamma << endl;
+        Gamma_Minus_One = Gamma - 1;
       }
 
       /*--- Recompute the primitive variables. ---*/
-
+      
       Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
+      //cout << "Entropy=" << Entropy << endl;
+      //cout << "SoundSpeed=" << SoundSpeed << endl;
+      //cout << "Gamma=" << Gamma << endl;
+      //cout << "Gamma_Minus_One=" << Gamma_Minus_One << endl;      
+      //cout << "farfield Density=" << Density << endl;
       Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity2 += Velocity[iDim]*Velocity[iDim];
@@ -5842,6 +5880,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Primitive variables, and gradient ---*/
 
         visc_numerics->SetPrimitive(V_domain, V_infty);
+        //cout << "V_domain[nDim+2]=" << V_domain[nDim+2] << endl;
+        //cout << "V_infty[nDim+2]=" << V_infty[nDim+2] << endl;
         visc_numerics->SetGamma(Gamma_Bound, Gamma_Infty);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
@@ -5859,6 +5899,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Compute and update viscous residual ---*/
 
         auto residual = visc_numerics->ComputeResidual(config);
+        //for (int iVar = 0; iVar < nVar; iVar++)cout << "residual=" << residual[iVar]<< endl;
         LinSysRes.SubtractBlock(iPoint, residual);
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
