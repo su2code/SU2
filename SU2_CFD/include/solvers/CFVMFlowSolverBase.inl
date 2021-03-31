@@ -807,7 +807,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   bool preprocessed = false;
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+  su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0}, Gamma_domain;
 
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
   su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
@@ -905,6 +905,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       /*--- Get current solution at this boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
+      Gamma_domain = nodes->GetGamma(iPoint);
 
       /*--- Set the reflected state based on the boundary node. Scalars are copied and
             the velocity is mirrored along the symmetry boundary, i.e. the velocity in
@@ -924,6 +925,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
 
       /*--- Set Primitive and Secondary for numerics class. ---*/
+      conv_numerics->SetGamma(Gamma_domain, Gamma_domain);
       conv_numerics->SetPrimitive(V_domain, V_reflected);
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
