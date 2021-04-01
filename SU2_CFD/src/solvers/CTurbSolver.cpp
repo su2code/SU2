@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
-  nVertex = new unsigned long[nMarker];
+  nVertex.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
@@ -80,6 +80,7 @@ CTurbSolver::~CTurbSolver(void) {
   }
 
   delete nodes;
+
 }
 
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -508,6 +509,41 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
+void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
+
+  /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
+  if(config->GetTurb_Fixed_Values()){
+
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+    /*--- Form normalized far-field velocity ---*/
+    const su2double* velocity_inf = config->GetVelocity_FreeStreamND();
+    su2double velmag_inf = GeometryToolbox::Norm(nDim, velocity_inf);
+    if(velmag_inf==0)
+      SU2_MPI::Error("Far-field velocity is zero, cannot fix turbulence quantities to inflow values.", CURRENT_FUNCTION);
+    su2double unit_velocity_inf[MAXNDIM];
+    for(unsigned short iDim=0; iDim<nDim; iDim++)
+      unit_velocity_inf[iDim] = velocity_inf[iDim] / velmag_inf;
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if( GeometryToolbox::DotProduct(nDim, geometry->nodes->GetCoord(iPoint), unit_velocity_inf)
+        < config->GetTurb_Fixed_Values_MaxScalarProd() ) {
+        /*--- Set the solution values and zero the residual ---*/
+        nodes->SetSolution_Old(iPoint, Solution_Inf);
+        nodes->SetSolution(iPoint, Solution_Inf);
+        LinSysRes.SetBlock_Zero(iPoint);
+        if (implicit) {
+          /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+          for(unsigned long iVar=0; iVar<nVar; iVar++)
+            Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        }
+      }
+    }
+  }
+
+}
+
 void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver_container, CConfig *config) {
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
@@ -515,12 +551,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
-  SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
+  SetResToZero();
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -564,7 +595,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   }
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
+    Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
   SU2_OMP_BARRIER

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config) {
 
-  unsigned short iVar, nLineLets;
+  unsigned short nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -66,16 +66,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Define some auxiliar vector related with the residual ---*/
 
-    Residual_RMS = new su2double[nVar]();
-    Residual_Max = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max = new unsigned long[nVar]();
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim]();
-    }
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
@@ -103,16 +97,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
-      Residual_BGS      = new su2double[nVar]();
-      Residual_Max_BGS  = new su2double[nVar]();
-
-      /*--- Define some structures for locating max residuals ---*/
-
-      Point_Max_BGS       = new unsigned long[nVar]();
-      Point_Max_Coord_BGS = new su2double*[nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Point_Max_Coord_BGS[iVar] = new su2double[nDim] ();
-      }
+      Residual_BGS.resize(nVar,0.0);
+      Residual_Max_BGS.resize(nVar,0.0);
+      Point_Max_BGS.resize(nVar,0);
+      Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
     }
 
   }
@@ -125,10 +113,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
-  nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   if (config->GetKind_Trans_Model() == BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
+
+  Solution_Inf[0] = nu_tilde_Inf;
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
@@ -525,7 +515,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde_Inf);
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -1969,7 +1959,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+    Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
   }
 
 }

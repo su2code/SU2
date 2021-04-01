@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,13 +72,13 @@ CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &
 
   nPoint_Send = new int[size+1]();
   nPoint_Recv = new int[size+1]();
-  nElem_Send  = new int[size+1]();  
+  nElem_Send  = new int[size+1]();
   nElem_Cum  = new int[size+1]();
   nElemConn_Send = new int[size+1]();
   nElemConn_Cum = new int[size+1]();
-  
+
   linearPartitioner = nullptr;
-  
+
   nElemPerType.fill(0);
   nElemPerTypeGlobal.fill(0);
 
@@ -92,7 +92,7 @@ CParallelDataSorter::~CParallelDataSorter(){
   delete [] nElem_Cum;
   delete [] nElemConn_Send;
   delete [] nElemConn_Cum;
-  
+
   /*--- Deallocate memory for connectivity data on each processor. ---*/
 
   delete [] Conn_Line_Par;
@@ -411,21 +411,21 @@ unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned 
 }
 
 void CParallelDataSorter::SetTotalElements(){
-  
+
   /*--- Reduce the total number of cells we will be writing in the output files. ---*/
 
   SU2_MPI::Allreduce(nElemPerType.data(), nElemPerTypeGlobal.data(), N_ELEM_TYPES, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  
-  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0); 
+
+  nElemGlobal = std::accumulate(nElemPerTypeGlobal.begin(), nElemPerTypeGlobal.end(), 0);
   nElem  = std::accumulate(nElemPerType.begin(), nElemPerType.end(), 0);
-  
+
   nConn = 0;
   nConnGlobal   = 0;
   auto addConnectivitySize = [this](GEO_TYPE elem, unsigned short nPoints){
     nConn    += GetnElem(elem)*nPoints;
     nConnGlobal   += GetnElemGlobal(elem)*nPoints;
   };
-  
+
   addConnectivitySize(LINE,          N_POINTS_LINE);
   addConnectivitySize(TRIANGLE,      N_POINTS_TRIANGLE);
   addConnectivitySize(QUADRILATERAL, N_POINTS_QUADRILATERAL);
@@ -433,7 +433,7 @@ void CParallelDataSorter::SetTotalElements(){
   addConnectivitySize(HEXAHEDRON,    N_POINTS_HEXAHEDRON);
   addConnectivitySize(PRISM,         N_POINTS_PRISM);
   addConnectivitySize(PYRAMID,       N_POINTS_PYRAMID);
-  
+
   /*--- Communicate the number of total cells/storage that will be
    written by each rank. After this communication, each proc knows how
    many cells will be written before its location in the file and the
@@ -442,9 +442,9 @@ void CParallelDataSorter::SetTotalElements(){
   nElem_Send[0] = 0; nElemConn_Send[0] = 0;
   nElem_Cum[0] = 0; nElemConn_Cum[0] = 0;
   for (int ii=1; ii <= size; ii++) {
-    nElem_Send[ii]     = int(nElem); 
+    nElem_Send[ii]     = int(nElem);
     nElemConn_Send[ii] = int(nConn);
-    nElem_Cum[ii] = 0;     
+    nElem_Cum[ii] = 0;
     nElemConn_Cum[ii] = 0;
   }
 
@@ -462,7 +462,7 @@ void CParallelDataSorter::SetTotalElements(){
     nElem_Cum[ii+1]     += nElem_Cum[ii];
     nElemConn_Cum[ii+1] += nElemConn_Cum[ii];
   }
-  
+
 
 }
 

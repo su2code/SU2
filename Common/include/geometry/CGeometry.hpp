@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1167,16 +1167,6 @@ public:
    * \return Number of pyramid elements.
    */
   inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
-
-  /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config);
-
-  /*!
-   * \brief Get geometrical planes in the mesh
-   */
-  inline vector<su2double> GetGeometryPlanes() const {return XCoordList;}
 
   /*!
    * \brief Get x coords of geometrical planes in the mesh

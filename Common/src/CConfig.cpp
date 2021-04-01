@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1115,7 +1115,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
-  
+
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -1727,9 +1727,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
-  /*!\brief CONV_CRITERIA
-   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
-  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  addStringOption("CONV_CRITERIA", ConvCriteria, "this option is deprecated");
   /*!\brief CONV_RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
   addDoubleOption("CONV_RESIDUAL_MINVAL", MinLogResidual, -14.0);
   /*!\brief CONV_STARTITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -2104,6 +2103,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
+
+  /* Fixed values for turbulence quantities to keep them at inflow conditions. */
+  /* DESCRIPTION: Fix turbulence quantities to far-field values inside an upstream half-space. */
+  addBoolOption("TURB_FIXED_VALUES", Turb_Fixed_Values, false);
+  /* DESCRIPTION: Shift of the fixed values half-space, in length units in the direction of far-field velocity. */
+  addDoubleOption("TURB_FIXED_VALUES_DOMAIN", Turb_Fixed_Values_MaxScalarProd, numeric_limits<su2double>::lowest());
 
   /* Harmonic Balance config */
   /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
@@ -2881,6 +2886,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+          /*if (!option_name.compare("CONV_CRITERIA"))
+            newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+                             string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -3063,7 +3072,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
     cout << "| (http://su2foundation.org)                                            |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2020, SU2 Contributors                                 |" << endl;
+    cout << "| Copyright 2012-2021, SU2 Contributors                                 |" << endl;
     cout << "|                                                                       |" << endl;
     cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -3268,6 +3277,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error(string("Fixed CL mode not implemented for the incompressible solver. \n"), CURRENT_FUNCTION);
     }
 
+    /*--- Inc CHT simulation, but energy equation of fluid is inactive. ---*/
+    if (Multizone_Problem && (nMarker_CHTInterface > 0) && !Energy_Equation)
+      SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
@@ -3371,6 +3383,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         case FIGURE_OF_MERIT:
         case SURFACE_TOTAL_PRESSURE:
         case SURFACE_STATIC_PRESSURE:
+        case SURFACE_STATIC_TEMPERATURE:
         case SURFACE_MASSFLOW:
         case SURFACE_UNIFORMITY:
         case SURFACE_SECONDARY:
@@ -3384,7 +3397,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                            string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
                            string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
                            string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
-                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+                           string("SURFACE_PRESSURE_DROP, SURFACE_STATIC_TEMPERATURE, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
           }
           break;
         default:
@@ -3415,7 +3428,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
     if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
 
-    if (Restart == NO) { Restart_Iter = 0; }
+    if (Restart == NO) {
+      Restart_Iter = 0;
+    } else {
+      if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
+    }
 
     if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
   } else {
@@ -4364,6 +4381,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
   }
 
+  if(Turb_Fixed_Values && !OptionIsSet("TURB_FIXED_VALUES_DOMAIN")){
+    SU2_MPI::Error("TURB_FIXED_VALUES activated, but no domain set with TURB_FIXED_VALUES_DOMAIN.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
@@ -4440,7 +4461,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Fixed_CM_Mode) {
       nInnerIter += Iter_dCL_dAlpha;
-      ConvCriteria = RESIDUAL;
       MinLogResidual = -24;
     }
   }
@@ -4599,7 +4619,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
-  
+
   /*--- Check feassbility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != NONE) {
     if (Kind_Regime != INCOMPRESSIBLE)
@@ -4793,6 +4813,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    CURRENT_FUNCTION);
   }
 
+  /* Force the lowest memory preconditioner when direct solvers are used. */
+
+  auto isPastix = [](unsigned short kindSolver) {
+    return kindSolver == PASTIX_LDLT || kindSolver == PASTIX_LU;
+  };
+
+  if (isPastix(Kind_Linear_Solver)) Kind_Linear_Solver_Prec = LU_SGS;
+  if (isPastix(Kind_DiscAdj_Linear_Solver)) Kind_DiscAdj_Linear_Prec = LU_SGS;
+  if (isPastix(Kind_Deform_Linear_Solver)) Kind_Deform_Linear_Solver_Prec = LU_SGS;
+
+
   if (DiscreteAdjoint) {
 #if !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD) {
@@ -4904,6 +4935,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
 
+  if (ReconstructionGradientRequired && GetFluidProblem() && Kind_ConvNumScheme_Flow == SPACE_CENTERED)
+    SU2_MPI::Error("For centered schemes the option NUM_METHOD_GRAD_RECON should not be set.", CURRENT_FUNCTION);
+
   /* Simpler boolean to control allocation of least-squares memory. */
 
   LeastSquaresRequired = false;
@@ -4923,21 +4957,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
 
-  bool fvm_flow = ((Kind_Solver == INC_EULER) ||
-                   (Kind_Solver == INC_NAVIER_STOKES) ||
-                   (Kind_Solver == INC_RANS) ||
-                   (Kind_Solver == EULER) ||
-                   (Kind_Solver == NAVIER_STOKES) ||
-                   (Kind_Solver == NEMO_EULER) ||
-                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
-                   (Kind_Solver == RANS) ||
-                   (Kind_Solver == DISC_ADJ_EULER) ||
-                   (Kind_Solver == DISC_ADJ_RANS) ||
-                   (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-                   (Kind_Solver == DISC_ADJ_INC_EULER) ||
-                   (Kind_Solver == DISC_ADJ_INC_RANS) ||
-                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
-  if (CFL_Adapt && !fvm_flow) {
+  if (CFL_Adapt && !GetFluidProblem()) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
@@ -4970,6 +4990,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
   if (GetGasModel() == "ARGON") monoatomic = true;
+
+  // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
+  if(OptionIsSet("CONV_CRITERIA")) {
+    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
+            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  }
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -6003,6 +6029,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case BUFFET_SENSOR:              cout << "Buffet sensor objective function." << endl; break;
         case SURFACE_TOTAL_PRESSURE:     cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:    cout << "Average static pressure objective function." << endl; break;
+        case SURFACE_STATIC_TEMPERATURE: cout << "Average static temperature objective function." << endl; break;
         case SURFACE_MASSFLOW:           cout << "Mass flow rate objective function." << endl; break;
         case SURFACE_MACH:               cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:             cout << "Custom objective function." << endl; break;
@@ -7906,6 +7933,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
+        case SURFACE_STATIC_TEMPERATURE:  AdjExt = "_T";        break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
         case SURFACE_UNIFORMITY:          AdjExt = "_uniform";  break;
         case SURFACE_SECONDARY:           AdjExt = "_second";   break;

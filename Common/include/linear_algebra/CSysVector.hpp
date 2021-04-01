@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -307,15 +307,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     atomicAdd(sum, dotRes);
 
 #ifdef HAVE_MPI
-    /*--- Reduce across all mpi ranks, only master thread communicates.
-     * The nElm condition is to allow vectors to also be used locally. ---*/
-    if (nElm != nElmDomain) {
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER {
-        sum = dotRes;
-        const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
-        SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
-      }
+    /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      sum = dotRes;
+      const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+      SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
     }
 #endif
     /*--- Make view of result consistent across threads. ---*/

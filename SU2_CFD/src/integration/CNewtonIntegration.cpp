@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,27 +91,9 @@ void CNewtonIntegration::Setup() {
   /*--- Check if the solver is able to provide a linear preconditioner. ---*/
   if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) return;
 
-  switch (config->GetKind_Linear_Solver_Prec()) {
-    case JACOBI:
-      preconditioner = new CJacobiPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-      break;
-    case LINELET:
-      preconditioner = new CLineletPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-      break;
-    case LU_SGS:
-      preconditioner = new CLU_SGSPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-      break;
-    case ILU:
-      preconditioner = new CILUPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-      break;
-    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      preconditioner = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
-                                                              config->GetKind_Linear_Solver_Prec(), false);
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized preconditioner for Newton-Krylov iterations.", CURRENT_FUNCTION);
-      break;
-  }
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
+
+  preconditioner = CPreconditioner<MixedScalar>::Create(kindPrec, solvers[FLOW_SOL]->Jacobian, geometry, config);
 
   if (!std::is_same<Scalar,MixedScalar>::value) {
     precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);

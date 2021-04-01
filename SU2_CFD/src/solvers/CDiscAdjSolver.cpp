@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,40 +65,21 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
-  Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
-  Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
-
-  /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
   Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
+
+  Residual_RMS.resize(nVar,1.0);
+  Residual_Max.resize(nVar,1.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
 
   if (config->GetMultizone_Residual()){
 
-    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
-
-  }
-
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
   /*--- Define some auxiliary vectors related to the solution ---*/
@@ -404,10 +385,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set Residuals to zero ---*/
 
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar,0.0);
-    SetRes_Max(iVar,0.0,0);
-  }
+  SetResToZero();
 
   /*--- Set the old solution and compute residuals. ---*/
 
@@ -429,11 +407,11 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      su2double residual = relax*(Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar));
-      nodes->AddSolution(iPoint, iVar, residual);
+      su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
+      nodes->AddSolution(iPoint, iVar, relax*residual);
 
       residual *= isdomain;
-      AddRes_RMS(iVar,pow(residual,2));
+      Residual_RMS[iVar] += pow(residual,2);
       AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
     }
   }
@@ -600,7 +578,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //      for (iVar = 0; iVar < nVar; iVar++){
 //          residual = node[iPoint]->GetSolution_Geometry(iVar) - node[iPoint]->Get_OldSolution_Geometry(iVar);
 //
-//          AddRes_RMS(iVar,residual*residual);
+//          Residual_RMS[iVar] += residual*residual;
 //          AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
 //      }
 //  }
@@ -782,22 +760,21 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
-  bool dual_time = (dual_time_1st || dual_time_2nd);
+  const bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
-  unsigned long iPoint;
-  unsigned short iVar;
+
   if (dual_time) {
-    for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++) {
+    for (auto iPoint = 0ul; iPoint<geometry->GetnPoint(); iPoint++) {
       solution_n = nodes->GetSolution_time_n(iPoint);
       solution_n1 = nodes->GetSolution_time_n1(iPoint);
-      for (iVar=0; iVar < nVar; iVar++) {
+      for (unsigned short iVar=0; iVar < nVar; iVar++) {
         nodes->SetDual_Time_Derivative(iPoint, iVar, solution_n[iVar]+nodes->GetDual_Time_Derivative_n(iPoint, iVar));
         nodes->SetDual_Time_Derivative_n(iPoint,iVar, solution_n1[iVar]);
       }
-    }
-  }
+    } // for iPoint
+  } // if dual_time
 }
 
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {

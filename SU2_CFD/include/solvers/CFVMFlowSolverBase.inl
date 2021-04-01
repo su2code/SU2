@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,27 +84,18 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iVar;
-  unsigned long iMarker;
-
   /*--- Define some auxiliar vector related with the residual ---*/
 
-  Residual_RMS = new su2double[nVar]();
-  Residual_Max = new su2double[nVar]();
-
-  /*--- Define some structures for locating max residuals ---*/
-
-  Point_Max = new unsigned long[nVar]();
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim]();
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
   if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
-    iPoint_UndLapl = new su2double[nPointDomain];
-    jPoint_UndLapl = new su2double[nPointDomain];
+    iPoint_UndLapl.resize(nPointDomain);
+    jPoint_UndLapl.resize(nPointDomain);
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -119,14 +110,14 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
 
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, vector<vector<su2double> >& X) {
+  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
   };
 
   /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
 
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, vector<su2activematrix>& X) {
+  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
     X.resize(M);
     for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
   };
@@ -179,7 +170,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   SlidingState.resize(nMarker);
   SlidingStateNodes.resize(nMarker);
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
       SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
       SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
@@ -212,14 +203,14 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   if (MGLevel == MESH_0) {
     VertexTraction.resize(nMarker);
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
       if (config.GetSolid_Wall(iMarker))
         VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
     }
 
     if (config.GetDiscrete_Adjoint()) {
       VertexTractionAdjoint.resize(nMarker);
-      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
         if (config.GetSolid_Wall(iMarker))
           VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
       }
@@ -228,19 +219,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config.GetMultizone_Residual()) {
-    Residual_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar] = 1.0;
-
-    Residual_Max_BGS = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar] = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 }
 
@@ -384,9 +366,10 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
                                                         bool reconstruction) {
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry, *config, primitives, 0,
-                             nPrimVarGrad, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
 template <class V, ENUM_REGIME R>
@@ -394,19 +377,24 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
                                                         bool reconstruction) {
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
+  PERIODIC_QUANTITIES commPer;
 
-  if (reconstruction)
+  if (reconstruction) {
     weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
+    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
+  }
+  else {
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+  }
 
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted ? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
 
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config, weighted, primitives, 0,
-                               nPrimVarGrad, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
+                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
 template <class V, ENUM_REGIME R>
@@ -2918,6 +2906,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case SURFACE_STATIC_PRESSURE:
       objFun += weight * config.GetSurface_Pressure(0);
+      break;
+    case SURFACE_STATIC_TEMPERATURE:
+      objFun += weight * config.GetSurface_Temperature(0);
       break;
     case SURFACE_MASSFLOW:
       objFun += weight * config.GetSurface_MassFlow(0);
