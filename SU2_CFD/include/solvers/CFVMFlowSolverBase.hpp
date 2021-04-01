@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -732,12 +732,7 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Set shared residual variables to 0 and declare
      *    local ones for current thread to work on. ---*/
 
-    SU2_OMP_MASTER
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
-    SU2_OMP_BARRIER
+    SetResToZero();
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
     const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -802,7 +797,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Reduce residual information over all threads in this rank. ---*/
       SU2_OMP_CRITICAL
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        AddRes_RMS(iVar, resRMS[iVar]);
+        Residual_RMS[iVar] += resRMS[iVar];
         AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
       }
       SU2_OMP_BARRIER
@@ -857,12 +852,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
 
-    SU2_OMP_MASTER
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
-    SU2_OMP_BARRIER
+    SetResToZero();
 
     su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
     const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -925,7 +915,7 @@ class CFVMFlowSolverBase : public CSolver {
     }
     SU2_OMP_CRITICAL
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      AddRes_RMS(iVar, resRMS[iVar]);
+      Residual_RMS[iVar] += resRMS[iVar];
       AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
     SU2_OMP_BARRIER
@@ -1109,7 +1099,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
 
   /*!
    * \brief Compute the limiter of the primitive variables.

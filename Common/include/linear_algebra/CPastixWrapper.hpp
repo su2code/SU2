@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -167,9 +167,18 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] kind_fact - Type of factorization.
-   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed);
+  void Factorize(CGeometry *geometry, const CConfig *config, unsigned short kind_fact);
+
+  /*!
+   * \brief Request solves with the transposed matrix.
+   * \param[in] transposed - Yes or no.
+   */
+  void SetTransposedSolve(bool transposed = true) {
+    using namespace PaStiX;
+    if (iparm[IPARM_SYM] == API_SYM_NO)
+      iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+  }
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []

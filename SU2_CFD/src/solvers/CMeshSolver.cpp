@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  System.SetToleranceType(LinearToleranceType::ABSOLUTE);
 
   /*--- Initialize structures for hybrid-parallel mode. ---*/
 
@@ -129,21 +128,12 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
     }
   }
 
-  unsigned short iVar;
-
   /*--- Initialize the BGS residuals in multizone problems. ---*/
   if (config->GetMultizone_Residual()){
-
-    Residual_BGS      = new su2double[nVar]();
-    Residual_Max_BGS  = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar]();
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-    }
+    Residual_BGS.resize(nVar,0.0);
+    Residual_Max_BGS.resize(nVar,0.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
 

@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -80,6 +80,7 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
+  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -96,7 +97,6 @@ private:
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
-  unsigned short ConvCriteria;    /*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter;       /*!< \brief Iteration for the point inversion problem. */
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
@@ -117,6 +117,7 @@ private:
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,       /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Wind_Gust,                /*!< \brief Flag to know if there is a wind gust. */
+  Turb_Fixed_Values,        /*!< \brief Flag to know if there are fixed values for turbulence quantities in one half-plane. */
   Aeroelastic_Simulation,   /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Weakly_Coupled_Heat,      /*!< \brief Flag to know if a heat equation should be weakly coupled to the incompressible solver. */
   Rotating_Frame,           /*!< \brief Flag to know if there is a rotating frame. */
@@ -923,6 +924,8 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
+  /*! \brief Maximal scalar product of the normed far-field velocity vector and a space coordinate where fixed turbulence quantities are set. */
+  su2double Turb_Fixed_Values_MaxScalarProd;
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
@@ -5877,12 +5880,6 @@ public:
   su2double GetBuffet_lambda(void) const { return Buffet_lambda; }
 
   /*!
-   * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
-   * \return Kind of convergence criteria.
-   */
-  unsigned short GetConvCriteria(void) const { return ConvCriteria; }
-
-  /*!
    * \brief Get the index in the config information of the marker <i>val_marker</i>.
    * \note When we read the config file, it stores the markers in a particular vector.
    * \return Index in the config information of the marker <i>val_marker</i>.
@@ -8064,6 +8061,20 @@ public:
    * \brief Value of the location ath which the gust begins.
    */
   su2double GetGust_Begin_Loc(void) const { return Gust_Begin_Loc; }
+
+  /*!
+   * \brief Get whether fixed values for turbulence quantities are applied.
+   * \return <code>TRUE</code> if fixed values are applied; otherwise <code>FALSE</code>.
+   */
+  bool GetTurb_Fixed_Values(void) const { return Turb_Fixed_Values; }
+
+  /*!
+   * \brief Get shift of the upstream half-plane where fixed values for turbulence quantities are applied.
+   * \details This half-plane is given by the condition that the dot product between the
+   * coordinate vector and the normalized far-field velocity vector is less than what this
+   * function returns.
+   */
+  su2double GetTurb_Fixed_Values_MaxScalarProd(void) const { return Turb_Fixed_Values_MaxScalarProd; }
 
   /*!
    * \brief Get the number of iterations to evaluate the parametric coordinates.
