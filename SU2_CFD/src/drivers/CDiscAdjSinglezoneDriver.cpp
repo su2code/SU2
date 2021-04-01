@@ -59,7 +59,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
 
-  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
+  bool compressible = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
 
   /*--- Determine if the problem has a mesh deformation solver ---*/
   bool mesh_def = config->GetDeform_Mesh();

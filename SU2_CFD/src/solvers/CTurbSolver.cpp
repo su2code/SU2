@@ -608,7 +608,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
 
 void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -743,7 +743,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   /*--- Flow solution, needed to get density. ---*/
 
@@ -1041,7 +1041,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    Therefore, we must reduce skipVars here if energy is inactive so that
    the turbulent variables are read correctly. ---*/
 
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 

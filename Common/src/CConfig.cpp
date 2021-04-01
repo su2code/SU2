@@ -1067,7 +1067,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MULTIZONE \n DESCRIPTION: Enable multizone mode \ingroup Config*/
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
-  addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
+  addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL);
 #ifdef CODI_REVERSE_TYPE
   const bool discAdjDefault = true;
 #else
@@ -3465,13 +3465,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||
       Kind_Solver == FEM_LES){
-    Kind_Regime = COMPRESSIBLE;
+    Kind_Regime = ENUM_REGIME::COMPRESSIBLE;
   } else if (Kind_Solver == INC_EULER ||
              Kind_Solver == INC_NAVIER_STOKES ||
              Kind_Solver == INC_RANS){
-    Kind_Regime = INCOMPRESSIBLE;
+    Kind_Regime = ENUM_REGIME::INCOMPRESSIBLE;
   }  else {
-    Kind_Regime = NO_FLOW;
+    Kind_Regime = ENUM_REGIME::NO_FLOW;
   }
 
   if ((rank == MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
@@ -4622,7 +4622,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check feassbility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
-    if (Kind_Regime != INCOMPRESSIBLE)
+    if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE)
       SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
     if (Kind_Solver == INC_EULER)
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
@@ -5532,20 +5532,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       case EULER:     case DISC_ADJ_EULER:
       case INC_EULER: case DISC_ADJ_INC_EULER:
       case FEM_EULER: case DISC_ADJ_FEM_EULER:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
       case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
       case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
       case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
       case RANS:     case DISC_ADJ_RANS:
       case INC_RANS: case DISC_ADJ_INC_RANS:
       case FEM_RANS: case DISC_ADJ_FEM_RANS:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case SA:        cout << "Spalart Allmaras" << endl; break;
@@ -5572,22 +5572,22 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         break;
       case NEMO_EULER:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case FEM_LES:
-        if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
+        if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
         cout << "Subgrid Scale model: ";
         switch (Kind_SGS_Model) {
           case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
@@ -5624,7 +5624,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
+    if ((Kind_Regime == ENUM_REGIME::COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -5672,12 +5672,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 
     if (!fea){
-      if (Kind_Regime == COMPRESSIBLE) {
+      if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) {
         if (Ref_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
         else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { cout << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
         else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { cout << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << endl; }
         else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
-    } else if (Kind_Regime == INCOMPRESSIBLE) {
+    } else if (Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) {
         if (Ref_Inc_NonDim == DIMENSIONAL) { cout << "Dimensional simulation." << endl; }
         else if (Ref_Inc_NonDim == INITIAL_VALUES) { cout << "Non-Dimensional simulation using intialization values." << endl; }
         else if (Ref_Inc_NonDim == REFERENCE_VALUES) { cout << "Non-Dimensional simulation using user-specified reference values." << endl; }

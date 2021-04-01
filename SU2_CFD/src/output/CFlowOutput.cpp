@@ -123,8 +123,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   const unsigned short nDim         = geometry->GetnDim();
   const unsigned short Kind_Average = config->GetKind_Average();
 
-  const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
+  const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
 
@@ -909,8 +909,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
   unsigned short iMarker_Monitoring;
 
-  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
-  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool compressible    = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   const bool unsteady        = config->GetTime_Domain();
   const bool viscous         = config->GetViscous();
   const bool dynamic_grid    = config->GetDynamic_Grid();

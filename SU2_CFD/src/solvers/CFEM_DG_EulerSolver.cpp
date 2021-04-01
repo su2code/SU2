@@ -145,7 +145,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
@@ -3138,7 +3138,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
 
-  if(config->GetKind_Regime() == COMPRESSIBLE) {
+  if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
     /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
     switch( nDim ) {
@@ -3612,7 +3612,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(config->GetKind_Regime() == COMPRESSIBLE) {
+    if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -9382,7 +9382,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FileName();
 

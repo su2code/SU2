@@ -620,7 +620,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Correction for compressible flows (use enthalpy) ---*/
 
-                if (!(config->GetKind_Regime() == INCOMPRESSIBLE)) {
+                if (!(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)) {
                   Pressure_i   = base_nodes->GetPressure(iPoint);
                   Pressure_j   = base_nodes->GetPressure(jPoint);
                   Diff[nVar-1] = ((base_nodes->GetSolution(iPoint,nVar-1) + Pressure_i) -
@@ -679,7 +679,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
                 /*--- Use density instead of pressure for incomp. flows. ---*/
 
-                if ((config->GetKind_Regime() == INCOMPRESSIBLE)) {
+                if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)) {
                   Pressure_i = base_nodes->GetDensity(iPoint);
                   Pressure_j = base_nodes->GetDensity(jPoint);
                 } else {

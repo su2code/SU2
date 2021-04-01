@@ -32,7 +32,7 @@
 
 /*--- Explicit instantiation of the parent class of CIncEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
+template class CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>;
 
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :

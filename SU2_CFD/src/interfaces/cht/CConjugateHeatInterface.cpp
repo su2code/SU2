@@ -48,8 +48,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
 
-  const bool compressible_flow = (donor_config->GetKind_Regime() == COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
+  const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
   const bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION) ||
                              (donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 

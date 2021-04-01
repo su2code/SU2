@@ -1345,7 +1345,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-            if (FlowRegime == COMPRESSIBLE) {
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
               if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
                 auto Secondary_i = nodes->GetSecondary(iPoint);
 
@@ -1770,7 +1770,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
   /// TODO: Move these ifs to specialized functions.
 
-  if (FlowRegime == COMPRESSIBLE) {
+  if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
     /*--- Evaluate reference values for non-dimensionalization.
      For dynamic meshes, use the motion Mach number as a reference value
      for computing the force coefficients. Otherwise, use the freestream values,
@@ -1788,7 +1788,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     }
   }
 
-  if (FlowRegime == INCOMPRESSIBLE) {
+  if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
     /*--- Evaluate reference values for non-dimensionalization.
      For dimensional or non-dim based on initial values, use
      the far-field state (inf). For a custom non-dim based
@@ -2490,9 +2490,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         /// TODO: Move the temperature index logic to a function.
 
-        if (FlowRegime == COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
+        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
 
-        if (FlowRegime == INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
+        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
@@ -2555,13 +2555,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         GradTemperature = 0.0;
 
-        if (FlowRegime == COMPRESSIBLE) {
+        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
           for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
 
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
-        if (FlowRegime == INCOMPRESSIBLE) {
+        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
           if (energy)
             for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
 

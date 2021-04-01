@@ -160,7 +160,7 @@ private:
   unsigned long LimiterIter;         /*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double AdjSharp_LimiterCoeff;   /*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;        /*!< \brief Kind of adjoint function. */
+  ENUM_REGIME Kind_Regime;           /*!< \brief Kind of flow regime: in/compressible. */
   unsigned short *Kind_ObjFunc;      /*!< \brief Kind of objective function. */
   su2double *Weight_ObjFunc;         /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth;    /*!< \brief Kind of sensitivity smoothing technique. */
@@ -464,8 +464,8 @@ private:
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
+  ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
-  Kind_MZSolver,                   /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,             /*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,          /*!< \brief Kind of the Thermal Conductivity Model*/
@@ -3596,14 +3596,14 @@ public:
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */
-  unsigned short GetKind_MZSolver(void) const { return Kind_MZSolver; }
+  ENUM_MULTIZONE GetKind_MZSolver(void) const { return Kind_MZSolver; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
    */
-  unsigned short GetKind_Regime(void) const { return Kind_Regime; }
+  ENUM_REGIME GetKind_Regime(void) const { return Kind_Regime; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).

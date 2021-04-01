@@ -347,7 +347,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool equiv_area = config->GetEquivArea();
-  bool buffet = (config->GetViscous() || config->GetKind_Regime() == COMPRESSIBLE);
+  bool buffet = (config->GetViscous() || config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
@@ -364,8 +364,8 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool incload = config->GetIncrementalLoad();
 
   bool thermal = false; /* Flag for whether to print heat flux values */
@@ -615,8 +615,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
   bool radiation            = config[val_iZone]->AddRadiation();
 
-  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
 
@@ -761,7 +761,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                 (config[val_iZone]->GetKind_Solver() == INC_EULER) || (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
                 (config[val_iZone]->GetKind_Solver() == INC_RANS);
-    bool buffet = (config[val_iZone]->GetViscous() || config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+    bool buffet = (config[val_iZone]->GetViscous() || config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -2430,8 +2430,8 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   unsigned short iDim, iMarker_Monitoring;
   ofstream Breakdown_file;
 
-  bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible       = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible     = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool unsteady           = (config[val_iZone]->GetTime_Marching() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
   bool dynamic_grid       = config[val_iZone]->GetDynamic_Grid();
@@ -7333,8 +7333,8 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
   unsigned short nDim         = geometry->GetnDim();
   unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   bool energy         = config->GetEnergy_Equation();
 
 

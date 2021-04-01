@@ -2583,7 +2583,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           const auto fluidZone = heat_target? donor : target;
 
-          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == COMPRESSIBLE))
+          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE))
             interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
           else if (config[fluidZone]->GetWeakly_Coupled_Heat())
             interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;

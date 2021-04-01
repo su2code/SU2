@@ -190,9 +190,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
-      default: Run_GaussSeidel(); break;
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
     }
 
     /*--- Update the solution for dual time stepping strategy ---*/

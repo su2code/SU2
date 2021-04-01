@@ -237,13 +237,13 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 /*!
  * \brief Different solver types for multizone problems
  */
-enum ENUM_MULTIZONE {
-  MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
-  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
+enum class ENUM_MULTIZONE {
+  MZ_BLOCK_GAUSS_SEIDEL, /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
+  MZ_BLOCK_JACOBI,       /*!< \brief Definition of a Block-Jacobi solver. */
 };
 static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
-  MakePair("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
-  MakePair("BLOCK_JACOBI", MZ_BLOCK_JACOBI)
+  MakePair("BLOCK_GAUSS_SEIDEL", ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL)
+  MakePair("BLOCK_JACOBI", ENUM_MULTIZONE::MZ_BLOCK_JACOBI)
 };
 
 /*!
@@ -395,7 +395,7 @@ enum ENUM_TRANSFER {
 /*!
  * \brief different regime modes
  */
-enum ENUM_REGIME {
+enum class ENUM_REGIME {
   COMPRESSIBLE = 0,   /*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1, /*!< \brief Definition of incompressible solver. */
   NO_FLOW = 2

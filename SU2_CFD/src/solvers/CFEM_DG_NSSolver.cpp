@@ -951,7 +951,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(config->GetKind_Regime() == COMPRESSIBLE) {
+    if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. Multiple elements are treated
             simultaneously to improve the performance of the matrix
