@@ -615,11 +615,8 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
                            su2double *val_normal, su2double **val_p_tensor) {
 
   su2double sqvel, rhooc, zeta;
-  //su2double rhoxc, c2;
 
   rhooc = *val_density / *val_soundspeed;
-  //rhoxc = *val_density * *val_soundspeed;
-  //c2 = *val_soundspeed * *val_soundspeed;
 
   if (nDim == 2) {
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];

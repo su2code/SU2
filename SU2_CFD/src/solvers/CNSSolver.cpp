@@ -346,7 +346,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
                             turbNodes->GetF2blending(jPoint));
     numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                               nodes->GetVorticityMag(jPoint));
-
+    // numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+    //                        nodes->GetStrainMag(jPoint));
   }
 
   /*--- Wall shear stress values (wall functions) ---*/

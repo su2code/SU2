@@ -3189,7 +3189,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
     {
       const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
       const auto iEdge = geometry->FindEdge(iPoint, jPoint);
-      const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+      const su2double sign = (iPoint < jPoint)? 1.0 : -1.0;
       for (auto iDim = 0u; iDim < nDim; iDim++)
         gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
       break;

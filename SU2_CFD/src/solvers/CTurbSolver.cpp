@@ -179,11 +179,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    // const su2double TKEi = good_i? turbPrimVar_i[0] : T_i[0];
-    // const su2double TKEj = good_j? turbPrimVar_j[0] : T_j[0];
-    // if (nodes->GetUnderRelaxation(iPoint) < 1e-6 && residual[0] >  nodes->GetSolution(iPoint,0)) cout << "rki= " << nodes->GetSolution(iPoint,0) << ", rkj= " << nodes->GetSolution(jPoint,0) << ", Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << endl;
-    // if (nodes->GetUnderRelaxation(jPoint) < 1e-6 && residual[0] < -nodes->GetSolution(jPoint,0)) cout << "rkj= " << nodes->GetSolution(jPoint,0) << ", rki= " << nodes->GetSolution(iPoint,0) << ", Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << endl;
-
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -271,6 +266,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF2blending(jPoint));
     numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint),
                               flowNodes->GetVorticityMag(jPoint));
+    // numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint),
+    //                        flowNodes->GetStrainMag(jPoint));
   }
 
   /*--- Compute residual, and Jacobians ---*/
@@ -340,22 +337,6 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
       good_i = good_i && (turbvar_i[iVar] >= 0.0);
       good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
-
-    /*--- Check if upwind flux exceeds solution, which  ---*/
-    /*--- can cause issues in regions of low turbulence ---*/
-
-    // su2double a_ij = 0.0;
-    // for (auto iDim = 0u; iDim < nDim; iDim++)
-    //   a_ij += (primvar_i[iDim+1]+primvar_j[iDim+1])*normal[iDim];
-
-    // const su2double fabs_a = fabs(a_ij);
-    // for (auto iVar = 0u; iVar < nTurbVar; iVar++) {
-    //   const bool good_flux = (a_ij >= 0)? (fabs_a*primvar_i[nDim+2]*turbvar_i[iVar] < nodes->GetSolution(iPoint,iVar))
-    //                                     : (fabs_a*primvar_j[nDim+2]*turbvar_j[iVar] < nodes->GetSolution(jPoint,iVar));
-
-    //   good_i = good_i && good_flux;
-    //   good_j = good_j && good_flux;
-    // }
   }
 }
 
@@ -430,7 +411,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
-  /*---         gradient projection (0.5*Psi*gradV_i*dist_ij).           ---*/
+  /*---         gradient projection (0.5*Psi*gradV_i*dist_ij).             ---*/
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
@@ -832,7 +813,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const unsigned long index = iPoint * nVar + iVar;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange && LinSysSol[index] < 0.) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 

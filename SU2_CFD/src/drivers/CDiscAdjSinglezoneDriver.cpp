@@ -456,29 +456,29 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetDirectResiduals(){
 
-  const bool heat = config->GetWeakly_Coupled_Heat();
-  const bool turb = config->GetKind_Turb_Model() != NONE;
-  const bool rads = config->AddRadiation();
-  const bool frozen_visc = config->GetFrozen_Visc_Disc();
+  // const bool heat = config->GetWeakly_Coupled_Heat();
+  // const bool turb = config->GetKind_Turb_Model() != NONE;
+  // const bool rads = config->AddRadiation();
+  // const bool frozen_visc = config->GetFrozen_Visc_Disc();
 
-  /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
+  // /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
-  for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes;
-    solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol;
-  }
-  if (turb && !frozen_visc) {
-    solver[ADJTURB_SOL]->LinSysRes = solver[TURB_SOL]->LinSysRes;
-    solver[ADJTURB_SOL]->LinSysSol = solver[TURB_SOL]->LinSysSol;
-  }
-  if (heat) {
-    solver[ADJHEAT_SOL]->LinSysRes = solver[HEAT_SOL]->LinSysRes;
-    solver[ADJHEAT_SOL]->LinSysSol = solver[HEAT_SOL]->LinSysSol;
-  }
-  if (rads) {
-    solver[ADJRAD_SOL]->LinSysRes = solver[RAD_SOL]->LinSysRes;
-    solver[ADJRAD_SOL]->LinSysSol = solver[RAD_SOL]->LinSysSol;
-  }
+  // for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++){
+  //   solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysRes = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysRes;
+  //   solver_container[ZONE_0][INST_0][iMesh][ADJFLOW_SOL]->LinSysSol = solver_container[ZONE_0][INST_0][iMesh][FLOW_SOL]->LinSysSol;
+  // }
+  // if (turb && !frozen_visc) {
+  //   solver[ADJTURB_SOL]->LinSysRes = solver[TURB_SOL]->LinSysRes;
+  //   solver[ADJTURB_SOL]->LinSysSol = solver[TURB_SOL]->LinSysSol;
+  // }
+  // if (heat) {
+  //   solver[ADJHEAT_SOL]->LinSysRes = solver[HEAT_SOL]->LinSysRes;
+  //   solver[ADJHEAT_SOL]->LinSysSol = solver[HEAT_SOL]->LinSysSol;
+  // }
+  // if (rads) {
+  //   solver[ADJRAD_SOL]->LinSysRes = solver[RAD_SOL]->LinSysRes;
+  //   solver[ADJRAD_SOL]->LinSysSol = solver[RAD_SOL]->LinSysSol;
+  // }
 
 }
 

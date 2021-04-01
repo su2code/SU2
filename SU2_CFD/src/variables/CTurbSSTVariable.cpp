@@ -27,7 +27,7 @@
 
 
 #include "../../include/variables/CTurbSSTVariable.hpp"
-
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
@@ -36,7 +36,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
 
-  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+  for(auto iPoint=0ul; iPoint<nPoint; ++iPoint)
   {
     Primitive(iPoint,0) = kine;
     Primitive(iPoint,1) = omega;
@@ -78,10 +78,8 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val
 
   /*--- Cross diffusion ---*/
 
-  CDkw(iPoint) = 0.0;
-  for (unsigned long iDim = 0; iDim < nDim; iDim++)
-    CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
-  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
+  CDkw(iPoint) = 2.0*val_density*sigma_om2/Primitive(iPoint,1)
+               * GeometryToolbox::DotProduct(nDim,Gradient[iPoint][0],Gradient[iPoint][1]);
   CDkwLimited(iPoint) = (CDkw(iPoint) < CDKW_MIN);
   CDkw(iPoint) = max(CDkw(iPoint), CDKW_MIN);
 

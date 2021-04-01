@@ -3193,14 +3193,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
-                                   residual.jacobian_i, 
+                                   residual.jacobian_i,
                                    residual.jacobian_j,
                                    good_i, good_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_j, primvar_i,
                                    &tke_j, &tke_i,
-                                   residual.jacobian_j, 
+                                   residual.jacobian_j,
                                    residual.jacobian_i,
                                    good_j, good_i,
                                    jPoint, iPoint);
@@ -3317,6 +3317,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
     const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
 
+    // good_i = good_i && (Delta*Proj_i >= 0.0);
+    // good_j = good_j && (Delta*Proj_j >= 0.0);
+
     /*--- Edge-based limiters ---*/
 
     if (limFlowNeeded) {
@@ -3373,6 +3376,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
       const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
+
+      // good_i = good_i && (Delta*Proj_i >= 0.0);
+      // good_j = good_j && (Delta*Proj_j >= 0.0);
 
       /*--- Edge-based limiters ---*/
 
@@ -5611,8 +5617,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Cp = Gas_Constant*Gamma / (Gamma-1.0);
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
-  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
@@ -7711,6 +7717,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                        turbNodes->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
+          // visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+          //                             nodes->GetStrainMag(iPoint));
         }
         
         /*--- Set values for gradient Jacobian ---*/
@@ -8002,6 +8010,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
                                        turbNodes->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
+          // visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+          //                             nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -10237,6 +10247,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
+          // visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+          //                             nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -10445,6 +10457,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
+          // visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+          //                             nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -12213,7 +12227,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetInnerIter()!= 0))
                       || (config->GetInnerIter() == 1));
   if( !write_heads ) return;

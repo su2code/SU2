@@ -360,10 +360,12 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
 
     const su2double F2 = nodes->GetF2blending(iPoint);
     const su2double VorticityMag = flowNodes->GetVorticityMag(iPoint);
+    // const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
     const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    // const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
@@ -534,12 +536,12 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   /*--------------------------------------------------------------------------*/
 
   su2double gradWeight[MAXNDIM] = {0.0};
-  const auto gradk  = nodes->GetGradient(iPoint)[0];
-  const auto gradom = nodes->GetGradient(iPoint)[1];
+  const auto gradk = nodes->GetGradient(iPoint)[0];
+  const auto grado = nodes->GetGradient(iPoint)[1];
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    Jacobian_i[1][0] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
+    Jacobian_i[1][0] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,grado);
     Jacobian_i[1][1] = factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
   }// if physical boundary
   
@@ -555,8 +557,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
-    Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradom)*sign_grad_i;
-    Jacobian_j[1][0]  = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradom);
+    Jacobian_i[1][0] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,grado)*sign_grad_i;
+    Jacobian_j[1][0]  = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,grado);
 
     Jacobian_i[1][1] += factor/r_i*GeometryToolbox::DotProduct(nDim,gradWeight,gradk)*sign_grad_i;
     Jacobian_j[1][1]  = factor/r_j*GeometryToolbox::DotProduct(nDim,gradWeight,gradk);
@@ -1735,7 +1737,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
                           * (1.0 + kUp*(1.0 + 0.5*kUp + pow(kUp,2)/6.0));
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      // if (Yp < 5.0 || Yp > 1.0e3) continue;
+      if (Yp < 5.0 || Yp > 1.0e3) continue;
       
       const su2double dYpw_dYp = 2.0*Ypw*(kappa*sqrt(Gam)/Q)*pow(1.0 - pow(2.0*Gam*Up - Beta,2.0)/(Q*Q), -0.5);
 
@@ -1818,7 +1820,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Yp > 500.) continue;
+      if (Yp < 5.0 || Yp > 500.) continue;
       
       const su2double Density_Normal = flowNodes->GetDensity(iPoint);
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
@@ -1890,34 +1892,38 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   
   walldist = geometry->node[iPoint]->GetWall_Distance();
 
-  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3],
+  su2double gradu[3][3], gradT[3], gradk[3], grado[3], divu, taut[3][3], tautomut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             pk = 0, pw = 0;
 
   const su2double F1 = varTur->GetF1blending(iPoint);
   const su2double F2 = varTur->GetF2blending(iPoint);
 
-  const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
-  const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
-  const su2double sigmaomega  = F1*constants[2] + (1.0 - F1)*constants[3];
-  const su2double sigmaomega2 = constants[3];
-  const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
-  const su2double betastar    = constants[6];
-  const su2double a1          = constants[7];
-  const su2double CDkw        = varTur->GetCrossDiff(iPoint);
+  const su2double alfa     = F1*constants[8] + (1.0 - F1)*constants[9];
+  const su2double sigmak   = F1*constants[0] + (1.0 - F1)*constants[1];
+  const su2double sigmao   = F1*constants[2] + (1.0 - F1)*constants[3];
+  const su2double sigmao2  = constants[3];
+  const su2double beta     = F1*constants[4] + (1.0 - F1)*constants[5];
+  const su2double betastar = constants[6];
+  const su2double a1       = constants[7];
+  const su2double CDkw     = varTur->GetCrossDiff(iPoint);
 
   const su2double VorticityMag = varFlo->GetVorticityMag(iPoint);
 
   const bool stress_limited = (omega < VorticityMag*F2/a1);
   const su2double zeta = max(omega,VorticityMag*F2/a1);
+  // const su2double StrainMag = varFlo->GetStrainMag(iPoint);
+
+  // const bool stress_limited = (omega < StrainMag*F2/a1);
+  // const su2double zeta = max(omega,StrainMag*F2/a1);
 
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
     }
-    gradT[iDim]     = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
-    gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
-    gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
+    gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
+    gradk[iDim] = varTur->GetGradient(iPoint, 0, iDim);
+    grado[iDim] = varTur->GetGradient(iPoint, 1, iDim);
   }
   
   //--- Account for wall functions
@@ -1973,15 +1979,15 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
     factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
             + 1.0/sigmak*gradk[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim)
-            + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+            + sigmao*grado[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -k*factor/pow(zeta,2.)*(!stress_limited);
   if (cdkw_positive) {
     for (iDim = 0; iDim < nDim; ++iDim) {
-      TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-      TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+      TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmao2/omega*grado[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+      TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmao2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     }
   }
 
@@ -2003,9 +2009,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                              -(mu+mut/sigmak)/r*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, yyi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
-    TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
-                                                    +varAdjTur->GetHessian(iPoint, romegai, yyi)
-                                                    +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
+    TmpWeights[nVarFlo+1] += -(mu+sigmao*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+                                                +varAdjTur->GetHessian(iPoint, romegai, yyi)
+                                                +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
 
   }
   else {
@@ -2014,8 +2020,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                                 +varAdjTur->GetHessian(iPoint, rki, yyi))
                              -(mu+mut/sigmak)/r*(varAdjFlo->GetHessian(iPoint, rei, xxi)
                                                 +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
-    TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
-                                                    +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
+    TmpWeights[nVarFlo+1] += -(mu+sigmao*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+                                                +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0]-omega*TmpWeights[nVarFlo+1];
 
