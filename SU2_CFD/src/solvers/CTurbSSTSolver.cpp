@@ -167,10 +167,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialize lower and upper limits---*/
 
-  lowerlimit[0] = 1.0e-16;
+  lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
   upperlimit[0] = 1.0e15;
 
-  lowerlimit[1] = 1.0e-16;
+  // lowerlimit[1] = 1.0e-16;
+  lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
   upperlimit[1] = 1.0e15;
   
 
@@ -295,13 +296,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- BCM: Reset non-physical ---*/
                             
-  // for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-  //   nodes->SetNon_Physical(iPoint, false);
-  //   // for (auto iVar = 0; iVar < nVar; iVar++) {
-  //   //   const su2double sol = max(min(nodes->GetSolution(iPoint, iVar), upperlimit[iVar]), lowerlimit[iVar]);
-  //   //   nodes->SetSolution(iPoint, iVar, sol);
-  //   // }
-  // }
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    // nodes->SetNon_Physical(iPoint, false);
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double sol = max(min(nodes->GetSolution(iPoint, iVar), upperlimit[iVar]), lowerlimit[iVar]);
+      nodes->SetSolution(iPoint, iVar, sol);
+    }
+  }
   
   SetPrimitive_Variables(solver);
   

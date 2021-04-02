@@ -800,11 +800,12 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
   const su2double allowableRatio = sa_model? 0.99 : 0.5;
 
-  if (sa_model || sst_model) {
+  // if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       su2double localUnderRelaxation = 1.0;
+      if (sa_model) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
@@ -816,10 +817,11 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         if (change > allowableChange && LinSysSol[index] < 0.) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
+    }
 
       /* Choose the minimum factor between mean flow and turbulence. */
 
-      // localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+      localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
       /* Threshold the relaxation factor in the event that there is
        a very small value. This helps avoid catastrophic crashes due
@@ -831,11 +833,11 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
       nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
-      // if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
-      // else  nodes->SetNon_Physical(iPoint, false);
+      if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+      else  nodes->SetNon_Physical(iPoint, false);
 
     }
-  }
+  // }
 
 }
 

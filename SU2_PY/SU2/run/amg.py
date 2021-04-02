@@ -164,7 +164,7 @@ def amg ( config , stderr = False ):
     if back_extension == ".su2":
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
-        amgio.py_ConvertSU2toInria(config_amg['adap_back'], "", "amg_back")
+        amgio.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back")
         config_amg['adap_back'] = os.path.join(cwd, "adap/ini/amg_back.meshb")
 
     #--- Remesh options: background surface mesh
