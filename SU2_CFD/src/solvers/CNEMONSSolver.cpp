@@ -378,18 +378,18 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       /*--- Scale thermal conductivity with turb ---*/
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
-      su2double Mass = 0.0;
-      auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-      su2double tmp1, scl, Cptr;
-      su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-      su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
-      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-        Mass += V[iSpecies]*Ms[iSpecies];
-      Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
-      tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-      scl  = tmp1/ktr;
-      ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-      kve  = kve*(1.0+scl);
+      //su2double Mass = 0.0;
+      //auto&     Ms   = FluidModel->GetSpeciesMolarMass();
+      //su2double tmp1, scl, Cptr;
+      //su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
+      //su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
+      //for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      //  Mass += V[iSpecies]*Ms[iSpecies];
+      //Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+      //tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
+      //scl  = tmp1/ktr;
+      //ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
+      //kve  = kve*(1.0+scl);
       //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
       //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
@@ -756,19 +756,19 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Scale thermal conductivity with turb ---*/
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
-      V = nodes->GetPrimitive(iPoint);
-      su2double Mass = 0.0;
-      auto&     Ms   = FluidModel->GetSpeciesMolarMass();
-      su2double tmp1, scl, Cptr;
-      su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
-      su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
-      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
-        Mass += V[iSpecies]*Ms[iSpecies];
-      Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
-      tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
-      scl  = tmp1/ktr;
-      ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
-      kve  = kve*(1.0+scl);
+      //V = nodes->GetPrimitive(iPoint);
+      //su2double Mass = 0.0;
+      //auto&     Ms   = FluidModel->GetSpeciesMolarMass();
+      //su2double tmp1, scl, Cptr;
+      //su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
+      //su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
+      //for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      //  Mass += V[iSpecies]*Ms[iSpecies];
+      //Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+      //tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
+      //scl  = tmp1/ktr;
+      //ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
+      //kve  = kve*(1.0+scl);
       //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
       //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
