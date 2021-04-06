@@ -2565,10 +2565,22 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-          auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-            interface_type = SLIDING_INTERFACE;
-            interface[donor][target] = new CSlidingInterface(nVar, 0);
-            if (rank == MASTER_NODE) cout << "sliding interface." << endl;
+                /*--- Mixing plane for turbo machinery applications. ---*/
+          if (config[donor]->GetBoolMixingPlaneInterface()) {
+            interface_type = MIXING_PLANE;
+            auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+            interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
+            if (rank == MASTER_NODE) {
+              cout << "Set mixing-plane interface from donor zone "
+                  << donor << " to target zone " << target << "." << endl;
+            }
+          }
+          else{
+            auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+              interface_type = SLIDING_INTERFACE;
+              interface[donor][target] = new CSlidingInterface(nVar, 0);
+              if (rank == MASTER_NODE) cout << "sliding interface." << endl;
+          }
         }
         else if (heat_donor || heat_target) {
           if (heat_donor && heat_target)
@@ -2600,18 +2612,6 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
           interface_type = CONSERVATIVE_VARIABLES;
           interface[donor][target] = new CConservativeVarsInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
-        }
-      }
-
-      /*--- Mixing plane for turbo machinery applications. ---*/
-
-      if (config[donor]->GetBoolMixingPlaneInterface()) {
-        interface_type = MIXING_PLANE;
-        auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
-        if (rank == MASTER_NODE) {
-          cout << "Set mixing-plane interface from donor zone "
-               << donor << " to target zone " << target << "." << endl;
         }
       }
 
@@ -2806,17 +2806,18 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
     for (donorZone = 0; donorZone < nZone; donorZone++) {
       for (targetZone = 0; targetZone < nZone; targetZone++) {
-        if (targetZone != donorZone){
+        if (interface_types[donorZone][targetZone]==MIXING_PLANE){
           interface[donorZone][targetZone]->SetSpanWiseLevels(config[donorZone], config[targetZone]);
         }
       }
     }
   }
 
-  if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
-  for (iZone = 0; iZone < nZone-1; iZone++) {
-    interface[iZone][nZone-1]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[nZone-1][INST_0][MESH_0], iZone);
-  }
+  // SKIPPING FOR NOW
+  // if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
+  // for (iZone = 0; iZone < nZone-1; iZone++) {
+  //   interface[iZone][nZone-1]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[nZone-1][INST_0][MESH_0], iZone);
+  // }
 
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
   for (iZone = 1; iZone < nZone; iZone++) {
@@ -2847,7 +2848,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
       nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
       for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
         for (targetZone = 0; targetZone < nZone; targetZone++) {
-          if (targetZone != donorZone){
+          if (interface_types[donorZone][targetZone]==MIXING_PLANE){
             interface[donorZone][targetZone]->PreprocessAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
                 config[donorZone], config[targetZone],
                 iMarkerInt);

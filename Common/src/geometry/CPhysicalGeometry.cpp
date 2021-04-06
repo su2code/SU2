@@ -5149,7 +5149,6 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                           valueSpan[nSpan_loc] = coord[2];
                         }
                         break;
-
                       }
                       nSpan_loc++;
                     }

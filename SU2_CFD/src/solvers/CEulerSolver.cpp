@@ -6561,7 +6561,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       }
 
 
-      /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
+      /* --- Compute average jump of charachteristic variable at the mixing-plane interface --- */
       GetFluidModel()->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
       AverageSoundSpeed = GetFluidModel()->GetSoundSpeed();
       conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[val_marker][iSpan], deltaprim, c_avg);
@@ -7026,7 +7026,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
-
     }
   }
 

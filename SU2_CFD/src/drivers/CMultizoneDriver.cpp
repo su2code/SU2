@@ -631,14 +631,16 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                 config_container[donorZone], config_container[targetZone], iMarkerInt );
       }
 
-      if(targetZone==nZone-1){
+      if(targetZone==nZone-1) {
         for (donorZone = 0; donorZone < nZone-1; donorZone++) {
-          interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-          interface_container[donorZone][targetZone]->GatherAverageTurboGeoValues(geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0], donorZone);
+          if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
+            interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+            interface_container[donorZone][targetZone]->GatherAverageTurboGeoValues(geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0], donorZone);
+          }
         }
       }
-      return UpdateMesh;
-      break;
+    return UpdateMesh;
+    break;
     }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
