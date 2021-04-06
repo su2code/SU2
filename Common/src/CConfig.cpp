@@ -2055,6 +2055,8 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SURFACE_PLUNGING_AMPL", nMarkerPlunging_Ampl, MarkerPlunging_Ampl);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
+  /* DESCRIPTION: Name of file defining arbitrary pitching set (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addStringOption("PITCHING_FILENAME", Pitching_Filename, string(""));
 
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
   addUnsignedShortOption("SMOOTH_GEOMETRY", SmoothNumGrid, 0);
