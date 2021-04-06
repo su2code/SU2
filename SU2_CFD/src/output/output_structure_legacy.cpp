@@ -677,7 +677,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
       /*--- Output a file with the forces breakdown. ---*/
 
-      if (config[val_iZone]->GetTime_Marching() == HARMONIC_BALANCE) {
+      if (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
         SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
 
@@ -714,8 +714,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     }
 
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
-    if (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST ||
-        config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)
+    if (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+        config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
       ExtIter_OffSet = 0;
 
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
@@ -1248,8 +1248,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- Header frequency ---*/
 
-    bool Unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                     (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
+    bool Unsteady = ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                     (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
     bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
     bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetScreen_Wrt_Freq(0) == 0));
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
@@ -1563,7 +1563,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         ) {
 
           if (!fem) {
-            if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_STEPPING)) {
+            if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::TIME_STEPPING)) {
               switch (config[val_iZone]->GetKind_Solver()) {
               case EULER : case NAVIER_STOKES: case RANS:
               case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
@@ -1649,10 +1649,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             else {
               if (flow) {
-                if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
+                if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
                 {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
-                } else if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
+                } else if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][val_iInst][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
                 } else {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
@@ -2432,7 +2432,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
   bool compressible       = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-  bool unsteady           = (config[val_iZone]->GetTime_Marching() != NO);
+  bool unsteady           = (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config[val_iZone]->GetViscous();
   bool dynamic_grid       = config[val_iZone]->GetDynamic_Grid();
   bool gravity            = config[val_iZone]->GetGravityForce();
@@ -4732,8 +4732,8 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 
   /*--- Write file name with extension if unsteady or steady ---*/
 
-  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
-      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+  if (((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) ||
+       (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -4883,8 +4883,8 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
   /*--- Write file name with extension if unsteady or steady ---*/
 
-  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
-      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+  if (((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) ||
+       (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));

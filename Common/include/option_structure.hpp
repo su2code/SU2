@@ -1998,21 +1998,21 @@ static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
 /*!
  * \brief Types of schemes for unsteady computations
  */
-enum ENUM_UNSTEADY {
-  STEADY = 0,            /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,     /*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,   /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,   /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
-  HARMONIC_BALANCE = 5   /*!< \brief Use a harmonic balance source term. */
+enum class TIME_MARCHING {
+  STEADY,           /*!< \brief A steady computation. */
+  TIME_STEPPING,    /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST,  /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND,  /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME, /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE, /*!< \brief Use a harmonic balance source term. */
 };
-static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
-  MakePair("NO", STEADY)
-  MakePair("TIME_STEPPING", TIME_STEPPING)
-  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
-  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-  MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
-  MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
+static const MapType<string, TIME_MARCHING> TimeMarching_Map = {
+  MakePair("NO", TIME_MARCHING::STEADY)
+  MakePair("TIME_STEPPING", TIME_MARCHING::TIME_STEPPING)
+  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", TIME_MARCHING::DT_STEPPING_1ST)
+  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", TIME_MARCHING::DT_STEPPING_2ND)
+  MakePair("HARMONIC_BALANCE", TIME_MARCHING::HARMONIC_BALANCE)
+  MakePair("ROTATIONAL_FRAME", TIME_MARCHING::ROTATIONAL_FRAME)
 };
 
 /*!

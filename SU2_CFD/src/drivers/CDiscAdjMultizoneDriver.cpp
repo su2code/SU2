@@ -827,7 +827,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != STEADY;
+  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 

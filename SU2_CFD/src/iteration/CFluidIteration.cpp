@@ -58,8 +58,8 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
 
-  const bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                        (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                        (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
@@ -166,8 +166,8 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {

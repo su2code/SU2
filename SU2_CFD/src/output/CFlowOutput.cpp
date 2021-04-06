@@ -877,7 +877,7 @@ void CFlowOutput::WriteMetaData(CConfig *config){
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
-    if (config->GetTime_Marching() == DT_STEPPING_1ST || config->GetTime_Marching() == DT_STEPPING_2ND)
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST || config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
       meta_file <<"ITER= " << curTimeIter + 1 << endl;
     else
       meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
@@ -2709,12 +2709,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
-    if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
+    if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
         ((Iter == 0) ||
          (Iter % config->GetVolume_Wrt_Freq() == 0) ||
          ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.

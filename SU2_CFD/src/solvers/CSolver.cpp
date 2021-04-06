@@ -2621,7 +2621,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-  if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
 
     ifstream restart_file_n1;
     string filename_n1;
@@ -3270,9 +3270,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
   su2double Area_Children, Area_Parent, dist, min_dist, Interp_Radius, Theta;
   const su2double *Coord = nullptr;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
 
   string UnstExt, text_line;
   ifstream restart_file;

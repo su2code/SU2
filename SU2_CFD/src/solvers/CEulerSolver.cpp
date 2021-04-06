@@ -56,9 +56,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != NONE);
   const auto direct_diff = config->GetDirectDiff();
-  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                         (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
@@ -82,7 +82,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
     }
@@ -1087,7 +1087,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   su2double Beta          = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach          = config->GetMach();
   su2double Reynolds      = config->GetReynolds();
-  bool unsteady           = (config->GetTime_Marching() != NO);
+  bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Turb_Model() != NONE);
@@ -2257,7 +2257,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
-  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -2473,7 +2473,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_DYN(omp_chunk_size)

@@ -490,7 +490,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
   if (VerificationSolution && VerificationSolution->ExactSolutionKnown()) {
     /*--- Get the physical time if necessary. ---*/
     su2double time = 0.0;
-    if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+    if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
     /*--- Reset the global error measures to zero. ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -724,9 +724,9 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   su2double Area_Children, Area_Parent;
   const su2double* Solution_Fine = nullptr;
   const passivedouble* Coord = nullptr;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
   bool steady_restart = config->GetSteadyRestart();
   bool turbulent = (config->GetKind_Turb_Model() != NONE);
 
@@ -946,8 +946,8 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != NONE);
-  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                          (config->GetTime_Marching() == DT_STEPPING_2ND));
+  const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1004,7 +1004,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     }
   }
 
-  if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Load an additional restart file for a 2nd-order restart ---*/
 
     solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter() - 1,
@@ -1471,7 +1471,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
     /*--- Get the physical time. ---*/
 
     su2double time = 0.0;
-    if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+    if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -1588,8 +1588,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
   su2double Residual_GCL;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Store the physical time step ---*/
 

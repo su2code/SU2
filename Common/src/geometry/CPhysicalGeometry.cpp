@@ -8666,11 +8666,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 
   unsigned long iTimeIter, nTimeIter;
   su2double delta_T, total_T;
-  if (config->GetTime_Marching() && config->GetTime_Domain()) {
+  if ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) {
     nTimeIter = config->GetUnst_AdjointIter();
     delta_T  = config->GetTime_Step();
     total_T  = (su2double)nTimeIter*delta_T;
-  } else if (config->GetTime_Marching() == HARMONIC_BALANCE) {
+  } else if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
 
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 
@@ -8697,11 +8697,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
 
     /*--- Write file name with extension if unsteady or steady ---*/
-    if (config->GetTime_Marching() == HARMONIC_BALANCE)
+    if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
       SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
 
-    if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
-        (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+    if (((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) ||
+        (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)) {
       if ((SU2_TYPE::Int(iTimeIter) >= 0)    && (SU2_TYPE::Int(iTimeIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iTimeIter));
       if ((SU2_TYPE::Int(iTimeIter) >= 10)   && (SU2_TYPE::Int(iTimeIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iTimeIter));
       if ((SU2_TYPE::Int(iTimeIter) >= 100)  && (SU2_TYPE::Int(iTimeIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iTimeIter));

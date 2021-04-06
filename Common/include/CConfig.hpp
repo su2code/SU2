@@ -151,7 +151,7 @@ private:
   su2double CM_Target;         /*!< \brief Fixed Cl mode Target CM. */
   su2double *HTP_Min_XCoord,
   *HTP_Min_YCoord;                   /*!< \brief Identification of the HTP. */
-  unsigned short TimeMarching;       /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -5047,7 +5047,7 @@ public:
    * \return The kind of time integration: Steady state, time stepping method (unsteady) or
    *         dual time stepping method (unsteady).
    */
-  unsigned short GetTime_Marching(void) const { return TimeMarching; }
+  TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
    * \brief Provides the number of species present in the plasma

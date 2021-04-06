@@ -509,7 +509,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   bool AnyDeformMesh = false;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    const auto harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
+    const auto harmonic_balance = (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],

@@ -53,9 +53,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
 
@@ -71,7 +71,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Modify file name for a dual-time unsteady restart ---*/
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
     }
@@ -1063,7 +1063,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   su2double Mach          = config->GetMach();
   su2double Reynolds      = config->GetReynolds();
 
-  bool unsteady           = (config->GetTime_Marching() != NO);
+  bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();

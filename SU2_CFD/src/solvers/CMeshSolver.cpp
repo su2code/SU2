@@ -578,9 +578,9 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
 
       su2double GridVel = 0.0;
 
-      if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim] +
                     1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
 
@@ -832,7 +832,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Determine how many files need to be read. ---*/
 
-  unsigned short nSteps = (config->GetTime_Marching() == DT_STEPPING_2ND) ? 2 : 1;
+  unsigned short nSteps = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ? 2 : 1;
 
   for(unsigned short iStep = 1; iStep <= nSteps; ++iStep) {
 

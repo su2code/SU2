@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
 
   const bool disc_adj = config.GetDiscrete_Adjoint();
   const bool multizone = config.GetMultizone_Problem();
-  const bool harmonic_balance = (config.GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
   if (dry_run) {
 

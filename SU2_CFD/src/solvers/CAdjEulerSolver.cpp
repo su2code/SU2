@@ -1494,8 +1494,8 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   su2double Area_Children, Area_Parent, *Solution, *Solution_Fine;
 
   bool restart = config->GetRestart();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
@@ -1845,7 +1845,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //  bool gravity        = (config->GetGravityForce() == YES);
-  bool harmonic_balance  = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance  = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -4568,9 +4568,9 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     /*--- Compute Residual ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
                           +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
     }
@@ -4583,9 +4583,9 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
-        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+        if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
           Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+        if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
           Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
       }
       Jacobian.AddBlock2Diag(iPoint, Jacobian_i);

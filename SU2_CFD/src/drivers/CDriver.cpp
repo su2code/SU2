@@ -900,7 +900,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
-  if (config->GetTime_Marching() && config->GetGrid_Movement()) {
+  if ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetGrid_Movement()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
       /*--- Update cell volume ---*/
@@ -1087,14 +1087,14 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
 
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+    else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
       val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
   }
@@ -1220,15 +1220,15 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
   bool time_domain = (config->GetTime_Domain()); // Dynamic simulation (FSI).
 
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+    else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
       val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
   }
@@ -2476,7 +2476,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
     surface_movement = new CSurfaceMovement();
     surface_movement->CopyBoundary(geometry[MESH_0], config);
-    if (config->GetTime_Marching() == HARMONIC_BALANCE){
+    if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
       iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, iInst);
     }
@@ -2962,7 +2962,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetInnerIter(Iter);
-    if (config_container[iZone]->GetTime_Marching())
+    if (config_container[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
@@ -3002,7 +3002,8 @@ void CFluidDriver::Run() {
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
 
-  unsteady = (config_container[MESH_0]->GetTime_Marching() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetTime_Marching() == DT_STEPPING_2ND);
+  unsteady = (config_container[MESH_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+             (config_container[MESH_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Zone preprocessing ---*/
 
@@ -3085,7 +3086,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   bool harmonic_balance;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-   harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
+   harmonic_balance = (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );

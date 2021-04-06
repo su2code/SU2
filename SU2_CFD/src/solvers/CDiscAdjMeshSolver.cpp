@@ -167,7 +167,7 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 
 void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
 
-  const bool time_stepping = (config->GetTime_Marching() != STEADY);
+  const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/

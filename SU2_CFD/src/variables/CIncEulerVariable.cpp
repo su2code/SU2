@@ -32,8 +32,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
                                      unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool viscous   = config->GetViscous();
 
   /*--- Allocate and initialize the primitive variables and gradients.

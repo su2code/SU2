@@ -48,9 +48,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -74,7 +74,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
@@ -238,7 +238,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   su2double Mach     = config->GetMach();
   su2double Reynolds = config->GetReynolds();
 
-  bool unsteady      = (config->GetTime_Marching() != NO);
+  bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
   bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
                         (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
@@ -1597,7 +1597,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -2467,8 +2467,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double Density, Cp;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
 
   const int ndim = nDim;

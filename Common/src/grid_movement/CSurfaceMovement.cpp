@@ -3416,7 +3416,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   char buffer[50];
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
-  bool unsteady = config->GetTime_Marching();
+  bool unsteady = config->GetTime_Marching() != TIME_MARCHING::STEADY;
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Load stuff from config ---*/

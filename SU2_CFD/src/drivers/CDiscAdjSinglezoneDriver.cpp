@@ -313,7 +313,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetTime_Marching() != STEADY;
+  bool time_stepping = config->GetTime_Marching() != TIME_MARCHING::STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 

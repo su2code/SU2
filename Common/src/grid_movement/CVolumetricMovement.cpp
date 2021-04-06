@@ -1880,7 +1880,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Problem dimension and physical time step ---*/
@@ -2042,7 +2042,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2188,7 +2188,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2319,7 +2319,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/

@@ -352,11 +352,11 @@ int main(int argc, char *argv[]) {
       if (
           ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
            ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-            !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
+            !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
            (StopCalc) ||
-           (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-             (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
+           (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+             (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
             ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0))))
 
           &&
@@ -445,9 +445,9 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-             !(config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) ||
+             !(config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) ||
             (StopCalc) ||
-            ((config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING) &&
+            ((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0)))) {
 
               /*--- Read in the restart file for this time step ---*/
@@ -538,11 +538,11 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-             !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-               (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
+             !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+               (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
             (StopCalc) ||
-            (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
+            (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0)))) {
 
 
@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    else if (config_container[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE) {
+    else if (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
 
       /*--- Read in the restart file for this time step ---*/
       for (iZone = 0; iZone < nZone; iZone++) {

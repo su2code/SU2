@@ -618,7 +618,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -717,7 +717,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset+iDim] = vector[iDim];
           }
-          if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
             vector = nodes->GetCoord_n1(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -824,7 +824,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
         case COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
           break;
         case MAX_LENGTH:
@@ -3636,8 +3636,8 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
-  bool FirstOrder = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  bool SecondOrder = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool FirstOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool SecondOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   su2double TimeStep = config->GetDelta_UnstTimeND();
 

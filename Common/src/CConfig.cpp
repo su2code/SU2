@@ -1607,7 +1607,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to time-marching ---*/
 
   /* DESCRIPTION: Unsteady simulation  */
-  addEnumOption("TIME_MARCHING", TimeMarching, TimeMarching_Map, STEADY);
+  addEnumOption("TIME_MARCHING", TimeMarching, TimeMarching_Map, TIME_MARCHING::STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
@@ -3408,9 +3408,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check for unsteady problem ---*/
 
-  if ((TimeMarching == TIME_STEPPING ||
-       TimeMarching == DT_STEPPING_1ST ||
-       TimeMarching == DT_STEPPING_2ND) && !Time_Domain){
+  if ((TimeMarching == TIME_MARCHING::TIME_STEPPING ||
+       TimeMarching == TIME_MARCHING::DT_STEPPING_1ST ||
+       TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) && !Time_Domain){
     SU2_MPI::Error("TIME_DOMAIN must be set to YES if TIME_MARCHING is "
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
@@ -3419,7 +3419,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
 
-    if (TimeMarching == TIME_STEPPING){ InnerIter = 1; }
+    if (TimeMarching == TIME_MARCHING::TIME_STEPPING){ InnerIter = 1; }
 
     /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
     if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
@@ -3443,7 +3443,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     ScreenWrtFreq[0]  = 1;
     HistoryWrtFreq[0] = 1;
 
-    if (TimeMarching != HARMONIC_BALANCE) { TimeMarching = STEADY; }
+    if (TimeMarching != TIME_MARCHING::HARMONIC_BALANCE) { TimeMarching = TIME_MARCHING::STEADY; }
   }
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
@@ -3454,7 +3454,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Deactivate the multigrid in the adjoint problem ---*/
 
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
-      (TimeMarching == TIME_STEPPING)) { nMGLevels = 0; }
+      (TimeMarching == TIME_MARCHING::TIME_STEPPING)) { nMGLevels = 0; }
 
   if (Kind_Solver == EULER ||
       Kind_Solver == NAVIER_STOKES ||
@@ -3496,7 +3496,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check for unsupported features. ---*/
 
-  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (TimeMarching == HARMONIC_BALANCE)){
+  if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
@@ -3605,7 +3605,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
-  if (TimeMarching == TIME_STEPPING){
+  if (TimeMarching == TIME_MARCHING::TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
   }
@@ -3635,7 +3635,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (GetGrid_Movement()){
     if ((Kind_SU2 == SU2_COMPONENT::SU2_CFD || Kind_SU2 == SU2_COMPONENT::SU2_SOL) &&
-        (TimeMarching == STEADY && !Time_Domain)){
+        (TimeMarching == TIME_MARCHING::STEADY && !Time_Domain)){
 
       if((Kind_GridMovement != ROTATING_FRAME) &&
          (Kind_GridMovement != STEADY_TRANSLATION) &&
@@ -3745,7 +3745,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*-- Setting Harmonic Balance period from the config file */
 
-  if (TimeMarching == HARMONIC_BALANCE) {
+  if (TimeMarching == TIME_MARCHING::HARMONIC_BALANCE) {
     HarmonicBalance_Period = GetHarmonicBalance_Period();
     if (HarmonicBalance_Period < 0)  {
       SU2_MPI::Error("Not a valid value for time period!!", CURRENT_FUNCTION);
@@ -4216,7 +4216,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_TimeIntScheme_FEM_Flow == ADER_DG) {
 
-    TimeMarching = TIME_STEPPING;  // Only time stepping for ADER.
+    TimeMarching = TIME_MARCHING::TIME_STEPPING;  // Only time stepping for ADER.
 
     /* If time accurate local time stepping is used, make sure that an unsteady
        CFL is specified. If not, terminate. */
@@ -4447,7 +4447,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Set up the time stepping / unsteady CFL options. ---*/
-  if ((TimeMarching == TIME_STEPPING) && (Unst_CFL != 0.0)) {
+  if ((TimeMarching == TIME_MARCHING::TIME_STEPPING) && (Unst_CFL != 0.0)) {
     for (iCFL = 0; iCFL < nCFL; iCFL++)
       CFL[iCFL] = Unst_CFL;
   }
@@ -4837,7 +4837,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
     Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
 
-    if (TimeMarching) {
+    if (TimeMarching != TIME_MARCHING::STEADY) {
 
       Restart_Flow = false;
 
@@ -4963,7 +4963,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    CURRENT_FUNCTION);
   }
 
-  if (CFL_Adapt && (TimeMarching == TIME_STEPPING)) {
+  if (CFL_Adapt && (TimeMarching == TIME_MARCHING::TIME_STEPPING)) {
     SU2_MPI::Error(string("CFL adaption not available for TIME_STEPPING integration.\n") +
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
@@ -6328,24 +6328,29 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (!fea) {
     switch (TimeMarching) {
-      case NO:
-      cout << "Local time stepping (steady state simulation)." << endl; break;
-      case TIME_STEPPING:
-      cout << "Unsteady simulation using a time stepping strategy."<< endl;
-      if (Unst_CFL != 0.0) {
-        cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-        if (Delta_UnstTime != 0.0) {
-          cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+      case TIME_MARCHING::STEADY:
+        cout << "Local time stepping (steady state simulation)." << endl; break;
+
+      case TIME_MARCHING::TIME_STEPPING:
+        cout << "Unsteady simulation using a time stepping strategy."<< endl;
+        if (Unst_CFL != 0.0) {
+          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+          if (Delta_UnstTime != 0.0) {
+            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+          }
         }
-      }
-      else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      break;
-      case DT_STEPPING_1ST: case DT_STEPPING_2ND:
-      if (TimeMarching == DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
-      if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
-      if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-      else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      break;
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        break;
+
+      case TIME_MARCHING::DT_STEPPING_1ST: case TIME_MARCHING::DT_STEPPING_2ND:
+        if (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST) cout << "Unsteady simulation, dual time stepping strategy (first order in time)."<< endl;
+        if (TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
+        if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        break;
+
+      default:
+        break;
     }
   }
   else {
@@ -6552,7 +6557,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         MGTable.PrintFooter();
       }
-      if (TimeMarching != TIME_STEPPING) {
+      if (TimeMarching != TIME_MARCHING::TIME_STEPPING) {
         cout << "Courant-Friedrichs-Lewy number:   ";
         cout.precision(3);
         cout.width(6); cout << CFL[0];

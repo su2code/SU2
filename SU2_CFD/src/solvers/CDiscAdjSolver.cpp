@@ -140,8 +140,8 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -232,8 +232,8 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
-  bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_n1_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  bool time_n_needed  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
   bool input          = true;
   bool push_index     = !config->GetMultizone_Problem();
 
@@ -377,8 +377,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
   const bool multizone = config->GetMultizone_Problem();
 
   const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_Adjoint();
@@ -588,8 +588,8 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
-                    config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+                    config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -643,7 +643,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetTime_Marching() != STEADY);
+  bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->nodes->GetCoord(iPoint);
@@ -760,8 +760,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  const bool dual_time_1st = (config_container->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool dual_time_2nd = (config_container->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time_1st = (config_container->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool dual_time_2nd = (config_container->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool dual_time = (dual_time_1st || dual_time_2nd);
   su2double *solution_n, *solution_n1;
 

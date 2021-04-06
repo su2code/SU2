@@ -5370,14 +5370,14 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   bool FullMassMatrix   = false, FullInverseMassMatrix = false;
   bool LumpedMassMatrix = false, DerMetricTerms = false;
 
-  if(config->GetTime_Marching() == STEADY ||
-     config->GetTime_Marching() == ROTATIONAL_FRAME) {
+  if(config->GetTime_Marching() == TIME_MARCHING::STEADY ||
+     config->GetTime_Marching() == TIME_MARCHING::ROTATIONAL_FRAME) {
     if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
     else                     FullInverseMassMatrix = true;
   }
-  else if(config->GetTime_Marching() == DT_STEPPING_1ST ||
-          config->GetTime_Marching() == DT_STEPPING_2ND ||
-          config->GetTime_Marching() == HARMONIC_BALANCE) {
+  else if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND ||
+          config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     if( UseLumpedMassMatrix ) FullMassMatrix = LumpedMassMatrix = true;
     else                      FullInverseMassMatrix = true;
   }
