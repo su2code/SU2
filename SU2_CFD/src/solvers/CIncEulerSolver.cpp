@@ -244,7 +244,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
                         (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
-  bool boussinesq    = (config->GetKind_DensityModel() == BOUSSINESQ);
+  bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
   /*--- Compute dimensional free-stream values. ---*/
 
@@ -558,16 +558,16 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     switch (config->GetKind_DensityModel()) {
 
-      case CONSTANT:
+      case INC_DENSITYMODEL::CONSTANT:
         if (energy) cout << "Energy equation is active and decoupled." << endl;
         else cout << "No energy equation." << endl;
         break;
 
-      case BOUSSINESQ:
+      case INC_DENSITYMODEL::BOUSSINESQ:
         if (energy) cout << "Energy equation is active and coupled through Boussinesq approx." << endl;
         break;
 
-      case VARIABLE:
+      case INC_DENSITYMODEL::VARIABLE:
         if (energy) cout << "Energy equation is active and coupled for variable density." << endl;
         break;
 
@@ -1259,7 +1259,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool rotating_frame = config->GetRotating_Frame();
   const bool axisymmetric   = config->GetAxisymmetric();
   const bool body_force     = config->GetBody_Force();
-  const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
+  const bool boussinesq     = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
@@ -1787,7 +1787,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
   su2double  Velocity[MAXNDIM] = {0.0};
 
-  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
 

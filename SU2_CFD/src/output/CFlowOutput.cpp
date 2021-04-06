@@ -218,7 +218,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == VARIABLE) {
+            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
               Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
               sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {
@@ -1653,7 +1653,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     /*--- Incompressible version of the console output ---*/
 
       bool energy     = config->GetEnergy_Equation();
-      bool boussinesq = (config->GetKind_DensityModel() == BOUSSINESQ);
+      bool boussinesq = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
       if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
@@ -1698,16 +1698,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
       switch (config->GetKind_DensityModel()) {
 
-        case CONSTANT:
+        case INC_DENSITYMODEL::CONSTANT:
           if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
           else Breakdown_file << "No energy equation." << "\n";
           break;
 
-        case BOUSSINESQ:
+        case INC_DENSITYMODEL::BOUSSINESQ:
           if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
           break;
 
-        case VARIABLE:
+        case INC_DENSITYMODEL::VARIABLE:
           if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
           break;
 

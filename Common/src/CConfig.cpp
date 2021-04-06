@@ -1246,7 +1246,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to incompressible flow solver ---*/
 
   /* DESCRIPTION: Option to choose the density model used in the incompressible flow solver. */
-  addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, CONSTANT);
+  addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, INC_DENSITYMODEL::CONSTANT);
     /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
@@ -4493,7 +4493,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == INC_EULER) {
     /*--- Force inviscid problems to use constant density and disable energy. ---*/
-    if (Kind_DensityModel != CONSTANT || Energy_Equation == true) {
+    if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT || Energy_Equation == true) {
       SU2_MPI::Error("Inviscid incompressible problems must be constant density (no energy eqn.).\n Use DENSITY_MODEL= CONSTANT and ENERGY_EQUATION= NO.", CURRENT_FUNCTION);
     }
   }
@@ -4501,22 +4501,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Default values should recover original incompressible behavior (for old config files). ---*/
 
   if (Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
-    if ((Kind_DensityModel == CONSTANT) || (Kind_DensityModel == BOUSSINESQ))
+    if ((Kind_DensityModel == INC_DENSITYMODEL::CONSTANT) || (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ))
       Kind_FluidModel = CONSTANT_DENSITY;
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
 
-  if (Kind_DensityModel != CONSTANT) Energy_Equation = true;
+  if (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) Energy_Equation = true;
 
-  if (Kind_DensityModel == BOUSSINESQ) {
+  if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;
     if (Body_Force) {
       SU2_MPI::Error("Body force and Boussinesq source terms are not currently compatible.", CURRENT_FUNCTION);
     }
   }
 
-  if (Kind_DensityModel == VARIABLE) {
+  if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
     if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }

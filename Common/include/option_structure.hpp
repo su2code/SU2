@@ -594,15 +594,15 @@ MakePair("GUPTA-YOS", GUPTAYOS)
 /*!
  * \brief Types of density models
  */
-enum ENUM_DENSITYMODEL {
-  CONSTANT = 0,
-  BOUSSINESQ = 1,  /*!< \brief BoussinesQ density model. */
-  VARIABLE = 2     /*!< \brief Variable density model. */
+enum class INC_DENSITYMODEL {
+  CONSTANT,   /*!< \brief Constant density. */
+  BOUSSINESQ, /*!< \brief Boussinesq density model. */
+  VARIABLE,   /*!< \brief Variable density model. */
 };
-static const MapType<string, ENUM_DENSITYMODEL> DensityModel_Map = {
-  MakePair("CONSTANT", CONSTANT)
-  MakePair("BOUSSINESQ", BOUSSINESQ)
-  MakePair("VARIABLE", VARIABLE)
+static const MapType<string, INC_DENSITYMODEL> DensityModel_Map = {
+  MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
+  MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
+  MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
 };
 
 /*!
