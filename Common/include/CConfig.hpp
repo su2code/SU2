@@ -466,6 +466,7 @@ private:
 
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
+  CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,             /*!< \brief Kind of the Viscosity Model*/
@@ -528,8 +529,7 @@ private:
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
+  Kind_BGS_RelaxMethod;         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -8835,7 +8835,7 @@ public:
    * \brief Get the CHT couling method.
    * \return Kind of the method.
    */
-  unsigned short GetKind_CHT_Coupling(void) const { return Kind_CHT_Coupling; }
+  CHT_COUPLING GetKind_CHT_Coupling() const { return Kind_CHT_Coupling; }
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
