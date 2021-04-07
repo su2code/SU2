@@ -123,7 +123,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
   if (time_n_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-      for (auto Var = 0u; iVar < nVar; iVar++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
       }
     }
