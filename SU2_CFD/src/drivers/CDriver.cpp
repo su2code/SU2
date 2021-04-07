@@ -2813,7 +2813,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     }
   }
 
-  // SKIPPING FOR NOW
+  // // SKIPPING FOR NOW
   // if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
   // for (iZone = 0; iZone < nZone-1; iZone++) {
   //   interface[iZone][nZone-1]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[nZone-1][INST_0][MESH_0], iZone);
