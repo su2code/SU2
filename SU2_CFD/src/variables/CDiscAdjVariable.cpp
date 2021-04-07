@@ -60,5 +60,3 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     External.resize(nPoint,nVar) = su2double(0.0);
   }
 }
-
-void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }

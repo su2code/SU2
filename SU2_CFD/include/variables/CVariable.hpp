@@ -1767,17 +1767,6 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
-   */
-  inline virtual void Set_OldSolution_Geometry() {}
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
-
-  /*!
    * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
    * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
    *       If this method is overriden, the BGSSolution_k ones proabably have to be too.

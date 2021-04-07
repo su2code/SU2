@@ -160,17 +160,4 @@ public:
     Solution_Geometry(iPoint,iVar) = val_solution_geometry;
   }
 
-  /*!
-   * \brief Set the value of the mesh solution (adjoint).
-   */
-  void Set_OldSolution_Geometry() override;
-
-  /*!
-   * \brief Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
-    return Solution_Geometry_Old(iPoint,iDim);
-  }
-
 };
