@@ -893,7 +893,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iMesh, unsigned long Iteration) {
 
   /* Check whether or not a time stepping scheme is used. */
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -951,7 +951,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(config->GetKind_Regime() == COMPRESSIBLE) {
+    if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. Multiple elements are treated
             simultaneously to improve the performance of the matrix
@@ -3155,7 +3155,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -6055,7 +6055,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix

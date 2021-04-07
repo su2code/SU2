@@ -40,7 +40,8 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
       Solution(iPoint,iVar) = sol[iVar];
 
   /*--- Additional container for dual-time stepping simulations ---*/
-  if ((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     DualTime_Derivative.resize(nPoint,nVar) = su2double(0.0);
     DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 

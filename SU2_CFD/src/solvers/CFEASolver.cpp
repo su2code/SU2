@@ -3288,13 +3288,15 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
   /*--- Apply a filter to the design densities of the elements to generate the
   physical densities which are the ones used to penalize their stiffness. ---*/
 
-  unsigned short type, search_lim;
+  ENUM_PROJECTION_FUNCTION type;
+  unsigned short search_lim;
   su2double param, radius;
 
-  vector<pair<unsigned short,su2double> > kernels;
+  vector<pair<ENUM_FILTER_KERNEL,su2double> > kernels;
   vector<su2double> filter_radius;
   for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
   {
+    ENUM_FILTER_KERNEL type;
     config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
     kernels.push_back(make_pair(type,param));
     filter_radius.push_back(radius);
@@ -3321,14 +3323,14 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
   {
     /*--- Apply projection. ---*/
     switch (type) {
-      case NO_PROJECTION: break;
-      case HEAVISIDE_UP:
+      case ENUM_PROJECTION_FUNCTION::NONE: break;
+      case ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP:
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (auto iElem=0ul; iElem<nElement; ++iElem)
           physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
         END_SU2_OMP_FOR
         break;
-      case HEAVISIDE_DOWN:
+      case ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN:
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (auto iElem=0ul; iElem<nElement; ++iElem)
           physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);

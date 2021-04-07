@@ -70,7 +70,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     }
     else { direct_iteration = CIterationFactory::CreateIteration(EULER, config);}
 
-    if (config->GetKind_Regime() == COMPRESSIBLE) {
+    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       direct_output = COutputFactory::CreateOutput(EULER, config, nDim); }
     else { direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim); }
 
@@ -306,7 +306,7 @@ void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
   CWindowingTools windowEvaluator = CWindowingTools();
 
-  if (config->GetTime_Marching() != STEADY){
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY){
     if (TimeIter < IterAvg_Obj){
       /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
       seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));

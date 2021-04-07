@@ -34,15 +34,15 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[val_iZone]->GetTime_Marching()) {
+  if (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2;
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
@@ -239,8 +239,8 @@ void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJHEAT_SOL]->SetConvergence(false);
     }
