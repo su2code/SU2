@@ -34,25 +34,13 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
                                         CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   StartTime = SU2_MPI::Wtime();
 
-  unsigned long iPoint;
-  unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool dual_time = (dual_time_1st || dual_time_2nd);
-  unsigned short iMesh;
+  const unsigned short TimeIter = config[val_iZone]->GetTimeIter();
+  const bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
+  const bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (dual_time_1st || dual_time_2nd);
   int Direct_Iter;
-  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-  bool grid_IsMoving = config[val_iZone]->GetGrid_Movement();
-
-  //  /*--- Read the target pressure for inverse design. ---------------------------------------------*/
-  //  if (config[val_iZone]->GetInvDesign_Cp() == YES)
-  //    output->SetCp_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-  //    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], ExtIter);
-
-  //  /*--- Read the target heat flux ----------------------------------------------------------------*/
-  //  if (config[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-  //    output->SetHeatFlux_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-  //    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], ExtIter);
+  const bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
+  const bool grid_IsMoving = config[val_iZone]->GetGrid_Movement();
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 

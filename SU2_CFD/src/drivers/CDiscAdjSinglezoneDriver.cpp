@@ -132,8 +132,6 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
-  /*--- NOTE: Inv Design Routines moved to CDiscAdjFluidIteration::Preprocess ---*/
-
   /*--- Preprocess the adjoint iteration ---*/
 
   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
@@ -276,8 +274,6 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
   /*--- Do one iteration of the direct solver ---*/
 
   DirectRun(kind_recording);
-
-  // NOTE: The inverse design calls were moved to DirectRun() - postprocess
 
   /*--- Store the recording state ---*/
 
