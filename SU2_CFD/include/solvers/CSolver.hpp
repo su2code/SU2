@@ -428,6 +428,7 @@ public:
       for (auto& r : Residual_Max) r = 0;
       for (auto& p : Point_Max) p = 0;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -3356,11 +3357,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  inline virtual void ReadDV(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
    */
   inline virtual su2double GetVal_EField(unsigned short iVal) const { return 0.0; }
@@ -3463,6 +3459,18 @@ public:
    */
   inline virtual void SetAitken_Relaxation(CGeometry *geometry,
                                            CConfig *config) { }
+
+  /*!
+   * \brief Loads the solution from the restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] filename - Name of the restart file.
+   * \param[in] skipVars - Number of variables preceeding the solution.
+   */
+  void BasicLoadRestart(CGeometry *geometry,
+                        const CConfig *config,
+                        const string& filename,
+                        unsigned long skipVars);
 
   /*!
    * \brief A virtual member.
@@ -3624,13 +3632,6 @@ public:
    * \param[in] config - The particular config.
    */
   inline virtual void SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
   /*!
    * \brief A virtual member.
@@ -3821,14 +3822,6 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   inline virtual void SetRecording(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] kind_recording - Kind of AD recording.
-   */
-  inline virtual void SetMesh_Recording(CGeometry **geometry,
-                                        CVolumetricMovement *grid_movement,
-                                        CConfig *config) {}
 
   /*!
    * \brief A virtual member.

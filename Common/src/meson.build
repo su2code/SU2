@@ -3,7 +3,8 @@ common_src =files(['graph_coloring_structure.cpp',
            'CConfig.cpp',
            'basic_types/ad_structure.cpp',
            'wall_model.cpp',
-           '../include/parallelization/mpi_structure.cpp'])
+           '../include/parallelization/mpi_structure.cpp',
+           '../include/parallelization/omp_structure.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')

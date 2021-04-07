@@ -955,6 +955,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -1037,6 +1038,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       SU2_MPI::Waitany(geometry->nPeriodicRecv,
                        geometry->req_PeriodicRecv,
                        &ind, &status);
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
       source = status.MPI_SOURCE;
 #else
@@ -1283,6 +1285,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
           }
         }
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -1294,6 +1297,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
     SU2_MPI::Waitall(geometry->nPeriodicSend,
                      geometry->req_PeriodicSend,
                      MPI_STATUS_IGNORE);
+    END_SU2_OMP_MASTER
 #endif
     SU2_OMP_BARRIER
   }
@@ -1520,6 +1524,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
 
       /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -1572,6 +1577,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
       SU2_OMP_MASTER
       SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
 
       /*--- Once we have recv'd a message, get the source rank. ---*/
@@ -1669,6 +1675,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
         }
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -1678,6 +1685,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 #ifdef HAVE_MPI
     SU2_OMP_MASTER
     SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+    END_SU2_OMP_MASTER
 #endif
     SU2_OMP_BARRIER
   }
@@ -1804,6 +1812,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
     }
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /* Loop over all points on this grid and apply CFL adaption. */
@@ -1816,6 +1825,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       Max_CFL_Local = 0.0;
       Avg_CFL_Local = 0.0;
     }
+    END_SU2_OMP_MASTER
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
     for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
@@ -1884,6 +1894,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
 
     }
+    END_SU2_OMP_FOR
 
     /* Reduce the min/max/avg local CFL numbers. */
 
@@ -1894,6 +1905,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
         Avg_CFL_Local += myCFLSum;
       }
+      END_SU2_OMP_CRITICAL
       SU2_OMP_BARRIER
 
       SU2_OMP_MASTER
@@ -1904,6 +1916,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
+      END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
     }
 
@@ -1914,6 +1927,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
 
   if (geometry->GetMGLevel() != MESH_0) return;
+
+  SU2_OMP_MASTER {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -1947,29 +1962,35 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   /*--- Set the Maximum residual in all the processors. ---*/
 
-  if (config->GetComm_Level() != COMM_FULL) return;
+  if (config->GetComm_Level() == COMM_FULL) {
 
-  const unsigned long nProcessor = size;
+    const unsigned long nProcessor = size;
 
-  su2activematrix rbuf_residual(nProcessor,nVar);
-  su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
-  su2activematrix rbuf_coord(nProcessor*nVar, nDim);
+    su2activematrix rbuf_residual(nProcessor,nVar);
+    su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
+    su2activematrix rbuf_coord(nProcessor*nVar, nDim);
 
-  SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
+        AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+      }
     }
   }
 
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) {
 
   if (geometry->GetMGLevel() != MESH_0) return;
+
+  SU2_OMP_MASTER {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
@@ -1982,26 +2003,30 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
     Residual_BGS[iVar] = max(EPS*EPS, sqrt(rbuf_res[iVar]/Global_nPointDomain));
   }
 
-  if (config->GetComm_Level() != COMM_FULL) return;
+  if (config->GetComm_Level() == COMM_FULL) {
 
-  /*--- Set the Maximum residual in all the processors. ---*/
+    /*--- Set the Maximum residual in all the processors. ---*/
 
-  const unsigned long nProcessor = size;
+    const unsigned long nProcessor = size;
 
-  su2activematrix rbuf_residual(nProcessor,nVar);
-  su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
-  su2activematrix rbuf_coord(nProcessor*nVar, nDim);
+    su2activematrix rbuf_residual(nProcessor,nVar);
+    su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
+    su2activematrix rbuf_coord(nProcessor*nVar, nDim);
 
-  SU2_MPI::Allgather(Residual_Max_BGS.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Point_Max_BGS.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Point_Max_Coord_BGS.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Residual_Max_BGS.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Point_Max_BGS.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(Point_Max_Coord_BGS.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max_BGS(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
+        AddRes_Max_BGS(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+      }
     }
   }
 
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
@@ -2033,6 +2058,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
         LinSysRes(iPoint,iVar) += Flux * Solution_i[iVar];
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Loop boundary edges ---*/
 
@@ -2058,6 +2084,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           LinSysRes(iPoint,iVar) -= Flux * base_nodes->GetSolution(iPoint,iVar);
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -2145,6 +2172,7 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
       }
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the Laplacian across any periodic boundaries. ---*/
 
@@ -2686,7 +2714,9 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   }
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- It's necessary to communicate this information ---*/
 
@@ -3721,6 +3751,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     /*--- Loop over the vertices ---*/
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       /*--- Recover the point index ---*/
@@ -3734,6 +3765,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config
         AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -3750,6 +3782,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
     if (!config->GetSolid_Wall(iMarker)) continue;
 
     /*--- Loop over the vertices ---*/
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       /*--- Recover the point index ---*/
@@ -3764,6 +3797,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
                                 SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -3816,6 +3850,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     Residual_BGS[iVar] = 0.0;
     Residual_Max_BGS[iVar] = 0.0;
   }
+  END_SU2_OMP_MASTER
 
   vector<su2double> resMax(nVar,0.0), resRMS(nVar,0.0);
   vector<const su2double*> coordMax(nVar,nullptr);
@@ -3839,6 +3874,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
       }
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Reduce residual information over all threads in this rank. ---*/
   SU2_OMP_CRITICAL
@@ -3846,11 +3882,65 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
     Residual_BGS[iVar] += resRMS[iVar];
     AddRes_Max_BGS(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
-  SU2_OMP_MASTER
   SetResidual_BGS(geometry, config);
-  SU2_OMP_BARRIER
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
+}
+
+void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const string& filename, unsigned long skipVars) {
+
+  /*--- Read and store the restart metadata. ---*/
+
+//  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, filename);
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry, config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry, config, filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  unsigned long iPoint_Global_Local = 0;
+
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    const auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      const auto index = iPoint_Global_Local*Restart_Vars[1] + skipVars;
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        base_nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+      }
+
+      iPoint_Global_Local++;
+    }
+
+  }
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  delete [] Restart_Vars;  Restart_Vars = nullptr;
+  delete [] Restart_Data;  Restart_Data = nullptr;
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
 }

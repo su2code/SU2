@@ -815,6 +815,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
     geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Visualize a dual control volume if requested ---*/
 
@@ -1280,6 +1281,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (euler || ns) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      END_SU2_OMP_PARALLEL
     }
     if (NEMO_euler || NEMO_ns) {
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1287,6 +1289,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (turbulent) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][TURB_SOL]->GetHasHybridParallel()))
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      END_SU2_OMP_PARALLEL
     }
     if (config->AddRadiation()) {
       solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1598,6 +1601,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (template_solver).", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1624,6 +1628,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE :
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1643,6 +1648,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for incompressible flows.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1761,6 +1767,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1777,6 +1784,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only FDS is available for incompressible flows.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
         }
@@ -1785,6 +1793,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1885,6 +1894,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE :
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1895,6 +1905,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
             SU2_OMP_MASTER
             SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
           }
 
@@ -1948,6 +1959,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1957,6 +1969,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the NEMO Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2028,6 +2041,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Riemann solver not implemented.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2043,6 +2057,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_UPWIND:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2055,6 +2070,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2106,6 +2122,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_UPWIND:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND:
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2115,6 +2132,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2159,6 +2177,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         default:
           SU2_OMP_MASTER
           SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
+          END_SU2_OMP_MASTER
           break;
       }
     }
@@ -2184,6 +2203,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     if (incompressible)
       SU2_OMP_MASTER
       SU2_MPI::Error("Convective schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -2191,6 +2211,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJFLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -2205,6 +2226,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -2233,6 +2255,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
         }
@@ -2241,6 +2264,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the continuous adjoint Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2304,12 +2328,14 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     if (!spalart_allmaras)
       SU2_OMP_MASTER
       SU2_MPI::Error("Only the SA turbulence model can be used with the continuous adjoint solver.", CURRENT_FUNCTION);
+      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
       case NO_CONVECTIVE:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJTURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2318,6 +2344,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (adjoint turbulence).", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2350,10 +2377,12 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           case NEO_HOOKEAN:
             SU2_OMP_MASTER
             SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
           default:
             SU2_OMP_MASTER
             SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
         }
         break;
@@ -2362,6 +2391,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           case LINEAR_ELASTIC:
             SU2_OMP_MASTER
             SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
           case NEO_HOOKEAN:
             if (config->GetMaterialCompressibility() == COMPRESSIBLE_MAT) {
@@ -2369,6 +2399,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             } else {
               SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
             }
             break;
           case KNOWLES:
@@ -2377,6 +2408,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             } else {
               SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
             }
             break;
           case IDEAL_DE:
@@ -2385,17 +2417,20 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             } else {
               SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
             }
             break;
           default:
             SU2_OMP_MASTER
             SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
         }
         break;
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
