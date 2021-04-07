@@ -735,7 +735,7 @@ private:
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short POD_Basis_Gen;       /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned long nHyper_Nodes;         /*!< \brief Number of hyper-reduction nodes desired. */
-  unsigned long nPOD_Modes;           /*!< \brief Number of POD mdoes desired. */
+  unsigned short nPOD_Modes;          /*!< \brief Number of POD mdoes desired. */
   bool libROM;           /*!< \brief Toggle saving to libROM. */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -766,6 +766,7 @@ private:
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
   Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
+  Init_Coord_FileName,           /*!< \brief Initial reduced coordinates filename for reduced order model computation. */
   Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
   libROMbase_FileName,           /*!< \brief Base filename for libROM file saving. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
@@ -5347,6 +5348,13 @@ public:
   string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
 
   /*!
+   * \brief Get the name of the file with the initial reduced coordinates for the reduced order
+   *      model problem.
+   * \return Name of the file with the initial snapshot.
+  */
+  string GetInit_Coord_FileName(void) const { return Init_Coord_FileName; }
+  
+  /*!
    * \brief Static or incremental toggle for POD basis generation type.
    * \return Type of POD generation type
    */
@@ -5362,7 +5370,7 @@ public:
    * \brief Get number of POD modes desired.
    * \return Number of POD modes desired.
    */
-  unsigned long GetnPOD_Modes(void) const { return nPOD_Modes; }
+  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
   
   /*!
    * \brief Get the name of the file for libROM to save.
