@@ -460,8 +460,13 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
 
   /*--- get the sensitivities from the adjoint solver to work with ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[ADJFLOW_SOL]);
-  /*--- precondition gradient and extract thew result. ---*/
-  solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+
+  /*--- precondition gradient and extract the result. ---*/
+  if (config->GetSobMode()==ONLY_GRAD) {
+    solver[GRADIENT_SMOOTHING]->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+  } else {
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+  }
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
 }
 
