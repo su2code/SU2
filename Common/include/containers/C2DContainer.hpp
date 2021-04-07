@@ -657,6 +657,6 @@ inline void Alloc3D(unsigned long M, const std::vector<unsigned long>& N, unsign
   for(unsigned long i = 0; i < M; ++i){
     X[i].resize(N[i],P) = su2double(val);
   }
-};
+}
 
 }
