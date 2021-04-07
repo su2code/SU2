@@ -4627,9 +4627,6 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   delete[] init_sol;
 }
 
-bool CSolver::GetRom_Convergence() {
-  return RomConverged;
-}
 
 #ifdef HAVE_LIBROM
 void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
@@ -5023,7 +5020,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   
   else {
-    if (1.0 / ReducedRes >= 1e13) {
+    if (1.0 / ReducedRes >= 1e2) {
       RomConverged = true;
       return;
     }
