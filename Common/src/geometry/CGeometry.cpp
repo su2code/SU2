@@ -622,7 +622,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -721,7 +721,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset+iDim] = vector[iDim];
           }
-          if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
             vector = nodes->GetCoord_n1(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -830,7 +830,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
         case COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
           break;
         case MAX_LENGTH:
@@ -3100,7 +3100,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 }
 
 void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
-                                        const vector<pair<unsigned short,su2double> > &kernels,
+                                        const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                         const unsigned short search_limit,
                                         su2double *values) const
 {
@@ -3212,7 +3212,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
   for (unsigned long iKernel=0; iKernel<kernels.size(); ++iKernel)
   {
-    unsigned short kernel_type = kernels[iKernel].first;
+    auto kernel_type = kernels[iKernel].first;
     su2double kernel_param = kernels[iKernel].second;
     su2double kernel_radius = filter_radius[iKernel];
 
@@ -3268,7 +3268,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
       switch ( kernel_type ) {
         /*--- distance-based kernels (weighted averages) ---*/
-        case CONSTANT_WEIGHT_FILTER: case CONICAL_WEIGHT_FILTER: case GAUSSIAN_WEIGHT_FILTER:
+        case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT:
+        case ENUM_FILTER_KERNEL::CONICAL_WEIGHT:
+        case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT:
 
           for (auto idx : neighbours)
           {
@@ -3278,9 +3280,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
             distance = sqrt(distance);
 
             switch ( kernel_type ) {
-              case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
-              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
-              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
+              case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT: weight = 1.0; break;
+              case ENUM_FILTER_KERNEL::CONICAL_WEIGHT: weight = kernel_radius-distance; break;
+              case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
               default: break;
             }
             weight *= vol_elem[idx];
@@ -3291,19 +3293,20 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
           break;
 
         /*--- morphology kernels (image processing) ---*/
-        case DILATE_MORPH_FILTER: case ERODE_MORPH_FILTER:
+        case ENUM_FILTER_KERNEL::DILATE_MORPH:
+        case ENUM_FILTER_KERNEL::ERODE_MORPH:
 
           for (auto idx : neighbours)
           {
             switch ( kernel_type ) {
-              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[idx]); break;
-              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[idx])); break;
+              case ENUM_FILTER_KERNEL::DILATE_MORPH: numerator += exp(kernel_param*work_values[idx]); break;
+              case ENUM_FILTER_KERNEL::ERODE_MORPH: numerator += exp(kernel_param*(1.0-work_values[idx])); break;
               default: break;
             }
             denominator += 1.0;
           }
           values[iElem] = log(numerator/denominator)/kernel_param;
-          if ( kernel_type==ERODE_MORPH_FILTER ) values[iElem] = 1.0-values[iElem];
+          if ( kernel_type==ENUM_FILTER_KERNEL::ERODE_MORPH ) values[iElem] = 1.0-values[iElem];
           break;
 
         default:
@@ -3645,8 +3648,8 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
-  bool FirstOrder = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  bool SecondOrder = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool FirstOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool SecondOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   su2double TimeStep = config->GetDelta_UnstTimeND();
 

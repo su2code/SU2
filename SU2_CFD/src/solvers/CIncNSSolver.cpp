@@ -32,7 +32,7 @@
 
 /*--- Explicit instantiation of the parent class of CIncEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
+template class CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>;
 
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
@@ -98,13 +98,13 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
-  if (config->GetKind_Streamwise_Periodic() != NONE)
+  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
     Compute_Streamwise_Periodic_Recovered_Values(config, geometry, iMesh);
 }
 
-void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geometry,
-                                                        CConfig        *config,
-                                                        const unsigned short iMesh) {
+void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
+                                                     CConfig *config,
+                                                     const unsigned short iMesh) {
 
   /*---------------------------------------------------------------------------------------------*/
   // 1. Evaluate massflow, area avg density & Temperature and Area at streamwise periodic outlet.
@@ -182,7 +182,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
     SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
   }
 
-  if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     /*------------------------------------------------------------------------------------------------*/
     /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
     /*---    The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
@@ -353,7 +353,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   const bool energy = config->GetEnergy_Equation();
 
   /*--- Variables for streamwise periodicity ---*/
-  const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
+  const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
   su2double Cp, thermal_conductivity, dot_product, scalar_factor;
 
@@ -550,8 +550,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     su2double Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0) / Temperature_Ref;
     su2double Twall = 0.0;
 
-    if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
-        (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+        (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       /*--- Compute closest normal neighbor ---*/
 
@@ -572,8 +572,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
       Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
     }
-    else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
-             (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+    else if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+             (config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 

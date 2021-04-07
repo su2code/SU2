@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
 
-  const CConfig config(config_file_name, SU2_CFD);
+  const CConfig config(config_file_name, SU2_COMPONENT::SU2_CFD);
   const unsigned short nZone = config.GetnZone();
   const bool turbo = config.GetBoolTurbomachinery();
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 
   const bool disc_adj = config.GetDiscrete_Adjoint();
   const bool multizone = config.GetMultizone_Problem();
-  const bool harmonic_balance = (config.GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
   if (dry_run) {
 

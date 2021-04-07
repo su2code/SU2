@@ -35,7 +35,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
 {
   Proj_Mean_GradTurbVar_Normal = new su2double [nVar] ();
   Proj_Mean_GradTurbVar_Edge = new su2double [nVar] ();

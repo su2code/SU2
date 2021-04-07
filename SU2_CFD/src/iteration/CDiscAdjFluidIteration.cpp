@@ -35,8 +35,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   StartTime = SU2_MPI::Wtime();
 
   const auto TimeIter = config[iZone]->GetTimeIter();
-  const bool dual_time_1st = (config[iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool dual_time_2nd = (config[iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time_1st = (config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool dual_time_2nd = (config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool dual_time = (dual_time_1st || dual_time_2nd);
   const bool grid_IsMoving = config[iZone]->GetGrid_Movement();
   const bool heat = config[iZone]->GetWeakly_Coupled_Heat();
@@ -56,7 +56,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[iZone]->GetTime_Marching()) {
+  if (config[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     const int Direct_Iter = SU2_TYPE::Int(config[iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2 + dual_time;
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
@@ -569,8 +569,8 @@ void CDiscAdjFluidIteration::Update(COutput* output, CIntegration**** integratio
                                     CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     for (unsigned short iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       integration[iZone][iInst][ADJFLOW_SOL]->SetConvergence(false);
     }

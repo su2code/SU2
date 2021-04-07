@@ -291,7 +291,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 

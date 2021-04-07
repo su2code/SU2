@@ -109,8 +109,8 @@ CDiscAdjSolver::~CDiscAdjSolver(void) { delete nodes; }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-  const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -155,8 +155,8 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
-  const bool time_n1_needed = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool time_n_needed  = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  const bool time_n1_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool time_n_needed  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
   const bool input          = true;
   const bool push_index     = !config->GetMultizone_Problem();
 
@@ -177,7 +177,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+  if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
@@ -217,7 +217,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
     BPressure = config->GetPressureOut_BC();
     Temperature = config->GetTotalTemperatureIn_BC();
@@ -233,7 +233,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register incompressible initialization values as input ---*/
 
-  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+  if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
       ((KindDirect_Solver == RUNTIME_FLOW_SYS &&
         (!config->GetBoolTurbomachinery())))) {
 
@@ -265,7 +265,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register incompressible radiation values as input ---*/
 
-  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+  if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
       ((KindDirect_Solver == RUNTIME_RADIATION_SYS &&
         (!config->GetBoolTurbomachinery())))) {
 
@@ -306,8 +306,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
   const bool multizone = config->GetMultizone_Problem();
 
   const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_Adjoint();
@@ -412,7 +412,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
 
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
@@ -426,7 +426,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
+  if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
     su2double Local_Sens_BPress, Local_Sens_Temperature;
 
     Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
@@ -436,7 +436,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     SU2_MPI::Allreduce(&Local_Sens_Temperature,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+  if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
       (KindDirect_Solver == RUNTIME_FLOW_SYS &&
        (!config->GetBoolTurbomachinery()))) {
 
@@ -451,7 +451,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+  if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
       (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
        (!config->GetBoolTurbomachinery()))) {
 
@@ -474,8 +474,8 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
-  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
-                          config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+                          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   su2double Solution[MAXNVAR] = {0.0};
 
@@ -503,7 +503,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   SU2_OMP_PARALLEL {
 
-  const bool time_stepping = (config->GetTime_Marching() != STEADY);
+  const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   const su2double eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -613,7 +613,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   if (!dual_time) return;
 

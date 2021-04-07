@@ -330,9 +330,9 @@ class CFVMFlowSolverBase : public CSolver {
 
     const bool viscous       = config->GetViscous();
     const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-    const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                               (config->GetTime_Marching() == DT_STEPPING_2ND);
+    const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
+    const bool dual_time     = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                               (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
     const su2double K_v = 0.25;
 
     /*--- Init thread-shared variables to compute min/max values.
