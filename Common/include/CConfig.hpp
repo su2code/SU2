@@ -1026,7 +1026,7 @@ private:
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
   unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
-  unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
+  P1_INIT Kind_P1_Init;                /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
   Scattering_Coeff;                    /*!< \brief Scattering coefficient of the medium (radiation). */
   unsigned short nMarker_Emissivity;   /*!< \brief Number of markers for which the emissivity is defined. */
@@ -9002,7 +9002,7 @@ public:
    * \brief Get the Kind of P1 initialization method applied.
    * \return Kind of P1 initialization method used.
    */
-  unsigned short GetKind_P1_Init(void) const { return Kind_P1_Init; }
+  P1_INIT GetKind_P1_Init(void) const { return Kind_P1_Init; }
 
   /*!
    * \brief Get the value of the absorption coefficient of the medium.

@@ -1225,13 +1225,13 @@ static const MapType<string, ENUM_RADIATION> Radiation_Map = {
 /*!
  * \brief Kinds of P1 initialization
  */
-enum ENUM_P1_INIT {
-  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
-  P1_INIT_TEMP = 1       /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
+enum class P1_INIT {
+  ZERO,         /*!< \brief Initialize the P1 model from zero values */
+  TEMPERATURE,  /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
 };
-static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
-  MakePair("ZERO", P1_INIT_ZERO)
-  MakePair("TEMPERATURE_INIT", P1_INIT_TEMP)
+static const MapType<string, P1_INIT> P1_Init_Map = {
+  MakePair("ZERO", P1_INIT::ZERO)
+  MakePair("TEMPERATURE_INIT", P1_INIT::TEMPERATURE)
 };
 
 /*!
