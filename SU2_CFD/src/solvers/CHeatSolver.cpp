@@ -965,8 +965,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
-  su2double* Normal = nullptr;
-
   Temperature_Ref       = config->GetTemperature_Ref();
   rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
 
@@ -978,7 +976,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       if (geometry->nodes->GetDomain(iPoint)) {
 
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
@@ -999,7 +997,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       if (geometry->nodes->GetDomain(iPoint)) {
 
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2)/rho_cp_solid;
