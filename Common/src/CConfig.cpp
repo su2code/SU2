@@ -1934,6 +1934,8 @@ void CConfig::SetConfig_Options() {
   
   /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
   addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("HYPER_NODES_FILENAME", HyperNodes_FileName, string("NONE"));
   /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
   addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
   /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/

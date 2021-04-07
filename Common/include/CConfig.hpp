@@ -765,6 +765,7 @@ private:
   Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
+  HyperNodes_FileName,           /*!< \brief Hyper-reduction nodes input file for reduced order model computation. */
   Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
   Init_Coord_FileName,           /*!< \brief Initial reduced coordinates filename for reduced order model computation. */
   Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
@@ -5332,6 +5333,12 @@ public:
    * \return Name of the file with the POD modes.
    */
   string GetRom_FileName(void) const { return Rom_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the hyper-reduction nodes previously computed.
+   * \return Name of the file with the hyper-reduction nodes.
+   */
+  string GetHyperNodes_FileName(void) const { return HyperNodes_FileName; }
   
   /*!
    * \brief Get the name of the file with the reference snapshot for the reduced order

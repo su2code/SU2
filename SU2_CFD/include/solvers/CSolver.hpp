@@ -189,6 +189,7 @@ public:
   unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
   su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
   su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
+  su2double Coord1_Old;                     /*!<\brief previous value of the reduced coordinate 1 (rom) */
   bool RomConverged;                        /*!<\brief whether or not the reduced order model has converged (rom) */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
@@ -1614,6 +1615,18 @@ public:
    * \return Value of the norm of the reduced residual.
    */
   inline su2double GetRes_ROM(void) const { return ReducedResNorm_Cur; }
+  
+  /*!
+    * \brief Set the current reduced residual, this is useful for the convergence history.
+    * \param[in] val_residual - Value of the norm of the reduced residual to store.
+    */
+   inline void SetCoord1_Old(su2double val_coord1) { Coord1_Old = val_coord1; }
+
+  /*!
+   * \brief Get the current reduced residual, this is useful for the convergence history.
+   * \return Value of the norm of the reduced residual.
+   */
+  inline su2double GetCoord1_Old(void) const { return Coord1_Old; }
   
   /*!
    * \brief Create mask for hyper-reduction using QDEIM method and libROM.

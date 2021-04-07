@@ -4722,6 +4722,7 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
 #endif
 
 void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+  // This function selects the masks E and E' using the Phi matrix and mesh data
   
 #ifdef HAVE_LIBROM
   bool gnat = false;
@@ -4732,29 +4733,29 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
 #endif
   
   auto t_start = std::chrono::high_resolution_clock::now();
-  // This function selects the masks E and E' using the Phi matrix and mesh data
-  
-  bool read_mask_from_file = false;
-  
 
-  
-  /*--- Get solver nodes ---*/
-  //CVariable* nodes = GetNodes();
-  
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
-  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  string phi_filename         = config->GetRom_FileName(); //TODO: better file names
+  string hypernodes_filename  = config->GetHyperNodes_FileName();
   unsigned long desired_nodes = config->GetnHyper_Nodes();
+  
+  bool read_mask_from_file = false;
+  bool use_all_nodes = false;
+  
   if (desired_nodes > nPointDomain) {
     SU2_MPI::Error("Number of nodes desired for hyper-reduction must be less than total number of nodes.", CURRENT_FUNCTION); }
   
-  if (desired_nodes == 0) read_mask_from_file = true;
+  if (desired_nodes == 0) use_all_nodes = true;
+  
+  ifstream in_hypernodes(hypernodes_filename);
+  if (in_hypernodes) read_mask_from_file = true;
   
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
   
-  if (!read_mask_from_file) {
+  if (!read_mask_from_file && !use_all_nodes) {
     std::cout << "Using greedy algorithm to compute " << desired_nodes << " nodes." << std::endl;
   if (in_phi) {
     std::string line;
@@ -4874,32 +4875,35 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   /*--- Masked Nodes (read from file) ---*/
   
-  if (read_mask_from_file) {
+  if (use_all_nodes) {
     std::cout << "Using all nodes for hyper-reduction." << std::endl;
     for (int i = 0; i < (int)nPointDomain; i++){
       Mask.push_back(i);
     }
-    //std::cout << "Using precomputed nodes." << std::endl;
-    //std::string file_name = "masked_nodes_airfoil_4500.csv";
-    //std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << file_name << std::endl;
-    //ifstream in_ref(file_name);
-    //
-    //if (in_ref) {
-    //  std::string line;
-    //  int s = 0;
-    //
-    //  while (getline(in_ref, line)) {
-    //    stringstream sep(line);
-    //    string field;
-    //    while (getline(sep, field, ',') && (s<desired_nodes)) {
-    //      Mask.push_back(stod(field));
-    //      s++;
-    //    }
-    //  }
-    //}
+  }
+  
+  if (read_mask_from_file) {
+    std::cout << "Using precomputed nodes." << std::endl;
+    std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << hypernodes_filename << std::endl;
+    ifstream in_hypernodes(hypernodes_filename);
+    
+    if (in_hypernodes) {
+      std::string line;
+      unsigned long s = 0;
+    
+      while (getline(in_hypernodes, line)) {
+        stringstream sep(line);
+        string field;
+        while (getline(sep, field, ',') && (s<desired_nodes)) {
+          Mask.push_back(stod(field));
+          s++;
+        }
+      }
+    }
   }
   
   sort(Mask.begin(),Mask.end());
+  
   
   if (!read_mask_from_file) {
   ofstream fs;
@@ -5017,6 +5021,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   if (InnerIter == 0) {
     RomConverged = false;
     SetResOld_ROM(ReducedRes);
+    SetCoord1_Old(GenCoordsY[0]);
   }
   
   else {
@@ -5024,7 +5029,10 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
       RomConverged = true;
       return;
     }
-    
+    else if ( abs( (GenCoordsY[0] - Coord1_Old) / Coord1_Old ) < 1e-5 ) {
+      RomConverged = true;
+      return;
+    }
     else if (ReducedResNorm_Cur == ReducedRes) {
       if (InnerIter > 5) RomConverged = true;
       else RomConverged = false;
@@ -5040,4 +5048,5 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
     }
   }
   SetRes_ROM(ReducedRes);
+  SetCoord1_Old(GenCoordsY[0]);
 }
