@@ -247,71 +247,43 @@ static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
 };
 
 /*!
- * \brief Types of fluid solvers
- */
-enum ENUM_FSI_FLUID_PROBLEM {
-  NO_SOLVER_FFSI = 0,      /*!< \brief Definition of no solver. */
-  EULER_FFSI = 1,          /*!< \brief Euler equations for the FSI problem */
-  NAVIER_STOKES_FFSI = 2,  /*!< \brief NS equations for the FSI problem */
-  RANS_FFSI = 3            /*!< \brief RANS equations for the FSI problem */
-};
-static const MapType<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = {
-  MakePair("NONE", NO_SOLVER_FFSI)
-  MakePair("EULER", EULER_FFSI)
-  MakePair("NAVIER_STOKES", NAVIER_STOKES_FFSI)
-  MakePair("RANS", RANS_FFSI)
-};
-
-/*!
- * \brief Types of structural solvers
- */
-enum ENUM_FSI_STRUC_PROBLEM {
-  NO_SOLVER_SFSI = 0,           /*!< \brief Definition of no solver. */
-  FEM_ELASTICITY_SFSI = 9,      /*!< \brief Nonlinear elasticity equations for the FSI problem */
-};
-static const MapType<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = {
-  MakePair("NONE", NO_SOLVER_SFSI)
-  MakePair("ELASTICITY", FEM_ELASTICITY_SFSI)
-};
-
-/*!
  * \brief Material geometric conditions
  */
-enum ENUM_STRUCT_SOLVER {
-  SMALL_DEFORMATIONS = 0,       /*!< \brief Definition of linear elastic material. */
-  LARGE_DEFORMATIONS = 1,       /*!< \brief Definition of Neo-Hookean material. */
+enum class STRUCT_DEFORMATION {
+  SMALL,       /*!< \brief Definition of linear elastic material. */
+  LARGE,       /*!< \brief Definition of Neo-Hookean material. */
 };
-static const MapType<string, ENUM_STRUCT_SOLVER> Struct_Map = {
-  MakePair("SMALL_DEFORMATIONS", SMALL_DEFORMATIONS)
-  MakePair("LARGE_DEFORMATIONS", LARGE_DEFORMATIONS)
+static const MapType<string, STRUCT_DEFORMATION> Struct_Map = {
+  MakePair("SMALL_DEFORMATIONS", STRUCT_DEFORMATION::SMALL)
+  MakePair("LARGE_DEFORMATIONS", STRUCT_DEFORMATION::LARGE)
 };
 
 /*!
  * \brief Material model
  */
-enum ENUM_MATERIAL_MODEL {
-  LINEAR_ELASTIC = 0,   /*!< \brief Definition of linear elastic material. */
-  NEO_HOOKEAN = 1,      /*!< \brief Definition of Neo-Hookean material. */
-  KNOWLES = 2,          /*!< \brief Definition of Knowles stored-energy potential */
-  IDEAL_DE = 3          /*!< \brief Definition of ideal Dielectric Elastomer */
+enum class STRUCT_MODEL {
+  LINEAR_ELASTIC,   /*!< \brief Definition of linear elastic material. */
+  NEO_HOOKEAN,      /*!< \brief Definition of Neo-Hookean material. */
+  KNOWLES,          /*!< \brief Definition of Knowles stored-energy potential */
+  IDEAL_DE,         /*!< \brief Definition of ideal Dielectric Elastomer */
 };
-static const MapType<string, ENUM_MATERIAL_MODEL> Material_Map = {
-  MakePair("LINEAR_ELASTIC", LINEAR_ELASTIC)
-  MakePair("NEO_HOOKEAN", NEO_HOOKEAN)
-  MakePair("KNOWLES", KNOWLES)
-  MakePair("IDEAL_DE", IDEAL_DE)
+static const MapType<string, STRUCT_MODEL> Material_Map = {
+  MakePair("LINEAR_ELASTIC", STRUCT_MODEL::LINEAR_ELASTIC)
+  MakePair("NEO_HOOKEAN", STRUCT_MODEL::NEO_HOOKEAN)
+  MakePair("KNOWLES", STRUCT_MODEL::KNOWLES)
+  MakePair("IDEAL_DE", STRUCT_MODEL::IDEAL_DE)
 };
 
 /*!
  * \brief Material compressibility
  */
-enum ENUM_MAT_COMPRESS {
-  COMPRESSIBLE_MAT = 0,           /*!< \brief Definition of compressible material. */
-  NEARLY_INCOMPRESSIBLE_MAT = 1,  /*!< \brief Definition of nearly incompressible material. */
+enum class STRUCT_COMPRESS {
+  COMPRESSIBLE,     /*!< \brief Definition of compressible material. */
+  NEARLY_INCOMP,    /*!< \brief Definition of nearly incompressible material. */
 };
-static const MapType<string, ENUM_MAT_COMPRESS> MatComp_Map = {
-  MakePair("COMPRESSIBLE", COMPRESSIBLE_MAT)
-  MakePair("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
+static const MapType<string, STRUCT_COMPRESS> MatComp_Map = {
+  MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
+  MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
 };
 
 /*!
@@ -1213,13 +1185,13 @@ static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
 /*!
  * \brief Kinds of radiation models
  */
-enum ENUM_RADIATION {
-  NO_RADIATION = 0,      /*!< \brief No radiation model */
-  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+enum class RADIATION_MODEL {
+  NONE,   /*!< \brief No radiation model */
+  P1,     /*!< \brief P1 Radiation model. */
 };
-static const MapType<string, ENUM_RADIATION> Radiation_Map = {
-  MakePair("NONE", NO_RADIATION)
-  MakePair("P1", P1_MODEL)
+static const MapType<string, RADIATION_MODEL> Radiation_Map = {
+  MakePair("NONE", RADIATION_MODEL::NONE)
+  MakePair("P1", RADIATION_MODEL::P1)
 };
 
 /*!

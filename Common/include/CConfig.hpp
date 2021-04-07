@@ -548,11 +548,10 @@ private:
 
   bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
-  unsigned short
-  Kind_Material_Compress,   /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
-  Kind_Material,            /*!< \brief Determines the material model to be used (structural analysis). */
-  Kind_Struct_Solver,       /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
-  Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
+  STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
+  STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
+  STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
+  unsigned short Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
 
   unsigned short Kind_Turb_Model;   /*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
@@ -1025,7 +1024,7 @@ private:
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
-  unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
+  RADIATION_MODEL Kind_Radiation;      /*!< \brief Kind of radiation model used. */
   P1_INIT Kind_P1_Init;                /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
   Scattering_Coeff;                    /*!< \brief Scattering coefficient of the medium (radiation). */
@@ -2129,19 +2128,19 @@ public:
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
    * \return Compressible or incompressible.
    */
-  unsigned short GetMaterialCompressibility(void) const { return Kind_Material_Compress; }
+  STRUCT_COMPRESS GetMaterialCompressibility(void) const { return Kind_Material_Compress; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
    * \return Compressible or incompressible.
    */
-  unsigned short GetMaterialModel(void) const { return Kind_Material; }
+  STRUCT_MODEL GetMaterialModel(void) const { return Kind_Material; }
 
   /*!
    * \brief Geometric conditions for the structural solver.
    * \return Small or large deformation structural analysis.
    */
-  unsigned short GetGeometricConditions(void) const { return Kind_Struct_Solver; }
+  STRUCT_DEFORMATION GetGeometricConditions(void) const { return Kind_Struct_Solver; }
 
   /*!
    * \brief Get the reference length for computing moment (the default value is 1).
@@ -8996,7 +8995,7 @@ public:
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
-  unsigned short GetKind_RadiationModel(void) const { return Kind_Radiation; }
+  RADIATION_MODEL GetKind_RadiationModel(void) const { return Kind_Radiation; }
 
   /*!
    * \brief Get the Kind of P1 initialization method applied.

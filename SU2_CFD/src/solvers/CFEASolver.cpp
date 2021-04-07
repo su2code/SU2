@@ -1817,7 +1817,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
   /*--- Residuals do not have to be computed while recording. ---*/
   if (config->GetDiscrete_Adjoint() && AD::TapeActive()) return;
 
-  if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+  if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
 
     /*--- For nonlinear analysis we have 3 convergence criteria: ---*/
     /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ---*/
@@ -1894,7 +1894,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
   /*--- Determine whether the load conditions are applied in the reference or in the current configuration. ---*/
 
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
 
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary. ---*/
 
@@ -2199,8 +2199,8 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
-  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
   const bool body_forces = config->GetDeadLoad();
 
@@ -2387,8 +2387,8 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
 
   const bool first_iter = (config->GetInnerIter() == 0);
   const bool dynamic = (config->GetTime_Domain());
-  const bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
   const bool body_forces = config->GetDeadLoad();
 

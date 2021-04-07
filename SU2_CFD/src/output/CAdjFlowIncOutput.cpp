@@ -439,7 +439,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (weakly_coupled_heat){
     Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
   }
-  if (config->GetKind_RadiationModel() != NONE){
+  if (config->GetKind_RadiationModel() != RADIATION_MODEL::NONE){
     Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
   }
 

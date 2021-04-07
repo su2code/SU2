@@ -765,9 +765,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
-    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-    bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
+    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+    bool fsi = (config[val_iZone]->GetFSI_Simulation());
     bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();

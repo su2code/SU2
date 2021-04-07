@@ -38,8 +38,8 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   const unsigned long TimeIter = config[val_iZone]->GetTimeIter();
   const unsigned long nIncrements = config[val_iZone]->GetNumberIncrements();
 
-  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);
-  const bool linear = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+  const bool linear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool disc_adj_fem = config[val_iZone]->GetDiscrete_Adjoint();
 
   /*--- Loads applied in steps (not used for discrete adjoint). ---*/

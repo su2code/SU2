@@ -212,7 +212,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
   /*--- Some numerics are only instanciated under these conditions ---*/
   const bool fsi = config[iZone]->GetFSI_Simulation() || config[iZone]->GetMultizone_Problem();
-  const bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
+  const bool nonlinear = config[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE;
   const bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   const bool element_based = dir_solver->IsElementBased() && nonlinear;
 

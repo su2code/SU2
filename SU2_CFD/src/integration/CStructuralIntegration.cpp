@@ -70,7 +70,7 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
                                                    CNumerics **numerics, CConfig *config,
                                                    unsigned short RunTime_EqSystem) {
   bool first_iter = (config->GetInnerIter() == 0);
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);
+  bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);

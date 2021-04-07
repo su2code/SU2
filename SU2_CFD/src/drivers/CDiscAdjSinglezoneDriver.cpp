@@ -493,7 +493,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
 
     case DISC_ADJ_FEM:
 
-      if (config->GetGeometricConditions() == LARGE_DEFORMATIONS){
+      if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
         cout << "UTOL-A: "   << log10(solver[FEA_SOL]->GetRes_FEM(0))
              << ", RTOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(1))
              << ", ETOL-A: " << log10(solver[FEA_SOL]->GetRes_FEM(2)) << "." << endl;

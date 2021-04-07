@@ -711,7 +711,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
 
       case DISC_ADJ_FEM:
         cout << " Zone " << iZone << " (structure)  - ";
-        if(config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS)
+        if(config_container[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE)
           cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
         else
           cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;

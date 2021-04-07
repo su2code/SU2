@@ -2291,11 +2291,11 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("STRESS_PENALTY_PARAM", 2, StressPenaltyParam.data());
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
-  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
+  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, STRUCT_DEFORMATION::SMALL);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Material model \n OPTIONS: see \link Material_Map \endlink \ingroup Config*/
-  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
+  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, STRUCT_MODEL::LINEAR_ELASTIC);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
-  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, STRUCT_COMPRESS::COMPRESSIBLE);
 
   /*  DESCRIPTION: Consider a prestretch in the structural domain
   *  Options: NO, YES \ingroup Config */
@@ -2462,7 +2462,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the radiation solver ---*/
 
   /* DESCRIPTION: Type of radiation model */
-  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
+  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, RADIATION_MODEL::NONE);
 
   /* DESCRIPTION: Kind of initialization of the P1 model  */
   addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT::TEMPERATURE);
@@ -3487,12 +3487,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+    if (Kind_Struct_Solver == STRUCT_DEFORMATION::SMALL){
       MinLogResidual = log10(Linear_Solver_Error);
     }
   }
 
-  Radiation = (Kind_Radiation != NO_RADIATION);
+  Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
   /*--- Check for unsupported features. ---*/
 
@@ -5604,11 +5604,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
-        if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
-        if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
-        if (Kind_Material == NEO_HOOKEAN) {
-          if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+        if (Kind_Struct_Solver == STRUCT_DEFORMATION::SMALL) cout << "Geometrically linear elasticity solver." << endl;
+        if (Kind_Struct_Solver == STRUCT_DEFORMATION::LARGE) cout << "Geometrically non-linear elasticity solver." << endl;
+        if (Kind_Material == STRUCT_MODEL::LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+        if (Kind_Material == STRUCT_MODEL::NEO_HOOKEAN) {
+          if (Kind_Material_Compress == STRUCT_COMPRESS::COMPRESSIBLE)
+            cout << "Compressible Neo-Hookean material model." << endl;
         }
         break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
