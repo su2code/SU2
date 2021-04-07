@@ -290,10 +290,12 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
       nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
     }
   } // for iPoint
+  END_SU2_OMP_FOR
 
   /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
   SU2_OMP_MASTER
   GetStreamwise_Periodic_Properties(geometry, config, iMesh);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
@@ -338,6 +340,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
 
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 
@@ -476,6 +479,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
@@ -585,4 +589,5 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     nodes->SetSolution_Old(iPoint, nDim+1, Twall);
     nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 }

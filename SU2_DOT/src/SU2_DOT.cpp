@@ -36,6 +36,10 @@ int main(int argc, char *argv[]) {
 
   char config_file_name[MAX_STRING_SIZE];
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   /*--- MPI initialization, and buffer setting ---*/
 
 #if defined(HAVE_OMP) && defined(HAVE_MPI)
@@ -48,6 +52,11 @@ int main(int argc, char *argv[]) {
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
+
+  /*--- AD initialization ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().initialize();
+#endif
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -406,8 +415,16 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
 
-  /*--- Finalize MPI parallelization ---*/
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
+#endif
+
+  /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 

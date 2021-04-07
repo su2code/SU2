@@ -372,6 +372,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
                    "support vectorization.", CURRENT_FUNCTION);
 
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
@@ -1388,7 +1389,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       GetFluidModel()->SetThermalConductivityModel(config);
     }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 
   Energy_FreeStreamND = GetFluidModel()->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
@@ -1724,12 +1726,14 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         }
 
       }
+      END_SU2_OMP_FOR
 
       FlowNodes->Set_OldSolution();
 
     }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 
 }
 
@@ -1753,61 +1757,47 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                                config->GetKind_Upwind_Flow() == SLAU ||
                                config->GetKind_Upwind_Flow() == SLAU2);
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
-
-  if (fixed_cl && !disc_adjoint && !cont_adjoint) {
-    SU2_OMP_MASTER
-    SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
-
   /*--- Set the primitive variables ---*/
 
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  SU2_OMP_BARRIER
+  ompMasterAssignBarrier(ErrorCounter, 0);
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
+  SU2_OMP_BARRIER
 
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+  SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
+
+    if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-    SU2_OMP_BARRIER
-  }
 
-  /*--- Compute the engine properties ---*/
+    /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
-  if (engine) {
-    SU2_OMP_MASTER
-    GetPower_Properties(geometry, config, iMesh, Output);
-    SU2_OMP_BARRIER
-  }
+    if (fixed_cl && !disc_adjoint && !cont_adjoint) {
+      SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
+    }
 
-  /*--- Compute the actuator disk properties and distortion levels ---*/
+    /*--- Compute the engine properties ---*/
 
-  if (actuator_disk) {
-    SU2_OMP_MASTER
-    {
+    if (engine) GetPower_Properties(geometry, config, iMesh, Output);
+
+    /*--- Compute the actuator disk properties and distortion levels ---*/
+
+    if (actuator_disk) {
       Set_MPI_ActDisk(solver_container, geometry, config);
       GetPower_Properties(geometry, config, iMesh, Output);
       SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
     }
-    SU2_OMP_BARRIER
-  }
 
-  /*--- Compute NearField MPI ---*/
+    /*--- Compute NearField MPI ---*/
 
-  if (nearfield) {
-    SU2_OMP_MASTER
-    Set_MPI_Nearfield(geometry, config);
-    SU2_OMP_BARRIER
+    if (nearfield) Set_MPI_Nearfield(geometry, config);
+
   }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Artificial dissipation ---*/
 
@@ -1891,6 +1881,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
     if (!physical) nonPhysicalPoints++;
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 }
@@ -1975,6 +1966,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
   ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -2164,6 +2156,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -2186,6 +2179,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -2290,6 +2284,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (rotating_frame) {
@@ -2320,6 +2315,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (axisymmetric) {
@@ -2396,6 +2392,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
+    END_SU2_OMP_FOR
   }
 
   if (gravity) {
@@ -2417,6 +2414,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
 
   }
 
@@ -2434,6 +2432,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
     }
+    END_SU2_OMP_FOR
   }
 
   if (windgust) {
@@ -2464,6 +2463,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Check if a verification solution is to be computed. ---*/
@@ -2494,6 +2494,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
           LinSysRes(iPoint,iVar) -= sourceMan[iVar]*Volume;
         }
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -2564,6 +2565,7 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the Laplacian across any periodic boundaries. ---*/
 
@@ -2636,6 +2638,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
     nodes->SetSensor(iPoint, Ducros_i);
   }
+  END_SU2_OMP_FOR
 
   InitiateComms(geometry, config, SENSOR);
   CompleteComms(geometry, config, SENSOR);
@@ -4816,6 +4819,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -5307,6 +5311,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -5823,7 +5828,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         }
       }
     }
-}
+    END_SU2_OMP_FOR
+  }
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -6723,6 +6729,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       }
 
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Free locally allocated memory ---*/
@@ -7052,6 +7059,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -7228,6 +7236,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
@@ -7375,6 +7384,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -7500,6 +7510,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -7724,6 +7735,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
     }
   }
+  END_SU2_OMP_FOR
 
   delete [] Normal;
 
@@ -7978,6 +7990,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
 
     }
   }
+  END_SU2_OMP_FOR
 
   delete [] Normal;
 
@@ -8037,6 +8050,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
     }
 
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -8100,6 +8114,7 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
     }
 
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -8543,6 +8558,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     }
 
   }
+  END_SU2_OMP_FOR
 
   /*--- Free locally allocated memory ---*/
 
@@ -8781,6 +8797,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CEulerSolver::PrintVerificationError(const CConfig *config) const {
@@ -8834,6 +8851,7 @@ void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
     }
     nodes->SetSolution(iPoint,nVar-1, Density_Inf*Energy_Inf);
   }
+  END_SU2_OMP_FOR
 }
 
 void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {

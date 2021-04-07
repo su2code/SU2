@@ -602,6 +602,7 @@ void CSinglezoneDriver::SetInitialMesh() {
         /*--- Set the grid velocity for this coarse node. ---*/
         geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
       }
+      END_SU2_OMP_FOR
       /*--- Push back the volume. ---*/
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
@@ -610,6 +611,7 @@ void CSinglezoneDriver::SetInitialMesh() {
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDriver::BoundaryConditionsUpdate(){
