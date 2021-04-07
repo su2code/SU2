@@ -7472,6 +7472,7 @@ CConfig::~CConfig(void) {
   delete[] Marker_Analyze;
   delete[] Marker_WallFunctions;
   delete[] Marker_ZoneInterface;
+  delete[] Marker_CHTInterface;
   delete [] Marker_PyCustom;
   delete[] Marker_All_SendRecv;
 
