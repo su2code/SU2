@@ -38,15 +38,15 @@
 class CDiscAdjVariable final : public CVariable {
 private:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  MatrixType Solution_Direct;
-  MatrixType DualTime_Derivative;
-  MatrixType DualTime_Derivative_n;
+  MatrixType Solution_Direct; // TK:: Description missing
+  MatrixType DualTime_Derivative; // TK:: Description missing
+  MatrixType DualTime_Derivative_n; // TK:: Description missing
 
-  MatrixType Solution_Geometry;
-  MatrixType Solution_Geometry_Old;
-  MatrixType Geometry_Direct;
+  MatrixType Solution_Geometry; // TK:: Description missing
+  MatrixType Solution_Geometry_Old; // TK:: Description missing
+  MatrixType Geometry_Direct; // TK:: Description missing
 
-  MatrixType Solution_Geometry_BGS_k;
+  MatrixType Solution_Geometry_BGS_k; // TK:: Description missing
 
 public:
   /*!
@@ -69,28 +69,46 @@ public:
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override { Sensitivity(iPoint,iDim) = val;}
+  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    Sensitivity(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Get the Sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity(iPoint,iDim); }
+  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override {
+    return Sensitivity(iPoint,iDim);
+  }
 
-  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
+  // TK:: Description missing
+  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
+    DualTime_Derivative(iPoint,iVar) = der;
+  }
 
-  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative_n(iPoint,iVar) = der; }
+  // TK:: Description missing
+  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override {
+    DualTime_Derivative_n(iPoint,iVar) = der;
+  }
 
-  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative(iPoint,iVar); }
+  // TK:: Description missing
+  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override {
+    return DualTime_Derivative(iPoint,iVar);
+  }
 
-  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative_n(iPoint,iVar); }
+  // TK:: Description missing
+  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override {
+    return DualTime_Derivative_n(iPoint,iVar);
+  }
 
+  // TK:: Description missing
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) override {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
+  // TK:: Description missing
   inline su2double* GetSolution_Direct(unsigned long iPoint) override { return Solution_Direct[iPoint]; }
 
   /*!
@@ -112,14 +130,18 @@ public:
    * \brief Get the restart geometry (coordinate of the converged solution).
    * \return Coordinate iDim of the geometry_direct vector.
    */
-  inline su2double GetGeometry_Direct(unsigned long iPoint, unsigned long iDim) const override { return Geometry_Direct(iPoint,iDim); }
+  inline su2double GetGeometry_Direct(unsigned long iPoint, unsigned long iDim) const override {
+    return Geometry_Direct(iPoint,iDim);
+  }
 
   /*!
    * \brief Get the geometry solution.
    * \param[in] iDim - Index of the coordinate.
    * \return Value of the solution for the index <i>iDim</i>.
    */
-  inline su2double GetSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override { return Solution_Geometry(iPoint,iDim); }
+  inline su2double GetSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
+    return Solution_Geometry(iPoint,iDim);
+  }
 
   /*!
    * \brief Set the value of the mesh solution (adjoint).
