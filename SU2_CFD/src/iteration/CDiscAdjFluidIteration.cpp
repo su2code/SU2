@@ -309,7 +309,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     if (turbulent) {
       solvers[MESH_0][TURB_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, false);
     }
-    if (config[val_iZone]->GetWeakly_Coupled_Heat())) {
+    if (config[iZone]->GetWeakly_Coupled_Heat()) {
       solvers[MESH_0][HEAT_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, false);
     }
   } else {
@@ -325,7 +325,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
         solvers[iMesh][TURB_SOL]->SetFreeStream_Solution(config[iZone]);
         solvers[iMesh][TURB_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh);
       }
-      if (config[val_iZone]->GetWeakly_Coupled_Heat())) {
+      if (config[iZone]->GetWeakly_Coupled_Heat()) {
         solvers[iMesh][HEAT_SOL]->SetFreeStream_Solution(config[iZone]);
         solvers[iMesh][HEAT_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh);
       }
