@@ -72,20 +72,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
-    X.resize(M);
-    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i], 0.0);
-  };
-
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
-    X.resize(M);
-    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
-  };
-
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual      = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
@@ -191,7 +177,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   unsigned short nConjVariables = 4;
 
-  Alloc3D(nMarker, nVertex, nConjVariables, ConjugateVar);
+  container_helpers::Alloc3D(nMarker, nVertex, nConjVariables, ConjugateVar);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
@@ -200,7 +186,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Heat flux in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, HeatFlux);
+  container_helpers::Alloc2D(nMarker, nVertex, HeatFlux);
 
   if (multizone){
     /*--- Initialize the BGS residuals. ---*/
