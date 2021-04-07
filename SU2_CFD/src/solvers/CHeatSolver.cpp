@@ -269,7 +269,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Restart the solution from file information ---*/
 
-  unsigned short iDim, iVar, iMesh;
+  unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
 
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
@@ -1530,7 +1530,7 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
-  su2double Area_Children, Area_Parent, *Solution_Fine, *Solution;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
 
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
