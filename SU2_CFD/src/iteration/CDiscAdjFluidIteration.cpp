@@ -412,13 +412,13 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 }
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                           unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
+                                           unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
 
   SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
-  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
+  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
 
     if (config[iZone]->GetFluidProblem()) {
@@ -440,14 +440,14 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     }
   }
 
-  if (kind_recording == MESH_COORDS) {
+  if (kind_recording == RECORDING::MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
 
   /*--- Register the variables of the mesh deformation ---*/
-  if (kind_recording == MESH_DEFORM) {
+  if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -460,7 +460,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 }
 
 void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
+                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
 
   SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 
@@ -487,11 +487,13 @@ void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
-                                             unsigned short kind_recording) {
+                                             RECORDING kind_recording) {
 
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)) {
+  if ((kind_recording == RECORDING::MESH_COORDS) ||
+      (kind_recording == RECORDING::NO_RECORDING) ||
+      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);

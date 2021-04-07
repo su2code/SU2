@@ -159,7 +159,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] kind_recording - Kind of recording, either FLOW_SOLUTION_VARIABLES or MESH_COORDS
    */
   void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                     unsigned short iInst, unsigned short kind_recording) override;
+                     unsigned short iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -182,7 +182,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
   void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, unsigned short kind_recording) override;
+                    unsigned short val_iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
@@ -195,6 +195,6 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                       unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
+                       unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
 };

@@ -182,21 +182,21 @@ void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry****
 }
 
 void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
+                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
 
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (kind_recording == MESH_COORDS) {
+  if (kind_recording == RECORDING::MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
   /*--- Register the variables of the mesh deformation ---*/
-  if (kind_recording == MESH_DEFORM) {
+  if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -207,8 +207,10 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                             CConfig** config, unsigned short iZone, unsigned short iInst,
-                                            unsigned short kind_recording) {
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)) {
+                                            RECORDING kind_recording) {
+  if ((kind_recording == RECORDING::MESH_COORDS) ||
+      (kind_recording == RECORDING::NO_RECORDING) ||
+      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
