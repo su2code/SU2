@@ -2521,9 +2521,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       if (roughwall) {
-        unsigned short WallType; su2double Roughness_Height;
+        WALL_TYPE WallType;
+        su2double Roughness_Height;
         tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-        if (WallType == ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
+        if (WallType == WALL_TYPE::ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
       }
       Density = nodes->GetDensity(iPoint);
 

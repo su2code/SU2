@@ -1442,13 +1442,13 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
 /*!
  * \brief types of wall boundary condition - smooth or rough
  */
-enum WALL_TYPE {
-  SMOOTH = 1,    /*!< \brief Smooth wall */
-  ROUGH = 2,   /*!< \brief Rough wall */
+enum class WALL_TYPE {
+  SMOOTH,  /*!< \brief Smooth wall */
+  ROUGH,   /*!< \brief Rough wall */
 };
 static const MapType<string, WALL_TYPE> WallType_Map = {
-  MakePair("SMOOTH", SMOOTH)
-  MakePair("ROUGH", ROUGH)
+  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
+  MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
 
 /*!

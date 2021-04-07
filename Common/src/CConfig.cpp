@@ -4657,18 +4657,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
        nRough_Wall = nWall;
        Roughness_Height = new su2double [nWall];
-       Kind_Wall = new unsigned short [nWall];
+       Kind_Wall = new WALL_TYPE [nWall];
        for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = SMOOTH;
+         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
        }
        for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + iMarker] = SMOOTH;
+         Kind_Wall[nMarker_HeatFlux + iMarker] = WALL_TYPE::SMOOTH;
        }
        for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = SMOOTH;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Check for mismatch in number of rough walls and solid walls. ---*/
@@ -4685,13 +4685,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        delete Roughness_Height;
        delete Kind_Wall;
        Roughness_Height = new su2double [nWall];
-       Kind_Wall = new unsigned short [nWall];
+       Kind_Wall = new WALL_TYPE [nWall];
        unsigned short jMarker, chkRough = 0;
 
        /*--- Initialize everything to smooth. ---*/
        for (iMarker = 0; iMarker < nWall; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = SMOOTH;
+         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
@@ -4718,7 +4718,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        /*--- Update kind_wall when a non zero roughness value is specified. ---*/
        for (iMarker = 0; iMarker < nWall; iMarker++)
          if (Roughness_Height[iMarker] != 0.0)
-           Kind_Wall[iMarker] = ROUGH;
+           Kind_Wall[iMarker] = WALL_TYPE::ROUGH;
 
        /*--- Check if a non solid wall marker was specified as rough. ---*/
        if (chkRough != nRough_Wall)
@@ -8813,10 +8813,10 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
+pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
   unsigned short iMarker = 0;
   short          flag = -1;
-  pair<unsigned short, su2double> WallProp;
+  pair<WALL_TYPE, su2double> WallProp;
 
   if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
     for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
@@ -8839,7 +8839,7 @@ pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_m
       }
   }
 
-  WallProp = make_pair(SMOOTH, 0.0);
+  WallProp = make_pair(WALL_TYPE::SMOOTH, 0.0);
   return WallProp;
 }
 
