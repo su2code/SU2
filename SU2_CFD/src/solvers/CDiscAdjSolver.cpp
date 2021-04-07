@@ -140,28 +140,25 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
-
-  unsigned long iPoint;
-  unsigned short iVar;
+  const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
+  const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
 
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     direct_solver->GetNodes()->SetSolution(iPoint, nodes->GetSolution_Direct(iPoint));
   }
 
   if (time_n_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
       }
     }
   }
   if (time_n1_needed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n1(iPoint)[iVar]);
       }
     }
@@ -379,7 +376,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
-  const bool multizone = config->GetMultizone_Problem();
 
   const su2double relax = (config->GetInnerIter()==0)? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
@@ -389,7 +385,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution and compute residuals. ---*/
 
-  if(!multizone) nodes->Set_OldSolution();
+  if(!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
 
@@ -588,18 +584,15 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
-                    config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST ||
+                          config->GetTime_Marching() == DT_STEPPING_2ND);
 
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
     if (dual_time) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
@@ -639,16 +632,14 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
-  unsigned long iPoint;
-  unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
   bool time_stepping = (config->GetTime_Marching() != STEADY);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->nodes->GetCoord(iPoint);
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       if(config->GetMultizone_Problem()) {
         Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);

@@ -66,7 +66,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
-   steady or an unsteady simulaiton */
+   steady or an unsteady simulation */
 
   InnerIter = config[val_iZone]->GetInnerIter();
 

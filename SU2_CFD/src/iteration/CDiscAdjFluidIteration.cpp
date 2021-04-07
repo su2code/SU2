@@ -60,7 +60,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
         /*--- Push solution back to correct array ---*/
 
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
           if (turbulent) {
@@ -83,7 +83,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
         /*--- Push solution back to correct array ---*/
 
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
           if (turbulent) {
             solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
@@ -128,7 +128,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/
 
-      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+      for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
         solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->Set_OldSolution();
         if (turbulent) {
           solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Set_OldSolution();
@@ -143,8 +143,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
       /*--- Set Solution at timestep n to solution at n-1 ---*/
 
-      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+      for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
           solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->SetSolution(
               iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
 
@@ -164,8 +164,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       }
       if (dual_time_1st) {
         /*--- Set Solution at timestep n-1 to the previously loaded solution ---*/
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+        for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+          for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(
                 iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
@@ -186,8 +186,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       }
       if (dual_time_2nd) {
         /*--- Set Solution at timestep n-1 to solution at n-2 ---*/
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+        for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+          for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n(
                 iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_time_n1(iPoint));
 
@@ -206,8 +206,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
           }
         }
         /*--- Set Solution at timestep n-2 to the previously loaded solution ---*/
-        for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-          for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+        for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+          for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
             solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1(
                 iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution_Old(iPoint));
 
@@ -231,7 +231,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
     /*--- Compute & set Grid Velocity via finite differences of the Coordinates. ---*/
     if (grid_IsMoving)
-      for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
+      for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
         geometry[val_iZone][val_iInst][iMesh]->SetGridVelocity(config[val_iZone], TimeIter);
 
   }  // if unsteady
@@ -239,26 +239,26 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
   if (TimeIter == 0 || dual_time) {
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+      for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
         solver[val_iZone][val_iInst][iMesh][ADJFLOW_SOL]->GetNodes()->SetSolution_Direct(
             iPoint, solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
     if (turbulent && !config[val_iZone]->GetFrozen_Visc_Disc()) {
-      for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+      for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
         solver[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetNodes()->SetSolution_Direct(
             iPoint, solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
     if (heat) {
-      for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+      for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
         solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->GetNodes()->SetSolution_Direct(
             iPoint, solver[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetNodes()->GetSolution(iPoint));
       }
     }
     if (config[val_iZone]->AddRadiation()) {
-      for (iPoint = 0; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+      for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
         solver[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->GetNodes()->SetSolution_Direct(
             iPoint, solver[val_iZone][val_iInst][MESH_0][RAD_SOL]->GetNodes()->GetSolution(iPoint));
       }
@@ -288,8 +288,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                    unsigned short val_iZone, unsigned short val_iInst,
                                                    int val_DirectIter) {
-  unsigned short iMesh;
-  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
 
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
@@ -300,7 +298,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
       solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->LoadRestart(
           geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], val_DirectIter, false);
     }
-    if (heat) {
+    if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
       solver[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(
           geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], val_DirectIter, false);
     }
@@ -308,7 +306,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Setting freestream conditions at direct iteration " << val_DirectIter << "." << endl;
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->SetFreeStream_Solution(config[val_iZone]);
       solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->Preprocessing(
           geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh,
@@ -318,7 +316,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
         solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Postprocessing(
             geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh);
       }
-      if (heat) {
+      if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
         solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->SetFreeStream_Solution(config[val_iZone]);
         solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->Postprocessing(
             geometry[val_iZone][val_iInst][iMesh], solver[val_iZone][val_iInst][iMesh], config[val_iZone], iMesh);
@@ -331,8 +329,6 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
                                      CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                      CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
                                      CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -341,10 +337,10 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
 
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (turbulent && !frozen_visc) {
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (config[iZone]->AddRadiation()) {
@@ -356,8 +352,6 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                                unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
@@ -365,11 +359,11 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (turbulent && !frozen_visc) {
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -384,8 +378,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
@@ -396,10 +388,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
 
-    if (turbulent && !frozen_visc) {
+    if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
-    if (heat) {
+    if (config[iZone]->GetWeakly_Coupled_Heat()) {
       solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
     }
     if (config[iZone]->AddRadiation()) {
@@ -427,18 +419,13 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
-
-  if (solver[iZone][iInst][MESH_0][ADJFEA_SOL]) {
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
 
   for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
     solver[iZone][iInst][iMesh][ADJFLOW_SOL]->SetRecording(geometry[iZone][iInst][iMesh], config[iZone]);
   }
-  if (turbulent && !frozen_visc) {
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->SetRecording(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
@@ -452,8 +439,6 @@ void CDiscAdjFluidIteration::SetRecording(CSolver***** solver, CGeometry**** geo
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              unsigned short kind_recording) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
@@ -469,14 +454,14 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   solver[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   solver[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
 
-  if (turbulent && !frozen_visc) {
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solver[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
                                                            config[iZone], MESH_0);
     solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
   }
 
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][HEAT_SOL]->Set_Heatflux_Areas(geometry[iZone][iInst][MESH_0], config[iZone]);
     solver[iZone][iInst][MESH_0][HEAT_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0],
                                                           config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
@@ -495,18 +480,16 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                             COutput* output, unsigned short iZone, unsigned short iInst) {
-  bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Register conservative variables as output of the iteration ---*/
 
   if (config[iZone]->GetFluidProblem()) {
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (turbulent && !frozen_visc) {
+  if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (heat) {
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
   if (config[iZone]->AddRadiation()) {
@@ -521,13 +504,12 @@ void CDiscAdjFluidIteration::Update(COutput* output, CIntegration**** integratio
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned short iMesh;
 
   /*--- Dual time stepping strategy ---*/
 
   if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
       (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJFLOW_SOL]->SetConvergence(false);
     }
   }

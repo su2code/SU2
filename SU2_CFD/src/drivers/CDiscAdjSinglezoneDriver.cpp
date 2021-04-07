@@ -44,7 +44,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Store the number of internal iterations that will be run by the adjoint solver ---*/
   nAdjoint_Iter = config_container[ZONE_0]->GetnInner_Iter();
 
-
   /*--- Store the pointers ---*/
   config      = config_container[ZONE_0];
   iteration   = iteration_container[ZONE_0][INST_0];
@@ -56,14 +55,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   /*--- Store the recording state ---*/
   RecordingState = NONE;
 
-  /*--- Determine if the problem is a turbomachinery problem ---*/
-  bool turbo = config->GetBoolTurbomachinery();
-
-  bool compressible = config->GetKind_Regime() == COMPRESSIBLE;
-
-  /*--- Determine if the problem has a mesh deformation solver ---*/
-  bool mesh_def = config->GetDeform_Mesh();
-
   /*--- Initialize the direct iteration ---*/
 
   switch (config->GetKind_Solver()) {
@@ -72,16 +63,21 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
-    if (turbo) {
+
+    if (config->GetBoolTurbomachinery()) {
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else       direct_iteration = CIterationFactory::CreateIteration(EULER, config);
-    if (compressible) direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
-    else direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim);
+    else { direct_iteration = CIterationFactory::CreateIteration(EULER, config);}
+
+    if (config->GetKind_Regime() == COMPRESSIBLE) {
+      direct_output = COutputFactory::CreateOutput(EULER, config, nDim); }
+    else { direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim); }
+
     MainVariables = SOLUTION_VARIABLES;
-    if (mesh_def) SecondaryVariables = MESH_DEFORM;
-    else          SecondaryVariables = MESH_COORDS;
+    if (config->GetDeform_Mesh()) {
+      SecondaryVariables = MESH_DEFORM; }
+    else { SecondaryVariables = MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
     break;
 
@@ -143,16 +139,12 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    *--- we only have to record if the current recording is different from the main variables. ---*/
 
   if (RecordingState != MainVariables){
-
     MainRecording();
-
   }
 
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
-
-  const bool steady = !config->GetTime_Domain();
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -200,7 +192,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Output files for steady state simulations. ---*/
 
-    if (steady) {
+    if (!config->GetTime_Domain()) {
       iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
                         config_container, Adjoint_Iter, false, ZONE_0, INST_0);
     }
@@ -262,8 +254,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
     }
-    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
 
+    iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
   }
 
   /*--- Set the dependencies of the iteration ---*/
@@ -309,18 +301,17 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  bool time_stepping = config->GetTime_Marching() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
   CWindowingTools windowEvaluator = CWindowingTools();
 
-  if (time_stepping){
+  if (config->GetTime_Marching() != STEADY){
     if (TimeIter < IterAvg_Obj){
-      // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
+      /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
       seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
     }
-    else{
+    else {
       seeding = 0.0;
     }
   }
@@ -533,7 +524,7 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 
   SetRecording(NONE);
 
-  /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+  /*--- Store the computational graph of one direct iteration with the solution variables as input. ---*/
 
   SetRecording(MainVariables);
 
