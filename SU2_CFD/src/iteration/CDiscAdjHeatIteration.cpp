@@ -227,9 +227,8 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            COutput* output, unsigned short iZone, unsigned short iInst) {
-  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  geometry[iZone][iInst][MESH_0]->RegisterOutput_Coordinates(config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
@@ -257,14 +256,4 @@ bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integratio
                             config[val_iZone]->GetInnerIter());
 
   return output->GetConvergence();
-}
-
-void CDiscAdjHeatIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                   unsigned long InnerIter, bool StopCalc, unsigned short val_iZone,
-                                   unsigned short val_iInst) {}
-
-void CDiscAdjHeatIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
 }

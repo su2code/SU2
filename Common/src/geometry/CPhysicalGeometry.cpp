@@ -4375,7 +4375,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig *config) {
       }
     }
 
-  }} // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_FOR
+  }
+  END_SU2_OMP_PARALLEL
 
   auto reduce = [](unsigned long& val) {
     unsigned long tmp = val;
@@ -4522,7 +4525,10 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig *config) {
         }
       }
     }
-  }} // end SU2_OMP_PARALLEL
+    END_SU2_OMP_FOR
+  }
+  }
+  END_SU2_OMP_PARALLEL
 
   auto reduce = [](unsigned long& val) {
     unsigned long tmp = val;
@@ -4698,6 +4704,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
     }
     nodes->SetElems(elems);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- Loop over all the points ---*/
@@ -4734,11 +4741,14 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
     /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
     nodes->SetnNeighbor(iPoint, points[iPoint].size());
   }
+  END_SU2_OMP_FOR
 
   SU2_OMP_MASTER
   nodes->SetPoints(points);
+  END_SU2_OMP_MASTER
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
@@ -6635,6 +6645,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     max_delta = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
     nodes->SetMaxLength(iPoint, max_delta);
   }
+  END_SU2_OMP_FOR
 
   InitiateComms(this, config, MAX_LENGTH);
   CompleteComms(this, config, MAX_LENGTH);
@@ -7515,10 +7526,12 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     SU2_OMP_FOR_STAT(1024)
     for (auto iEdge = 0ul; iEdge < nEdge; iEdge++)
       edges->SetNormal(iEdge, ZeroArea);
+    END_SU2_OMP_FOR
 
     SU2_OMP_FOR_STAT(1024)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       nodes->SetVolume(iPoint, 0.0);
+    END_SU2_OMP_FOR
   }
 
   SU2_OMP_MASTER { /*--- The following is difficult to parallelize with threads. ---*/
@@ -7653,7 +7666,9 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (nDim == 3) cout <<"Volume of the computational grid: "<< DomainVolume <<"."<< endl;
   }
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Check if there is a normal with null area ---*/
   SU2_OMP_FOR_STAT(1024)
@@ -7662,6 +7677,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     su2double DefaultArea[MAXNDIM] = {EPS*EPS};
     if (Area2 == 0.0) edges->SetNormal(iEdge, DefaultArea);
   }
+  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
@@ -7673,6 +7689,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
     for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
       for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         vertex[iMarker][iVertex]->SetZeroValues();
+    END_SU2_OMP_FOR
   }
 
   /*--- Loop over all the boundary elements ---*/
@@ -7738,6 +7755,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       AD::EndPreacc();
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Check if there is a normal with null area ---*/
 
@@ -7749,6 +7767,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
@@ -11030,9 +11049,10 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
         nodes->SetRoughnessHeight(iPoint, localRoughness);
       }
     }
+    END_SU2_OMP_FOR
 
   }
-  // end SU2_OMP_PARALLEL
+  END_SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {

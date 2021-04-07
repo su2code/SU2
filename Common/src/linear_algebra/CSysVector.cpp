@@ -50,7 +50,7 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm * sizeof(ScalarType));
+  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType,true>(64, nElm*sizeof(ScalarType));
 
   if (val != nullptr) {
     if (!valIsArray) {
@@ -63,6 +63,8 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
+  if (!std::is_trivial<ScalarType>::value)
+    for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   MemoryAllocation::aligned_free(vec_val);
 }
 

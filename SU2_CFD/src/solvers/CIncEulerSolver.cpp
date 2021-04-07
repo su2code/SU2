@@ -825,9 +825,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Set the primitive variables ---*/
 
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  SU2_OMP_BARRIER
+  ompMasterAssignBarrier(ErrorCounter, 0);
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
@@ -840,6 +838,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -862,6 +861,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   if (outlet) {
     SU2_OMP_MASTER
     GetOutlet_Properties(geometry, config, iMesh, Output);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -924,6 +924,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
     if (!physical) nonPhysicalPoints++;
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 }
@@ -1053,6 +1054,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -1076,6 +1078,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   SU2_OMP_MASTER
   ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -1219,6 +1222,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -1241,6 +1245,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -1298,6 +1303,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (boussinesq) {
@@ -1330,6 +1336,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (rotating_frame) {
@@ -1364,6 +1371,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (axisymmetric) {
@@ -1388,6 +1396,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         nodes->SetAuxVar(iPoint, 0, AuxVar);
 
       }
+      END_SU2_OMP_FOR
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
 
@@ -1451,6 +1460,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (radiation) {
@@ -1493,6 +1503,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
 
     }
+    END_SU2_OMP_FOR
 
   }
 
@@ -1506,6 +1517,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
         nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
       }
+      END_SU2_OMP_FOR
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1545,6 +1557,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     } // for iPoint
+    END_SU2_OMP_FOR
 
     if(!streamwise_periodic_temperature && energy) {
 
@@ -1584,6 +1597,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
             LinSysRes.AddBlock(iPoint, residual);
 
           }// for iVertex
+          END_SU2_OMP_FOR
         }// if periodic inlet boundary
       }// for iMarker
 
@@ -1619,6 +1633,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         }
 
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -1754,9 +1769,11 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
+    END_SU2_OMP_FOR
 
     SU2_OMP_CRITICAL
     MaxVel2 = max(MaxVel2, maxVel2);
+    END_SU2_OMP_CRITICAL
 
     SU2_OMP_BARRIER
 
@@ -1766,6 +1783,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -1776,6 +1794,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
     nodes->SetBetaInc2(iPoint, BetaInc2);
+  END_SU2_OMP_FOR
 
 }
 
@@ -2008,6 +2027,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -2249,6 +2269,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     if (implicit)
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
   }
+  END_SU2_OMP_FOR
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -2446,6 +2467,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -2536,6 +2558,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
+    END_SU2_OMP_FOR
   }
 
   else {
@@ -2579,6 +2602,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -2615,6 +2639,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -2675,6 +2700,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -2954,4 +2980,6 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
     }
     nodes->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
+  END_SU2_OMP_FOR
+
 }
