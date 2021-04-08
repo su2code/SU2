@@ -289,17 +289,17 @@ static const MapType<string, STRUCT_COMPRESS> MatComp_Map = {
 /*!
  * \brief Types of interpolators
  */
-enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR = 0,      /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1,         /*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
-  WEIGHTED_AVERAGE = 3,      /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
-  RADIAL_BASIS_FUNCTION = 4, /*!< \brief Radial basis function interpolation. */
+enum class INTERFACE_INTERPOLATOR {
+  NEAREST_NEIGHBOR,      /*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC,         /*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
+  WEIGHTED_AVERAGE,      /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
+  RADIAL_BASIS_FUNCTION, /*!< \brief Radial basis function interpolation. */
 };
-static const MapType<string, ENUM_INTERPOLATOR> Interpolator_Map = {
-  MakePair("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-  MakePair("ISOPARAMETRIC",    ISOPARAMETRIC)
-  MakePair("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE)
-  MakePair("RADIAL_BASIS_FUNCTION", RADIAL_BASIS_FUNCTION)
+static const MapType<string, INTERFACE_INTERPOLATOR> Interpolator_Map = {
+  MakePair("NEAREST_NEIGHBOR", INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR)
+  MakePair("ISOPARAMETRIC",    INTERFACE_INTERPOLATOR::ISOPARAMETRIC)
+  MakePair("WEIGHTED_AVERAGE", INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE)
+  MakePair("RADIAL_BASIS_FUNCTION", INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION)
 };
 
 /*!

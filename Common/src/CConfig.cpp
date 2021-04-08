@@ -2408,7 +2408,7 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
    */
-  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR);
 
   /*  DESCRIPTION: Use conservative approach for interpolating between meshes. */
   addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
