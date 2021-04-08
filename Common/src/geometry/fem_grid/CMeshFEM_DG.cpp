@@ -3473,7 +3473,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     /*--- Correct the number of variables for side 0 if the adjacent element
           is a hexahedron or quadrilateral. Add the surface standard element
           to typesSurfaceSol afterwards. ---*/
-    unsigned short mSolVar = typesFaceGrid[i].short9;
+    unsigned short mSolVar = typesFaceSol[i].short9;
     if((typesFaceSol[i].short2 == HEXAHEDRON) || (typesFaceSol[i].short2 == QUADRILATERAL))
       mSolVar = 1;
 
@@ -3485,7 +3485,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     /*--- Correct the number of variables for side 1 if the adjacent element
           is a hexahedron or quadrilateral. Add the surface standard element
           to typesSurfaceSol afterwards. ---*/
-    mSolVar = typesFaceGrid[i].short9;
+    mSolVar = typesFaceSol[i].short9;
     if((typesFaceSol[i].short5 == HEXAHEDRON) || (typesFaceSol[i].short5 == QUADRILATERAL))
       mSolVar = 1;
     typesSurfaceSol.push_back(CUnsignedShort8T(typesFaceSol[i].short0, typesFaceSol[i].short1,
@@ -3543,7 +3543,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
       if(typesSurfaceGrid[i].short0 == QUADRILATERAL) nInt *= nInt;
       nDOFs  = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem,
                                                        typesSurfaceGrid[i].short3);
-      short3 = typesSurfaceSol[i].short6;
+      short3 = typesSurfaceGrid[i].short6;
       VTK_Type_Elem = LINE;
     }
 

@@ -126,6 +126,11 @@ void CFEMStandardQuadAdjacentHexSol::GradSolIntPoints(ColMajorMatrix<su2double> 
                          matSolDOF, matGradSolInt[1]);
   gemmDOFs2Int->DOFs2Int(tensorDSolDt, faceID_Elem, swapTangInTensor, matSolDOF.cols(),
                          matSolDOF, matGradSolInt[2]);
+
+  /*--- Set the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolDOF.cols(); ++j)
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+      matGradSolInt[0](i,j) = matGradSolInt[1](i,j) = matGradSolInt[2](i,j) = 0.0;
 }
 
 void CFEMStandardQuadAdjacentHexSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
@@ -136,4 +141,9 @@ void CFEMStandardQuadAdjacentHexSol::SolIntPoints(ColMajorMatrix<su2double> &mat
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, swapTangInTensor, matSolDOF.cols(),
                          matSolDOF, matSolInt);
+
+  /*--- Set the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolDOF.cols(); ++j)
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+      matSolInt(i,j) = matSolInt(0,j);
 }

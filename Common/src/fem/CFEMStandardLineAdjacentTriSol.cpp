@@ -68,6 +68,12 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
         derivatives in the integration points. ---*/
   VandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, legBasisInt);
   GradVandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, derLegBasisInt[0], derLegBasisInt[1]);
+
+  /*--- Make sure that the padded values of legBasisInt are initialized properly
+        to avoid problems. The gradients are set to zero, which is fine. ---*/
+  for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+    for(unsigned short j=0; j<nDOFs; ++j)
+      legBasisInt(i,j) = legBasisInt(0,j);
 }
 
 void CFEMStandardLineAdjacentTriSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

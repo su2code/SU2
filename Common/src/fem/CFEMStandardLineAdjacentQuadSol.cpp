@@ -102,6 +102,12 @@ void CFEMStandardLineAdjacentQuadSol::GradSolIntPoints(ColMajorMatrix<su2double>
         integration points of the face. ---*/
   gemmDOFs2Int->DOFs2Int(tensorDSolDr, faceID_Elem, matSolDOF.cols(), matSolDOF, matGradSolInt[0]);
   gemmDOFs2Int->DOFs2Int(tensorDSolDs, faceID_Elem, matSolDOF.cols(), matSolDOF, matGradSolInt[1]);
+
+  /*--- Set the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolDOF.cols(); ++j)
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+      matGradSolInt[0](i,j) = matGradSolInt[1](i,j) = 0.0;
+
 }
 
 void CFEMStandardLineAdjacentQuadSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
@@ -111,4 +117,9 @@ void CFEMStandardLineAdjacentQuadSol::SolIntPoints(ColMajorMatrix<su2double> &ma
         arguments to compute the solution in the integration points
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, matSolDOF.cols(), matSolDOF, matSolInt);
+
+  /*--- Set the padded data to avoid problems. ---*/
+  for(unsigned short j=0; j<matSolDOF.cols(); ++j)
+    for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+      matSolInt(i,j) = matSolInt(0,j);
 }

@@ -70,6 +70,12 @@ CFEMStandardQuadAdjacentPyraSol::CFEMStandardQuadAdjacentPyraSol(const unsigned 
   VandermondePyramid(nPoly, rInt, sInt, tInt, legBasisInt);
   GradVandermondePyramid(nPoly, rInt, sInt, tInt, derLegBasisInt[0],
                          derLegBasisInt[1], derLegBasisInt[2]);
+
+  /*--- Make sure that the padded values of legBasisInt are initialized properly
+        to avoid problems. The gradients are set to zero, which is fine. ---*/
+  for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
+    for(unsigned short j=0; j<nDOFs; ++j) 
+      legBasisInt(i,j) = legBasisInt(0,j);
 }
 
 void CFEMStandardQuadAdjacentPyraSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,

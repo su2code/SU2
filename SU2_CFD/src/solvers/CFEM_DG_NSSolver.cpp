@@ -1142,7 +1142,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     /*--- Compute the invisid fluxes in the integration points of the face. ---*/
     const unsigned int indFlux = omp_get_num_threads() + omp_get_thread_num();
     ColMajorMatrix<su2double> &fluxes = matchingInternalFaces[l].standardElemFlow->elem0->workSolInt[indFlux];
-    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].metricNormalsFace,
+    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].JacobiansFace,
+                              matchingInternalFaces[l].metricNormalsFace,
                               matchingInternalFaces[l].gridVelocities, numerics, fluxes);
   }
 

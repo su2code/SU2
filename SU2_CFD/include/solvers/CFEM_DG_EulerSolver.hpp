@@ -693,6 +693,7 @@ protected:
    * \param[in]  config         - Definition of the particular problem.
    * \param[in]  solLeft        - Left solution in the points.
    * \param[in]  solRight       - Right solution in the points.
+   * \param[in]  JacobiansFace  - The jacobians of the face.
    * \param[in]  normalsFace    - The normals of the face.
    * \param[in]  gridVelocities - The grid velocities of the face.
    * \param[in]  numerics       - Object, which contains the Riemann solver.
@@ -701,6 +702,7 @@ protected:
   void ComputeInviscidFluxesFace(CConfig                   *config,
                                  ColMajorMatrix<su2double> &solLeft,
                                  ColMajorMatrix<su2double> &solRight,
+                                 su2activevector           &JacobiansFace,
                                  ColMajorMatrix<su2double> &normalsFace,
                                  ColMajorMatrix<su2double> &gridVelocities,
                                  CNumerics                 *numerics,

@@ -3532,7 +3532,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     /*--- Compute the invisid fluxes in the integration points of the face. ---*/
     const unsigned int indFlux = omp_get_num_threads() + omp_get_thread_num();
     ColMajorMatrix<su2double> &fluxes = matchingInternalFaces[l].standardElemFlow->elem0->workSolInt[indFlux];
-    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].metricNormalsFace,
+    ComputeInviscidFluxesFace(config, solIntLeft, solIntRight, matchingInternalFaces[l].JacobiansFace,
+                              matchingInternalFaces[l].metricNormalsFace,
                               matchingInternalFaces[l].gridVelocities, numerics, fluxes);
 
     /*--- Multiply the fluxes with the integration weight of the
@@ -4182,28 +4183,271 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *config,
                                                     ColMajorMatrix<su2double> &solLeft,
                                                     ColMajorMatrix<su2double> &solRight,
+                                                    su2activevector           &JacobiansFace,
                                                     ColMajorMatrix<su2double> &normalsFace,
                                                     ColMajorMatrix<su2double> &gridVelocities,
                                                     CNumerics                 *numerics,
                                                     ColMajorMatrix<su2double> &fluxes) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Some abbreviations for terms involving the specific heat ratio and
+        the number of items for which the flux must be computed. ---*/
+  const su2double gm1 = Gamma_Minus_One;
+  const su2double ovgm1 = 1.0/gm1;
+  const unsigned int nItems = gridVelocities.rows();
 
-    if(i == rank) {
+  /*--- Make a distinction between the several Riemann solvers. ---*/
+  switch( config->GetRiemann_Solver_FEM() ) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+    case ROE: {
+
+      /*--- Roe's approximate Riemann solver. Easier storage of the cut off
+            value for the entropy correction. ---*/
+      const su2double Delta = config->GetEntropyFix_Coeff();
+
+      /*--- Make a distinction between two and three space dimensions
+            in order to have the most efficient code. ---*/
+      switch( nDim ) {
+
+        case 2: {
+
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  half the Jacobian (which is half the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double halfArea = JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0), rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1), uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2), vR   = solRight(i,2);
+            const su2double pL   = solLeft(i,3), pR   = solRight(i,3);
+
+            /*--- Compute the total energy of the left and right state. ---*/
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR);
+
+            /*--- Compute the difference of the conservative mean flow variables. ---*/
+            const su2double dr  = rhoR    - rhoL;
+            const su2double dru = rhoR*uR - rhoL*uL;
+            const su2double drv = rhoR*vR - rhoL*vL;
+            const su2double drE = rER     - rEL;
+
+            /*--- Compute the Roe average state. ---*/
+            const su2double zL = sqrt(rhoL);
+            const su2double zR = sqrt(rhoR);
+            su2double tmp      = 1.0/(zL + zR);
+
+            const su2double rHL = rEL + pL;
+            const su2double rHR = rER + pR;
+
+            const su2double uAvg = tmp*(zL*uL + zR*uR);
+            const su2double vAvg = tmp*(zL*vL + zR*vR);
+            const su2double HAvg = tmp*(rHL/zL + rHR/zR);
+
+            /*--- Compute from the Roe average state some variables, which occur
+                  quite often in the matrix vector product to be computed. ---*/
+            const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg);
+            tmp                      = gm1*(HAvg - alphaAvg);
+            const su2double a2Avg    = fabs(tmp);
+            const su2double aAvg     = sqrt(a2Avg);
+            const su2double vnAvg    = uAvg*nx + vAvg*ny;
+            const su2double unAvg    = vnAvg - gridVelNorm;
+            const su2double ovaAvg   = 1.0/aAvg;
+            const su2double ova2Avg  = 1.0/a2Avg;
+
+            /*--- Compute the absolute values of the three eigenvalues and
+                  apply the entropy correction. ---*/
+            su2double lam1 = fabs(unAvg + aAvg);
+            su2double lam2 = fabs(unAvg - aAvg);
+            su2double lam3 = fabs(unAvg);
+
+            tmp  = Delta*max(lam1, lam2);
+            lam1 = max(lam1, tmp);
+            lam2 = max(lam2, tmp);
+            lam3 = max(lam3, tmp);
+
+            /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
+            const su2double abv1 = 0.5*(lam1 + lam2);
+            const su2double abv2 = 0.5*(lam1 - lam2);
+            const su2double abv3 = abv1 - lam3;
+
+            const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv + drE);
+            const su2double abv5 = nx*dru + ny*drv - vnAvg*dr;
+            const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+            const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+            /*--- Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)). ---*/
+            const su2double vnL = uL*nx + vL*ny;
+            const su2double vnR = uR*nx + vR*ny;
+            const su2double unL = vnL - gridVelNorm;
+            const su2double unR = vnR - gridVelNorm;
+            const su2double pa  = pL + pR;
+
+            fluxes(i,0) = halfArea*(rhoL*unL + rhoR*unR - (lam3*dr + abv6));
+            fluxes(i,1) = halfArea*(rhoL*uL*unL + rhoR*uR*unR + pa*nx
+                        -           (lam3*dru + uAvg*abv6 + nx*abv7));
+            fluxes(i,2) = halfArea*(rhoL*vL*unL + rhoR*vR*unR + pa*ny
+                        -           (lam3*drv + vAvg*abv6 + ny*abv7));
+            fluxes(i,3) = halfArea*(rEL*unL + rER*unR + pL*vnL + pR*vnR
+                        -           (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+          }
+
+          break;
+        }
+
+        /*--------------------------------------------------------------------*/
+
+        case 3: {
+
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  half the Jacobian (which is half the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double nz = normalsFace(i,2);
+            const su2double halfArea = JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny
+                                        + gridVelocities(i,2)*ny;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0), rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1), uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2), vR   = solRight(i,2);
+            const su2double wL   = solLeft(i,3), wR   = solRight(i,3);
+            const su2double pL   = solLeft(i,4), pR   = solRight(i,4);
+
+            /*--- Compute the total energy of the left and right state. ---*/
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL + wL*wL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR + wR*wR);
+
+            /*--- Compute the difference of the conservative mean flow variables. ---*/
+            const su2double dr  = rhoR    - rhoL;
+            const su2double dru = rhoR*uR - rhoL*uL;
+            const su2double drv = rhoR*vR - rhoL*vL;
+            const su2double drw = rhoR*wR - rhoL*wL;
+            const su2double drE = rER     - rEL;
+
+            /*--- Compute the Roe average state. ---*/
+            const su2double zL = sqrt(rhoL);
+            const su2double zR = sqrt(rhoR);
+            su2double tmp      = 1.0/(zL + zR);
+
+            const su2double rHL = rEL + pL;
+            const su2double rHR = rER + pR;
+
+            const su2double uAvg = tmp*(zL*uL + zR*uR);
+            const su2double vAvg = tmp*(zL*vL + zR*vR);
+            const su2double wAvg = tmp*(zL*wL + zR*wR);
+            const su2double HAvg = tmp*(rHL/zL + rHR/zR);
+
+            /*--- Compute from the Roe average state some variables, which occur
+                  quite often in the matrix vector product to be computed. ---*/
+            const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg + wAvg*wAvg);
+            tmp                      = gm1*(HAvg - alphaAvg);
+            const su2double a2Avg    = fabs(tmp);
+            const su2double aAvg     = sqrt(a2Avg);
+            const su2double vnAvg    = uAvg*nx + vAvg*ny + wAvg*nz;
+            const su2double unAvg    = vnAvg - gridVelNorm;
+            const su2double ovaAvg   = 1.0/aAvg;
+            const su2double ova2Avg  = 1.0/a2Avg;
+
+            /*--- Compute the absolute values of the three eigenvalues and
+                  apply the entropy correction. ---*/
+            su2double lam1 = fabs(unAvg + aAvg);
+            su2double lam2 = fabs(unAvg - aAvg);
+            su2double lam3 = fabs(unAvg);
+
+            tmp  = Delta*max(lam1, lam2);
+            lam1 = max(lam1, tmp);
+            lam2 = max(lam2, tmp);
+            lam3 = max(lam3, tmp);
+
+            /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
+            const su2double abv1 = 0.5*(lam1 + lam2);
+            const su2double abv2 = 0.5*(lam1 - lam2);
+            const su2double abv3 = abv1 - lam3;
+
+            const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv -wAvg*drw + drE);
+            const su2double abv5 = nx*dru + ny*drv + nz*drw - vnAvg*dr;
+            const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+            const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+            /*--- Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)). ---*/
+            const su2double vnL = uL*nx + vL*ny + wL*nz;
+            const su2double vnR = uR*nx + vR*ny + wR*nz;
+            const su2double unL = vnL - gridVelNorm;
+            const su2double unR = vnR - gridVelNorm;
+            const su2double pa  = pL + pR;
+
+            fluxes(i,0) = halfArea*(rhoL*unL + rhoR*unR - (lam3*dr + abv6));
+            fluxes(i,1) = halfArea*(rhoL*uL*unL + rhoR*uR*unR + pa*nx
+                        -           (lam3*dru + uAvg*abv6 + nx*abv7));
+            fluxes(i,2) = halfArea*(rhoL*vL*unL + rhoR*vR*unR + pa*ny
+                        -           (lam3*drv + vAvg*abv6 + ny*abv7));
+            fluxes(i,3) = halfArea*(rhoL*wL*unL + rhoR*wR*unR + pa*nz
+                        -           (lam3*drw + wAvg*abv6 + nz*abv7));
+            fluxes(i,4) = halfArea*(rEL*unL + rER*unR + pL*vnL + pR*vnR
+                        -           (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+          }
+
+          break;
+        }
       }
+
+      break;
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-  }
+    /*------------------------------------------------------------------------*/
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+    case LAX_FRIEDRICH: {
+
+      /*--- Local Lax-Friedrich (Rusanov) flux Make a distinction between two and
+            three space dimensions in order to have the most efficient code. ---*/
+      switch( nDim ) {
+
+        case 2: {
+
+          break;
+        }
+
+        /*--------------------------------------------------------------------*/
+
+        case 3: {
+
+          break;
+        }
+      }
+
+      break;
+    }
+
+    /*------------------------------------------------------------------------*/
+
+    default: {
+
+      if(rank == MASTER_NODE) {
+        SU2_OMP_SINGLE
+        SU2_MPI::Error(string("Riemann solver not implemented yet"), CURRENT_FUNCTION);
+      }
+
+      SU2_OMP_SINGLE
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
