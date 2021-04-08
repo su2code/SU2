@@ -1003,27 +1003,27 @@ static const MapType<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
 /*!
  * \brief Type of time integration schemes
  */
-enum ENUM_TIME_INT_FEA {
-  CD_EXPLICIT = 1,       /*!< \brief Support for implementing an explicit method. */
-  NEWMARK_IMPLICIT = 2,  /*!< \brief Implicit Newmark integration definition. */
-  GENERALIZED_ALPHA = 3  /*!< \brief Support for implementing another implicit method. */
+enum class STRUCT_TIME_INT {
+  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
+  NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
+  GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
-static const MapType<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", CD_EXPLICIT)
-  MakePair("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", GENERALIZED_ALPHA)
+static const MapType<string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
+  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
+  MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
+  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
 };
 
 /*!
  * \brief Type of time integration schemes
  */
-enum ENUM_SPACE_ITE_FEA {
-  NEWTON_RAPHSON = 1,           /*!< \brief Full Newton-Rapshon method. */
-  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+enum class STRUCT_SPACE_ITE {
+  NEWTON,       /*!< \brief Full Newton-Rapshon method. */
+  MOD_NEWTON,   /*!< \brief Modified Newton-Raphson method. */
 };
-static const MapType<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = {
-  MakePair("NEWTON_RAPHSON", NEWTON_RAPHSON)
-  MakePair("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON)
+static const MapType<string, STRUCT_SPACE_ITE> Space_Ite_Map_FEA = {
+  MakePair("NEWTON_RAPHSON", STRUCT_SPACE_ITE::NEWTON)
+  MakePair("MODIFIED_NEWTON_RAPHSON", STRUCT_SPACE_ITE::MOD_NEWTON)
 };
 
 /*!

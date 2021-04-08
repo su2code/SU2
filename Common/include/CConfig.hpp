@@ -501,9 +501,10 @@ private:
   Kind_TimeIntScheme_Turb,      /*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_FEA,       /*!< \brief Time integration for the FEA equations. */
-  Kind_SpaceIteScheme_FEA,      /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
+  STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  unsigned short
   Kind_TimeIntScheme_Radiation, /*!< \brief Time integration for the Radiation equations. */
   Kind_ConvNumScheme,           /*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,      /*!< \brief Centered or upwind scheme for the flow equations. */
@@ -4310,7 +4311,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
+  STRUCT_TIME_INT GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4337,7 +4338,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_SpaceIteScheme_FEA(void) const { return Kind_SpaceIteScheme_FEA; }
+  STRUCT_SPACE_ITE GetKind_SpaceIteScheme_FEA(void) const { return Kind_SpaceIteScheme_FEA; }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the flow

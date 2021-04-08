@@ -1665,7 +1665,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
+  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, STRUCT_TIME_INT::NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization for radiation problems*/
   addEnumOption("TIME_DISCRE_RADIATION", Kind_TimeIntScheme_Radiation, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -2304,7 +2304,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
-  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
+  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, STRUCT_SPACE_ITE::NEWTON);
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
   addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
@@ -6429,13 +6429,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
-        case CD_EXPLICIT:
+        case STRUCT_TIME_INT::CD_EXPLICIT:
           cout << "Explicit time integration (NOT IMPLEMENTED YET)." << endl;
           break;
-        case GENERALIZED_ALPHA:
+        case STRUCT_TIME_INT::GENERALIZED_ALPHA:
           cout << "Generalized-alpha method." << endl;
           break;
-        case NEWMARK_IMPLICIT:
+        case STRUCT_TIME_INT::NEWMARK_IMPLICIT:
           if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
@@ -8160,7 +8160,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
 
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
+        SetKind_TimeIntScheme(NONE);
       }
       break;
   }

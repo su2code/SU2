@@ -211,7 +211,7 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
   } else if (fsi) {
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
      * purposes) ---*/
-    if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
+    if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::NEWMARK_IMPLICIT) {
       feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
   }

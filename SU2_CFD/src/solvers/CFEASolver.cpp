@@ -1401,10 +1401,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     else if (dynamic) {
 
       switch (config->GetKind_TimeIntScheme_FEA()) {
-        case (CD_EXPLICIT):
+        case (STRUCT_TIME_INT::CD_EXPLICIT):
           cout << "NOT IMPLEMENTED YET" << endl;
           break;
-        case (NEWMARK_IMPLICIT):
+        case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
           for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -1458,7 +1458,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 
           break;
-        case (GENERALIZED_ALPHA):
+        case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
           cout << "NOT IMPLEMENTED YET" << endl;
           break;
       }
@@ -1556,10 +1556,10 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
   su2double gamma = config->GetNewmark_gamma(), beta = config->GetNewmark_beta();
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (CD_EXPLICIT):
+    case (STRUCT_TIME_INT::CD_EXPLICIT):
       cout << "NOT IMPLEMENTED YET" << endl;
       break;
-    case (NEWMARK_IMPLICIT):
+    case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
       /*--- Integration constants for Newmark scheme ---*/
 
@@ -1575,7 +1575,7 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 
       break;
 
-    case (GENERALIZED_ALPHA):
+    case (STRUCT_TIME_INT::GENERALIZED_ALPHA):
 
       /*--- Integration constants for Generalized Alpha ---*/
       /*--- Needs to be updated if accounting for structural damping ---*/
@@ -2201,7 +2201,7 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
   const bool dynamic = (config->GetTime_Domain());
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
-  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
   const bool body_forces = config->GetDeadLoad();
 
   /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
@@ -2389,7 +2389,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
   const bool dynamic = (config->GetTime_Domain());
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
-  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);
+  const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
   const bool body_forces = config->GetDeadLoad();
 
   /*--- Blend between previous and current timestep. ---*/
