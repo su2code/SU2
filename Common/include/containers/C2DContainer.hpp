@@ -624,39 +624,3 @@ using su2activematrix = su2matrix<su2double>;
 using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
 
-/*--- Functions to allocate 2D/3D data. ---*/
-
-namespace container_helpers {
-
-/*!
- * \brief Allocate a vector of varying-size vectors and initialize with some value.
- * \param[in] M - the first index is >=0 and < M
- * \param[in] N - the second index is >=0 and < N[first index]
- * \param[in,out] X - the vector of vectors
- * \param[in] val - the value for initialization, default is 0
- * \tparam T - type of an element
- */
-template<typename T>
-inline void Alloc2D(unsigned long M, const std::vector<unsigned long>& N, std::vector<std::vector<T> >& X, T val = 0) {
-  X.resize(M);
-  for(unsigned long i = 0; i < M; ++i){
-    X[i].resize(N[i], val);
-  }
-}
-
-/*!
- * \brief Allocate a vector of matrices with varying row count, and initialize with some value.
- * \param[in] M - the first index is >=0 and < M
- * \param[in] N - the second index is >=0 and < N[first index]
- * \param[in] P - the third index is >=0 and < P
- * \param[in,out] X - the vector of matrices
- * \param[in] val - the value for initialization, default is 0
- */
-inline void Alloc3D(unsigned long M, const std::vector<unsigned long>& N, unsigned long P, std::vector<su2activematrix>& X, su2double val=0) {
-  X.resize(M);
-  for(unsigned long i = 0; i < M; ++i){
-    X[i].resize(N[i],P) = su2double(val);
-  }
-}
-
-}

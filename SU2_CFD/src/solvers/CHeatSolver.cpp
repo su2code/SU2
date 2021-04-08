@@ -177,7 +177,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   unsigned short nConjVariables = 4;
 
-  container_helpers::Alloc3D(nMarker, nVertex, nConjVariables, ConjugateVar);
+  Alloc3D(nVertex, nConjVariables, ConjugateVar);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
@@ -186,7 +186,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Heat flux in all the markers ---*/
 
-  container_helpers::Alloc2D(nMarker, nVertex, HeatFlux);
+  Alloc2D(nVertex, HeatFlux);
 
   if (multizone){
     /*--- Initialize the BGS residuals. ---*/
@@ -635,7 +635,7 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas.data(), config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas.data(), Surface_Areas.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   Total_HeatFlux_Areas = 0.0;
@@ -962,7 +962,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       if (geometry->nodes->GetDomain(iPoint)) {
 
-        su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        const su2double* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;

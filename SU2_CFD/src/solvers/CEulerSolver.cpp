@@ -173,13 +173,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Explicit scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
   }
 
-  using container_helpers::Alloc2D;
-  using container_helpers::Alloc3D;
-
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
 
-  Alloc3D(nMarker, nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
+  Alloc3D(nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
@@ -197,18 +194,18 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   ActDisk_Axis.resize(nMarker, MAXNDIM);
 
   /*--- Actuator Disk Fa, Fx, Fy and Fz allocations ---*/
-  Alloc2D(nMarker, nVertex, ActDisk_Fa);
-  Alloc2D(nMarker, nVertex, ActDisk_Fx);
-  Alloc2D(nMarker, nVertex, ActDisk_Fy);
-  Alloc2D(nMarker, nVertex, ActDisk_Fz);
+  Alloc2D(nVertex, ActDisk_Fa);
+  Alloc2D(nVertex, ActDisk_Fx);
+  Alloc2D(nVertex, ActDisk_Fy);
+  Alloc2D(nVertex, ActDisk_Fz);
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaP);
+  Alloc2D(nVertex, ActDisk_DeltaP);
 
   /*--- Store the value of the Delta T at the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaT);
+  Alloc2D(nVertex, ActDisk_DeltaT);
 
   /*--- Supersonic coefficients ---*/
 
