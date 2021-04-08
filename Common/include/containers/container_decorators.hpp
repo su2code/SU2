@@ -227,7 +227,7 @@ inline void AllocVectorOfVectors(size_t M, const IndexVector& N, VectorOfVector&
 }
 
 /*!
- * \overload Derive outer size from index vector.
+ * \overload Deduce outer size from index vector.
  */
 template<class IndexVector, class VectorOfVector, class Scalar = int>
 inline void AllocVectorOfVectors(const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
@@ -255,7 +255,7 @@ inline void AllocVectorOfMatrices(size_t M, const IndexVector& N, size_t P, Vect
 }
 
 /*!
- * \overload Derive outer size from index vector.
+ * \overload Deduce outer size from index vector.
  */
 template<class IndexVector, class VectorOfMatrix, class Scalar = int>
 inline void AllocVectorOfMatrices(const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
