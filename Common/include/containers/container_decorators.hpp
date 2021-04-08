@@ -218,7 +218,7 @@ struct C3DDummyMiddleView
  * \tparam IndexVector - type of N
  */
 template<typename Scalar, typename IndexVector>
-inline void Alloc2D(unsigned long M, const IndexVector& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
+inline void AllocVectorOfVectors(unsigned long M, const IndexVector& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
   X.resize(M);
   for(unsigned long i = 0; i < M; ++i){
     X[i].resize(N[i], val);
@@ -232,9 +232,9 @@ inline void Alloc2D(unsigned long M, const IndexVector& N, std::vector<std::vect
  * \tparam Scalar - type of an element
  */
 template<typename Scalar>
-inline void Alloc2D(const std::vector<unsigned long>& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
+inline void AllocVectorOfVectors(const std::vector<unsigned long>& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
   unsigned long M = N.size();
-  Alloc2D(M, N, X, val);
+  AllocVectorOfVectors(M, N, X, val);
 }
 
 /*!
@@ -248,7 +248,7 @@ inline void Alloc2D(const std::vector<unsigned long>& N, std::vector<std::vector
  * \tparam IndexVector - type of N
  */
 template<typename Matrix, typename IndexVector>
-inline void Alloc3D(unsigned long M, const IndexVector& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
+inline void AllocVectorOfMatrices(unsigned long M, const IndexVector& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
   X.resize(M);
   for(unsigned long i = 0; i < M; ++i){
     X[i].resize(N[i],P) = val;
@@ -264,7 +264,7 @@ inline void Alloc3D(unsigned long M, const IndexVector& N, unsigned long P, std:
  * \tparam Matrix - type of a matrix, scalar type is Matrix::Scalar
  */
 template<typename Matrix>
-inline void Alloc3D(const std::vector<unsigned long>& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
+inline void AllocVectorOfMatrices(const std::vector<unsigned long>& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
   unsigned long M = N.size();
-  Alloc3D(M, N, P, X, val);
+  AllocVectorOfMatrices(M, N, P, X, val);
 }

@@ -177,7 +177,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   unsigned short nConjVariables = 4;
 
-  Alloc3D(nVertex, nConjVariables, ConjugateVar);
+  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
@@ -186,7 +186,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Heat flux in all the markers ---*/
 
-  Alloc2D(nVertex, HeatFlux);
+  AllocVectorOfVectors(nVertex, HeatFlux);
 
   if (multizone){
     /*--- Initialize the BGS residuals. ---*/
