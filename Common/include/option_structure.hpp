@@ -470,20 +470,6 @@ const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 
 
 /*!
- * \brief Types of mathematical problem to solve
- */
-enum ENUM_MATH_PROBLEM {
-  DIRECT = 0,               /*!< \brief Direct problem */
-  CONTINUOUS_ADJOINT = 1,   /*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2      /*!< \brief AD-based discrete adjoint problem. */
-};
-static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
-  MakePair("DIRECT", DIRECT)
-  MakePair("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-  MakePair("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
-};
-
-/*!
  * \brief Types of spatial discretizations
  */
 enum ENUM_SPACE {
