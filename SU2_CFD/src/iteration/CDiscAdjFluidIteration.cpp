@@ -492,7 +492,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   const bool frozen_visc = config[iZone]->GetFrozen_Visc_Disc();
 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
-      (kind_recording == RECORDING::NO_RECORDING) ||
+      (kind_recording == RECORDING::CLEAR_INDICES) ||
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 

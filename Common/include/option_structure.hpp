@@ -2043,7 +2043,7 @@ static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 
 
 enum class RECORDING {
-  NO_RECORDING,
+  CLEAR_INDICES,
   SOLUTION_VARIABLES,
   MESH_COORDS,
   MESH_DEFORM,

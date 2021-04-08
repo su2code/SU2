@@ -235,9 +235,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
-  SetRecording(RECORDING::NO_RECORDING, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-  RecordingState = RECORDING::NO_RECORDING;
+  RecordingState = RECORDING::CLEAR_INDICES;
 
   AD::ClearAdjoints();
   SetAdj_ObjFunction();
@@ -301,7 +301,7 @@ void CDiscAdjMultizoneDriver::Run() {
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
     if (RecordingState != RECORDING::SOLUTION_VARIABLES) {
-      SetRecording(RECORDING::NO_RECORDING, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
@@ -454,7 +454,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::NO_RECORDING, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
 
   /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
@@ -554,7 +554,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
-    case RECORDING::NO_RECORDING:       cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::CLEAR_INDICES:       cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
     default: break;
@@ -563,7 +563,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   /*--- Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
-  if(kind_recording != RECORDING::NO_RECORDING) {
+  if(kind_recording != RECORDING::CLEAR_INDICES) {
 
     AD::StartRecording();
 
@@ -636,7 +636,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     }
   }
 
-  if (kind_recording != RECORDING::NO_RECORDING && driver_config->GetWrt_AD_Statistics()) {
+  if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {

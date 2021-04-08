@@ -54,7 +54,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   integration = integration_container[ZONE_0][INST_0];
 
   /*--- Store the recording state ---*/
-  RecordingState = RECORDING::NO_RECORDING;
+  RecordingState = RECORDING::CLEAR_INDICES;
 
   /*--- Determine if the problem is a turbomachinery problem ---*/
   bool turbo = config->GetBoolTurbomachinery();
@@ -255,7 +255,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*---Enable recording and register input of the iteration --- */
 
-  if (kind_recording != RECORDING::NO_RECORDING){
+  if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
 
@@ -291,7 +291,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   SetObjFunction();
 
-  if (kind_recording != RECORDING::NO_RECORDING && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+  if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
@@ -520,7 +520,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(RECORDING kind_recording){
 
     cout << "-------------------------------------------------------------------------" << endl << endl;
   }
-  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::NO_RECORDING)){
+  else if ((rank == MASTER_NODE) && (kind_recording == SecondaryVariables) && (SecondaryVariables != RECORDING::CLEAR_INDICES)){
     cout << endl << "Recording the computational graph with respect to the ";
     switch (SecondaryVariables){
       case RECORDING::MESH_COORDS: cout << "mesh coordinates." << endl;    break;
@@ -535,7 +535,7 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::NO_RECORDING);
+  SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
 
@@ -548,7 +548,7 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::NO_RECORDING);
+  SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
 

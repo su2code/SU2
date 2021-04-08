@@ -88,7 +88,7 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  RECORDING RecordingState = RECORDING::NO_RECORDING;      /*!< \brief The kind of recording that the tape currently holds. */
+  RECORDING RecordingState = RECORDING::CLEAR_INDICES;      /*!< \brief The kind of recording that the tape currently holds. */
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
