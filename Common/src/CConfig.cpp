@@ -2419,7 +2419,7 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink
    * Sets Kind_RadialBasis \ingroup Config
    */
-  addEnumOption("KIND_RADIAL_BASIS_FUNCTION", Kind_RadialBasisFunction, RadialBasisFunction_Map, WENDLAND_C2);
+  addEnumOption("KIND_RADIAL_BASIS_FUNCTION", Kind_RadialBasisFunction, RadialBasisFunction_Map, RADIAL_BASIS::WENDLAND_C2);
 
   /*  DESCRIPTION: Use polynomial term in radial basis function interpolation.
   *  Options: NO, YES \ingroup Config */

@@ -958,7 +958,7 @@ private:
   unsigned short Kind_Interpolation;         /*!< \brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation;            /*!< \brief Conservative approach for non matching mesh interpolation. */
   unsigned short NumNearestNeighbors;        /*!< \brief Number of neighbors used for Nearest Neighbor interpolation. */
-  unsigned short Kind_RadialBasisFunction;   /*!< \brief type of radial basis function to use for radial basis FSI. */
+  RADIAL_BASIS Kind_RadialBasisFunction;     /*!< \brief type of radial basis function to use for radial basis FSI. */
   bool RadialBasisFunction_PolynomialOption; /*!< \brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
   su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter (radius). */
   su2double RadialBasisFunction_PruneTol;    /*!< \brief Tolerance to prune the RBF interpolation matrix. */
@@ -8694,7 +8694,7 @@ public:
   /*!
    * \brief Get the basis function to use for radial basis function interpolation for FSI.
    */
-  unsigned short GetKindRadialBasisFunction(void) const { return Kind_RadialBasisFunction; }
+  RADIAL_BASIS GetKindRadialBasisFunction(void) const { return Kind_RadialBasisFunction; }
 
   /*!
    * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.

@@ -305,19 +305,19 @@ static const MapType<string, ENUM_INTERPOLATOR> Interpolator_Map = {
 /*!
  * \brief Types of radial basis functions
  */
-enum ENUM_RADIALBASIS {
-  WENDLAND_C2 = 0,        /*!< \brief Wendland C2 radial basis function. */
-  INV_MULTI_QUADRIC = 1,  /*!< \brief Inversed multi quartic biharmonic spline. */
-  GAUSSIAN = 2,           /*!< \brief Gaussian basis function. */
-  THIN_PLATE_SPLINE = 3,  /*!< \brief Thin plate spline. */
-  MULTI_QUADRIC = 4,      /*!< \brief Multi quartic biharmonic spline. */
+enum class RADIAL_BASIS {
+  WENDLAND_C2,        /*!< \brief Wendland C2 radial basis function. */
+  INV_MULTI_QUADRIC,  /*!< \brief Inversed multi quartic biharmonic spline. */
+  GAUSSIAN,           /*!< \brief Gaussian basis function. */
+  THIN_PLATE_SPLINE,  /*!< \brief Thin plate spline. */
+  MULTI_QUADRIC,      /*!< \brief Multi quartic biharmonic spline. */
 };
-static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
-  MakePair("WENDLAND_C2", WENDLAND_C2)
-  MakePair("INV_MULTI_QUADRIC", INV_MULTI_QUADRIC)
-  MakePair("GAUSSIAN", GAUSSIAN)
-  MakePair("THIN_PLATE_SPLINE", THIN_PLATE_SPLINE)
-  MakePair("MULTI_QUADRIC", MULTI_QUADRIC)
+static const MapType<string, RADIAL_BASIS> RadialBasisFunction_Map = {
+  MakePair("WENDLAND_C2", RADIAL_BASIS::WENDLAND_C2)
+  MakePair("INV_MULTI_QUADRIC", RADIAL_BASIS::INV_MULTI_QUADRIC)
+  MakePair("GAUSSIAN", RADIAL_BASIS::GAUSSIAN)
+  MakePair("THIN_PLATE_SPLINE", RADIAL_BASIS::THIN_PLATE_SPLINE)
+  MakePair("MULTI_QUADRIC", RADIAL_BASIS::MULTI_QUADRIC)
 };
 
 /*!
