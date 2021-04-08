@@ -236,6 +236,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
         auto Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Compute the DES length scale ---*/
@@ -281,6 +282,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -289,7 +291,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
@@ -379,6 +381,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
   if (harmonic_balance) {
 
@@ -394,6 +397,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         LinSysRes(iPoint,iVar) += Source*Volume;
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -410,6 +414,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
   }
@@ -475,6 +480,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -535,6 +541,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -622,6 +629,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -707,6 +715,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -795,6 +804,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -883,6 +893,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1032,6 +1043,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
 //        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1125,6 +1137,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1229,6 +1242,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1889,6 +1903,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     nodes->SetDES_LengthScale(iPoint, lengthScale);
 
   }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,

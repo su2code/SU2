@@ -32,8 +32,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
                                unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
                                Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool viscous   = config->GetViscous();
   const bool windgust  = config->GetWind_Gust();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
@@ -97,7 +97,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
-  if (config->GetTime_Marching() == HARMONIC_BALANCE)
+  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/

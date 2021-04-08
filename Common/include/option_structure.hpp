@@ -63,12 +63,12 @@ using MapType = CEmptyMap<T,U>;
 /*!
  * \brief Different software components of SU2
  */
-enum SU2_COMPONENT {
-  SU2_CFD = 1,  /*!< \brief Running the SU2_CFD software. */
-  SU2_DEF = 2,  /*!< \brief Running the SU2_DEF software. */
-  SU2_DOT = 3,  /*!< \brief Running the SU2_DOT software. */
-  SU2_GEO = 5,  /*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
+enum class SU2_COMPONENT {
+  SU2_CFD, /*!< \brief Running the SU2_CFD software. */
+  SU2_DEF, /*!< \brief Running the SU2_DEF software. */
+  SU2_DOT, /*!< \brief Running the SU2_DOT software. */
+  SU2_GEO, /*!< \brief Running the SU2_GEO software. */
+  SU2_SOL  /*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
@@ -237,13 +237,13 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 /*!
  * \brief Different solver types for multizone problems
  */
-enum ENUM_MULTIZONE {
-  MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
-  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
+enum class ENUM_MULTIZONE {
+  MZ_BLOCK_GAUSS_SEIDEL, /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
+  MZ_BLOCK_JACOBI,       /*!< \brief Definition of a Block-Jacobi solver. */
 };
 static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
-  MakePair("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
-  MakePair("BLOCK_JACOBI", MZ_BLOCK_JACOBI)
+  MakePair("BLOCK_GAUSS_SEIDEL", ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL)
+  MakePair("BLOCK_JACOBI", ENUM_MULTIZONE::MZ_BLOCK_JACOBI)
 };
 
 /*!
@@ -395,7 +395,7 @@ enum ENUM_TRANSFER {
 /*!
  * \brief different regime modes
  */
-enum ENUM_REGIME {
+enum class ENUM_REGIME {
   COMPRESSIBLE = 0,   /*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1, /*!< \brief Definition of incompressible solver. */
   NO_FLOW = 2
@@ -594,15 +594,15 @@ MakePair("GUPTA-YOS", GUPTAYOS)
 /*!
  * \brief Types of density models
  */
-enum ENUM_DENSITYMODEL {
-  CONSTANT = 0,
-  BOUSSINESQ = 1,  /*!< \brief BoussinesQ density model. */
-  VARIABLE = 2     /*!< \brief Variable density model. */
+enum class INC_DENSITYMODEL {
+  CONSTANT,   /*!< \brief Constant density. */
+  BOUSSINESQ, /*!< \brief Boussinesq density model. */
+  VARIABLE,   /*!< \brief Variable density model. */
 };
-static const MapType<string, ENUM_DENSITYMODEL> DensityModel_Map = {
-  MakePair("CONSTANT", CONSTANT)
-  MakePair("BOUSSINESQ", BOUSSINESQ)
-  MakePair("VARIABLE", VARIABLE)
+static const MapType<string, INC_DENSITYMODEL> DensityModel_Map = {
+  MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
+  MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
+  MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
 };
 
 /*!
@@ -1239,17 +1239,17 @@ static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
  * The first (temperature) part determines the BC method on the fluid side, the second (heatflux) part determines
  * the BC method on the solid side of the CHT interface.
  */
-enum ENUM_CHT_COUPLING {
-  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX = 0,
-  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX = 1,
-  DIRECT_TEMPERATURE_ROBIN_HEATFLUX = 2,
-  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX = 3
+enum CHT_COUPLING {
+  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX,
+  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX,
+  DIRECT_TEMPERATURE_ROBIN_HEATFLUX,
+  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX,
 };
-static const MapType<string, ENUM_CHT_COUPLING> CHT_Coupling_Map = {
-  MakePair("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
-  MakePair("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
-  MakePair("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
-  MakePair("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)
+static const MapType<string, CHT_COUPLING> CHT_Coupling_Map = {
+  MakePair("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
+  MakePair("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
+  MakePair("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
+  MakePair("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)
 };
 
 /*!
@@ -1377,30 +1377,30 @@ enum TURBO_MARKER_TYPE{
  * \brief Types inlet boundary treatments
  */
 enum INLET_TYPE {
-  TOTAL_CONDITIONS = 1,   /*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  MASS_FLOW = 2,          /*!< \brief User specifies density and velocity (mass flow). */
-  INPUT_FILE = 3,         /*!< \brief User specifies an input file. */
-  VELOCITY_INLET = 4,     /*!< \brief Velocity inlet for an incompressible flow. */
-  PRESSURE_INLET = 5      /*!< \brief Total pressure inlet for an incompressible flow. */
+  TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
+  MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
+  INPUT_FILE,       /*!< \brief User specifies an input file. */
+  VELOCITY_INLET,   /*!< \brief Velocity inlet for an incompressible flow. */
+  PRESSURE_INLET,   /*!< \brief Total pressure inlet for an incompressible flow. */
 };
 static const MapType<string, INLET_TYPE> Inlet_Map = {
-  MakePair("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
-  MakePair("MASS_FLOW", MASS_FLOW)
-  MakePair("INPUT_FILE", INPUT_FILE)
-  MakePair("VELOCITY_INLET", VELOCITY_INLET)
-  MakePair("PRESSURE_INLET", PRESSURE_INLET)
+  MakePair("TOTAL_CONDITIONS", INLET_TYPE::TOTAL_CONDITIONS)
+  MakePair("MASS_FLOW", INLET_TYPE::MASS_FLOW)
+  MakePair("INPUT_FILE", INLET_TYPE::INPUT_FILE)
+  MakePair("VELOCITY_INLET", INLET_TYPE::VELOCITY_INLET)
+  MakePair("PRESSURE_INLET", INLET_TYPE::PRESSURE_INLET)
 };
 
 /*!
  * \brief Types outlet boundary treatments
  */
-enum OUTLET_TYPE {
-  PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
-  MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
+enum class INC_OUTLET_TYPE {
+  PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
+  MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<string, OUTLET_TYPE> Outlet_Map = {
-  MakePair("PRESSURE_OUTLET", PRESSURE_OUTLET)
-  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
+static const MapType<string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+  MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
+  MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
 };
 
 /*!
@@ -1998,21 +1998,21 @@ static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
 /*!
  * \brief Types of schemes for unsteady computations
  */
-enum ENUM_UNSTEADY {
-  STEADY = 0,            /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,     /*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,   /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,   /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
-  HARMONIC_BALANCE = 5   /*!< \brief Use a harmonic balance source term. */
+enum class TIME_MARCHING {
+  STEADY,           /*!< \brief A steady computation. */
+  TIME_STEPPING,    /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST,  /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND,  /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME, /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE, /*!< \brief Use a harmonic balance source term. */
 };
-static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
-  MakePair("NO", STEADY)
-  MakePair("TIME_STEPPING", TIME_STEPPING)
-  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
-  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-  MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
-  MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
+static const MapType<string, TIME_MARCHING> TimeMarching_Map = {
+  MakePair("NO", TIME_MARCHING::STEADY)
+  MakePair("TIME_STEPPING", TIME_MARCHING::TIME_STEPPING)
+  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", TIME_MARCHING::DT_STEPPING_1ST)
+  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", TIME_MARCHING::DT_STEPPING_2ND)
+  MakePair("HARMONIC_BALANCE", TIME_MARCHING::HARMONIC_BALANCE)
+  MakePair("ROTATIONAL_FRAME", TIME_MARCHING::ROTATIONAL_FRAME)
 };
 
 /*!
@@ -2177,36 +2177,36 @@ static const MapType<string, COMM_LEVEL> Comm_Map = {
   MakePair("FULL",    COMM_FULL)
 };
 
-/*
+/*!
  * \brief Types of filter kernels, initially intended for structural topology optimization applications
  */
-enum ENUM_FILTER_KERNEL {
-  CONSTANT_WEIGHT_FILTER = 0,      /*!< \brief Uniform weight. */
-  CONICAL_WEIGHT_FILTER  = 1,      /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
-  GAUSSIAN_WEIGHT_FILTER = 2,      /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
-  DILATE_MORPH_FILTER    = 3,      /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
-  ERODE_MORPH_FILTER     = 4,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
+enum class ENUM_FILTER_KERNEL {
+  CONSTANT_WEIGHT,  /*!< \brief Uniform weight. */
+  CONICAL_WEIGHT,   /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
+  GAUSSIAN_WEIGHT,  /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
+  DILATE_MORPH,     /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
+  ERODE_MORPH,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
 };
 static const MapType<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
-  MakePair("CONSTANT", CONSTANT_WEIGHT_FILTER)
-  MakePair("CONICAL" , CONICAL_WEIGHT_FILTER)
-  MakePair("GAUSSIAN", GAUSSIAN_WEIGHT_FILTER)
-  MakePair("DILATE"  , DILATE_MORPH_FILTER)
-  MakePair("ERODE"   , ERODE_MORPH_FILTER)
+  MakePair("CONSTANT", ENUM_FILTER_KERNEL::CONSTANT_WEIGHT)
+  MakePair("CONICAL", ENUM_FILTER_KERNEL::CONICAL_WEIGHT)
+  MakePair("GAUSSIAN", ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT)
+  MakePair("DILATE", ENUM_FILTER_KERNEL::DILATE_MORPH)
+  MakePair("ERODE", ENUM_FILTER_KERNEL::ERODE_MORPH)
 };
 
 /*!
  * \brief Types of projection function, initially intended for structural topology optimization applications
  */
-enum ENUM_PROJECTION_FUNCTION {
-  NO_PROJECTION  = 0,      /*!< \brief No projection. */
-  HEAVISIDE_UP   = 1,      /*!< \brief Project values towards 1. */
-  HEAVISIDE_DOWN = 2,      /*!< \brief Project values towards 0. */
+enum class ENUM_PROJECTION_FUNCTION {
+  NONE,           /*!< \brief No projection. */
+  HEAVISIDE_UP,   /*!< \brief Project values towards 1. */
+  HEAVISIDE_DOWN, /*!< \brief Project values towards 0. */
 };
 static const MapType<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
-  MakePair("NO_PROJECTION" , NO_PROJECTION)
-  MakePair("HEAVISIDE_UP"  , HEAVISIDE_UP)
-  MakePair("HEAVISIDE_DOWN", HEAVISIDE_DOWN)
+  MakePair("NO_PROJECTION", ENUM_PROJECTION_FUNCTION::NONE)
+  MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
+  MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
 };
 
 /*!
@@ -2246,15 +2246,15 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
 /*!
  * \brief Types of streamwise periodicity.
  */
-enum ENUM_STREAMWISE_PERIODIC {
-  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
-  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
-  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
+enum class ENUM_STREAMWISE_PERIODIC {
+  NONE,          /*!< \brief No streamwise periodic flow. */
+  PRESSURE_DROP, /*!< \brief Prescribed pressure drop. */
+  MASSFLOW,      /*!< \brief Prescribed massflow. */
 };
 static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
-  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
-  MakePair("PRESSURE_DROP", PRESSURE_DROP)
-  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
+  MakePair("NONE",          ENUM_STREAMWISE_PERIODIC::NONE)
+  MakePair("PRESSURE_DROP", ENUM_STREAMWISE_PERIODIC::PRESSURE_DROP)
+  MakePair("MASSFLOW",      ENUM_STREAMWISE_PERIODIC::MASSFLOW)
 };
 
 /*!
