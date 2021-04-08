@@ -206,7 +206,7 @@ struct C3DDummyMiddleView
   }
 };
 
-/*--- Functions to allocate 2D/3D data. ---*/
+/*--- Helper functions to allocate containers of containers. ---*/
 
 /*!
  * \brief Allocate a vector of varying-size vectors and initialize with some value.
@@ -214,26 +214,24 @@ struct C3DDummyMiddleView
  * \param[in] N - the second index is >=0 and < N[first index]
  * \param[in,out] X - the vector of vectors
  * \param[in] val - the value for initialization, default is 0
- * \tparam Scalar - type of an element
  * \tparam IndexVector - type of N
+ * \tparam VectorOfVector - type of X
  */
-template<typename Scalar, typename IndexVector>
-inline void AllocVectorOfVectors(unsigned long M, const IndexVector& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(size_t M, const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
   X.resize(M);
-  for(unsigned long i = 0; i < M; ++i){
-    X[i].resize(N[i], val);
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i]);
+    for (auto& x : X[i]) x = val;
   }
 }
+
 /*!
- * \brief Allocate a vector of varying-size vectors and initialize with some value.
- * \param[in] N - Vector of ranges of the second index. Its size determines the range of the first index.
- * \param[in,out] X - the vector of vectors
- * \param[in] val - the value for initialization, default is 0
- * \tparam Scalar - type of an element
+ * \overload Derive outer size from index vector.
  */
-template<typename Scalar>
-inline void AllocVectorOfVectors(const std::vector<unsigned long>& N, std::vector<std::vector<Scalar> >& X, Scalar val = 0) {
-  unsigned long M = N.size();
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
+  auto M = N.size();
   AllocVectorOfVectors(M, N, X, val);
 }
 
@@ -244,27 +242,23 @@ inline void AllocVectorOfVectors(const std::vector<unsigned long>& N, std::vecto
  * \param[in] P - the third index is >=0 and < P
  * \param[in,out] X - the vector of matrices
  * \param[in] val - the value for initialization, default is 0
- * \tparam Matrix - type of a matrix, scalar type is Matrix::Scalar
  * \tparam IndexVector - type of N
+ * \tparam VectorOfMatrix - type of X
  */
-template<typename Matrix, typename IndexVector>
-inline void AllocVectorOfMatrices(unsigned long M, const IndexVector& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(size_t M, const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
   X.resize(M);
-  for(unsigned long i = 0; i < M; ++i){
-    X[i].resize(N[i],P) = val;
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i],P);
+    for (auto& x : X[i]) x = val;
   }
 }
 
 /*!
- * \brief Allocate a vector of matrices with varying row count, and initialize with some value.
- * \param[in] N - Vector of ranges of the second index. Its size determines the range of the first index.
- * \param[in] P - the third index is >=0 and < P
- * \param[in,out] X - the vector of matrices
- * \param[in] val - the value for initialization, default is 0
- * \tparam Matrix - type of a matrix, scalar type is Matrix::Scalar
+ * \overload Derive outer size from index vector.
  */
-template<typename Matrix>
-inline void AllocVectorOfMatrices(const std::vector<unsigned long>& N, unsigned long P, std::vector<Matrix>& X, typename Matrix::Scalar val=0) {
-  unsigned long M = N.size();
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
+  auto M = N.size();
   AllocVectorOfMatrices(M, N, P, X, val);
 }

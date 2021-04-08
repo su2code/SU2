@@ -183,24 +183,17 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
-
-  AllocVectorOfMatrices(nVertex, nHeatConjugateVar, HeatConjugateVar);
-  for (auto& x : HeatConjugateVar) x = config.GetTemperature_FreeStreamND();
+  AllocVectorOfMatrices(nVertex, nHeatConjugateVar, HeatConjugateVar, config.GetTemperature_FreeStreamND());
 
   if (MGLevel == MESH_0) {
-    VertexTraction.resize(nMarker);
-    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (config.GetSolid_Wall(iMarker))
-        VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
-    }
+    auto nSolidVertex = nVertex;
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+      if (!config.GetSolid_Wall(iMarker))
+        nSolidVertex[iMarker] = 0;
 
-    if (config.GetDiscrete_Adjoint()) {
-      VertexTractionAdjoint.resize(nMarker);
-      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-        if (config.GetSolid_Wall(iMarker))
-          VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
-      }
-    }
+    AllocVectorOfMatrices(nSolidVertex, nDim, VertexTraction);
+
+    if (config.GetDiscrete_Adjoint()) AllocVectorOfMatrices(nSolidVertex, nDim, VertexTractionAdjoint);
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/

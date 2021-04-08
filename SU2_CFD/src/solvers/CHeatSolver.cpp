@@ -33,7 +33,6 @@ CHeatSolver::CHeatSolver(void) : CSolver() { }
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   unsigned short iVar, iDim, nLineLets, iMarker;
-  unsigned long iVertex;
 
   bool multizone = config->GetMultizone_Problem();
 
@@ -176,13 +175,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
    used for communications with donor cells ---*/
 
   unsigned short nConjVariables = 4;
-
-  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar);
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
+  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar, config->GetTemperature_FreeStreamND());
 
   /*--- Heat flux in all the markers ---*/
 
