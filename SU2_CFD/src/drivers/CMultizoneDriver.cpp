@@ -37,6 +37,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
 
+
   /*--- Initialize some useful booleans ---*/
   fsi = false; cht = false;
 
@@ -486,7 +487,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   for (iZone = 0; iZone < nZone; iZone++){
     wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
-                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc);
+                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc );
   }
 
   if (wrote_files){
@@ -679,6 +680,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
     /*--- Check whether the outer time integration has reached the final time ---*/
     TimeConvergence = GetTimeConvergence();
+
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
@@ -698,5 +700,5 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-  return driver_output->GetTimeConvergence();
+    return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
