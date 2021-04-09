@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -218,6 +218,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
@@ -381,7 +382,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }
     } // end target vertex loop
-
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalDonorPoints += totalDonors;
@@ -390,7 +391,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       AvgCorrection += sumCorr;
       MaxCorrection = max(MaxCorrection, maxCorr);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
     donorCoord.resize(0,0);

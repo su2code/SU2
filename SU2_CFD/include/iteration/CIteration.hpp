@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -279,12 +279,6 @@ class CIteration {
 
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
                               unsigned short iZone, unsigned short iInst) {}
-
-  virtual void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                     unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
-  virtual void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                    unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
 
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
                             unsigned short val_iInst, unsigned short kind_recording) {}

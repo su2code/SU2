@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -229,6 +229,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -305,6 +306,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -503,6 +505,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   delete [] PrimVar_j;
@@ -540,6 +543,7 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
         }
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -559,7 +563,7 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
 
   /*--- Build implicit system ---*/
 
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /// TODO: This could be the SetTime_Step of this solver.
@@ -593,22 +597,22 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
       }
     }
   }
+  END_SU2_OMP_FOR
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   /*--- Compute the root mean square residual ---*/
-  SU2_OMP_MASTER
   SetResidual_RMS(geometry, config);
-  SU2_OMP_BARRIER
 }
 
 void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -628,6 +632,7 @@ void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solve
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
+        END_SU2_OMP_FOR
         break;
 
       case SST: case SST_SUST:
@@ -647,6 +652,7 @@ void CTurbSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solve
                       density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
         }
+        END_SU2_OMP_FOR
         break;
 
     }
@@ -668,11 +674,12 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system. ---*/
 
-  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
@@ -680,6 +687,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CompleteImplicitIteration(geometry, solver_container, config);
@@ -733,6 +741,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -741,9 +750,9 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
   const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   /*--- Flow solution, needed to get density. ---*/
 
@@ -834,6 +843,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       }
 
     }
+    END_SU2_OMP_FOR
 
   } else {
 
@@ -880,6 +890,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -927,6 +938,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           }
 
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -999,6 +1011,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
+    END_SU2_OMP_FOR
 
   } // end dynamic grid
 
@@ -1041,7 +1054,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    Therefore, we must reduce skipVars here if energy is inactive so that
    the turbulent variables are read correctly. ---*/
 
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 
@@ -1081,6 +1094,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- MPI solution and compute the eddy viscosity ---*/
@@ -1108,6 +1122,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       }
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+    END_SU2_OMP_FOR
 
     solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
@@ -1124,7 +1139,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
 
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
 }

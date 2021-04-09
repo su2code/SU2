@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -123,10 +123,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   const unsigned short nDim         = geometry->GetnDim();
   const unsigned short Kind_Average = config->GetKind_Average();
 
-  const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
+  const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
-  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
+  const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
@@ -218,7 +218,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == VARIABLE) {
+            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
               Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
               sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {
@@ -877,7 +877,7 @@ void CFlowOutput::WriteMetaData(CConfig *config){
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
-    if (config->GetTime_Marching() == DT_STEPPING_1ST || config->GetTime_Marching() == DT_STEPPING_2ND)
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST || config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
       meta_file <<"ITER= " << curTimeIter + 1 << endl;
     else
       meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
@@ -909,8 +909,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
   unsigned short iMarker_Monitoring;
 
-  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
-  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool compressible    = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   const bool unsteady        = config->GetTime_Domain();
   const bool viscous         = config->GetViscous();
   const bool dynamic_grid    = config->GetDynamic_Grid();
@@ -1264,7 +1264,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
     Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file << "-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2020, SU2 Contributors                                 |" << "\n";
+    Breakdown_file << "| Copyright 2012-2021, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -1653,7 +1653,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     /*--- Incompressible version of the console output ---*/
 
       bool energy     = config->GetEnergy_Equation();
-      bool boussinesq = (config->GetKind_DensityModel() == BOUSSINESQ);
+      bool boussinesq = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
       if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
@@ -1698,16 +1698,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
       switch (config->GetKind_DensityModel()) {
 
-        case CONSTANT:
+        case INC_DENSITYMODEL::CONSTANT:
           if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
           else Breakdown_file << "No energy equation." << "\n";
           break;
 
-        case BOUSSINESQ:
+        case INC_DENSITYMODEL::BOUSSINESQ:
           if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
           break;
 
-        case VARIABLE:
+        case INC_DENSITYMODEL::VARIABLE:
           if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
           break;
 
@@ -2709,12 +2709,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
-    if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
+    if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
         ((Iter == 0) ||
          (Iter % config->GetVolume_Wrt_Freq() == 0) ||
          ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.

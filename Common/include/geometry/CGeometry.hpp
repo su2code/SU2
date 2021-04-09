@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1169,16 +1169,6 @@ public:
   inline unsigned long GetnElemPyra(void) const { return nelem_pyramid; }
 
   /*!
-   * \brief Indentify geometrical planes in the mesh
-   */
-  void SetGeometryPlanes(CConfig *config);
-
-  /*!
-   * \brief Get geometrical planes in the mesh
-   */
-  inline vector<su2double> GetGeometryPlanes() const {return XCoordList;}
-
-  /*!
    * \brief Get x coords of geometrical planes in the mesh
    */
   inline vector<vector<su2double> > GetXCoord() const {return Xcoord_plane;}
@@ -1252,13 +1242,7 @@ public:
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config) const;
-
-  /*!
-   * \brief Register the coordinates of the mesh nodes as output.
-   * \param[in] config
-   */
-  void RegisterOutput_Coordinates(CConfig *config) const;
+  void RegisterCoordinates(const CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1561,7 +1545,8 @@ public:
    * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
    * \param[in,out] values - On entry, the "raw" values, on exit, the filtered values.
    */
-  void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+  void FilterValuesAtElementCG(const vector<su2double> &filter_radius,
+                               const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                const unsigned short search_limit, su2double *values) const;
 
   /*!

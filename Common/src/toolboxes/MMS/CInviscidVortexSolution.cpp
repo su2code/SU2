@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,9 +61,9 @@ CInviscidVortexSolution::CInviscidVortexSolution(unsigned short val_nDim,
   gamOvGm1 = ovGm1*Gamma;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if((config->GetTime_Marching() != TIME_STEPPING) &&
-     (config->GetTime_Marching() != DT_STEPPING_1ST) &&
-     (config->GetTime_Marching() != DT_STEPPING_2ND))
+  if((config->GetTime_Marching() != TIME_MARCHING::TIME_STEPPING) &&
+     (config->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_1ST) &&
+     (config->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_2ND))
     SU2_MPI::Error("Unsteady mode must be selected for the inviscid vortex",
                    CURRENT_FUNCTION);
 

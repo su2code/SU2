@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -214,7 +214,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
       /*--- Output original FFD FFDBox ---*/
 
-      if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
+      if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_COMPONENT::SU2_DOT)) {
 
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
           auto FileFormat = config->GetVolumeOutputFiles();
@@ -303,7 +303,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
             MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
 
-            if ((MaxDiff > BoundLimit) && (config->GetKind_SU2() == SU2_DEF)) {
+            if ((MaxDiff > BoundLimit) && (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF)) {
 
               if (rank == MASTER_NODE) cout << "Out-of-bounds, re-adjusting scale factor to safisfy line search limit." << endl;
 
@@ -322,7 +322,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
             }
 
             /*--- Set total deformation values in config ---*/
-            if (config->GetKind_SU2() == SU2_DEF) {
+            if (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) {
 
               totaldeformation.resize(config->GetnDV());
               for (iDV = 0; iDV < config->GetnDV(); iDV++) {
@@ -493,7 +493,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
         /*--- Output the deformed FFD Boxes ---*/
 
-        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
+        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_COMPONENT::SU2_DOT)) {
 
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
             auto FileFormat = config->GetVolumeOutputFiles();
@@ -1031,7 +1031,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
   su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
   bool FFD_Symmetry_Plane = config->GetFFD_Symmetry_Plane();
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
@@ -1114,10 +1114,10 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 
-      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_GEO)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT)) ||
           ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
 
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
@@ -3416,7 +3416,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   char buffer[50];
   string DV_Filename, UnstExt, text_line;
   ifstream surface_positions;
-  bool unsteady = config->GetTime_Marching();
+  bool unsteady = config->GetTime_Marching() != TIME_MARCHING::STEADY;
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Load stuff from config ---*/
@@ -3476,8 +3476,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
     if (nDim == 2) point_line >> iPoint >> NewCoord[0] >> NewCoord[1];
     if (nDim == 3) point_line >> iPoint >> NewCoord[0] >> NewCoord[1] >> NewCoord[2];
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
-          (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
+      if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) ||
+          (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           GlobalIndex = geometry->nodes->GetGlobalIndex(jPoint);
@@ -3558,8 +3558,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Loop through to find only moving surface markers ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
-        (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
+    if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) ||
+        (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD)) {
 
       /*--- Loop over all surface points for this marker ---*/
 
@@ -3703,7 +3703,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
    deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
   /*--- Read the coordinates. Two main formats:
    - Selig are in an x, y format starting from trailing edge, along the upper surface to the leading
@@ -3874,8 +3874,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF))) {
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
         Coord_i = boundary->vertex[iMarker][iVertex]->GetCoord();
         Coord_ip1 = boundary->vertex[iMarker][iVertex+1]->GetCoord();
@@ -3898,8 +3898,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     Arch = 0.0;
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF))) {
         Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
 
         if (iVertex == 0) Arch = 0.0;

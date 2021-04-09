@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -115,14 +115,13 @@ FORCEINLINE Double squaredNorm(const VectorDbl<nDim>& vector) {
 template<size_t nDim>
 FORCEINLINE Double norm(const VectorDbl<nDim>& vector) { return sqrt(squaredNorm(vector)); }
 
+#ifndef CODI_REVERSE_TYPE
 /*!
  * \brief Gather a single variable from index iPoint of a 1D container.
  */
 template<class Container>
 FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
-  auto x = *vars.innerIter(iPoint);
-  AD::SetPreaccIn(x, Double::Size);
-  return x;
+  return *vars.innerIter(iPoint);
 }
 
 /*!
@@ -130,9 +129,7 @@ FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
  */
 template<size_t nVar, class Container>
 FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
-  auto x = vars.template get<VectorDbl<nVar> >(iPoint);
-  AD::SetPreaccIn(x, nVar, Double::Size);
-  return x;
+  return vars.template get<VectorDbl<nVar> >(iPoint);
 }
 
 /*!
@@ -140,10 +137,55 @@ FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
  */
 template<size_t nRows, size_t nCols, class Container>
 FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& vars) {
-  auto x = vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
-  AD::SetPreaccIn(x, nRows, nCols, Double::Size);
+  return vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
+}
+#else
+
+namespace {
+  template<class Container, su2enable_if<Container::IsVector> = 0>
+  FORCEINLINE const su2double& get(const Container& vars, unsigned long iPoint) { return vars(iPoint); }
+
+  /*--- When getting 1 variable from a matrix container, we assume it is the first. ---*/
+  template<class Container, su2enable_if<!Container::IsVector> = 0>
+  FORCEINLINE const su2double& get(const Container& vars, unsigned long iPoint) { return vars(iPoint,0); }
+}
+
+template<class Container>
+FORCEINLINE Double gatherVariables(Int iPoint, const Container& vars) {
+  Double x;
+  for (size_t k=0; k<Double::Size; ++k) {
+    AD::SetPreaccIn(get(vars, iPoint[k]));
+    x[k] = get(vars, iPoint[k]);
+  }
   return x;
 }
+
+template<size_t nVar, class Container>
+FORCEINLINE VectorDbl<nVar> gatherVariables(Int iPoint, const Container& vars) {
+  VectorDbl<nVar> x;
+  for (size_t i=0; i<nVar; ++i) {
+    for (size_t k=0; k<Double::Size; ++k) {
+      AD::SetPreaccIn(vars(iPoint[k],i));
+      x[i][k] = vars(iPoint[k],i);
+    }
+  }
+  return x;
+}
+
+template<size_t nRows, size_t nCols, class Container>
+FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& vars) {
+  MatrixDbl<nRows,nCols> x;
+  for (size_t i=0; i<nRows; ++i) {
+    for (size_t j=0; j<nCols; ++j) {
+      for (size_t k=0; k<Double::Size; ++k) {
+        AD::SetPreaccIn(vars(iPoint[k],i,j));
+        x(i,j)[k] = vars(iPoint[k],i,j);
+      }
+    }
+  }
+  return x;
+}
+#endif
 
 /*!
  * \brief Stop the AD preaccumulation.

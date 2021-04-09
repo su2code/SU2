@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,8 +48,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
 
-  const bool compressible_flow = (donor_config->GetKind_Regime() == COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
+  const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
   const bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION) ||
                              (donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
@@ -112,8 +112,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
     heat_flux_density       = thermal_conductivityND*dTdn;
 
-    if ((donor_config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
       conductivity_over_dist  = thermal_conductivity/dist;
@@ -126,8 +126,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
     heat_flux_density       = thermal_conductivityND*dTdn;
 
-    if ((donor_config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       switch (donor_config->GetKind_ConductivityModel()) {
 
@@ -151,8 +151,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     thermal_diffusivity     = donor_config->GetThermalDiffusivity_Solid();
     heat_flux_density       = thermal_diffusivity*dTdn;
 
-    if ((donor_config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       rho_cp_solid            = donor_config->GetSpecific_Heat_Cp()*donor_config->GetDensity_Solid();
       conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
@@ -166,8 +166,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   /*--- We only need these for the Robin BC option ---*/
 
-  if ((donor_config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-      (donor_config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+      (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
     Donor_Variable[2] = conductivity_over_dist;
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
@@ -184,8 +184,8 @@ void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeom
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 1,
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[1]);
 
-  if ((target_config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-      (target_config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  if ((target_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+      (target_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
     target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 2,
                                               target_config->GetRelaxation_Factor_CHT(), Target_Variable[2]);

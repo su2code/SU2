@@ -6,10 +6,10 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,13 +50,17 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
 
 void CMeshVariable::Register_MeshCoord(bool input) {
   if (input) {
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
         AD::RegisterInput(Mesh_Coord(iPoint,iDim));
+    END_SU2_OMP_FOR
   }
   else {
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
         AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
+    END_SU2_OMP_FOR
   }
 }

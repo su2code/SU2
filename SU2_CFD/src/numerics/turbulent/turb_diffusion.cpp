@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
 {
   Proj_Mean_GradTurbVar_Normal = new su2double [nVar] ();
   Proj_Mean_GradTurbVar_Edge = new su2double [nVar] ();

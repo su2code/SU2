@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -333,6 +333,7 @@ void CFEAElasticity::ReadDV(const CConfig *config) {
   bool master_node = false;
   SU2_OMP_MASTER
   master_node = (rank == MASTER_NODE);
+  END_SU2_OMP_MASTER
 
   unsigned long index;
 

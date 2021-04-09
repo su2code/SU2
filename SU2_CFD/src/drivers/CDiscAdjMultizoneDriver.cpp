@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -226,7 +226,7 @@ void CDiscAdjMultizoneDriver::Run() {
         config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
       AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
-      LinSolver[iZone].SetRecomputeResidual(false);
+      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
@@ -639,7 +639,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -827,7 +827,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != STEADY;
+  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY;
   unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 

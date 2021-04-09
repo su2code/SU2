@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,22 @@ class CFEAIteration;
  * \brief Class for driving an iteration of the discrete adjoint FEM system.
  * \author R. Sanchez
  */
-class CDiscAdjFEAIteration : public CIteration {
+class CDiscAdjFEAIteration final : public CIteration {
  private:
   CFEAIteration* fem_iteration;    /*!< \brief Pointer to the primal iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
+
+  /*!
+   * \brief load solution for dynamic problems
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instance.
+   * \param[in] val_DirectIter - Direct iteration to load.
+   */
+  void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                            unsigned short val_iInst, int val_DirectIter);
 
  public:
   /*!
@@ -91,25 +103,6 @@ class CDiscAdjFEAIteration : public CIteration {
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                unsigned short val_iInst) override;
-
-  /*!
-   * \brief Updates the containers for the discrete adjoint mean flow system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   */
-  void Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-              unsigned short val_iInst) override;
 
   /*!
    * \brief Monitors the convergence and other metrics for the discrete adjoint mean flow system.
@@ -182,26 +175,6 @@ class CDiscAdjFEAIteration : public CIteration {
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] kind_recording - The kind of recording (geometry or flow).
-   */
-  void SetRecording(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                    CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                    unsigned short val_iInst, unsigned short kind_recording);
-
-  /*!
-   * \brief Record a single iteration of the direct FEM system.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -209,7 +182,6 @@ class CDiscAdjFEAIteration : public CIteration {
    * \param[in] val_iInst - Index of the instance.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-
   void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
                     unsigned short val_iInst, unsigned short kind_recording) override;
 
@@ -226,15 +198,4 @@ class CDiscAdjFEAIteration : public CIteration {
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                        unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
 
-  /*!
-   * \brief load solution for dynamic problems
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] val_DirectIter - Direct iteration to load.
-   */
-  void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
-                            unsigned short val_iInst, int val_DirectIter) override;
 };

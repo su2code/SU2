@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -423,7 +423,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
+  inline su2double& GetWall_Distance(unsigned long iPoint) { return Wall_Distance(iPoint); }
+  inline const su2double& GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
 
   /*!
    * \brief Set the value of the distance to the nearest wall.
@@ -451,7 +452,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
+  inline su2double& GetSharpEdge_Distance(unsigned long iPoint) { return SharpEdge_Distance(iPoint); }
+  inline const su2double& GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
 
   /*!
    * \brief Set the value of the curvature at a surface node.
@@ -486,7 +488,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Area or volume of the control volume.
    */
-  inline su2double GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
+  inline su2double& GetVolume(unsigned long iPoint) { return Volume(iPoint); }
+  inline const su2double& GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
 
   /*!
    * \brief Set the volume of the control volume.
@@ -507,7 +510,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Periodic component of area or volume for a control volume on a periodic marker.
    */
-  inline su2double GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
+  inline su2double& GetPeriodicVolume(unsigned long iPoint) { return Periodic_Volume(iPoint); }
+  inline const su2double& GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
 
   /*!
    * \brief Set the missing component of area or volume for a control volume on a periodic marker.
