@@ -471,7 +471,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if Solver has converged and has run another iteration.
    */
-  bool GetCauchyCorrectedTimeConvergence(CConfig *config);
+  bool GetCauchyCorrectedTimeConvergence(const CConfig *config);
 
   /*!
    * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
@@ -802,4 +802,3 @@ protected:
   inline virtual void SetAdditionalScreenOutput(CConfig *config){}
 
 };
-

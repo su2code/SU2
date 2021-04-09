@@ -738,8 +738,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   }
 }
 
-bool COutput::GetCauchyCorrectedTimeConvergence(CConfig *config){
-   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == DT_STEPPING_2ND){
+bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
+   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
        // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
        cauchyTimeConverged = TimeConvergence;
        TimeConvergence = false;
