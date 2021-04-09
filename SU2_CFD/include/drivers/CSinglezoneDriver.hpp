@@ -39,7 +39,6 @@ class CSinglezoneDriver : public CDriver {
 protected:
 
   unsigned long TimeIter;
-  bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
 public:
 

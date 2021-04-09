@@ -39,8 +39,6 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
-  cauchyTimeConverged = false;
-
 }
 
 CSinglezoneDriver::~CSinglezoneDriver(void) {
@@ -192,7 +190,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],
-                                                               TimeIter, StopCalc || cauchyTimeConverged);
+                                                               TimeIter, StopCalc);
 
   if (wrote_files){
 
@@ -274,15 +272,6 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
     TimeConvergence = GetTimeConvergence();
 
-    if(!cauchyTimeConverged && TimeConvergence && config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND){
-         // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
-        cauchyTimeConverged = TimeConvergence;
-        TimeConvergence = false;
-    }
-    else if(cauchyTimeConverged){
-        TimeConvergence = cauchyTimeConverged;
-    }
-
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
@@ -325,5 +314,5 @@ void CSinglezoneDriver::Runtime_Options(){
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
-  return output_container[ZONE_0]->GetTimeConvergence();
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

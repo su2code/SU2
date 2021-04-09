@@ -43,7 +43,6 @@ protected:
   bool cht;
 
   unsigned long TimeIter;
-  bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
 
   unsigned short *nVarZone;
   su2double **init_res,      /*!< \brief Stores the initial residual. */
