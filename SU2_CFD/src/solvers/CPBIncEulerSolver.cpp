@@ -163,6 +163,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
       FaceVelocityCorrec[iEdge][iDim] = 0.0;
      }
    }
+   TransientCorr.resize(nEdge) = su2double(0.0);
 
   /*--- Initial comms. ---*/
 
@@ -1637,13 +1638,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       GridVel_j = geometry->nodes->GetGridVel(jPoint);
     }
 
-    /*--- Rhie Chow correction for time step must go here ---*/
-    Transient_Corr = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Transient_Corr += (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)))*Normal[iDim]*MeanDensity;
-      FaceVel[iDim] = (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)));
-    }
-
     /*--- Face average mass flux. ---*/
     MassFlux_Avg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -1697,8 +1691,17 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       FaceVel[iDim] -= Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
     }
 
-    //MassFlux_Part = MassFlux_Avg - RhieChowInterp + Transient_Corr;
-    MassFlux_Part = MassFlux_Avg - RhieChowInterp;
+    MassFlux_Part = MassFlux_Avg - RhieChowInterp + TransientCorr[iEdge];
+    //MassFlux_Part = MassFlux_Avg - RhieChowInterp;
+
+    /*--- Rhie Chow correction for time step must go here ---*/
+    /*Transient_Corr = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Transient_Corr += (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)))*Normal[iDim]*MeanDensity;
+      FaceVel[iDim] = (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)));
+    }*/
+
+    TransientCorr[iEdge] = -RhieChowInterp;
 
     for (iDim = 0; iDim < nDim; iDim++)
       FaceVelocity[iEdge][iDim] = FaceVel[iDim];
@@ -1944,7 +1947,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
       if (implicit) factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
     }
     if (implicit)
-      alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
+      alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor+(Vol/delT));
     else
       alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow();
   }

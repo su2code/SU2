@@ -42,6 +42,7 @@ su2double
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
   su2double ResMassFlux;
+  su2activevector TransientCorr;
 
   su2activematrix FaceVelocity, FaceVelocityCorrec;
 
