@@ -18,3 +18,4 @@ option('enable-tests',  type : 'boolean', value : false, description: 'compile U
 option('enable-mixedprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for sparse algebra')
 option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
 option('enable-mpp',  type : 'boolean', value : false, description: 'enable Mutation++ support')
+option('opdi-backend', type : 'combo', choices : ['auto', 'macro', 'ompt'], value : 'auto', description: 'OpDiLib backend choice')

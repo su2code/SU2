@@ -68,6 +68,7 @@ if (geometry.GetnDim() == 2) {\
       for(size_t iPoint = 0; iPoint < geometry.GetnPoint(); ++iPoint)
         for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
          limiter(iPoint, iVar) = 1.0;
+      END_SU2_OMP_FOR
       break;
     }
     case BARTH_JESPERSEN:

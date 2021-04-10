@@ -59,7 +59,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != NO) {
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Solution_time_n.resize(nPoint,nVar);
     Solution_time_n1.resize(nPoint,nVar);
   }
@@ -119,6 +119,7 @@ void CVariable::Restore_BGSSolution_k() {
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
 void CVariable::RegisterSolution(bool input, bool push_index) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(input) {
@@ -137,9 +138,11 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CVariable::RegisterSolution_time_n(bool push_index) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(push_index) {
@@ -151,9 +154,11 @@ void CVariable::RegisterSolution_time_n(bool push_index) {
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CVariable::RegisterSolution_time_n1(bool push_index) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(push_index) {
@@ -165,4 +170,5 @@ void CVariable::RegisterSolution_time_n1(bool push_index) {
       }
     }
   }
+  END_SU2_OMP_FOR
 }

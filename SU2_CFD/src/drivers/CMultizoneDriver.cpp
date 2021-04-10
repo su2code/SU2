@@ -37,6 +37,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
 
+
   /*--- Initialize some useful booleans ---*/
   fsi = false; cht = false;
 
@@ -190,9 +191,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
-      default: Run_GaussSeidel(); break;
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
     }
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -494,7 +494,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   for (iZone = 0; iZone < nZone; iZone++){
     wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
-                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc);
+                                                            solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc );
   }
 
   if (wrote_files){
@@ -517,7 +517,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   bool AnyDeformMesh = false;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    const auto harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
+    const auto harmonic_balance = (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance) && (!fsi)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
@@ -687,6 +687,7 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
     /*--- Check whether the outer time integration has reached the final time ---*/
     TimeConvergence = GetTimeConvergence();
+
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
@@ -706,5 +707,5 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-  return driver_output->GetTimeConvergence();
+    return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

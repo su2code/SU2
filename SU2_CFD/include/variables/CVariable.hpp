@@ -115,6 +115,11 @@ protected:
 
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
+
+  inline static void AssertOverride() {
+    assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
+  }
+
 public:
   /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
@@ -686,24 +691,6 @@ public:
   }
 
   /*!
-   * \overload
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) = value; }
-
-  /*!
-   * \brief Add <i>value</i> to the solution gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the solution gradient.
-   */
-  inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
-
-  /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
@@ -750,47 +737,6 @@ public:
   inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
-   * \brief Set the value of the limiter.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
-   */
-  inline void SetLimiter(unsigned long iPoint, unsigned long iVar, su2double val_limiter) { Limiter(iPoint,iVar) = val_limiter; }
-
-  /*!
-   * \brief Set the value of the limiter.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_species - Index of the species .
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
-   */
-  inline virtual void SetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar, su2double val_limiter) {}
-
-  /*!
-   * \brief Set the value of the limiter.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_species - Index of the species .
-   * \param[in] iVar - Index of the variable.
-   */
-  inline virtual su2double GetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the max solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the max solution for the index <i>iVar</i>.
-   */
-  inline void SetSolution_Max(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Max(iPoint,iVar) = solution; }
-
-  /*!
-   * \brief Set the value of the min solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution - Value of the min solution for the index <i>iVar</i>.
-   */
-  inline void SetSolution_Min(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Min(iPoint,iVar) = solution; }
-
-  /*!
    * \brief Get the slope limiter.
    * \return Reference to the limiters vector.
    */
@@ -812,33 +758,18 @@ public:
   inline su2double GetLimiter(unsigned long iPoint, unsigned long iVar) const { return Limiter(iPoint,iVar); }
 
   /*!
-   * \brief Get the value of the min solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the min solution for the variable <i>iVar</i>.
+   * \brief Get the min solution.
+   * \return Value of the min solution for the domain.
    */
-  inline su2double GetSolution_Max(unsigned long iPoint, unsigned long iVar) const { return Solution_Max(iPoint,iVar); }
+  inline MatrixType& GetSolution_Max() { return Solution_Max; }
+  inline const MatrixType& GetSolution_Max() const { return Solution_Max; }
 
   /*!
    * \brief Get the min solution.
    * \return Value of the min solution for the domain.
    */
-  inline MatrixType& GetSolution_Max(void) { return Solution_Max; }
-
-  /*!
-   * \brief Set the value of the preconditioner Beta.
-   * \param[in] val_Beta - Value of the low Mach preconditioner variable Beta
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the min solution for the variable <i>iVar</i>.
-   */
-  inline su2double GetSolution_Min(unsigned long iPoint, unsigned long iVar) const { return Solution_Min(iPoint,iVar); }
-
-  /*!
-   * \brief Get the min solution.
-   * \return Value of the min solution for the domain.
-   */
-  inline MatrixType& GetSolution_Min(void) { return Solution_Min; }
+  inline MatrixType& GetSolution_Min() { return Solution_Min; }
+  inline const MatrixType& GetSolution_Min() const { return Solution_Min; }
 
   /*!
    * \brief Get the value of the wind gust
@@ -876,27 +807,11 @@ public:
   inline void SetDelta_Time(unsigned long iPoint, su2double val_delta_time) { Delta_Time(iPoint) = val_delta_time; }
 
   /*!
-   * \brief Set the value of the time step.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_delta_time - Value of the time step.
-   * \param[in] iSpecies - Index of the Species.
-   */
-  inline virtual void SetDelta_Time(unsigned long iPoint, su2double val_delta_time, unsigned long iSpecies) {}
-
-  /*!
    * \brief Get the value of the time step.
    * \param[in] iPoint - Point index.
    * \return Value of the time step.
    */
   inline su2double GetDelta_Time(unsigned long iPoint) const {return Delta_Time(iPoint); }
-
-  /*!
-   * \brief Get the value of the time step.
-   * \param[in] iPoint - Point index.
-   * \param[in] iSpecies - Index of the Species
-   * \return Value of the time step.
-   */
-  inline virtual su2double GetDelta_Time(unsigned long iPoint, unsigned long iSpecies) { return 0.0; }
 
   /*!
    * \brief Set the value of the maximum eigenvalue for the inviscid terms of the PDE.
@@ -906,27 +821,11 @@ public:
   inline void SetMax_Lambda_Inv(unsigned long iPoint, su2double val_max_lambda) { Max_Lambda_Inv(iPoint) = val_max_lambda; }
 
   /*!
-   * \brief Set the value of the maximum eigenvalue for the inviscid terms of the PDE.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
-   * \param[in] val_species - Value of the species index to set the maximum eigenvalue.
-   */
-  inline virtual void SetMax_Lambda_Inv(unsigned long iPoint, su2double val_max_lambda, unsigned long val_species) {}
-
-  /*!
    * \brief Set the value of the maximum eigenvalue for the viscous terms of the PDE.
    * \param[in] iPoint - Point index.
    * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
    */
   inline void SetMax_Lambda_Visc(unsigned long iPoint, su2double val_max_lambda) { Max_Lambda_Visc(iPoint) = val_max_lambda; }
-
-  /*!
-   * \brief Set the value of the maximum eigenvalue for the viscous terms of the PDE.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
-   * \param[in] val_species - Index of the species to set the maximum eigenvalue of the viscous terms.
-   */
-  inline virtual void SetMax_Lambda_Visc(unsigned long iPoint, su2double val_max_lambda, unsigned long val_species) {}
 
   /*!
    * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
@@ -964,27 +863,11 @@ public:
   inline void SetLambda(unsigned long iPoint, su2double val_lambda) { Lambda(iPoint) = val_lambda; }
 
   /*!
-   * \brief Set the value of the spectral radius.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_lambda - Value of the spectral radius.
-   * \param[in] val_iSpecies -Index of species
-   */
-  inline virtual void SetLambda(unsigned long iPoint, su2double val_lambda, unsigned long val_iSpecies) {}
-
-  /*!
    * \brief Add the value of the spectral radius.
    * \param[in] iPoint - Point index.
    * \param[in] val_lambda - Value of the spectral radius.
    */
   inline void AddLambda(unsigned long iPoint, su2double val_lambda) { Lambda(iPoint) += val_lambda; }
-
-  /*!
-   * \brief Add the value of the spectral radius.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_iSpecies -Index of species
-   * \param[in] val_lambda - Value of the spectral radius.
-   */
-  inline virtual void AddLambda(unsigned long iPoint, su2double val_lambda, unsigned long val_iSpecies) {}
 
   /*!
    * \brief Get the value of the spectral radius.
@@ -995,27 +878,11 @@ public:
   inline const VectorType& GetLambda() const { return Lambda; }
 
   /*!
-   * \brief Get the value of the spectral radius.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_iSpecies -Index of species
-   * \return Value of the spectral radius.
-   */
-  inline virtual su2double GetLambda(unsigned long iPoint, unsigned long val_iSpecies) { return 0.0; }
-
-  /*!
    * \brief Set pressure sensor.
    * \param[in] iPoint - Point index.
    * \param[in] val_sensor - Value of the pressure sensor.
    */
   inline void SetSensor(unsigned long iPoint, su2double val_sensor) { Sensor(iPoint) = val_sensor; }
-
-  /*!
-   * \brief Set pressure sensor.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_sensor - Value of the pressure sensor.
-   * \param[in] iSpecies - Index of the species.
-   */
-  inline virtual void SetSensor(unsigned long iPoint, su2double val_sensor, unsigned long iSpecies) {}
 
   /*!
    * \brief Get the pressure sensor.
@@ -1024,14 +891,6 @@ public:
    */
   inline su2double GetSensor(unsigned long iPoint) const { return Sensor(iPoint); }
   inline const VectorType& GetSensor() const { return Sensor; }
-
-  /*!
-   * \brief Get the pressure sensor.
-   * \param[in] iPoint - Point index.
-   * \param[in] iSpecies - index of species
-   * \return Value of the pressure sensor.
-   */
-  inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
    * \brief Increment the value of the undivided laplacian of the solution.
@@ -1151,15 +1010,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \param[in] val_vector - Direction of projection.
-   * \param[in] val_species - Index of the desired species.
-   * \return Value of the projected velocity.
-   */
-  inline virtual su2double GetProjVel(unsigned long iPoint, su2double *val_vector, unsigned long val_species) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return Value of the sound speed.
    */
   inline virtual su2double GetSoundSpeed(unsigned long iPoint) const { return 0.0; }
@@ -1216,24 +1066,9 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Norm 2 of the velocity vector of Fluid val_species.
-   */
-  inline virtual su2double GetVelocity2(unsigned long iPoint, unsigned long val_species) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return The laminar viscosity of the flow.
    */
   inline virtual su2double GetLaminarViscosity(unsigned long iPoint) const { return 0.0; }
-
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return The laminar viscosity of the flow.
-   */
-  inline virtual su2double GetLaminarViscosity(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1401,6 +1236,12 @@ public:
    */
   inline virtual bool SetPrimVar(unsigned long iPoint, su2double Density_Inf, su2double Viscosity_Inf,
                                  su2double eddy_visc, su2double turb_ke, CConfig *config) {return true; }
+
+  /*!
+   * \brief Get the primitive variables for all points.
+   * \return Reference to primitives.
+   */
+  inline virtual const MatrixType& GetPrimitive() const { AssertOverride(); return Solution; }
 
   /*!
    * \brief A virtual member.
@@ -1595,13 +1436,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] config - Configuration parameters.
-   * \param[in] Coord - Physical coordinates.
-   */
-  inline virtual void SetPrimitive(unsigned long iPoint, CConfig *config, su2double *Coord) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] Temperature_Wall - Value of the Temperature at the wall
    */
   inline virtual void SetWallTemperature(unsigned long iPoint, su2double Temperature_Wall) {}
@@ -1630,7 +1464,6 @@ public:
 
   /*!
    * \brief A virtual member.
-
    */
   inline virtual const su2double *GetStress_FEM(unsigned long iPoint) const {return nullptr;}
 
@@ -1780,17 +1613,23 @@ public:
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value to add to the gradient of the primitive variables.
-   */
-  inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief Get the primitive variable gradients for all points.
+   * \return Reference to primitive variable gradient.
+   */
+  inline virtual CVectorOfMatrix& GetGradient_Primitive() { AssertOverride(); return Gradient; }
+  inline virtual const CVectorOfMatrix& GetGradient_Primitive() const { AssertOverride(); return Gradient; }
+
+  /*!
+   * \brief Get the primitive variables limiter.
+   * \return Primitive variables limiter for the entire domain.
+   */
+  inline virtual MatrixType& GetLimiter_Primitive() { AssertOverride(); return Limiter; }
+  inline virtual const MatrixType& GetLimiter_Primitive() const { AssertOverride(); return Limiter; }
 
   /*!
    * \brief A virtual member.
@@ -1798,21 +1637,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double val_value) {}
 
   /*!
    * \brief A virtual member.
@@ -1828,22 +1652,6 @@ public:
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the primitive gradient for MUSCL reconstruction.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
-
-  /*!
-   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
    * \return Value of the primitive gradient for MUSCL reconstruction.
    */
   inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
@@ -1852,7 +1660,8 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+  inline virtual CVectorOfMatrix& GetGradient_Reconstruction() { AssertOverride(); return Gradient; }
+  inline virtual const CVectorOfMatrix& GetGradient_Reconstruction() const { AssertOverride(); return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -1888,20 +1697,6 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
-
-  /*!
-   * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
-   * \param[in] iSpecies - Value of iSpecies to which the eigenvalue belongs
-   */
-  inline virtual void AddMax_Lambda_Inv(unsigned long iPoint, su2double val_max_lambda, unsigned long iSpecies) {}
-
-  /*!
-   * \brief Add a value to the maximum eigenvalue for the viscous terms of the PDE.
-   * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
-   * \param[in] iSpecies - Value of iSpecies to which the eigenvalue belongs
-   */
-  inline virtual void AddMax_Lambda_Visc(unsigned long iPoint, su2double val_max_lambda, unsigned long iSpecies) {}
 
   /*!
    * \brief A virtual member.
