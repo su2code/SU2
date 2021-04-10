@@ -64,7 +64,7 @@ private:
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;                 /*!< \brief MPI rank and size.*/
   bool base_config;
-  unsigned short Kind_SU2;        /*!< \brief Kind of SU2 software component.*/
+  SU2_COMPONENT Kind_SU2;        /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim;      /*!< \brief Kind of non dimensionalization.*/
   unsigned short Ref_Inc_NonDim;  /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_AverageProcess;            /*!< \brief Kind of mixing process.*/
@@ -151,7 +151,7 @@ private:
   su2double CM_Target;         /*!< \brief Fixed Cl mode Target CM. */
   su2double *HTP_Min_XCoord,
   *HTP_Min_YCoord;                   /*!< \brief Identification of the HTP. */
-  unsigned short TimeMarching;       /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
+  TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine;        /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
@@ -160,7 +160,7 @@ private:
   unsigned long LimiterIter;         /*!< \brief Freeze the value of the limiter after a number of iterations */
   su2double AdjSharp_LimiterCoeff;   /*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;        /*!< \brief Kind of adjoint function. */
+  ENUM_REGIME Kind_Regime;           /*!< \brief Kind of flow regime: in/compressible. */
   unsigned short *Kind_ObjFunc;      /*!< \brief Kind of objective function. */
   su2double *Weight_ObjFunc;         /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth;    /*!< \brief Kind of sensitivity smoothing technique. */
@@ -464,8 +464,10 @@ private:
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
+  ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
+  INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
+  CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
-  Kind_MZSolver,                   /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,             /*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,          /*!< \brief Kind of the Thermal Conductivity Model*/
@@ -473,7 +475,6 @@ private:
   Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
-  Kind_DensityModel,               /*!< \brief Kind of the density model for incompressible flows. */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,           /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,           /*!< \brief Kind of the dynamic mesh movement. */
@@ -528,8 +529,7 @@ private:
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
+  Kind_BGS_RelaxMethod;         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -558,10 +558,11 @@ private:
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   unsigned short Kind_Trans_Model,  /*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow,
-  Kind_Inlet, *Kind_Inc_Inlet,
-  *Kind_Inc_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  INLET_TYPE Kind_Inlet;
+  INLET_TYPE *Kind_Inc_Inlet;
+  INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
@@ -999,11 +1000,11 @@ private:
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
-  unsigned short Kind_Streamwise_Periodic;          /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
-  bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
-  su2double Streamwise_Periodic_PressureDrop;       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
-  su2double Streamwise_Periodic_TargetMassFlow;     /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
-  su2double Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
+  ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
+  bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
+  su2double Streamwise_Periodic_PressureDrop;        /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
+  su2double Streamwise_Periodic_TargetMassFlow;      /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
+  su2double Streamwise_Periodic_OutletHeat;          /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
@@ -1012,14 +1013,14 @@ private:
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
   su2double simp_minimum_stiffness;     /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
-  unsigned short top_optim_nKernel,        /*!< \brief Number of kernels specified. */
-                *top_optim_kernels,        /*!< \brief The kernels to use. */
-                 top_optim_nKernelParams,  /*!< \brief Number of kernel parameters specified. */
-                 top_optim_nRadius,        /*!< \brief Number of radius values specified. */
-                 top_optim_search_lim;     /*!< \brief Limit the maximum "logical radius" considered during filtering. */
-  su2double *top_optim_kernel_params,  /*!< \brief The kernel parameters. */
-            *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
-  unsigned short top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
+  ENUM_FILTER_KERNEL* top_optim_kernels;   /*!< \brief The kernels to use. */
+  unsigned short top_optim_nKernel;        /*!< \brief Number of kernels specified. */
+  unsigned short top_optim_nKernelParams;  /*!< \brief Number of kernel parameters specified. */
+  unsigned short top_optim_nRadius;        /*!< \brief Number of radius values specified. */
+  unsigned short top_optim_search_lim;     /*!< \brief Limit the maximum "logical radius" considered during filtering. */
+  su2double *top_optim_kernel_params;  /*!< \brief The kernel parameters. */
+  su2double *top_optim_filter_radius;  /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  ENUM_PROJECTION_FUNCTION top_optim_proj_type;  /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;      /*!< \brief The value of the parameter for the projection function. */
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
@@ -1190,12 +1191,12 @@ private:
 
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
-  template <class Tenum>
-  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value);
+  template <class Tenum, class Tfield>
+  void addEnumOption(const string name, Tfield& option_field, const map<string,Tenum>& enum_map, Tenum default_value);
 
   // input_size is the number of options read in from the config file
-  template <class Tenum>
-  void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map);
+  template <class Tenum, class Tfield>
+  void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
   void addDoubleArrayOption(const string name, const int size, su2double* option_field);
 
@@ -1271,22 +1272,22 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, bool verb_high);
 
   /*!
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
-  CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
+  CConfig(istream &case_buffer, SU2_COMPONENT val_software, bool verb_high);
 
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
-  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
+  CConfig(CConfig * config, char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high);
 
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
+  CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software);
 
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -1317,7 +1318,7 @@ public:
   * \brief Print the header to screen
   * \param val_software - Kind of software component
   */
-  void SetHeader(unsigned short val_software) const;
+  void SetHeader(SU2_COMPONENT val_software) const;
 
   /*!
    * \brief Get the MPI communicator of SU2.
@@ -3595,14 +3596,14 @@ public:
    * \brief Kind of Multizone Solver.
    * \return Governing equation that we are solving.
    */
-  unsigned short GetKind_MZSolver(void) const { return Kind_MZSolver; }
+  ENUM_MULTIZONE GetKind_MZSolver(void) const { return Kind_MZSolver; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
    */
-  unsigned short GetKind_Regime(void) const { return Kind_Regime; }
+  ENUM_REGIME GetKind_Regime(void) const { return Kind_Regime; }
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3647,7 +3648,7 @@ public:
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
    */
-  unsigned short GetKind_DensityModel(void) const { return Kind_DensityModel; }
+  INC_DENSITYMODEL GetKind_DensityModel(void) const { return Kind_DensityModel; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
@@ -4135,7 +4136,7 @@ public:
    * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
-  unsigned short GetKind_SU2(void) const { return Kind_SU2; }
+  SU2_COMPONENT GetKind_SU2(void) const { return Kind_SU2; }
 
   /*!
    * \brief Get the kind of non-dimensionalization.
@@ -4153,7 +4154,7 @@ public:
    * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
-  void SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
+  void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
   /*!
    * \brief Get the kind of the turbulence model.
@@ -4652,7 +4653,7 @@ public:
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
    * \return Kind of inlet boundary condition.
    */
-  unsigned short GetKind_Inlet(void) const { return Kind_Inlet; }
+  INLET_TYPE GetKind_Inlet(void) const { return Kind_Inlet; }
 
   /*!
    * \brief Check if the inlet profile(s) are specified in an input file
@@ -4682,7 +4683,7 @@ public:
    * \brief Get the type of incompressible inlet from the list.
    * \return Kind of the incompressible inlet.
    */
-  unsigned short GetKind_Inc_Inlet(string val_marker) const;
+  INLET_TYPE GetKind_Inc_Inlet(string val_marker) const;
 
   /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
@@ -4700,7 +4701,7 @@ public:
    * \brief Get the type of incompressible outlet from the list.
    * \return Kind of the incompressible outlet.
    */
-  unsigned short GetKind_Inc_Outlet(string val_marker) const;
+  INC_OUTLET_TYPE GetKind_Inc_Outlet(string val_marker) const;
 
   /*!
    * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
@@ -5046,7 +5047,7 @@ public:
    * \return The kind of time integration: Steady state, time stepping method (unsteady) or
    *         dual time stepping method (unsteady).
    */
-  unsigned short GetTime_Marching(void) const { return TimeMarching; }
+  TIME_MARCHING GetTime_Marching() const { return TimeMarching; }
 
   /*!
    * \brief Provides the number of species present in the plasma
@@ -5750,7 +5751,7 @@ public:
    * \brief Get information about the streamwise periodicity (None, Pressure_Drop, Massflow).
    * \return Driving force identification.
    */
-  unsigned short GetKind_Streamwise_Periodic(void) const { return Kind_Streamwise_Periodic; }
+  ENUM_STREAMWISE_PERIODIC GetKind_Streamwise_Periodic(void) const { return Kind_Streamwise_Periodic; }
 
   /*!
    * \brief Get information about the streamwise periodicity Energy equation handling.
@@ -7894,17 +7895,17 @@ public:
   /*!
    * \brief Config file postprocessing.
    */
-  void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim);
+  void SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_izone, unsigned short val_nDim);
 
   /*!
    * \brief Config file markers processing.
    */
-  void SetMarkers(unsigned short val_software);
+  void SetMarkers(SU2_COMPONENT val_software);
 
   /*!
    * \brief Config file output.
    */
-  void SetOutput(unsigned short val_software, unsigned short val_izone);
+  void SetOutput(SU2_COMPONENT val_software, unsigned short val_izone);
 
   /*!
    * \brief Value of Aeroelastic solution coordinate at time n+1.
@@ -8834,7 +8835,7 @@ public:
    * \brief Get the CHT couling method.
    * \return Kind of the method.
    */
-  unsigned short GetKind_CHT_Coupling(void) const { return Kind_CHT_Coupling; }
+  CHT_COUPLING GetKind_CHT_Coupling() const { return Kind_CHT_Coupling; }
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.
@@ -8882,7 +8883,7 @@ public:
   /*!
    * \brief Get the i'th kernel to use, its parameter, and the radius.
    */
-  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, ENUM_FILTER_KERNEL &type,
                                 su2double &param, su2double &radius) const {
     type = top_optim_kernels[iKernel];
     param = top_optim_kernel_params[iKernel];
@@ -8897,7 +8898,7 @@ public:
   /*!
    * \brief Get the type and parameter for the projection function used in topology optimization
    */
-  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
+  void GetTopology_Optim_Projection(ENUM_PROJECTION_FUNCTION &type, su2double &param) const {
     type = top_optim_proj_type;  param = top_optim_proj_param;
   }
 

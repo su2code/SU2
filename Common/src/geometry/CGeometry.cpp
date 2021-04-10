@@ -400,7 +400,9 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
   delete [] bufS_P2PRecv;
   bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 
@@ -504,6 +506,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 }
 
@@ -601,6 +604,7 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 }
 
@@ -618,7 +622,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -717,7 +721,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset+iDim] = vector[iDim];
           }
-          if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
             vector = nodes->GetCoord_n1(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -736,6 +740,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           break;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -782,6 +787,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 
     SU2_OMP_MASTER
     SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
@@ -824,7 +830,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
         case COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
           break;
         case MAX_LENGTH:
@@ -839,6 +845,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
       }
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -848,6 +855,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 #ifdef HAVE_MPI
   SU2_OMP_MASTER
   SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
+  END_SU2_OMP_MASTER
 #endif
   SU2_OMP_BARRIER
 
@@ -1226,7 +1234,9 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
   delete [] bufS_PeriodicRecv;
   bufS_PeriodicRecv = new unsigned short[nRecv] ();
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
@@ -1283,6 +1293,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 #endif
 
@@ -1337,7 +1348,8 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
-  } // end master
+  }
+  END_SU2_OMP_MASTER
 #else
 
   /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
@@ -2480,43 +2492,23 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(CConfig *config) const {
-  unsigned short iDim;
-  unsigned long iPoint;
-  bool input = true;
-  bool push_index = config->GetMultizone_Problem()? false : true;
+void CGeometry::RegisterCoordinates(const CConfig *config) const {
+  const bool input = true;
+  const bool push_index = config->GetMultizone_Problem()? false : true;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
     }
     if(!push_index) {
       nodes->SetIndex(iPoint, input);
     }
   }
-}
-
-void CGeometry::RegisterOutput_Coordinates(CConfig *config) const{
-  unsigned short iDim;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if(config->GetMultizone_Problem()) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-    else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-  }
+  END_SU2_OMP_FOR
 }
 
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
-
-  unsigned short iMesh;
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
@@ -2529,7 +2521,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
@@ -3108,7 +3100,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 }
 
 void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
-                                        const vector<pair<unsigned short,su2double> > &kernels,
+                                        const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                         const unsigned short search_limit,
                                         su2double *values) const
 {
@@ -3159,6 +3151,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem+iDim] = 0.0;
     vol_elem[iElem] = 0.0;
   }
+  END_SU2_OMP_FOR
 
   /*--- Populate ---*/
   SU2_OMP_FOR_STAT(256)
@@ -3168,6 +3161,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem_global+iDim] = elem[iElem]->GetCG(iDim);
     vol_elem[iElem_global] = elem[iElem]->GetVolume();
   }
+  END_SU2_OMP_FOR
 
 #ifdef HAVE_MPI
   /*--- Account for the duplication introduced by the halo elements and the
@@ -3175,10 +3169,12 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   SU2_OMP_FOR_STAT(256)
   for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
     halo_detect[iElem] = 0;
+  END_SU2_OMP_FOR
 
   SU2_OMP_FOR_STAT(256)
   for(auto iElem=0ul; iElem<nElem; ++iElem)
     halo_detect[elem[iElem]->GetGlobalIndex()] = 1;
+  END_SU2_OMP_FOR
 
   /*--- Share with all processors ---*/
   SU2_OMP_MASTER
@@ -3195,6 +3191,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     MPI_Allreduce(halo_detect.data(),char_buffer.data(),Global_nElemDomain,MPI_CHAR,MPI_SUM,SU2_MPI::GetComm());
     halo_detect.swap(char_buffer);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(256)
@@ -3204,6 +3201,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem+iDim] /= numRepeat;
     vol_elem[iElem] /= numRepeat;
   }
+  END_SU2_OMP_FOR
 #endif
 
   /*--- SECOND: Each processor performs the average for its elements. For each
@@ -3214,7 +3212,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
   for (unsigned long iKernel=0; iKernel<kernels.size(); ++iKernel)
   {
-    unsigned short kernel_type = kernels[iKernel].first;
+    auto kernel_type = kernels[iKernel].first;
     su2double kernel_param = kernels[iKernel].second;
     su2double kernel_radius = filter_radius[iKernel];
 
@@ -3223,11 +3221,13 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
       work_values[iElem] = 0.0;
+    END_SU2_OMP_FOR
 
     /*--- Populate ---*/
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<nElem; ++iElem)
       work_values[elem[iElem]->GetGlobalIndex()] = values[iElem];
+    END_SU2_OMP_FOR
 
 #ifdef HAVE_MPI
     /*--- Share with all processors ---*/
@@ -3237,6 +3237,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       SU2_MPI::Allreduce(work_values,buffer,Global_nElemDomain,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
       swap(buffer, work_values); delete [] buffer;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Account for duplication ---*/
@@ -3245,6 +3246,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       su2double numRepeat = halo_detect[iElem];
       work_values[iElem] /= numRepeat;
     }
+    END_SU2_OMP_FOR
 #endif
 
     /*--- Filter ---*/
@@ -3266,7 +3268,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
       switch ( kernel_type ) {
         /*--- distance-based kernels (weighted averages) ---*/
-        case CONSTANT_WEIGHT_FILTER: case CONICAL_WEIGHT_FILTER: case GAUSSIAN_WEIGHT_FILTER:
+        case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT:
+        case ENUM_FILTER_KERNEL::CONICAL_WEIGHT:
+        case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT:
 
           for (auto idx : neighbours)
           {
@@ -3276,9 +3280,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
             distance = sqrt(distance);
 
             switch ( kernel_type ) {
-              case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
-              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
-              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
+              case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT: weight = 1.0; break;
+              case ENUM_FILTER_KERNEL::CONICAL_WEIGHT: weight = kernel_radius-distance; break;
+              case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
               default: break;
             }
             weight *= vol_elem[idx];
@@ -3289,28 +3293,31 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
           break;
 
         /*--- morphology kernels (image processing) ---*/
-        case DILATE_MORPH_FILTER: case ERODE_MORPH_FILTER:
+        case ENUM_FILTER_KERNEL::DILATE_MORPH:
+        case ENUM_FILTER_KERNEL::ERODE_MORPH:
 
           for (auto idx : neighbours)
           {
             switch ( kernel_type ) {
-              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[idx]); break;
-              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[idx])); break;
+              case ENUM_FILTER_KERNEL::DILATE_MORPH: numerator += exp(kernel_param*work_values[idx]); break;
+              case ENUM_FILTER_KERNEL::ERODE_MORPH: numerator += exp(kernel_param*(1.0-work_values[idx])); break;
               default: break;
             }
             denominator += 1.0;
           }
           values[iElem] = log(numerator/denominator)/kernel_param;
-          if ( kernel_type==ERODE_MORPH_FILTER ) values[iElem] = 1.0-values[iElem];
+          if ( kernel_type==ENUM_FILTER_KERNEL::ERODE_MORPH ) values[iElem] = 1.0-values[iElem];
           break;
 
         default:
           SU2_MPI::Error("Unknown type of filter kernel",CURRENT_FUNCTION);
       }
     }
+    END_SU2_OMP_FOR
   }
 
-  } // end OpenMP parallel section
+  }
+  END_SU2_OMP_PARALLEL
 
   limited_searches /= kernels.size();
 
@@ -3342,13 +3349,16 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
       nFaces_elem[iElem] = 0;
+    END_SU2_OMP_FOR
 
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<nElem; ++iElem) {
       auto iElem_global = elem[iElem]->GetGlobalIndex();
       nFaces_elem[iElem_global] = elem[iElem]->GetnFaces();
     }
+    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_PARALLEL
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
@@ -3378,6 +3388,7 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
     /*--- Initialize ---*/
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<matrix_size; ++iElem) neighbour_idx[iElem] = -1;
+    END_SU2_OMP_FOR
 
     /*--- Populate ---*/
     SU2_OMP_FOR_STAT(128)
@@ -3395,7 +3406,9 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
         }
       }
     }
+    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_PARALLEL
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
@@ -3523,6 +3536,7 @@ void CGeometry::SetElemVolume()
     if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
     else        elem[iElem]->SetVolume(element->ComputeVolume());
   }
+  END_SU2_OMP_FOR
 
   delete elements[0];
   delete elements[1];
@@ -3531,7 +3545,8 @@ void CGeometry::SetElemVolume()
     delete elements[3];
   }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
@@ -3633,8 +3648,8 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
-  bool FirstOrder = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  bool SecondOrder = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool FirstOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool SecondOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   su2double TimeStep = config->GetDelta_UnstTimeND();
 

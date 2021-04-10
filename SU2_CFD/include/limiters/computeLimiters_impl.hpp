@@ -115,6 +115,7 @@ void computeLimiters_impl(CSolver* solver,
     for (size_t iPoint = 0; iPoint < nPoint; ++iPoint)
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
+    END_SU2_OMP_FOR
 
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
@@ -215,6 +216,7 @@ void computeLimiters_impl(CSolver* solver,
 
     AD::EndPreacc();
   }
+  END_SU2_OMP_FOR
 
   /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
   if (periodic)
