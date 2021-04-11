@@ -321,6 +321,10 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
   /*--- Solve or smooth the linear system ---*/
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  /*--- Store the value of the residual. ---*/
+  SetResLinSolver(System.GetResidual());
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
