@@ -236,6 +236,11 @@ class CIteration {
   }
 
   /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {};
+
+  /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] geometry - Geometrical definition of the problem.
