@@ -56,22 +56,41 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   }
 
+  /*--- Reading pitching csv file if exists and store it. ---*/
   string filename = config->GetPitching_Filename();
   vector<vector<string>> vals_string;
-  if (!filename.empty()){
+  if (!filename.empty() && rank == MASTER_NODE){
     cout << "about to read file" << endl;
     using_pitching_file = true;
     ReadCSVFile(filename, pitching_labels, vals_string);
     pitching_vals.resize(vals_string.size(),{});
     for (unsigned long i = 0; i < vals_string.size(); i++){
       pitching_vals[i].resize(vals_string[i].size(),0.0);
-      for (unsigned short j; j < vals_string.size(); j++){
+      for (unsigned short j=0; j < vals_string[i].size(); j++){
         pitching_vals[i][j] = stod(vals_string[i][j]);
       }
     }
   }
   else{
     using_pitching_file = false;
+  }
+
+  /*--- Reading translation csv file if exists and store it. ---*/
+  string filenameTranslation = config->GetTranslation_Filename();
+  vector<vector<string>> translation_vals_string;
+  if (!filenameTranslation.empty() && rank == MASTER_NODE ){
+    using_translation_file = true;
+    ReadCSVFile(filenameTranslation, translation_labels, translation_vals_string);
+    translation_vals.resize(translation_vals_string.size(),{});
+    for (unsigned long i = 0; i < translation_vals_string.size(); i++){
+      translation_vals[i].resize(translation_vals_string[i].size(),0.0);
+      for (unsigned short j = 0; j < translation_vals_string[i].size(); j++){
+        translation_vals[i][j] = stod(translation_vals_string[i][j]);
+      }
+    }
+  }
+  else{
+    using_translation_file = false;
   }
 }
 
