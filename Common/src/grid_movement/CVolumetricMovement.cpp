@@ -2051,7 +2051,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Local variables ---*/
   su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0}, *Coord, Center[3] = {0.0,0.0,0.0},
   Omega[3] = {0.0,0.0,0.0}, Ampl[3] = {0.0,0.0,0.0}, Phase[3] = {0.0,0.0,0.0};
-  su2double Lref, deltaT, alphaDot[3], *GridVel, newGridVel[3] = {0.0,0.0,0.0};
+  su2double Lref, deltaT, Omega_Ref, alphaDot[3], *GridVel, newGridVel[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -2067,12 +2067,13 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
+  Omega_Ref = config->GetOmega_Ref();
 
   /*--- Pitching origin, frequency, and amplitude from config. ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    Omega[iDim]  = config->GetPitching_Omega(iDim)/config->GetOmega_Ref();
+    Omega[iDim]  = config->GetPitching_Omega(iDim)/Omega_Ref;
     Ampl[iDim]   = config->GetPitching_Ampl(iDim)*DEG2RAD;
     Phase[iDim]  = config->GetPitching_Phase(iDim)*DEG2RAD;
   }
@@ -2113,9 +2114,9 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 
     /*--- Angular velocity at the new time ---*/
 
-    alphaDot[0] = pitching_vals[iter-restart_iter][3];
-    alphaDot[1] = pitching_vals[iter-restart_iter][4];
-    alphaDot[2] = pitching_vals[iter-restart_iter][5];
+    alphaDot[0] = pitching_vals[iter-restart_iter][3]/Omega_Ref;
+    alphaDot[1] = pitching_vals[iter-restart_iter][4]/Omega_Ref;
+    alphaDot[2] = pitching_vals[iter-restart_iter][5]/Omega_Ref;
   }
   else{
     /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
@@ -2132,8 +2133,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   }
 
   if (rank == MASTER_NODE && iter == 0) {
-      cout << " Pitching frequency: (" << Omega[0] << ", " << Omega[1];
-      cout << ", " << Omega[2] << ") rad/s." << endl;
+      cout << " Pitching frequency: (" << Omega[0]*Omega_Ref << ", " << Omega[1]*Omega_Ref;
+      cout << ", " << Omega[2]*Omega_Ref << ") rad/s." << endl;
       cout << " Pitching amplitude: (" << Ampl[0]/DEG2RAD << ", ";
       cout << Ampl[1]/DEG2RAD << ", " << Ampl[2]/DEG2RAD;
       cout << ") degrees."<< endl;
@@ -2215,7 +2216,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
 
   /*--- Local variables ---*/
-  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref;
+  su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord, Omega[3], Ampl[3], Lref,Omega_Ref;
   su2double *GridVel, newGridVel[3] = {0.0, 0.0, 0.0}, xDot[3];
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -2226,10 +2227,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
+  Omega_Ref = config->GetOmega_Ref();
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    Omega[iDim]  = config->GetPlunging_Omega(iDim)/config->GetOmega_Ref();
+    Omega[iDim]  = config->GetPlunging_Omega(iDim)/Omega_Ref;
     Ampl[iDim]   = config->GetPlunging_Ampl(iDim)/Lref;
   }
 
@@ -2274,10 +2276,10 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   xDot[2] = -Ampl[2]*Omega[2]*(cos(Omega[2]*time_new));
 
   if (rank == MASTER_NODE && iter == 0) {
-    cout << " Plunging frequency: (" << Omega[0] << ", " << Omega[1];
-    cout << ", " << Omega[2] << ") rad/s." << endl;
-    cout << " Plunging amplitude: (" << Ampl[0] << ", ";
-    cout << Ampl[1] << ", " << Ampl[2] <<  ") m."<< endl;
+    cout << " Plunging frequency: (" << Omega[0]*Omega_Ref << ", " << Omega[1]*Omega_Ref;
+    cout << ", " << Omega[2]*Omega_Ref << ") rad/s." << endl;
+    cout << " Plunging amplitude: (" << Ampl[0]*Lref << ", ";
+    cout << Ampl[1]*Lref << ", " << Ampl[2]*Lref <<  ") m."<< endl;
   }
 
   /*--- Loop over and move each node in the volume mesh ---*/
@@ -2348,20 +2350,23 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Local variables ---*/
   su2double deltaX[3], newCoord[3] = {0.0, 0.0, 0.0}, Center[3], *Coord;
   su2double xDot[3];
-  su2double deltaT, time_new, time_old;
+  su2double deltaT, time_new, time_old, Velocity_Ref, Lref;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  unsigned long restart_iter = config->GetRestart_Iter();
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
+  Velocity_Ref = config->GetVelocity_Ref();
+  Lref = config->GetLength_Ref();
 
   /*--- Get motion center and translation rates from config ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
     Center[iDim] = config->GetMotion_Origin(iDim);
-    xDot[iDim]   = config->GetTranslation_Rate(iDim);
+    xDot[iDim]   = config->GetTranslation_Rate(iDim)/Velocity_Ref;
   }
 
   if (harmonic_balance) {
@@ -2392,16 +2397,29 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
     }
   }
 
-  /*--- Compute delta change in the position in the x, y, & z directions. ---*/
-  deltaX[0] = xDot[0]*(time_new-time_old);
-  deltaX[1] = xDot[1]*(time_new-time_old);
-  deltaX[2] = xDot[2]*(time_new-time_old);
+  /*--- Check if  translation file exists to fill up delta change in the position in the x, y, & z directions. ---*/
+  if (using_translation_file){
+    deltaX[0] = translation_vals[iter-restart_iter][0]/Lref;
+    deltaX[1] = translation_vals[iter-restart_iter][1]/Lref;
+    deltaX[2] = translation_vals[iter-restart_iter][2]/Lref;
+
+    /*--- Velocity at the new time ---*/
+    xDot[0] = translation_vals[iter-restart_iter][3]/Velocity_Ref;
+    xDot[1] = translation_vals[iter-restart_iter][4]/Velocity_Ref;
+    xDot[2] = translation_vals[iter-restart_iter][5]/Velocity_Ref;
+  }
+  else{
+    /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+    deltaX[0] = xDot[0]*(time_new-time_old);
+    deltaX[1] = xDot[1]*(time_new-time_old);
+    deltaX[2] = xDot[2]*(time_new-time_old);
+  }
 
   if (rank == MASTER_NODE) {
-    cout << " New physical time: " << time_new << " seconds." << endl;
+    cout << " New physical time: " << config->GetCurrent_UnstTime() << " seconds." << endl;
     if (iter == 0) {
-    cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
-      cout << ", " << xDot[2]*config->GetVelocity_Ref();
+      cout << " Translational velocity: (" << xDot[0]*Velocity_Ref << ", " << xDot[1]*Velocity_Ref;
+      cout << ", " << xDot[2]*Velocity_Ref;
       if (config->GetSystemMeasurements() == SI) cout << ") m/s." << endl;
       else cout << ") ft/s." << endl;
     }

@@ -52,6 +52,10 @@ protected:
   vector<string> pitching_labels;
   vector<vector<su2double>> pitching_vals;
 
+  bool using_translation_file;
+  vector<string> translation_labels;
+  vector<vector<su2double>> translation_vals;
+
 #ifndef CODI_FORWARD_TYPE
   CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
   CSysSolve<su2mixedfloat>  System;      /*!< \brief Linear solver/smoother. */

@@ -888,6 +888,7 @@ private:
   *MarkerPlunging_Omega,          /*!< \brief Angular frequency of marker.. */
   *MarkerPlunging_Ampl;           /*!< \brief Plunging amplitude of marker. */
   string Pitching_Filename;       /*!< \brief Filename defining arbitrary pitching motion */
+  string Translation_Filename;    /*!< \brief Filename defining arbitrary translation motion */
 
   unsigned short
   nMarkerMotion_Origin,           /*!< \brief Number of values provided for mesh motion origin of marker. */
@@ -5673,6 +5674,12 @@ public:
    * \return pitching filename
    */
   string GetPitching_Filename() const { return Pitching_Filename; }
+
+  /*!
+   * \brief Get filename defining translation movement
+   * \return translation filename
+   */
+  string GetTranslation_Filename() const { return Translation_Filename; }
 
   /*!
    * \brief Get the Harmonic Balance frequency pointer.
