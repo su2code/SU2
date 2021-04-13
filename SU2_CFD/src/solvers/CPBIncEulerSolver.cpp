@@ -163,7 +163,9 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
       FaceVelocityCorrec[iEdge][iDim] = 0.0;
      }
    }
-   TransientCorr.resize(nEdge) = su2double(0.0);
+   PseudoTimeCorr.resize(nEdge,nDim) = su2double(0.0);
+   TimeMarchingCorr_n.resize(nEdge,nDim) = su2double(0.0);
+   TimeMarchingCorr_n1.resize(nEdge,nDim) = su2double(0.0);
 
   /*--- Initial comms. ---*/
 
@@ -1254,9 +1256,6 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     }
   }
 
-  if (config->GetInnerIter() == 0)
-    UpdateFaceVelocity(geometry, solver_container, config);
-
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -1372,20 +1371,6 @@ void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_con
   InitiateComms(geometry, config, MOM_COEFF);
   CompleteComms(geometry, config, MOM_COEFF);
 
-}
-
-void CPBIncEulerSolver::UpdateFaceVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  unsigned long iEdge, iPoint, jPoint;
-  su2double Normal[MAXNDIM];
-
-  for (iEdge = 0; iEdge < nEdge; iEdge++) {
-    iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
-    geometry->edges->GetNormal(iEdge, Normal);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      FaceVelocity[iEdge][iDim] = 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim));
-    }
-  }
 }
 
 void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -1609,14 +1594,15 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   su2double Edge_Vector[MAXNDIM], dist_ij_2;
   su2double *Coord_i, *Coord_j;
   su2double MassFlux_Part, MassFlux_Avg, Mom_Coeff[MAXNDIM], *Normal,Vel_Avg, Grad_Avg;
-  su2double Area, MeanDensity, VelocityOldFace;
-  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM], GradP_proj, RhieChowInterp, Coeff_Mom, FaceVel[MAXNDIM];
-  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Adj_Mass, Transient_Corr,*GridVel_i,*GridVel_j;
+  su2double Area, MeanDensity, Vol , TimeStep;
+  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM], GradP_proj, RhieChowInterp, Coeff_Mom, PsCorr[MAXNDIM], PsCorrFace;
+  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Adj_Mass,*GridVel_i,*GridVel_j;
   su2double Net_Mass, alfa, Mass_In, Mass_Out, Mass_Free_In, Mass_Free_Out, Mass_Corr, Area_out;
   string Marker_Tag;
-  su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j, weight, dir,x,y;
+  su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j;
   unsigned short Kind_Outlet;
   Normal = new su2double [nDim];
+  bool unsteady = (config->GetTime_Marching() != NO);
 
   /*--- Initialize mass flux to zero ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -1643,14 +1629,12 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     for (iDim = 0; iDim < nDim; iDim++) {
       Vel_Avg = 0.5*(nodes->GetVelocity(iPoint,iDim) + nodes->GetVelocity(jPoint,iDim));
       MassFlux_Avg += MeanDensity*Vel_Avg*Normal[iDim];
-      FaceVel[iDim] += Vel_Avg;
     }
     
     if (dynamic_grid)
       for (iDim = 0; iDim < nDim; iDim++) {
         Vel_Avg = 0.5*(GridVel_i[iDim]+GridVel_j[iDim]);
         MassFlux_Avg -= MeanDensity*Vel_Avg*Normal[iDim];
-        FaceVel[iDim] -= Vel_Avg;
       }
 
     /*--- Rhie Chow interpolation ---*/
@@ -1686,25 +1670,76 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
      * --- GradP_f = (p_F^n - p_P^n)/ds , GradP_in = 0.5*(GradP_P^n + GradP_F^n)---*/
     RhieChowInterp = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
+      /*--- Linearly interpolated coefficient. ---*/
       Coeff_Mom = 0.5*(nodes->Get_Mom_Coeff(iPoint,iDim) + nodes->Get_Mom_Coeff(jPoint,iDim));
+      /*--- Difference of pressure gradients. ---*/
       RhieChowInterp += Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
-      FaceVel[iDim] -= Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
+      /*--- Save the pressure gradient contribution for the correction term used in the next iteration. ---*/
+      PsCorr[iDim] = -Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
     }
 
-    MassFlux_Part = MassFlux_Avg - RhieChowInterp + TransientCorr[iEdge];
-    //MassFlux_Part = MassFlux_Avg - RhieChowInterp;
-
     /*--- Rhie Chow correction for time step must go here ---*/
-    /*Transient_Corr = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Transient_Corr += (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)))*Normal[iDim]*MeanDensity;
-      FaceVel[iDim] = (FaceVelocity[iEdge][iDim] - 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim)));
-    }*/
+    su2double beta = 0.0, beta_n = 0.0, beta_n1 = 0.0;
+    su2double den_i,den_j,num_i,num_n_i,num_n1_i,num_j,num_n1_j,num_n_j;
+    if (unsteady) {
+      TimeStep = config->GetDelta_UnstTimeND();
+      
+      Vol = 0.5*(geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetVolume(jPoint));
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+          den_i = geometry->nodes->GetVolume(iPoint)/nodes->Get_Mom_Coeff(iPoint,iDim);
+          den_j = geometry->nodes->GetVolume(jPoint)/nodes->Get_Mom_Coeff(jPoint,iDim);
+          Coeff_Mom = 0.5*(nodes->Get_Mom_Coeff(iPoint,iDim) + nodes->Get_Mom_Coeff(jPoint,iDim));
+      }
+      PsCorrFace = 0.0;
+      if (config->GetTime_Marching() == DT_STEPPING_1ST) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          // Coefficient of correction for pseudo time iteration
+          num_i = den_i - geometry->nodes->GetVolume(iPoint)/TimeStep;
+          num_j = den_j - geometry->nodes->GetVolume(jPoint)/TimeStep;
+          beta = 0.5*(num_i/den_i + num_j/den_j);
+          // Coefficient of correction for unsteady time level n
+          num_n_i = -geometry->nodes->GetVolume(iPoint)/TimeStep;
+          num_n_j = -geometry->nodes->GetVolume(jPoint)/TimeStep;
+          beta_n = -0.5*(num_n_i/den_i + num_n_j/den_j);
 
-    TransientCorr[iEdge] = -RhieChowInterp;
+          PsCorrFace += (beta*PseudoTimeCorr[iEdge][iDim] + beta_n*TimeMarchingCorr_n[iEdge][iDim])*Normal[iDim]*MeanDensity;
+        }
+      }
+      if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          // Coefficient of correction for pseudo time iteration
+          num_i = den_i - 3.0*geometry->nodes->GetVolume(iPoint)/(2.0*TimeStep);
+          num_j = den_j - 3.0*geometry->nodes->GetVolume(jPoint)/(2.0*TimeStep);
+          beta = 0.5*(num_i/den_i + num_j/den_j);
+          // Coefficient of correction for unsteady time level n
+          num_n_i = -4.0*geometry->nodes->GetVolume(iPoint)/(2.0*TimeStep);
+          num_n_j = -4.0*geometry->nodes->GetVolume(jPoint)/(2.0*TimeStep);
+          beta_n = -0.5*(num_n_i/den_i + num_n_j/den_j);
+          // Coefficient of correction for unsteady time level n-1
+          num_n1_i = geometry->nodes->GetVolume(iPoint)/(2.0*TimeStep);
+          num_n1_j = geometry->nodes->GetVolume(jPoint)/(2.0*TimeStep);
+          beta_n1 = 0.5*(num_n1_i/den_i + num_n1_j/den_j);
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      FaceVelocity[iEdge][iDim] = FaceVel[iDim];
+          PsCorrFace += (beta*PseudoTimeCorr[iEdge][iDim] + beta_n*TimeMarchingCorr_n[iEdge][iDim] + beta_n1*TimeMarchingCorr_n1[iEdge][iDim])*Normal[iDim]*MeanDensity;
+        }
+      }
+    }
+    else {
+      beta = 1.0; PsCorrFace = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        PsCorrFace += PseudoTimeCorr[iEdge][iDim]*Normal[iDim]*MeanDensity;
+      PsCorrFace = beta*PsCorrFace;
+    }
+
+    /*--- Calculate the mass flux at the face including the linearly interpolated velocities, pressure 
+     *    gradient difference contribution and correction for time stepping (both pseudo and dual time). ---*/ 
+    MassFlux_Part = MassFlux_Avg - RhieChowInterp + PsCorrFace;
+
+
+    /*--- Update correction of face velocity for the next iteration. ---*/
+    for (iDim = 0; iDim < nDim; iDim++) 
+      PseudoTimeCorr[iEdge][iDim] = PsCorr[iDim] ;//+ PseudoTimeCorr[iEdge][iDim];
 
     if (geometry->nodes->GetDomain(iPoint)) nodes->AddMassFlux(iPoint,MassFlux_Part);
     if (geometry->nodes->GetDomain(jPoint)) nodes->SubtractMassFlux(jPoint,MassFlux_Part);
@@ -1856,6 +1891,20 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
   SetResMassFluxRMS(geometry, config);
   delete [] Normal;
+}
+
+void CPBIncEulerSolver::SetMomentumCorrection_DualTime() {
+
+unsigned long  iEdge;
+unsigned short iDim;
+
+for (iEdge = 0; iEdge < nEdge; iEdge++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
+    TimeMarchingCorr_n1[iEdge][iDim] = TimeMarchingCorr_n[iEdge][iDim];
+    TimeMarchingCorr_n[iEdge][iDim] = PseudoTimeCorr[iEdge][iDim];
+  }
+}
+
 }
 
 

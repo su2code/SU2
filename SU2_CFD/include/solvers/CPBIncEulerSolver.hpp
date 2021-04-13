@@ -42,7 +42,7 @@ su2double
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
   su2double ResMassFlux;
-  su2activevector TransientCorr;
+  su2activematrix PseudoTimeCorr, TimeMarchingCorr_n, TimeMarchingCorr_n1;
 
   su2activematrix FaceVelocity, FaceVelocityCorrec;
 
@@ -276,14 +276,6 @@ public:
                                CConfig *config) final;
   
   /*!
-   * \brief Update face velocity based on new solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateFaceVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
-
-  /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -349,17 +341,20 @@ public:
   /*!
    * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of momentum equation.
-   *
    */
   void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh);
 
   /*!
    * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of momentum equation in a periodic problem.
-   *
    */
   void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  /*!
+   * \brief Update corrections for the Rhie-Chow interpolation for unsteady problems.
+   */
+  void SetMomentumCorrection_DualTime();
+  
   /*!
    * \brief Set the convergence of mass flux for current internal iteration.
    */

@@ -1569,14 +1569,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container,const CConfig *config) { }
-  
-  /*!
-   * \brief Update face velocity based on new solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void UpdateFaceVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) { };
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -4587,6 +4579,12 @@ public:
    * Set coefficients for pressure correction equation in periodic problems.
    */
   inline virtual void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member
+   * Update corrections for the Rhie-Chow interpolation for unsteady problems.
+   */
+  inline virtual void SetMomentumCorrection_DualTime() { }
 
 protected:
   /*!

@@ -224,6 +224,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     geometry->nodes->SetCoord_n1();
     geometry->nodes->SetCoord_n();
   }
+  
+  if (config->GetKind_Incomp_System() == PRESSURE_BASED)
+    solver->SetMomentumCorrection_DualTime();
 
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
