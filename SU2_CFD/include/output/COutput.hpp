@@ -653,6 +653,12 @@ protected:
   }
 
   /*!
+   * \brief OutputScreenAndHistory
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputScreenAndHistory(CConfig *config);
+
+  /*!
    * \brief Set the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
