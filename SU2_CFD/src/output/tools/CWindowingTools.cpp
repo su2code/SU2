@@ -74,7 +74,20 @@ void CWindowedAverage::Reset(){
 }
 
 void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
-  if(curTimeIter >= startIter)values.push_back(valIn);
+  if(curTimeIter >= startIter) {
+
+    /*--- Remove last element if this is still the same time iteration ---*/
+    if (winTimeIter.size() > 0) {
+      if (winTimeIter[winTimeIter.size()-1] == curTimeIter) {
+        values.pop_back();
+        winTimeIter.pop_back();
+      }
+    }
+
+    /*--- Update time iteration and value ---*/
+    winTimeIter.push_back(curTimeIter);
+    values.push_back(valIn);
+  }
 }
 
 su2double CWindowedAverage::WindowedUpdate(WINDOW_FUNCTION windowId){
