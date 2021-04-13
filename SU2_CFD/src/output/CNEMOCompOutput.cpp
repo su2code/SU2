@@ -696,6 +696,12 @@ bool CNEMOCompOutput::SetInit_Residuals(CConfig *config){
 
 }
 
+bool CNEMOCompOutput::SetUpdate_Averages(CConfig *config){
+
+  return true;
+
+}
+
 void CNEMOCompOutput::SetAdditionalScreenOutput(CConfig *config){
 
   if (config->GetFixed_CL_Mode()){

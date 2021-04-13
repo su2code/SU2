@@ -88,4 +88,11 @@ public:
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInit_Residuals(CConfig *config) override;
+
+  /*!
+   * \brief Check whether the averaged values should be updated
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> averages should be updated.
+   */
+  bool SetUpdate_Averages(CConfig *config) override;
 };

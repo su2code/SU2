@@ -724,6 +724,12 @@ bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
 
 }
 
+bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
+
+  return true;
+
+}
+
 void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 
   if (config->GetFixed_CL_Mode()){

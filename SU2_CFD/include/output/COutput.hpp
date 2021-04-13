@@ -742,6 +742,13 @@ protected:
   inline virtual bool SetInit_Residuals(CConfig *config) {return false;}
 
   /*!
+   * \brief Check whether the averaged values should be updated
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> averages should be updated.
+   */
+  inline virtual bool SetUpdate_Averages(CConfig *config){return false;}
+
+  /*!
    * \brief Set the values of the volume output fields for a surface point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

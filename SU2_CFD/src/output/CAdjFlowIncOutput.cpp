@@ -530,3 +530,10 @@ bool CAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));
 
 }
+
+bool CAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
+  return false;
+
+//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+
+}
