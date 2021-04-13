@@ -205,7 +205,10 @@ public:
    * \brief Get species formation enthalpy.
    */
   vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
-   
+  
+  /*!
+   * \brief Get wall catalycity values.
+   */ 
   vector<su2double>& GetWall_Catalycity() final { return Wall_Catalycity; }
   };
 

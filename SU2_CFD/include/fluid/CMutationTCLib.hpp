@@ -141,5 +141,10 @@ public:
    */
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
+  /*!
+   * \brief Get wall catalycity values.
+   */ 
+  vector<su2double>& GetWall_Catalycity() final { return Wall_Catalycity; }
+
 };
 #endif

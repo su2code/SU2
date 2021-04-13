@@ -243,8 +243,7 @@ public:
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 
   /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \return The heat flux. 
+   * \brief Get wall catalycity values.
    */
   virtual const vector<su2double>& GetWall_Catalycity() = 0;
 
