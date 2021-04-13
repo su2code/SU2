@@ -48,6 +48,7 @@
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 
+  cauchyTimeConverged = false;
   this->nDim = nDim;
 
   rank = SU2_MPI::GetRank();
@@ -737,12 +738,22 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   }
 }
 
-
+bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
+   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
+       // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
+       cauchyTimeConverged = TimeConvergence;
+       TimeConvergence = false;
+    }
+    else if(cauchyTimeConverged){
+       TimeConvergence = cauchyTimeConverged;
+    }
+    return TimeConvergence;
+}
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing){
 
-  bool writeFiles = WriteVolume_Output(config, iter, force_writing);
+  bool writeFiles = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged);
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
 
