@@ -804,7 +804,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
         su2double vel = Restart_Data[index+iDim+6];
-        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, Restart_Data[index+iDim+6]);
+        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, vel);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
