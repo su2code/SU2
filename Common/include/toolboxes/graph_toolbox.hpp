@@ -166,6 +166,7 @@ public:
     SU2_OMP_PARALLEL_(for schedule(static,roundUpDiv(getOuterSize(),omp_get_max_threads())))
     for(Index_t k = 0; k < getOuterSize(); ++k)
       m_diagPtr(k) = findInnerIdx(k,k);
+    END_SU2_OMP_PARALLEL
   }
 
   /*!
@@ -184,6 +185,7 @@ public:
         assert(m_innerIdxTransp(k) != m_innerIdx.size() && "The pattern is not symmetric.");
       }
     }
+    END_SU2_OMP_PARALLEL
   }
 
   /*!

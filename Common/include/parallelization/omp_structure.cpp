@@ -1,7 +1,8 @@
 /*!
- * \file ad_structure.cpp
- * \brief Main subroutines for the algorithmic differentiation (AD) structure.
- * \author T. Albring
+ * \file omp_structure.cpp
+ * \brief Source file counterpart for omp_structure.hpp.
+ * \note Contains OpDiLib initialization, finalization and includes the OpDiLib source file.
+ * \author J. Blühdorn
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,27 +26,36 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/basic_types/datatype_structure.hpp"
+#include "omp_structure.hpp"
 
-namespace AD {
-#ifdef CODI_REVERSE_TYPE
-  /*--- Initialization of the global variables ---*/
-
-  int adjointVectorPosition = 0;
-
-  std::vector<su2double::GradientData> inputValues;
-  std::vector<su2double::GradientData> localInputValues;
-  std::vector<su2double*> localOutputValues;
-
-  TapePosition StartPosition, EndPosition;
-  std::vector<TapePosition> TapePositions;
-
-  bool PreaccActive = false;
-  bool PreaccEnabled = true;
-
-  codi::PreaccumulationHelper<su2double> PreaccHelper;
-
-  ExtFuncHelper* FuncHelper;
-
+void omp_initialize() {
+#ifdef HAVE_OPDI
+#if !defined(HAVE_OMPT)
+  opdi::backend = new opdi::MacroBackend;
+  opdi::backend->init();
+#endif
+  opdi::logic = new opdi::OmpLogic;
+  opdi::logic->init();
+  su2double::getGlobalTape().initialize();
+  opdi::tool = new CoDiOpDiTool<su2double>;
+  opdi::tool->init();
 #endif
 }
+
+void omp_finalize() {
+#ifdef HAVE_OPDI
+  opdi::tool->finalize();
+  su2double::getGlobalTape().finalize();
+  opdi::logic->finalize();
+  opdi::backend->finalize();
+  delete opdi::tool;
+  delete opdi::logic;
+#if !defined(HAVE_OMPT)
+  delete opdi::backend;
+#endif
+#endif
+}
+
+#ifdef HAVE_OPDI
+#include "opdi.cpp"
+#endif
