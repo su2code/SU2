@@ -502,6 +502,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
+    LinSysSol.SetValZero();
   }
   END_SU2_OMP_PARALLEL
 
