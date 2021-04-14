@@ -593,6 +593,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
     LinSysRes.SetValZero();
     LinSysSol.SetValZero();
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions including boundary velocity ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, true);
