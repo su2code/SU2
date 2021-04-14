@@ -68,7 +68,6 @@ class CWindowedAverage:CWindowingTools{
 private:
   su2double val;                       /*!< \brief Value of the windowed-time average (of the instantaneous output) from starting time to the current time iteration. */
   std::vector<su2double> values;       /*!< \brief Vector of instantatneous output values from starting time to the current time iteration.*/
-  std::vector<su2double> winTimeIter;  /*!< \brief Vector of windowed time iterations.*/
 
 public:
   CWindowedAverage();

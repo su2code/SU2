@@ -74,19 +74,12 @@ void CWindowedAverage::Reset(){
 }
 
 void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
-  if(curTimeIter >= startIter) {
-
-    /*--- Remove last element if this is still the same time iteration ---*/
-    if (winTimeIter.size() > 0) {
-      if (winTimeIter[winTimeIter.size()-1] == curTimeIter) {
-        values.pop_back();
-        winTimeIter.pop_back();
-      }
-    }
-
-    /*--- Update time iteration and value ---*/
-    winTimeIter.push_back(curTimeIter);
-    values.push_back(valIn);
+  if (curTimeIter < startIter) return;
+  curTimeIter -= startIter;
+  if (curTimeIter == values.size()) values.push_back(valIn);
+  else {
+    assert(curTimeIter == values.size()-1 && "Cannot go back or advance more than one timestep.");
+    values.back() = valIn;
   }
 }
 
@@ -137,5 +130,4 @@ su2double CWindowedAverage::BumpWindowing(){
   }
   return wnd_timeAvg/static_cast<su2double>(values.size());
 }
-
 
