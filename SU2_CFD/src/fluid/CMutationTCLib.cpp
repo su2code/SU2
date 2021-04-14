@@ -44,11 +44,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
     // Wall mass fractions for catalytic boundaries
     Wall_Catalycity.resize(nSpecies,0.0);
 
-    Wall_Catalycity[4] = 0.4;
-    Wall_Catalycity[3] = 0.4;
-    Wall_Catalycity[2] = 0.1;
-    Wall_Catalycity[1] = 0.05;
-    Wall_Catalycity[0] = 0.05;
+    const auto Wall_Catalycity = config->GetGas_Composition();
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -227,4 +223,8 @@ vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
    return Enthalpy_Formation;  
 }
+
+
+vector<su2double>& CMutationTCLib::GetWall_Catalycity() {return Wall_Catalycity;}
+
 #endif
