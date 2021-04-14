@@ -2678,6 +2678,7 @@ void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
   for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
     nodes->SetSolution_Vel_Pred(iPoint);
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
