@@ -972,7 +972,6 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
     /*--- Species relaxation time ---*/
     taus = tauMW + tauP;
-    if (iSpecies == 0) {cout <<"delete me tau "<<taus<<endl;}
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
@@ -1218,9 +1217,9 @@ void CSU2TCLib::DiffusionCoeffD(){
 void CSU2TCLib::ViscosityD(){
   
   //AIR-5
-  //su2double Mu_ref = 1.716E-5;
-  //su2double T_ref  = 273.15;
-  //su2double S_ref  = 111;
+  su2double Mu_ref = 1.716E-5;
+  su2double T_ref  = 273.15;
+  su2double S_ref  = 111;
   
   //N2
   //su2double Mu_ref = 1.663E-5;
@@ -1228,9 +1227,9 @@ void CSU2TCLib::ViscosityD(){
   //su2double S_ref  = 107;
 
   //ARGON
-  su2double Mu_ref = 2.125E-5;
-  su2double T_ref  = 273.15;
-  su2double S_ref  = 114;
+  //su2double Mu_ref = 2.125E-5;
+  //su2double T_ref  = 273.15;
+  //su2double S_ref  = 114;
 
   su2double T_nd = T / T_ref;
 
