@@ -77,7 +77,7 @@ protected:
 
 public:
   /*!
-   * \brief Implementation of the base Roe flux.
+   * \brief Implementation of the base centered flux.
    */
   void ComputeFlux(Int iEdge,
                    const CConfig& config,

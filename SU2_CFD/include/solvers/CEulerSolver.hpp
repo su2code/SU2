@@ -35,9 +35,9 @@
  * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
-class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
+class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE> {
 protected:
-  using BaseClass = CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
+  using BaseClass = CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
@@ -277,7 +277,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>() {}
+  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
 
   /*!
    * \overload Main constructor of this class.

@@ -1242,13 +1242,7 @@ public:
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config) const;
-
-  /*!
-   * \brief Register the coordinates of the mesh nodes as output.
-   * \param[in] config
-   */
-  void RegisterOutput_Coordinates(CConfig *config) const;
+  void RegisterCoordinates(const CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1551,7 +1545,8 @@ public:
    * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
    * \param[in,out] values - On entry, the "raw" values, on exit, the filtered values.
    */
-  void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+  void FilterValuesAtElementCG(const vector<su2double> &filter_radius,
+                               const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                const unsigned short search_limit, su2double *values) const;
 
   /*!

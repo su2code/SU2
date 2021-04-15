@@ -54,7 +54,7 @@ CNSUnitQuadSolution::CNSUnitQuadSolution(unsigned short val_nDim,
   Viscosity = config->GetMu_ConstantND();
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the NS Unit Quad case",
                    CURRENT_FUNCTION);
 

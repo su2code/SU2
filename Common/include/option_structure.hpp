@@ -63,12 +63,12 @@ using MapType = CEmptyMap<T,U>;
 /*!
  * \brief Different software components of SU2
  */
-enum SU2_COMPONENT {
-  SU2_CFD = 1,  /*!< \brief Running the SU2_CFD software. */
-  SU2_DEF = 2,  /*!< \brief Running the SU2_DEF software. */
-  SU2_DOT = 3,  /*!< \brief Running the SU2_DOT software. */
-  SU2_GEO = 5,  /*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
+enum class SU2_COMPONENT {
+  SU2_CFD, /*!< \brief Running the SU2_CFD software. */
+  SU2_DEF, /*!< \brief Running the SU2_DEF software. */
+  SU2_DOT, /*!< \brief Running the SU2_DOT software. */
+  SU2_GEO, /*!< \brief Running the SU2_GEO software. */
+  SU2_SOL  /*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
@@ -237,13 +237,13 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
 /*!
  * \brief Different solver types for multizone problems
  */
-enum ENUM_MULTIZONE {
-  MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
-  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
+enum class ENUM_MULTIZONE {
+  MZ_BLOCK_GAUSS_SEIDEL, /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
+  MZ_BLOCK_JACOBI,       /*!< \brief Definition of a Block-Jacobi solver. */
 };
 static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
-  MakePair("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
-  MakePair("BLOCK_JACOBI", MZ_BLOCK_JACOBI)
+  MakePair("BLOCK_GAUSS_SEIDEL", ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL)
+  MakePair("BLOCK_JACOBI", ENUM_MULTIZONE::MZ_BLOCK_JACOBI)
 };
 
 /*!
@@ -395,7 +395,7 @@ enum ENUM_TRANSFER {
 /*!
  * \brief different regime modes
  */
-enum ENUM_REGIME {
+enum class ENUM_REGIME {
   COMPRESSIBLE = 0,   /*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1, /*!< \brief Definition of incompressible solver. */
   NO_FLOW = 2
@@ -594,15 +594,15 @@ MakePair("GUPTA-YOS", GUPTAYOS)
 /*!
  * \brief Types of density models
  */
-enum ENUM_DENSITYMODEL {
-  CONSTANT = 0,
-  BOUSSINESQ = 1,  /*!< \brief BoussinesQ density model. */
-  VARIABLE = 2     /*!< \brief Variable density model. */
+enum class INC_DENSITYMODEL {
+  CONSTANT,   /*!< \brief Constant density. */
+  BOUSSINESQ, /*!< \brief Boussinesq density model. */
+  VARIABLE,   /*!< \brief Variable density model. */
 };
-static const MapType<string, ENUM_DENSITYMODEL> DensityModel_Map = {
-  MakePair("CONSTANT", CONSTANT)
-  MakePair("BOUSSINESQ", BOUSSINESQ)
-  MakePair("VARIABLE", VARIABLE)
+static const MapType<string, INC_DENSITYMODEL> DensityModel_Map = {
+  MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
+  MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
+  MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
 };
 
 /*!
@@ -1115,8 +1115,6 @@ enum BC_TYPE {
   OUTLET_FLOW = 5,            /*!< \brief Boundary outlet flow definition. */
   PERIODIC_BOUNDARY = 6,      /*!< \brief Periodic boundary definition. */
   NEARFIELD_BOUNDARY = 7,     /*!< \brief Near-Field boundary definition. */
-  ELECTRODE_BOUNDARY = 8,     /*!< \brief Electrode boundary definition. */
-  DIELEC_BOUNDARY = 9,        /*!< \brief Dipoisson boundary definition. */
   CUSTOM_BOUNDARY = 10,       /*!< \brief custom boundary definition. */
   INTERFACE_BOUNDARY = 11,    /*!< \brief Domain interface boundary definition. */
   DIRICHLET = 12,             /*!< \brief Boundary Euler wall definition. */
@@ -1241,17 +1239,17 @@ static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
  * The first (temperature) part determines the BC method on the fluid side, the second (heatflux) part determines
  * the BC method on the solid side of the CHT interface.
  */
-enum ENUM_CHT_COUPLING {
-  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX = 0,
-  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX = 1,
-  DIRECT_TEMPERATURE_ROBIN_HEATFLUX = 2,
-  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX = 3
+enum CHT_COUPLING {
+  DIRECT_TEMPERATURE_NEUMANN_HEATFLUX,
+  AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX,
+  DIRECT_TEMPERATURE_ROBIN_HEATFLUX,
+  AVERAGED_TEMPERATURE_ROBIN_HEATFLUX,
 };
-static const MapType<string, ENUM_CHT_COUPLING> CHT_Coupling_Map = {
-  MakePair("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
-  MakePair("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
-  MakePair("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
-  MakePair("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)
+static const MapType<string, CHT_COUPLING> CHT_Coupling_Map = {
+  MakePair("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
+  MakePair("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
+  MakePair("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
+  MakePair("AVERAGED_TEMPERATURE_ROBIN_HEATFLUX", CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)
 };
 
 /*!
@@ -1379,30 +1377,30 @@ enum TURBO_MARKER_TYPE{
  * \brief Types inlet boundary treatments
  */
 enum INLET_TYPE {
-  TOTAL_CONDITIONS = 1,   /*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  MASS_FLOW = 2,          /*!< \brief User specifies density and velocity (mass flow). */
-  INPUT_FILE = 3,         /*!< \brief User specifies an input file. */
-  VELOCITY_INLET = 4,     /*!< \brief Velocity inlet for an incompressible flow. */
-  PRESSURE_INLET = 5      /*!< \brief Total pressure inlet for an incompressible flow. */
+  TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
+  MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
+  INPUT_FILE,       /*!< \brief User specifies an input file. */
+  VELOCITY_INLET,   /*!< \brief Velocity inlet for an incompressible flow. */
+  PRESSURE_INLET,   /*!< \brief Total pressure inlet for an incompressible flow. */
 };
 static const MapType<string, INLET_TYPE> Inlet_Map = {
-  MakePair("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
-  MakePair("MASS_FLOW", MASS_FLOW)
-  MakePair("INPUT_FILE", INPUT_FILE)
-  MakePair("VELOCITY_INLET", VELOCITY_INLET)
-  MakePair("PRESSURE_INLET", PRESSURE_INLET)
+  MakePair("TOTAL_CONDITIONS", INLET_TYPE::TOTAL_CONDITIONS)
+  MakePair("MASS_FLOW", INLET_TYPE::MASS_FLOW)
+  MakePair("INPUT_FILE", INLET_TYPE::INPUT_FILE)
+  MakePair("VELOCITY_INLET", INLET_TYPE::VELOCITY_INLET)
+  MakePair("PRESSURE_INLET", INLET_TYPE::PRESSURE_INLET)
 };
 
 /*!
  * \brief Types outlet boundary treatments
  */
-enum OUTLET_TYPE {
-  PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
-  MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
+enum class INC_OUTLET_TYPE {
+  PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
+  MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<string, OUTLET_TYPE> Outlet_Map = {
-  MakePair("PRESSURE_OUTLET", PRESSURE_OUTLET)
-  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
+static const MapType<string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+  MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
+  MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
 };
 
 /*!
@@ -2000,21 +1998,21 @@ static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
 /*!
  * \brief Types of schemes for unsteady computations
  */
-enum ENUM_UNSTEADY {
-  STEADY = 0,            /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,     /*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,   /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,   /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
-  HARMONIC_BALANCE = 5   /*!< \brief Use a harmonic balance source term. */
+enum class TIME_MARCHING {
+  STEADY,           /*!< \brief A steady computation. */
+  TIME_STEPPING,    /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST,  /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND,  /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME, /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE, /*!< \brief Use a harmonic balance source term. */
 };
-static const MapType<string, ENUM_UNSTEADY> TimeMarching_Map = {
-  MakePair("NO", STEADY)
-  MakePair("TIME_STEPPING", TIME_STEPPING)
-  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
-  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-  MakePair("HARMONIC_BALANCE", HARMONIC_BALANCE)
-  MakePair("ROTATIONAL_FRAME", ROTATIONAL_FRAME)
+static const MapType<string, TIME_MARCHING> TimeMarching_Map = {
+  MakePair("NO", TIME_MARCHING::STEADY)
+  MakePair("TIME_STEPPING", TIME_MARCHING::TIME_STEPPING)
+  MakePair("DUAL_TIME_STEPPING-1ST_ORDER", TIME_MARCHING::DT_STEPPING_1ST)
+  MakePair("DUAL_TIME_STEPPING-2ND_ORDER", TIME_MARCHING::DT_STEPPING_2ND)
+  MakePair("HARMONIC_BALANCE", TIME_MARCHING::HARMONIC_BALANCE)
+  MakePair("ROTATIONAL_FRAME", TIME_MARCHING::ROTATIONAL_FRAME)
 };
 
 /*!
@@ -2107,57 +2105,62 @@ static const MapType<string, ENUM_INPUT_REF> Input_Ref_Map = {
  * \brief Vertex-based quantities exchanged during periodic marker communications.
  */
 enum PERIODIC_QUANTITIES {
-  PERIODIC_NONE       = 99,  /*!< \brief No periodic communication required. */
-  PERIODIC_VOLUME     =  1,  /*!< \brief Volume communication for summing total CV (periodic only). */
-  PERIODIC_NEIGHBORS  =  2,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
-  PERIODIC_RESIDUAL   =  3,  /*!< \brief Residual and Jacobian communication (periodic only). */
-  PERIODIC_LAPLACIAN  =  4,  /*!< \brief Undivided Laplacian communication for JST (periodic only). */
-  PERIODIC_MAX_EIG    =  5,  /*!< \brief Maximum eigenvalue communication (periodic only). */
-  PERIODIC_SENSOR     =  6,  /*!< \brief Dissipation sensor communication (periodic only). */
-  PERIODIC_SOL_GG     =  7,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
-  PERIODIC_PRIM_GG    =  8,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
-  PERIODIC_SOL_LS     =  9,  /*!< \brief Solution gradient communication for weighted Least Squares (periodic only). */
-  PERIODIC_PRIM_LS    = 10,  /*!< \brief Primitive gradient communication for weighted Least Squares (periodic only). */
-  PERIODIC_LIM_SOL_1  = 11,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
-  PERIODIC_LIM_SOL_2  = 12,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_LIM_PRIM_1 = 13,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
-  PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
-  PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
-  PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_NONE       ,  /*!< \brief No periodic communication required. */
+  PERIODIC_VOLUME     ,  /*!< \brief Volume communication for summing total CV (periodic only). */
+  PERIODIC_NEIGHBORS  ,  /*!< \brief Communication of the number of neighbors for centered schemes (periodic only). */
+  PERIODIC_RESIDUAL   ,  /*!< \brief Residual and Jacobian communication (periodic only). */
+  PERIODIC_LAPLACIAN  ,  /*!< \brief Undivided Laplacian communication for JST (periodic only). */
+  PERIODIC_MAX_EIG    ,  /*!< \brief Maximum eigenvalue communication (periodic only). */
+  PERIODIC_SENSOR     ,  /*!< \brief Dissipation sensor communication (periodic only). */
+  PERIODIC_SOL_GG     ,  /*!< \brief Solution gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_PRIM_GG    ,  /*!< \brief Primitive gradient communication for Green-Gauss (periodic only). */
+  PERIODIC_SOL_LS     ,  /*!< \brief Solution gradient communication for weighted Least Squares (periodic only). */
+  PERIODIC_PRIM_LS    ,  /*!< \brief Primitive gradient communication for weighted Least Squares (periodic only). */
+  PERIODIC_SOL_ULS    ,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   ,  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_SOL_GG_R   ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_PRIM_GG_R  ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_SOL_LS_R   ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_PRIM_LS_R  ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_SOL_ULS_R  ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_PRIM_ULS_R ,  /*!< \brief Same but reconstruction. */
+  PERIODIC_LIM_SOL_1  ,  /*!< \brief Solution limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_SOL_2  ,  /*!< \brief Solution limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
+  PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
+  PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
 };
 
 /*!
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
 enum MPI_QUANTITIES {
-  SOLUTION             =  0,  /*!< \brief Conservative solution communication. */
-  SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
-  SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
-  SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
-  PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
-  PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
-  UNDIVIDED_LAPLACIAN  = 10,  /*!< \brief Undivided Laplacian communication. */
-  MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
-  SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
-  AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
-  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
-  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
-  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
-  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
-  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
-  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
-  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
-  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
-  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
-  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
-  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
-  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
-  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
+  SOLUTION             ,  /*!< \brief Conservative solution communication. */
+  SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
+  SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_GRAD_REC    ,  /*!< \brief Conservative solution reconstruction gradient communication. */
+  SOLUTION_LIMITER     ,  /*!< \brief Conservative solution limiter communication. */
+  SOLUTION_GEOMETRY    ,  /*!< \brief Geometry solution communication. */
+  PRIMITIVE_GRADIENT   ,  /*!< \brief Primitive gradient communication. */
+  PRIMITIVE_GRAD_REC   ,  /*!< \brief Primitive reconstruction gradient communication. */
+  PRIMITIVE_LIMITER    ,  /*!< \brief Primitive limiter communication. */
+  UNDIVIDED_LAPLACIAN  ,  /*!< \brief Undivided Laplacian communication. */
+  MAX_EIGENVALUE       ,  /*!< \brief Maximum eigenvalue communication. */
+  SENSOR               ,  /*!< \brief Dissipation sensor communication. */
+  AUXVAR_GRADIENT      ,  /*!< \brief Auxiliary variable gradient communication. */
+  COORDINATES          ,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      ,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
+  SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         ,  /*!< \brief FEA solution communication. */
+  MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  PRIMITIVE               /*!< \brief Primitive solution communication. */
 };
 
 /*!
@@ -2174,36 +2177,36 @@ static const MapType<string, COMM_LEVEL> Comm_Map = {
   MakePair("FULL",    COMM_FULL)
 };
 
-/*
+/*!
  * \brief Types of filter kernels, initially intended for structural topology optimization applications
  */
-enum ENUM_FILTER_KERNEL {
-  CONSTANT_WEIGHT_FILTER = 0,      /*!< \brief Uniform weight. */
-  CONICAL_WEIGHT_FILTER  = 1,      /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
-  GAUSSIAN_WEIGHT_FILTER = 2,      /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
-  DILATE_MORPH_FILTER    = 3,      /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
-  ERODE_MORPH_FILTER     = 4,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
+enum class ENUM_FILTER_KERNEL {
+  CONSTANT_WEIGHT,  /*!< \brief Uniform weight. */
+  CONICAL_WEIGHT,   /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
+  GAUSSIAN_WEIGHT,  /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
+  DILATE_MORPH,     /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
+  ERODE_MORPH,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
 };
 static const MapType<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
-  MakePair("CONSTANT", CONSTANT_WEIGHT_FILTER)
-  MakePair("CONICAL" , CONICAL_WEIGHT_FILTER)
-  MakePair("GAUSSIAN", GAUSSIAN_WEIGHT_FILTER)
-  MakePair("DILATE"  , DILATE_MORPH_FILTER)
-  MakePair("ERODE"   , ERODE_MORPH_FILTER)
+  MakePair("CONSTANT", ENUM_FILTER_KERNEL::CONSTANT_WEIGHT)
+  MakePair("CONICAL", ENUM_FILTER_KERNEL::CONICAL_WEIGHT)
+  MakePair("GAUSSIAN", ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT)
+  MakePair("DILATE", ENUM_FILTER_KERNEL::DILATE_MORPH)
+  MakePair("ERODE", ENUM_FILTER_KERNEL::ERODE_MORPH)
 };
 
 /*!
  * \brief Types of projection function, initially intended for structural topology optimization applications
  */
-enum ENUM_PROJECTION_FUNCTION {
-  NO_PROJECTION  = 0,      /*!< \brief No projection. */
-  HEAVISIDE_UP   = 1,      /*!< \brief Project values towards 1. */
-  HEAVISIDE_DOWN = 2,      /*!< \brief Project values towards 0. */
+enum class ENUM_PROJECTION_FUNCTION {
+  NONE,           /*!< \brief No projection. */
+  HEAVISIDE_UP,   /*!< \brief Project values towards 1. */
+  HEAVISIDE_DOWN, /*!< \brief Project values towards 0. */
 };
 static const MapType<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
-  MakePair("NO_PROJECTION" , NO_PROJECTION)
-  MakePair("HEAVISIDE_UP"  , HEAVISIDE_UP)
-  MakePair("HEAVISIDE_DOWN", HEAVISIDE_DOWN)
+  MakePair("NO_PROJECTION", ENUM_PROJECTION_FUNCTION::NONE)
+  MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
+  MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
 };
 
 /*!
@@ -2243,15 +2246,15 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
 /*!
  * \brief Types of streamwise periodicity.
  */
-enum ENUM_STREAMWISE_PERIODIC {
-  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
-  PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
-  STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
+enum class ENUM_STREAMWISE_PERIODIC {
+  NONE,          /*!< \brief No streamwise periodic flow. */
+  PRESSURE_DROP, /*!< \brief Prescribed pressure drop. */
+  MASSFLOW,      /*!< \brief Prescribed massflow. */
 };
 static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
-  MakePair("NONE",          NO_STREAMWISE_PERIODIC)
-  MakePair("PRESSURE_DROP", PRESSURE_DROP)
-  MakePair("MASSFLOW",      STREAMWISE_MASSFLOW)
+  MakePair("NONE",          ENUM_STREAMWISE_PERIODIC::NONE)
+  MakePair("PRESSURE_DROP", ENUM_STREAMWISE_PERIODIC::PRESSURE_DROP)
+  MakePair("MASSFLOW",      ENUM_STREAMWISE_PERIODIC::MASSFLOW)
 };
 
 /*!
