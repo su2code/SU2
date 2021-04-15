@@ -44,7 +44,14 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
     // Wall mass fractions for catalytic boundaries
     Wall_Catalycity.resize(nSpecies,0.0);
 
-    const auto Wall_Catalycity = config->GetGas_Composition();
+    if(nSpecies == 5)
+      Wall_Catalycity[0] = 0.00;
+      Wall_Catalycity[1] = 0.00;
+      Wall_Catalycity[2] = 0.00;
+      Wall_Catalycity[3] = 0.77;
+      Wall_Catalycity[4] = 0.23;
+
+    //const auto Wall_Catalycity = config->GetGas_Composition();
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
