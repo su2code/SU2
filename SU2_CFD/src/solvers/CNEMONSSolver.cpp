@@ -52,6 +52,16 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
       break;
   }
 
+  /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
+  /* V = [Y1, ... , Yn, T, Tve, ... ] */
+  primitives_aux = new su2double[nPrimVar];
+
+}
+
+CNEMONSSolver::~CNEMONSSolver(void) {
+
+  if (primitives_aux != nullptr) delete [] primitives_aux;
+
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -198,8 +208,9 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      unsigned short iRKStep) {
 
   bool err;
-  unsigned short iVar;
+  unsigned short iVar, jVar;
   unsigned long iPoint, jPoint, iEdge;
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -256,23 +267,23 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-    //        err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
+              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
+            err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
-      //if (implicit) {
-      //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      //  Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      //  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      //  Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-      //}
+      if (implicit) {
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+      }
     }
   } //iEdge
 }
@@ -635,12 +646,13 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
 
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jVar;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Ti, Tvei, Tj, Tvej, Twall, dij, theta,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
-  su2double *V;
+  su2double *V, *dTdU, *dTvedU;
   bool ionization = config->GetIonization();
+  bool implicit = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
@@ -738,20 +750,20 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
-      //if (implicit) {
-      //  for (iVar = 0; iVar < nVar; iVar++)
-      //    for (jVar = 0; jVar < nVar; jVar++)
-      //      Jacobian_i[iVar][jVar] = 0.0;
-      //
-      //  dTdU   = nodes->GetdTdU(iPoint);
-      //  dTvedU = nodes->GetdTvedU(iPoint);
-      //  for (iVar = 0; iVar < nVar; iVar++) {
-      //    Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dij*dTdU[iVar] +
-      //                                          kve*theta/dij*dTvedU[iVar])*Area;
-      //    Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dij*dTvedU[iVar]*Area;
-      //  }
-      //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      //} // implicit
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+      
+        dTdU   = nodes->GetdTdU(iPoint);
+        dTvedU = nodes->GetdTvedU(iPoint);
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dij*dTdU[iVar] +
+                                                kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dij*dTvedU[iVar]*Area;
+        }
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      } // implicit
     }
   }
 }

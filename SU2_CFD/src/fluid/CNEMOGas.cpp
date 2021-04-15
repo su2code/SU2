@@ -42,6 +42,7 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   eves.resize(nSpecies,0.0);
   hs.resize(nSpecies,0.0);
   ws.resize(nSpecies,0.0);
+  taus.resize(nSpecies,0.0)
   DiffusionCoeff.resize(nSpecies,0.0);
   Enthalpy_Formation.resize(nSpecies,0.0);
   Ref_Temperature.resize(nSpecies,0.0);
@@ -150,7 +151,7 @@ su2double CNEMOGas::ComputeGamma(){
 
 su2double CNEMOGas::ComputerhoCvve() {
 
-    Cvves = ComputeSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle(Tve);
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -272,7 +273,6 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
     ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
-
   if (ionization) {
     SU2_MPI::Error("NEED TO IMPLEMENT dTdU for IONIZED MIX",CURRENT_FUNCTION);
   }
