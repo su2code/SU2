@@ -176,8 +176,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
 CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
-  unsigned short iDim, iSpecies, iVar;
-  su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
+  unsigned short iDim, iSpecies, iVar, jVar,jSpecies;
+  su2double rho, rhou, rhov, rhoEve, vel2, H, yinv, T, Tve, Ru, RuSI;
   su2double *Ds, **GV, ktr, kve;
 
   /*--- Rename for convenience ---*/

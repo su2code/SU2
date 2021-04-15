@@ -991,7 +991,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
   } // ii
 }
 
-void CUserDefinedTCLib::ComputeKeqConstants(unsigned short val_Reaction) {
+void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii, iIndex, tbl_offset, pwr;
   su2double N, tmp1, tmp2;
@@ -1145,7 +1145,7 @@ void CSU2TCLib::GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double
   }
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
 

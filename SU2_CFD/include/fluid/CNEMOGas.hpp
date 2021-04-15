@@ -116,7 +116,7 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
+  virtual vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) = 0;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).

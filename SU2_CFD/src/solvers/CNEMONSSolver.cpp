@@ -51,17 +51,6 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
       /*--- Already done upstream. ---*/
       break;
   }
-
-  /* Auxiliary vector for storing primitives for gradient computation in viscous flow */
-  /* V = [Y1, ... , Yn, T, Tve, ... ] */
-  primitives_aux = new su2double[nPrimVar];
-
-}
-
-CNEMONSSolver::~CNEMONSSolver(void) {
-
-  if (primitives_aux != nullptr) delete [] primitives_aux;
-
 }
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
