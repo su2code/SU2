@@ -2566,7 +2566,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       WallDistMod = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim] * WallDist[iDim];
       WallDistMod = sqrt(WallDistMod);
-
+      WallDistMod = geometry->nodes->GetVolume(iPoint)*2/Area;
       /*--- Compute y+ and non-dimensional velocity ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
