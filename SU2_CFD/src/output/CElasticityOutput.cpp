@@ -266,9 +266,3 @@ bool CElasticityOutput::SetInit_Residuals(CConfig *config){
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 
 }
-
-bool CElasticityOutput::SetUpdate_Averages(CConfig *config){
-
-  return true;
-
-}

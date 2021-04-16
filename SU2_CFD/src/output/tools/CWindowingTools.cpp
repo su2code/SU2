@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/output/tools/CWindowingTools.hpp"
+#include <cassert>
 
 //WindowingTools
 su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long curTimeIter, unsigned long endTimeIter) const{
