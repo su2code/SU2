@@ -1776,10 +1776,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
 
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
-  unsigned long iVertex, iPoint;
-  unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
+  unsigned long iVertex, iPoint, jVertex, jPoint;
+  unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring, iNeigh;
   su2double Pressure = 0.0, factor, NFPressOF, RefVel2 = 0.0, RefTemp, RefDensity = 0.0, RefPressure, Mach2Vel,
-            Mach_Motion;
+            Mach_Motion, Pressure_j[2] = {0.0}, dist[2] = {0.0}, UnitNormal_j[MAXNDIM][2] = {0.0};
   const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
   su2double AxiFactor;
@@ -1887,7 +1887,33 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         Pressure = nodes->GetPressure(iPoint);
+        unsigned short k = 0;
+        su2double Force_integration[MAXNDIM][2] = {0.0};
+        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          if (axisymmetric)
+            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+          else
+            AxiFactor = 1.0;
+          jPoint= geometry->nodes->GetPoint(iPoint, iNeigh);
+          jVertex = geometry->nodes->GetVertex(jPoint, iMarker);
+          
+          if (jVertex != -1){
+            dist[k] = GeometryToolbox::Distance(nDim,geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint))/2;
+            Pressure_j[k] = nodes->GetPressure(jPoint);
+            su2double Area_j = GeometryToolbox::Norm(nDim,geometry->vertex[iMarker][jVertex]->GetNormal());
+            for (iDim=0; iDim < nDim; iDim++){
+              UnitNormal_j[iDim][k] = geometry->vertex[iMarker][jVertex]->GetNormal(iDim)/Area_j;
+              Force_integration[iDim][k] = -(Pressure_j[k] - Pressure_Inf) * UnitNormal_j[iDim][k] * factor * AxiFactor;
+            }
+            k++;
+          }
+          
+        }
+        // cout << "Point: " << iPoint << ", Force_integration[0][0]: " << Force_integration[0][0] << ", Force_integration[0][1]: " << Force_integration[0][1];
 
+        assert(k==2);
+        // Pressure = (2-dist[1]/dist[0])*Pressure_j[0] + (dist[0]+dist[1]) * (dist[0]+dist[1])/(dist[0]*dist[1])*Pressure + (2-dist[0]/dist[1]) * Pressure_j[1];
+        // Pressure = Pressure/6;
         CPressure[iMarker][iVertex] = (Pressure - RefPressure) * factor * RefArea;
 
         /*--- Note that the pressure coefficient is computed at the
@@ -1918,8 +1944,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
            orientation of the normal (outward) ---*/
 
           su2double Force[MAXNDIM] = {0.0};
+          // su2double Force_integration[MAXNDIM][2] = {0.0};
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] * factor * AxiFactor;
+            Force[iDim] = -(Pressure - Pressure_Inf) * Normal[iDim] / GeometryToolbox::Norm(nDim,Normal) * factor * AxiFactor;
+            for (iNeigh = 0; iNeigh < 2; iNeigh++){
+              Force_integration[iDim][iNeigh] = (Force_integration[iDim][iNeigh] + Force[iDim])/2;
+            }
+            // if (iDim == 0)
+              // cout << ", Force[0]" << Force[0] <<endl;
+            Force[iDim] = (2-dist[1]/dist[0])*Force_integration[iDim][0] + (dist[0]+dist[1])*(dist[0]+dist[1])/(dist[0]*dist[1])*Force[iDim] + (2-dist[0]/dist[1]) * Force_integration[iDim][1];
+            Force[iDim] *= GeometryToolbox::Norm(nDim,Normal)/6;
             ForceInviscid[iDim] += Force[iDim];
           }
 
@@ -2419,14 +2453,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   if (!config->GetViscous()) return;
 
-  unsigned long iVertex, iPoint, iPointNormal;
-  unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
+  unsigned long iVertex, iPoint, iPointNormal, jPoint, jVertex;
+  unsigned short iMarker, iMarker_Monitoring, iDim, jDim, iNeigh;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, dTn, dTven,
-            GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, Area_j, TauNormal, dTn, dTven, dist[2]= {0.0},
+            GradTemperature, Density = 0.0, WallDistMod, FrictionVel, TauElem_j[3][2] = {{0.0}},
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
-  const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr, *Normal_j;
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2606,6 +2640,64 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
         }
         HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+      }
+
+      unsigned short k = 0;
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+        jPoint= geometry->nodes->GetPoint(iPoint, iNeigh);
+        jVertex = geometry->nodes->GetVertex(jPoint, iMarker);
+        if (jVertex != -1){
+          Normal_j = geometry->vertex[iMarker][jVertex]->GetNormal();
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0; jDim < nDim; jDim++) {
+              if (!nemo) Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(jPoint, iDim + 1, jDim);
+              else       Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(jPoint, iDim + VEL_INDEX, jDim);
+            }
+
+            /// TODO: Move the temperature index logic to a function.
+
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(jPoint, 0, iDim);
+
+            if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(jPoint, nDim + 1, iDim);
+          }
+
+          Viscosity = nodes->GetLaminarViscosity(jPoint);
+          if (roughwall) {
+            unsigned short WallType; su2double Roughness_Height;
+            tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+            if (WallType == ROUGH) Viscosity += nodes->GetEddyViscosity(jPoint);
+          }
+          Density = nodes->GetDensity(jPoint);
+
+          Area_j = GeometryToolbox::Norm(nDim, Normal_j);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            UnitNormal[iDim] = Normal_j[iDim] / Area_j;
+          }
+
+          /*--- Evaluate Tau ---*/
+          CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
+
+          /*--- If necessary evaluate the QCR contribution to Tau ---*/
+
+          if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
+
+          /*--- Project Tau in each surface element ---*/
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem_j[iDim][k] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++) {
+              TauElem_j[iDim][k] += Tau[iDim][jDim] * UnitNormal[jDim];
+            }
+            TauElem_j[iDim][k] = (TauElem_j[iDim][k] + TauElem[iDim])/2;
+          }
+          dist[k] = GeometryToolbox::Distance(nDim,Coord,geometry->nodes->GetCoord(jPoint))/2;
+          k++;
+        }
+      }
+      assert(k==2);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        TauElem[iDim] = (2-dist[1]/dist[0])*TauElem_j[iDim][0] + (dist[0]+dist[1])*(dist[0]+dist[1])/(dist[0]*dist[1])*TauElem[iDim] + (2-dist[0]/dist[1]) * TauElem_j[iDim][1];
+        TauElem[iDim] = TauElem[iDim] /6;
       }
 
       /*--- Note that y+, and heat are computed at the
