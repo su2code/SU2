@@ -3296,9 +3296,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, iVar, iMesh, iMarker, jMarker;
+  unsigned short iVar, iMesh, iMarker, jMarker;
   unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
-  su2double Area_Children, Area_Parent, dist, min_dist, Interp_Radius, Theta;
+  su2double dist, min_dist, Interp_Radius, Theta;
   const su2double *Coord = nullptr;
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
@@ -3316,29 +3316,23 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   string Interpolation_Function, Interpolation_Type;
   bool Interpolate = false;
 
-  su2double *Normal = new su2double[nDim];
-
   unsigned long Marker_Counter = 0;
 
-  bool turbulent = (config->GetKind_Solver() == RANS ||
-                    config->GetKind_Solver() == INC_RANS ||
-                    config->GetKind_Solver() == ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_INC_RANS);
-
   unsigned short nVar_Turb = 0;
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        nVar_Turb = 1;
-        break;
-      case SST: case SST_SUST:
-        nVar_Turb = 2;
-        break;
-      default:
-        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
-        break;
-    }
+
+  switch (config->GetKind_Turb_Model()) {
+    case NONE:
+      break;
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      nVar_Turb = 1;
+      break;
+    case SST: case SST_SUST:
+      nVar_Turb = 2;
+      break;
+    default:
+      SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
+      break;
+  }
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
@@ -3619,10 +3613,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           /*--- Get the coarse mesh point and compute the boundary area. ---*/
 
           iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
-          geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
-          Area_Parent = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
-          Area_Parent = sqrt(Area_Parent);
+          const auto Normal = geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal();
+          const su2double Area_Parent = GeometryToolbox::Norm(nDim, Normal);
 
           /*--- Reset the values for the coarse point. ---*/
 
@@ -3638,8 +3630,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
             Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
             for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
-            Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
-                                                                           Marker_Tag, geometry[iMesh-1], config);
+            auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
+                                                                                Marker_Tag, geometry[iMesh-1], config);
             for (iVar = 0; iVar < nColumns; iVar++) {
               Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
             }
@@ -3654,7 +3646,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     }
   }
 
-  delete [] Normal;
 }
 
 
