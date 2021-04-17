@@ -470,9 +470,9 @@ private:
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
   CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
   CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
+  FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
-  Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -3648,7 +3648,7 @@ public:
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
    */
-  INC_DENSITYMODEL GetKind_DensityModel(void) const { return Kind_DensityModel; }
+  INC_DENSITYMODEL GetKind_DensityModel() const { return Kind_DensityModel; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
@@ -3660,7 +3660,7 @@ public:
    * \brief free stream option to initialize the solution
    * \return free stream option
    */
-  unsigned short GetKind_FreeStreamOption(void) const { return Kind_FreeStreamOption; }
+  FREESTREAM_OPTION GetKind_FreeStreamOption() const { return Kind_FreeStreamOption; }
 
   /*!
    * \brief free stream option to initialize the solution

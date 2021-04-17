@@ -1079,7 +1079,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Turb_Model() != NONE);
   bool tkeNeeded          = (turbulent && (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST));
-  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
+  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
 

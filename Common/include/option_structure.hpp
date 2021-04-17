@@ -578,13 +578,13 @@ static const MapType<string, ENUM_INIT_OPTION> InitOption_Map = {
 /*!
  * \brief Types of initialization option
  */
-enum ENUM_FREESTREAM_OPTION {
-  TEMPERATURE_FS = 0,  /*!< \brief Temperature initialization. */
-  DENSITY_FS = 1       /*!< \brief Density initalization. */
+enum class FREESTREAM_OPTION {
+  TEMPERATURE_FS, /*!< \brief Temperature initialization. */
+  DENSITY_FS, /*!< \brief Density initalization. */
 };
-static const MapType<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = {
-  MakePair("TEMPERATURE_FS", TEMPERATURE_FS)
-  MakePair("DENSITY_FS", DENSITY_FS)
+static const MapType<string, FREESTREAM_OPTION> FreeStreamOption_Map = {
+  MakePair("TEMPERATURE_FS", FREESTREAM_OPTION::TEMPERATURE_FS)
+  MakePair("DENSITY_FS", FREESTREAM_OPTION::DENSITY_FS)
 };
 
 /*!
