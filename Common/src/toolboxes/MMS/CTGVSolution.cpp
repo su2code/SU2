@@ -84,7 +84,7 @@ CTGVSolution::CTGVSolution(unsigned short val_nDim,
     SU2_MPI::Error("Constant viscosity must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the Taylor Green Vortex",
                    CURRENT_FUNCTION);
 }

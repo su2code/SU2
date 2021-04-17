@@ -1452,27 +1452,30 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         }
         switch (config->GetKind_ConductivityModel()) {
 
-          case CONSTANT_PRANDTL:
-            Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+            Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL "<< "\n";
             Breakdown_file << "Prandtl: " << config->GetPrandtl_Lam()<< "\n";
             break;
 
-          case CONSTANT_CONDUCTIVITY:
-            Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT:
+            Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
 
         if ((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)) {
           switch (config->GetKind_ConductivityModel_Turb()) {
-            case CONSTANT_PRANDTL_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL "<< "\n";
               Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
               break;
-            case NO_CONDUCTIVITY_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::NONE:
+              Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
               Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
               break;
           }
@@ -1814,19 +1817,19 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         if (energy) {
           switch (config->GetKind_ConductivityModel()) {
 
-            case CONSTANT_PRANDTL:
+            case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
               Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< "\n";
               break;
 
-            case CONSTANT_CONDUCTIVITY:
-              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+            case CONDUCTIVITYMODEL::CONSTANT:
+              Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
               break;
 
-            case POLYNOMIAL_CONDUCTIVITY:
-              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            case CONDUCTIVITYMODEL::POLYNOMIAL:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL "<< endl;
               Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
               for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
                 Breakdown_file << config->GetKt_PolyCoeff(iVar);
@@ -1845,12 +1848,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
           if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
             switch (config->GetKind_ConductivityModel_Turb()) {
-              case CONSTANT_PRANDTL_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
                 Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
                 break;
-              case NO_CONDUCTIVITY_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::NONE:
+                Breakdown_file << "Turbulent Conductivity Model: CONDUCTIVITYMODEL_TURB::NONE "<< "\n";
                 Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
                 break;
             }

@@ -108,7 +108,7 @@ CMMSNSTwoHalfSpheresSolution::CMMSNSTwoHalfSpheresSolution(unsigned short val_nD
     SU2_MPI::Error("Sutherland must be selected for viscosity for the MMS NS Two Half Spheres case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Spheres case",
                    CURRENT_FUNCTION);
 }

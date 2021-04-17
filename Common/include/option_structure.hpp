@@ -591,9 +591,9 @@ static const MapType<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = {
  * \brief Types of viscosity model
  */
 enum class VISCOSITYMODEL {
-  CONSTANT = 0, /*!< \brief Constant viscosity. */
-  SUTHERLAND = 1, /*!< \brief Sutherlands Law viscosity. */
-  POLYNOMIAL = 2, /*!< \brief Polynomial viscosity. */
+  CONSTANT, /*!< \brief Constant viscosity. */
+  SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
+  POLYNOMIAL, /*!< \brief Polynomial viscosity. */
 };
 static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
@@ -604,27 +604,27 @@ static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
 /*!
  * \brief Types of thermal conductivity model
  */
-enum ENUM_CONDUCTIVITYMODEL {
-  CONSTANT_CONDUCTIVITY = 0,   /*!< \brief Constant thermal conductivity. */
-  CONSTANT_PRANDTL = 1,        /*!< \brief Constant Prandtl number. */
-  POLYNOMIAL_CONDUCTIVITY = 2  /*!< \brief Polynomial thermal conductivity. */
+enum class CONDUCTIVITYMODEL {
+  CONSTANT, /*!< \brief Constant thermal conductivity. */
+  CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
+  POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
 };
-static const MapType<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = {
-  MakePair("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-  MakePair("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
-  MakePair("POLYNOMIAL_CONDUCTIVITY", POLYNOMIAL_CONDUCTIVITY)
+static const MapType<string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
+  MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
+  MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
+  MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
 };
 
 /*!
  * \brief Types of turbulent thermal conductivity model
  */
-enum ENUM_CONDUCTIVITYMODEL_TURB {
-  NO_CONDUCTIVITY_TURB  = 0,  /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
-  CONSTANT_PRANDTL_TURB = 1   /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
+enum class CONDUCTIVITYMODEL_TURB {
+  NONE, /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
+  CONSTANT_PRANDTL, /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
 };
-static const MapType<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
-  MakePair("NONE", NO_CONDUCTIVITY_TURB)
-  MakePair("CONSTANT_PRANDTL_TURB", CONSTANT_PRANDTL_TURB)
+static const MapType<string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
+  MakePair("NONE", CONDUCTIVITYMODEL_TURB::NONE)
+  MakePair("CONSTANT_PRANDTL_TURB", CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL)
 };
 
 /*!

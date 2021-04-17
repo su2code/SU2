@@ -56,24 +56,24 @@ void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
 
 void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
-    case CONSTANT_CONDUCTIVITY:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::CONSTANT:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantConductivityRANS>(
             new CConstantConductivityRANS(config->GetKt_ConstantND(), config->GetPrandtl_Turb()));
       } else {
         ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetKt_ConstantND()));
       }
       break;
-    case CONSTANT_PRANDTL:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantPrandtlRANS>(
             new CConstantPrandtlRANS(config->GetPrandtl_Lam(), config->GetPrandtl_Turb()));
       } else {
         ThermalConductivity = unique_ptr<CConstantPrandtl>(new CConstantPrandtl(config->GetPrandtl_Lam()));
       }
       break;
-    case POLYNOMIAL_CONDUCTIVITY:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::POLYNOMIAL:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CPolynomialConductivityRANS<N_POLY_COEFFS>>(
             new CPolynomialConductivityRANS<N_POLY_COEFFS>(config->GetKt_PolyCoeffND(), config->GetPrandtl_Turb()));
       } else {

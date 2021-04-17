@@ -468,10 +468,10 @@ private:
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
   VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
+  CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
+  CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
-  Kind_ConductivityModel,          /*!< \brief Kind of the Thermal Conductivity Model*/
-  Kind_ConductivityModel_Turb,     /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
@@ -3689,19 +3689,19 @@ public:
    * \brief Get the value of the viscosity model.
    * \return Viscosity model.
    */
-  VISCOSITYMODEL GetKind_ViscosityModel(void) const { return Kind_ViscosityModel; }
+  VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
 
   /*!
    * \brief Get the value of the thermal conductivity model.
    * \return Conductivity model.
    */
-  unsigned short GetKind_ConductivityModel(void) const { return Kind_ConductivityModel; }
+  CONDUCTIVITYMODEL GetKind_ConductivityModel() const { return Kind_ConductivityModel; }
 
   /*!
    * \brief Get the value of the turbulent thermal conductivity model.
    * \return Turbulent conductivity model.
    */
-  unsigned short GetKind_ConductivityModel_Turb(void) const { return Kind_ConductivityModel_Turb; }
+  CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
    * \brief Get the value of the constant viscosity.
