@@ -1461,6 +1461,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         NonDimTable.PrintFooter();
         break;
 
+      default:
+        break;
+
       }
       switch(config->GetKind_ConductivityModel()){
       case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
