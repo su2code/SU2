@@ -1178,7 +1178,7 @@ void CConfig::SetConfig_Options() {
 
    /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
-  addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
+  addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, VISCOSITYMODEL::SUTHERLAND);
 
   /*--- Options related to Constant Viscosity Model ---*/
 
@@ -3585,7 +3585,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (ideal_gas && (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS)) {
     if (SystemMeasurements == US && standard_air) {
-      if (Kind_ViscosityModel != SUTHERLAND) {
+      if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
         SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
       }
     }
@@ -4533,7 +4533,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
-    if (Kind_ViscosityModel == SUTHERLAND) {
+    if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
       if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
@@ -4543,7 +4543,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check the coefficients for the polynomial models. ---*/
 
   if (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS) {
-    if ((Kind_ViscosityModel == POLYNOMIAL_VISCOSITY) || (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+    if ((Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL) || (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
     }
   }
@@ -4557,7 +4557,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
   }
 
-  if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
+  if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetMu_PolyCoeff(iVar);

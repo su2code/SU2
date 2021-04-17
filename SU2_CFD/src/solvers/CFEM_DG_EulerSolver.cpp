@@ -1140,7 +1140,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     if (viscous) {
 
       switch(config->GetKind_ViscosityModel()){
-      case CONSTANT_VISCOSITY:
+      case VISCOSITYMODEL::CONSTANT:
         ModelTable << "CONSTANT_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -1149,7 +1149,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
-      case SUTHERLAND:
+      case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";

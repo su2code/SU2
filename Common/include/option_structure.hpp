@@ -590,15 +590,15 @@ static const MapType<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = {
 /*!
  * \brief Types of viscosity model
  */
-enum ENUM_VISCOSITYMODEL {
-  CONSTANT_VISCOSITY = 0,   /*!< \brief Constant viscosity. */
-  SUTHERLAND = 1,           /*!< \brief Sutherlands Law viscosity. */
-  POLYNOMIAL_VISCOSITY = 2  /*!< \brief Polynomial viscosity. */
+enum class VISCOSITYMODEL {
+  CONSTANT = 0, /*!< \brief Constant viscosity. */
+  SUTHERLAND = 1, /*!< \brief Sutherlands Law viscosity. */
+  POLYNOMIAL = 2, /*!< \brief Polynomial viscosity. */
 };
-static const MapType<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = {
-  MakePair("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-  MakePair("SUTHERLAND", SUTHERLAND)
-  MakePair("POLYNOMIAL_VISCOSITY", POLYNOMIAL_VISCOSITY)
+static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
+  MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
+  MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
+  MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
 };
 
 /*!

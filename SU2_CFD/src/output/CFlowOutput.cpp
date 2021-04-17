@@ -1422,7 +1422,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
         switch (config->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config->GetMu_Constant();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1430,7 +1430,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1444,6 +1444,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             Breakdown_file << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< "\n";
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
@@ -1766,7 +1769,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (viscous) {
         switch (config->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1774,7 +1777,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1790,7 +1793,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
             break;
 
-          case POLYNOMIAL_VISCOSITY:
+          case VISCOSITYMODEL::POLYNOMIAL:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {

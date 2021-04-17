@@ -2954,7 +2954,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2962,7 +2962,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2976,6 +2976,9 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             Breakdown_file << "Ref. Temperature (non-dim): " << config[val_iZone]->GetMu_Temperature_RefND()<< "\n";
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
@@ -3298,7 +3301,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
       if (viscous) {
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Constant Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3306,7 +3309,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3322,7 +3325,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
-          case POLYNOMIAL_VISCOSITY:
+          case VISCOSITYMODEL::POLYNOMIAL:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {

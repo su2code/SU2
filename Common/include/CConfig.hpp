@@ -467,9 +467,9 @@ private:
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
+  VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
-  Kind_ViscosityModel,             /*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,          /*!< \brief Kind of the Thermal Conductivity Model*/
   Kind_ConductivityModel_Turb,     /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
@@ -3689,7 +3689,7 @@ public:
    * \brief Get the value of the viscosity model.
    * \return Viscosity model.
    */
-  unsigned short GetKind_ViscosityModel(void) const { return Kind_ViscosityModel; }
+  VISCOSITYMODEL GetKind_ViscosityModel(void) const { return Kind_ViscosityModel; }
 
   /*!
    * \brief Get the value of the thermal conductivity model.

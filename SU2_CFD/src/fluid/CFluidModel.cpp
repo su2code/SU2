@@ -40,19 +40,16 @@
 
 void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
-    case CONSTANT_VISCOSITY:
+    case VISCOSITYMODEL::CONSTANT:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
       break;
-    case SUTHERLAND:
+    case VISCOSITYMODEL::SUTHERLAND:
       LaminarViscosity = unique_ptr<CSutherland>(
           new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND()));
       break;
-    case POLYNOMIAL_VISCOSITY:
+    case VISCOSITYMODEL::POLYNOMIAL:
       LaminarViscosity = unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
-      break;
-    default:
-      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
 }
