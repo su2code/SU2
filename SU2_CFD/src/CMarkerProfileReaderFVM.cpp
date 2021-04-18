@@ -483,11 +483,15 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
       }
       else {
         switch (Kind_Inlet) {
+
           case INLET_TYPE::VELOCITY_INLET:
             node_file << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24); 
             break;
           case INLET_TYPE::PRESSURE_INLET:
             node_file << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
+            break;
+          default:
+            SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
             break;
         }
       }

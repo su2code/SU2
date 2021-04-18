@@ -3320,12 +3320,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   unsigned long Marker_Counter = 0;
 
-  bool turbulent = (config->GetKind_Solver() == RANS ||
-                    config->GetKind_Solver() == INC_RANS ||
-                    config->GetKind_Solver() == ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_RANS ||
-                    config->GetKind_Solver() == DISC_ADJ_INC_RANS);
-
   unsigned short nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- Count the number of columns that we have for this flow case,
