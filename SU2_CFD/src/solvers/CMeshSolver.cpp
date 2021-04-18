@@ -681,7 +681,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
    * The derivatives are still correct since the motion does not depend on the solution,
    * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
 
-  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
+  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint() && !velocity_transfer) {
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
 
@@ -710,8 +710,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
-      if (!velocity_transfer) BC_Deforming(geometry, numerics, config, iMarker);
-      else BC_Velocity(geometry, numerics, config, iMarker);
+      BC_Deforming(geometry, numerics, config, iMarker, velocity_transfer);
     }
     else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 

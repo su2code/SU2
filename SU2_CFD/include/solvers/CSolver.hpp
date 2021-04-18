@@ -929,23 +929,13 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] velocity - Boolean to determine if boundary condition is for velocity
    */
   inline virtual void BC_Deforming(CGeometry *geometry,
                                    CNumerics *numerics,
                                    const CConfig *config,
-                                   unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Velocity(CGeometry *geometry,
-                                   CNumerics *numerics,
-                                   const CConfig *config,
-                                   unsigned short val_marker) { }
+                                   unsigned short val_marker,
+                                   bool velocity) { }
 
   /*!
    * \brief A virtual member.

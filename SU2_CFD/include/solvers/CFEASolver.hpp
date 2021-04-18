@@ -460,23 +460,13 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] velocity - Boolean to determine if boundary condition is for velocity
    */
   void BC_Deforming(CGeometry *geometry,
                     CNumerics *numerics,
                     const CConfig *config,
-                    unsigned short val_marker) final;
-
-  /*!
-   * \brief Velocity boundary condition at deformable marker.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Velocity(CGeometry *geometry,
-                    CNumerics *numerics,
-                    const CConfig *config,
-                    unsigned short val_marker) final;
+                    unsigned short val_marker,
+                    bool velocity) final;
 
   /*!
    * \brief Iterate using an implicit Newmark solver.
