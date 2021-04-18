@@ -502,7 +502,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    LinSysSol.SetValZero();
+    if (config->GetTime_Domain() && config->GetFSI_Simulation()) LinSysSol.SetValZero();
   }
   END_SU2_OMP_PARALLEL
 
@@ -908,20 +908,10 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;
 
-      unsigned long iPoint_Global;
-
-      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
-
-        auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
-
-        if (iPoint_Local >= 0) {
-
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            if(iStep==1)
-              nodes->Set_Solution_time_n(iPoint_Local, iDim, 0.0);
-            else
-              nodes->Set_Solution_time_n1(iPoint_Local, iDim, 0.0);
-          }
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          if(iStep == 1) nodes->Set_Solution_time_n(iPoint, iDim, 0.0);
+          else nodes->Set_Solution_time_n1(iPoint, iDim, 0.0);
         }
       }
     }
