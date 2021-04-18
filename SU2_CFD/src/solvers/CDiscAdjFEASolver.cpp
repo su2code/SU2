@@ -596,11 +596,9 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
   // Temporary Output
   if (config->GetAdvanced_FEAElementBased()) {
     if (rank == MASTER_NODE) {
-      unsigned short iVar;
 
       /*--- Header of the temporary dv sensitivity output file ---*/
       ofstream myfile2_res;
-      bool outputDVFEA = false;
 
       switch (config->GetDV_FEA()) {
         case YOUNG_MODULUS:
