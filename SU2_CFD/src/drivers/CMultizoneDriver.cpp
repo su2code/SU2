@@ -452,14 +452,15 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        iteration_container[jZone][INST_0]->Update(output_container[jZone], integration_container, geometry_container,
-            solver_container, numerics_container, config_container,
-            surface_movement, grid_movement, FFDBox, jZone, INST_0);
         UpdateMesh += Transfer_Data(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
     if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
+
+    iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
