@@ -159,7 +159,6 @@ void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration
                                    CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                    CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
                                    CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
-  bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 

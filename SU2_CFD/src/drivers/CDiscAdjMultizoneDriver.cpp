@@ -489,6 +489,9 @@ void CDiscAdjMultizoneDriver::Run() {
       case DISC_ADJ_FEM:
         IDX_SOL = ADJFEA_SOL;
         break;
+      default:
+        SU2_MPI::Error("Chosen discrete adjoint solver not yet supported for calculation of sensitivities", CURRENT_FUNCTION);
+        break;
     }
 
     su2double Sensitivity;
