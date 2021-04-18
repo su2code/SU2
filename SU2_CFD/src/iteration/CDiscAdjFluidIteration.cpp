@@ -157,7 +157,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
           for (auto iMesh=0; iMesh<=config[iZone]->GetnMGLevels();iMesh++) {
             /*--- If negative iteration number, set default ---*/
             if (Direct_Iter - 2 < 0) {
-              for(auto iPoint=0; iPoint<geometry[iZone][iInst][iMesh]->GetnPoint();iPoint++) {
+              for(auto iPoint=0ul; iPoint<geometry[iZone][iInst][iMesh]->GetnPoint();iPoint++) {
                 geometry[iZone][iInst][iMesh]->nodes->SetVolume(iPoint,0.0);
               }
             }
@@ -344,7 +344,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
 void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                    unsigned short iZone, unsigned short iInst, int DirectIter) {
-  unsigned short iMesh;
+
   bool heat = config[iZone]->GetWeakly_Coupled_Heat();
 
   auto solvers = solver[iZone][iInst];
@@ -366,7 +366,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     if (rank == MASTER_NODE && iZone == ZONE_0)
       cout << " Setting freestream conditions at direct iteration " << DirectIter << "." << endl;
 
-    for (auto iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
+    for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
       solvers[iMesh][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][iMesh], solvers[iMesh], config[iZone], iMesh,
                                               DirectIter, RUNTIME_FLOW_SYS, false);
