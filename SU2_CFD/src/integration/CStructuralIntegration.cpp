@@ -106,19 +106,19 @@ void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver 
     switch (config->GetMarker_All_KindBC(iMarker)) {
 
       case LOAD_DIR_BOUNDARY:
-        solver->BC_Dir_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Dir_Load(geometry, config, iMarker);
         break;
 
       case LOAD_SINE_BOUNDARY:
-        solver->BC_Sine_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Sine_Load(geometry, config, iMarker);
         break;
 
       case LOAD_BOUNDARY:
-        solver->BC_Normal_Load(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Normal_Load(geometry, config, iMarker);
         break;
 
       case DAMPER_BOUNDARY:
-        solver->BC_Damper(geometry, numerics[FEA_TERM], config, iMarker);
+        solver->BC_Damper(geometry, config, iMarker);
         break;
     }
   }
@@ -150,13 +150,13 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Clamped(geometry, config, iMarker);
         break;
       case SYMMETRY_PLANE:
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, config, iMarker);
         break;
       case DISP_DIR_BOUNDARY:
-        solver_container[MainSolver]->BC_DispDir(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_DispDir(geometry, config, iMarker);
         break;
     }
   }
@@ -184,7 +184,7 @@ void CStructuralIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver *
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case CLAMPED_BOUNDARY:
-        solver_container[MainSolver]->BC_Clamped_Post(geometry, numerics[FEA_TERM], config, iMarker);
+        solver_container[MainSolver]->BC_Clamped_Post(geometry, config, iMarker);
         break;
     }
   }

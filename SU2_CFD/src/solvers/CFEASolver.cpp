@@ -1600,7 +1600,7 @@ void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 }
 
 
-void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   const bool dynamic = config->GetTime_Domain();
   const su2double zeros[MAXNVAR] = {0.0};
@@ -1632,7 +1632,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
-void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   bool dynamic = config->GetTime_Domain();
 
@@ -1654,7 +1654,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 
 }
 
-void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
   const bool dynamic = config->GetTime_Domain();
@@ -1712,7 +1712,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
 }
 
-void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_DispDir(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim;
 
@@ -1890,7 +1890,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
 
 }
 
-void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Normal_Load(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   /*--- Determine whether the load conditions are applied in the reference or in the current configuration. ---*/
 
@@ -1984,7 +1984,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
 }
 
-void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Dir_Load(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   auto TagBound = config->GetMarker_All_TagBound(val_marker);
   su2double LoadDirVal = config->GetLoad_Dir_Value(TagBound);
@@ -2045,7 +2045,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
 
 }
 
-void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
+void CFEASolver::BC_Damper(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   const su2double dampConst = config->GetDamper_Constant(config->GetMarker_All_TagBound(val_marker));
 
@@ -2098,37 +2098,6 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
       nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
 
-  }
-
-}
-
-void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker, bool velocity){
-
-  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-    auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (!velocity) {
-      /*--- Retrieve the boundary displacement ---*/
-      su2double Disp[MAXNVAR] = {0.0};
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
-
-      /*--- Set and enforce solution ---*/
-      LinSysSol.SetBlock(iNode, Disp);
-      Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
-    }
-    else {
-      /*--- Retrieve the boundary velocity ---*/
-      su2double Vel[MAXNVAR] = {0.0};
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Vel[iDim] = nodes->GetBound_Vel(iNode,iDim);
-
-      /*--- Set and enforce solution ---*/
-      LinSysSol.SetBlock(iNode, Vel);
-      Jacobian.EnforceSolutionAtNode(iNode, Vel, LinSysRes);
-    }
   }
 
 }
