@@ -3326,19 +3326,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                     config->GetKind_Solver() == DISC_ADJ_RANS ||
                     config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
-  unsigned short nVar_Turb = 0;
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        nVar_Turb = 1;
-        break;
-      case SST: case SST_SUST:
-        nVar_Turb = 2;
-        break;
-      default:
-        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
-        break;
-    }
+  unsigned short nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
@@ -3348,6 +3336,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    Interpolation purposes. ---*/
 
   unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+
+  /*--- for incompressible flow, we can switch the energy equation off ---*/
+  /*--- for now, we write the temperature even if we are not using it ---*/
+  /*--- because a number of routines depend on the presence of the temperature field ---*/
+  //if (config->GetEnergy_Equation() ==false)
+  //nCol_InletFile = nCol_InletFile -1;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -3361,7 +3355,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, solver[MESH_0], profile_filename, KIND_MARKER, nCol_InletFile);
 
   /*--- Load data from the restart into correct containers. ---*/
 

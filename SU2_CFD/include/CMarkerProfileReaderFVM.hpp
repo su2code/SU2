@@ -46,6 +46,7 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
+#include "../../SU2_CFD/include/solvers/CSolver.hpp"
 
 using namespace std;
 
@@ -69,6 +70,8 @@ protected:
   unsigned short markerType;  /*!< \brief Type of marker where the profiles are being applied. */
 
   unsigned short numberOfVars;  /*!< \brief Number of variables added to the number of coordinates to write each line in the template profile file. */
+
+  unsigned short numberOfTurbVars;  /*!< \brief Number of turbulence variables added to the number of coordinates to write each line in the template profile file. */
 
   unsigned long numberOfProfiles;  /*!< \brief Auxiliary structure for holding the number of markers in a profile file. */
 
@@ -111,6 +114,7 @@ public:
    */
   CMarkerProfileReaderFVM(CGeometry      *val_geometry,
                           CConfig        *val_config,
+                          CSolver        **val_solver,
                           string         val_filename,
                           unsigned short val_kind_marker,
                           unsigned short val_number_vars);
