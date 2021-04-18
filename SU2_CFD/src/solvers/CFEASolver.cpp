@@ -2102,42 +2102,33 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
 
 }
 
-void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
+void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker, bool velocity){
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
     auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Retrieve the boundary displacement ---*/
-    su2double Disp[MAXNVAR] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
+    if (!velocity) {
+      /*--- Retrieve the boundary displacement ---*/
+      su2double Disp[MAXNVAR] = {0.0};
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Disp[iDim] = nodes->GetBound_Disp(iNode,iDim);
 
-    /*--- Set and enforce solution ---*/
-    LinSysSol.SetBlock(iNode, Disp);
-    Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
+      /*--- Set and enforce solution ---*/
+      LinSysSol.SetBlock(iNode, Disp);
+      Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
+    }
+    else {
+      /*--- Retrieve the boundary velocity ---*/
+      su2double Vel[MAXNVAR] = {0.0};
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Vel[iDim] = nodes->GetBound_Vel(iNode,iDim);
 
-  }
-
-}
-
-void CFEASolver::BC_Velocity(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
-
-  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-    auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Retrieve the boundary velocity ---*/
-    su2double Vel[MAXNVAR] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel[iDim] = nodes->GetBound_Vel(iNode,iDim);
-
-    /*--- Set and enforce solution ---*/
-    LinSysSol.SetBlock(iNode, Vel);
-    Jacobian.EnforceSolutionAtNode(iNode, Vel, LinSysRes);
-
+      /*--- Set and enforce solution ---*/
+      LinSysSol.SetBlock(iNode, Vel);
+      Jacobian.EnforceSolutionAtNode(iNode, Vel, LinSysRes);
+    }
   }
 
 }
@@ -2678,6 +2669,7 @@ void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
   for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
     nodes->SetSolution_Vel_Pred(iPoint);
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {

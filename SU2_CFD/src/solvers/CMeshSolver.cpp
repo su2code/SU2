@@ -502,6 +502,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
+    if (config->GetTime_Domain() && config->GetFSI_Simulation()) LinSysSol.SetValZero();
   }
   END_SU2_OMP_PARALLEL
 
@@ -592,6 +593,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
     LinSysRes.SetValZero();
     LinSysSol.SetValZero();
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions including boundary velocity ---*/
   SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, true);
@@ -682,7 +684,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
    * The derivatives are still correct since the motion does not depend on the solution,
    * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
 
-  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
+  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint() && !velocity_transfer) {
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
 
@@ -711,8 +713,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
-      if (!velocity_transfer) BC_Deforming(geometry, numerics, config, iMarker);
-      else BC_Velocity(geometry, numerics, config, iMarker);
+      BC_Deforming(geometry, numerics, config, iMarker, velocity_transfer);
     }
     else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 
@@ -806,7 +807,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
         su2double vel = Restart_Data[index+iDim+6];
-        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, Restart_Data[index+iDim+6]);
+        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, vel);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -910,20 +911,10 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;
 
-      unsigned long iPoint_Global;
-
-      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
-
-        auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
-
-        if (iPoint_Local >= 0) {
-
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            if(iStep==1)
-              nodes->Set_Solution_time_n(iPoint_Local, iDim, 0.0);
-            else
-              nodes->Set_Solution_time_n1(iPoint_Local, iDim, 0.0);
-          }
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          if(iStep == 1) nodes->Set_Solution_time_n(iPoint, iDim, 0.0);
+          else nodes->Set_Solution_time_n1(iPoint, iDim, 0.0);
         }
       }
     }

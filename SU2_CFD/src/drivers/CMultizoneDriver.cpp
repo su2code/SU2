@@ -452,23 +452,16 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        /*--- Run update on structural solution to update relaxation on grid velocities before transferring data ---*/
-        if (config_container[jZone]->GetStructuralProblem()) {
-          iteration_container[jZone][INST_0]->Update(output_container[jZone], integration_container, geometry_container,
-              solver_container, numerics_container, config_container,
-              surface_movement, grid_movement, FFDBox, jZone, INST_0);
-        }
         UpdateMesh += Transfer_Data(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
     if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
-    if (!config_container[iZone]->GetStructuralProblem()) {
-      iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
-    }
+
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
     for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
       if (integration_container[iZone][INST_0][iSol] != nullptr){
