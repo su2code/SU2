@@ -198,7 +198,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder_Windowing.cfg" 
     discadj_cylinder.test_iter = 6
-    discadj_cylinder.test_vals = [0.202349, -0.000119, 2.688757, -0.000032, 1.067900]
+    discadj_cylinder.test_vals = [0.202349, -0.000119, 1.899933, -0.000050, 1.067900]
     discadj_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder.timeout   = 1600
     discadj_cylinder.tol       = 0.0001

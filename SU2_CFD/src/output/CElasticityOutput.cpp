@@ -270,10 +270,3 @@ bool CElasticityOutput::SetInit_Residuals(CConfig *config){
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 
 }
-
-bool CElasticityOutput::SetUpdate_Averages(CConfig *config){
-  return (config->GetTime_Domain() &&
-            ((multiZone && ((curOuterIter == config->GetnOuter_Iter() - 1 && curInnerIter == config->GetnInner_Iter() - 1) || convergence)) ||
-             (!multiZone && (curInnerIter == config->GetnInner_Iter() - 1 || convergence))));
-
-}
