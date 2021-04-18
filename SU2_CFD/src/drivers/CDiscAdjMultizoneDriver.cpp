@@ -475,7 +475,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     auto solvers = solver_container[iZone][INST_0][MESH_0];
     auto geometry = geometry_container[iZone][INST_0][MESH_0];
-    int IDX_SOL;
+    int IDX_SOL = NO_SOLVER;
 
     switch (config_container[iZone]->GetKind_Solver()) {
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
