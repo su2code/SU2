@@ -218,6 +218,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
@@ -381,7 +382,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }
     } // end target vertex loop
-
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalDonorPoints += totalDonors;
@@ -390,7 +391,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       AvgCorrection += sumCorr;
       MaxCorrection = max(MaxCorrection, maxCorr);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
     donorCoord.resize(0,0);

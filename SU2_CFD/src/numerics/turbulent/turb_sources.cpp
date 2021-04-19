@@ -32,7 +32,7 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   rotating_frame(config->GetRotating_Frame())
 {
   /*--- Spalart-Allmaras closure constants ---*/
@@ -758,7 +758,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
                                                    const CConfig* config) :
                           CNumerics(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
   axisymmetric = config->GetAxisymmetric();
 

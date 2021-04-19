@@ -33,12 +33,14 @@
 
 #ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
-#define CNEWTON_PARFOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#define CNEWTON_PARFOR SU2_OMP_FOR_(simd schedule(static,omp_chunk_size) SU2_NOWAIT)
 #else
-#define CNEWTON_PARFOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#define CNEWTON_PARFOR SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
 #endif
+#define END_CNEWTON_PARFOR END_SU2_OMP_FOR
 #else
 #define CNEWTON_PARFOR SU2_OMP_SIMD
+#define END_CNEWTON_PARFOR
 #endif
 
 /*!
@@ -114,6 +116,7 @@ private:
   inline void SetSolutionResult(CSysVector<T>& x) const {
     CNEWTON_PARFOR
     for (auto i = 0ul; i < x.GetLocSize(); ++i) x[i] = LinSysSol[i];
+    END_CNEWTON_PARFOR
   }
 
   /*--- Preconditioner objects for each active solver. ---*/
@@ -127,11 +130,13 @@ private:
                                            unsigned long iters, Scalar& eps) const {
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
+    END_CNEWTON_PARFOR
 
     iters = Preconditioner_impl(precondIn, precondOut, iters, eps);
 
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
+    END_CNEWTON_PARFOR
     SU2_OMP_BARRIER
 
     return iters;
@@ -212,3 +217,4 @@ public:
 };
 
 #undef CNEWTON_PARFOR
+#undef END_CNEWTON_PARFOR

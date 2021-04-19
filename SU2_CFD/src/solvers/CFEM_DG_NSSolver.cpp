@@ -96,10 +96,12 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry *geometry, const CConfig 
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -111,6 +113,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     Min_Delta_Time = 1.e25;
     Max_Delta_Time = 0.0;
   }
+  END_SU2_OMP_SINGLE
 
   /*--- Determine the chunk size for the OMP loops, if supported. ---*/
 #ifdef HAVE_OMP
@@ -121,7 +124,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         the CFL number a bit easier. Note that if we are using explicit
         time stepping, the regular CFL condition has been overwritten with the
         unsteady CFL condition in the config post-processing (if non-zero). ---*/
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   const su2double CFL = config->GetCFL(iMesh);
 
   /*--- Constant factor present in the heat flux vector, namely the ratio of
@@ -149,6 +152,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     SU2_OMP_FOR_STAT(omp_chunk_size_elem)
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       volElem[i].deltaTime = config->GetDelta_UnstTimeND();
+    END_SU2_OMP_FOR
+
   } else {
 
     /*--- Define the thread local variables for the minimum and maximum time step. ---*/
@@ -445,6 +450,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       MinDeltaT = min(MinDeltaT, dtEff);
       MaxDeltaT = max(MaxDeltaT, dtEff);
     }
+    END_SU2_OMP_FOR
 
     /*--- Update the shared variables Min_Delta_Time and Max_Delta_Time. ---*/
     SU2_OMP_CRITICAL
@@ -452,6 +458,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       Min_Delta_Time = min(Min_Delta_Time, MinDeltaT);
       Max_Delta_Time = max(Max_Delta_Time, MaxDeltaT);
     }
+    END_SU2_OMP_CRITICAL
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
           do this for steady calculations if the high verbosity is set, but we
@@ -468,6 +475,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       }
     }
+    END_SU2_OMP_SINGLE
 #endif
 
     /*--- For explicit time stepping with an unsteady CFL imposed, use the
@@ -478,9 +486,11 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       SU2_OMP_FOR_STAT(omp_chunk_size_elem)
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         volElem[l].deltaTime = Min_Delta_Time/volElem[l].factTimeLevel;
+      END_SU2_OMP_FOR
 
       SU2_OMP_SINGLE
       config->SetDelta_UnstTimeND(Min_Delta_Time);
+      END_SU2_OMP_SINGLE
     }
   }
 }
@@ -505,10 +515,12 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -531,10 +543,12 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE  
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -557,10 +571,12 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -583,10 +599,12 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
@@ -618,10 +636,12 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
@@ -1098,6 +1118,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
           The source terms are stored in solInt. ---*/
     if( addSourceTerms ) volElem[l].ResidualBasisFunctions(solInt);
   }
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
@@ -1146,6 +1167,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                               matchingInternalFaces[l].metricNormalsFace,
                               matchingInternalFaces[l].gridVelocities, numerics, fluxes);
   }
+  END_SU2_OMP_FOR
 
   for(int i=0; i<size; ++i) {
 
@@ -1160,10 +1182,12 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolElem,
@@ -1193,10 +1217,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolE
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol,
@@ -1222,10 +1248,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol,
@@ -1251,10 +1279,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
@@ -1284,10 +1314,12 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
@@ -1314,10 +1346,12 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceChunk,
@@ -1341,10 +1375,12 @@ void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceC
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
@@ -1367,10 +1403,12 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
@@ -1393,10 +1431,12 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
@@ -1419,10 +1459,12 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
@@ -1445,10 +1487,12 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
@@ -1472,10 +1516,12 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
@@ -1499,10 +1545,12 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
@@ -1526,10 +1574,12 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
@@ -1553,10 +1603,12 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
@@ -1580,10 +1632,12 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
@@ -1606,10 +1660,12 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
@@ -1641,10 +1697,12 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
@@ -1676,10 +1734,12 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
@@ -1711,10 +1771,12 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
@@ -1745,8 +1807,10 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }

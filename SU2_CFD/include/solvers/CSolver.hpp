@@ -476,6 +476,7 @@ public:
       for (auto& r : Residual_Max) r = 0;
       for (auto& p : Point_Max) p = 0;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -1352,34 +1353,6 @@ public:
                                         CNumerics *visc_numerics,
                                         CConfig *config,
                                         unsigned short val_marker) { }
-
-  /*!
-   * \brief Impose the symmetry boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Dielec(CGeometry *geometry,
-                                CSolver **solver_container,
-                                CNumerics *numerics,
-                                CConfig *config,
-                                unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Electrode(CGeometry *geometry,
-                                   CSolver **solver_container,
-                                   CNumerics *numerics,
-                                   CConfig *config,
-                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -3432,11 +3405,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  inline virtual void ReadDV(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
    */
   inline virtual su2double GetVal_EField(unsigned short iVal) const { return 0.0; }
@@ -3539,6 +3507,18 @@ public:
    */
   inline virtual void SetAitken_Relaxation(CGeometry *geometry,
                                            CConfig *config) { }
+
+  /*!
+   * \brief Loads the solution from the restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] filename - Name of the restart file.
+   * \param[in] skipVars - Number of variables preceeding the solution.
+   */
+  void BasicLoadRestart(CGeometry *geometry,
+                        const CConfig *config,
+                        const string& filename,
+                        unsigned long skipVars);
 
   /*!
    * \brief A virtual member.
@@ -3704,25 +3684,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
    * \brief  A virtual member.
@@ -3905,14 +3870,6 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   inline virtual void SetRecording(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] kind_recording - Kind of AD recording.
-   */
-  inline virtual void SetMesh_Recording(CGeometry **geometry,
-                                        CVolumetricMovement *grid_movement,
-                                        CConfig *config) {}
 
   /*!
    * \brief A virtual member.

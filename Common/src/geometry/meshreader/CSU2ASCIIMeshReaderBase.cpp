@@ -44,20 +44,20 @@ CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig        *val_config,
 CSU2ASCIIMeshReaderBase::~CSU2ASCIIMeshReaderBase(void) { }
 
 void CSU2ASCIIMeshReaderBase::ReadMetadata() {
-  
-  bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
+
+  bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   bool multizone_file = config->GetMultizone_Mesh();
-  
+
   /*--- Open grid file ---*/
-  
+
   mesh_file.open(meshFilename.c_str(), ios::in);
   if (mesh_file.fail()) {
     SU2_MPI::Error(string("Error opening SU2 ASCII grid.") +
                    string(" \n Check that the file exists."), CURRENT_FUNCTION);
   }
-  
+
   /*--- If more than one, find the curent zone in the mesh file. ---*/
-  
+
   string text_line;
   string::size_type position;
   if ((nZones > 1 && multizone_file) || harmonic_balance) {
@@ -87,37 +87,37 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
       }
     }
   }
-  
+
   /*--- Read the metadata: problem dimension, offsets for angle
    of attack and angle of sideslip, global points, global elements,
    and number of markers. Perform error checks as we go. ---*/
-  
+
   bool foundNDIME = false, foundNPOIN = false;
   bool foundNELEM = false, foundNMARK = false;
-  
+
   while (getline (mesh_file, text_line)) {
-    
+
     /*--- Read the dimension of the problem ---*/
-    
+
     position = text_line.find ("NDIME=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
       dimension = atoi(text_line.c_str());
       foundNDIME = true;
     }
-    
+
     /*--- The AoA and AoS offset values are optional. ---*/
-    
+
     position = text_line.find ("AOA_OFFSET=",0);
     if (position != string::npos) {
       su2double AoA_Offset = 0.0;
       text_line.erase (0,11);
       AoA_Offset = atof(text_line.c_str());
-      
+
       /*--- The offset is in deg ---*/
-      
+
       su2double AoA_Current = config->GetAoA() + AoA_Offset;
-      
+
       if (config->GetDiscard_InFiles() == false) {
         if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))  {
           cout.precision(6);
@@ -131,19 +131,19 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
         if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))
           cout <<"WARNING: Discarding the AoA offset in the geometry file." << endl;
       }
-      
+
     }
-    
+
     position = text_line.find ("AOS_OFFSET=",0);
     if (position != string::npos) {
       su2double AoS_Offset = 0.0;
       text_line.erase (0,11);
       AoS_Offset = atof(text_line.c_str());
-      
+
       /*--- The offset is in deg ---*/
-      
+
       su2double AoS_Current = config->GetAoS() + AoS_Offset;
-      
+
       if (config->GetDiscard_InFiles() == false) {
         if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))  {
           cout.precision(6);
@@ -157,9 +157,9 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
         if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))
           cout <<"WARNING: Discarding the AoS offset in the geometry file." << endl;
       }
-      
+
     }
-    
+
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
@@ -168,7 +168,7 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
         getline (mesh_file, text_line);
       foundNPOIN = true;
     }
-    
+
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
@@ -177,24 +177,24 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
         getline (mesh_file, text_line);
       foundNELEM = true;
     }
-    
+
     position = text_line.find ("NMARK=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
       numberOfMarkers = atoi(text_line.c_str());
       foundNMARK = true;
     }
-    
+
     /* Stop before we reach the next zone then check for errors below. */
     position = text_line.find ("IZONE=",0);
     if (position != string::npos) {
       break;
     }
   }
-  
+
   /* Close the mesh file. */
   mesh_file.close();
-  
+
   /* Throw an error if any of the keywords was not found. */
   if (!foundNDIME) {
     SU2_MPI::Error(string("Could not find NDIME= keyword.") +
@@ -216,7 +216,7 @@ void CSU2ASCIIMeshReaderBase::ReadMetadata() {
                    string(" \n Check the SU2 ASCII file format."),
                    CURRENT_FUNCTION);
   }
-  
+
 }
 
 void CSU2ASCIIMeshReaderBase::FastForwardToMyZone() {

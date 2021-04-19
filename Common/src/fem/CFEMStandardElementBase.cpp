@@ -54,6 +54,7 @@ void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_
       workSolInt.resize(nVarInt*omp_get_num_threads());
       workGradSolInt.resize(omp_get_num_threads());
     }
+    END_SU2_OMP_SINGLE
 
     /*--- Every thread allocates its own memory. ---*/
     const int thread = omp_get_thread_num();
@@ -66,6 +67,7 @@ void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_
     for(unsigned short i=0; i<val_nDim; ++i)
       workGradSolInt[thread][i].resize(nIntegrationPad, val_nVar);
   }
+  END_SU2_OMP_PARALLEL
 }
 
 unsigned short CFEMStandardElementBase::GetNIntStatic(unsigned short VTK_Type,

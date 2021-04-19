@@ -280,12 +280,6 @@ class CIteration {
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
                               unsigned short iZone, unsigned short iInst) {}
 
-  virtual void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                     unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
-  virtual void LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                    unsigned short val_iZone, unsigned short val_iInst, int val_DirectIter) {}
-
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
                             unsigned short val_iInst, unsigned short kind_recording) {}
 };

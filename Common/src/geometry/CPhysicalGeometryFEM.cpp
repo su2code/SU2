@@ -632,6 +632,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
                     for(unsigned short iDim=0; iDim<nDim; ++iDim)
                       coorExGlobalSearch.push_back(coorEx[iDim]);
                   }
+		  END_SU2_OMP_CRITICAL
                 }
               }
 
@@ -646,6 +647,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
                     this boundary element. ---*/
               bound[iMarker][l]->SetDonorsWallFunctions(donorElementsFace);
             }
+	    END_SU2_OMP_FOR
           }
 
           break;
@@ -656,8 +658,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       }
     }
 
-
-  } /*--- end SU2_OMP_PARALLEL ---*/
+  }
+  END_SU2_OMP_PARALLEL
 
   /*--- The remaining part of this function only needs to be carried out in parallel mode. ---*/
 #ifdef HAVE_MPI
@@ -953,13 +955,15 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
   /*--- Counters, which keep track of the number of different grid
         location types present. Initialized to zero. ---*/
-  unsigned long counterGridLocation[NO_PREFERRED_LOCATION+1];
-  for(unsigned short i=0; i<=NO_PREFERRED_LOCATION; ++i)
-    counterGridLocation[i] = 0;
+  unsigned long counterGridLocation[NO_PREFERRED_LOCATION+1] = {0};
 
   /*---- Start of the OpenMP parallel region, if supported. ---*/
   SU2_OMP_PARALLEL
   {
+    /*--- Definition of the thread local version of counterGridLocation to handle
+          the reduction handled manually to avoid complications with CODIPACK. ---*/
+    unsigned long counterLocation[NO_PREFERRED_LOCATION+1] = {0};
+
     /*--- Define the matrices used to store the coordinates, its derivatives and
           the Jacobians. For later purposes, when computing the face metrics,
           als the matrices for storing the normals is defined. Every standard
@@ -977,7 +981,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     /*--- Loop over the local volume elements to compute the minimum and maximum
           Jacobian for both the LGL and equidistant point distribution and to
           determine the number of different location types. ---*/
-    SU2_OMP_FOR_DYN_(omp_chunk_size, reduction(+: counterGridLocation[:NO_PREFERRED_LOCATION+1]))
+    SU2_OMP_FOR_DYN(omp_chunk_size)
     for(unsigned long i=0; i<nElem; ++i) {
 
       /*--- Determine the order of the polynomials that must be integrated exactly.
@@ -1022,10 +1026,10 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
                                                   jacMinEqui[i], jacMaxEqui[i]);
 
       /*--- Determine the situation for the grid location and update
-            the appropriate entry in counterGridLocation. ---*/
-      if((jacMinLGL[i] <= 0.0) && (jacMinEqui[i] <= 0.0)) ++counterGridLocation[NO_VALID_LOCATION];
-      else if(jacMinEqui[i] <= 0.0)                       ++counterGridLocation[LGL_ONLY];
-      else if(jacMinLGL[i]  <= 0.0)                       ++counterGridLocation[EQUI_ONLY];
+            the appropriate entry in counterLocation. ---*/
+      if((jacMinLGL[i] <= 0.0) && (jacMinEqui[i] <= 0.0)) ++counterLocation[NO_VALID_LOCATION];
+      else if(jacMinEqui[i] <= 0.0)                       ++counterLocation[LGL_ONLY];
+      else if(jacMinLGL[i]  <= 0.0)                       ++counterLocation[EQUI_ONLY];
       else {
 
         /*--- Both point distribution produce a valid mapping. Pick the
@@ -1034,11 +1038,20 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
         const su2double ratioJacLGL = jacMaxLGL[i] /jacMinLGL[i];
         const su2double ratioJacEq  = jacMaxEqui[i]/jacMinEqui[i];
 
-        if(     ratioJacEq/ratioJacLGL >= 1.001) ++counterGridLocation[LGL_PREFERRED];
-        else if(ratioJacLGL/ratioJacEq >= 1.001) ++counterGridLocation[EQUI_PREFERRED];
-        else                                     ++counterGridLocation[NO_PREFERRED_LOCATION];
+        if(     ratioJacEq/ratioJacLGL >= 1.001) ++counterLocation[LGL_PREFERRED];
+        else if(ratioJacLGL/ratioJacEq >= 1.001) ++counterLocation[EQUI_PREFERRED];
+        else                                     ++counterLocation[NO_PREFERRED_LOCATION];
       }
     }
+    END_SU2_OMP_FOR
+
+    /*--- Carry out the reduction over the threads. ---*/
+    SU2_OMP_CRITICAL
+    {
+      for(unsigned short i=0; i<=NO_PREFERRED_LOCATION; ++i)
+        counterGridLocation[i] += counterLocation[i];
+    }
+    END_SU2_OMP_CRITICAL
 
     /*--- When MPI is used, determine the global values of counterGridLocation.
           Only a single thread needs to do this. ---*/
@@ -1053,6 +1066,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       SU2_MPI::Allreduce(tmpCounter, counterGridLocation, count,
                          MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_SINGLE
 #endif
 
     /*--- Terminate if elements with no valid location are present, i.e. elements
@@ -1066,6 +1080,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
                 << "negative Jacobians for both the LGL and equidistand node distribution.";
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
+      END_SU2_OMP_SINGLE
     }
 
     /*--- Check if there are both elements present for which the LGL distribution must
@@ -1082,6 +1097,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
                 << " elements with negative Jacobians for equidistant distribution.";
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
+      END_SU2_OMP_SINGLE
     }
 
     /*--- All elements can have a valid mapping to the standard elements.
@@ -1103,6 +1119,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
         SU2_OMP_SINGLE
         SU2_MPI::Error(string("User specified to use LGL grid DOFs, but only equidistant DOFs are valid"),
                        CURRENT_FUNCTION);
+        END_SU2_OMP_SINGLE
       }
 
       gridLocation = LGL;
@@ -1114,6 +1131,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
         SU2_OMP_SINGLE
         SU2_MPI::Error(string("User specified to use Equidistant grid DOFs, but only LGL DOFs are valid"),
                        CURRENT_FUNCTION);
+        END_SU2_OMP_SINGLE
       }
 
       gridLocation = EQUIDISTANT;
@@ -1231,8 +1249,10 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       const su2double lenScale = 2.0*jacVolMin/jacFaceMax;
       elem[i]->SetLengthScale(lenScale);
     }
+    END_SU2_OMP_FOR
 
-  } /*--- end SU2_OMP_PARALLEL ---*/
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                                    *config,

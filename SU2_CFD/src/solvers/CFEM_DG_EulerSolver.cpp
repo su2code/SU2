@@ -131,7 +131,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
             when a restart takes place. ---*/
       volElem[i].SetConstantSolution(EntropyVarFreeStream.data(), nVar, 0);
     }
+    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Determine the communication pattern. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
@@ -174,7 +176,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   su2double Beta             = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
   su2double Reynolds         = config->GetReynolds();
-  bool unsteady           = (config->GetTime_Marching() != NO);
+  bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
@@ -468,7 +470,8 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       GetFluidModel()->SetThermalConductivityModel(config);
     }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 
   Energy_FreeStreamND = GetFluidModel()->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
@@ -1288,6 +1291,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
       SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
     }
+    END_SU2_OMP_SINGLE
 
     exit(1); */
 
@@ -1461,7 +1465,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
 
     /*--- OpenMP loop over the number of ranks to which
           data must be sent. ---*/
-    SU2_OMP(for schedule(static,1) nowait)
+    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1514,6 +1518,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                      MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
+    END_SU2_OMP_FOR
   }
 #endif
 }
@@ -1555,11 +1560,13 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
         if( !flag ) counter = 0;
       }
     }
+    END_SU2_OMP_SINGLE
+
     if( !counter ) return false;
 
     /*--- OpenMP loop over the number of ranks from which
           this rank has received data. ---*/
-    SU2_OMP(for schedule(static,1) nowait)
+    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1632,6 +1639,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
       }
     }
   }
+  END_SU2_OMP_FOR
 
   /*------------------------------------------------------------------------*/
   /*--- Correct the vector quantities in the rotational periodic halo's. ---*/
@@ -1699,6 +1707,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
         }
       }
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Return true to indicate that the communication has been completed. ---*/
@@ -1762,6 +1771,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
         res(mm,3) = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
       }
     }
+    END_SU2_OMP_FOR
   }
 
 #ifdef HAVE_MPI
@@ -1772,7 +1782,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
     /*--- Loop over the number of ranks from which this rank receives data in
           the original communication pattern. In the reverse pattern, data
           has to be sent. ---*/
-    SU2_OMP(for schedule(static,1) nowait)
+    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksRecvMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1815,6 +1825,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
                      MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][indComm]);
     }
+    END_SU2_OMP_FOR
   }
 #endif
 }
@@ -1854,6 +1865,8 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
         if( !flag ) counter = 0;
       }
     }
+    END_SU2_OMP_SINGLE
+
     if( !counter ) return false;
 
     /*-------------------------------------------------------------------------*/
@@ -1863,7 +1876,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
     /*--- Loop over the received residual data from all ranks and update the
           residual of the DOFs of the corresponding elements. Note that in
           reverse mode the send communication data must be used. ---*/
-    SU2_OMP(for schedule(static,1) nowait)
+    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
     for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
       unsigned long ii = 0;
 
@@ -1919,6 +1932,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
         resS(j,iVar) += resR(j,iVar);
     }
   }
+  END_SU2_OMP_FOR
 
   /*-----------------------------------------------------------------------*/
   /*---   Initialize the halo residuals for this time level for ADER.   ---*/
@@ -1978,7 +1992,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
         /*--- Convert the nodal solution to the modal solution. ---*/
         volElem[i].NodalToModalFlow();
       }
-    } // end SU2_OMP_PARALLEL
+      END_SU2_OMP_FOR
+    }
+    END_SU2_OMP_PARALLEL
   }
 }
 
@@ -1992,6 +2008,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   /*--- Initialize the counter for the number of bad elements to zero. ---*/
   SU2_OMP_SINGLE
   counter = 0;
+  END_SU2_OMP_SINGLE
 
   /*--- Define the local counter for the number of bad elements. ---*/
   unsigned long ErrorCounter = 0;
@@ -2022,10 +2039,12 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       ++ErrorCounter;
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Determine the total number of bad elements in this partition. ---*/
   SU2_OMP_ATOMIC
   counter += ErrorCounter;
+
   SU2_OMP_BARRIER
 
   /*--- Collect the number of non-physical points for this iteration. ---*/
@@ -2039,12 +2058,13 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       if(iMesh == MESH_0) config->SetNonphysical_Points(counter);
     }
   }
+  END_SU2_OMP_SINGLE
 
   /*-----------------------------------------------------------------------------*/
   /*                       Check for grid motion.                                */
   /*-----------------------------------------------------------------------------*/
 
-  const bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
+  const bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   if(config->GetGrid_Movement() && !harmonic_balance) {
 
     /*--- Determine the type of grid motion. ---*/
@@ -2066,6 +2086,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
           SU2_OMP_SINGLE
           SU2_MPI::Error("Rigid body motion only possible for CLASSICAL_RK4_EXPLICIT.",
                          CURRENT_FUNCTION);
+          END_SU2_OMP_SINGLE
         }
 
         /*--- Determine whether or not it is needed to compute the motion data. ---*/
@@ -2115,6 +2136,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
             SU2_OMP_FOR_STAT(omp_chunk_size_poin)
             for(unsigned long l=0; l<nMeshPoints; ++l)
               meshPoints[l].coor[1] += dB2;
+	    END_SU2_OMP_FOR
 
             /*--- Update the coordinates of the volume elements. ---*/
             SU2_OMP_FOR_STAT(omp_chunk_size_elem)
@@ -2138,6 +2160,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
               for(unsigned short i=0; i<nItems; ++i)
                 volElem[l].coorSolDOFs(i,1) += dB2;
             }
+            END_SU2_OMP_FOR
 
             /*--- Loop over the internal matching faces. ---*/
             SU2_OMP_FOR_STAT(omp_chunk_size_face)
@@ -2148,6 +2171,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
               for(unsigned short i=0; i<nItems; ++i)
                 matchingInternalFaces[l].coorIntegrationPoints(i,1) += dB2;
             }
+            END_SU2_OMP_FOR
 
             /*--- The physical boundary faces. Exclude the periodic boundaries,
                   because these are not physical boundaries. ---*/
@@ -2168,6 +2192,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
                   for(unsigned short i=0; i<nItems; ++i)
                     boundaries[iMarker].surfElem[l].coorIntegrationPoints(i,1) += dB2;
                 }
+                END_SU2_OMP_FOR
               }
             }
           }
@@ -2192,6 +2217,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
             for(unsigned short i=0; i<nItems; ++i)
               volElem[l].gridVelocitiesSolDOFs(i,1) = db2Newdt;
           }
+          END_SU2_OMP_FOR
 
           /*--- Loop over the internal matching faces. ---*/
           SU2_OMP_FOR_STAT(omp_chunk_size_face)
@@ -2203,6 +2229,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
             for(unsigned short i=0; i<nItems; ++i)
               matchingInternalFaces[l].gridVelocities(i,1) = db2Newdt;
           }
+          END_SU2_OMP_FOR
 
           /*--- The physical boundary faces. Exclude the periodic boundaries,
                 because these are not physical boundaries. ---*/
@@ -2223,6 +2250,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
                 for(unsigned short i=0; i<nItems; ++i)
                   boundaries[iMarker].surfElem[l].gridVelocities(i,1) = db2Newdt;
               }
+              END_SU2_OMP_FOR
             }
           }
         }
@@ -2234,6 +2262,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
         SU2_OMP_SINGLE
         SU2_MPI::Error("Only rigid body motion possible for DG-FEM solver at the moment.",
                        CURRENT_FUNCTION);
+        END_SU2_OMP_SINGLE
       }
     }
   }
@@ -2259,10 +2288,12 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::Set_OldSolution() {
@@ -2285,6 +2316,7 @@ void CFEM_DG_EulerSolver::Set_OldSolution() {
     for(unsigned int i=0; i<nItems; ++i)
       solDOFsWork[i] = solDOFs[i];
   }
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
@@ -2302,10 +2334,12 @@ void CFEM_DG_EulerSolver::Set_NewSolution() {
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -2317,6 +2351,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     Min_Delta_Time = 1.e25;
     Max_Delta_Time = 0.0;
   }
+  END_SU2_OMP_SINGLE
 
   /*--- Determine the chunk size for the OMP loops, if supported. ---*/
 #ifdef HAVE_OMP
@@ -2327,7 +2362,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         the CFL number a bit easier. Note that if we are using explicit
         time stepping, the regular CFL condition has been overwritten with the
         unsteady CFL condition in the config post-processing (if non-zero). ---*/
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   const su2double CFL = config->GetCFL(iMesh);
 
   /*--- Check for explicit time stepping with imposed time step. If the unsteady
@@ -2341,6 +2376,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_FOR_STAT(omp_chunk_size_elem)
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       volElem[i].deltaTime = config->GetDelta_UnstTimeND();
+    END_SU2_OMP_FOR
+
   } else {
 
     /*--- Define the thread local variables for the minimum and maximum time step. ---*/
@@ -2428,6 +2465,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       MinDeltaT = min(MinDeltaT, dtEff);
       MaxDeltaT = max(MaxDeltaT, dtEff);
     }
+    END_SU2_OMP_FOR
 
     /*--- Update the shared variables Min_Delta_Time and Max_Delta_Time. ---*/
     SU2_OMP_CRITICAL
@@ -2435,6 +2473,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       Min_Delta_Time = min(Min_Delta_Time, MinDeltaT);
       Max_Delta_Time = max(Max_Delta_Time, MaxDeltaT);
     }
+    END_SU2_OMP_CRITICAL
 
     /*--- Compute the max and the min dt (in parallel). Note that we only
           do this for steady calculations if the high verbosity is set, but we
@@ -2451,6 +2490,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       }
     }
+    END_SU2_OMP_SINGLE
 #endif
 
     /*--- For explicit time stepping with an unsteady CFL imposed, use the
@@ -2461,9 +2501,11 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       SU2_OMP_FOR_STAT(omp_chunk_size_elem)
       for(unsigned long l=0; l<nVolElemOwned; ++l)
         volElem[l].deltaTime = Min_Delta_Time/volElem[l].factTimeLevel;
+      END_SU2_OMP_FOR
 
       SU2_OMP_SINGLE
       config->SetDelta_UnstTimeND(Min_Delta_Time);
+      END_SU2_OMP_SINGLE
     }
   }
 }
@@ -2493,6 +2535,7 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
       }
     }
   }
+  END_SU2_OMP_SINGLE
 
   /*--- If the current value of timeEvolved is larger or equal than the
         synchronization time, syncTimeReached is set to true and a correction
@@ -2509,13 +2552,16 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
     SU2_OMP_FOR_STAT(omp_chunk_size_vol)
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       volElem[i].deltaTime = newDeltaTime/volElem[i].factTimeLevel;
+    END_SU2_OMP_FOR
 
     SU2_OMP_SINGLE
     syncTimeReached = true;
+    END_SU2_OMP_SINGLE
   }
   else {
     SU2_OMP_SINGLE
     syncTimeReached = false;
+    END_SU2_OMP_SINGLE
   }
 }
 
@@ -2527,6 +2573,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
         not the tasks from the list have been completed. ---*/
   SU2_OMP_SINGLE
   taskCompleted.assign(tasksList.size(), false);
+  END_SU2_OMP_SINGLE
 
   /*--- Easier storage of the number of time levels. ---*/
   const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
@@ -2571,6 +2618,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2586,6 +2634,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2596,6 +2645,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2612,6 +2662,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                 taskCarriedOut = true;
                 SU2_OMP_SINGLE
                 taskCompleted[i] = true;
+                END_SU2_OMP_SINGLE
               }
               break;
             }
@@ -2624,6 +2675,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2640,6 +2692,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                 taskCarriedOut = true;
                 SU2_OMP_SINGLE
                 taskCompleted[i] = true;
+                END_SU2_OMP_SINGLE
               }
               break;
             }
@@ -2664,6 +2717,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2687,6 +2741,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2699,6 +2754,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2711,6 +2767,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2723,6 +2780,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2736,6 +2794,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2749,6 +2808,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2760,6 +2820,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2771,6 +2832,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2781,6 +2843,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2791,6 +2854,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2803,6 +2867,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2815,6 +2880,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2829,6 +2895,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2841,6 +2908,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               taskCarriedOut = true;
               SU2_OMP_SINGLE
               taskCompleted[i] = true;
+              END_SU2_OMP_SINGLE
               break;
             }
 
@@ -2886,6 +2954,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
   /*--- Initialize the tolerance vector. ---*/
   SU2_OMP_SINGLE
   TolSolADER.assign(nVar, 0.0);
+  END_SU2_OMP_SINGLE
 
   /*--- Parallel loop over the owned elements to determine
         the local values of the tolerances. ---*/
@@ -2904,6 +2973,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
     for(unsigned short iVar=0; iVar<nVar; ++iVar)
       WRef[iVar] = max(WRef[iVar], basis0*volElem[i].solDOFs(0,iVar));
   }
+  END_SU2_OMP_FOR
 
   /*--- Determine the maximum values of all threads. ---*/
   SU2_OMP_CRITICAL
@@ -2911,6 +2981,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
     for(unsigned short iVar=0; iVar<nVar; ++iVar)
       TolSolADER[iVar] = max(TolSolADER[iVar], WRef[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   /*--- Determine the global maximum when MPI is used. ---*/
@@ -2923,6 +2994,7 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
     SU2_MPI::Allreduce(WRef, TolSolADER.data(), nVar, MPI_DOUBLE, MPI_MAX,
                        SU2_MPI::GetComm());
   }
+  END_SU2_OMP_SINGLE
 #endif
 }
 
@@ -2943,10 +3015,12 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
@@ -2970,10 +3044,12 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -2997,10 +3073,12 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -3024,10 +3102,12 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -3051,10 +3131,12 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
@@ -3078,10 +3160,12 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig           
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
@@ -3284,6 +3368,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
           The source terms are stored in solInt. ---*/
     if( addSourceTerms ) volElem[l].ResidualBasisFunctions(solInt);
   }
+  END_SU2_OMP_FOR
 }
 
 bool CFEM_DG_EulerSolver::VolumeSourceTerms(CConfig                  *config,
@@ -3333,7 +3418,7 @@ bool CFEM_DG_EulerSolver::VolumeSourceTerms(CConfig                  *config,
 
       /*--- Get the physical time if necessary. ---*/
       su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
       /*--- Store the number of integration points and the integration weights. ---*/
       const unsigned short nIntPad = elem->standardElemFlow->GetNIntegrationPad();
@@ -3490,10 +3575,12 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
@@ -3550,6 +3637,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     /*------------------------------------------------------------------------*/
 
   }
+  END_SU2_OMP_FOR
 
   for(int i=0; i<size; ++i) {
 
@@ -3564,10 +3652,12 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
@@ -3588,10 +3678,12 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
@@ -3612,10 +3704,12 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
@@ -3634,10 +3728,12 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
@@ -3659,10 +3755,12 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
@@ -3680,10 +3778,12 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConf
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -3702,10 +3802,12 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -3724,10 +3826,12 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
@@ -3746,10 +3850,12 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
@@ -3768,10 +3874,12 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
@@ -3790,10 +3898,12 @@ void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *config,
@@ -3816,10 +3926,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *co
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
@@ -3843,10 +3955,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config,
@@ -3870,10 +3984,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *config,
@@ -3897,10 +4013,12 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
@@ -3924,10 +4042,12 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
@@ -3951,10 +4071,12 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
@@ -3978,10 +4100,12 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
@@ -4005,10 +4129,12 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
@@ -4033,10 +4159,12 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
@@ -4061,10 +4189,12 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
@@ -4089,10 +4219,12 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
@@ -4116,10 +4248,12 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
@@ -4147,10 +4281,12 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
@@ -4174,10 +4310,12 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
 
     SU2_OMP_SINGLE
     SU2_MPI::Barrier(SU2_MPI::GetComm());
+    END_SU2_OMP_SINGLE
   }
 
   SU2_OMP_SINGLE
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *config,
@@ -4442,10 +4580,12 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
       if(rank == MASTER_NODE) {
         SU2_OMP_SINGLE
         SU2_MPI::Error(string("Riemann solver not implemented yet"), CURRENT_FUNCTION);
+        END_SU2_OMP_SINGLE
       }
 
       SU2_OMP_SINGLE
       SU2_MPI::Barrier(SU2_MPI::GetComm());
+      END_SU2_OMP_SINGLE
     }
   }
 }
@@ -4527,11 +4667,16 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
   unsigned long nBadDOFs = 0;
   SU2_OMP_PARALLEL
   {
+    /*--- Definition of the number of bad elements for this thread.
+          The reduction is handled manually to avoid complications
+          with CODIPACK. ---*/
+    unsigned long nDOFsBad = 0;
+
     /*--- Loop over the owned elements. ---*/
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
 #endif
-    SU2_OMP_FOR_STAT_(omp_chunk_size_vol, reduction(+: nBadDOFs))
+    SU2_OMP_FOR_STAT(omp_chunk_size_vol)
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
       /*--- Loop over the DOFs of this element, which currently
@@ -4557,10 +4702,10 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
         /*--- Check for negative pressure, density or temperature. ---*/
         if((Pressure < 0.0) || (rho < 0.0) || (Temperature < 0.0)) {
 
-          /*--- Reset the state to the infinity state and update nBadDOFs. ---*/
+          /*--- Reset the state to the infinity state and update nDOFsBad. ---*/
           for(unsigned short k=0; k<nVar; ++k)
             volElem[i].solDOFs(j,k) = ConsVarFreeStream[k];
-          ++nBadDOFs;
+          ++nDOFsBad;
         }
       }
 
@@ -4570,7 +4715,18 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
       /*--- Convert the nodal solution to the modal solution. ---*/
       volElem[i].NodalToModalFlow();
     }
-  } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_FOR
+
+    /*--- Carry out the reduction over the threads. ---*/
+    if (config->GetComm_Level() == COMM_FULL) {
+      SU2_OMP_CRITICAL
+      {
+        nBadDOFs += nDOFsBad;
+      }
+      END_SU2_OMP_CRITICAL
+    }
+  }
+  END_SU2_OMP_PARALLEL
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {

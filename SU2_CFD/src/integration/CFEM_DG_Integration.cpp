@@ -55,7 +55,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                                                      solver_container[iZone][iInst][iMesh],
                                                                                      numerics_container[iZone][iInst][iMesh][Solver_Position],
                                                                                      config[iZone], iMesh, RunTime_EqSystem);
-    } // end SU2_OMP_PARALLEL
+    }
+    END_SU2_OMP_PARALLEL
 
     return;
   }
@@ -81,7 +82,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         algorithm below. ---*/
   bool TimeSyncSpecified   = false;
   const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
-  if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
+  if(config[iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING &&
      config[iZone]->GetUnst_CFL()      != 0.0 &&
      TimeSync                          != 0.0) TimeSyncSpecified = true;
 
@@ -112,6 +113,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
       else {
         SU2_OMP_SINGLE
         syncTimeReached = true;
+	END_SU2_OMP_SINGLE
       }
 
       /*--- For ADER in combination with time accurate local time stepping, the
@@ -153,7 +155,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
     solver_container[iZone][iInst][FinestMesh][Solver_Position]->Pressure_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
     solver_container[iZone][iInst][FinestMesh][Solver_Position]->Friction_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CFEM_DG_Integration::Space_Integration(CGeometry      *geometry,

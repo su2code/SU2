@@ -34,15 +34,15 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[val_iZone]->GetTime_Marching()) {
+  if (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2;
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
@@ -227,9 +227,8 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            COutput* output, unsigned short iZone, unsigned short iInst) {
-  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  geometry[iZone][iInst][MESH_0]->RegisterOutput_Coordinates(config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
@@ -240,8 +239,8 @@ void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJHEAT_SOL]->SetConvergence(false);
     }
@@ -257,14 +256,4 @@ bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integratio
                             config[val_iZone]->GetInnerIter());
 
   return output->GetConvergence();
-}
-
-void CDiscAdjHeatIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                   unsigned long InnerIter, bool StopCalc, unsigned short val_iZone,
-                                   unsigned short val_iInst) {}
-
-void CDiscAdjHeatIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
 }

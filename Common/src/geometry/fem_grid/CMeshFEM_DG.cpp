@@ -2328,7 +2328,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
         const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size) SU2_NOWAIT)
         for(unsigned long l=0; l<nVolElemTot; ++l) {
 
           /*--- Determine the grid velocities in the integration points. ---*/
@@ -2366,7 +2366,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
         const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size_face) SU2_NOWAIT)
         for(unsigned long l=0; l<matchingFaces.size(); ++l) {
 
           /*--- Determine the grid velocities in the integration points. ---*/
@@ -2406,14 +2406,14 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 
             /*--- For a shroud boundary the grid velocities must be set to zero. ---*/
             if( shroudBoundary ) {
-              SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+              SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
               for(unsigned long l=0; l<surfElem.size(); ++l)
                 surfElem[l].coorIntegrationPoints.setConstant(0.0);
             }
             else {
 
               /*--- Normal boundary. Loop over the number of boundary faces. ---*/
-              SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+              SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
               for(unsigned long l=0; l<surfElem.size(); ++l) {
 
                 /*--- Determine the grid velocities in the integration points. ---*/
@@ -2451,7 +2451,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
         const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size) SU2_NOWAIT)
         for(unsigned long l=0; l<nVolElemTot; ++l) {
 
           /*--- Determine the grid velocities in the integration points. ---*/
@@ -2475,7 +2475,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
         const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size_face) SU2_NOWAIT)
         for(unsigned long l=0; l<matchingFaces.size(); ++l) {
 
           /*--- Determine the grid velocities in the integration points. ---*/
@@ -2496,7 +2496,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
             const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
 #endif
-            SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+            SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
             for(unsigned long l=0; l<surfElem.size(); ++l) {
 
               /*--- Determine the grid velocities in the integration points. ---*/
@@ -2547,7 +2547,7 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 #ifdef HAVE_OMP
             const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
 #endif
-            SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+            SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
             for(unsigned long l=0; l<surfElem.size(); ++l) {
 
               /*--- Loop over the number of integration points. ---*/
@@ -2581,7 +2581,8 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
       }
     }
 
-  } /*--- end SU2_OMP_PARALLEL ---*/
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
@@ -2605,6 +2606,7 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
       /*--- Compute the metric terms in the integration points. ---*/
       matchingFaces[i].MetricTermsIntegrationPoints(nDim, volElem);
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the physical boundaries. ---*/
     for(unsigned int l=0; l<boundaries.size(); ++l) {
@@ -2624,9 +2626,11 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
           /*--- Compute the metric terms in the integration points. ---*/
           boundaries[l].surfElem[i].MetricTermsIntegrationPoints(nDim, volElem);
         }        
+        END_SU2_OMP_FOR
       }
     }
-  } /*--- end SU2_OMP_PARALLEL ---*/
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
@@ -2643,7 +2647,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /*--- Check if ADER-DG is used as explicit time integration scheme for
         the unsteady simulation. ---*/
-  if((config->GetTime_Marching()           == TIME_STEPPING) &&
+  if((config->GetTime_Marching()           == TIME_MARCHING::TIME_STEPPING) &&
      (config->GetKind_TimeIntScheme_Flow() == ADER_DG)) {
 
     /*--- Check for a compressible Navier-Stokes simulation. ---*/
@@ -2672,13 +2676,19 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /*---- Start of the OpenMP parallel region, if supported. ---*/
   SU2_OMP_PARALLEL
   {
+    /*--- Definition of the number of negative Jacobians for this thread.
+          The reduction is handled manually to avoid complications
+          with CODIPACK. ---*/
+    unsigned long nNegJac = 0;
+
     /*--- Loop over all elements to set the coordinates. ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for(unsigned long i=0; i<nVolElemTot; ++i)
       volElem[i].SetCoorGridDOFs(nDim, meshPoints);
+    END_SU2_OMP_FOR
 
     /*--- Loop over the owned volume elements. ---*/
-    SU2_OMP_FOR_STAT_(omp_chunk_size, reduction(+: nElemNegJac))
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
       /*--- Initialize the grid velocities. ---*/
@@ -2688,14 +2698,23 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
             in the solution DOFs. Update the number of bad elements
             if negative Jacobians are present. ---*/
       if( !(volElem[i].MetricTermsIntegrationPoints(useLGL, nDim)) ||
-          !(volElem[i].MetricTermsSolDOFs(nDim)) ) ++nElemNegJac;
+          !(volElem[i].MetricTermsSolDOFs(nDim)) ) ++nNegJac;
 
       /*--- Compute the derivatives of the metric terms in the
             integration points, if needed. ---*/
       if( DerMetricTerms )
         volElem[i].DerMetricTermsIntegrationPoints(nDim);
     }
-  } /*--- end SU2_OMP_PARALLEL ---*/
+    END_SU2_OMP_FOR
+
+    /*--- Carry out the reduction over the threads. ---*/
+    SU2_OMP_CRITICAL
+    {
+      nElemNegJac += nElemNegJac;
+    }
+    END_SU2_OMP_CRITICAL
+  }
+  END_SU2_OMP_PARALLEL
 
   /*--- Determine the global number of elements with negative Jacobians. ---*/
 #ifdef HAVE_MPI
@@ -3054,6 +3073,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                 }
               }
             }
+            END_SU2_OMP_SINGLE
 
             /*--- Retrieve the double information for this wall model. The height
                   of the exchange location is the first element of this array. ---*/
@@ -3181,6 +3201,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
                 volElem[donor].standardElemFlow->BasisFunctionsInPoints(parCoor, matDonor);
               }
             }
+            END_SU2_OMP_FOR
           }
 
           break;
@@ -3190,6 +3211,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       }
     }
   }
+  END_SU2_OMP_PARALLEL
 }
 
 /*---------------------------------------------------------------------*/
@@ -4246,14 +4268,14 @@ void CMeshFEM_DG::SetWallDistance(su2double val) {
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
 #endif
-    SU2_OMP(for schedule(static,omp_chunk_size_elem) nowait)
+    SU2_OMP(for schedule(static,omp_chunk_size_elem) SU2_NOWAIT)
     for(unsigned long l=0; l<nVolElemOwned; ++l)
       volElem[l].SetWallDistance(val);
 
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
 #endif
-    SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+    SU2_OMP(for schedule(static,omp_chunk_size_face) SU2_NOWAIT)
     for(unsigned long l=0; l<matchingFaces.size(); ++l)
       matchingFaces[l].SetWallDistance(val);
 
@@ -4265,12 +4287,13 @@ void CMeshFEM_DG::SetWallDistance(su2double val) {
 #ifdef HAVE_OMP
         const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
         for(unsigned long l=0; l<surfElem.size(); ++l)
           surfElem[l].SetWallDistance(val);
       }
     }
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {
@@ -4287,14 +4310,14 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT)
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
 #endif
-    SU2_OMP(for schedule(static,omp_chunk_size_elem) nowait)
+    SU2_OMP(for schedule(static,omp_chunk_size_elem) SU2_NOWAIT)
     for(unsigned long l=0; l<nVolElemOwned; ++l)
       volElem[l].ComputeWallDistance(WallADT, nDim);
 
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
 #endif
-    SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+    SU2_OMP(for schedule(static,omp_chunk_size_face) SU2_NOWAIT)
     for(unsigned long l=0; l<matchingFaces.size(); ++l)
       matchingFaces[l].ComputeWallDistance(WallADT, nDim);
 
@@ -4307,12 +4330,13 @@ void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT)
 #ifdef HAVE_OMP
         const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
 #endif
-        SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+        SU2_OMP(for schedule(static,omp_chunk_size_surf) SU2_NOWAIT)
         for(unsigned long l=0; l<surfElem.size(); ++l)
           surfElem[l].ComputeWallDistance(WallADT, nDim);
       }
     }
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {

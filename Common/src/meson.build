@@ -2,7 +2,8 @@ common_include = include_directories('./')
 common_src =files(['CConfig.cpp',
                    'basic_types/ad_structure.cpp',
                    'wall_model.cpp',
-                   '../include/parallelization/mpi_structure.cpp'])
+                   '../include/parallelization/mpi_structure.cpp',
+                   '../include/parallelization/omp_structure.cpp'])
 
 subdir('linear_algebra')
 subdir('toolboxes')

@@ -31,6 +31,7 @@
 #include "../../../../Common/include/option_structure.hpp"
 #include "../../../../Common/include/toolboxes/CLinearPartitioner.hpp"
 #include <array>
+#include <cassert>
 
 class CGeometry;
 class CConfig;
@@ -41,12 +42,12 @@ protected:
   /*!
    * \brief The MPI rank
    */
-  int rank;
+  const int rank;
 
   /*!
    * \brief The MPI size, aka the number of processors.
    */
-  int size;
+  const int size;
 
   unsigned long nGlobalPointBeforeSort; //!< Global number of points without halos before sorting
   unsigned long nLocalPointsBeforeSort;   //!< Local number of points without halos before sorting on this proc
@@ -66,7 +67,20 @@ protected:
    * \brief Map that stores the index for each GEO_TYPE type where to find information
    * in the element arrays.
    */
-  static const map<unsigned short, unsigned short> TypeMap;
+  struct {
+    static unsigned short at(unsigned short type) {
+      switch(type) {
+        case LINE: return 0;
+        case TRIANGLE: return 1;
+        case QUADRILATERAL: return 2;
+        case TETRAHEDRON: return 3;
+        case HEXAHEDRON: return 4;
+        case PRISM: return 5;
+        case PYRAMID: return 6;
+        default: assert(false); return 0;
+      };
+    }
+  } TypeMap;
 
   unsigned long nPointsGlobal;   //!< Global number of points without halos
   unsigned long nElemGlobal;    //!< Global number of elems without halos
@@ -75,7 +89,7 @@ protected:
   unsigned long nElem;     //!< Local number of elements
   unsigned long nConn;     //!< Local size of the connectivity array
 
-  CLinearPartitioner* linearPartitioner;  //!< Linear partitioner based on the global number of points.
+  CLinearPartitioner linearPartitioner;  //!< Linear partitioner based on the global number of points.
 
   unsigned short GlobalField_Counter;  //!< Number of output fields
 
@@ -88,11 +102,8 @@ protected:
   int *nElemConn_Send;                 //!< Number of element connectivity this processor has to send to other processors
   int *nElemConn_Cum;                  //!< Cumulative number of element connectivity entries
   unsigned long *Index;                //!< Index each point has in the send buffer
-  su2double *connSend;                 //!< Send buffer holding the data that will be send to other processors
-  passivedouble *passiveDoubleBuffer;  //!< Buffer holding the sorted, partitioned data as passivedouble types
-  su2double     *doubleBuffer;         //!< Buffer holding the sorted, partitioned data as su2double types
-  /// Pointer used to allocate the memory used for ::passiveDoubleBuffer and ::doubleBuffer.
-  char *dataBuffer;
+  passivedouble *connSend;             //!< Send buffer holding the data that will be send to other processors
+  passivedouble *dataBuffer;           //!< Buffer holding the sorted, partitioned data as passivedouble types
   unsigned long *idSend;               //!< Send buffer holding global indices that will be send to other processors
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
@@ -243,7 +254,7 @@ public:
    * \return The beginning node ID.
    */
   virtual unsigned long GetNodeBegin(unsigned short rank) const {
-    return linearPartitioner->GetFirstIndexOnRank(rank);
+    return linearPartitioner.GetFirstIndexOnRank(rank);
   }
 
   /*!
@@ -252,7 +263,7 @@ public:
    * \return The ending node ID.
    */
   unsigned long GetNodeEnd(unsigned short rank) const {
-    return linearPartitioner->GetLastIndexOnRank(rank);
+    return linearPartitioner.GetLastIndexOnRank(rank);
   }
 
   /*!
@@ -261,13 +272,13 @@ public:
    * \input iPoint - the point ID.
    * \return the value of the data field at a point.
    */
-  passivedouble GetData(unsigned short iField, unsigned long iPoint) const  {return passiveDoubleBuffer[iPoint*GlobalField_Counter + iField];}
+  passivedouble GetData(unsigned short iField, unsigned long iPoint) const  {return dataBuffer[iPoint*GlobalField_Counter + iField];}
 
   /*!
    * \brief Get the pointer to the sorted linear partitioned data.
    * \return Pointer to the sorted data.
    */
-  const passivedouble *GetData() const {return passiveDoubleBuffer;}
+  const passivedouble *GetData() const {return dataBuffer;}
 
   /*!
    * \brief Get the global index of a point.
@@ -281,14 +292,14 @@ public:
    * \input rank - the processor rank.
    * \return The cumulated number of points up to certain processor rank.
    */
-  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner->GetCumulativeSizeBeforeRank(rank);}
+  virtual unsigned long GetnPointCumulative(unsigned short rank) const {return linearPartitioner.GetCumulativeSizeBeforeRank(rank);}
 
   /*!
    * \brief Get the linear number of points
    * \input rank - the processor rank.
    * \return The linear number of points up to certain processor rank.
    */
-  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner->GetSizeOnRank(rank);}
+  unsigned long GetnPointLinear(unsigned short rank) const {return linearPartitioner.GetSizeOnRank(rank);}
 
   /*!
    * \brief Check whether the current connectivity is sorted (i.e. if SortConnectivity has been called)
@@ -305,10 +316,10 @@ public:
    * \param[in] data - Value of the field
    */
   void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
-    connSend[Index[iPoint] + iField] = data;
+    connSend[Index[iPoint] + iField] = SU2_TYPE::GetValue(data);
   }
 
-  su2double GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
+  passivedouble GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
 
@@ -318,7 +329,7 @@ public:
    * \return The rank/processor number.
    */
   virtual unsigned short FindProcessor(unsigned long iPoint) const {
-    return linearPartitioner->GetRankContainingIndex(iPoint);
+    return linearPartitioner.GetRankContainingIndex(iPoint);
   }
 
   /*!
