@@ -3349,7 +3349,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, solver[MESH_0], profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
 
   /*--- Load data from the restart into correct containers. ---*/
 

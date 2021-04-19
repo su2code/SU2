@@ -29,7 +29,6 @@
 
 CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
                                                  CConfig        *val_config,
-                                                 CSolver        **val_solver,
                                                  string         val_filename,
                                                  unsigned short val_kind_marker,
                                                  unsigned short val_number_vars) {
@@ -46,7 +45,6 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   filename     = val_filename;
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
-  numberOfTurbVars = val_solver[TURB_SOL]->GetnVar();
 
   /* Attempt to open the specified file. */
   ifstream profile_file;
@@ -441,6 +439,7 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
   const unsigned short nColumns = dimension + numberOfVars;
   const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
   su2double turb_val[2] = {0.0,0.0};
+  unsigned short numberOfTurbVars=0;
 
   // create vector with inlet values 
 
@@ -501,20 +500,24 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
       else 
         node_file << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24) << "NORMAL-Z   " << setw(24);
 
-      switch (numberOfTurbVars) {
-        case 0:
+      
+      switch (config->GetKind_Turb_Model()) {
+        case NO_TURB_MODEL:
           /*--- no turbulence model---*/
+          numberOfTurbVars = 0;
           break;
-        case 1:
+        case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
           /*--- 1-equation turbulence model: SA ---*/
           turb_val[0] = config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND();
           node_file << "NU_TILDE   " << setw(24);
+          numberOfTurbVars = 1;
           break;
-        case 2:
+        case SST: case SST_SUST:
           /*--- 2-equation turbulence model (SST) ---*/
           turb_val[0] = config->GetTke_FreeStream();
           turb_val[1] = config->GetOmega_FreeStream();
           node_file << "TKE        " << setw(24) << "DISSIPATION";
+          numberOfTurbVars = 2;
           break;
       }
 
