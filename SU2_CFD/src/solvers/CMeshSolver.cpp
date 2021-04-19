@@ -502,7 +502,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    if (config->GetTime_Domain() && config->GetFSI_Simulation()) LinSysSol.SetValZero();
+    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
   }
   END_SU2_OMP_PARALLEL
 
@@ -521,6 +521,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the dual grid. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
+  /*--- Check for failed deformation (negative volumes). ---*/
+  SetMinMaxVolume(geometry[MESH_0], config, true);
+
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain && !config->GetFSI_Simulation())
     ComputeGridVelocity(geometry[MESH_0], config);
@@ -532,15 +535,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
     ComputeGridVelocity_FromBoundary(geometry, numerics, config);
   }
 
-  SU2_OMP_PARALLEL {
-
   /*--- Update the multigrid structure. ---*/
+  SU2_OMP_PARALLEL
   UpdateMultiGrid(geometry, config);
-
-  /*--- Check for failed deformation (negative volumes). ---*/
-  SetMinMaxVolume(geometry[MESH_0], config, true);
-
-  }
   END_SU2_OMP_PARALLEL
 
 }
@@ -565,6 +562,10 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   }
   END_SU2_OMP_FOR
 
+  /*--- Communicate the updated displacements and mesh coordinates. ---*/
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
+
 }
 
 void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
@@ -579,6 +580,10 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 }
 
 void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+
+  if (config->GetnZone() == 1)
+    SU2_MPI::Error("It is not possible to compute grid velocity from boundary velocity for single zone problems.\n"
+                   "MARKER_FLUID_LOAD should only be used for structural boundaries.", CURRENT_FUNCTION);
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
