@@ -304,7 +304,6 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
     dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
-    if (config[iZone]->GetTime_Domain()) dir_solver->PredictStruct_Velocity(structural_geometry, config[iZone]);
   }
 
   /*--- Topology optimization dependencies. ---*/
