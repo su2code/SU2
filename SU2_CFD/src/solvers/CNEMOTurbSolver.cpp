@@ -1028,11 +1028,11 @@ void CNEMOTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
 
   /*--- Skip flow variables ---*/
-
+  unsigned short nSpecies = config->GetnSpecies();
   unsigned short skipVars = 0;
 
-  if (nDim == 2) skipVars += 6;
-  if (nDim == 3) skipVars += 8;
+  if (nDim == 2) skipVars += 6+2*nSpecies;
+  if (nDim == 3) skipVars += 8+2*nSpecies;
 
   /*--- Adjust the number of solution variables in the incompressible
    restart. We always carry a space in nVar for the energy equation in the
