@@ -3303,6 +3303,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
+  const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -3315,12 +3316,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   ifstream inlet_file;
   string Interpolation_Function, Interpolation_Type;
   bool Interpolate = false;
-
   su2double *Normal = new su2double[nDim];
-
   unsigned long Marker_Counter = 0;
 
-  unsigned short nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  vector<string> columnNames; /*--- names of the columns in the profile ---*/
+  vector<string> columnValues;
+  unsigned short nVar_Turb = 0;
+  if (config->GetKind_Turb_Model()!=NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
@@ -3347,9 +3349,87 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (dual_time || time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
+ 
+  // create vector of column names
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- Skip if this is the wrong type of marker. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
+
+    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    std::stringstream columnName,columnValue;    
+
+    columnValue << setprecision(15);
+    columnValue << std::scientific;
+
+    columnValue << t_total << "\t" << p_total <<"\t";
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      columnValue << flow_dir[iDim] <<"\t";
+    }
+
+    columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
+    if(nDim==3) columnName << "COORD-Z    " << setw(24); 
+    
+    if (compressible){
+      INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
+      switch (Kind_Inlet) {
+        /*--- compressible conditions ---*/
+        case INLET_TYPE::TOTAL_CONDITIONS:
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
+          break;
+        case INLET_TYPE::MASS_FLOW:
+          columnName << "DENSITY    " << setw(24) << "VELOCITY   " << setw(24); 
+          break;
+        default:
+          SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
+          break;        }
+    } else {
+      INLET_TYPE Kind_Inc_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+      switch (Kind_Inc_Inlet) {
+        /*--- incompressible conditions ---*/  
+        case INLET_TYPE::VELOCITY_INLET:
+          columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24); 
+          break;
+        case INLET_TYPE::PRESSURE_INLET:
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
+          break;
+        default:
+          SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
+          break;
+      }
+    }
+
+    columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
+    if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
+
+    switch (config->GetKind_Turb_Model()) {
+      case NO_TURB_MODEL:
+        /*--- no turbulence model---*/
+        break;
+      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+        /*--- 1-equation turbulence model: SA ---*/
+        columnName << "NU_TILDE   " << setw(24);
+        columnValue << config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND() <<"\t";
+        break;
+      case SST: case SST_SUST:
+        /*--- 2-equation turbulence model (SST) ---*/
+        columnName << "TKE        " << setw(24) << "DISSIPATION";
+        columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
+        break;
+    }
+
+    columnNames.push_back(columnName.str());   
+    columnValues.push_back(columnValue.str());
+
+  }
+
+
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 

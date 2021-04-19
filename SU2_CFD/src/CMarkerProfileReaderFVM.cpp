@@ -31,7 +31,9 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
                                                  CConfig        *val_config,
                                                  string         val_filename,
                                                  unsigned short val_kind_marker,
-                                                 unsigned short val_number_vars) {
+                                                 unsigned short val_number_vars,
+                                                 vector<string> val_columnNames,
+                                                 vector<string> val_columnValues) {
 
   /*--- Store input values and pointers to class data. ---*/
 
@@ -45,6 +47,8 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   filename     = val_filename;
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
+  columnNames = val_columnNames;
+  columnValues = val_columnValues;
 
   /* Attempt to open the specified file. */
   ifstream profile_file;
@@ -80,9 +84,9 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
   /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored. 
         This allows for some information in a header that will be ignored by the profile reader. ---*/
   while (getline (profile_file, text_line)) {
-    
+    cout << "line = " << text_line << endl;
+    /*--- read NMARK ---*/
     string::size_type position = text_line.find ("NMARK=",0);
-    //cout << "position = " << position << endl;
     if (position != string::npos) {
       nmarkFound = true;
       text_line.erase (0,6); numberOfProfiles = atoi(text_line.c_str());
@@ -91,6 +95,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
       numberOfColumnsInProfile.resize(numberOfProfiles);
 
       for (unsigned short iMarker = 0 ; iMarker < numberOfProfiles; iMarker++) {
+
         /*--- read MARKER_TAG ---*/
         getline (profile_file, text_line);
         text_line.erase (0,11);
@@ -100,32 +105,37 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
           position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
         }
         profileTags.push_back(text_line.c_str());
+
         /*--- read NROW ---*/
         getline (profile_file, text_line);
-
+    cout << "line = " << text_line << endl;
         text_line.erase (0,5); numberOfRowsInProfile[iMarker] = atoi(text_line.c_str());
+
         /*--- read NCOL ---*/
         getline (profile_file, text_line);
+    cout << "line = " << text_line << endl;
         text_line.erase (0,5); numberOfColumnsInProfile[iMarker] = atoi(text_line.c_str());
 
         /*--- read the column format description. This line is not required, so if we cannot find it, we just continue  ---*/
         getline (profile_file, text_line);
+    cout << "line = " << text_line << endl;
         string::size_type dataheader = text_line.find ("# COORD",0);
         if (dataheader == 0) {
+    cout << "skip = " << skip << endl;
           skip = 0;
-        } else { 
+        } else {
           /*--- no header, but we have read a line, so we have to read one line less data ---*/
+    cout << "skip = " << skip << endl;
           skip = 1;
-          }
-
+        }
 
         /*--- Skip the data. This is read in the next loop. ---*/
         
-        for (unsigned long iRow = 0; iRow < numberOfRowsInProfile[iMarker]-skip; iRow++) getline (profile_file, text_line);
+        for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
 
       }
     } else {
-      //cout << "inlet profile reader is ignoring line: " << text_line << endl;
+      cout << "inlet profile reader is ignoring line: " << text_line << endl;
     }
   }
 
@@ -160,7 +170,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         getline (profile_file, text_line);
         
-        /*--- if skip=0 then we can expect comn format description ---*/
+        /*--- if skip=0 then we can expect column format description ---*/
         if (skip == 0) getline (profile_file, text_line);
 
         /*--- Now read the data for each row and store. ---*/
@@ -437,19 +447,14 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
    total number of columns of data specified in the constructor. ---*/
 
   const unsigned short nColumns = dimension + numberOfVars;
-  const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
-  su2double turb_val[2] = {0.0,0.0};
-  unsigned short numberOfTurbVars=0;
-
-  // create vector with inlet values 
 
   /*--- Write the profile file. Note that we have already merged
    all of the information for the markers and coordinates previously
    in the MergeProfileMarkers() routine and only the master writes. ---*/
 
   if (rank == MASTER_NODE) {
-
-    ofstream node_file("profile_example.dat");
+    
+    ofstream node_file("example_"+filename);
 
     node_file << "NMARK= " << numberOfProfiles << endl;
 
@@ -458,9 +463,6 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
       /*--- Access the default data for this marker. ---*/
 
       string Marker_Tag = profileTags[iMarker];
-      su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
-      su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
-      auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
       
       /*--- Header information for this marker. ---*/
 
@@ -468,61 +470,8 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
       node_file << "NROW="        << numberOfRowsInProfile[iMarker] << endl;
       node_file << "NCOL="        << nColumns          << endl;
 
-      /*--- start of the header line (names of the columns) --- */
-
-      if (dimension==2)  
-        node_file << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
-      else 
-        node_file << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24) << "COORD-Z    " << setw(24); 
-
-      INLET_TYPE Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
-
-      if (compressible) {
-        node_file << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
-      }
-      else {
-        switch (Kind_Inlet) {
-
-          case INLET_TYPE::VELOCITY_INLET:
-            node_file << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24); 
-            break;
-          case INLET_TYPE::PRESSURE_INLET:
-            node_file << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
-            break;
-          default:
-            SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
-            break;
-        }
-      }
-
-      if (dimension==2)  
-        node_file << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
-      else 
-        node_file << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24) << "NORMAL-Z   " << setw(24);
-
-      
-      switch (config->GetKind_Turb_Model()) {
-        case NO_TURB_MODEL:
-          /*--- no turbulence model---*/
-          numberOfTurbVars = 0;
-          break;
-        case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-          /*--- 1-equation turbulence model: SA ---*/
-          turb_val[0] = config->GetNuFactor_FreeStream()*config->GetViscosity_FreeStreamND()/config->GetDensity_FreeStreamND();
-          node_file << "NU_TILDE   " << setw(24);
-          numberOfTurbVars = 1;
-          break;
-        case SST: case SST_SUST:
-          /*--- 2-equation turbulence model (SST) ---*/
-          turb_val[0] = config->GetTke_FreeStream();
-          turb_val[1] = config->GetOmega_FreeStream();
-          node_file << "TKE        " << setw(24) << "DISSIPATION";
-          numberOfTurbVars = 2;
-          break;
-      }
-
-      /*--- end of the header line (names of the columns) --- */
-      node_file << endl;
+      /*--- header line (names of the columns) --- */
+      node_file << columnNames[iMarker] << endl;
 
       node_file << setprecision(15);
       node_file << std::scientific;
@@ -535,15 +484,8 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
           node_file << profileCoords[iMarker][iDim][iPoint] << "\t";
         }
 
-        node_file << t_total << "\t" << p_total;
-        for (unsigned short iDim = 0; iDim < dimension; iDim++) {
-          node_file << "\t" << flow_dir[iDim];
-        }
-        for (unsigned short iVar = 0; iVar < numberOfTurbVars; iVar++) {
-          node_file << "\t" << turb_val[iVar];
-        }
+        node_file << columnValues[iMarker] << endl;
 
-        node_file << endl;
       }
 
     }
@@ -556,7 +498,7 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
     err << "  Could not find the input file for the marker profile." << endl;
     err << "  Looked for: " << filename << "." << endl;
     err << "  Created a template profile file with default values" << endl;
-    err << "  and correct number of columns at `profile_example.dat`." << endl;
+    err << "  named example_" << filename << endl;
     err << "  You can use this file as a guide for making your own profile" << endl;
     err << "  specification." << endl << endl;
     SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
