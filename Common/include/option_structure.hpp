@@ -883,17 +883,17 @@ static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
 /*!
  * \brief Types of window (weight) functions for cost functional
  */
-enum WINDOW_FUNCTION {
-  SQUARE = 0,        /*!< \brief No weight function  (order 1)*/
-  HANN = 1,          /*!< \brief Hann-type weight function (order 3) */
-  HANN_SQUARE = 2,   /*!< \brief Hann-squared type weight function (order 5)*/
-  BUMP = 3,          /*!< \brief bump type weight function (exponential order of convergence) */
+enum class WINDOW_FUNCTION {
+  SQUARE,        /*!< \brief No weight function  (order 1)*/
+  HANN,          /*!< \brief Hann-type weight function (order 3) */
+  HANN_SQUARE,   /*!< \brief Hann-squared type weight function (order 5)*/
+  BUMP,          /*!< \brief bump type weight function (exponential order of convergence) */
 };
 static const MapType<string, WINDOW_FUNCTION> Window_Map = {
-  MakePair("SQUARE", SQUARE)
-  MakePair("HANN", HANN)
-  MakePair("HANN_SQUARE", HANN_SQUARE)
-  MakePair("BUMP", BUMP)
+  MakePair("SQUARE", WINDOW_FUNCTION::SQUARE)
+  MakePair("HANN", WINDOW_FUNCTION::HANN)
+  MakePair("HANN_SQUARE", WINDOW_FUNCTION::HANN_SQUARE)
+  MakePair("BUMP", WINDOW_FUNCTION::BUMP)
 };
 
 /*!
