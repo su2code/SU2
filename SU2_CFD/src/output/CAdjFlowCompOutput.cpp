@@ -466,11 +466,3 @@ bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
          ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));
 
 }
-
-bool CAdjFlowCompOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
-
-}
-
