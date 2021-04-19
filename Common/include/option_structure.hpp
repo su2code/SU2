@@ -1103,29 +1103,29 @@ enum BC_TYPE {
 };
 
 /*!
- * \brief Different regime modes
+ * \brief 2D Formulation for structural problems
  */
-enum ENUM_2DFORM {
-  PLANE_STRESS = 0,     /*!< \brief Definition of plane stress solver. */
-  PLANE_STRAIN = 1      /*!< \brief Definition of plane strain solver. */
+enum class STRUCT_2DFORM {
+  PLANE_STRESS,     /*!< \brief Definition of plane stress solver. */
+  PLANE_STRAIN      /*!< \brief Definition of plane strain solver. */
 };
-static const MapType<string, ENUM_2DFORM> ElasForm_2D = {
-  MakePair("PLANE_STRESS", PLANE_STRESS)
-  MakePair("PLANE_STRAIN", PLANE_STRAIN)
+static const MapType<string, STRUCT_2DFORM> ElasForm_2D = {
+  MakePair("PLANE_STRESS", STRUCT_2DFORM::PLANE_STRESS)
+  MakePair("PLANE_STRAIN", STRUCT_2DFORM::PLANE_STRAIN)
 };
 
 /*!
- * \brief Kinds of relaxation for FSI problem
+ * \brief Kinds of relaxation for multizone problems
  */
-enum ENUM_AITKEN {
-  NO_RELAXATION = 0,        /*!< \brief No relaxation in the strongly coupled approach. */
-  FIXED_PARAMETER = 1,      /*!< \brief Relaxation with a fixed parameter. */
-  AITKEN_DYNAMIC = 2        /*!< \brief Relaxation using Aitken's dynamic parameter. */
+enum class BGS_RELAXATION {
+  NONE,       /*!< \brief No relaxation in the strongly coupled approach. */
+  FIXED,      /*!< \brief Relaxation with a fixed parameter. */
+  AITKEN,     /*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
-static const MapType<string, ENUM_AITKEN> AitkenForm_Map = {
-  MakePair("NONE", NO_RELAXATION)
-  MakePair("FIXED_PARAMETER", FIXED_PARAMETER)
-  MakePair("AITKEN_DYNAMIC", AITKEN_DYNAMIC)
+static const MapType<string, BGS_RELAXATION> AitkenForm_Map = {
+  MakePair("NONE", BGS_RELAXATION::NONE)
+  MakePair("FIXED_PARAMETER", BGS_RELAXATION::FIXED)
+  MakePair("AITKEN_DYNAMIC", BGS_RELAXATION::AITKEN)
 };
 
 /*!

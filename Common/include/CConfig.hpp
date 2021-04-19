@@ -529,8 +529,8 @@ private:
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
-  Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_BGS_RelaxMethod;         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -859,7 +859,7 @@ private:
   unsigned long refNodeID;              /*!< \brief Global ID for the reference node (optimization). */
   string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
-  unsigned short Kind_2DElasForm;       /*!< \brief Kind of bidimensional elasticity solver. */
+  STRUCT_2DFORM Kind_2DElasForm;        /*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI_Ramp;         /*!< \brief Number of FSI subiterations during which a ramp is applied. */
   unsigned short iInst;                 /*!< \brief Current instance value */
   su2double AitkenStatRelax;      /*!< \brief Aitken's relaxation factor (if set as static) */
@@ -2087,7 +2087,7 @@ public:
    * \brief Formulation for 2D elasticity (plane stress - strain)
    * \return Flag to 2D elasticity model.
    */
-  unsigned short GetElas2D_Formulation(void) const { return Kind_2DElasForm; }
+  STRUCT_2DFORM GetElas2D_Formulation() const { return Kind_2DElasForm; }
 
   /*!
    * \brief Decide whether it's necessary to read a reference geometry.
@@ -8621,7 +8621,7 @@ public:
    * \brief Get the relaxation method chosen for the simulation
    * \return Value of the relaxation method
    */
-  unsigned short GetRelaxation_Method_FSI(void) const { return Kind_BGS_RelaxMethod; }
+  BGS_RELAXATION GetRelaxation_Method_BGS(void) const { return Kind_BGS_RelaxMethod; }
 
   /*!
    * \brief Get the kind of Riemann solver for the DG method (FEM flow solver).

@@ -2666,21 +2666,21 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
   su2double delta_deltaU[MAXNVAR] = {0.0};
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
 
-  unsigned short RelaxMethod_FSI = config->GetRelaxation_Method_FSI();
+  const auto RelaxMethod_FSI = config->GetRelaxation_Method_BGS();
 
   /*--- Only when there is movement, and a dynamic coefficient is requested, it makes sense to compute the Aitken's coefficient ---*/
 
-  if (RelaxMethod_FSI == NO_RELAXATION) {
+  if (RelaxMethod_FSI == BGS_RELAXATION::NONE) {
 
     SetWAitken_Dyn(1.0);
 
   }
-  else if (RelaxMethod_FSI == FIXED_PARAMETER) {
+  else if (RelaxMethod_FSI == BGS_RELAXATION::FIXED) {
 
     SetWAitken_Dyn(config->GetAitkenStatRelax());
 
   }
-  else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
+  else if (RelaxMethod_FSI == BGS_RELAXATION::AITKEN) {
 
     if (iOuterIter == 0) {
 
