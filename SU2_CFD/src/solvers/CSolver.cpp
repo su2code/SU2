@@ -3360,7 +3360,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       /*--- Get data for this profile. ---*/
 
-      vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
+      const vector<passivedouble>& Inlet_Data = profileReader.GetDataForProfile(jMarker);
       const auto nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
       vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
@@ -3449,7 +3449,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
             const auto index = iRow*nColumns;
 
-            const auto dist = GeometryToolbox::Distance(nDim, &Inlet_Data[index], Coord);
+            const auto dist = GeometryToolbox::Distance(nDim, Coord, &Inlet_Data[index]);
 
             /*--- Check is this is the closest point and store data if so. ---*/
 
