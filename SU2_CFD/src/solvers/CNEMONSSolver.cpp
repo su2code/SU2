@@ -884,12 +884,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Yst[3] = cat_eff * Yj[0] + Yj[3];
       Yst[4] = cat_eff * Yj[1] + Yj[4];
 
-      cout << Yst[0] << endl;
-      cout << Yst[1] << endl;
-      cout << Yst[2] << endl;
-      cout << Yst[3] << endl;
-      cout << Yst[4] << endl;
-
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
