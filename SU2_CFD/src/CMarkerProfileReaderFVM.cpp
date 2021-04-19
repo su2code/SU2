@@ -47,7 +47,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   filename     = val_filename;
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
-  columnNames = val_columnNames;
+  columnNames  = val_columnNames;
   columnValues = val_columnValues;
 
   /* Attempt to open the specified file. */
@@ -84,7 +84,6 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
   /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored. 
         This allows for some information in a header that will be ignored by the profile reader. ---*/
   while (getline (profile_file, text_line)) {
-    cout << "line = " << text_line << endl;
     /*--- read NMARK ---*/
     string::size_type position = text_line.find ("NMARK=",0);
     if (position != string::npos) {
@@ -108,24 +107,19 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
         /*--- read NROW ---*/
         getline (profile_file, text_line);
-    cout << "line = " << text_line << endl;
         text_line.erase (0,5); numberOfRowsInProfile[iMarker] = atoi(text_line.c_str());
 
         /*--- read NCOL ---*/
         getline (profile_file, text_line);
-    cout << "line = " << text_line << endl;
         text_line.erase (0,5); numberOfColumnsInProfile[iMarker] = atoi(text_line.c_str());
 
         /*--- read the column format description. This line is not required, so if we cannot find it, we just continue  ---*/
         getline (profile_file, text_line);
-    cout << "line = " << text_line << endl;
         string::size_type dataheader = text_line.find ("# COORD",0);
         if (dataheader == 0) {
-    cout << "skip = " << skip << endl;
           skip = 0;
         } else {
           /*--- no header, but we have read a line, so we have to read one line less data ---*/
-    cout << "skip = " << skip << endl;
           skip = 1;
         }
 
@@ -135,7 +129,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
       }
     } else {
-      cout << "inlet profile reader is ignoring line: " << text_line << endl;
+      //cout << "inlet profile reader is ignoring line: " << text_line << endl;
     }
   }
 
@@ -164,7 +158,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
       for (unsigned short iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
 
-        /*--- Skip the tag, nRow, nCol and comment lines. ---*/
+        /*--- Skip the tag, nRow and nCol lines. ---*/
 
         getline (profile_file, text_line);
         getline (profile_file, text_line);
