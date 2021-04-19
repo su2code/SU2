@@ -146,5 +146,6 @@ public:
    */ 
   vector<su2double>& GetWall_Catalycity() final;
 
+
 };
 #endif

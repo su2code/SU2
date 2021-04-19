@@ -1141,8 +1141,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
-  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
+  /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
+  addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
 
+  /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 

@@ -801,8 +801,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar,
       RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
+  su2double rho, cat_eff, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
+  dij, *Di, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -812,8 +812,10 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   //su2double pcontrol = 0.6;
 
   /*--- Get species mass fractions at the wall ---*/
-  auto& Yst = FluidModel->GetWall_Catalycity();
+  //auto& Yst = FluidModel->GetWall_Catalycity(); Use this one
   //const auto Yst = config->GetGas_Composition();
+
+  cat_eff = config->GetCatalytic_Efficiency();
 
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
@@ -828,6 +830,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
+  Yst   = new su2double[nSpecies];
   dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -872,7 +875,21 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       eves = nodes->GetEve(iPoint);
       hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
+        Yj[iSpecies]  = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
+      
+      // Naive Gamma Model
+      Yst[0] = (1-cat_eff) * Yj[0];
+      Yst[1] = (1-cat_eff) * Yj[1];
+      Yst[2] = Yj[2];
+      Yst[3] = cat_eff * Yj[0] + Yj[3];
+      Yst[4] = cat_eff * Yj[1] + Yj[4];
+
+      cout << Yst[0] << endl;
+      cout << Yst[1] << endl;
+      cout << Yst[2] << endl;
+      cout << Yst[3] << endl;
+      cout << Yst[4] << endl;
+
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
