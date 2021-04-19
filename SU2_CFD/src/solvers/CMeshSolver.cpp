@@ -502,12 +502,12 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    if (config->GetTime_Domain() && config->GetFSI_Simulation()) LinSysSol.SetValZero();
+    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
   }
   END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, false);
+  SetBoundaryDisplacements(geometry[MESH_0], config, false);
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
@@ -521,19 +521,23 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the dual grid. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
-  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
-  if (time_domain) {
-    if (config->GetFSI_Simulation()) ComputeGridVelocity_FromBoundary(geometry, numerics, config);
-    else ComputeGridVelocity(geometry[MESH_0], config);
-  }
-
-  /*--- Update the multigrid structure. ---*/
-  UpdateMultiGrid(geometry, config);
-
   /*--- Check for failed deformation (negative volumes). ---*/
   SetMinMaxVolume(geometry[MESH_0], config, true);
 
+  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
+  if (time_domain && !config->GetFSI_Simulation())
+    ComputeGridVelocity(geometry[MESH_0], config);
+
   }
+  END_SU2_OMP_PARALLEL
+
+  if (time_domain && config->GetFSI_Simulation()) {
+    ComputeGridVelocity_FromBoundary(geometry, numerics, config);
+  }
+
+  /*--- Update the multigrid structure. ---*/
+  SU2_OMP_PARALLEL
+  UpdateMultiGrid(geometry, config);
   END_SU2_OMP_PARALLEL
 
 }
@@ -544,7 +548,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       /*--- Retrieve the displacement from the solution of the linear system ---*/
       su2double val_disp = LinSysSol(iPoint, iDim);
@@ -562,9 +566,6 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
 }
 
 void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
@@ -579,6 +580,10 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 }
 
 void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+
+  if (config->GetnZone() == 1)
+    SU2_MPI::Error("It is not possible to compute grid velocity from boundary velocity for single zone problems.\n"
+                   "MARKER_FLUID_LOAD should only be used for structural boundaries.", CURRENT_FUNCTION);
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
@@ -596,16 +601,18 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
   END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions including boundary velocity ---*/
-  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, true);
+  SetBoundaryDisplacements(geometry[MESH_0], config, true);
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
+
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double val_vel = LinSysSol(iPoint, iDim);
 
       /*--- Non-dimensionalize velocity ---*/
-      val_vel = val_vel/config->GetVelocity_Ref();
+      val_vel /= config->GetVelocity_Ref();
 
       // Debug: Force zero grid velocity
       if (config->GetWrt_Performance()) val_vel = 0.0;
@@ -613,6 +620,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
@@ -676,7 +684,23 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
 
 }
 
-void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config, bool velocity_transfer){
+void CMeshSolver::BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity){
+
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Retrieve the boundary displacement or velocity ---*/
+    su2double Sol[MAXNVAR] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      if (velocity) Sol[iDim] = nodes->GetBound_Vel(iPoint,iDim);
+      else Sol[iDim] = nodes->GetBound_Disp(iPoint,iDim);
+    }
+    LinSysSol.SetBlock(iPoint, Sol);
+    Jacobian.EnforceSolutionAtNode(iPoint, Sol, LinSysRes);
+  }
+}
+
+void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config, bool velocity_transfer){
 
   /* Surface motions are not applied during discrete adjoint runs as the corresponding
    * boundary displacements are computed when loading the primal solution, and it
@@ -684,7 +708,10 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
    * The derivatives are still correct since the motion does not depend on the solution,
    * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
 
-  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint() && !velocity_transfer) {
+  if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
+    if (velocity_transfer)
+      SU2_MPI::Error("Forced motions are not compatible with FSI simulations.", CURRENT_FUNCTION);
+
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
 
@@ -704,7 +731,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 
-      BC_Clamped(geometry, numerics, config, iMarker);
+      BC_Clamped(geometry, config, iMarker);
     }
   }
 
@@ -713,11 +740,11 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
-      BC_Deforming(geometry, numerics, config, iMarker, velocity_transfer);
+      BC_Deforming(geometry, config, iMarker, velocity_transfer);
     }
     else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 
-      BC_Sym_Plane(geometry, numerics, config, iMarker);
+      BC_Sym_Plane(geometry, config, iMarker);
     }
   }
 

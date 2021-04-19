@@ -109,7 +109,16 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] velocity_transfer - Boolean for deforming displacement or velocity
    */
-  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config, bool velocity_transfer);
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config, bool velocity_transfer);
+
+  /*!
+   * \brief Apply forced displacement boundary conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Index of the marker.
+   * \param[in] velocity - Boolean for deforming displacement or velocity.
+   */
+  void BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity);
 
 public:
   /*!

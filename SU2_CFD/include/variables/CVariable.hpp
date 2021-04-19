@@ -91,8 +91,6 @@ protected:
   MatrixType Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
   MatrixType Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
 
-  MatrixType Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
-
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
@@ -218,14 +216,6 @@ public:
    * \return Pointer to the old solution vector.
    */
   inline su2double GetSolution_Old(unsigned long iPoint, unsigned long iVar) const { return Solution_Old(iPoint,iVar); }
-
-  /*!
-   * \brief Get the old solution of the discrete adjoint problem (for multiphysics subiterations)
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Old_Adj(unsigned long iPoint, unsigned long iVar) const { return Solution_Adj_Old(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the old solution.
