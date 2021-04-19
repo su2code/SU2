@@ -189,9 +189,6 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
                            unsigned short val_iInst) {
   const auto TimeIter = config[val_iZone]->GetTimeIter();
   const bool dynamic = (config[val_iZone]->GetTime_Domain());
-  const bool fsi = config[val_iZone]->GetFSI_Simulation();
-
-  CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*----------------- Update structural solver ----------------------*/
 
@@ -207,7 +204,6 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
     const su2double Physical_t = (TimeIter + 1) * Physical_dt;
     if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
-
   }
 }
 
