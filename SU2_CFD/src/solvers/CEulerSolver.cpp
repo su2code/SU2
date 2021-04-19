@@ -173,24 +173,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Explicit scheme. No Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
   }
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
-    X.resize(M);
-    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i], 0.0);
-  };
-
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
-    X.resize(M);
-    for(unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
-  };
-
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
 
-  Alloc3D(nMarker, nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
+  AllocVectorOfMatrices(nVertex, (rans? nPrimVar+2 : nPrimVar), DonorPrimVar);
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
@@ -208,18 +194,18 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   ActDisk_Axis.resize(nMarker, MAXNDIM);
 
   /*--- Actuator Disk Fa, Fx, Fy and Fz allocations ---*/
-  Alloc2D(nMarker, nVertex, ActDisk_Fa);
-  Alloc2D(nMarker, nVertex, ActDisk_Fx);
-  Alloc2D(nMarker, nVertex, ActDisk_Fy);
-  Alloc2D(nMarker, nVertex, ActDisk_Fz);
+  AllocVectorOfVectors(nVertex, ActDisk_Fa);
+  AllocVectorOfVectors(nVertex, ActDisk_Fx);
+  AllocVectorOfVectors(nVertex, ActDisk_Fy);
+  AllocVectorOfVectors(nVertex, ActDisk_Fz);
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaP);
+  AllocVectorOfVectors(nVertex, ActDisk_DeltaP);
 
   /*--- Store the value of the Delta T at the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_DeltaT);
+  AllocVectorOfVectors(nVertex, ActDisk_DeltaT);
 
   /*--- Supersonic coefficients ---*/
 

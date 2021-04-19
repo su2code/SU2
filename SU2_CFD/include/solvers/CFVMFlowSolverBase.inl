@@ -58,40 +58,26 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- LinSysSol will always be init to 0. ---*/
   System.SetxIsZero(true);
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const vector<unsigned long>& N, vector<vector<su2double> >& X) {
-    X.resize(M);
-    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],0.0);
-  };
-
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
-    X.resize(M);
-    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i],P) = su2double(0.0);
-  };
-
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
+  AllocVectorOfMatrices(nVertex, nPrimVar, CharacPrimVar);
 
   /*--- Store the value of the Total Pressure at the inlet BC ---*/
 
-  Alloc2D(nMarker, nVertex, Inlet_Ttotal);
+  AllocVectorOfVectors(nVertex, Inlet_Ttotal);
 
   /*--- Store the value of the Total Temperature at the inlet BC ---*/
 
-  Alloc2D(nMarker, nVertex, Inlet_Ptotal);
+  AllocVectorOfVectors(nVertex, Inlet_Ptotal);
 
   /*--- Store the value of the Flow direction at the inlet BC ---*/
 
-  Alloc3D(nMarker, nVertex, nDim, Inlet_FlowDir);
+  AllocVectorOfMatrices(nVertex, nDim, Inlet_FlowDir);
 
   /*--- Force definition and coefficient arrays for all of the markers ---*/
 
-  Alloc2D(nMarker, nVertex, CPressure);
-  Alloc2D(nMarker, nVertex, CPressureTarget);
+  AllocVectorOfVectors(nVertex, CPressure);
+  AllocVectorOfVectors(nVertex, CPressureTarget);
 
   /*--- Non dimensional aerodynamic coefficients ---*/
 
@@ -129,42 +115,35 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Heat flux in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, HeatFlux);
-  Alloc2D(nMarker, nVertex, HeatFluxTarget);
+  AllocVectorOfVectors(nVertex, HeatFlux);
+  AllocVectorOfVectors(nVertex, HeatFluxTarget);
 
   /*--- Y plus in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, YPlus);
+  AllocVectorOfVectors(nVertex, YPlus);
 
   /*--- Skin friction in all the markers ---*/
 
-  Alloc3D(nMarker, nVertex, nDim, CSkinFriction);
+  AllocVectorOfMatrices(nVertex, nDim, CSkinFriction);
 
   /*--- Wall Shear Stress in all the markers ---*/
 
-  Alloc2D(nMarker, nVertex, WallShearStress);
+  AllocVectorOfVectors(nVertex, WallShearStress);
 
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
-
-  Alloc3D(nMarker, nVertex, nHeatConjugateVar, HeatConjugateVar);
-  for (auto& x : HeatConjugateVar) x = config.GetTemperature_FreeStreamND();
+  AllocVectorOfMatrices(nVertex, nHeatConjugateVar, HeatConjugateVar, config.GetTemperature_FreeStreamND());
 
   if (MGLevel == MESH_0) {
-    VertexTraction.resize(nMarker);
-    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (config.GetSolid_Wall(iMarker))
-        VertexTraction[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
-    }
+    auto nSolidVertex = nVertex;
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+      if (!config.GetSolid_Wall(iMarker))
+        nSolidVertex[iMarker] = 0;
 
-    if (config.GetDiscrete_Adjoint()) {
-      VertexTractionAdjoint.resize(nMarker);
-      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-        if (config.GetSolid_Wall(iMarker))
-          VertexTractionAdjoint[iMarker].resize(nVertex[iMarker], nDim) = su2double(0.0);
-      }
-    }
+    AllocVectorOfMatrices(nSolidVertex, nDim, VertexTraction);
+
+    if (config.GetDiscrete_Adjoint()) AllocVectorOfMatrices(nSolidVertex, nDim, VertexTractionAdjoint);
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/

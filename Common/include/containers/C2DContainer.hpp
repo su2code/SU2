@@ -50,7 +50,7 @@ enum SizeType : size_t {DynamicSize=0};
 
 /*--- Namespace to "hide" helper classes and
  functions used by the container class. ---*/
-namespace container_helpers
+namespace container_details
 {
 /*!
  * \class AccessorImpl
@@ -147,7 +147,9 @@ public:
   bool empty() const noexcept {return size()==0;}                       \
   Scalar_t* data() noexcept {return m_data;}                            \
   const Scalar_t* data() const noexcept {return m_data;}                \
+  Scalar_t* begin() noexcept {return data();}                           \
   const Scalar_t* begin() const noexcept {return data();}               \
+  Scalar_t* end() noexcept {return data()+size();}                      \
   const Scalar_t* end() const noexcept {return data()+size();}
 
   /*!
@@ -383,12 +385,12 @@ public:
  */
 template<typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticRows, size_t StaticCols>
 class C2DContainer :
-  public container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
+  public container_details::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>
 {
   static_assert(std::is_integral<Index_t>::value,"");
 
 private:
-  using Base = container_helpers::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
+  using Base = container_details::AccessorImpl<Index_t,Scalar_t,Store,AlignSize,StaticRows,StaticCols>;
   using Base::m_data;
   using Base::m_allocate;
   using Base::m_destroy;
