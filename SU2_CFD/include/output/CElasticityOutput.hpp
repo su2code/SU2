@@ -88,4 +88,5 @@ public:
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInit_Residuals(CConfig *config) override;
+
 };

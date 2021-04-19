@@ -980,7 +980,7 @@ private:
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
-  unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
+  WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                    /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
@@ -5217,7 +5217,7 @@ public:
    * \brief Get Index of the window function used as weight in the cost functional
    * \return
    */
-  WINDOW_FUNCTION GetKindWindow(void) const { return static_cast<WINDOW_FUNCTION>(Kind_WindowFct); }
+  WINDOW_FUNCTION GetKindWindow(void) const { return Kind_WindowFct; }
 
   /*!
    * \brief Get the name of the file with the forces breakdown of the problem.
