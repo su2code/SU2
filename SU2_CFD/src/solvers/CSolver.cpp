@@ -3379,7 +3379,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
       vector<su2double> Interpolation_Column (nRows);
 
-      bool Interpolate = false;
+      bool Interpolate = true;
 
       switch(config->GetKindInletInterpolationFunction()){
 
@@ -3388,21 +3388,19 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
 
         case (AKIMA_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
-            interpolation_function = "AKIMA";
-            Interpolate = true;
           }
+          interpolation_function = "AKIMA";
           break;
 
         case (LINEAR_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
-            interpolation_function = "LINEAR";
-            Interpolate = true;
           }
+          interpolation_function = "LINEAR";
           break;
 
         default:
@@ -3496,7 +3494,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           const su2double Theta = atan2(Coord[1],Coord[0]);
 
           /* --- Evaluating and saving the final spline data ---*/
-          for (unsigned short iVar=0; iVar < nColumns; iVar++){
+          for (auto iVar=0ul; iVar < nColumns; iVar++){
 
             /*---Evaluate spline will get the respective value of the Data set (column) specified
             for that interpolator[iVar], cycling through all columns to get all the
