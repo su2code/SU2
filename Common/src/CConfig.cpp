@@ -2677,7 +2677,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
 
   /* DESCRIPTION: Window (weight) function for the cost-functional in the reverse sweep */
-  addEnumOption("WINDOW_FUNCTION", Kind_WindowFct,Window_Map, SQUARE);
+  addEnumOption("WINDOW_FUNCTION", Kind_WindowFct, Window_Map, WINDOW_FUNCTION::SQUARE);
 
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
