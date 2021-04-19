@@ -39,7 +39,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
-  streamwisePeriodic             = config->GetKind_Streamwise_Periodic();
+  streamwisePeriodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -697,13 +697,7 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 
 bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curInnerIter < 2));
-
-}
-
-bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
-
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
+  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
+         (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
 
 }

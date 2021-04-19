@@ -526,14 +526,7 @@ void CAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CS
 
 bool CAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curTimeIter < 2));
-
-}
-
-bool CAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
+         (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));
 
 }
