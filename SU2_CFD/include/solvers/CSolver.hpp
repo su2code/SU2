@@ -3412,15 +3412,7 @@ public:
    * \param[in] config - Definition of the problem.
    */
   inline virtual void PredictStruct_Displacement(CGeometry *geometry,
-                                                 CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the problem.
-   */
-  inline virtual void PredictStruct_Velocity(CGeometry *geometry,
-                                             CConfig *config) { }
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3429,7 +3421,7 @@ public:
    * \param[in] iOuterIter - Current outer iteration.
    */
   inline virtual void ComputeAitken_Coefficient(CGeometry *geometry,
-                                                CConfig *config,
+                                                const CConfig *config,
                                                 unsigned long iOuterIter) { }
 
   /*!
@@ -3438,7 +3430,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetAitken_Relaxation(CGeometry *geometry,
-                                           CConfig *config) { }
+                                           const CConfig *config) { }
 
   /*!
    * \brief Loads the solution from the restart file.

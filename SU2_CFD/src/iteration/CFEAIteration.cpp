@@ -224,7 +224,6 @@ void CFEAIteration::Predictor(COutput* output, CIntegration**** integration, CGe
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
-  if (config[val_iZone]->GetTime_Domain()) feaSolver->PredictStruct_Velocity(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 }
 
 void CFEAIteration::Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry,

@@ -2584,10 +2584,11 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config) {
+void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
   const su2double Delta_t = config->GetDelta_DynTime();
+  const bool dynamic = config->GetTime_Domain();
 
   if(predOrder > 2 && rank == MASTER_NODE)
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
@@ -2627,21 +2628,14 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
       } break;
     }
 
+    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
+
   }
   END_SU2_OMP_PARALLEL
 
 }
 
-void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
-
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
-    nodes->SetSolution_Vel_Pred(iPoint);
-  }
-  END_SU2_OMP_PARALLEL
-}
-
-void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
+void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -2731,9 +2725,10 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
 
 }
 
-void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
+void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
+  const bool dynamic = config->GetTime_Domain();
 
   /*--- To nPoint to avoid communication. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
@@ -2750,8 +2745,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
     nodes->SetSolution_Old(iPoint, dispCalc);
 
     /*--- Set predicted velocity to update in multizone iterations ---*/
-
-    if (config->GetTime_Domain()) nodes->SetSolution_Vel_Pred(iPoint);
+    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
 
     /*--- Apply the Aitken relaxation ---*/
     su2double newDispPred[MAXNVAR] = {0.0};
