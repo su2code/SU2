@@ -63,7 +63,6 @@ protected:
   /*--- Some more storage is needed because of the handling of two separated solution update strategies ---*/
   su2matrix<Scalar> work2;
   su2matrix<Scalar> p;                  // projected solution
-  su2matrix<Scalar> p_n;                // old projected solution
   Eigen::VectorXd p_R;                  // projected solution in terms of basis R
   Eigen::VectorXd pn_R;                 // old projected solution in terms of basis R
 
@@ -74,6 +73,7 @@ protected:
   Eigen::MatrixXd NewtonInverseMatrix;  // p = p_n + NewtonInverseMatrix*(p-p_n)
 
   Index iBasis = 0;
+  Index BasisSize_n = 0;
 
   void shiftHistoryLeft(std::vector<su2matrix<Scalar>> &history) {
     for (Index i = 1; i < history.size(); ++i) {
@@ -85,29 +85,31 @@ protected:
 
   void projectOntoSubspace() {
 
-    /*--- save p to p_n as needed for the Newton step ---*/
-    std::swap(p,p_n);                                   // p_n addresses: old projected solution
+    /*--- save p_R to pn_R as needed for the Newton step ---*/
+    pn_R = p_R;                                           // pn_R: z in original paper
 
     /*--- Get references ---*/
     Eigen::Map<Eigen::VectorXd> Eigen_work(work.data(),work.size());
     Eigen::Map<Eigen::VectorXd> Eigen_p(p.data(),p.size());
 
     /* --- Compute projection onto subspace of unstable/slow modes ---*/
-    p_R = EigenR.transpose()*Eigen_work;                // \xi in original paper
-    Eigen_p = EigenR*p_R;                               // p addresses: projected solution
+    p_R = EigenR.transpose()*Eigen_work;                // p_R: \xi in original paper
+    Eigen_p = EigenR*p_R;                               // p addresses: (uncorrected) projected solution in standard basis
   }
 
   void updateProjectedSolution() {
 
-    /*--- Get references ---*/
-    Eigen::Map<Eigen::VectorXd> Eigen_p(p.data(),p.size());
-    Eigen::Map<Eigen::VectorXd> Eigen_pn(p_n.data(),p_n.size());
-
-    pn_R = EigenR.transpose()*Eigen_pn;                 // z in original paper
+    if (EigenR.cols() > BasisSize_n) {
+      pn_R = p_R;
+      BasisSize_n = EigenR.cols();
+    }
 
     /*--- Compute update w.r.t. subspace basis (Eq. (5.6) in original paper of Shroff & Keller). ---*/
     p_R = pn_R + NewtonInverseMatrix * (p_R - pn_R);
 //    p_R = pn_R + (p_R - pn_R);                        // linear algebra sanity check
+
+    /*--- Compute unstable part w.r.t. standard basis ---*/
+    Eigen::Map<Eigen::VectorXd> Eigen_p(p.data(),p.size());
     Eigen_p = EigenR*p_R;                               // updated projected solution
   }
 
@@ -139,7 +141,6 @@ public:
     work.resize(npt,nvar);
     work2.resize(npt,nvar);
     p.resize(npt,nvar);
-    p_n.resize(npt,nvar);
     X.clear();                              // role here: store history of delta solutions in stable space
     R.clear();                              // role here: store basis of unstable subspace
     for (Index i = 0; i < nsample; ++i) {
@@ -267,7 +268,7 @@ public:
 
     if (iBasis > 0) {
 
-    /*--- Project solution update (loaded at work), store at p. ---*/
+    /*--- Project solution-to-be-corrected update (loaded at work), store at p, coefficients at p_R. ---*/
       projectOntoSubspace();
 //      SU2_OMP_SIMD
       for (Index i = 0; i < work.size(); ++i) {
@@ -278,12 +279,13 @@ public:
         p.data()[i] = 0.0;
     }
 
+    /*--- Keep X updated to check for new basis elements. ---*/
+
     /*--- Check for need to shift left. ---*/
     if (iSample+1 == X.size()) {
       shiftHistoryLeft(X);
       iSample--;                                                    // X[0].data not needed anymore
     }
-    /*--- Keep X updated to check for new basis elements. ---*/
 //    SU2_OMP_SIMD
     for (Index i = 0; i < work.size(); ++i) {
       work2.data()[i] = work.data()[i] - work2.data()[i];           // work2 addresses: delta q
