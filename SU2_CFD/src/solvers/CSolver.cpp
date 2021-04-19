@@ -3291,48 +3291,22 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    hand. Note that, in the future, these routines can be used for any solver
    and potentially any marker type (beyond inlets). ---*/
 
-  unsigned short KIND_SOLVER = val_kind_solver;
-  unsigned short KIND_MARKER = val_kind_marker;
+  const auto KIND_SOLVER = val_kind_solver;
+  const auto KIND_MARKER = val_kind_marker;
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, iMesh, iMarker, jMarker;
-  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
-  su2double dist, min_dist, Interp_Radius, Theta;
-  const su2double *Coord = nullptr;
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
+  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
+                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
 
-  string UnstExt, text_line;
-  ifstream restart_file;
+  const auto iZone = config->GetiZone();
+  const auto nZone = config->GetnZone();
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string Marker_Tag;
-  string profile_filename = config->GetInlet_FileName();
-  ifstream inlet_file;
-  string Interpolation_Function, Interpolation_Type;
-  bool Interpolate = false;
-
-  unsigned long Marker_Counter = 0;
+  auto profile_filename = config->GetInlet_FileName();
 
   unsigned short nVar_Turb = 0;
-
-  switch (config->GetKind_Turb_Model()) {
-    case NONE:
-      break;
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      nVar_Turb = 1;
-      break;
-    case SST: case SST_SUST:
-      nVar_Turb = 2;
-      break;
-    default:
-      SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
-      break;
-  }
+  if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
@@ -3341,7 +3315,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -3350,7 +3324,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Modify file name for an unsteady restart ---*/
 
-  if (dual_time || time_stepping)
+  if (time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
   /*--- Read the profile data from an ASCII file. ---*/
@@ -3359,14 +3333,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  Marker_Counter = 0;
-
-  unsigned short global_failure = 0, local_failure = 0;
-  ostringstream error_msg;
+  unsigned long Marker_Counter = 0;
+  unsigned short local_failure = 0;
 
   const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- Skip if this is the wrong type of marker. ---*/
 
@@ -3374,9 +3346,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     /*--- Get tag in order to identify the correct inlet data. ---*/
 
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-    for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+    for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
 
       /*--- If we have not found the matching marker string, continue to next marker. ---*/
 
@@ -3389,23 +3361,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       /*--- Get data for this profile. ---*/
 
       vector<passivedouble> Inlet_Data = profileReader.GetDataForProfile(jMarker);
-      unsigned short nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+      const auto nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
       vector<su2double> Inlet_Data_Interpolated ((nCol_InletFile+nDim)*geometry[MESH_0]->nVertex[iMarker]);
 
       /*--- Define Inlet Values vectors before and after interpolation (if needed) ---*/
       vector<su2double> Inlet_Values(nCol_InletFile+nDim);
       vector<su2double> Inlet_Interpolated(nColumns);
 
-      unsigned long nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
+      const auto nRows = profileReader.GetNumberOfRowsInProfile(jMarker);
 
       /*--- Pointer to call Set and Evaluate functions. ---*/
-      vector<C1DInterpolation*> interpolator (nColumns);
+      vector<C1DInterpolation*> interpolator(nColumns,nullptr);
       string interpolation_function, interpolation_type;
 
       /*--- Define the reference for interpolation. ---*/
       unsigned short radius_index=0;
       vector<su2double> InletRadii = profileReader.GetColumnForProfile(jMarker, radius_index);
       vector<su2double> Interpolation_Column (nRows);
+
+      bool Interpolate = false;
 
       switch(config->GetKindInletInterpolationFunction()){
 
@@ -3436,7 +3410,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
       }
 
-      if (Interpolate == true){
+      if (Interpolate){
         switch(config->GetKindInletInterpolationType()){
           case(VR_VTHETA):
             interpolation_type="VR_VTHETA";
@@ -3452,40 +3426,37 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         else if (nDim == 2)
           cout<<"Ensure the flow direction is in x direction"<<endl;
       }
-      else if(Interpolate == false) {
+      else {
         cout<<"No Inlet Interpolation being used"<<endl;
       }
 
       /*--- Loop through the nodes on this marker. ---*/
 
-      for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
-        iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
+        const auto iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+        const auto Coord = geometry[MESH_0]->nodes->GetCoord(iPoint);
 
-        if(Interpolate == false) {
+        if (!Interpolate) {
 
-          min_dist = 1e16;
+          su2double min_dist = 1e16;
 
           /*--- Find the distance to the closest point in our inlet profile data. ---*/
 
-          for (iRow = 0; iRow < nRows; iRow++) {
+          for (auto iRow = 0ul; iRow < nRows; iRow++) {
 
             /*--- Get the coords for this data point. ---*/
 
-            index = iRow*nColumns;
+            const auto index = iRow*nColumns;
 
-            dist = 0.0;
-            for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
-            dist = sqrt(dist);
+            const auto dist = GeometryToolbox::Distance(nDim, &Inlet_Data[index], Coord);
 
             /*--- Check is this is the closest point and store data if so. ---*/
 
             if (dist < min_dist) {
-            min_dist = dist;
-            for (iVar = 0; iVar < nColumns; iVar++)
-              Inlet_Values[iVar] = Inlet_Data[index+iVar];
+              min_dist = dist;
+              for (auto iVar = 0ul; iVar < nColumns; iVar++)
+                Inlet_Values[iVar] = Inlet_Data[index+iVar];
             }
 
           }
@@ -3501,33 +3472,31 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           } else {
 
             unsigned long GlobalIndex = geometry[MESH_0]->nodes->GetGlobalIndex(iPoint);
-            cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+            cout << "WARNING: Did not find a match between the points in the inlet file\n";
             cout << "and point " << GlobalIndex;
             cout << std::scientific;
             cout << " at location: [" << Coord[0] << ", " << Coord[1];
-            if (nDim ==3) error_msg << ", " << Coord[2];
-            cout << "]" << endl;
-            cout << "Distance to closest point: " << min_dist << endl;
-            cout << "Current tolerance:         " << tolerance << endl;
-            cout << endl;
-            cout << "You can widen the tolerance for point matching by changing the value" << endl;
+            if (nDim==3) cout << ", " << Coord[2];
+            cout << "]\n";
+            cout << "Distance to closest point: " << min_dist << "\n";
+            cout << "Current tolerance:         " << tolerance << "\n\n";
+            cout << "You can increase the tolerance for point matching by changing the value\n";
             cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
             local_failure++;
             break;
           }
 
         }
-
-        else if(Interpolate == true) {
+        else { // Interpolate
 
           /* --- Calculating the radius and angle of the vertex ---*/
           /* --- Flow should be in z direction for 3D cases ---*/
           /* --- Or in x direction for 2D cases ---*/
-          Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
-          Theta = atan2(Coord[1],Coord[0]);
+          const su2double Interp_Radius = sqrt(pow(Coord[0],2)+ pow(Coord[1],2));
+          const su2double Theta = atan2(Coord[1],Coord[0]);
 
           /* --- Evaluating and saving the final spline data ---*/
-          for  (unsigned short iVar=0; iVar < nColumns; iVar++){
+          for (unsigned short iVar=0; iVar < nColumns; iVar++){
 
             /*---Evaluate spline will get the respective value of the Data set (column) specified
             for that interpolator[iVar], cycling through all columns to get all the
@@ -3566,13 +3535,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       } // end iVertex loop
 
-      if(config->GetPrintInlet_InterpolatedData() == true) {
-          PrintInletInterpolatedData(Inlet_Data_Interpolated, profileReader.GetTagForProfile(jMarker),
-                                     geometry[MESH_0]->nVertex[iMarker], nDim, nCol_InletFile+nDim);
+      if (config->GetPrintInlet_InterpolatedData()) {
+        PrintInletInterpolatedData(Inlet_Data_Interpolated, profileReader.GetTagForProfile(jMarker),
+                                   geometry[MESH_0]->nVertex[iMarker], nDim, nCol_InletFile+nDim);
       }
 
-      for (int i=0; i<nColumns;i++)
-        delete interpolator[i];
+      for (auto& interp : interpolator) delete interp;
 
     } // end jMarker loop
 
@@ -3580,6 +3548,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   } // end iMarker loop
 
+  unsigned short global_failure;
   SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 
   if (global_failure > 0) {
@@ -3589,18 +3558,19 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Copy the inlet data down to the coarse levels if multigrid is active.
    Here, we use a face area-averaging to restrict the values. ---*/
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
         /* Check the number of columns and allocate temp array. */
 
         unsigned short nColumns = 0;
-        for (jMarker = 0; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
+        for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
           if (profileReader.GetTagForProfile(jMarker) == Marker_Tag) {
             nColumns = profileReader.GetNumberOfColumnsInProfile(jMarker);
+            break;
           }
         }
         vector<su2double> Inlet_Values(nColumns);
@@ -3608,17 +3578,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
         /*--- Loop through the nodes on this marker. ---*/
 
-        for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+        for (auto iVertex = 0ul; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
 
           /*--- Get the coarse mesh point and compute the boundary area. ---*/
 
-          iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          const auto iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
           const auto Normal = geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal();
           const su2double Area_Parent = GeometryToolbox::Norm(nDim, Normal);
 
           /*--- Reset the values for the coarse point. ---*/
 
-          for (iVar = 0; iVar < nColumns; iVar++) Inlet_Values[iVar] = 0.0;
+          for (auto& v : Inlet_Values) v = 0.0;
 
           /*-- Loop through the children and extract the inlet values
            from those nodes that lie on the boundary as well as their
@@ -3627,14 +3597,13 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            children from the interior volume will not be included in
            the averaging. ---*/
 
-          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-            for (iVar = 0; iVar < nColumns; iVar++) Inlet_Fine[iVar] = 0.0;
+          for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+            const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+
             auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
                                                                                 Marker_Tag, geometry[iMesh-1], config);
-            for (iVar = 0; iVar < nColumns; iVar++) {
+            for (auto iVar = 0u; iVar < nColumns; iVar++)
               Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
-            }
           }
 
           /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
