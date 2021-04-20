@@ -59,8 +59,8 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
   /*--- Reading pitching csv file if exists and store it. ---*/
   string filename = config->GetPitching_Filename();
   vector<vector<string>> vals_string;
-  if (!filename.empty() && rank == MASTER_NODE){
-    cout << "about to read file" << endl;
+  using_pitching_file = !filename.empty();
+  if (using_pitching_file){
     using_pitching_file = true;
     ReadCSVFile(filename, pitching_labels, vals_string);
     pitching_vals.resize(vals_string.size(),{});
@@ -71,15 +71,12 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
       }
     }
   }
-  else{
-    using_pitching_file = false;
-  }
 
   /*--- Reading translation csv file if exists and store it. ---*/
   string filenameTranslation = config->GetTranslation_Filename();
   vector<vector<string>> translation_vals_string;
-  if (!filenameTranslation.empty() && rank == MASTER_NODE ){
-    using_translation_file = true;
+  using_translation_file = !filenameTranslation.empty();
+  if (using_translation_file){
     ReadCSVFile(filenameTranslation, translation_labels, translation_vals_string);
     translation_vals.resize(translation_vals_string.size(),{});
     for (unsigned long i = 0; i < translation_vals_string.size(); i++){
@@ -88,9 +85,6 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
         translation_vals[i][j] = stod(translation_vals_string[i][j]);
       }
     }
-  }
-  else{
-    using_translation_file = false;
   }
 }
 
@@ -2136,6 +2130,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     alphaDot[0] = pitching_vals[iter-restart_iter][3]/Omega_Ref;
     alphaDot[1] = pitching_vals[iter-restart_iter][4]/Omega_Ref;
     alphaDot[2] = pitching_vals[iter-restart_iter][5]/Omega_Ref;
+
+    // cout << "dtheta = " << dtheta << ", dphi = " << dphi << ", dpsi = " << dpsi << endl;
   }
   else{
     /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
