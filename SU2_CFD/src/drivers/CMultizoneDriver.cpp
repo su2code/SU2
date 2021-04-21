@@ -541,7 +541,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   iteration->SetMesh_Deformation(geometry_container[val_iZone][INST_0],
                                  solver_container[val_iZone][INST_0][MESH_0],
                                  numerics_container[val_iZone][INST_0][MESH_0],
-                                 config_container[val_iZone], NONE);
+                                 config_container[val_iZone], RECORDING::CLEAR_INDICES);
 
   /*--- Update the wall distances if the mesh was deformed. ---*/
   if (config_container[val_iZone]->GetGrid_Movement() ||

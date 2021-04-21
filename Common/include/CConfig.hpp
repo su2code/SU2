@@ -467,12 +467,12 @@ private:
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
+  VISCOSITYMODEL Kind_ViscosityModel; /*!< \brief Kind of the Viscosity Model*/
+  CONDUCTIVITYMODEL Kind_ConductivityModel; /*!< \brief Kind of the Thermal Conductivity Model */
+  CONDUCTIVITYMODEL_TURB Kind_ConductivityModel_Turb; /*!< \brief Kind of the Turbulent Thermal Conductivity Model */
+  FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   unsigned short Kind_Solver,      /*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,                 /*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
-  Kind_ViscosityModel,             /*!< \brief Kind of the Viscosity Model*/
-  Kind_ConductivityModel,          /*!< \brief Kind of the Thermal Conductivity Model*/
-  Kind_ConductivityModel_Turb,     /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
-  Kind_FreeStreamOption,           /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_TransCoeffModel,            /*!< \brief Transport coefficient Model for NEMO solver. */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -501,9 +501,10 @@ private:
   Kind_TimeIntScheme_Turb,      /*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_FEA,       /*!< \brief Time integration for the FEA equations. */
-  Kind_SpaceIteScheme_FEA,      /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
+  STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
+  unsigned short
   Kind_TimeIntScheme_Radiation, /*!< \brief Time integration for the Radiation equations. */
   Kind_ConvNumScheme,           /*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,      /*!< \brief Centered or upwind scheme for the flow equations. */
@@ -528,8 +529,8 @@ private:
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
-  Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
-  Kind_BGS_RelaxMethod;         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
+  BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -548,11 +549,10 @@ private:
 
   bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
-  unsigned short
-  Kind_Material_Compress,   /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
-  Kind_Material,            /*!< \brief Determines the material model to be used (structural analysis). */
-  Kind_Struct_Solver,       /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
-  Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
+  STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
+  STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
+  STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
+  unsigned short Kind_DV_FEA;              /*!< \brief Kind of Design Variable for FEA problems.*/
 
   unsigned short Kind_Turb_Model;   /*!< \brief Turbulent model definition. */
   unsigned short Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
@@ -563,7 +563,7 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
-  unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
+  WALL_TYPE *Kind_Wall;            /*!< \brief Type of wall treatment. */
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
@@ -859,7 +859,7 @@ private:
   unsigned long refNodeID;              /*!< \brief Global ID for the reference node (optimization). */
   string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
   unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
-  unsigned short Kind_2DElasForm;       /*!< \brief Kind of bidimensional elasticity solver. */
+  STRUCT_2DFORM Kind_2DElasForm;        /*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI_Ramp;         /*!< \brief Number of FSI subiterations during which a ramp is applied. */
   unsigned short iInst;                 /*!< \brief Current instance value */
   su2double AitkenStatRelax;      /*!< \brief Aitken's relaxation factor (if set as static) */
@@ -958,10 +958,10 @@ private:
   bool Predictor,                         /*!< \brief Determines whether a predictor step is used. */
   Relaxation;                             /*!< \brief Determines whether a relaxation step is used. */
   unsigned short Pred_Order;              /*!< \brief Order of the predictor for FSI applications. */
-  unsigned short Kind_Interpolation;         /*!< \brief type of interpolation to use for FSI applications. */
+  INTERFACE_INTERPOLATOR Kind_Interpolation; /*!< \brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation;            /*!< \brief Conservative approach for non matching mesh interpolation. */
   unsigned short NumNearestNeighbors;        /*!< \brief Number of neighbors used for Nearest Neighbor interpolation. */
-  unsigned short Kind_RadialBasisFunction;   /*!< \brief type of radial basis function to use for radial basis FSI. */
+  RADIAL_BASIS Kind_RadialBasisFunction;     /*!< \brief type of radial basis function to use for radial basis FSI. */
   bool RadialBasisFunction_PolynomialOption; /*!< \brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
   su2double RadialBasisFunction_Parameter;   /*!< \brief Radial basis function parameter (radius). */
   su2double RadialBasisFunction_PruneTol;    /*!< \brief Tolerance to prune the RBF interpolation matrix. */
@@ -1027,8 +1027,8 @@ private:
   bool HeatSource;                     /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
   su2double ValHeatSource;             /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double Heat_Source_Rot_Z;         /*!< \brief Rotation of the volumetric heat source on the Z axis. */
-  unsigned short Kind_Radiation;       /*!< \brief Kind of radiation model used. */
-  unsigned short Kind_P1_Init;         /*!< \brief Kind of initialization used in the P1 model. */
+  RADIATION_MODEL Kind_Radiation;      /*!< \brief Kind of radiation model used. */
+  P1_INIT Kind_P1_Init;                /*!< \brief Kind of initialization used in the P1 model. */
   su2double Absorption_Coeff,          /*!< \brief Absorption coefficient of the medium (radiation). */
   Scattering_Coeff;                    /*!< \brief Scattering coefficient of the medium (radiation). */
   unsigned short nMarker_Emissivity;   /*!< \brief Number of markers for which the emissivity is defined. */
@@ -2089,7 +2089,7 @@ public:
    * \brief Formulation for 2D elasticity (plane stress - strain)
    * \return Flag to 2D elasticity model.
    */
-  unsigned short GetElas2D_Formulation(void) const { return Kind_2DElasForm; }
+  STRUCT_2DFORM GetElas2D_Formulation() const { return Kind_2DElasForm; }
 
   /*!
    * \brief Decide whether it's necessary to read a reference geometry.
@@ -2131,19 +2131,19 @@ public:
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
    * \return Compressible or incompressible.
    */
-  unsigned short GetMaterialCompressibility(void) const { return Kind_Material_Compress; }
+  STRUCT_COMPRESS GetMaterialCompressibility(void) const { return Kind_Material_Compress; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
    * \return Compressible or incompressible.
    */
-  unsigned short GetMaterialModel(void) const { return Kind_Material; }
+  STRUCT_MODEL GetMaterialModel(void) const { return Kind_Material; }
 
   /*!
    * \brief Geometric conditions for the structural solver.
    * \return Small or large deformation structural analysis.
    */
-  unsigned short GetGeometricConditions(void) const { return Kind_Struct_Solver; }
+  STRUCT_DEFORMATION GetGeometricConditions(void) const { return Kind_Struct_Solver; }
 
   /*!
    * \brief Get the reference length for computing moment (the default value is 1).
@@ -3650,7 +3650,7 @@ public:
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
    */
-  INC_DENSITYMODEL GetKind_DensityModel(void) const { return Kind_DensityModel; }
+  INC_DENSITYMODEL GetKind_DensityModel() const { return Kind_DensityModel; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
@@ -3662,7 +3662,7 @@ public:
    * \brief free stream option to initialize the solution
    * \return free stream option
    */
-  unsigned short GetKind_FreeStreamOption(void) const { return Kind_FreeStreamOption; }
+  FREESTREAM_OPTION GetKind_FreeStreamOption() const { return Kind_FreeStreamOption; }
 
   /*!
    * \brief free stream option to initialize the solution
@@ -3691,19 +3691,19 @@ public:
    * \brief Get the value of the viscosity model.
    * \return Viscosity model.
    */
-  unsigned short GetKind_ViscosityModel(void) const { return Kind_ViscosityModel; }
+  VISCOSITYMODEL GetKind_ViscosityModel() const { return Kind_ViscosityModel; }
 
   /*!
    * \brief Get the value of the thermal conductivity model.
    * \return Conductivity model.
    */
-  unsigned short GetKind_ConductivityModel(void) const { return Kind_ConductivityModel; }
+  CONDUCTIVITYMODEL GetKind_ConductivityModel() const { return Kind_ConductivityModel; }
 
   /*!
    * \brief Get the value of the turbulent thermal conductivity model.
    * \return Turbulent conductivity model.
    */
-  unsigned short GetKind_ConductivityModel_Turb(void) const { return Kind_ConductivityModel_Turb; }
+  CONDUCTIVITYMODEL_TURB GetKind_ConductivityModel_Turb() const { return Kind_ConductivityModel_Turb; }
 
   /*!
    * \brief Get the value of the constant viscosity.
@@ -4313,7 +4313,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
+  STRUCT_TIME_INT GetKind_TimeIntScheme_FEA(void) const { return Kind_TimeIntScheme_FEA; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4340,7 +4340,7 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_SpaceIteScheme_FEA(void) const { return Kind_SpaceIteScheme_FEA; }
+  STRUCT_SPACE_ITE GetKind_SpaceIteScheme_FEA(void) const { return Kind_SpaceIteScheme_FEA; }
 
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
@@ -6651,7 +6651,7 @@ public:
    * \param[in] val_index - Index corresponding to the boundary.
    * \return The wall type and roughness height.
    */
-  pair<unsigned short, su2double> GetWallRoughnessProperties(string val_marker) const;
+  pair<WALL_TYPE,su2double> GetWallRoughnessProperties(string val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
@@ -8635,7 +8635,7 @@ public:
    * \brief Get the relaxation method chosen for the simulation
    * \return Value of the relaxation method
    */
-  unsigned short GetRelaxation_Method_FSI(void) const { return Kind_BGS_RelaxMethod; }
+  BGS_RELAXATION GetRelaxation_Method_BGS(void) const { return Kind_BGS_RelaxMethod; }
 
   /*!
    * \brief Get the kind of Riemann solver for the DG method (FEM flow solver).
@@ -8699,7 +8699,7 @@ public:
   /*!
    * \brief Get the interpolation method used for matching between zones.
    */
-  unsigned short GetKindInterpolation(void) const { return Kind_Interpolation; }
+  INTERFACE_INTERPOLATOR GetKindInterpolation(void) const { return Kind_Interpolation; }
 
   /*!
    * \brief Get option of whether to use conservative interpolation between zones.
@@ -8709,7 +8709,7 @@ public:
   /*!
    * \brief Get the basis function to use for radial basis function interpolation for FSI.
    */
-  unsigned short GetKindRadialBasisFunction(void) const { return Kind_RadialBasisFunction; }
+  RADIAL_BASIS GetKindRadialBasisFunction(void) const { return Kind_RadialBasisFunction; }
 
   /*!
    * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.
@@ -9010,13 +9010,13 @@ public:
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
-  unsigned short GetKind_RadiationModel(void) const { return Kind_Radiation; }
+  RADIATION_MODEL GetKind_RadiationModel(void) const { return Kind_Radiation; }
 
   /*!
    * \brief Get the Kind of P1 initialization method applied.
    * \return Kind of P1 initialization method used.
    */
-  unsigned short GetKind_P1_Init(void) const { return Kind_P1_Init; }
+  P1_INIT GetKind_P1_Init(void) const { return Kind_P1_Init; }
 
   /*!
    * \brief Get the value of the absorption coefficient of the medium.

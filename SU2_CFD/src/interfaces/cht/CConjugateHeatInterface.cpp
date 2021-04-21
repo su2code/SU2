@@ -131,13 +131,16 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
       switch (donor_config->GetKind_ConductivityModel()) {
 
-        case CONSTANT_CONDUCTIVITY:
+        case CONDUCTIVITYMODEL::CONSTANT:
           thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
           break;
 
-        case CONSTANT_PRANDTL:
+        case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
           thermal_conductivity = thermal_conductivityND*donor_config->GetGas_Constant_Ref()
                                  *donor_config->GetViscosity_Ref();
+          break;
+
+        default:
           break;
       }
 

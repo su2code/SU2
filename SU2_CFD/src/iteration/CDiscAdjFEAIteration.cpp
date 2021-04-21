@@ -174,7 +174,7 @@ void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration
 
 void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                         unsigned short val_iZone, unsigned short val_iInst,
-                                        unsigned short kind_recording) {
+                                        RECORDING kind_recording) {
   /*--- Prepare for recording by resetting the solution to the initial converged solution ---*/
 
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->SetRecording(geometry[val_iZone][val_iInst][MESH_0],
@@ -182,8 +182,8 @@ void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geome
 }
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                         unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  if (kind_recording != MESH_COORDS) {
+                                         unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  if (kind_recording != RECORDING::MESH_COORDS) {
     /*--- Register structural displacements as input ---*/
 
     solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -204,7 +204,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                            CConfig** config, unsigned short iZone, unsigned short iInst,
-                                           unsigned short kind_recording) {
+                                           RECORDING kind_recording) {
   auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
   auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
   auto structural_geometry = geometry[iZone][iInst][MESH_0];
@@ -212,7 +212,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
   /*--- Some numerics are only instanciated under these conditions ---*/
   const bool fsi = config[iZone]->GetFSI_Simulation() || config[iZone]->GetMultizone_Problem();
-  const bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
+  const bool nonlinear = config[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE;
   const bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   const bool element_based = dir_solver->IsElementBased() && nonlinear;
 
@@ -295,7 +295,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
   dir_solver->CompleteComms(structural_geometry, config[iZone], SOLUTION_FEA);
 
-  if (kind_recording == MESH_COORDS) {
+  if (kind_recording == RECORDING::MESH_COORDS) {
     structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
     structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
   }
@@ -312,7 +312,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   /*--- Topology optimization dependencies. ---*/
 
   /*--- We only differentiate wrt to this variable in the adjoint secondary recording. ---*/
-  if (config[iZone]->GetTopology_Optimization() && (kind_recording == MESH_COORDS)) {
+  if (config[iZone]->GetTopology_Optimization() && (kind_recording == RECORDING::MESH_COORDS)) {
     /*--- The filter may require the volumes of the elements. ---*/
     structural_geometry->SetElemVolume();
     /// TODO: Ideally there would be a way to capture this dependency without the `static_cast`, but
