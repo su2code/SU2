@@ -32,7 +32,7 @@
 CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    const CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
-  nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
+  nearly_incompressible = (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP);
 
   unsigned short iVar;
 
