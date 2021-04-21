@@ -38,8 +38,8 @@
 class CFlameletSolver: public CScalarSolver {
 private:
   CFluidModel *FluidModel;     /*!< \brief Fluid model for the scalar transport problem. */
-  vector<su2double> scalar_clipping_max;
-  vector<su2double> scalar_clipping_min;
+  //vector<su2double> scalar_clipping_max;
+  //vector<su2double> scalar_clipping_min;
   unsigned long n_table_misses; /*!< \brief number of times we failed to do a lookup from the table */
 
 public:
@@ -53,7 +53,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] FluidModel
    */
   CFlameletSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
@@ -72,21 +71,27 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container,
-                     CConfig *config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem,
-                     bool Output) override;
+  void Preprocessing(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CConfig *config,
+                     unsigned short iMesh,
+                     unsigned short iRKStep,
+                     unsigned short RunTime_EqSystem,
+                     bool Output);
   
   /*!
    * \brief Post-processing routine for the passive scalar model.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container,
-                      CConfig *config, unsigned short iMesh) override;
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh);
   
-  /*!
+    /*!
    * \brief Compute the primitive variables (diffusivities)
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -103,7 +108,7 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
-                           CConfig *config, unsigned long ExtIter) override;
+                           CConfig *config, unsigned long ExtIter);
   
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -111,14 +116,13 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
+  void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
@@ -127,11 +131,6 @@ public:
                        CNumerics     **numerics_container,
                        CConfig  *config,
                        unsigned short  iMesh) override;
-
-  //inline su2double SetScalar_Clipping_Max(vector<su2double> val_clip) {scalar_clipping_max = val_clip;}
-  //inline su2double SetScalar_Clipping_Min(vector<su2double> val_clip) {scalar_clipping_min = val_clip;}
-  //inline su2double GetScalar_Clipping_Max(int val_ivar) {return scalar_clipping_max[val_ivar];}
-  //inline su2double GetScalar_Clipping_Min(int val_ivar) {return scalar_clipping_min[val_ivar];}
 
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -142,9 +141,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container,
-                          CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker) override;
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config,
+                          unsigned short val_marker);
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -155,9 +157,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CGeometry *geometry, CSolver **solver_container,
-                CNumerics *conv_numerics, CNumerics *visc_numerics,
-                CConfig *config, unsigned short val_marker) override;
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker);
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -168,9 +173,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
-                 CNumerics *conv_numerics, CNumerics *visc_numerics,
-                 CConfig *config, unsigned short val_marker) override;
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker);
 
   inline void SetNTableMisses(unsigned short val_n_table_misses) override { n_table_misses = val_n_table_misses; }
 

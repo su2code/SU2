@@ -66,6 +66,8 @@ protected:
 
   inline su2double GetScalarSources(int i_scalar) { return source_scalar.at(i_scalar); }
 
+  inline su2double *GetScalarSources(){ return &source_scalar[0]; }
+
   inline unsigned short GetNScalars() { return n_scalars; }
 
   inline su2double GetScalarLookups(int i_scalar) { return lookup_scalar.at(i_scalar); }

@@ -38,18 +38,30 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
   viscous = config->GetViscous();
   implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
 
-  Residual = new su2double [nVar];
-  Jacobian_i = new su2double* [nVar];
+  Residual       = new su2double [nVar];
+  scalar_sources = new su2double [nVar];
+  Jacobian_i     = new su2double* [nVar];
+
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar] ();
   }
+}
 
+CSourcePieceWise_transportedScalar_general::~CSourcePieceWise_transportedScalar_general(void){
+  delete [] Residual;
+   if (Jacobian_i != nullptr) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      delete [] Jacobian_i[iVar];
+    }
+    delete [] Jacobian_i;
+  }
 }
 
 CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(scalar_sources, nVar);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); 
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
@@ -73,12 +85,15 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
     //Eddy_Viscosity_i = V_i[nDim+6];
   }
 
-  for (auto iVar = 0; iVar < nVar; iVar++){
-    Residual[iVar] = 0.0;
-    for (auto jVar = 0; jVar < nVar; jVar++){
-      Jacobian_i[iVar][jVar] = 0.0;  
+  /*--- Implicit part for production term (to do). ---*/
+  for (auto i_var = 0; i_var < nVar; i_var++) {
+    Residual[i_var] = scalar_sources[i_var] * Volume;
+    for (auto j_var = 0; j_var < nVar; j_var++) {
+      Jacobian_i[i_var][j_var] = 0.0;
     }
   }
+  // FIXME dan: add source term derivatives to jacobian
+  //Jacobian[i][j] = dSource_i / dScalar_j
 
    /*--- Add the production terms to the residuals. ---*/
 

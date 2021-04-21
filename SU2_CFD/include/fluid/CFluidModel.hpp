@@ -128,7 +128,13 @@ class CFluidModel {
   /*!
    * \brief Get the source term of the transported scalar
    */
-  virtual inline su2double GetScalarSources(int){ return 37; }
+  virtual inline su2double* GetScalarSources(){ return nullptr; }
+
+    /*!
+   * \brief Get the source term of the transported scalar
+   * \param[in] val_ix - Index of the scalar.
+   */
+  virtual inline su2double GetScalarSources(int val_ix){ return 37; }
   
   /*!
   * \brief Get the number of transported scalars
@@ -177,6 +183,7 @@ class CFluidModel {
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt;
   }
+
 /*!
    * \brief Get fluid mass diffusivity.
    */
@@ -188,6 +195,7 @@ class CFluidModel {
     //dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return mass_diffusivity;
   }
+  
   /*!
    * \brief Get fluid pressure partial derivative.
    */

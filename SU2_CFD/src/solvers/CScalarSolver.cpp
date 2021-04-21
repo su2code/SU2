@@ -456,8 +456,10 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
       // nijso: check underrelaxation
       for (unsigned short iVar = 0u; iVar < nVar; iVar++) {
         //nodes->AddSolution(iPoint,iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+        // FIXME dan: Underrelaxation is turned off here beacuse problems.
         nodes->AddConservativeSolution(iPoint, iVar,
-          nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+          //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
+          LinSysSol(iPoint,iVar),
           density, density_old, lowerlimit[iVar], upperlimit[iVar]);
       }
     }                

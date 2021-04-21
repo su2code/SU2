@@ -86,7 +86,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (passive scalar model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
@@ -428,10 +428,15 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous        = config->GetViscous();
 
+  vector<su2double> zero_sources(nVar,0.);
+
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Set scalar sources to zero ---*/
+  numerics->SetScalarSources(&zero_sources[0]);
 
   /*--- Loop over all points. ---*/
 

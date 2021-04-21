@@ -158,8 +158,8 @@ protected:
   *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
   *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
   su2double
-  *ScalarVar_i,
-  *ScalarVar_j;
+  *ScalarVar_i,  /*!< \brief Vector of scalar variables at point i. */
+  *ScalarVar_j;  /*!< \brief Vector of scalar variables at point j. */
   su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -410,17 +410,12 @@ public:
   }
 
   /*!
-   * \brief Set the values of the transported scalars.
-   * \param[in] val_scalar_i - Value of the scalar at point i.
-   * \param[in] val_ix_i - Index of the scalar at point i.
-   * \param[in] val_scalar_j - Value of the scalar at point j.
-   * \param[in] val_ix_j - Index of the scalar at point j.
+   * \brief Set the values of the volumetric scalar sources.
+   * \param[in] val_scalar_sources - Values of the scalar sources.
    */
-  inline void SetScalarVar(su2double val_scalar_i, int val_ix_i,
-                           su2double val_scalar_j, int val_ix_j) {
-    ScalarVar_i[val_ix_i] = val_scalar_i;
-    ScalarVar_j[val_ix_j] = val_scalar_j;
-  }
+  virtual void SetScalarSources(su2double *val_scalar_sources) {/* empty */}
+
+  virtual void SetSourcePV(su2double val_sourcepv) {}
 
   /*!
    * \brief Set the value of the turbulent variable.
@@ -449,8 +444,8 @@ public:
    * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
    */
   inline void SetScalarVarGradient(su2double **val_scalar_grad_i, su2double **val_scalar_grad_j) {
-  ScalarVar_Grad_i = val_scalar_grad_i;
-  ScalarVar_Grad_j = val_scalar_grad_j;
+    ScalarVar_Grad_i = val_scalar_grad_i;
+    ScalarVar_Grad_j = val_scalar_grad_j;
 }
 
   /*!

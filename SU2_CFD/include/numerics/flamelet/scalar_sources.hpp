@@ -42,6 +42,9 @@ class CSourcePieceWise_transportedScalar_general final : public CNumerics {
 private:
   su2double *Residual = nullptr;
   su2double **Jacobian_i = nullptr;
+  su2double *scalar_sources = nullptr;
+
+  su2double source_pv;
 
   bool incompressible;
   bool viscous;
@@ -125,5 +128,25 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
+
+    /*!
+   * \brief Set the value of the progress variable source term for the flamelet model.
+   * \param[in] val_sourcepv_i - Value of the source term at point i.
+   * \param[in] val_sourcepv_j - Value of the source term at point j.
+   */
+  inline void SetScalarSources(su2double *val_scalar_sources) override {
+    for (auto i_var=0u; i_var < nVar; i_var++)
+      scalar_sources[i_var] = val_scalar_sources[i_var];
+  }
+
+  inline void SetSourcePV(su2double val_sourcepv) override {
+    source_pv = val_sourcepv;
+  }
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_transportedScalar_general(void) override;
+
 
 };

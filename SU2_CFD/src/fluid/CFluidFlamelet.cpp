@@ -92,7 +92,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
 
   /*--- we clip at a small positive value --- */
-  if (table_sources[I_SRC_TOT_PROG_VAR]<1.0e-6){
+  if (source_scalar.at(I_PROG_VAR)<1.0e-6){
   // cout << "source term < 0!! (c,h)= "<<prog<<", "<<enth << endl;
   /* --- clip negative values of progress variable source term (this should not happen for a good lookup table) ---*/
     source_scalar.at(I_PROG_VAR) = 0.0;

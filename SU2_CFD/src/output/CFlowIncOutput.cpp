@@ -483,12 +483,14 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("ENTHALPY"         , "Enthalpy"         , "SOLUTION", "Enthalpy solution"         );
       AddVolumeOutput("Y_CO"             , "Y_CO"             , "SOLUTION", "CO Mass fraction solution" );
       AddVolumeOutput("Y_NOX"            , "Y_NOx"            , "SOLUTION", "NOx Mass fraction solution");
+      AddVolumeOutput("DIFFUSIVITY_PV"   , "Diffusivity_PV"   , "SOLUTION", "Diffusivity of the progress variable");
+      AddVolumeOutput("DIFFUSIVITY_ENTH" , "Diffusivity_Enth" , "SOLUTION", "Diffusivity of the enthalpy");
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
         if (config->GetLookupName(i_lookup)!="NULL"){ 
           string strname1="lookup_"+config->GetLookupName(i_lookup);
           AddVolumeOutput(config->GetLookupName(i_lookup),strname1,"LOOKUP",config->GetLookupName(i_lookup));
         }
-      AddVolumeOutput("TABLE_MISS"       , "Table_miss"       , "SOLUTION", "Lookup table miss");
+      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
       
 
       break;
@@ -714,7 +716,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   
   // Solution data
   su2double *scalars;
-  unsigned long table_miss;
+  unsigned long table_misses;
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
@@ -724,15 +726,17 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("ENTHALPY"         , iPoint, Node_Scalar->GetSolution(iPoint, I_ENTHALPY));
       SetVolumeOutputValue("Y_CO"             , iPoint, Node_Scalar->GetSolution(iPoint, I_CO      ));
       SetVolumeOutputValue("Y_NOX"            , iPoint, Node_Scalar->GetSolution(iPoint, I_NOX     ));
+      SetVolumeOutputValue("DIFFUSIVITY_PV"   , iPoint, Node_Scalar->GetDiffusivity(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("DIFFUSIVITY_ENTH" , iPoint, Node_Scalar->GetDiffusivity(iPoint, I_ENTHALPY));
 
       // update lookup
-      scalars = Node_Scalar->GetSolution(iPoint);
-      table_miss = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
+      scalars      = Node_Scalar->GetSolution(iPoint);
+      table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarLookups(scalars);
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
         if (config->GetLookupName(i_lookup)!="NULL")
           SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarLookups(i_lookup));
       }
-      SetVolumeOutputValue("TABLE_MISS"       , iPoint, (su2double)table_miss);
+      SetVolumeOutputValue("TABLE_MISSES"       , iPoint, (su2double)table_misses);
 
       break;
     case NO_SCALAR_MODEL:
@@ -744,10 +748,12 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     case PASSIVE_SCALAR:
       break;
     case PROGRESS_VARIABLE:
-      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, Node_Scalar->GetScalarSources(iPoint, I_PROG_VAR));
-      SetVolumeOutputValue("SOURCE_ENTHALPY"         , iPoint, Node_Scalar->GetScalarSources(iPoint, I_ENTHALPY));
-      SetVolumeOutputValue("SOURCE_Y_CO"             , iPoint, Node_Scalar->GetScalarSources(iPoint, I_CO      ));
-      SetVolumeOutputValue("SOURCE_Y_NOX"            , iPoint, Node_Scalar->GetScalarSources(iPoint, I_NOX     ));
+      scalars      = Node_Scalar->GetSolution(iPoint);
+      table_misses = solver[FLOW_SOL]->GetFluidModel()->SetScalarSources(scalars);
+      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_PROG_VAR));
+      SetVolumeOutputValue("SOURCE_ENTHALPY"         , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_ENTHALPY));
+      SetVolumeOutputValue("SOURCE_Y_CO"             , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_CO      ));
+      SetVolumeOutputValue("SOURCE_Y_NOX"            , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetScalarSources(I_NOX     ));
       break;
     case NO_SCALAR_MODEL:
       break;

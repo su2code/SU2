@@ -74,10 +74,14 @@ CNumerics::ResidualType<> CAvgGrad_transportedScalar::ComputeResidual(const CCon
   unsigned short iVar, iDim;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(Coord_i, nDim);
+  AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
+  AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
+
   if (correct_gradient) {
     AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
@@ -162,7 +166,7 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
       (rho * D_{i,m} + mu_t/Sc_t ) * grad(Y_i))
       with D_{i,m} the mass diffusion coefficient of species i into the mixture m
     */
-    su2double Mass_Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
+    su2double Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
 
     su2double Mass_Diffusivity_Tur = 0.0;
     if (inc_rans) 
