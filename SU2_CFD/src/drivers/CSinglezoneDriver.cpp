@@ -222,7 +222,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
                                  solver_container[ZONE_0][INST_0][MESH_0],
                                  numerics_container[ZONE_0][INST_0][MESH_0],
-                                 config_container[ZONE_0], NONE);
+                                 config_container[ZONE_0], RECORDING::CLEAR_INDICES);
 
   /*--- Update the wall distances if the mesh was deformed. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() ||

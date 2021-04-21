@@ -74,6 +74,9 @@ protected:
 
   string filename;  /*!< \brief File name of the marker profile file. */
 
+  vector<string> columnNames; /*!< \brief string containing all the names of the columns, one for each marker */
+  vector<string> columnValues; /*!< \brief initial values for the profile, in string format */
+
   vector<string> profileTags;  /*!< \brief Auxiliary structure for holding the string names of the markers in a profile file. */
 
   vector<unsigned long> numberOfRowsInProfile;  /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in a profile file. */
@@ -113,7 +116,9 @@ public:
                           CConfig        *val_config,
                           string         val_filename,
                           unsigned short val_kind_marker,
-                          unsigned short val_number_vars);
+                          unsigned short val_number_vars,
+                          vector<string> val_columnNames,
+                          vector<string> val_columnValues);
 
   /*!
    * \brief Destructor of the CMeshReaderFVM class.

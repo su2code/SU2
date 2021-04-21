@@ -149,13 +149,13 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 }
 
 void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNumerics*** numerics, CConfig* config,
-                                     unsigned short kind_recording) {
+                                     RECORDING kind_recording) {
   if (!config->GetDeform_Mesh()) return;
 
   /*--- Perform the elasticity mesh movement ---*/
 
   bool wasActive = false;
-  if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
+  if ((kind_recording != RECORDING::MESH_DEFORM) && !config->GetMultizone_Problem()) {
     /*--- In a primal run, AD::TapeActive returns a false ---*/
     /*--- In any other recordings, the tape is passive during the deformation. ---*/
     wasActive = AD::BeginPassive();

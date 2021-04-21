@@ -149,7 +149,7 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] kind_recording - Kind of recording, either FEM_VARIABLES or MESH_COORDS
    */
   void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                     unsigned short iInst, unsigned short kind_recording) override;
+                     unsigned short iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Registers all output variables of the FEM iteration.
@@ -184,7 +184,7 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
   void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, unsigned short kind_recording) override;
+                    unsigned short val_iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)
@@ -197,6 +197,6 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                       unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
+                       unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
 };
