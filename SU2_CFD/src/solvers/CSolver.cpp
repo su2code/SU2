@@ -3373,8 +3373,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;        }
     } else {
-      INLET_TYPE Kind_Inc_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
-      switch (Kind_Inc_Inlet) {
+      switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/  
         case INLET_TYPE::VELOCITY_INLET:
           columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24); 
