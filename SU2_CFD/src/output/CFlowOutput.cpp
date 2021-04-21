@@ -818,6 +818,38 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
 }
 
+void CFlowOutput::AddRigidMotionOutput(CConfig *config){
+  unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
+
+  switch (Kind_Grid_Movement) {
+    case RIGID_MOTION:
+      AddHistoryOutput("DISPLACEMENT_X", "Displacement_x", ScreenOutputFormat::FIXED, "RIGID_MOTION", "X-displacement of the grid");
+      AddHistoryOutput("DISPLACEMENT_Y", "Displacement_y", ScreenOutputFormat::FIXED, "RIGID_MOTION", "Y-displacement of the grid");
+      AddHistoryOutput("DISPLACEMENT_Z", "Displacement_z", ScreenOutputFormat::FIXED, "RIGID_MOTION", "Z-displacement of the grid");
+      AddHistoryOutput("ROTATION_X", "Rotation_x", ScreenOutputFormat::FIXED, "RIGID_MOTION", "Rotation of the grid about the x-axis");
+      AddHistoryOutput("ROTATION_Y", "Rotation_y", ScreenOutputFormat::FIXED, "RIGID_MOTION", "Rotation of the grid about the y-axis");
+      AddHistoryOutput("ROTATION_Z", "Rotation_z", ScreenOutputFormat::FIXED, "RIGID_MOTION", "Rotation of the grid about the z-axis");
+      break;
+  }
+}
+
+void CFlowOutput::SetRigidMotion(CConfig *config, CGeometry *geometry) {
+  unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
+  vector<su2double> Rotation = geometry->GetRotation();
+  vector<su2double> Displacement = geometry->GetTranslation();
+
+  switch (Kind_Grid_Movement) {
+    case RIGID_MOTION:
+      SetHistoryOutputValue("DISPLACEMENT_X", Displacement[0]);
+      SetHistoryOutputValue("DISPLACEMENT_Y", Displacement[1]);
+      SetHistoryOutputValue("DISPLACEMENT_Z", Displacement[2]);
+      SetHistoryOutputValue("ROTATION_X", Rotation[0]);
+      SetHistoryOutputValue("ROTATION_Y", Rotation[1]);
+      SetHistoryOutputValue("ROTATION_Z", Rotation[2]);
+      break;
+  }
+}
+
 su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
 
   /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/

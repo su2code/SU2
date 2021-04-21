@@ -94,6 +94,20 @@ protected:
   void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Add rigid motion output fields
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddRigidMotionOutput(CConfig *config);
+
+  /*!
+   * \brief Set rigid motion output field values
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRigidMotion(CConfig *config, CGeometry *geometry);
+
+  /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
    * \param[in] VelocityGradient - Velocity gradients
    * \return Value of the Q criteration at the node

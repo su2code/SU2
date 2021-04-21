@@ -126,6 +126,11 @@ protected:
   su2double **CustomBoundaryTemperature{nullptr};
   su2double **CustomBoundaryHeatFlux{nullptr};
 
+  /*--- Rotation and translation information ---*/
+
+  vector<su2double> Rotation{0.0, 0.0, 0.0};
+  vector<su2double> Translation{0.0, 0.0, 0.0};
+
   /*--- Create vectors and distribute the values among the different planes queues ---*/
 
   vector<vector<su2double> > Xcoord_plane;     /*!< \brief Vector containing x coordinates of new points appearing on a single plane */
@@ -1708,5 +1713,36 @@ public:
    * \return A pointer to the reference node coordinate vector.
    */
   inline virtual const su2double* GetStreamwise_Periodic_RefNode(void) const { return nullptr; }
+
+  /*!
+   * \brief Add rotation angles to current orientation.
+   * \param[in] val_* - rotation angles about x, y, and z axes
+   */
+  inline void AddRotation(su2double val_dtheta, su2double val_dphi, su2double val_dpsi) {
+    Rotation[0] += val_dtheta;
+    Rotation[1] += val_dphi;
+    Rotation[2] += val_dpsi;
+  }
+
+  /*!
+   * \brief Add translation values to current orientation.
+   * \param[in] val_translation - translation values in the x, y, and z directions
+   */
+  inline void AddTranslation(su2double* val_translation) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      Translation[iDim] += val_translation[iDim];
+  }
+
+  /*!
+   * \brief Get current rotation angles of the grid.
+   * \param[out] Rotation - rotation angles about the x, y, and z axes
+   */
+  inline vector<su2double> GetRotation() const {return Rotation;}
+
+  /*!
+   * \brief Get current translation displacement of the grid.
+   * \param[in] Translation - translational displacements in the x, y, and z directions
+   */
+  inline vector<su2double> GetTranslation() const {return Translation;}
 };
 

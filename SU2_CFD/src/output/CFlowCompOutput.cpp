@@ -279,6 +279,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   Add_CpInverseDesignOutput(config);
 
+  /*--- Add rigid motion fields ---*/
+
+  AddRigidMotionOutput(config);
+
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -714,6 +718,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(flow_solver, geometry, config);
+
+  /*--- Set rigid motion fields ---*/
+
+  SetRigidMotion(config, geometry);
 
 }
 

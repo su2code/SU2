@@ -1909,6 +1909,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  su2double DEG2RAD = PI_NUMBER/180.0;
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
@@ -2056,6 +2057,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
+  geometry->AddRotation(dtheta/DEG2RAD, dphi/DEG2RAD, dpsi/DEG2RAD);
 
 }
 
@@ -2225,6 +2227,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
+  geometry->AddRotation(dtheta/DEG2RAD, dphi/DEG2RAD, dpsi/DEG2RAD);
 
 }
 
@@ -2358,6 +2361,10 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
 
   UpdateDualGrid(geometry, config);
 
+  for (iDim = 0; iDim < nDim; iDim++)
+    deltaX[iDim] = deltaX[iDim]*Lref;
+  geometry->AddTranslation(deltaX);
+
 }
 
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
@@ -2484,6 +2491,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
+  for (iDim = 0; iDim < nDim; iDim++)
+    deltaX[iDim] = deltaX[iDim]*Lref;
+  geometry->AddTranslation(deltaX);
 
 }
 

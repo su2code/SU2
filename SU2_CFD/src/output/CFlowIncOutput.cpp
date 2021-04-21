@@ -235,6 +235,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   AddAerodynamicCoefficients(config);
 
+  /*--- Add rigid motion fields ---*/
+
+  AddRigidMotionOutput(config);
+
 }
 
 void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -358,6 +362,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   /*--- Set rotating frame coefficients --- */
 
   SetRotatingFrameCoefficients(config, flow_solver);
+
+  /*--- Set rigid motion fields ---*/
+
+  SetRigidMotion(config, geometry);
 
 }
 
