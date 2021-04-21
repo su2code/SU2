@@ -401,7 +401,7 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
 
     /*--- If mesh deformation defined in config, extract here as well ---*/
     if (config[iZone]->GetDeform_Mesh()) {
-      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
+      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
 
       solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
     }

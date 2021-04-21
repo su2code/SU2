@@ -163,7 +163,7 @@ void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                            config[val_iZone]);
+                                                                            config[val_iZone], CrossTerm);
 
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0],
                                                                              config[val_iZone]);

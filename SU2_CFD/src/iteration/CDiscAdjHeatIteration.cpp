@@ -171,7 +171,7 @@ void CDiscAdjHeatIteration::Iterate(COutput* output, CIntegration**** integratio
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
   solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
-                                                                             config[val_iZone]);
+                                                                             config[val_iZone], CrossTerm);
 }
 
 void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,

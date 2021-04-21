@@ -119,7 +119,7 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
   SU2_OMP_BARRIER
 }
 
-void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
@@ -169,7 +169,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CS
   const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/
-  ExtractAdjoint_Solution(geometry, config);
+  ExtractAdjoint_Solution(geometry, config, false);
 
   /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
   ExtractAdjoint_Variables(geometry, config);
