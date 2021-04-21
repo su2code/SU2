@@ -3337,7 +3337,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
  
   // create vector of column names
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     /*--- Skip if this is the wrong type of marker. ---*/
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
@@ -3359,9 +3359,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
     if(nDim==3) columnName << "COORD-Z    " << setw(24); 
     
-    if (compressible){
-      INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
-      switch (Kind_Inlet) {
+    if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+      switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
           columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
