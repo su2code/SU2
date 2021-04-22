@@ -173,16 +173,21 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
   unsigned long iVertex, kVertex;
 
-  unsigned long *uptr, nVertex, iDim, nDim, iPoint;
+  unsigned long *uptr, nVertex, nElems, iDim, nDim, iPoint;
 
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
 
   nDim = geom->GetnDim();
 
-  if( val_marker != -1 )
+  /*--- If this zone has no parts of the marker, it will not participate
+   * in the first part of this function (collection). ---*/
+  if( val_marker != -1 ){
     nVertex  = geom->GetnVertex(  val_marker  );
-  else
+    nElems   = geom->GetnElem_Bound(val_marker);
+  } else {
     nVertex  = 0;
+    nElems   = 0;
+  }
 
   /*--- Get the number of domain vertices on the marker, and a mapping
   * (iVertex) -> (iLocalVertex, non-domain points being ignored). ---*/
@@ -220,7 +225,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   }
 
   /*--- Define the neighbors map. ---*/
-  for(unsigned long iElem=0; iElem < geom->nElem_Bound[val_marker]; iElem++){
+  for(unsigned long iElem=0; iElem < nElems; iElem++){
     CPrimalGrid* elem = geom->bound[val_marker][iElem];
     for(unsigned short iNode=0; iNode<elem->GetnNodes(); iNode++){
       iPoint = elem->GetNode(iNode);
