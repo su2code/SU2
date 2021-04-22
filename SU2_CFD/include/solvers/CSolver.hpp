@@ -122,6 +122,8 @@ protected:
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
+  vector<su2double> TurboPrimitive;
+
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
@@ -4433,6 +4435,13 @@ public:
    * \return Should return true if "yes", false if "no".
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
+
+  /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {return TurboPrimitive;}
 
 protected:
   /*!

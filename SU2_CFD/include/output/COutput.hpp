@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "../objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 class CGeometry;
 class CSolver;
@@ -301,7 +302,7 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetTurboPerformance_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerformance> TurboPerf, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
 
   /*!

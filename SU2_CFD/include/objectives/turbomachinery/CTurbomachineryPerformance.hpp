@@ -49,9 +49,7 @@ class CTurbomachineryPrimitiveState {
   public:
   CTurbomachineryPrimitiveState();
 
-  CTurbomachineryPrimitiveState(su2double density,
-                                su2double pressure,
-                                su2double *velocity,
+  CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitives,
                                 unsigned short nDim,
                                 su2double tangVel);
 
