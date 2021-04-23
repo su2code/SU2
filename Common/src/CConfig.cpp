@@ -5004,9 +5004,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") monoatomic = true;
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  if(OptionIsSet("CONV_CRITERIA")) {
-    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
+    cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
+            "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
   }
 }
 

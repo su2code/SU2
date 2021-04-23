@@ -108,7 +108,7 @@ struct CSysMatrixComms {
 template<class ScalarType>
 class CSysMatrix {
 private:
-  friend class CSysMatrixComms;
+  friend struct CSysMatrixComms;
 
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
