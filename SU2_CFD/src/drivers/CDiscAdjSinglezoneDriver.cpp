@@ -68,12 +68,18 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
       direct_iteration = new CTurboIteration(config);
       output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
-    else       direct_iteration = CIterationFactory::CreateIteration(EULER, config);
-    if (compressible) direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
-    else direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim);
+    else { direct_iteration = CIterationFactory::CreateIteration(EULER, config); }
+
+    if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
+      direct_output = COutputFactory::CreateOutput(EULER, config, nDim);
+    }
+    else { direct_output =  COutputFactory::CreateOutput(INC_EULER, config, nDim); }
+
     MainVariables = RECORDING::SOLUTION_VARIABLES;
-    if (mesh_def) SecondaryVariables = RECORDING::MESH_DEFORM;
-    else          SecondaryVariables = RECORDING::MESH_COORDS;
+    if (config->GetDeform_Mesh()) {
+      SecondaryVariables = RECORDING::MESH_DEFORM;
+    }
+    else { SecondaryVariables = RECORDING::MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
     break;
 
