@@ -247,105 +247,77 @@ static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
 };
 
 /*!
- * \brief Types of fluid solvers
- */
-enum ENUM_FSI_FLUID_PROBLEM {
-  NO_SOLVER_FFSI = 0,      /*!< \brief Definition of no solver. */
-  EULER_FFSI = 1,          /*!< \brief Euler equations for the FSI problem */
-  NAVIER_STOKES_FFSI = 2,  /*!< \brief NS equations for the FSI problem */
-  RANS_FFSI = 3            /*!< \brief RANS equations for the FSI problem */
-};
-static const MapType<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = {
-  MakePair("NONE", NO_SOLVER_FFSI)
-  MakePair("EULER", EULER_FFSI)
-  MakePair("NAVIER_STOKES", NAVIER_STOKES_FFSI)
-  MakePair("RANS", RANS_FFSI)
-};
-
-/*!
- * \brief Types of structural solvers
- */
-enum ENUM_FSI_STRUC_PROBLEM {
-  NO_SOLVER_SFSI = 0,           /*!< \brief Definition of no solver. */
-  FEM_ELASTICITY_SFSI = 9,      /*!< \brief Nonlinear elasticity equations for the FSI problem */
-};
-static const MapType<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = {
-  MakePair("NONE", NO_SOLVER_SFSI)
-  MakePair("ELASTICITY", FEM_ELASTICITY_SFSI)
-};
-
-/*!
  * \brief Material geometric conditions
  */
-enum ENUM_STRUCT_SOLVER {
-  SMALL_DEFORMATIONS = 0,       /*!< \brief Definition of linear elastic material. */
-  LARGE_DEFORMATIONS = 1,       /*!< \brief Definition of Neo-Hookean material. */
+enum class STRUCT_DEFORMATION {
+  SMALL,       /*!< \brief Definition of linear elastic material. */
+  LARGE,       /*!< \brief Definition of Neo-Hookean material. */
 };
-static const MapType<string, ENUM_STRUCT_SOLVER> Struct_Map = {
-  MakePair("SMALL_DEFORMATIONS", SMALL_DEFORMATIONS)
-  MakePair("LARGE_DEFORMATIONS", LARGE_DEFORMATIONS)
+static const MapType<string, STRUCT_DEFORMATION> Struct_Map = {
+  MakePair("SMALL_DEFORMATIONS", STRUCT_DEFORMATION::SMALL)
+  MakePair("LARGE_DEFORMATIONS", STRUCT_DEFORMATION::LARGE)
 };
 
 /*!
  * \brief Material model
  */
-enum ENUM_MATERIAL_MODEL {
-  LINEAR_ELASTIC = 0,   /*!< \brief Definition of linear elastic material. */
-  NEO_HOOKEAN = 1,      /*!< \brief Definition of Neo-Hookean material. */
-  KNOWLES = 2,          /*!< \brief Definition of Knowles stored-energy potential */
-  IDEAL_DE = 3          /*!< \brief Definition of ideal Dielectric Elastomer */
+enum class STRUCT_MODEL {
+  LINEAR_ELASTIC,   /*!< \brief Definition of linear elastic material. */
+  NEO_HOOKEAN,      /*!< \brief Definition of Neo-Hookean material. */
+  KNOWLES,          /*!< \brief Definition of Knowles stored-energy potential */
+  IDEAL_DE,         /*!< \brief Definition of ideal Dielectric Elastomer */
 };
-static const MapType<string, ENUM_MATERIAL_MODEL> Material_Map = {
-  MakePair("LINEAR_ELASTIC", LINEAR_ELASTIC)
-  MakePair("NEO_HOOKEAN", NEO_HOOKEAN)
-  MakePair("KNOWLES", KNOWLES)
-  MakePair("IDEAL_DE", IDEAL_DE)
+static const MapType<string, STRUCT_MODEL> Material_Map = {
+  MakePair("LINEAR_ELASTIC", STRUCT_MODEL::LINEAR_ELASTIC)
+  MakePair("NEO_HOOKEAN", STRUCT_MODEL::NEO_HOOKEAN)
+  MakePair("KNOWLES", STRUCT_MODEL::KNOWLES)
+  MakePair("IDEAL_DE", STRUCT_MODEL::IDEAL_DE)
 };
 
 /*!
  * \brief Material compressibility
  */
-enum ENUM_MAT_COMPRESS {
-  COMPRESSIBLE_MAT = 0,           /*!< \brief Definition of compressible material. */
-  NEARLY_INCOMPRESSIBLE_MAT = 1,  /*!< \brief Definition of nearly incompressible material. */
+enum class STRUCT_COMPRESS {
+  COMPRESSIBLE,     /*!< \brief Definition of compressible material. */
+  NEARLY_INCOMP,    /*!< \brief Definition of nearly incompressible material. */
 };
-static const MapType<string, ENUM_MAT_COMPRESS> MatComp_Map = {
-  MakePair("COMPRESSIBLE", COMPRESSIBLE_MAT)
-  MakePair("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
+static const MapType<string, STRUCT_COMPRESS> MatComp_Map = {
+  MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
+  MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
 };
 
 /*!
  * \brief Types of interpolators
  */
-enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR = 0,      /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1,         /*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
-  WEIGHTED_AVERAGE = 3,      /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
-  RADIAL_BASIS_FUNCTION = 4, /*!< \brief Radial basis function interpolation. */
+enum class INTERFACE_INTERPOLATOR {
+  NEAREST_NEIGHBOR,      /*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC,         /*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
+  WEIGHTED_AVERAGE,      /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
+  RADIAL_BASIS_FUNCTION, /*!< \brief Radial basis function interpolation. */
 };
-static const MapType<string, ENUM_INTERPOLATOR> Interpolator_Map = {
-  MakePair("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-  MakePair("ISOPARAMETRIC",    ISOPARAMETRIC)
-  MakePair("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE)
-  MakePair("RADIAL_BASIS_FUNCTION", RADIAL_BASIS_FUNCTION)
+static const MapType<string, INTERFACE_INTERPOLATOR> Interpolator_Map = {
+  MakePair("NEAREST_NEIGHBOR", INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR)
+  MakePair("ISOPARAMETRIC",    INTERFACE_INTERPOLATOR::ISOPARAMETRIC)
+  MakePair("WEIGHTED_AVERAGE", INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE)
+  MakePair("RADIAL_BASIS_FUNCTION", INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION)
 };
 
 /*!
  * \brief Types of radial basis functions
  */
-enum ENUM_RADIALBASIS {
-  WENDLAND_C2 = 0,        /*!< \brief Wendland C2 radial basis function. */
-  INV_MULTI_QUADRIC = 1,  /*!< \brief Inversed multi quartic biharmonic spline. */
-  GAUSSIAN = 2,           /*!< \brief Gaussian basis function. */
-  THIN_PLATE_SPLINE = 3,  /*!< \brief Thin plate spline. */
-  MULTI_QUADRIC = 4,      /*!< \brief Multi quartic biharmonic spline. */
+enum class RADIAL_BASIS {
+  WENDLAND_C2,        /*!< \brief Wendland C2 radial basis function. */
+  INV_MULTI_QUADRIC,  /*!< \brief Inversed multi quartic biharmonic spline. */
+  GAUSSIAN,           /*!< \brief Gaussian basis function. */
+  THIN_PLATE_SPLINE,  /*!< \brief Thin plate spline. */
+  MULTI_QUADRIC,      /*!< \brief Multi quartic biharmonic spline. */
 };
-static const MapType<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = {
-  MakePair("WENDLAND_C2", WENDLAND_C2)
-  MakePair("INV_MULTI_QUADRIC", INV_MULTI_QUADRIC)
-  MakePair("GAUSSIAN", GAUSSIAN)
-  MakePair("THIN_PLATE_SPLINE", THIN_PLATE_SPLINE)
-  MakePair("MULTI_QUADRIC", MULTI_QUADRIC)
+static const MapType<string, RADIAL_BASIS> RadialBasisFunction_Map = {
+  MakePair("WENDLAND_C2", RADIAL_BASIS::WENDLAND_C2)
+  MakePair("INV_MULTI_QUADRIC", RADIAL_BASIS::INV_MULTI_QUADRIC)
+  MakePair("GAUSSIAN", RADIAL_BASIS::GAUSSIAN)
+  MakePair("THIN_PLATE_SPLINE", RADIAL_BASIS::THIN_PLATE_SPLINE)
+  MakePair("MULTI_QUADRIC", RADIAL_BASIS::MULTI_QUADRIC)
 };
 
 /*!
@@ -498,20 +470,6 @@ const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 
 
 /*!
- * \brief Types of mathematical problem to solve
- */
-enum ENUM_MATH_PROBLEM {
-  DIRECT = 0,               /*!< \brief Direct problem */
-  CONTINUOUS_ADJOINT = 1,   /*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2      /*!< \brief AD-based discrete adjoint problem. */
-};
-static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
-  MakePair("DIRECT", DIRECT)
-  MakePair("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-  MakePair("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
-};
-
-/*!
  * \brief Types of spatial discretizations
  */
 enum ENUM_SPACE {
@@ -620,53 +578,53 @@ static const MapType<string, ENUM_INIT_OPTION> InitOption_Map = {
 /*!
  * \brief Types of initialization option
  */
-enum ENUM_FREESTREAM_OPTION {
-  TEMPERATURE_FS = 0,  /*!< \brief Temperature initialization. */
-  DENSITY_FS = 1       /*!< \brief Density initalization. */
+enum class FREESTREAM_OPTION {
+  TEMPERATURE_FS, /*!< \brief Temperature initialization. */
+  DENSITY_FS, /*!< \brief Density initalization. */
 };
-static const MapType<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = {
-  MakePair("TEMPERATURE_FS", TEMPERATURE_FS)
-  MakePair("DENSITY_FS", DENSITY_FS)
+static const MapType<string, FREESTREAM_OPTION> FreeStreamOption_Map = {
+  MakePair("TEMPERATURE_FS", FREESTREAM_OPTION::TEMPERATURE_FS)
+  MakePair("DENSITY_FS", FREESTREAM_OPTION::DENSITY_FS)
 };
 
 /*!
  * \brief Types of viscosity model
  */
-enum ENUM_VISCOSITYMODEL {
-  CONSTANT_VISCOSITY = 0,   /*!< \brief Constant viscosity. */
-  SUTHERLAND = 1,           /*!< \brief Sutherlands Law viscosity. */
-  POLYNOMIAL_VISCOSITY = 2  /*!< \brief Polynomial viscosity. */
+enum class VISCOSITYMODEL {
+  CONSTANT, /*!< \brief Constant viscosity. */
+  SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
+  POLYNOMIAL, /*!< \brief Polynomial viscosity. */
 };
-static const MapType<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = {
-  MakePair("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-  MakePair("SUTHERLAND", SUTHERLAND)
-  MakePair("POLYNOMIAL_VISCOSITY", POLYNOMIAL_VISCOSITY)
+static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
+  MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
+  MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
+  MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
 };
 
 /*!
  * \brief Types of thermal conductivity model
  */
-enum ENUM_CONDUCTIVITYMODEL {
-  CONSTANT_CONDUCTIVITY = 0,   /*!< \brief Constant thermal conductivity. */
-  CONSTANT_PRANDTL = 1,        /*!< \brief Constant Prandtl number. */
-  POLYNOMIAL_CONDUCTIVITY = 2  /*!< \brief Polynomial thermal conductivity. */
+enum class CONDUCTIVITYMODEL {
+  CONSTANT, /*!< \brief Constant thermal conductivity. */
+  CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
+  POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
 };
-static const MapType<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = {
-  MakePair("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-  MakePair("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
-  MakePair("POLYNOMIAL_CONDUCTIVITY", POLYNOMIAL_CONDUCTIVITY)
+static const MapType<string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
+  MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
+  MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
+  MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
 };
 
 /*!
  * \brief Types of turbulent thermal conductivity model
  */
-enum ENUM_CONDUCTIVITYMODEL_TURB {
-  NO_CONDUCTIVITY_TURB  = 0,  /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
-  CONSTANT_PRANDTL_TURB = 1   /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
+enum class CONDUCTIVITYMODEL_TURB {
+  NONE, /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
+  CONSTANT_PRANDTL, /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
 };
-static const MapType<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
-  MakePair("NONE", NO_CONDUCTIVITY_TURB)
-  MakePair("CONSTANT_PRANDTL_TURB", CONSTANT_PRANDTL_TURB)
+static const MapType<string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
+  MakePair("NONE", CONDUCTIVITYMODEL_TURB::NONE)
+  MakePair("CONSTANT_PRANDTL_TURB", CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL)
 };
 
 /*!
@@ -1045,27 +1003,27 @@ static const MapType<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
 /*!
  * \brief Type of time integration schemes
  */
-enum ENUM_TIME_INT_FEA {
-  CD_EXPLICIT = 1,       /*!< \brief Support for implementing an explicit method. */
-  NEWMARK_IMPLICIT = 2,  /*!< \brief Implicit Newmark integration definition. */
-  GENERALIZED_ALPHA = 3  /*!< \brief Support for implementing another implicit method. */
+enum class STRUCT_TIME_INT {
+  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
+  NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
+  GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
-static const MapType<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", CD_EXPLICIT)
-  MakePair("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", GENERALIZED_ALPHA)
+static const MapType<string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
+  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
+  MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
+  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
 };
 
 /*!
  * \brief Type of time integration schemes
  */
-enum ENUM_SPACE_ITE_FEA {
-  NEWTON_RAPHSON = 1,           /*!< \brief Full Newton-Rapshon method. */
-  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+enum class STRUCT_SPACE_ITE {
+  NEWTON,       /*!< \brief Full Newton-Rapshon method. */
+  MOD_NEWTON,   /*!< \brief Modified Newton-Raphson method. */
 };
-static const MapType<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = {
-  MakePair("NEWTON_RAPHSON", NEWTON_RAPHSON)
-  MakePair("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON)
+static const MapType<string, STRUCT_SPACE_ITE> Space_Ite_Map_FEA = {
+  MakePair("NEWTON_RAPHSON", STRUCT_SPACE_ITE::NEWTON)
+  MakePair("MODIFIED_NEWTON_RAPHSON", STRUCT_SPACE_ITE::MOD_NEWTON)
 };
 
 /*!
@@ -1145,29 +1103,29 @@ enum BC_TYPE {
 };
 
 /*!
- * \brief Different regime modes
+ * \brief 2D Formulation for structural problems
  */
-enum ENUM_2DFORM {
-  PLANE_STRESS = 0,     /*!< \brief Definition of plane stress solver. */
-  PLANE_STRAIN = 1      /*!< \brief Definition of plane strain solver. */
+enum class STRUCT_2DFORM {
+  PLANE_STRESS,     /*!< \brief Definition of plane stress solver. */
+  PLANE_STRAIN      /*!< \brief Definition of plane strain solver. */
 };
-static const MapType<string, ENUM_2DFORM> ElasForm_2D = {
-  MakePair("PLANE_STRESS", PLANE_STRESS)
-  MakePair("PLANE_STRAIN", PLANE_STRAIN)
+static const MapType<string, STRUCT_2DFORM> ElasForm_2D = {
+  MakePair("PLANE_STRESS", STRUCT_2DFORM::PLANE_STRESS)
+  MakePair("PLANE_STRAIN", STRUCT_2DFORM::PLANE_STRAIN)
 };
 
 /*!
- * \brief Kinds of relaxation for FSI problem
+ * \brief Kinds of relaxation for multizone problems
  */
-enum ENUM_AITKEN {
-  NO_RELAXATION = 0,        /*!< \brief No relaxation in the strongly coupled approach. */
-  FIXED_PARAMETER = 1,      /*!< \brief Relaxation with a fixed parameter. */
-  AITKEN_DYNAMIC = 2        /*!< \brief Relaxation using Aitken's dynamic parameter. */
+enum class BGS_RELAXATION {
+  NONE,       /*!< \brief No relaxation in the strongly coupled approach. */
+  FIXED,      /*!< \brief Relaxation with a fixed parameter. */
+  AITKEN,     /*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
-static const MapType<string, ENUM_AITKEN> AitkenForm_Map = {
-  MakePair("NONE", NO_RELAXATION)
-  MakePair("FIXED_PARAMETER", FIXED_PARAMETER)
-  MakePair("AITKEN_DYNAMIC", AITKEN_DYNAMIC)
+static const MapType<string, BGS_RELAXATION> AitkenForm_Map = {
+  MakePair("NONE", BGS_RELAXATION::NONE)
+  MakePair("FIXED_PARAMETER", BGS_RELAXATION::FIXED)
+  MakePair("AITKEN_DYNAMIC", BGS_RELAXATION::AITKEN)
 };
 
 /*!
@@ -1213,25 +1171,25 @@ static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
 /*!
  * \brief Kinds of radiation models
  */
-enum ENUM_RADIATION {
-  NO_RADIATION = 0,      /*!< \brief No radiation model */
-  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+enum class RADIATION_MODEL {
+  NONE,   /*!< \brief No radiation model */
+  P1,     /*!< \brief P1 Radiation model. */
 };
-static const MapType<string, ENUM_RADIATION> Radiation_Map = {
-  MakePair("NONE", NO_RADIATION)
-  MakePair("P1", P1_MODEL)
+static const MapType<string, RADIATION_MODEL> Radiation_Map = {
+  MakePair("NONE", RADIATION_MODEL::NONE)
+  MakePair("P1", RADIATION_MODEL::P1)
 };
 
 /*!
  * \brief Kinds of P1 initialization
  */
-enum ENUM_P1_INIT {
-  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
-  P1_INIT_TEMP = 1       /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
+enum class P1_INIT {
+  ZERO,         /*!< \brief Initialize the P1 model from zero values */
+  TEMPERATURE,  /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
 };
-static const MapType<string, ENUM_P1_INIT> P1_Init_Map = {
-  MakePair("ZERO", P1_INIT_ZERO)
-  MakePair("TEMPERATURE_INIT", P1_INIT_TEMP)
+static const MapType<string, P1_INIT> P1_Init_Map = {
+  MakePair("ZERO", P1_INIT::ZERO)
+  MakePair("TEMPERATURE_INIT", P1_INIT::TEMPERATURE)
 };
 
 /*!
@@ -1442,13 +1400,13 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
 /*!
  * \brief types of wall boundary condition - smooth or rough
  */
-enum WALL_TYPE {
-  SMOOTH = 1,    /*!< \brief Smooth wall */
-  ROUGH = 2,   /*!< \brief Rough wall */
+enum class WALL_TYPE {
+  SMOOTH,  /*!< \brief Smooth wall */
+  ROUGH,   /*!< \brief Rough wall */
 };
 static const MapType<string, WALL_TYPE> WallType_Map = {
-  MakePair("SMOOTH", SMOOTH)
-  MakePair("ROUGH", ROUGH)
+  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
+  MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
 
 /*!
@@ -2070,11 +2028,12 @@ static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 };
 
 
-enum ENUM_RECORDING {
-  SOLUTION_VARIABLES = 1,
-  MESH_COORDS = 2,
-  MESH_DEFORM = 3,
-  SOLUTION_AND_MESH = 4
+enum class RECORDING {
+  CLEAR_INDICES,
+  SOLUTION_VARIABLES,
+  MESH_COORDS,
+  MESH_DEFORM,
+  SOLUTION_AND_MESH,
 };
 
 /*!

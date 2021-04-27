@@ -1069,60 +1069,19 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                   CConfig *config) const {
 
-  bool euler, ns, turbulent,
-  adj_euler, adj_ns, adj_turb,
-  heat,
-  fem,
-  template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
-  int val_iter = 0;
-  unsigned short iMesh;
-
-  /*--- Initialize some useful booleans ---*/
-
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  heat             = false;  disc_adj_turb    = false;
-  template_solver  = false;
-
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
-  bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
+  const bool adjoint = config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint();
 
-  if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+  int val_iter = 0;
+
+  if (config->GetTime_Domain()) {
+    val_iter = adjoint? config->GetUnst_AdjointIter() : config->GetRestart_Iter();
+    val_iter -= 1;
+    if (!adjoint && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
+      val_iter -= 1;
+    if (!adjoint && !config->GetRestart()) val_iter = 0;
   }
-
-  if (time_stepping) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-  }
-
-  /*--- Assign booleans ---*/
-
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; break;
-    case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-  }
-
 
   /*--- Load inlet profile files for any of the active solver containers.
    Note that these routines fill the fine grid data structures for the markers
@@ -1138,31 +1097,16 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       cout << config->GetInlet_FileName() << endl;
     }
 
-    bool no_profile = false;
-
-    if (euler || ns || adj_euler || adj_ns || disc_adj) {
+    if (solver[MESH_0][FLOW_SOL]) {
       solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
     }
-    if (turbulent || adj_turb || disc_adj_turb) {
+    if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
-    }
-
-    if (template_solver) {
-      no_profile = true;
-    }
-    if (heat) {
-      no_profile = true;
-    }
-    if (fem) {
-      no_profile = true;
-    }
-    if (disc_adj_fem) {
-      no_profile = true;
     }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
-    if (no_profile) {
+    if (!config->GetFluidProblem()) {
       SU2_MPI::Error(string("Inlet profile specification via file (C++) has not been \n") +
                      string("implemented yet for this solver.\n") +
                      string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
@@ -1178,12 +1122,10 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */
 
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (euler || ns || adj_euler || adj_ns || disc_adj)
-          solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
-        if (turbulent)
-          solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 
@@ -2369,73 +2311,48 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (fem) {
     /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases. ---*/
     switch (config->GetGeometricConditions()) {
-      case SMALL_DEFORMATIONS:
+      case STRUCT_DEFORMATION::SMALL:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             numerics[MESH_0][FEA_SOL][fea_term] = new CFEALinearElasticity(nDim, nVar_FEM, config);
             break;
-          case NEO_HOOKEAN:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
-            break;
           default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
+            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
             break;
         }
         break;
-      case LARGE_DEFORMATIONS :
+      case STRUCT_DEFORMATION::LARGE:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
-            SU2_OMP_MASTER
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
             break;
-          case NEO_HOOKEAN:
-            if (config->GetMaterialCompressibility() == COMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::NEO_HOOKEAN:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::COMPRESSIBLE) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          case KNOWLES:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::KNOWLES:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          case IDEAL_DE:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::IDEAL_DE:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_IdealDE(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
-            break;
         }
-        break;
-      default:
-        SU2_OMP_MASTER
-        SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
     /*--- The following definitions only make sense if we have a non-linear solution. ---*/
-    if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+    if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
 
       /*--- This allocates a container for electromechanical effects. ---*/
 
