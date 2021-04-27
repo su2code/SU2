@@ -201,7 +201,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
-  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  const auto nOuterIter = driver_config->GetnOuter_Iter();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -881,8 +881,8 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
   Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
 
-  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+  for(auto iZone = 0u; iZone < nZone; iZone++) {
+    for (auto jZone = 0u; jZone < nZone; jZone++) {
       if (iZone != jZone || interface_container[jZone][iZone] != nullptr) {
 
         /*--- If jZone contributes to iZone in the primal problem, then
@@ -890,11 +890,11 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+        for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
           CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
-          if (solver && solver->GetAdjoint()) {
-            unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-            unsigned short nVar = solver->GetnVar();
+          if (solver && solver->GetAdjoint()) { // TobiKattmann::What is this solver variable?
+            auto nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+            auto nVar = solver->GetnVar();
             Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
           }
         }
