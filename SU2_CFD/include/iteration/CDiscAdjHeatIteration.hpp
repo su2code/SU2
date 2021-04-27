@@ -142,7 +142,7 @@ class CDiscAdjHeatIteration final : public CIteration {
    * \param[in] kind_recording - Kind of recording.
    */
   void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                     unsigned short iInst, unsigned short kind_recording) override;
+                     unsigned short iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -166,6 +166,6 @@ class CDiscAdjHeatIteration final : public CIteration {
    * \param[in] kind_recording - The kind of recording.
    */
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                       unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
+                       unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
 };

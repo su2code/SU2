@@ -1178,7 +1178,7 @@ void CConfig::SetConfig_Options() {
 
    /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
-  addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
+  addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, VISCOSITYMODEL::SUTHERLAND);
 
   /*--- Options related to Constant Viscosity Model ---*/
 
@@ -1196,10 +1196,10 @@ void CConfig::SetConfig_Options() {
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
-  addEnumOption("CONDUCTIVITY_MODEL", Kind_ConductivityModel, ConductivityModel_Map, CONSTANT_PRANDTL);
+  addEnumOption("CONDUCTIVITY_MODEL", Kind_ConductivityModel, ConductivityModel_Map, CONDUCTIVITYMODEL::CONSTANT_PRANDTL);
 
   /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
-  addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONSTANT_PRANDTL_TURB);
+  addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL);
 
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
@@ -1232,7 +1232,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
-  addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
+  addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
   /*!\brief FREESTREAM_DENSITY\n DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) \n DEFAULT -1.0 (calculated from others) \ingroup Config*/
@@ -1665,7 +1665,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
+  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, STRUCT_TIME_INT::NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization for radiation problems*/
   addEnumOption("TIME_DISCRE_RADIATION", Kind_TimeIntScheme_Radiation, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -2291,11 +2291,11 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("STRESS_PENALTY_PARAM", 2, StressPenaltyParam.data());
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
-  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
+  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, STRUCT_DEFORMATION::SMALL);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Material model \n OPTIONS: see \link Material_Map \endlink \ingroup Config*/
-  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
+  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, STRUCT_MODEL::LINEAR_ELASTIC);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
-  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, STRUCT_COMPRESS::COMPRESSIBLE);
 
   /*  DESCRIPTION: Consider a prestretch in the structural domain
   *  Options: NO, YES \ingroup Config */
@@ -2304,9 +2304,9 @@ void CConfig::SetConfig_Options() {
   addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
-  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
+  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, STRUCT_SPACE_ITE::NEWTON);
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
-  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
+  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, STRUCT_2DFORM::PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DEAD_LOAD", DeadLoad, false);
@@ -2408,7 +2408,7 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
    */
-  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR);
 
   /*  DESCRIPTION: Use conservative approach for interpolating between meshes. */
   addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
@@ -2419,7 +2419,7 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink
    * Sets Kind_RadialBasis \ingroup Config
    */
-  addEnumOption("KIND_RADIAL_BASIS_FUNCTION", Kind_RadialBasisFunction, RadialBasisFunction_Map, WENDLAND_C2);
+  addEnumOption("KIND_RADIAL_BASIS_FUNCTION", Kind_RadialBasisFunction, RadialBasisFunction_Map, RADIAL_BASIS::WENDLAND_C2);
 
   /*  DESCRIPTION: Use polynomial term in radial basis function interpolation.
   *  Options: NO, YES \ingroup Config */
@@ -2454,7 +2454,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Aitken's dynamic minimum relaxation factor for the first iteration */
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Kind of relaxation */
-  addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
+  addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, BGS_RELAXATION::NONE);
   /* DESCRIPTION: Relaxation required */
   addBoolOption("RELAXATION", Relaxation, false);
 
@@ -2462,10 +2462,10 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the radiation solver ---*/
 
   /* DESCRIPTION: Type of radiation model */
-  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
+  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, RADIATION_MODEL::NONE);
 
   /* DESCRIPTION: Kind of initialization of the P1 model  */
-  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT_TEMP);
+  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT::TEMPERATURE);
 
   /* DESCRIPTION: Absorption coefficient */
   addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
@@ -3487,12 +3487,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Kind_Struct_Solver == SMALL_DEFORMATIONS){
+    if (Kind_Struct_Solver == STRUCT_DEFORMATION::SMALL){
       MinLogResidual = log10(Linear_Solver_Error);
     }
   }
 
-  Radiation = (Kind_Radiation != NO_RADIATION);
+  Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
   /*--- Check for unsupported features. ---*/
 
@@ -3585,11 +3585,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (ideal_gas && (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS)) {
     if (SystemMeasurements == US && standard_air) {
-      if (Kind_ViscosityModel != SUTHERLAND) {
+      if (Kind_ViscosityModel != VISCOSITYMODEL::SUTHERLAND) {
         SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
       }
     }
-    if (Kind_ConductivityModel != CONSTANT_PRANDTL ) {
+    if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL ) {
       SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS", CURRENT_FUNCTION);
     }
 
@@ -4533,7 +4533,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
-    if (Kind_ViscosityModel == SUTHERLAND) {
+    if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
       if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY)) {
         SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
@@ -4543,7 +4543,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check the coefficients for the polynomial models. ---*/
 
   if (Kind_Solver != INC_EULER && Kind_Solver != INC_NAVIER_STOKES && Kind_Solver != INC_RANS) {
-    if ((Kind_ViscosityModel == POLYNOMIAL_VISCOSITY) || (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
+    if ((Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL) || (Kind_ConductivityModel == CONDUCTIVITYMODEL::POLYNOMIAL) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
     }
   }
@@ -4557,7 +4557,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
   }
 
-  if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
+  if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetMu_PolyCoeff(iVar);
@@ -4566,7 +4566,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("MU_POLYCOEFFS not set for viscosity model POLYNOMIAL_VISCOSITY. \n"), CURRENT_FUNCTION);
   }
 
-  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY)) {
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_ConductivityModel == CONDUCTIVITYMODEL::POLYNOMIAL)) {
     su2double sum = 0.0;
     for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetKt_PolyCoeff(iVar);
@@ -4657,18 +4657,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
        nRough_Wall = nWall;
        Roughness_Height = new su2double [nWall];
-       Kind_Wall = new unsigned short [nWall];
+       Kind_Wall = new WALL_TYPE [nWall];
        for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = SMOOTH;
+         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
        }
        for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + iMarker] = SMOOTH;
+         Kind_Wall[nMarker_HeatFlux + iMarker] = WALL_TYPE::SMOOTH;
        }
        for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = SMOOTH;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Check for mismatch in number of rough walls and solid walls. ---*/
@@ -4685,13 +4685,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        delete Roughness_Height;
        delete Kind_Wall;
        Roughness_Height = new su2double [nWall];
-       Kind_Wall = new unsigned short [nWall];
+       Kind_Wall = new WALL_TYPE [nWall];
        unsigned short jMarker, chkRough = 0;
 
        /*--- Initialize everything to smooth. ---*/
        for (iMarker = 0; iMarker < nWall; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
-         Kind_Wall[iMarker] = SMOOTH;
+         Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
@@ -4718,7 +4718,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        /*--- Update kind_wall when a non zero roughness value is specified. ---*/
        for (iMarker = 0; iMarker < nWall; iMarker++)
          if (Roughness_Height[iMarker] != 0.0)
-           Kind_Wall[iMarker] = ROUGH;
+           Kind_Wall[iMarker] = WALL_TYPE::ROUGH;
 
        /*--- Check if a non solid wall marker was specified as rough. ---*/
        if (chkRough != nRough_Wall)
@@ -4801,7 +4801,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       (Kind_Solver != DISC_ADJ_RANS) &&
       (Kind_Solver != INC_RANS) &&
       (Kind_Solver != DISC_ADJ_INC_RANS)){
-    Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
+    Kind_ConductivityModel_Turb = CONDUCTIVITYMODEL_TURB::NONE;
   }
 
   /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
@@ -5604,11 +5604,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
-        if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
-        if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
-        if (Kind_Material == NEO_HOOKEAN) {
-          if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+        if (Kind_Struct_Solver == STRUCT_DEFORMATION::SMALL) cout << "Geometrically linear elasticity solver." << endl;
+        if (Kind_Struct_Solver == STRUCT_DEFORMATION::LARGE) cout << "Geometrically non-linear elasticity solver." << endl;
+        if (Kind_Material == STRUCT_MODEL::LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+        if (Kind_Material == STRUCT_MODEL::NEO_HOOKEAN) {
+          if (Kind_Material_Compress == STRUCT_COMPRESS::COMPRESSIBLE)
+            cout << "Compressible Neo-Hookean material model." << endl;
         }
         break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
@@ -6428,13 +6429,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
-        case CD_EXPLICIT:
+        case STRUCT_TIME_INT::CD_EXPLICIT:
           cout << "Explicit time integration (NOT IMPLEMENTED YET)." << endl;
           break;
-        case GENERALIZED_ALPHA:
+        case STRUCT_TIME_INT::GENERALIZED_ALPHA:
           cout << "Generalized-alpha method." << endl;
           break;
-        case NEWMARK_IMPLICIT:
+        case STRUCT_TIME_INT::NEWMARK_IMPLICIT:
           if (Dynamic_Analysis) cout << "Newmark implicit method for the structural time integration." << endl;
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
@@ -8160,7 +8161,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
 
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
+        SetKind_TimeIntScheme(NONE);
       }
       break;
   }
@@ -8814,10 +8815,10 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
+pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
   unsigned short iMarker = 0;
   short          flag = -1;
-  pair<unsigned short, su2double> WallProp;
+  pair<WALL_TYPE, su2double> WallProp;
 
   if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
     for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
@@ -8840,7 +8841,7 @@ pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_m
       }
   }
 
-  WallProp = make_pair(SMOOTH, 0.0);
+  WallProp = make_pair(WALL_TYPE::SMOOTH, 0.0);
   return WallProp;
 }
 
