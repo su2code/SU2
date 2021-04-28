@@ -3632,7 +3632,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (nKind_SurfaceMovement != nMarker_Moving) {
-    SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
+    SU2_MPI::Error("Number of SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
   if (TimeMarching == TIME_MARCHING::TIME_STEPPING){
