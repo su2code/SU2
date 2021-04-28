@@ -898,6 +898,8 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   }
 
+  if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
+
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
