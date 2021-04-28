@@ -2759,8 +2759,6 @@ void CFlowOutput::AddCommonFVMOutputs(const CConfig *config) {
 
 void CFlowOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
 
-  CPoint* Node_Geo  = geometry->nodes;
-
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
