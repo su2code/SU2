@@ -671,7 +671,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         for (jVar = 0; jVar < nVar; jVar++)
           if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
               (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar])   )
-    //        err = true;
+            err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
@@ -1034,7 +1034,7 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
 
 void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
-  CompleteImplicitIteration_impl<false>(geometry, config);
+  CompleteImplicitIteration_impl<true>(geometry, config);
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -1706,6 +1706,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   const su2double *Flow_Dir;
 
   bool dynamic_grid         = config->GetGrid_Movement();
+  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
@@ -1941,7 +1942,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       }
 
       /*--- Set various quantities in the solver class ---*/
-      conv_numerics->SetEve(node_infty->GetEve(0),nodes->GetEve(iPoint));
+      conv_numerics->SetdPdU  (node_infty->GetdPdU(0),   nodes->GetdPdU(iPoint));
+      conv_numerics->SetdTdU  (node_infty->GetdTdU(0),   nodes->GetdTdU(iPoint));
+      conv_numerics->SetdTvedU(node_infty->GetdTvedU(0), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetEve   (node_infty->GetEve(0),    nodes->GetEve(iPoint));
+      conv_numerics->SetCvve  (node_infty->GetCvve(0),   nodes->GetCvve(iPoint));
+      conv_numerics->SetGamma (node_infty->GetGamma(0),  nodes->GetGamma(iPoint));
+
       conv_numerics->SetConservative(U_domain, U_inlet);
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
@@ -1950,7 +1957,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution ---*/
 //      if (viscous) {
@@ -2506,10 +2513,10 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
-
+      
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
     }
   }
 
@@ -2517,11 +2524,3 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   delete [] Normal;
 
 }
-
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}

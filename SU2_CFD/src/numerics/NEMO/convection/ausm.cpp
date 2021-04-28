@@ -171,15 +171,31 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   //TODO DELETE THIS: ROE Jacobian for DEBUGGING
   if (implicit){
 
+    RoeU        = new su2double  [nVar];
+    RoeV        = new su2double  [nPrimVar];
+    RoedPdU     = new su2double  [nVar];
+    Lambda      = new su2double  [nVar];
+    Epsilon     = new su2double  [nVar];
+    P_Tensor    = new su2double* [nVar];
+    invP_Tensor = new su2double* [nVar];
+
+    roe_eves.resize(nSpecies,0.0);
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      P_Tensor[iVar]    = new su2double [nVar];
+      invP_Tensor[iVar] = new su2double [nVar];
+    }
+	  
     su2double R = sqrt(fabs(rho_i/rho_j));
     
-
-    for (iVar = 0; iVar < nVar; iVar++)
+    
+    for (iVar = 0; iVar < nVar; iVar++){
       RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
-
-    for (iVar = 0; iVar < nPrimVar; iVar++)
+    }
+    for (iVar = 0; iVar < nPrimVar; iVar++){
       RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
-
+    }
+    
     auto& roe_eves = fluidmodel->ComputeSpeciesEve(RoeV[TVE_INDEX]);
 
     /*--- Calculate derivatives of pressure ---*/
@@ -213,7 +229,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
     Lambda[nSpecies+nDim]   = ProjVelocity - RoeSoundSpeed;
     Lambda[nSpecies+nDim+1] = ProjVelocity;
-
+    
     /*--- Harten and Hyman (1983) entropy correction ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
@@ -233,9 +249,6 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
       else
         Lambda[iVar] = fabs(Lambda[iVar]);
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      Lambda[iVar] = fabs(Lambda[iVar]);
-
     /*--- Calculate inviscid projected Jacobians ---*/
     // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
     if (implicit){
@@ -249,7 +262,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
         Proj_ModJac_Tensor_ij = 0.0;
-        for (kVar = 0; kVar < nVar; kVar++)
+        for (unsigned short kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
         Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
@@ -480,6 +493,5 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   //     }
   //   }
   // }
-
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

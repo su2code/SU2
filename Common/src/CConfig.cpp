@@ -3546,10 +3546,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
   }
 
-  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
-      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
-  }
-
   if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
       SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
@@ -6387,8 +6383,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if((Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES))
-            SU2_MPI::Error("Implicit time scheme is not working with NEMO. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:
