@@ -1163,7 +1163,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4, 0, -3.764076, -4.081142] #last 4 columns
+    fsi2d.test_vals = [4, 0, -3.768496, -4.159961] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
     fsi2d.timeout   = 1600
     fsi2d.multizone= True
@@ -1188,7 +1188,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.379832, -4.006001, 0.000000, 0.000000]
+    dyn_fsi.test_vals = [-4.398550, -4.086739, 0.000000, 117.000000]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "mpirun -n 2 SU2_CFD"
@@ -1344,7 +1344,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4, 0, -3.764076, -4.081142] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4, 0, -3.768496, -4.159961] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.unsteady  = True
