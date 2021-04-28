@@ -39,6 +39,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
+  gridMovement = config->GetDynamic_Grid();
   streamwisePeriodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
@@ -63,7 +64,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (config->GetDynamic_Grid()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
+    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -397,7 +398,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
 
   // Grid velocity
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -562,7 +563,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
   }
 
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)

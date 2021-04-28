@@ -69,6 +69,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
+    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
