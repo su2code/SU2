@@ -51,11 +51,11 @@ def amg ( config , stderr = False ):
     #--- Check config options related to mesh adaptation
     
     adap_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', 'PYADAP_SENSOR', \
-    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_ARMAX', 'PYADAP_HGRAD', \
-    'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
-    'PYADAP_INV_VOL', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
+                    'PYADAP_BACK', 'PYADAP_HMAX', 'PYADAP_HMIN', 'PYADAP_ARMAX', 'PYADAP_HGRAD', \
+                    'PYADAP_RESIDUAL_REDUCTION', 'PYADAP_FLOW_ITER', 'PYADAP_ADJ_ITER', 'PYADAP_CFL', \
+                    'PYADAP_INV_VOL', 'PYADAP_ORTHO', 'PYADAP_RDG', 'PYADAP_PYTHON']
     required_options = ['PYADAP_COMPLEXITY', 'PYADAP_SUBITE', \
-    'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
+                        'PYADAP_SENSOR', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME']
     
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -79,18 +79,15 @@ def amg ( config , stderr = False ):
     adap_adj_iter  = su2amg.get_adj_iter(config)
     adap_flow_cfl  = su2amg.get_flow_cfl(config)
     adap_adj_cfl   = su2amg.get_flow_cfl(config)
-    # adap_res       = su2amg.get_residual_reduction(config)
 
     adap_sensor = config.PYADAP_SENSOR
     sensor_avail = ['MACH', 'PRES', 'MACH_PRES', 'GOAL']
     
     if adap_sensor not in sensor_avail:
-        raise ValueError('Unknown adaptation sensor (PYADAP_SENSOR option).\n')
+        raise ValueError('Unknown adaptation sensor %s. Available options are %s.' % (adap_sensor, sensor_avail))
         
     if len(mesh_sizes) != len(sub_iter):
-        raise ValueError('Inconsistent number of mesh sizes and sub-iterations.\n \
-                          %d mesh sizes and %d sub-iterations provided.' % (len(mesh_sizes),len(sub_iter)))
-        
+        raise ValueError('Inconsistent number of mesh sizes and sub-iterations. %d mesh sizes and %d sub-iterations provided.' % (len(mesh_sizes),len(sub_iter)))
         
     #--- Use the python interface to amg, or the executable?
     
@@ -460,15 +457,6 @@ def amg ( config , stderr = False ):
 
                     su2amg.update_adj_config(config_cfd_ad, cur_meshfil, cur_solfil, cur_solfil_adj, \
                                              cur_solfil_adj_ini, adap_adj_iter[iSiz], mesh_sizes[iSiz])
-
-                    # cfl = su2amg.get_min_cfl(history_format)
-                    # cfl = max(cfl, adap_flow_cfl[iSiz])
-                    # su2amg.set_cfl(config_cfd_ad, cfl)
-
-                    # if (config.KIND_TURB_MODEL != 'NONE'):
-                    #     cfl_turb = su2amg.get_min_cfl_turb(history_format)
-                    #     cfl_red  = cfl_turb/cfl
-                    #     config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
 
                     SU2_CFD(config_cfd_ad)
 
