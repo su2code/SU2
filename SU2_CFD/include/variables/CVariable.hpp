@@ -91,8 +91,6 @@ protected:
   MatrixType Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
   MatrixType Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
 
-  MatrixType Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
-
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
@@ -212,14 +210,6 @@ public:
    * \return Pointer to the old solution vector.
    */
   inline su2double GetSolution_Old(unsigned long iPoint, unsigned long iVar) const { return Solution_Old(iPoint,iVar); }
-
-  /*!
-   * \brief Get the old solution of the discrete adjoint problem (for multiphysics subiterations)
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Old_Adj(unsigned long iPoint, unsigned long iVar) const { return Solution_Adj_Old(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the old solution.
@@ -1964,10 +1954,21 @@ public:
   inline virtual void Set_OldSolution_Accel() {}
 
   /*!
+   * \brief  A virtual member. Set the value of the velocity solution predictor.
+   */
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
+
+  /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
+
+  /*!
+   * \brief  A virtual member. Get the velocity solution predictor.
+   * \return Pointer to the velocity solution vector.
+   */
+  inline virtual const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief  A virtual member. Get the solution at time n.
@@ -2063,10 +2064,22 @@ public:
   inline virtual su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief A virtual member. Get the value of the velocity imposed at the boundary.
+   * \return Value of the boundary velocity.
+   */
+  inline virtual su2double GetBound_Vel(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] val_BoundVel - Pointer to the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, const su2double *val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
@@ -2074,6 +2087,13 @@ public:
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundVel - Value of the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, unsigned long iDim, const su2double val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.

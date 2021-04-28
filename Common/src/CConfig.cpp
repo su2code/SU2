@@ -3207,6 +3207,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Check if MULTIGRID is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_MultiGrid = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("MULTIGRID") != string::npos) {
+      Wrt_MultiGrid = true;
+    }
+  }
+
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
   }
@@ -4996,9 +5004,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (GetGasModel() == "ARGON") monoatomic = true;
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-  if(OptionIsSet("CONV_CRITERIA")) {
-    cout << string("\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
-            string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n");
+  if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
+    cout << "\n\nWARNING: CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n"
+            "That is, RESIDUAL for any RMS_* BGS_* value, and CAUCHY for coefficients such as DRAG etc.\n" << endl;
   }
 }
 
