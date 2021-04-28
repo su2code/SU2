@@ -9718,12 +9718,6 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     }
   }
 
-  /*--- Set the Restart iter for time dependent problems ---*/
-  if (driver_config->GetRestart()){
-    Unst_RestartIter = driver_config->GetRestart_Iter();
-    Dyn_RestartIter  = driver_config->GetRestart_Iter();
-  }
-
   /*--- Fix the Time Step for all subdomains, for the case of time-dependent problems ---*/
   if (driver_config->GetTime_Domain()){
     Delta_UnstTime = driver_config->GetTime_Step();

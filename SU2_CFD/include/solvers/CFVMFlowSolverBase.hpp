@@ -524,9 +524,10 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+     * This is only done once because in dual time the time step cannot be variable. ---*/
 
-    if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+    if (dual_time && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
 
       /*--- Thread-local variable for reduction. ---*/
       su2double glbDtND = 1e30;
@@ -547,6 +548,9 @@ class CFVMFlowSolverBase : public CSolver {
         Global_Delta_UnstTimeND = glbDtND;
 
         config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+
+        if (rank == MASTER_NODE)
+          cout << "\nTime step based on UNST_CFL_NUMBER: " << glbDtND*config->GetTime_Ref() << "s\n" << endl;
       }
       END_SU2_OMP_MASTER
       SU2_OMP_BARRIER
