@@ -69,6 +69,20 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   Solution_i = new su2double[nVar];
   Solution_j = new su2double[nVar];
 
+  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
+
+  auto Alloc3D = [](unsigned long M, const vector<unsigned long>& N, unsigned long P, vector<su2activematrix>& X) {
+    X.resize(M);
+    for (unsigned long i = 0; i < M; ++i) X[i].resize(N[i], P) = su2double(0.0);
+  };
+
+  /*--- Store the values of the temperature and the heat flux density at the boundaries,
+   used for coupling with a solid donor cell ---*/
+  constexpr auto n_conjugate_var = 4u;
+
+  Alloc3D(nMarker, nVertex, n_conjugate_var, conjugate_var);
+  for (auto& x : conjugate_var) x = config->GetTemperature_FreeStreamND();
+
   /*--- do not see a reason to use only single grid ---*/
   //if (iMesh == MESH_0) {
 
@@ -245,7 +259,7 @@ void CFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double * scalars = nodes->GetSolution(i_point);
 
-    n_not_in_domain += fluid_model_local->SetTDState_T(0,scalars); /*--- first arguemnt (temperature) is not used ---*/
+    n_not_in_domain += fluid_model_local->SetTDState_T(0,scalars); /*--- first argument (temperature) is not used ---*/
 
     for(auto i_scalar = 0u; i_scalar < config->GetNScalars(); ++i_scalar){
       nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(), i_scalar);
@@ -376,7 +390,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
          /* --- flame zone --- */
         } else if ( (point_loc > 0) && (point_loc <= flame_thickness) ){
-          scalar_init[I_PROG_VAR] = 0.5*(prog_unburnt + prog_burnt);
+          scalar_init[I_PROG_VAR] = prog_unburnt + point_loc * (prog_burnt - prog_unburnt)/flame_thickness;
 
         /* --- burnt region --- */
         } else if ( (point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness) ){
@@ -393,7 +407,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
         // we can make an init based on the lookup table. 
         for(int i_scalar = 0; i_scalar < config->GetNScalars(); ++i_scalar){
           if ( (i_scalar != I_ENTHALPY) && (i_scalar != I_PROG_VAR) )
-          scalar_init[i_scalar] = config->GetScalar_Init(i_scalar);
+            scalar_init[i_scalar] = config->GetScalar_Init(i_scalar);
         }
         
         solver_container[i_mesh][SCALAR_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
@@ -793,4 +807,57 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
 
 }
 
+void CFlameletSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                              CConfig *config, unsigned short val_marker) {
+
+  unsigned short iVar, jVar, iDim;
+  unsigned long iVertex, iPoint, total_index;
+
+  bool implicit                   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  string Marker_Tag               = config->GetMarker_All_TagBound(val_marker);
+  su2double temp_wall             = config->GetIsothermal_Temperature(Marker_Tag);
+  CFluidModel *fluid_model_local  = solver_container[FLOW_SOL]->GetFluidModel();    
+  CSolver *heat_solver            = solver_container[HEAT_SOL];
+  su2double enth_wall, prog_wall;
+  unsigned long n_not_iterated    = 0;
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+
+    temp_wall = GetConjugateHeatVariable(val_marker, iVertex, 0);
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Set enthalpy on the wall ---*/
+
+      prog_wall = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint)[I_PROG_VAR];
+      n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
+
+      /*--- Impose the value of the enthalpy as a strong boundary
+      condition (Dirichlet) and remove any
+      contribution to the residual at this node. ---*/
+
+      nodes->SetSolution(iPoint, I_ENTHALPY, enth_wall);
+      nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);
+
+      LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
+
+      nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTHALPY);
+
+      if (implicit) {
+        total_index = iPoint * nVar + I_ENTHALPY;
+
+        Jacobian.DeleteValsRowi(total_index);
+      }
+    }
+  }
+  if (rank == MASTER_NODE && n_not_iterated > 0){
+    cout << " !!! CHT interface ("  << Marker_Tag << "): Number of points in which enthalpy could not be iterated: " << n_not_iterated << " !!!" << endl;
+  }
+}
 

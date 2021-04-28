@@ -349,6 +349,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   std::stringstream inner_iter_ss;
   inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
 
+  std::stringstream outer_iter_ss;
+  outer_iter_ss << "_" << std::setw(8) << std::setfill('0') << curOuterIter;
+
   /*--- Write files depending on the format --- */
 
   switch (format) {
@@ -457,8 +460,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       if (fileName.empty()){
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-        if (!config->GetWrt_Sol_Overwrite()){ 
-          fileName.append(inner_iter_ss.str());
+        if (!config->GetWrt_Sol_Overwrite()){
+          if (config->GetMultizone_Problem())
+            fileName.append(outer_iter_ss.str());
+          else 
+            fileName.append(inner_iter_ss.str());
         }
       }
 

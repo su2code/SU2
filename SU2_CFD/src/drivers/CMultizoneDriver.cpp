@@ -261,6 +261,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
+
+    if (config_container[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL)
+      solver_container[iZone][INST_0][MESH_0][SCALAR_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
+
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -595,7 +601,11 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
     case CONJUGATE_HEAT_SF:
     {
       donorSolver  = HEAT_SOL;
-      targetSolver = FLOW_SOL;
+      if ( config_container[FLOW_SOL]->GetKind_Scalar_Model() == PROGRESS_VARIABLE )
+        targetSolver = SCALAR_SOL;
+      else
+        targetSolver = FLOW_SOL;
+       
       break;
     }
     case CONJUGATE_HEAT_WEAKLY_SF:

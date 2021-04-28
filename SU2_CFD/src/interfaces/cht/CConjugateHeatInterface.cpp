@@ -132,6 +132,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       switch (donor_config->GetKind_ConductivityModel()) {
 
         case CONSTANT_CONDUCTIVITY:
+        case FLAMELET_CONDUCT_MODEL:
           thermal_conductivity = thermal_conductivityND*donor_config->GetConductivity_Ref();
           break;
 

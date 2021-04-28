@@ -41,6 +41,7 @@ private:
   //vector<su2double> scalar_clipping_max;
   //vector<su2double> scalar_clipping_min;
   unsigned long n_table_misses; /*!< \brief number of times we failed to do a lookup from the table */
+  vector<su2activematrix> conjugate_var;     /*!< \brief CHT variables for each boundary and vertex. */
 
 public:
   /*!
@@ -183,5 +184,48 @@ public:
   inline void SetNTableMisses(unsigned short val_n_table_misses) override { n_table_misses = val_n_table_misses; }
 
   inline unsigned long GetNTableMisses() override { return n_table_misses; }
+
+  /*!
+   * \brief Impose the (received) conjugate heat variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_ConjugateHeat_Interface(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker) override;
+
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   */
+  inline su2double GetConjugateHeatVariable(unsigned short val_marker,
+                                            unsigned long val_vertex,
+                                            unsigned short pos_var) const override {
+    return conjugate_var[val_marker][val_vertex][pos_var];
+  }
+
+  /*!
+   * \brief Set the conjugate heat variables.
+   * \param[in] val_marker        - marker index
+   * \param[in] val_vertex        - vertex index
+   * \param[in] pos_var           - variable position (in vector of all conjugate heat variables)
+   * \param[in] relaxation factor - relaxation factor for the change of the variables
+   * \param[in] val_var           - value of the variable
+   */
+  inline void SetConjugateHeatVariable(unsigned short val_marker,
+                                       unsigned long val_vertex,
+                                       unsigned short pos_var,
+                                       su2double relaxation_factor,
+                                       su2double val_var) override {
+    conjugate_var[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*conjugate_var[val_marker][val_vertex][pos_var];
+  }
 
 };
