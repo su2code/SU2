@@ -98,7 +98,7 @@ class CIteration {
    * \param[in] kind_recording - Current kind of recording.
    */
   void SetMesh_Deformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
-                           CConfig* config_container, unsigned short kind_recording);
+                           CConfig* config_container, RECORDING kind_recording);
 
   /*!
    * \brief A virtual member.
@@ -272,14 +272,14 @@ class CIteration {
                                  unsigned short iInst) {}
 
   virtual void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                             unsigned short iInst, unsigned short kind_recording) {}
+                             unsigned short iInst, RECORDING kind_recording) {}
 
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                               unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {}
+                               unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
                               unsigned short iZone, unsigned short iInst) {}
 
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                            unsigned short val_iInst, unsigned short kind_recording) {}
+                            unsigned short val_iInst, RECORDING kind_recording) {}
 };

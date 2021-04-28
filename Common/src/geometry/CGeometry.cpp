@@ -3823,6 +3823,33 @@ void CGeometry::SetNaturalElementColoring()
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
 
+void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry) {
+
+  using tColor = uint8_t;
+  constexpr auto nColor = numeric_limits<tColor>::max();
+
+  if (nMGLevels) CoarseGridColor_.resize(nPoint,nMGLevels) = 0;
+
+  for (auto iMesh = nMGLevels; iMesh >= 1; --iMesh) {
+    /*--- Color the coarse points. ---*/
+    vector<tColor> color;
+    const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
+    if (colorSparsePattern<CCompressedSparsePatternUL, tColor, nColor>(adjacency, 1, false, &color).empty())
+      continue;
+
+    /*--- Propagate colors to fine mesh. ---*/
+    for (auto step = 0u; step < iMesh; ++step) {
+      auto coarseMesh = geometry[iMesh-1-step];
+      if (step)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step-1);
+      else
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+    }
+  }
+}
+
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
 
   int nZone = config_container[ZONE_0]->GetnZone();

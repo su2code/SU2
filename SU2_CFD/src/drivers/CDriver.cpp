@@ -899,6 +899,8 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   }
 
+  if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
+
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
@@ -2290,73 +2292,48 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (fem) {
     /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases. ---*/
     switch (config->GetGeometricConditions()) {
-      case SMALL_DEFORMATIONS:
+      case STRUCT_DEFORMATION::SMALL:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             numerics[MESH_0][FEA_SOL][fea_term] = new CFEALinearElasticity(nDim, nVar_FEM, config);
             break;
-          case NEO_HOOKEAN:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
-            break;
           default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
+            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
             break;
         }
         break;
-      case LARGE_DEFORMATIONS :
+      case STRUCT_DEFORMATION::LARGE:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
-            SU2_OMP_MASTER
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
             break;
-          case NEO_HOOKEAN:
-            if (config->GetMaterialCompressibility() == COMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::NEO_HOOKEAN:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::COMPRESSIBLE) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          case KNOWLES:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::KNOWLES:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          case IDEAL_DE:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::IDEAL_DE:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_IdealDE(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
             }
             break;
-          default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
-            break;
         }
-        break;
-      default:
-        SU2_OMP_MASTER
-        SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
     /*--- The following definitions only make sense if we have a non-linear solution. ---*/
-    if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+    if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
 
       /*--- This allocates a container for electromechanical effects. ---*/
 
@@ -2524,7 +2501,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          if (!config[donor]->GetTime_Domain()) interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          else interface[donor][target] = new CDisplacementsInterface(2*nDim, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {

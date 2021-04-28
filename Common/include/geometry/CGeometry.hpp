@@ -184,6 +184,8 @@ protected:
   unsigned long edgeColorGroupSize{1};   /*!< \brief Size of the edge groups within each color. */
   unsigned long elemColorGroupSize{1};   /*!< \brief Size of the element groups within each color. */
 
+  ColMajorMatrix<uint8_t> CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
+
 public:
   /*--- Main geometric elements of the grid. ---*/
 
@@ -256,6 +258,8 @@ public:
   vector<su2double> Orthogonality;       /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
   vector<su2double> Aspect_Ratio;        /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
   vector<su2double> Volume_Ratio;        /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
+
+  const ColMajorMatrix<uint8_t>& CoarseGridColor = CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
 
   /*!
    * \brief Constructor of the class.
@@ -1595,6 +1599,13 @@ public:
    * \param config - Config
    */
   inline virtual void ComputeMeshQualityStatistics(const CConfig *config) {}
+
+  /*!
+   * \brief Color multigrid levels for visualization.
+   * \param nMGLevels - Number of levels
+   * \param geometry - The levels
+   */
+  void ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry);
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.

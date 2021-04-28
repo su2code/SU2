@@ -141,4 +141,15 @@ protected:
    * \param node_flow
    */
   void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
+
+  /*!
+   * \brief Add common FVM outputs.
+   */
+  void AddCommonFVMOutputs(const CConfig* config);
+
+  /*!
+   * \brief Load common FVM outputs.
+   */
+  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint);
+
 };
