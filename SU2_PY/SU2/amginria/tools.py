@@ -116,7 +116,45 @@ def set_cfl(config, cfl_iSiz):
                                           + str(cfl_params[3]) \
                                           + ")"
 
-    
+def set_flow_config_ini(config, cur_solfil):
+    config.CONV_FILENAME    = "history"
+    config.RESTART_FILENAME = cur_solfil
+    config.VOLUME_OUTPUT    = "COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER"
+    config.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
+    config.COMPUTE_METRIC   = 'NO'
+    config.MATH_PROBLEM     = 'DIRECT'
+
+def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
+    config.CONV_FILENAME        = "history_adj"
+    config.RESTART_ADJ_FILENAME = cur_solfil_adj
+    config.SOLUTION_FILENAME    = cur_solfil
+    config.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
+    config.VOLUME_OUTPUT        = "COORDINATES, SOLUTION, PRIMITIVE, METRIC"
+    config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
+    config.COMPUTE_METRIC       = 'YES'
+    config.ADAP_HMAX            = config.PYADAP_HMAX
+    config.ADAP_HMIN            = config.PYADAP_HMIN
+    config.ADAP_ARMAX           = config.PYADAP_ARMAX
+    config.ADAP_COMPLEXITY      = int(mesh_size)
+    config.RESTART_CFL          = 'YES'
+
+def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl):
+    config.MESH_FILENAME     = cur_meshfil
+    config.SOLUTION_FILENAME = cur_solfil_ini
+    config.RESTART_FILENAME  = cur_solfil
+    config.ITER              = int(flow_iter)
+
+    set_cfl(config, flow_cfl)
+
+def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, adj_iter, mesh_size):
+    config.MESH_FILENAME          = cur_meshfil
+    config.RESTART_ADJ_FILENAME   = cur_solfil_adj
+    config.SOLUTION_ADJ_FILENAME  = cur_solfil_adj_ini
+    config.SOLUTION_FILENAME      = cur_solfil
+    config.RESTART_FILENAME       = cur_solfil
+    config.ITER                   = int(adj_iter)
+    config.ADAP_COMPLEXITY        = int(mesh_size)
+   
 def print_adap_options(config, kwds):
     prt = '\nMesh adaptation options:\n'
     for kwd in kwds:

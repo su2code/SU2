@@ -912,36 +912,31 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   if (exact_jacobian) {
     /*--- k production Jacobian ---*/
 
-    // if (pk_limited) {
-    //   Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
-    //   Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
-    // }
-    // else if (pk_positive) {
-    //   Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-    //   Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
-    // }
-    if (pk_positive) {
-      Jacobian_i[0][0] -= TWO3*max(diverg,0.0)*Volume;
+    if (pk_limited) {
+      Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
+      Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
+    }
+    else if (pk_positive) {
+      Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
       Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
     }
+    // if (pk_positive) {
+    //   // Jacobian_i[0][0] -= TWO3*max(diverg,0.0)*Volume;
+    //   Jacobian_i[0][0] -= TWO3*diverg*Volume;
+    //   Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
+    // }
      
     /*--- omega production Jacobian ---*/
 
     if (!stress_limited && pw_positive) {
-      // Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-      Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
+      Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
+      // Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
     }
 
     /*--- Cross-diffusion Jacobian ---*/
 
     Jacobian_i[1][1] -= (1. - F1_i)*CDkw/(Density_i*TurbVar_i[1])*Volume*(!CDkw_Limited);
     // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited)*cdkw_positive;
-
-    if (Residual[1] > 1e10) {
-      su2double dKdOmega = 0;
-      for (auto iDim = 0u; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-      cout << "CDkw= "  << CDkw << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
-    }
   }
   
   AD::SetPreaccOut(Residual, nVar);

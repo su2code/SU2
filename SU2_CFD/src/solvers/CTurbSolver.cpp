@@ -144,13 +144,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
+    bool good_i = (!nodes->GetNon_Physical(iPoint) && !geometry->node[iPoint]->GetPhysicalBoundary());
+    bool good_j = (!nodes->GetNon_Physical(jPoint) && !geometry->node[jPoint]->GetPhysicalBoundary());
     bool muscl = (config->GetMUSCL_Turb() && muscl_start && (good_i || good_j));
     if (muscl) {
       /*--- Reconstruction ---*/
 
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
+                                         turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -326,16 +327,16 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive density ---*/
 
-  good_i = good_i && (primvar_i[nDim+2] > 0.0);
-  good_j = good_j && (primvar_j[nDim+2] > 0.0);
+  good_i &= (primvar_i[nDim+2] > 0.0);
+  good_j &= (primvar_j[nDim+2] > 0.0);
 
   if (!sa_neg) {
 
     /*--- Positive turbulent variables ---*/
 
     for (auto iVar = 0u; iVar < nTurbVar; iVar++) {
-      good_i = good_i && (turbvar_i[iVar] >= 0.0);
-      good_j = good_j && (turbvar_j[iVar] >= 0.0);
+      good_i &= (turbvar_i[iVar] >= 0.0);
+      good_j &= (turbvar_j[iVar] >= 0.0);
     }
   }
 }
@@ -372,7 +373,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
-  /*---         term and the difference (0.5*Psi*(V_i-V_j)).             ---*/
+  /*---         term and the difference (0.5*Psi*(V_i-V_j)).               ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Store reconstruction weights ---*/
@@ -695,7 +696,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
     su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
-    if (sst)  Delta = Vol / nodes->GetDelta_Time(iPoint);
+    // if (sst)  Delta = Vol / nodes->GetDelta_Time(iPoint);
 
     Jacobian.AddVal2Diag(iPoint, Delta);
 
@@ -748,6 +749,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   ComputeUnderRelaxationFactor(solver, config);
 
+  // InitiateComms(geometry, config, NON_PHYSICAL);
+  // CompleteComms(geometry, config, NON_PHYSICAL);
+
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
@@ -798,9 +802,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = sa_model? 0.99 : 0.5;
+  const su2double allowableRatio = sa_model? 0.99 : 0.2;
 
-  // if (sa_model || sst_model) {
+  if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
@@ -814,14 +818,14 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const unsigned long index = iPoint * nVar + iVar;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange && LinSysSol[index] < 0.) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
-    }
+      }
 
       /* Choose the minimum factor between mean flow and turbulence. */
 
-      localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+      // localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
       /* Threshold the relaxation factor in the event that there is
        a very small value. This helps avoid catastrophic crashes due
@@ -833,11 +837,11 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
       nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
-      if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
-      else  nodes->SetNon_Physical(iPoint, false);
+      // if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+      // else nodes->SetNon_Physical(iPoint, false);
 
     }
-  // }
+  }
 
 }
 

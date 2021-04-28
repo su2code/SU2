@@ -364,11 +364,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) final;
+  // void SetTime_Step(CGeometry *geometry,
+  //                   CSolver **solver,
+  //                   CConfig *config,
+  //                   unsigned short iMesh,
+  //                   unsigned long Iteration) final;
   
   /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.

@@ -93,7 +93,7 @@ namespace LimiterHelpers
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
   {
-    const su2double sign = (proj > 0.0)? 1.0 : -1.0;
+    const su2double sign = (delta > 0.0)? 1.0 : -1.0;
     const su2double r = proj / (delta + sign*epsilon());
     const su2double phi = min((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
                               1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
@@ -130,6 +130,27 @@ namespace LimiterHelpers
 
         break;
       }
+      case PIPERNO:
+      {
+        const su2double sign = (delta > 0.0)? 1.0 : -1.0;
+        const su2double eps = sign*epsilon();
+        const su2double r = proj / (delta + eps);
+        const su2double phi1 = (3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0);
+        const su2double phi2 = 1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0);
+        const su2double y = delta+eps;
+
+        const su2double psi1 = (1.0/3.0 + 2.0/(3.0*r + epsilon()));
+        const su2double psi2 = min(phi1,phi2);
+        const su2double dpsi1 = -6.0/(pow(3.0*r + epsilon(),2.0));
+        const su2double dpsi2 = (phi1 < phi2)
+                              ? su2double(-3.0*(pow(r,4.0) - 4.0*pow(r,3.0) + 22.0*pow(r,2.0) - 36.0*r + 17.0)
+                                          / pow(pow(r, 3.0) - 3.0*r + 18.0,2.0))
+                              : su2double(1.5*pow((r-1.0),2.0)*(1.0 + 4.0*r));
+
+        dpsi = -pow(proj/y,2.) * (dpsi1 * psi2 + dpsi2 * psi1) * (r >= 0);
+
+        break;
+      }
       default:
         break;
     }
@@ -155,6 +176,27 @@ namespace LimiterHelpers
 
         dpsi = -b * delta * (b * pow(y,2.) + delta * (2. * y - delta))
              / pow(pow(delta,2.) + b * pow(y,2.),2.) * proj * (R >= 0);
+
+        break;
+      }
+      case PIPERNO:
+      {
+        const su2double sign = (delta > 0.0)? 1.0 : -1.0;
+        const su2double eps = sign*epsilon();
+        const su2double r = proj / (delta + eps);
+        const su2double phi1 = (3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0);
+        const su2double phi2 = 1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0);
+        const su2double y = delta+eps;
+
+        const su2double psi1 = (1.0/3.0 + 2.0/(3.0*r + epsilon()));
+        const su2double psi2 = min(phi1,phi2);
+        const su2double dpsi1 = -6.0/(pow(3.0*r + epsilon(),2.0));
+        const su2double dpsi2 = (phi1 < phi2)
+                              ? su2double(-3.0*(pow(r,4.0) - 4.0*pow(r,3.0) + 22.0*pow(r,2.0) - 36.0*r + 17.0)
+                                          / pow(pow(r, 3.0) - 3.0*r + 18.0,2.0))
+                              : su2double(1.5*pow((r-1.0),2.0)*(1.0 + 4.0*r));
+
+        dpsi = (proj/y) * (dpsi1 * psi2 + dpsi2 * psi1) * (r >= 0);
 
         break;
       }

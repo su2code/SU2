@@ -3089,13 +3089,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
-    bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
+    bool good_i = (!nodes->GetNon_Physical(iPoint) && !geometry->node[iPoint]->GetPhysicalBoundary());
+    bool good_j = (!nodes->GetNon_Physical(jPoint) && !geometry->node[jPoint]->GetPhysicalBoundary());
+    bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start && (good_i || good_j));
     if (muscl) {
       /*--- Reconstruction ---*/
 
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       Turbulent_i, Turbulent_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+                       Turbulent_i, Turbulent_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -3273,8 +3274,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     su2double           *primvar_j,
                                     su2double           *turbvar_i, 
                                     su2double           *turbvar_j,
-                                    bool                &good_i,
-                                    bool                &good_j,
                                     const unsigned long nFlowVarGrad,
                                     const unsigned long nTurbVarGrad) {
 
@@ -3316,9 +3315,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
     const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
-
-    // good_i = good_i && (Delta*Proj_i >= 0.0);
-    // good_j = good_j && (Delta*Proj_j >= 0.0);
 
     /*--- Edge-based limiters ---*/
 
@@ -3377,9 +3373,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       const su2double Proj_i = GeometryToolbox::DotProduct(nDim,Grad_i,Vector_ij) - Delta;
       const su2double Proj_j = GeometryToolbox::DotProduct(nDim,Grad_j,Vector_ij) - Delta;
 
-      // good_i = good_i && (Delta*Proj_i >= 0.0);
-      // good_j = good_j && (Delta*Proj_j >= 0.0);
-
       /*--- Edge-based limiters ---*/
 
       if (limTurbNeeded) {
@@ -3432,8 +3425,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive density ---*/
 
-  good_i = good_i && (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
-  good_j = good_j && (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
+  good_i &= (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
+  good_j &= (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
 
   /*--- Positive turbulent kinetic energy ---*/
 
@@ -3441,8 +3434,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
   if (tkeNeeded) {
-    good_i = good_i && (tke_i >= 0.0);
-    good_j = good_j && (tke_j >= 0.0);
+    good_i &= (tke_i >= 0.0);
+    good_j &= (tke_j >= 0.0);
   }
 
   /*--- Positive Roe sound speed ---*/
@@ -3465,8 +3458,8 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
   const su2double RoeTke = (R*tke_j+tke_i)/R_Plus_One;
 
-  good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
-  good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
+  good_i &= (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
+  good_j &= (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
@@ -3901,16 +3894,16 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
   /*--- Additional factor if TKE flux is needed ---*/
   su2double tke_i = 0., tke_visc = 0.;
-  if (tkeNeeded) {
-    const su2double F1_i = turbNodes->GetF1blending(iPoint);
-    const su2double F1_j = turbNodes->GetF1blending(jPoint);
-    const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
-    const su2double visc_k_i = 0.5*nodes->GetEddyViscosity(iPoint)/(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2);
-    const su2double visc_k_j = 0.5*nodes->GetEddyViscosity(jPoint)/(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
+  // if (tkeNeeded) {
+  //   const su2double F1_i = turbNodes->GetF1blending(iPoint);
+  //   const su2double F1_j = turbNodes->GetF1blending(jPoint);
+  //   const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
+  //   const su2double visc_k_i = 0.5*nodes->GetEddyViscosity(iPoint)*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2);
+  //   const su2double visc_k_j = 0.5*nodes->GetEddyViscosity(jPoint)*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
 
-    tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
-    tke_i = turbNodes->GetPrimitive(iPoint,0);
-  }
+  //   tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
+  //   tke_i = turbNodes->GetPrimitive(iPoint,0);
+  // }
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
   for (auto iVar = 0u; iVar < (unsigned short)(nVar-1); iVar++) {
@@ -5421,6 +5414,9 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   ComputeUnderRelaxationFactor(solver, config);
 
+  // InitiateComms(geometry, config, NON_PHYSICAL);
+  // CompleteComms(geometry, config, NON_PHYSICAL);
+
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
@@ -5461,7 +5457,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = 0.99;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -5493,8 +5489,9 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-    if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
-    else  nodes->SetNon_Physical(iPoint, false);
+    
+    // if (localUnderRelaxation < 0.1) nodes->SetNon_Physical(iPoint, true);
+    // else nodes->SetNon_Physical(iPoint, false);
 
   }
 

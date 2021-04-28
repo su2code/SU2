@@ -120,7 +120,10 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, vector<vector<ScalarType> > & 
   if ((nrm <= 0.0) || (nrm != nrm)) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
     SU2_OMP_MASTER
-    SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
+    const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+    string solver_name;
+    if (master) solver_name = (w[i+1].GetNVar() > 2)? "FLOW_SOL" : "TURB_SOL";
+    SU2_MPI::Error(solver_name + string(": FGMRES orthogonalization failed, linear solver diverged."), CURRENT_FUNCTION);
   }
 
   /*--- Begin main Gram-Schmidt loop ---*/

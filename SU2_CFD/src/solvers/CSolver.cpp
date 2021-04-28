@@ -2021,6 +2021,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = 3*(nDim-1)*nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case NON_PHYSICAL:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_UNSIGNED_SHORT;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -2039,6 +2043,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
   /*--- Set some local pointers to make access simpler. ---*/
 
   su2double *bufDSend = geometry->bufD_P2PSend;
+  unsigned short *bufSSend = geometry->bufS_P2PSend;
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -2210,6 +2215,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetMetric(iPoint, iDim);
             break;
+          case NON_PHYSICAL:
+            bufSSend[buf_offset] = base_nodes->GetNon_Physical(iPoint)? 1 : 0;
+            break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -2240,6 +2248,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Set some local pointers to make access simpler. ---*/
 
   su2double *bufDRecv = geometry->bufD_P2PRecv;
+  unsigned short *bufSRecv = geometry->bufS_P2PRecv;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -2424,6 +2433,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iDim = 0; iDim < 3*(nDim-1); iDim++)
               base_nodes->SetMetric(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
+          case NON_PHYSICAL:
+            base_nodes->SetNon_Physical(iPoint, (bufSRecv[buf_offset] == 1)? true : false);
+            break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -2456,8 +2468,7 @@ void CSolver::ResetCFLAdapt() {
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
-                             CConfig   *config,
-                             unsigned short RunTime_EqSystem) {
+                             CConfig   *config) {
 
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
@@ -2469,23 +2480,18 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
-  // unsigned short nMGLevels          = config->GetnMGLevels();
 
+  /* Number of iterations considered to check for stagnation. */
   const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
-
-  // su2double CFLMaxRed = 1.0;
-  // switch(RunTime_EqSystem) {
-  //   case RUNTIME_TURB_SYS:
-  //     CFLMaxRed = config->GetCFLMaxRedCoeff_Turb();
-  //     nMGLevels = 0;
-  //     break;
-  //   default:
-  //     break;
-  // }
 
   static bool reduceCFL, resetCFL, canIncrease;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+    /* Store the mean flow, and turbulence solvers more clearly. */
+
+    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -2499,10 +2505,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check whether we achieved the requested reduction in the linear
      solver residual within the specified number of linear iterations. */
 
-    const su2double linRes = GetResLinSolver();
+    su2double linResTurb = 0.0;
+    if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
+
+    /* Max linear residual between flow and turbulence. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
 
     /* Tolerance limited to an acceptable value. */
-
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
 
     /* Check that we are meeting our nonlinear residual reduction target
@@ -2513,7 +2522,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-    resetCFL = linRes > 1.0;
+    resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
     canIncrease = linRes < linTol;
 
@@ -2524,8 +2533,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Sum the RMS residuals for all equations. */
 
       New_Func = 0.0;
-      for (unsigned short iVar = 0; iVar < GetnVar(); iVar++) {
-        New_Func += log10(GetRes_RMS(iVar));
+      for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+        New_Func += log10(solverFlow->GetRes_RMS(iVar));
+      }
+      if ((iMesh == MESH_0) && solverTurb) {
+        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+          New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        }
       }
 
       /* Compute the difference in the nonlinear residuals between the
@@ -2582,14 +2596,18 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Get the current local flow CFL number at this point. */
 
-      su2double CFL = GetNodes()->GetLocalCFL(iPoint);
+      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      su2double underRelaxation = GetNodes()->GetUnderRelaxation(iPoint);
+      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+      su2double underRelaxationTurb = 1.0;
+      if ((iMesh == MESH_0) && solverTurb)
+        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2626,7 +2644,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      GetNodes()->SetLocalCFL(iPoint, CFL);
+      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      if ((iMesh == MESH_0) && solverTurb) {
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+      }
 
       /* Store min and max CFL for reporting on the fine grid. */
 

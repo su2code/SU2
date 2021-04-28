@@ -322,8 +322,6 @@ public:
                                 su2double           *primvar_j,
                                 su2double           *turbvar_i, 
                                 su2double           *turbvar_j,
-                                bool                &good_i,
-                                bool                &good_j,
                                 const unsigned long nFlowVarGrad,
                                 const unsigned long nTurbVarGrad) {}
 
@@ -1744,7 +1742,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - Container vector with all the solutions.
    */
-  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned short RunTime_EqSystem);
+  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
 
   /*!
    * \brief Reset the local CFL adaption variables

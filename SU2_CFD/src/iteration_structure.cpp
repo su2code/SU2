@@ -511,10 +511,7 @@ void CFluidIteration::Iterate(COutput *output,
   if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                   solver[val_iZone][val_iInst], config[val_iZone], RUNTIME_FLOW_SYS);
-    if (turb)
-      solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                     solver[val_iZone][val_iInst], config[val_iZone], RUNTIME_TURB_SYS);
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
