@@ -2889,6 +2889,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
                              string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
           else {
+            /*--- Find the most likely candidate for the unrecognized option, based on the length
+             of start and end character sequences shared by candidates and the option. ---*/
             auto countMatchChars = [&option_name](const string& candidate) {
               const size_t sz1 = option_name.size(), sz2 = candidate.size();
               size_t nMatch = 0;
