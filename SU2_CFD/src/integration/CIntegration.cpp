@@ -61,10 +61,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
   /*--- Compute viscous residuals ---*/
-  solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
+  //solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
 
   /*--- Compute source term residuals ---*/
-  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
+  //solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
 
@@ -94,7 +94,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
       case EULER_WALL:
-        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case ACTDISK_INLET:
         solver_container[MainSolver]->BC_ActDisk_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
@@ -103,7 +103,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Engine_Inflow(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case INLET_FLOW:
-        solver_container[MainSolver]->BC_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case ACTDISK_OUTLET:
         solver_container[MainSolver]->BC_ActDisk_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
@@ -112,13 +112,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Engine_Exhaust(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case SUPERSONIC_INLET:
-        solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case OUTLET_FLOW:
-        solver_container[MainSolver]->BC_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case SUPERSONIC_OUTLET:
-        solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case GILES_BOUNDARY:
         solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
@@ -132,10 +132,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         }
         break;
       case FAR_FIELD:
-        solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case SYMMETRY_PLANE:
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
     }
   }
@@ -148,10 +148,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
-        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case HEAT_FLUX:
-        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        //solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);

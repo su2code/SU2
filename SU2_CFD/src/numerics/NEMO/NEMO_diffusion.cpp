@@ -161,14 +161,14 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
       dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
     dist_ij = sqrt(dist_ij);
 
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       Jacobian_i, Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
   }
 
-  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
 
 CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
@@ -327,14 +327,14 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
       dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
     dist_ij = sqrt(dist_ij);
 
-    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
-                       Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
-                       Jacobian_i, Jacobian_j, config);
+    //GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
+    //                   Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+    //                   Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
+    //                   dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
+    //                   val_Jacobian_i, val_Jacobian_j, config);
 
   }
 
-  return ResidualType<>(Flux, Jacobian_j, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 }
 

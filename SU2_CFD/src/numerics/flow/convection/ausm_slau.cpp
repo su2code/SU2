@@ -967,11 +967,10 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
       }
     }
   }
-  cout <<"delete meeeeeeeee"<<endl;
+  cout <<"delete me"<<endl;
   for (iVar=0;iVar<nVar;iVar++)
     for (unsigned short jVar=0;jVar<nVar;jVar++)
-      //cout <<"jac i"<<Jacobian_i[iVar][jVar]<<endl;
-  
-  return ResidualType<>(Flux,NULL,NULL);
-  //return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+      cout <<"Jac I: "<<Jacobian_i[iVar][jVar]<<endl;
+
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

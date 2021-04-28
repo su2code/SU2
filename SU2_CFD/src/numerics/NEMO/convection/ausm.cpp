@@ -493,5 +493,12 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   //     }
   //   }
   // }
+  cout <<"delete me"<<endl;
+  for (unsigned iVar = 0; iVar < 4; iVar++) {
+    for (unsigned jVar = 0; jVar < 4; jVar++) {
+      cout <<"Jac I: " << Jacobian_i[iVar][jVar] <<endl;
+    }
+  }
+
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }
