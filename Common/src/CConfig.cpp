@@ -1644,14 +1644,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION:  Turn on/off harmonic balance preconditioning */
   addBoolOption("HB_PRECONDITION", HB_Precondition, false);
-  /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
-  addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
   /* DESCRIPTION: Number of iterations to average the objective */
   addLongOption("ITER_AVERAGE_OBJ", Iter_Avg_Objective , 0);
-  /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
-  addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -2884,6 +2880,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           else if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          else if (!option_name.compare("UNST_RESTART_ITER"))
+            newString.append("UNST_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
+          else if (!option_name.compare("DYN_RESTART_ITER"))
+            newString.append("DYN_RESTART_ITER is deprecated. Use RESTART_ITER instead.\n\n");
           // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
           /*else if (!option_name.compare("CONV_CRITERIA"))
             newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
@@ -9697,7 +9697,7 @@ void CConfig::SetFreeStreamTurboNormal(const su2double* turboNormal){
 
 }
 
-void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
+void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* config_container){
 
   for (unsigned short iZone = 0; iZone < nZone; iZone++){
 
@@ -9712,6 +9712,10 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     }
     if (config_container[iZone]->GetTime_Step() != GetTime_Step()){
       SU2_MPI::Error("Option TIME_STEP must be the same in all zones.", CURRENT_FUNCTION);
+    }
+    if (config_container[iZone]->GetUnst_CFL() != 0.0){
+      SU2_MPI::Error("Option UNST_CFL_NUMBER cannot be used in multizone problems (must be 0),"
+                     " use a fixed TIME_STEP instead.", CURRENT_FUNCTION);
     }
     if (config_container[iZone]->GetMultizone_Problem() != GetMultizone_Problem()){
       SU2_MPI::Error("Option MULTIZONE must be the same in all zones.", CURRENT_FUNCTION);
@@ -9760,29 +9764,19 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
   /*------ Determine the special properties of the problem -----*/
   /*------------------------------------------------------------*/
 
-  bool structural_zone = false;
   bool fluid_zone = false;
-
-  unsigned short iZone = 0;
+  bool structural_zone = false;
 
   /*--- If there is at least a fluid and a structural zone ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-    case EULER: case NAVIER_STOKES: case RANS:
-    case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
-      fluid_zone = true;
-      break;
-    case FEM_ELASTICITY:
-      structural_zone = true;
-      Relaxation = true;
-      break;
-    }
+  for (auto iZone = 0u; iZone < nZone; iZone++) {
+    fluid_zone |= config_container[iZone]->GetFluidProblem();
+    structural_zone |= config_container[iZone]->GetStructuralProblem();
   }
+
+  if (structural_zone) Relaxation = true;
 
   /*--- If the problem has FSI properties ---*/
   FSI_Problem = fluid_zone && structural_zone;
 
   Multizone_Residual = true;
-
 }

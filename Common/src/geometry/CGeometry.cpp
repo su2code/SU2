@@ -28,24 +28,7 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
-
-/*--- Cross product ---*/
-
-#define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];  \
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];  \
-(dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
-
-/*--- Cross product ---*/
-
-#define DOT(v1,v2) ((v1)[0]*(v2)[0] + (v1)[1]*(v2)[1] + (v1)[2]*(v2)[2]);
-
-/*--- a = b - c ---*/
-
-#define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];  \
-(dest)[1] = (v1)[1] - (v2)[1];  \
-(dest)[2] = (v1)[2] - (v2)[2];
+#include "../../include/toolboxes/geometry_toolbox.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -1626,16 +1609,16 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Find vectors for two edges sharing vert0 ---*/
 
-  SUB(edge1, vert1, vert0);
-  SUB(edge2, vert2, vert0);
+  GeometryToolbox::Distance(3, vert1, vert0, edge1);
+  GeometryToolbox::Distance(3, vert2, vert0, edge2);
 
   /*--- Begin calculating determinant - also used to calculate U parameter ---*/
 
-  CROSS(pvec, dir, edge2);
+  GeometryToolbox::CrossProduct(dir, edge2, pvec);
 
   /*--- If determinant is near zero, ray lies in plane of triangle ---*/
 
-  det = DOT(edge1, pvec);
+  det = GeometryToolbox::DotProduct(3, edge1, pvec);
 
 
   if (fabs(det) < epsilon) return(false);
@@ -1644,27 +1627,27 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Calculate distance from vert0 to ray origin ---*/
 
-  SUB(tvec, orig, vert0);
+  GeometryToolbox::Distance(3, orig, vert0, tvec);
 
   /*--- Calculate U parameter and test bounds ---*/
 
-  u = inv_det * DOT(tvec, pvec);
+  u = inv_det * GeometryToolbox::DotProduct(3, tvec, pvec);
 
   if (u < 0.0 || u > 1.0) return(false);
 
   /*--- prepare to test V parameter ---*/
 
-  CROSS(qvec, tvec, edge1);
+  GeometryToolbox::CrossProduct(tvec, edge1, qvec);
 
   /*--- Calculate V parameter and test bounds ---*/
 
-  v = inv_det * DOT(dir, qvec);
+  v = inv_det * GeometryToolbox::DotProduct(3, dir, qvec);
 
   if (v < 0.0 || u + v > 1.0) return(false);
 
   /*--- Calculate t, ray intersects triangle ---*/
 
-  t = inv_det * DOT(edge2, qvec);
+  t = inv_det * GeometryToolbox::DotProduct(3, edge2, qvec);
 
   /*--- Compute the intersection point in cartesian coordinates ---*/
 
@@ -1724,21 +1707,21 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double p
 
   su2double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
 
-  SUB(dir, point1, point0);
+  GeometryToolbox::Distance(3, point1, point0, dir);
 
   if (RayIntersectsTriangle(point0, dir, vert0, vert1, vert2, intersect)) {
 
     /*--- Check that the intersection is in the segment ---*/
 
-    SUB(u, point0, intersect);
-    SUB(v, point1, intersect);
+    GeometryToolbox::Distance(3, point0, intersect, u);
+    GeometryToolbox::Distance(3, point1, intersect, v);
 
-    SUB(edge1, vert1, vert0);
-    SUB(edge2, vert2, vert0);
-    CROSS(Plane_Normal, edge1, edge2);
+    GeometryToolbox::Distance(3, vert1, vert0, edge1);
+    GeometryToolbox::Distance(3, vert2, vert0, edge2);
+    GeometryToolbox::CrossProduct(edge1, edge2, Plane_Normal);
 
-    Denominator = DOT(Plane_Normal, u);
-    Numerator = DOT(Plane_Normal, v);
+    Denominator = GeometryToolbox::DotProduct(3, Plane_Normal, u);
+    Numerator = GeometryToolbox::DotProduct(3, Plane_Normal, v);
 
     Aux = Numerator * Denominator;
 
@@ -3549,7 +3532,7 @@ void CGeometry::SetElemVolume()
   END_SU2_OMP_PARALLEL
 }
 
-void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -3602,7 +3585,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
 }
 
-void CGeometry::SetShroudVelocity(CConfig *config) {
+void CGeometry::SetShroudVelocity(const CConfig *config) {
 
   unsigned long iPoint, iVertex;
   unsigned short iMarker, iMarkerShroud;
@@ -3621,7 +3604,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) {
   }
 }
 
-void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetTranslationalVelocity(const CConfig *config, bool print) {
 
   su2double xDot[3] = {0.0,0.0,0.0};
 
@@ -3641,10 +3624,68 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetGridVel(iPoint, xDot);
-
 }
 
-void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
+void CGeometry::SetWallVelocity(const CConfig *config, bool print) {
+
+  const su2double L_Ref = config->GetLength_Ref();
+  const su2double Omega_Ref = config->GetOmega_Ref();
+  const su2double Vel_Ref = config->GetVelocity_Ref();
+
+  /*--- Store grid velocity for each node on the moving surface(s).
+   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
+
+    /*--- Identify iMarker from the list of those under MARKER_MOVING
+     Get prescribed wall speed from config for this marker. ---*/
+
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const auto jMarker = config->GetMarker_Moving(Marker_Tag);
+
+    su2double xDot[MAXNDIM], Center[MAXNDIM], Omega[MAXNDIM];
+
+    for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+      Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      Omega[iDim] = config->GetMarkerRotationRate(jMarker, iDim) / Omega_Ref;
+      xDot[iDim] = config->GetMarkerTranslationRate(jMarker, iDim) / Vel_Ref;
+    }
+
+    if (rank == MASTER_NODE && print) {
+      cout << " Storing grid velocity for marker: ";
+      cout << Marker_Tag << ".\n";
+      cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+      cout << ", " << xDot[2]*config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ") m/s.\n";
+      else cout << ") ft/s.\n";
+      cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+      cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+      cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+    }
+
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Calculate non-dim. position from rotation center ---*/
+      su2double r[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        r[iDim] = (nodes->GetCoord(iPoint,iDim) - Center[iDim]) / L_Ref;
+
+      /*--- Cross Product of angular velocity and distance from center to
+       get the rotational velocity. Note that we are adding on the velocity
+       due to pure translation as well. ---*/
+
+      su2double GridVel[MAXNDIM];
+      GeometryToolbox::CrossProduct(Omega, r, GridVel);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        nodes->SetGridVel(iPoint, iDim, xDot[iDim]+GridVel[iDim]);
+    }
+  }
+}
+
+void CGeometry::SetGridVelocity(const CConfig *config) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 

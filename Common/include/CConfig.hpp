@@ -8292,22 +8292,19 @@ public:
   void GEMMProfilingCSV(void);
 
   /*!
-   *
    * \brief Set freestream turbonormal for initializing solution.
    */
   void SetFreeStreamTurboNormal(const su2double* turboNormal);
 
   /*!
-   *
    * \brief Set freestream turbonormal for initializing solution.
    */
   const su2double* GetFreeStreamTurboNormal(void) const { return FreeStreamTurboNormal; }
 
   /*!
-   *
    * \brief Set multizone properties.
    */
-  void SetMultizone(CConfig *driver_config, CConfig **config_container);
+  void SetMultizone(const CConfig *driver_config, const CConfig* const* config_container);
 
   /*!
    * \brief Get the verbosity level of the console output.
