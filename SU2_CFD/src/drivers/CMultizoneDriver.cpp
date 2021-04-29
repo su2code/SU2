@@ -37,7 +37,6 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
 
-
   /*--- Initialize some useful booleans ---*/
   fsi = false; cht = false;
 
@@ -644,25 +643,15 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
 bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
-  unsigned long nOuterIter, OuterIter, nTimeIter;
-  su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, FinalTimeReached, MaxIterationsReached, TimeConvergence;
-
-  OuterIter  = driver_config->GetOuterIter();
-  nOuterIter = driver_config->GetnOuter_Iter();
-  nTimeIter  = driver_config->GetnTime_Iter();
-  MaxTime    = driver_config->GetMax_Time();
-  CurTime    = driver_output->GetHistoryFieldValue("CUR_TIME");
-
-  TimeDomain = driver_config->GetTime_Domain();
-
-
   /*--- Check whether the inner solver has converged --- */
 
-  if (TimeDomain == NO){
+  if (driver_config->GetTime_Domain() == NO){
 
-    InnerConvergence     = driver_output->GetConvergence();
-    MaxIterationsReached = OuterIter+1 >= nOuterIter;
+    const auto OuterIter  = driver_config->GetOuterIter();
+    const auto nOuterIter = driver_config->GetnOuter_Iter();
+
+    const auto InnerConvergence = driver_output->GetConvergence();
+    const bool MaxIterationsReached = (OuterIter+1 >= nOuterIter);
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
@@ -672,17 +661,19 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
-    StopCalc = MaxIterationsReached || InnerConvergence;
+    return (MaxIterationsReached || InnerConvergence);
   }
-
-
-  if (TimeDomain == YES) {
+  else { // i.e. unsteady simulation
 
     /*--- Check whether the outer time integration has reached the final time ---*/
-    TimeConvergence = GetTimeConvergence();
+    const auto TimeConvergence = GetTimeConvergence();
 
-    FinalTimeReached     = CurTime >= MaxTime;
-    MaxIterationsReached = TimeIter+1 >= nTimeIter;
+    const auto nTimeIter = driver_config->GetnTime_Iter();
+    const auto MaxTime   = driver_config->GetMax_Time();
+    const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
+
+    const bool FinalTimeReached = (CurTime >= MaxTime);
+    const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
 
     if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
       cout << endl << "----------------------------- Solver Exit -------------------------------";
@@ -692,10 +683,8 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
-    StopCalc = FinalTimeReached || MaxIterationsReached;
+    return (FinalTimeReached || MaxIterationsReached);
   }
-
-  return StopCalc;
 
 }
 
