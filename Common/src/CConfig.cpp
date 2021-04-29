@@ -2731,8 +2731,10 @@ void CConfig::SetConfig_Options() {
   addStringListOption("SCREEN_OUTPUT", nScreenOutput, ScreenOutput);
   /* DESCRIPTION: Type of output printed to the history file */
   addStringListOption("HISTORY_OUTPUT", nHistoryOutput, HistoryOutput);
-  /* DESCRIPTION: Type of output printed to the volume solution file */
+  /* DESCRIPTION: Type of regular output printed to the volume solution file */
   addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
+  /* DESCRIPTION: Type of debug output printed to the volume solution file */
+  addStringListOption("VOLUME_DEBUGOUTPUT", nVolumeDebugOutput, VolumeDebugOutput);
 
   /* DESCRIPTION: History writing frequency (INNER_ITER) */
   addUnsignedLongOption("HISTORY_WRT_FREQ_INNER", HistoryWrtFreq[2], 1);

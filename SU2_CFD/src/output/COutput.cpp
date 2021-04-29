@@ -103,9 +103,12 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
     requestedScreenFields.push_back(config->GetScreenOutput_Field(iField));
   }
 
-  nRequestedVolumeFields = config->GetnVolumeOutput();
-  for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
+  nRequestedVolumeFields = config->GetnVolumeOutput() + config->GetnVolumeDebugOutput();
+  for (unsigned short iField = 0; iField < config->GetnVolumeOutput(); iField++){
     requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
+  }
+  for (unsigned short iField = 0; iField < config->GetnVolumeDebugOutput(); iField++){
+    requestedVolumeFields.push_back(config->GetVolumeDebugOutput_Field(iField));
   }
 
   gridMovement = config->GetGrid_Movement();
@@ -1423,6 +1426,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/
 
   SetVolumeOutputFields(config);
+  SetVolumeDebugOutputFields(config);
 
   /*---Coordinates and solution groups must be always in the output.
    * If they are not requested, add them here. ---*/
@@ -1623,6 +1627,19 @@ void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double 
     }
   }
 
+}
+
+void COutput::SetVolumeDebugOutputValue(string name, unsigned long iPoint, su2double value){
+  auto search = volumeOutput_Map.find(name);
+  if(search==volumeOutput_Map.end()){
+    SU2_MPI::Error(string("Debug output field '")+name+string("' has not been registered in VOLUME_DEBUGOUTPUT."), CURRENT_FUNCTION);
+  } else {
+    const short Offset = search->second.offset;
+    if (Offset != -1 && volumeDataSorter!=nullptr){
+     // volumeDataSorter is allocated with the first write of volume solution file
+     volumeDataSorter->SetUnsorted_Data(iPoint, Offset, value);
+    }
+  }
 }
 
 su2double COutput::GetVolumeOutputValue(string name, unsigned long iPoint){
@@ -2167,5 +2184,12 @@ void COutput::PrintVolumeFields(){
     }
 
     VolumeFieldTable.PrintFooter();
+  }
+}
+
+void COutput::SetVolumeDebugOutputFields(CConfig *config){
+  for(int i=0; i<config->GetnVolumeDebugOutput(); i++){
+    string name = config->GetVolumeDebugOutput_Field(i);
+    AddVolumeOutput(name, name, "DEBUG", string("Debug field '")+name+string("'"));
   }
 }

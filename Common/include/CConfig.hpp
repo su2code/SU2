@@ -1101,9 +1101,13 @@ private:
   bool SpecialOutput,             /*!< \brief Determines if the special output is written. */
   Wrt_ForcesBreakdown;            /*!< \brief Determines if the forces breakdown file is written. */
   string *ScreenOutput,           /*!< \brief Kind of the screen output. */
-  *HistoryOutput, *VolumeOutput;  /*!< \brief Kind of the output printed to the history file. */
+  *HistoryOutput,  /*!< \brief Kind of the output printed to the history file. */
+  *VolumeOutput,   /*!< \brief Kind of the output printed to the volume solution file regularly. */
+  *VolumeDebugOutput; /*!< \brief Kind of the output printed to the volume solution file as debug information. */
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
-  nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
+  nHistoryOutput,   /*!< \brief Number of variables printed to the history file. */
+  nVolumeOutput,    /*!< \brief Number of variables printed to the volume solution file regularly. */
+  nVolumeDebugOutput; /*!< \brief Number of variables printed to the volume solution file as debug information. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
@@ -9104,14 +9108,24 @@ public:
   string GetHistoryOutput_Field(unsigned short iField) const { return HistoryOutput[iField]; }
 
   /*!
-   * \brief Get the number of history output variables requested
+   * \brief Get the number of regular volume solution variables requested
    */
   unsigned short GetnVolumeOutput(void) const { return nVolumeOutput; }
 
   /*!
-   * \brief Get the history output field iField
+   * \brief Get the number of debug volume solution variables requested
+   */
+  unsigned short GetnVolumeDebugOutput(void) const { return nVolumeDebugOutput; }
+
+  /*!
+   * \brief Get the volume solution regular output field iField
    */
   string GetVolumeOutput_Field(unsigned short iField) const { return VolumeOutput[iField]; }
+
+  /*!
+   * \brief Get the volume solution debug output field iField
+   */
+  string GetVolumeDebugOutput_Field(unsigned short iField) const { return VolumeDebugOutput[iField]; }
 
   /*!
   * \brief Get the convergence fields for monitoring

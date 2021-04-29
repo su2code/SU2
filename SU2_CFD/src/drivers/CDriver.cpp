@@ -201,7 +201,8 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
 
       Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
-                             solver_container[iZone][iInst], numerics_container[iZone][iInst]);
+                             solver_container[iZone][iInst], output_container[iZone],
+                             numerics_container[iZone][iInst]);
 
       /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
        The integration class orchestrates the execution of the spatial integration
@@ -1336,7 +1337,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration, CGeometry 
 
 }
 
-void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
+void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, COutput *output, CNumerics ****&numerics) const {
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
@@ -1513,7 +1514,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     numerics[iMGlevel] = new CNumerics** [MAX_SOLS];
     for (iSol = 0; iSol < MAX_SOLS; iSol++)
-      numerics[iMGlevel][iSol] = new CNumerics* [MAX_TERMS*omp_get_max_threads()]();
+      numerics[iMGlevel][iSol] = new CNumerics* [MAX_TERMS*omp_get_max_threads()]{nullptr};
   }
 
   /*--- Instantiate one numerics object per thread for each required term. ---*/
@@ -2385,6 +2386,17 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     numerics[MESH_0][MESH_SOL][fea_term] = new CFEAMeshElasticity(nDim, nDim, geometry[MESH_0]->GetnElem(), config);
 
   } // end "per-thread" allocation loop
+
+  /*--- Set pointers for debug output in all allocated numerics objects. ---*/
+  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+      for(unsigned long iTerm = 0; iTerm<MAX_TERMS*omp_get_max_threads(); iTerm++){
+        if(numerics[iMGlevel][iSol][iTerm]!=nullptr){
+          numerics[iMGlevel][iSol][iTerm]->SetDebugOutput(output);
+        }
+      }
+    }
+  }
 
 }
 

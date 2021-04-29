@@ -39,6 +39,8 @@
 #include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
+#include "../../include/output/COutput.hpp"
+
 using namespace std;
 
 class CElement;
@@ -226,6 +228,9 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  COutput* output = nullptr; /*!< \brief Debug Output */
+  unsigned long iPoint_DebugOutput; /*!< \brief point ID to write debug output values to */
 
 public:
   /*!
@@ -1609,6 +1614,40 @@ public:
    * \param[in] SolverSPvals - Struct holding the values.
    */
   virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
+
+  /*!
+   * \brief Set pointer for debug output.
+   * \param[in] pointer for debug output
+   */
+  inline void SetDebugOutput(COutput* output) {
+    this->output = output;
+  }
+
+  /*! Set point ID for debug output.
+   * \param[in] iPoint_DebugOutput - point ID for debug output
+   */
+  inline void SetiPoint_DebugOutput(unsigned long iPoint_DebugOutput){
+    this->iPoint_DebugOutput = iPoint_DebugOutput;
+  }
+
+  /*! Write to debug output.
+   * \details In order to write debug output alongside the regular output
+   * to the volume solution file, you need to
+   *  - add the field name to the cfg option VOLUME_DEBUGOUTPUT
+   *  - set the point iD in the calling CSolver function by SetiPoint_DebugOutput(iPoint),
+   *  - call this function with the field name and value.
+   * \param[in] name - field name of value to write.
+   * \param[in] value - value to write
+   */
+  inline void WriteToDebugOutput(string name, su2double value){
+    if(output==nullptr){
+      SU2_MPI::Error("Debug output not set.", CURRENT_FUNCTION);
+    }
+    SU2_OMP_CRITICAL
+    output->SetVolumeDebugOutputValue(name, iPoint_DebugOutput, value);
+    END_SU2_OMP_CRITICAL
+  }
+
 };
 
 /*!

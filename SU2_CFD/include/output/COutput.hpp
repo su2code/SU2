@@ -586,7 +586,15 @@ protected:
     volumeOutput_List.push_back(name);
   }
 
+public:
+  /*! Write debug output.
+   * \param[in] name - name of value
+   * \param[in] iPoint - point ID where value is located
+   * \param[in] value - value to write
+   */
+  void SetVolumeDebugOutputValue(string name, unsigned long iPoint, su2double value);
 
+protected:
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
@@ -759,6 +767,7 @@ protected:
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
 
+  void SetVolumeDebugOutputFields(CConfig *config);
 
   /*!
    * \brief Load the history output field values
