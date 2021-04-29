@@ -2807,8 +2807,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
 
   string errorString;
 
+  const int max_err_count = 30; // Maximum number of errors to print before stopping
   int err_count = 0;  // How many errors have we found in the config file
-  int max_err_count = 30; // Maximum number of errors to print before stopping
   int line_count = 1;
 
   map<string, bool> included_options;
@@ -2818,10 +2818,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
   while (getline (config_buffer, text_line)) {
 
     if (err_count >= max_err_count) {
-      errorString.append("too many errors. Stopping parse");
-
-      cout << errorString << endl;
-      throw(1);
+      errorString.append("Too many errors, stopping parse.");
+      break;
     }
 
      PrintingToolbox::trim(text_line);
@@ -2862,34 +2860,63 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
             newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
                              "and it also applies to discrete adjoint problems.\n\n");
-          if (!option_name.compare("WRT_MESH_QUALITY"))
+          else if (!option_name.compare("WRT_MESH_QUALITY"))
             newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
-          if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
+          else if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
             newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
-          if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
+          else if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
             newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
-          if (!option_name.compare("WRT_BINARY_RESTART"))
+          else if (!option_name.compare("WRT_BINARY_RESTART"))
             newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
-          if (!option_name.compare("WRT_RESIDUALS"))
+          else if (!option_name.compare("WRT_RESIDUALS"))
             newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
-          if (!option_name.compare("WRT_LIMITERS"))
+          else if (!option_name.compare("WRT_LIMITERS"))
             newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
-          if (!option_name.compare("WRT_CON_FREQ"))
+          else if (!option_name.compare("WRT_CON_FREQ"))
             newString.append("WRT_CON_FREQ is deprecated. Use SCREEN_WRT_FREQ_INNER or SCREEN_WRT_FREQ_OUTER for multizone cases instead.\n\n");
-          if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
+          else if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
             newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
-          if (!option_name.compare("WRT_SRF_SOL"))
+          else if (!option_name.compare("WRT_SRF_SOL"))
             newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
-          if (!option_name.compare("WRT_CSV_SOL"))
+          else if (!option_name.compare("WRT_CSV_SOL"))
             newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
-          if (!option_name.compare("WRT_SOL_FREQ"))
+          else if (!option_name.compare("WRT_SOL_FREQ"))
             newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
-          if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
+          else if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
             newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
-          /*if (!option_name.compare("CONV_CRITERIA"))
+          /*else if (!option_name.compare("CONV_CRITERIA"))
             newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
                              string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
+          else {
+            /*--- Find the most likely candidate for the unrecognized option, based on the length
+             of start and end character sequences shared by candidates and the option. ---*/
+            auto countMatchChars = [&option_name](const string& candidate) {
+              const size_t sz1 = option_name.size(), sz2 = candidate.size();
+              size_t nMatch = 0;
+              for (size_t i=0; i<min(sz1,sz2); ++i) {
+                if (option_name[i] == candidate[i]) nMatch++;
+                else break;
+              }
+              for (size_t i=0; i<min(sz1,sz2); ++i) {
+                if (option_name[sz1-1-i] == candidate[sz2-1-i]) nMatch++;
+                else break;
+              }
+              return nMatch;
+            };
+            string match;
+            size_t maxScore = 0;
+            for (auto& candidate : option_map) {
+              auto score = countMatchChars(candidate.first);
+              if (score > maxScore) {
+                maxScore = score;
+                match = candidate.first;
+              }
+            }
+            newString.append("Did you mean ");
+            newString.append(match);
+            newString.append("?\n");
+          }
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -2908,7 +2935,6 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
         line_count++;
         continue;
       }
-
 
       /*--- New found option. Add it to the map, and delete from all options ---*/
 
@@ -2973,7 +2999,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   string errorString;
 
   int err_count = 0;  // How many errors have we found in the config file
-  int max_err_count = 30; // Maximum number of errors to print before stopping
+  const int max_err_count = 30; // Maximum number of errors to print before stopping
 
   map<string, bool> included_options;
 
@@ -2982,10 +3008,8 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
   while (getline (case_file, text_line)) {
 
     if (err_count >= max_err_count) {
-      errorString.append("too many errors. Stopping parse");
-
-      cout << errorString << endl;
-      throw(1);
+      errorString.append("Too many errors, stopping parse.");
+      break;
     }
 
     if (TokenizeString(text_line, option_name, option_value)) {
@@ -4401,11 +4425,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
-        SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
-                       string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
-                       CURRENT_FUNCTION);
-      }
+    if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
+      SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
+                     string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
+                     CURRENT_FUNCTION);
+    }
 #endif
     /*--- Initialize the derivative values ---*/
     switch (DirectDiff) {
