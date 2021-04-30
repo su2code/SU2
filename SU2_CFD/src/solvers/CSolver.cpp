@@ -3139,11 +3139,12 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
+  const auto t0 = SU2_MPI::Wtime();
 
   if (rank == MASTER_NODE) {
     cout << "\nThe number of points in the solution (" << nPointFile << ") does not match "
             "the mesh (" << geometry->GetGlobal_nPointDomain() << ").\n"
-            "A nearest neighbor interpolation will be performed.\n" << endl;
+            "A nearest neighbor interpolation will be performed." << endl;
   }
 
   su2activematrix localVars(nPointDomain, nFields);
@@ -3275,6 +3276,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
         Restart_Data[counter*nFields+iVar] = SU2_TYPE::GetValue(localVars(iPoint,iVar));
       counter++;
     }
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
 
