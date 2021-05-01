@@ -1301,7 +1301,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
 
 }
 
-void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
+void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {
 
   /*--- Loop over all coarse mesh points. ---*/
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_max_threads()))
