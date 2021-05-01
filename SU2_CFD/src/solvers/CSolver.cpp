@@ -3125,7 +3125,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
     SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
 
   if (config->GetStructuralProblem())
-    SU2_MPI::Error("Cannot interpolate restart for FEA problems.", CURRENT_FUNCTION);
+    SU2_MPI::Error("Cannot interpolate the restart file for FEA problems.", CURRENT_FUNCTION);
 
   /* Challenges:
    *  - Do not use too much memory by gathering the restart data in all ranks.
@@ -3140,11 +3140,12 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
   const auto t0 = SU2_MPI::Wtime();
+  auto nRecurse = 0;
 
   if (rank == MASTER_NODE) {
-    cout << "\nThe number of points in the solution (" << nPointFile << ") does not match "
+    cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
             "the mesh (" << geometry->GetGlobal_nPointDomain() << ").\n"
-            "A nearest neighbor interpolation will be performed." << endl;
+            "A recursive nearest neighbor interpolation will be performed." << endl;
   }
 
   su2activematrix localVars(nPointDomain, nFields);
@@ -3184,7 +3185,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
 
   su2activematrix donorVars(nPointDonorMax, nFields);
-  vector<su2double> distance(nPointDomain, 1e12);
+  vector<su2double> donorDist(nPointDomain, 1e12);
 
   /*--- Circle over all ranks. ---*/
 
@@ -3193,7 +3194,9 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const int count = sendBuf.size();
 
   for (int iStep = 0; iStep < size; ++iStep) {
+
     swap(sendBuf, donorVars);
+
     if (iStep) {
       /*--- Odd ranks send and then receive, and vice versa. ---*/
       if (rank%2) SU2_MPI::Send(sendBuf.data(), count, MPI_DOUBLE, dst, 0, SU2_MPI::GetComm());
@@ -3203,17 +3206,27 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       else SU2_MPI::Recv(donorVars.data(), count, MPI_DOUBLE, src, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
     }
 
-    for (auto iPointDonor = 0ul; iPointDonor < donorVars.rows(); ++iPointDonor) {
-      int r=0;
-      su2double dist=0;
-      unsigned long iPoint=0;
-      adt.DetermineNearestNode(donorVars[iPointDonor], dist, iPoint, r);
+    /*--- Find the closest target for each donor. ---*/
 
-      if (dist < distance[iPoint]) {
-        distance[iPoint] = dist;
+    vector<su2double> targetDist(nPointDonorMax);
+    vector<unsigned long> iTarget(nPointDonorMax);
+
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      int r=0;
+      adt.DetermineNearestNode(donorVars[iDonor], targetDist[iDonor], iTarget[iDonor], r);
+    }
+
+    /*--- Keep the closest donor for each target (this is separate for OpenMP). ---*/
+
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      const auto iPoint = iTarget[iDonor];
+      const auto dist = targetDist[iDonor];
+
+      if (dist < donorDist[iPoint]) {
+        donorDist[iPoint] = dist;
         isMapped[iPoint] = true;
         for (auto iVar = 0ul; iVar < donorVars.cols(); ++iVar)
-          localVars(iPoint,iVar) = donorVars(iPointDonor,iVar);
+          localVars(iPoint,iVar) = donorVars(iDonor,iVar);
       }
     }
   }
@@ -3221,44 +3234,38 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   /*--- Recursively diffuse the nearest neighbor data. ---*/
 
-  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint)
-    isMapped[iPoint] = true;
+  auto nDonor = isMapped;
 
-  auto isSeed = isMapped;
-  su2vector<uint8_t> nDonor(nPointDomain);
-
-  for (bool done=false; !done;) {
-    nDonor = 0;
+  for (bool done=false; !done; ++nRecurse) {
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-      if (!isSeed[iPoint]) continue;
+      /*--- Do not change points that are already interpolated. ---*/
+      if (isMapped[iPoint]) continue;
 
+      /*--- Boundaries to boundaries and domain to domain. ---*/
       const bool boundary_i = geometry->nodes->GetSolidBoundary(iPoint);
 
       for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-        /*--- Do not change points that are already interpolated (or halos). ---*/
-        if (isMapped[jPoint]) continue;
-        /*--- Boundaries to boundaries and domain to domain. ---*/
+        if (!isMapped[jPoint]) continue;
         if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
 
-        nDonor[jPoint]++;
+        nDonor[iPoint]++;
 
         for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
-          localVars(jPoint,iVar) += localVars(iPoint,iVar);
+          localVars(iPoint,iVar) += localVars(jPoint,iVar);
+      }
+
+      if (nDonor[iPoint] > 0) {
+        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
+          localVars(iPoint,iVar) /= nDonor[iPoint];
+        nDonor[iPoint] = true;
       }
     }
 
+    /*--- Repeat while all points are not mapped. ---*/
     done = true;
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-      /*--- Choose new seeds for next outer loop iteration. ---*/
-      isSeed[iPoint] = nDonor[iPoint] > 0;
-      /*--- Which means they are being mapped now. ---*/
-      isMapped[iPoint] |= isSeed[iPoint];
-      /*--- Repeat outer loop until all points are mapped. ---*/
-      done &= isMapped[iPoint];
-
-      if (nDonor[iPoint])
-        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
-          localVars(iPoint,iVar) /= nDonor[iPoint];
+      isMapped[iPoint] = nDonor[iPoint];
+      done &= nDonor[iPoint];
     }
   }
   } // everything goes out of scope except "localVars"
@@ -3279,7 +3286,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   }
 
   if (rank == MASTER_NODE) {
-    cout << "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
+    cout << "Number of recursions: " << nRecurse << ".\n"
+            "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
 

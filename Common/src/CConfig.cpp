@@ -4465,8 +4465,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
 #else
   if (AD_Mode == YES) {
-    SU2_MPI::Error(string("AUTO_DIFF=YES requires Automatic Differentiation support.\n") +
-                   string("Please use correct executables (configuration/compilation is done using the preconfigure.py script)."),
+    SU2_MPI::Error("Config option AUTO_DIFF= YES requires AD support.\n"
+                   "Please use SU2_???_AD (meson.py ... -Denable-autodiff=true ...).",
                    CURRENT_FUNCTION);
   }
 #endif
