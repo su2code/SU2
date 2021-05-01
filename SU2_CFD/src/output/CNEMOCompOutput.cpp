@@ -419,6 +419,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
+  AddCommonFVMOutputs(config);
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -554,6 +556,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
+
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
@@ -693,12 +697,6 @@ bool CNEMOCompOutput::SetInit_Residuals(CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
-
-}
-
-bool CNEMOCompOutput::SetUpdate_Averages(CConfig *config){
-
-  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
 
 }
 
