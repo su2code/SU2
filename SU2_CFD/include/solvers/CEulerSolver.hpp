@@ -543,7 +543,19 @@ public:
    */
   inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                        CNumerics *numerics, CConfig *config) { }
-
+  /*!
+   * \brief Compute wiggle detector for hybrid central upwind schemes
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in,out] primitive - Primitive variables.
+   * \param[out] secondary - Secondary variables.
+   */
+  static void WiggleDetector(su2double *Coord_i, su2double **Gradient_i, su2double *V_i,
+                             su2double *Coord_j, su2double **Gradient_j, su2double *V_j,
+                             unsigned short nDim, su2double& WiggleDetector);
+  
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
    *        in a more thermodynamically consistent way.

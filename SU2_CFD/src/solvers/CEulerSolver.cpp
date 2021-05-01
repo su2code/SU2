@@ -3161,39 +3161,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
 
-      if (hybrid_central_upwind){
-
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-
-          su2double Project_Grad_i = 0.0;
-          su2double Project_Grad_j = 0.0;
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-            Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-          }
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
-        }
-
-        Proj_Flux_Jac_i = new su2double*[nVar];
-        Proj_Flux_Jac_j = new su2double*[nVar];
-        for (iVar = 0; iVar < nVar; iVar++)
-        {
-          Proj_Flux_Jac_i[iVar] = new su2double[nVar];
-          Proj_Flux_Jac_j[iVar] = new su2double[nVar];
-        }
-
-        auto Normal_ij = geometry->edge[iEdge]->GetNormal();
-        numerics->GetInviscidProjFlux_KEEP(V_i , V_j, Normal_ij, Proj_Flux, Proj_Flux_Jac_i);
-
-        for (iVar = 0; iVar < nVar; iVar++){
-          for (jVar = 0; jVar < nVar; jVar++){
-            Proj_Flux_Jac_j[iVar][jVar] = Proj_Flux_Jac_i[iVar][jVar];
-          }
-        }
-      }
-
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         su2double Project_Grad_i = 0.0;
@@ -3298,23 +3265,50 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     if (hybrid_central_upwind)
     {
-      su2double LowerBound = config->GetMin_LowDissipation();
-      su2double Ortho = min(geometry->Orthogonality[iPoint],
-                        geometry->Orthogonality[jPoint]) * PI_NUMBER / 180.;
-      su2double Sigma = pow(cos(Ortho),2.0);
+      su2double Vector_ij[MAXNDIM] = {0.0};
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+      }
+      
+      auto Normal_ij  = geometry->edge[iEdge]->GetNormal();
+      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      su2double Ducros_ij = 0.0;
-      if (config->GetKind_RoeLowDiss() == DUCROS){
-        Ducros_ij = max(nodes->GetSensor(iPoint),
-                        nodes->GetSensor(jPoint));
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        }
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
       }
 
-      Sigma = min(max(Sigma, Ducros_ij), 1.0);
-      Sigma = max(LowerBound, Sigma);
+      Proj_Flux_Jac_i = new su2double*[nVar];
+      Proj_Flux_Jac_j = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++)
+      {
+        Proj_Flux_Jac_i[iVar] = new su2double[nVar];
+        Proj_Flux_Jac_j[iVar] = new su2double[nVar];
+      }
+      numerics->GetInviscidProjFlux_KEEP(V_i , V_j, Normal_ij, Proj_Flux, Proj_Flux_Jac_i);
 
-      if (nodes->GetNon_Physical(iPoint) ||
-          nodes->GetNon_Physical(jPoint)) Sigma = 1.0;
-
+      for (iVar = 0; iVar < nVar; iVar++){
+        for (jVar = 0; jVar < nVar; jVar++){
+          Proj_Flux_Jac_j[iVar][jVar] = Proj_Flux_Jac_i[iVar][jVar];
+        }
+      }
+      
+      su2double Sigma = config->GetMin_LowDissipation();
+      WiggleDetector(Coord_i, Gradient_i, V_i,
+                     Coord_j, Gradient_j, V_j,
+                     nDim, Sigma);
+//      if (nodes->GetNon_Physical(iPoint) ||
+//          nodes->GetNon_Physical(jPoint)) Sigma = 1.0;
+      
       for (iVar = 0; iVar < nVar; iVar++)
       {
         Proj_Flux[iVar] =  (1. - Sigma)*Proj_Flux[iVar] + Sigma * residual[iVar];
@@ -3415,6 +3409,49 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
   }
 
 }
+
+void CEulerSolver::WiggleDetector(su2double *Coord_i, su2double **Gradient_i, su2double *V_i,
+                                  su2double *Coord_j, su2double **Gradient_j, su2double *V_j,
+                                  unsigned short nDim, su2double& WiggleDetector){
+  
+  
+  su2double Vector_ij[MAXNDIM] = {0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
+  }
+  
+  su2double Vector_ij_Mag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Vector_ij_Mag += pow(Vector_ij[iDim], 2.0);
+  Vector_ij_Mag = sqrt(Vector_ij_Mag);
+  
+  
+  unsigned short nLocalVar = 5;
+  if (nDim == 2) nLocalVar = 4;
+    
+  for (unsigned short iVar = 0; iVar < nLocalVar; iVar++){
+    
+    su2double Project_Grad_c = (V_j[iVar+1] - V_i[iVar+1]) / Vector_ij_Mag;
+    
+    su2double WiggleDetector_ij = 0.0;
+    su2double Project_Grad_i = 0.0;
+    su2double Project_Grad_j = 0.0;
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+      Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+    }
+    
+    
+    if ((Project_Grad_i*Project_Grad_c < -1e-4) &&
+        (Project_Grad_j*Project_Grad_c < -1e-4)){
+      WiggleDetector_ij = 1.0;
+    }
+    WiggleDetector = fmax(WiggleDetector, WiggleDetector_ij);
+    
+  }
+}
+
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
                                                   su2double *primitive, su2double *secondary) {
