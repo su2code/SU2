@@ -2863,14 +2863,14 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
     if (!getline (restart_file, text_line)) break;
 
-    vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
-
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
+
+      vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
 
       /*--- Store the solution (starting with node coordinates) --*/
 
@@ -3056,7 +3056,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   int *blocklen = nullptr;
   MPI_Aint *displace = nullptr;
 
-  if (nPointFile == geometry->GetGlobal_nPointDomain()) {
+  if (nPointFile == geometry->GetGlobal_nPointDomain() ||
+      config->GetKind_SU2() == SU2_COMPONENT::SU2_SOL) {
     /*--- No interpolation, each rank reads the indices it needs. ---*/
     nBlock = geometry->GetnPointDomain();
 
@@ -3114,7 +3115,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
 #endif
 
-  if (nPointFile != geometry->GetGlobal_nPointDomain()) {
+  if (nPointFile != geometry->GetGlobal_nPointDomain() &&
+      config->GetKind_SU2() != SU2_COMPONENT::SU2_SOL) {
     InterpolateRestartData(geometry, config);
   }
 }
