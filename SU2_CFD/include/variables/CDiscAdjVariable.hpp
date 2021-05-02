@@ -38,7 +38,7 @@
 class CDiscAdjVariable final : public CVariable {
 private:
   MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  MatrixType Solution_Direct; /*!< \brief  TK:: ?? Stores the primal solution of the current timestep in order to be able to reset. */
+  MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
   MatrixType DualTime_Derivative; /*!< \brief Container holding all dual time contributions to the adjoint variable. */
   MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
 
@@ -86,9 +86,6 @@ public:
 
   /*!
    * \brief Set/store the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
-   * \param[in] iPoint - Point index
-   * \param[in] iVar - Index of the variable
-   * \param[in] der - Derivative value
    */
   inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
     DualTime_Derivative(iPoint,iVar) = der;
@@ -96,9 +93,6 @@ public:
 
   /*!
    * \brief Set/store the dual time contributions to the adjoint variable for upcoming timestep.
-   * \param[in] iPoint - Point index
-   * \param[in] iVar - Index of the variable
-   * \param[in] der - Derivative value
    */
   inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override {
     DualTime_Derivative_n(iPoint,iVar) = der;
@@ -106,9 +100,6 @@ public:
 
   /*!
    * \brief Return the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
-   * \param[in] iPoint - Point index
-   * \param[in] iVar - Index of the variable
-   * \return Derivative value
    */
   inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override {
     return DualTime_Derivative(iPoint,iVar);
@@ -116,9 +107,6 @@ public:
 
   /*!
    * \brief Return the dual time contributions to the adjoint variable for upcoming timestep.
-   * \param[in] iPoint - Point index
-   * \param[in] iVar - Index of the variable
-   * \return Derivative value
    */
   inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override {
     return DualTime_Derivative_n(iPoint,iVar);
@@ -126,8 +114,6 @@ public:
 
   /*!
    * \brief Set/store the primal solution for all variables of one point.
-   * \param[in] iPoint - Point index
-   * \param[in] *val_solution_direct - pointer to all variables of iPoint
    */
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) override {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
@@ -136,8 +122,6 @@ public:
 
   /*!
    * \brief Returns the primal solution for all variables of one point.
-   * \param[in] iPoint - Point index
-   * \return Pointer to all variables of iPoint
    */
   inline su2double* GetSolution_Direct(unsigned long iPoint) override { return Solution_Direct[iPoint]; }
 
