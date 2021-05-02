@@ -286,7 +286,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
     /*--- Compute & set Grid Velocity via finite differences of the Coordinates. ---*/
     if (grid_IsMoving)
       for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++)
-        geometries[iMesh]->SetGridVelocity(config[iZone], TimeIter);
+        geometries[iMesh]->SetGridVelocity(config[iZone]);
 
   }  // if unsteady
 

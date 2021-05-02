@@ -106,7 +106,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
        differencing based on node coordinates at previous times. ---*/
 
       if (rank == MASTER_NODE) cout << " Computing grid velocities by finite differencing." << endl;
-      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+      geometry[MESH_0]->SetGridVelocity(config);
 
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
@@ -138,7 +138,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
     if (!adjoint) {
       if (rank == MASTER_NODE) cout << " Computing grid velocities by finite differencing." << endl;
-      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+      geometry[MESH_0]->SetGridVelocity(config);
     }
 
     /*--- Update the multigrid structure after moving the finest grid,

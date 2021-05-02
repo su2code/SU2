@@ -246,14 +246,13 @@ protected:
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
-  void StaticMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSurfaceMovement *surface_movement);
+  void StaticMesh_Preprocessing(const CConfig *config, CGeometry **geometry);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    */
   void Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface);
-
 
   /*!
    * \brief A virtual member.
