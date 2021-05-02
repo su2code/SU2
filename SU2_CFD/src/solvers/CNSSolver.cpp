@@ -2692,6 +2692,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal;
   bool CalculateWallModel = false;
+  bool WMLESFirstPoint = config->GetWMLES_First_Point();
 
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
   su2double GradP[3], GradP_TangMod;
@@ -2791,7 +2792,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        /*--- If an exchange location was found (donor element) use this information as the input
        for the wall model. Otherwise, the information of the 1st point off the wall is used. ---*/
 
-       if (geometry->vertex[iMarker][iVertex]->GetDonorFound()){
+       if (geometry->vertex[iMarker][iVertex]->GetDonorFound() && !WMLESFirstPoint){
 
          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
          WallDistMod = doubleInfo[0];

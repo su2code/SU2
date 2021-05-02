@@ -3441,7 +3441,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   map<unsigned long, unsigned long>::const_iterator MI;
 
-  bool wmles = config->GetWall_Models();
+  bool wmles = (config->GetWall_Models() && !config->GetWMLES_First_Point());
 
   /*--- Check for a wall treatment of the viscous boundaries. If present, some
         additional elements (and nodes) may be added as halo's. Only needed

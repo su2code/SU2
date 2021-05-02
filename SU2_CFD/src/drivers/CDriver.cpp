@@ -741,7 +741,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   unsigned short requestedMGlevels = config->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
-  bool wall_models = config->GetWall_Models();
+  bool wall_models = (config->GetWall_Models() && !config->GetWMLES_First_Point());
 
   /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
