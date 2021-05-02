@@ -202,13 +202,13 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
 
   if(dynamic){
-    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(iPoint, 0));
-    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(iPoint, 1));
-    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(iPoint, 2));
+    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution(iPoint, 0+nDim));
+    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution(iPoint, 1+nDim));
+    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution(iPoint, 3+nDim));
 
-    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(iPoint, 0));
-    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
-    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
+    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution(iPoint, 0+2*nDim));
+    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution(iPoint, 1+2*nDim));
+    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution(iPoint, 2+2*nDim));
   }
 
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);

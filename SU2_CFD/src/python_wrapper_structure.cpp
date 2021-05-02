@@ -681,10 +681,10 @@ vector<passivedouble> CDriver::GetFEA_Velocity(unsigned short iMarker, unsigned 
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
-    Velocity[0] = solver->GetNodes()->GetSolution_Vel(iPoint, 0);
-    Velocity[1] = solver->GetNodes()->GetSolution_Vel(iPoint, 1);
+    Velocity[0] = solver->GetNodes()->GetSolution(iPoint, 0+geometry->GetnDim());
+    Velocity[1] = solver->GetNodes()->GetSolution(iPoint, 1+geometry->GetnDim());
     if (geometry->GetnDim() == 3)
-      Velocity[2] = solver->GetNodes()->GetSolution_Vel(iPoint, 2);
+      Velocity[2] = solver->GetNodes()->GetSolution(iPoint, 2+geometry->GetnDim());
     else
       Velocity[2] = 0.0;
   }
@@ -707,10 +707,10 @@ vector<passivedouble> CDriver::GetFEA_Velocity_n(unsigned short iMarker, unsigne
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   if (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC){
-    Velocity_n[0] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 0);
-    Velocity_n[1] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 1);
+    Velocity_n[0] = solver->GetNodes()->GetSolution_time_n(iPoint, 0+geometry->GetnDim());
+    Velocity_n[1] = solver->GetNodes()->GetSolution_time_n(iPoint, 1+geometry->GetnDim());
     if (geometry->GetnDim() == 3)
-      Velocity_n[2] = solver->GetNodes()->GetSolution_Vel_time_n(iPoint, 2);
+      Velocity_n[2] = solver->GetNodes()->GetSolution_time_n(iPoint, 2+geometry->GetnDim());
     else
       Velocity_n[2] = 0.0;
   }

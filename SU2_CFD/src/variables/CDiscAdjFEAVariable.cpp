@@ -37,9 +37,20 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
   Sensitivity_Old.resize(nPoint,nDim) = su2double(0.0);
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = disp[iVar];
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    if (config->GetTime_Domain()) {
+      for (unsigned long iVar = 0; iVar < nDim; iVar++)
+        Solution(iPoint,iVar) = disp[iVar];
+      for (unsigned long iVar = nDim; iVar < 2*nDim; iVar++)
+        Solution(iPoint,iVar) = vel[iVar];
+      for (unsigned long iVar = 2*nDim; iVar < 3*nDim; iVar++)
+        Solution(iPoint,iVar) = accel[iVar];
+    }
+    else {
+      for (unsigned long iVar = 0; iVar < nVar; iVar++)
+        Solution(iPoint,iVar) = disp[iVar];
+    }
+  }
 
   if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
     External.resize(nPoint,nVar) = su2double(0.0);
@@ -51,32 +62,5 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
 
   Dynamic_Derivative.resize(nPoint,nVar) = su2double(0.0);
   Dynamic_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
-  Dynamic_Derivative_Vel.resize(nPoint,nVar) = su2double(0.0);
-  Dynamic_Derivative_Vel_n.resize(nPoint,nVar) = su2double(0.0);
-  Dynamic_Derivative_Accel.resize(nPoint,nVar) = su2double(0.0);
-  Dynamic_Derivative_Accel_n.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Direct_Vel.resize(nPoint,nVar) = su2double(0.0);
-  Solution_Direct_Accel.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Vel.resize(nPoint,nVar);
-  Solution_Accel.resize(nPoint,nVar);
-
-  Solution_Old_Vel.resize(nPoint,nVar) = su2double(0.0);
-  Solution_Old_Accel.resize(nPoint,nVar) = su2double(0.0);
-
-  Solution_Vel_time_n.resize(nPoint,nVar) = su2double(0.0);
-  Solution_Accel_time_n.resize(nPoint,nVar) = su2double(0.0);
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-      Solution_Vel(iPoint,iVar) = vel[iVar];
-      Solution_Accel(iPoint,iVar) = accel[iVar];
-    }
-  }
 
 }
-
-void CDiscAdjFEAVariable::Set_OldSolution_Vel() { Solution_Old_Vel = Solution_Vel; }
-
-void CDiscAdjFEAVariable::Set_OldSolution_Accel() { Solution_Old_Accel = Solution_Accel; }

@@ -44,22 +44,6 @@ protected:
 
   MatrixType Dynamic_Derivative;
   MatrixType Dynamic_Derivative_n;
-  MatrixType Dynamic_Derivative_Vel;
-  MatrixType Dynamic_Derivative_Vel_n;
-  MatrixType Dynamic_Derivative_Accel;
-  MatrixType Dynamic_Derivative_Accel_n;
-
-  MatrixType Solution_Vel;
-  MatrixType Solution_Accel;
-
-  MatrixType Solution_Vel_time_n;
-  MatrixType Solution_Accel_time_n;
-
-  MatrixType Solution_Old_Vel;
-  MatrixType Solution_Old_Accel;
-
-  MatrixType Solution_Direct_Vel;
-  MatrixType Solution_Direct_Accel;
 
   /*!
    * \brief Constructor of the class.
@@ -125,129 +109,10 @@ public:
     return Dynamic_Derivative_n(iPoint,iVar);
   }
 
-  inline void SetDynamic_Derivative_Vel(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Dynamic_Derivative_Vel(iPoint,iVar) = der;
-  }
-
-  inline void SetDynamic_Derivative_Vel_n(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Dynamic_Derivative_Vel_n(iPoint,iVar) = der;
-  }
-
-  inline su2double GetDynamic_Derivative_Vel(unsigned long iPoint, unsigned long iVar) const final {
-    return Dynamic_Derivative_Vel(iPoint,iVar);
-  }
-
-  inline su2double GetDynamic_Derivative_Vel_n(unsigned long iPoint, unsigned long iVar) const final {
-    return Dynamic_Derivative_Vel_n(iPoint,iVar);
-  }
-
-  inline void SetDynamic_Derivative_Accel(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Dynamic_Derivative_Accel(iPoint,iVar) = der;
-  }
-
-  inline void SetDynamic_Derivative_Accel_n(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Dynamic_Derivative_Accel_n(iPoint,iVar) = der;
-  }
-
-  inline su2double GetDynamic_Derivative_Accel(unsigned long iPoint, unsigned long iVar) const final {
-    return Dynamic_Derivative_Accel(iPoint,iVar);
-  }
-
-  inline su2double GetDynamic_Derivative_Accel_n(unsigned long iPoint, unsigned long iVar) const final {
-    return Dynamic_Derivative_Accel_n(iPoint,iVar);
-  }
-
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  inline void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Vel(iPoint,iVar) = val_solution_direct[iVar];
-  }
-
-  inline void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Accel(iPoint,iVar) = val_solution_direct[iVar];
-  }
-
   inline su2double* GetSolution_Direct(unsigned long iPoint) final { return Solution_Direct[iPoint]; }
-
-  inline su2double* GetSolution_Vel_Direct(unsigned long iPoint) final { return Solution_Direct_Vel[iPoint]; }
-
-  inline su2double* GetSolution_Accel_Direct(unsigned long iPoint) final { return Solution_Direct_Accel[iPoint]; }
-
-  inline su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const final { return Solution_Old_Vel(iPoint,iVar); }
-
-  inline su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const final { return Solution_Old_Accel(iPoint,iVar); }
-
-  /*!
-   * \brief Get the acceleration (Structural Analysis).
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetSolution_Accel(unsigned long iPoint, unsigned long iVar) const final { return Solution_Accel(iPoint,iVar); }
-
-  /*!
-   * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Accel_time_n(unsigned long iPoint, unsigned long iVar) const final { return Solution_Accel_time_n(iPoint,iVar); }
-
-  /*!
-   * \brief Get the velocity (Structural Analysis).
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const final { return Solution_Vel(iPoint,iVar); }
-
-  /*!
-   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const final { return Solution_Vel_time_n(iPoint,iVar); }
-
-  /*!
-   * \brief Set the value of the acceleration (Structural Analysis - adjoint).
-   * \param[in] val_solution - Solution of the problem (acceleration).
-   */
-  inline void SetSolution_Accel(unsigned long iPoint, const su2double *val_solution_accel) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Solution_Accel(iPoint,iVar) = val_solution_accel[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis - adjoint).
-   * \param[in] val_solution - Solution of the problem (velocity).
-   */
-  inline void SetSolution_Vel(unsigned long iPoint, const su2double *val_solution_vel) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel(iPoint,iVar) = val_solution_vel[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the adjoint acceleration (Structural Analysis) at time n.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_Accel_time_n(unsigned long iPoint, const su2double *val_solution_accel_time_n) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Accel_time_n(iPoint,iVar) = val_solution_accel_time_n[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the adjoint velocity (Structural Analysis) at time n.
-   * \param[in] val_solution_old - Pointer to the residual vector.
-   */
-  inline void SetSolution_Vel_time_n(unsigned long iPoint, const su2double *val_solution_vel_time_n) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_time_n(iPoint,iVar) = val_solution_vel_time_n[iVar];
-  }
-
-  /*!
-   * \brief Set the value of the old acceleration (Structural Analysis - adjoint).
-   */
-  void Set_OldSolution_Accel() final;
-
-  /*!
-   * \brief Set the value of the old velocity (Structural Analysis - adjoint).
-   */
-  void Set_OldSolution_Vel() final;
 
 };

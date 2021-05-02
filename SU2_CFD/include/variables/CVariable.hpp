@@ -1808,61 +1808,6 @@ public:
   }
 
   /*!
-   * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
-   * \param[in] solution_direct - Value of the direct velocity solution.
-   */
-  inline virtual void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *sol) {}
-
-  /*!
-   * \brief A virtual member. Set the direct acceleration solution for the adjoint solver.
-   * \param[in] solution_direct - Value of the direct acceleration solution.
-   */
-  inline virtual void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *sol) {}
-
-  /*!
-   * \brief A virtual member. Get the direct velocity solution for the adjoint solver.
-   * \return Pointer to the direct velocity solution vector.
-   */
-  inline virtual su2double* GetSolution_Vel_Direct(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief A virtual member. Get the direct acceleraction solution for the adjoint solver.
-   * \return Pointer to the direct acceleraction solution vector.
-   */
-  inline virtual su2double* GetSolution_Accel_Direct(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis).
-   * \param[in] solution - Solution of the problem (velocity).
-   */
-  inline virtual void SetSolution_Vel(unsigned long iPoint, const su2double *solution) {}
-
-  /*!
-   * \overload
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution_vel - Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual void SetSolution_Vel(unsigned long iPoint, unsigned long iVar, su2double solution_vel) {}
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis) at time n.
-   * \param[in] solution_vel_time_n - Value of the old solution.
-   */
-  inline virtual void SetSolution_Vel_time_n(unsigned long iPoint, const su2double *solution_vel_time_n) {}
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis) at time n.
-   */
-  inline virtual void SetSolution_Vel_time_n() {}
-
-  /*!
-   * \overload
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution_vel_time_n - Value of the old solution for the index <i>iVar</i>.
-   */
-  inline virtual void SetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar, su2double solution_vel_time_n) {}
-
-  /*!
    * \brief Get the solution at time n.
    * \param[in] iVar - Index of the variable.
    * \return Value of the solution for the index <i>iVar</i>.
@@ -1875,100 +1820,6 @@ public:
    * \return Value of the solution for the index <i>iVar</i>.
    */
   inline su2double GetSolution_time_n1(unsigned long iPoint, unsigned long iVar) const { return Solution_time_n1(iPoint,iVar); }
-
-  /*!
-   * \brief Get the velocity (Structural Analysis).
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
-   */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
-
-  /*!
-   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
-
-  /*!
-   * \brief Set the value of the acceleration (Structural Analysis).
-   * \param[in] solution_accel - Solution of the problem (acceleration).
-   */
-  inline virtual void SetSolution_Accel(unsigned long iPoint, const su2double *solution_accel) {}
-
-  /*!
-   * \overload
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution_accel - Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual void SetSolution_Accel(unsigned long iPoint, unsigned long iVar, su2double solution_accel) {}
-
-  /*!
-   * \brief Set the value of the acceleration (Structural Analysis) at time n.
-   * \param[in] solution_accel_time_n - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Accel_time_n(unsigned long iPoint, const su2double *solution_accel_time_n) {}
-
-  /*!
-   * \brief Set the value of the acceleration (Structural Analysis) at time n.
-   */
-  inline virtual void SetSolution_Accel_time_n() {}
-
-  /*!
-   * \overload
-   * \param[in] iVar - Index of the variable.
-   * \param[in] solution_accel_time_n - Value of the old solution for the index <i>iVar</i>.
-   */
-  inline virtual void SetSolution_Accel_time_n(unsigned long iPoint, unsigned long iVar, su2double solution_accel_time_n) {}
-
-  /*!
-   * \brief Get the acceleration (Structural Analysis).
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetSolution_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
-   */
-  inline virtual su2double *GetSolution_Accel(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Accel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  inline virtual su2double *GetSolution_Accel_time_n(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void Set_OldSolution_Vel() {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void Set_OldSolution_Accel() {}
 
   /*!
    * \brief  A virtual member. Set the value of the velocity solution predictor.
@@ -2156,76 +2007,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel(bool input, bool push_index) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void RegisterSolution_Vel_time_n(bool input, bool push_index) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void RegisterSolution_Accel(bool input, bool push_index) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void RegisterSolution_Accel_time_n(bool input, bool push_index) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetAdjointSolution_Vel(unsigned long iPoint, const su2double *adj_sol) {}
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void RegisterFlowTraction() { }
 
   /*!
    * \brief A virtual member.
    */
   inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void GetAdjointSolution_Vel(unsigned long iPoint, su2double *adj_sol) const {}
-  inline virtual void GetAdjointSolution_Vel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetAdjointSolution_Vel_time_n(unsigned long iPoint, const su2double *adj_sol) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void GetAdjointSolution_Vel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
-  inline virtual void GetAdjointSolution_Vel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetAdjointSolution_Accel(unsigned long iPoint, const su2double *adj_sol) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void GetAdjointSolution_Accel(unsigned long iPoint, su2double *adj_sol) const {}
-  inline virtual void GetAdjointSolution_Accel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void SetAdjointSolution_Accel_time_n(unsigned long iPoint, const su2double *adj_sol) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void GetAdjointSolution_Accel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
-  inline virtual void GetAdjointSolution_Accel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.

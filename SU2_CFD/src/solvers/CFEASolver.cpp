@@ -127,6 +127,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   SetFSI_ConvValue(1,0.0);
 
   nVar = nDim;
+  if (dynamic) nVar = 3*nDim;
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -1408,12 +1409,12 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
           for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-            for (iVar = 0; iVar < nVar; iVar++) {
+            for (iVar = 0; iVar < nDim; iVar++) {
               TimeRes_Aux(iPoint,iVar) =
                 a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
                 a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
-                a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
-                a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar); // a3*U''(t)
+                a_dt[2]*nodes->GetSolution_time_n(iPoint,iVar+nDim) +  // a2*U'(t)
+                a_dt[3]*nodes->GetSolution_time_n(iPoint,iVar+2*nDim); // a3*U''(t)
             }
           }
 
@@ -1614,11 +1615,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, const CConfig *config, unsigned
     nodes->SetSolution(iPoint, zeros);
 
     if (dynamic) {
-      nodes->SetSolution_Vel(iPoint, zeros);
-      nodes->SetSolution_Accel(iPoint, zeros);
       nodes->Set_Solution_time_n(iPoint, zeros);
-      nodes->SetSolution_Vel_time_n(iPoint, zeros);
-      nodes->SetSolution_Accel_time_n(iPoint, zeros);
     }
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
@@ -1644,11 +1641,6 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, uns
     auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     nodes->SetSolution(iPoint, zeros);
-
-    if (dynamic) {
-      nodes->SetSolution_Vel(iPoint, zeros);
-      nodes->SetSolution_Accel(iPoint, zeros);
-    }
 
   }
 
@@ -1695,11 +1687,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsign
     /*--- Set and enforce solution at current and previous time-step ---*/
     nodes->SetSolution(iPoint, axis, 0.0);
     if (dynamic) {
-      nodes->SetSolution_Vel(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel(iPoint, axis, 0.0);
       nodes->Set_Solution_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
     }
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
@@ -2092,8 +2080,8 @@ void CFEASolver::BC_Damper(CGeometry *geometry, const CConfig *config, unsigned 
 
       /*--- Writing over the normal. --*/
       su2double* force = normal;
-      for (iDim = 0; iDim < nVar; iDim++)
-        force[iDim] = dampCoeff * nodes->GetSolution_Vel(iPoint, iDim);
+      for (iDim = 0; iDim < nDim; iDim++)
+        force[iDim] = dampCoeff * nodes->GetSolution(iPoint, iDim+nDim);//Vel Solution
 
       nodes->Add_SurfaceLoad_Res(iPoint, force);
     }
@@ -2242,12 +2230,12 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
       /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nDim; iVar++) {
           TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
-            a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
-            a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar); // a3*U''(t)
+            a_dt[2]*nodes->GetSolution_time_n(iPoint,iVar+nDim) +  // a2*U'(t)
+            a_dt[3]*nodes->GetSolution_time_n(iPoint,iVar+2*nDim); // a3*U''(t)
         }
       }
       END_SU2_OMP_FOR
@@ -2284,26 +2272,26 @@ void CFEASolver::ImplicitNewmark_Update(const CGeometry *geometry, const CConfig
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nDim; iVar++) {
 
           /*--- Acceleration component of the solution. ---*/
           /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
           su2double sol = a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
                                    nodes->GetSolution_time_n(iPoint,iVar)) -
-                          a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-                          a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
+                          a_dt[2]* nodes->GetSolution_time_n(iPoint,iVar+nDim) -//Vel
+                          a_dt[3]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim);//Accel
 
-          nodes->SetSolution_Accel(iPoint, iVar, sol);
+          nodes->SetSolution(iPoint, iVar+2*nDim, sol);
 
           /*--- Velocity component of the solution. ---*/
           /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-          sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-                a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-                a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+          sol = nodes->GetSolution_time_n(iPoint,iVar+nDim)+//Vel
+                a_dt[6]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim) +//Accel
+                a_dt[7]* nodes->GetSolution(iPoint,iVar+2*nDim);//Accel
 
-          nodes->SetSolution_Vel(iPoint, iVar, sol);
+          nodes->SetSolution(iPoint, iVar+nDim, sol);
         }
       }
       END_SU2_OMP_FOR
@@ -2332,26 +2320,26 @@ void CFEASolver::ImplicitNewmark_Relaxation(const CGeometry *geometry, const CCo
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nDim; iVar++) {
 
           /*--- Acceleration component of the solution ---*/
           /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
           su2double sol = a_dt[0]*(nodes->GetSolution(iPoint,iVar) -
                                    nodes->GetSolution_time_n(iPoint,iVar)) -
-                          a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-                          a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
+                          a_dt[2]* nodes->GetSolution_time_n(iPoint,iVar+nDim) -//Vel
+                          a_dt[3]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim);//Accel
 
-          nodes->SetSolution_Accel(iPoint, iVar, sol);
+          nodes->SetSolution(iPoint, iVar+2*nDim, sol);//Accel
 
           /*--- Velocity component of the solution ---*/
           /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-          sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-                a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-                a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+          sol = nodes->GetSolution_time_n(iPoint,iVar+nDim)+//Vel
+                a_dt[6]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim) +//Accel
+                a_dt[7]* nodes->GetSolution(iPoint,iVar+2*nDim);//Accel
 
-          nodes->SetSolution_Vel(iPoint, iVar, sol);
+          nodes->SetSolution(iPoint, iVar+nDim, sol);
         }
       }
       END_SU2_OMP_FOR
@@ -2426,12 +2414,12 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
       /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nDim; iVar++) {
           TimeRes_Aux(iPoint,iVar) =
             a_dt[0]*nodes->GetSolution_time_n(iPoint,iVar) -      // a0*U(t)
             a_dt[0]*nodes->GetSolution(iPoint,iVar) +             // a0*U(t+dt)(k-1)
-            a_dt[2]*nodes->GetSolution_Vel_time_n(iPoint,iVar) +  // a2*U'(t)
-            a_dt[3]*nodes->GetSolution_Accel_time_n(iPoint,iVar); // a3*U''(t)
+            a_dt[2]*nodes->GetSolution_time_n(iPoint,iVar+nDim) +  // a2*U'(t)
+            a_dt[3]*nodes->GetSolution_time_n(iPoint,iVar+2*nDim); // a3*U''(t)
         }
       }
       END_SU2_OMP_FOR
@@ -2510,31 +2498,31 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(const CGeometry *geometry, cons
       nodes->SetSolution(iPoint, iVar, sol);
     }
 
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nDim; iVar++) {
 
       /*--- Acceleration component of the solution ---*/
       /*--- U''(t+dt-alpha_m) = a8*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
 
       su2double tmp = a_dt[8]*(nodes->GetSolution(iPoint,iVar) -
                                nodes->GetSolution_time_n(iPoint,iVar)) -
-                      a_dt[2]* nodes->GetSolution_Vel_time_n(iPoint,iVar) -
-                      a_dt[3]* nodes->GetSolution_Accel_time_n(iPoint,iVar);
+                      a_dt[2]* nodes->GetSolution_time_n(iPoint,iVar+nDim) -//Vel
+                      a_dt[3]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim);//Accel
 
       /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
       /*--- U''(t+dt) = 1/alpha_m*(U''(t+1-alpha_m)-alpha_m*U''(t)) ---*/
 
-      su2double sol = (1/(1-alpha_m)) * (tmp - alpha_m*nodes->GetSolution_Accel_time_n(iPoint,iVar));
+      su2double sol = (1/(1-alpha_m)) * (tmp - alpha_m*nodes->GetSolution_time_n(iPoint,iVar+2*nDim));
 
-      nodes->SetSolution_Accel(iPoint, iVar, sol);
+      nodes->SetSolution(iPoint, iVar+2*nDim, sol);//Accel
 
       /*--- Velocity component of the solution ---*/
       /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
 
-      sol = nodes->GetSolution_Vel_time_n(iPoint,iVar)+
-            a_dt[6]* nodes->GetSolution_Accel_time_n(iPoint,iVar) +
-            a_dt[7]* nodes->GetSolution_Accel(iPoint,iVar);
+      sol = nodes->GetSolution_time_n(iPoint,iVar+nDim)+//Vel
+            a_dt[6]* nodes->GetSolution_time_n(iPoint,iVar+2*nDim) +//Accel
+            a_dt[7]* nodes->GetSolution(iPoint,iVar+2*nDim);//Accel
 
-      nodes->SetSolution_Vel(iPoint, iVar, sol);
+      nodes->SetSolution(iPoint, iVar+nDim, sol);//Vel
     }
 
   }
@@ -2602,23 +2590,20 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *
     switch (predOrder) {
       case 1: {
         const su2double* solDisp = nodes->GetSolution(iPoint);
-        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
         su2double valPred[MAXNVAR] = {0.0};
 
         for (iDim=0; iDim < nDim; iDim++)
-          valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
+          valPred[iDim] = solDisp[iDim] + Delta_t*nodes->GetSolution(iPoint, iDim+nDim);
 
         nodes->SetSolution_Pred(iPoint, valPred);
       } break;
 
       case 2: {
         const su2double* solDisp = nodes->GetSolution(iPoint);
-        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
-        const su2double* solVel_tn = nodes->GetSolution_Vel_time_n(iPoint);
         su2double valPred[MAXNVAR] = {0.0};
 
         for (iDim=0; iDim < nDim; iDim++)
-          valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
+          valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*nodes->GetSolution(iPoint, iDim+nDim)-nodes->GetSolution_time_n(iPoint, iDim+nDim));
 
         nodes->SetSolution_Pred(iPoint, valPred);
       } break;
@@ -3160,14 +3145,18 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
       const auto index = counter*Restart_Vars[1] + skipVars;
       const passivedouble* Sol = &Restart_Data[index];
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short iVar = 0; iVar < nDim; iVar++) {
         nodes->SetSolution(iPoint_Local, iVar, Sol[iVar]);
         if (dynamic) {
-          nodes->SetSolution_Vel(iPoint_Local, iVar, Sol[iVar+nVar]);
-          nodes->SetSolution_Accel(iPoint_Local, iVar, Sol[iVar+2*nVar]);
+          nodes->SetSolution(iPoint_Local, iVar+nDim, Sol[iVar+nVar]);
+          nodes->SetSolution(iPoint_Local, iVar+2*nDim, Sol[iVar+2*nVar]);
         }
         if (fluid_structure && discrete_adjoint){
           nodes->SetSolution_Old(iPoint_Local, iVar, Sol[iVar]);
+          if (dynamic) {
+          nodes->SetSolution_Old(iPoint_Local, iVar+nDim, Sol[iVar+nVar]);
+          nodes->SetSolution_Old(iPoint_Local, iVar+2*nDim, Sol[iVar+2*nVar]);
+        }
         }
       }
 
@@ -3191,8 +3180,6 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   if (dynamic) {
     nodes->Set_Solution_time_n();
-    nodes->SetSolution_Vel_time_n();
-    nodes->SetSolution_Accel_time_n();
   }
 
   if (fluid_structure) {

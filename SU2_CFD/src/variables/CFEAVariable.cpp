@@ -47,40 +47,34 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (nDim==2) Stress.resize(nPoint,3);
   else         Stress.resize(nPoint,6);
 
+  Solution_Vel_Pred.resize(nPoint,nDim);
+
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < nDim; iVar++)
       Solution(iPoint,iVar) = val_fea[iVar];
 
   if (dynamic_analysis) {
-    Solution_Vel.resize(nPoint,nVar);
-    Solution_Accel.resize(nPoint,nVar);
-
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-      for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-        Solution_Vel(iPoint,iVar) = val_fea[iVar+nVar];
-        Solution_Accel(iPoint,iVar) = val_fea[iVar+2*nVar];
+      for (unsigned long iVar = nDim; iVar < 2*nDim; iVar++) {
+        Solution(iPoint,iVar) = val_fea[iVar+nDim];
       }
-    }
-    Solution_Vel_time_n = Solution_Vel;
-    Solution_Accel_time_n = Solution_Accel;
-
-    if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-      AD_Vel_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Vel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_OutputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Accel_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
+      for (unsigned long iVar = 2*nDim; iVar < 3*nDim; iVar++) {
+        Solution(iPoint,iVar) = val_fea[iVar+2*nDim];
+      }
     }
   }
 
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
-    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
+    if (dynamic_analysis) {
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (unsigned long iVar = 0; iVar < nDim; iVar++) {
+          Solution_Vel_Pred(iPoint, iVar) = Solution(iPoint,iVar+nDim);
+        }
+      }
+    }
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
@@ -106,10 +100,6 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   }
 }
 
-void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
-
-void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }
-
 void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
@@ -126,90 +116,6 @@ void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index) {
         AD::RegisterOutput(Solution_time_n(iPoint,iVar));
         if(!push_index)
           AD::SetIndex(AD_Time_n_OutputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
-      }
-    }
-  }
-}
-
-void CFEAVariable::RegisterSolution_Vel(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution_Vel(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution_Vel(iPoint,iVar), false);
-          AD::SetIndex(AD_Vel_InputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution_Vel(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_Vel_OutputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
-      }
-    }
-  }
-}
-
-void CFEAVariable::RegisterSolution_Vel_time_n(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar), false);
-          AD::SetIndex(AD_Vel_Time_n_InputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution_Vel_time_n(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_Vel_Time_n_OutputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
-      }
-    }
-  }
-}
-
-void CFEAVariable::RegisterSolution_Accel(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution_Accel(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution_Accel(iPoint,iVar), false);
-          AD::SetIndex(AD_Accel_InputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution_Accel(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_Accel_OutputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
-      }
-    }
-  }
-}
-
-void CFEAVariable::RegisterSolution_Accel_time_n(bool input, bool push_index) {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar), false);
-          AD::SetIndex(AD_Accel_Time_n_InputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution_Accel_time_n(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_Accel_Time_n_OutputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
       }
     }
   }
