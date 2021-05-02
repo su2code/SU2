@@ -369,32 +369,26 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   }
   END_SU2_OMP_MASTER
 
+  /*--- Extract and store the adjoint of the primal solution at time n ---*/
   if (time_n_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      /*--- Extract the adjoint solution at time n ---*/
-
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-
-      /*--- Store the adjoint solution at time n ---*/
-
       nodes->Set_Solution_time_n(iPoint,Solution);
+
     }
     END_SU2_OMP_FOR
   }
 
+  /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
   if (time_n1_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      /*--- Extract the adjoint solution at time n-1 ---*/
-
       direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
-
-      /*--- Store the adjoint solution at time n-1 ---*/
-
       nodes->Set_Solution_time_n1(iPoint,Solution);
+
     }
     END_SU2_OMP_FOR
   }
@@ -472,25 +466,31 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                           config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
-  su2double Solution[MAXNVAR] = {0.0};
+  su2double Solution[MAXNVAR] = {0.0}; /*!< \brief Local container to manipulate the adjoint solution. */
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+
+    /*--- Get and store the adjoint solution of a point. ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
+
+    /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
     if (dual_time) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
+
+    /*--- Set the adjoint values of the primal (TK::??) solution. ---*/
     if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
     }
-  }
+  } // for iPoint
   END_SU2_OMP_FOR
 }
 

@@ -544,7 +544,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       donorSolver  = FLOW_SOL;
       targetSolver = FLOW_SOL;
 
-      /*--- Aditional transfer for turbulence variables. ---*/
+      /*--- Additional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == RANS ||
           config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {

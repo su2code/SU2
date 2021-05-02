@@ -37,16 +37,16 @@
  */
 class CDiscAdjVariable final : public CVariable {
 private:
-  MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  MatrixType Solution_Direct; // TK:: Description missing
-  MatrixType DualTime_Derivative; // TK:: Description missing
-  MatrixType DualTime_Derivative_n; // TK:: Description missing
+  MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Solution_Direct; /*!< \brief  TK:: ?? Stores the primal solution of the current timestep in order to be able to reset. */
+  MatrixType DualTime_Derivative; /*!< \brief Container holding all dual time contributions to the adjoint variable. */
+  MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
 
-  MatrixType Solution_Geometry; // TK:: Description missing
-  MatrixType Solution_Geometry_Old; // TK:: Description missing
-  MatrixType Geometry_Direct; // TK:: Description missing
+  MatrixType Solution_Geometry; /*!< \brief TK:: Description missing. */
+  MatrixType Solution_Geometry_Old; /*!< \brief TK:: Description missing. */
+  MatrixType Geometry_Direct; /*!< \brief TK:: Description missing. */
 
-  MatrixType Solution_Geometry_BGS_k; // TK:: Description missing
+  MatrixType Solution_Geometry_BGS_k; /*!< \brief TK:: Description missing. */
 
 public:
   /*!
@@ -66,6 +66,7 @@ public:
 
   /*!
    * \brief Set the sensitivity at the node
+   * \param[in] iPoint - Point index
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
@@ -75,6 +76,7 @@ public:
 
   /*!
    * \brief Get the Sensitivity at the node
+   * \param[in] iPoint - Point index
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
@@ -82,33 +84,61 @@ public:
     return Sensitivity(iPoint,iDim);
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Set/store the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
+   * \param[in] iPoint - Point index
+   * \param[in] iVar - Index of the variable
+   * \param[in] der - Derivative value
+   */
   inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
     DualTime_Derivative(iPoint,iVar) = der;
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Set/store the dual time contributions to the adjoint variable for upcoming timestep.
+   * \param[in] iPoint - Point index
+   * \param[in] iVar - Index of the variable
+   * \param[in] der - Derivative value
+   */
   inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override {
     DualTime_Derivative_n(iPoint,iVar) = der;
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Return the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
+   * \param[in] iPoint - Point index
+   * \param[in] iVar - Index of the variable
+   * \return Derivative value
+   */
   inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override {
     return DualTime_Derivative(iPoint,iVar);
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Return the dual time contributions to the adjoint variable for upcoming timestep.
+   * \param[in] iPoint - Point index
+   * \param[in] iVar - Index of the variable
+   * \return Derivative value
+   */
   inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override {
     return DualTime_Derivative_n(iPoint,iVar);
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Set/store the primal solution for all variables of one point.
+   * \param[in] iPoint - Point index
+   * \param[in] *val_solution_direct - pointer to all variables of iPoint
+   */
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) override {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  // TK:: Description missing
+  /*!
+   * \brief Returns the primal solution for all variables of one point.
+   * \param[in] iPoint - Point index
+   * \return Pointer to all variables of iPoint
+   */
   inline su2double* GetSolution_Direct(unsigned long iPoint) override { return Solution_Direct[iPoint]; }
 
   /*!

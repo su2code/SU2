@@ -2260,7 +2260,7 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the solution at time n.
+   * \brief Set the adjoint values of the solution at time n. TK:: unused func
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution_time_n(unsigned long iPoint, const su2double *adj_sol) {
@@ -2278,7 +2278,7 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the solution at time n-1.
+   * \brief Set the adjoint values of the solution at time n-1. TK:: unused func
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution_time_n1(unsigned long iPoint, const su2double *adj_sol) {

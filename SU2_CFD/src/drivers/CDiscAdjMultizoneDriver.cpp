@@ -134,7 +134,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    if (driver_config->GetTime_Domain())
+    if (driver_config->GetTime_Domain()) // TobiKattmann:: Remove the error and introduce time iteration
       SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
                      CURRENT_FUNCTION);
   }
@@ -173,7 +173,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
   ComputeAdjoints(iZone, eval_transfer);
 
   /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-
+  // TobiKattmann:: Make sure to extract correct sensitivities here
   iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                               solver_container, numerics_container, config_container,
                                               surface_movement, grid_movement, FFDBox, iZone, INST_0);
@@ -288,13 +288,13 @@ void CDiscAdjMultizoneDriver::Run() {
      *    if the current recording is different from them.
      *
      *    To set the tape appropriately, the following recording methods are provided:
-     *    (1) NONE: All information from a previous recording is removed.
+     *    (1) CLEAR_INDICES: All information from a previous recording is removed.
      *    (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
      *    (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
      *    (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
      *
      *    By default, all (state and mesh coordinate variables) will be declared as output,
-     *    since it does not change the computational effort. ---*/
+     *    since it does not change the computational effort, just the memory consumption of the tape. ---*/
 
 
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
@@ -420,6 +420,8 @@ void CDiscAdjMultizoneDriver::Run() {
           Update_Cross_Term(iZone, jZone);
         }
       }
+
+      // TobiKattmann:: Add dual time terms dG/du from n+1 and N+2 to external
 
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 
@@ -828,18 +830,17 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY;
-  unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
+  const auto IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  if (time_stepping){
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY){
     if (TimeIter < IterAvg_Obj){
       // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
       auto windowEvaluator = CWindowingTools();
       su2double weight = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj-1);
       seeding = weight / IterAvg_Obj;
     }
-    else{
+    else {
       seeding = 0.0;
     }
   }
@@ -850,8 +851,8 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
-  unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
-  unsigned short leave_izone = iZone*2 + ITERATION_READY;
+  const unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
+  const unsigned short leave_izone = iZone*2 + ITERATION_READY;
 
   AD::ClearAdjoints();
 
@@ -864,7 +865,7 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  /*--- Compute adjoints of transfer and mesh deformation routines, only stricktly needed
+  /*--- Compute adjoints of transfer and mesh deformation routines, only strictly needed
    *    on the last inner iteration. Structural problems have some minor issue and we
    *    need to evaluate this section on every iteration. ---*/
 
