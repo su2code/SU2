@@ -1631,8 +1631,6 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, const CConfig *config, unsigned
 
 void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
-  bool dynamic = config->GetTime_Domain();
-
   su2double zeros[MAXNVAR] = {0.0};
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
