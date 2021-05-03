@@ -2709,7 +2709,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
 void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
-  const bool dynamic = config->GetTime_Domain();
 
   /*--- To nPoint to avoid communication. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
