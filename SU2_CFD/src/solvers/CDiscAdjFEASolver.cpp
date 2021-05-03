@@ -160,17 +160,6 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
       }
     }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->GetNodes()->GetSolution_Accel_time_n(iPoint)[iVar]);
-      }
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->GetNodes()->GetSolution_Vel_time_n(iPoint)[iVar]);
-      }
-    }
-
   }
 
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
@@ -285,7 +274,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   unsigned long iPoint;
   su2double residual;
 
-  su2double Solution[MAXNVAR] = {0.0}, Solution_Vel[MAXNVAR] = {0.0}, Solution_Accel[MAXNVAR] = {0.0};
+  su2double Solution[MAXNVAR] = {0.0};
 
   /*--- Set Residuals to zero ---*/
 
@@ -388,7 +377,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   const bool dynamic = (config->GetTime_Domain());
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
-  su2double Solution[MAXNVAR] = {0.0}, Solution_Vel[MAXNVAR] = {0.0}, Solution_Accel[MAXNVAR] = {0.0};
+  su2double Solution[MAXNVAR] = {0.0};
 
   unsigned short iVar;
 
@@ -397,22 +386,18 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     }
     if(deform_mesh){
-      for (iVar = 0; iVar < nVar; iVar++){
+      for (iVar = 0; iVar < nDim; iVar++){
         Solution[iVar] += nodes->GetSourceTerm_DispAdjoint(iPoint,iVar);
       }
     }
     if (dynamic){
-      for (iVar = 0; iVar < nDim; iVar++){
+      for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += nodes->GetDynamic_Derivative_n(iPoint,iVar);
       }
-      for (iVar = 0; iVar < nDim; iVar++){
-        Solution_Accel[iVar] = nodes->GetSolution_Accel(iPoint,iVar) + nodes->GetDynamic_Derivative_n(iPoint,iVar+2*nDim);
-      }
-      for (iVar = 0; iVar < nDim; iVar++){
-        Solution_Vel[iVar] = nodes->GetSolution_Vel(iPoint,iVar) + nodes->GetDynamic_Derivative_n(iPoint,iVar+nDim);
-      }
       if (deform_mesh){
-        Solution_Vel[iVar] += nodes->GetSourceTerm_VelAdjoint(iPoint,iVar);
+        for (iVar = nDim; iVar < 2*nDim; iVar++){
+          Solution[iVar] += nodes->GetSourceTerm_VelAdjoint(iPoint,iVar-nDim);
+        }
       }
     }
     direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
