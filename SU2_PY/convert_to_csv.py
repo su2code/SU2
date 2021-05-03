@@ -3,7 +3,7 @@
 ## \file convert_to_csv.py
 #  \brief This script converts SU2 ASCII restart files generated with a version prior v7 to the CSV format
 #  \author T. Albring
-#  \version 7.0.0 "Falcon"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
