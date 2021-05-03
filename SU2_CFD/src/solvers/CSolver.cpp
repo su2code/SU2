@@ -3296,7 +3296,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   } // everything goes out of scope except "localVars"
 
-  /*--- Move to Restart_Data in "funny" order. ---*/
+  /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
   Restart_Data = new passivedouble[nPointDomain*nFields];
   Restart_Vars[2] = nPointDomain;
