@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,7 @@
 
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 
+  cauchyTimeConverged = false;
   this->nDim = nDim;
 
   rank = SU2_MPI::GetRank();
@@ -205,8 +206,6 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
 
-  bool write_header, write_history, write_screen;
-
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
   LoadCommonHistoryData(config);
@@ -219,26 +218,8 @@ void COutput::SetHistory_Output(CGeometry *geometry,
 
   MonitorTimeConvergence(config, curTimeIter);
 
-  /*--- Output using only the master node ---*/
+  OutputScreenAndHistory(config);
 
-  if (rank == MASTER_NODE && !noWriting) {
-
-    /*--- Write the history file ---------------------------------------------------------------------------*/
-
-    write_history = WriteHistoryFile_Output(config);
-    if (write_history) SetHistoryFile_Output(config);
-
-    /*--- Write the screen header---------------------------------------------------------------------------*/
-
-    write_header = WriteScreen_Header(config);
-    if (write_header) SetScreen_Header(config);
-
-    /*--- Write the screen output---------------------------------------------------------------------------*/
-
-    write_screen = WriteScreen_Output(config);
-    if (write_screen) SetScreen_Output(config);
-
-  }
 }
 
 void COutput::SetHistory_Output(CGeometry *geometry,
@@ -254,6 +235,7 @@ void COutput::SetHistory_Output(CGeometry *geometry,
   Convergence_Monitoring(config, curInnerIter);
 
   Postprocess_HistoryData(config);
+
 }
 
 void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
@@ -261,8 +243,6 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
   curTimeIter  = TimeIter;
   curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();
   curOuterIter = OuterIter;
-
-  bool write_header, write_screen, write_history;
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
@@ -276,24 +256,28 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
   MonitorTimeConvergence(driver_config, curTimeIter);
 
-  /*--- Output using only the master node ---*/
+  OutputScreenAndHistory(driver_config);
 
+}
+
+void COutput::OutputScreenAndHistory(CConfig *config) {
+
+  bool write_header, write_screen, write_history;
   if (rank == MASTER_NODE && !noWriting) {
 
     /*--- Write the history file ---------------------------------------------------------------------------*/
-    write_history = WriteHistoryFile_Output(driver_config);
-    if (write_history) SetHistoryFile_Output(driver_config);
+    write_history = WriteHistoryFile_Output(config);
+    if (write_history) SetHistoryFile_Output(config);
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = WriteScreen_Header(driver_config);
-    if (write_header) SetScreen_Header(driver_config);
+    write_header = WriteScreen_Header(config);
+    if (write_header) SetScreen_Header(config);
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = WriteScreen_Output(driver_config);
-    if (write_screen) SetScreen_Output(driver_config);
+    write_screen = WriteScreen_Output(config);
+    if (write_screen) SetScreen_Output(config);
 
   }
-
 }
 
 void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
@@ -765,12 +749,22 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   }
 }
 
-
+bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
+   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
+       // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
+       cauchyTimeConverged = TimeConvergence;
+       TimeConvergence = false;
+    }
+    else if(cauchyTimeConverged){
+       TimeConvergence = cauchyTimeConverged;
+    }
+    return TimeConvergence;
+}
 
 bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                               unsigned long iter, bool force_writing){
 
-  bool writeFiles = WriteVolume_Output(config, iter, force_writing);
+  bool writeFiles = WriteVolume_Output(config, iter, force_writing || cauchyTimeConverged);
 
   /*--- Check if the data sorters are allocated, if not, allocate them. --- */
 
@@ -1733,10 +1727,6 @@ void COutput::SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2doub
 
 }
 
-
-
-
-
 void COutput::Postprocess_HistoryData(CConfig *config){
 
   map<string, pair<su2double, int> > Average;
@@ -1758,13 +1748,11 @@ void COutput::Postprocess_HistoryData(CConfig *config){
     }
 
     if (currentField.fieldType == HistoryFieldType::COEFFICIENT){
-      if(SetUpdate_Averages(config)){
-        if (config->GetTime_Domain()){
-          windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
-          SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
-          if (config->GetDirectDiff() != NO_DERIVATIVE) {
-            SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
-          }
+      if (config->GetTime_Domain()){
+        windowedTimeAverages[historyOutput_List[iField]].addValue(currentField.value,config->GetTimeIter(), config->GetStartWindowIteration()); //Collecting Values for Windowing
+        SetHistoryOutputValue("TAVG_" + fieldIdentifier, windowedTimeAverages[fieldIdentifier].WindowedUpdate(config->GetKindWindow()));
+        if (config->GetDirectDiff() != NO_DERIVATIVE) {
+          SetHistoryOutputValue("D_TAVG_" + fieldIdentifier, SU2_TYPE::GetDerivative(windowedTimeAverages[fieldIdentifier].GetVal()));
         }
       }
       if (config->GetDirectDiff() != NO_DERIVATIVE){

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   bool body_forces        = config->GetDeadLoad();
   bool incremental_load   = config->GetIncrementalLoad();
   bool prestretch_fem     = config->GetPrestretch();  // Structure is prestretched
@@ -69,6 +69,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
+    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/

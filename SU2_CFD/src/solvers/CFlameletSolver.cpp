@@ -38,16 +38,20 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
                                  unsigned short iMesh)
 : CScalarSolver(geometry, config) {
   unsigned short nLineLets;
-  bool turbulent = ((config->GetKind_Solver() == RANS) ||
+  const bool turbulent = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
-  bool multizone = config->GetMultizone_Problem();
+  const bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  const bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+  const bool multizone = config->GetMultizone_Problem();
 
+  /*--- Dimension of the problem --> passive scalar will only ever
+   have a single equation. Other child classes of CScalarSolver
+   will have variable numbers of equations. ---*/
+ 
   nVar     = config->GetNScalars();
   nPrimVar = config->GetNScalars();
 
-  nPoint       = geometry->GetnPoint();
+  nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
   /*--- Initialize nVarGrad for deallocation ---*/
@@ -196,7 +200,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
   /*-- Allocation of inlets has to happen in derived classes
    (not CScalarSolver), due to arbitrary number of scalar variables.
    First, we also set the column index for any inlet profiles. ---*/
-  
+  // [x,y],T,[U,V],
   Inlet_Position = nDim*2+2;
   if (turbulent) {
     if (turb_SA) Inlet_Position += 1;
@@ -278,7 +282,6 @@ void CFlameletSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
-  // nijso: this makes the residuals unavailable for output
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
@@ -323,7 +326,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
   if ((!Restart) && ExtIter == 0) {
     if (rank == MASTER_NODE){
       cout << "Initializing progress variable and temperature (initial condition)." << endl;
-    } 
+    }
 
     su2double *scalar_init  = new su2double[nVar];
     su2double *flame_offset = config->GetFlameOffset();
@@ -373,7 +376,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
         for (unsigned long i_var = 0; i_var < nVar; i_var++)
           Solution[i_var] = 0.0;
         
-                coords = geometry[i_mesh]->nodes->GetCoord(i_point);
+        coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         /* determine if our location is above or below the plane, assuming the normal 
            is pointing towards the burned region*/ 
@@ -409,7 +412,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
           if ( (i_scalar != I_ENTHALPY) && (i_scalar != I_PROG_VAR) )
             scalar_init[i_scalar] = config->GetScalar_Init(i_scalar);
         }
-        
+
         solver_container[i_mesh][SCALAR_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
 
       }
@@ -424,7 +427,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
       
     }
 
-  delete[] scalar_init;
+    delete[] scalar_init;
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0))
       cout << endl;
@@ -447,7 +450,7 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
   
   su2double  BetaInc2, Density, dRhodT, dRhodC, Temperature, Cp, Delta;
   
-  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -568,6 +571,12 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
     /*--- Update scalar sources in the fluidmodel ---*/
 
+    /*--- Axisymmetry source term for the scalar equation. ---*/
+    if (axisymmetric){
+      /*--- Set y coordinate ---*/
+      first_numerics->SetCoord(geometry->nodes->GetCoord(i_point), geometry->nodes->GetCoord(i_point));
+    }
+
     fluid_model_local->SetScalarSources(nodes->GetSolution(i_point));
 
     /*--- Retrieve scalar sources from fluidmodel and update numerics class data. ---*/
@@ -587,66 +596,6 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     
   }
   
-  /*--- Axisymmetry source term for the scalar equation. ---*/
-  
-  if (axisymmetric) {
-    
-    /*--- Zero out Jacobian structure ---*/
-    
-    if (implicit) {
-      for (auto i_var = 0u; i_var < nVar; i_var ++)
-        for (auto j_var = 0u; j_var < nVar; j_var ++)
-          Jacobian_i[i_var][j_var] = 0.0;
-    }
-    
-    /*--- loop over points ---*/
-    
-    for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-      
-      /*--- Primitive variables w/o reconstruction ---*/
-      
-      second_numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point), nullptr);
-      
-      /*--- Scalar variables w/o reconstruction ---*/
-      
-      second_numerics->SetScalarVar(nodes->GetSolution(i_point), nullptr);
-      
-      /*--- Mass diffusivity coefficients. ---*/
-      
-      second_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(i_point), nullptr);
-      
-      /*--- Set control volume ---*/
-      
-      second_numerics->SetVolume(geometry->nodes->GetVolume(i_point));
-      
-      /*--- Set y coordinate ---*/
-      
-      second_numerics->SetCoord(geometry->nodes->GetCoord(i_point), nullptr);
-      
-      /*--- If viscous, we need gradients for extra terms. ---*/
-      
-      if (viscous) {
-        
-        /*--- Gradient of the scalar variables ---*/
-        
-        second_numerics->SetScalarVarGradient(nodes->GetGradient(i_point), nullptr);
-        
-      }
-      
-      /*--- Compute Source term Residual ---*/
-      
-      second_numerics->ComputeResidual(Residual, Jacobian_i, config);
-      
-      /*--- Add Residual ---*/
-      
-      LinSysRes.AddBlock(i_point, Residual);
-      
-      /*--- Implicit part ---*/
-      
-      if (implicit) Jacobian.AddBlock(i_point, i_point, Jacobian_i);
-      
-    }
-  }
 }
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry,
@@ -739,6 +688,14 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     }
   }
 
+}
+
+void CFlameletSolver::BC_HeatFlux_Wall(CGeometry *geometry, 
+                                       CSolver **solver_container, 
+                                       CNumerics *conv_numerics,
+                                       CNumerics *visc_numerics, 
+                                       CConfig *config, 
+                                       unsigned short val_marker) {
 }
 
 void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,

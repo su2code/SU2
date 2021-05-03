@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -389,7 +389,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string::size_type position;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
-  bool time_spectral = config->GetTime_Marching() == HARMONIC_BALANCE;
+  bool time_spectral = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 

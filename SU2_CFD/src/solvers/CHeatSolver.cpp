@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,16 +28,11 @@
 #include "../../include/solvers/CHeatSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CHeatSolver::CHeatSolver(void) : CSolver() {
-
-  ConjugateVar = nullptr;
-  HeatFlux     = nullptr;
-}
+CHeatSolver::CHeatSolver(void) : CSolver() { }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
   unsigned short iVar, iDim, nLineLets, iMarker;
-  unsigned long iVertex;
 
   bool multizone = config->GetMultizone_Problem();
 
@@ -69,6 +64,13 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   nMarker = config->GetnMarker_All();
 
   CurrentMesh = iMesh;
+
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+
+  nVertex.resize(nMarker);
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    nVertex[iMarker] = geometry->nVertex[iMarker];
+
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual      = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
@@ -97,8 +99,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
 
-  Primitive_Flow_i = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) Primitive_Flow_i[iVar] = 0.0;
-  Primitive_Flow_j = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) Primitive_Flow_j[iVar] = 0.0;
+  Primitive_Flow_i.resize(nDim+1, 0.0);
+  Primitive_Flow_j.resize(nDim+1, 0.0);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -129,17 +131,9 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     OutputHeadingNames = new string[nOutputVariables];
   }
 
-  HeatFlux_per_Marker = new su2double[nMarker];
-  AverageT_per_Marker = new su2double[nMarker];
-  Surface_Areas       = new su2double[config->GetnMarker_HeatFlux()];
-
-  for(iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatFlux_per_Marker[iMarker]        = 0.0;
-    AverageT_per_Marker[iMarker]  = 0.0;
-  }
-  for(iMarker = 0; iMarker < config->GetnMarker_HeatFlux(); iMarker++) {
-    Surface_Areas[iMarker] = 0.0;
-  }
+  HeatFlux_per_Marker.resize(nMarker, 0.0);
+  AverageT_per_Marker.resize(nMarker, 0.0);
+  Surface_Areas.resize(config->GetnMarker_HeatFlux(), 0.0);
 
   Set_Heatflux_Areas(geometry, config);
 
@@ -181,29 +175,11 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
    used for communications with donor cells ---*/
 
   unsigned short nConjVariables = 4;
-
-  ConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    ConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      ConjugateVar[iMarker][iVertex] = new su2double [nConjVariables];
-      for (iVar = 0; iVar < nConjVariables ; iVar++) {
-        ConjugateVar[iMarker][iVertex][iVar] = 0.0;
-      }
-      ConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
+  AllocVectorOfMatrices(nVertex, nConjVariables, ConjugateVar, config->GetTemperature_FreeStreamND());
 
   /*--- Heat flux in all the markers ---*/
 
-  HeatFlux = new su2double* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      HeatFlux[iMarker][iVertex] = 0.0;
-    }
-  }
+  AllocVectorOfVectors(nVertex, HeatFlux);
 
   if (multizone){
     /*--- Initialize the BGS residuals. ---*/
@@ -230,15 +206,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 }
 
 CHeatSolver::~CHeatSolver(void) {
-
-  unsigned short iMarker;
-
-  if (HeatFlux != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete [] HeatFlux[iMarker];
-    }
-    delete [] HeatFlux;
-  }
 
   delete nodes;
 }
@@ -281,7 +248,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Restart the solution from file information ---*/
 
-  unsigned short iDim, iVar, iMesh;
+  unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
 
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
@@ -292,13 +259,9 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   bool heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION) ||
                         (config->GetKind_Solver() == DISC_ADJ_HEAT));
 
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
-
-  Coord = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord[iDim] = 0.0;
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
@@ -393,8 +356,6 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
-
-  delete [] Coord;
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
@@ -526,7 +487,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
         Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
 
-        numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
+        numerics->SetPrimitive(Primitive_Flow_i.data(), Primitive_Flow_j.data());
         numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
       }
 
@@ -667,7 +628,7 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas, config->GetnMarker_HeatFlux(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(Local_Surface_Areas, Surface_Areas.data(), Surface_Areas.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&Local_HeatFlux_Areas_Monitor, &Total_HeatFlux_Areas_Monitor, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   Total_HeatFlux_Areas = 0.0;
@@ -807,7 +768,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM];
 
   su2double *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
   //su2double Prandtl_Turb;
@@ -902,9 +863,6 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     }
   }
 
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-
 }
 
 void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -920,7 +878,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM];
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -971,9 +929,6 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     }
   }
 
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
-
 }
 
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
@@ -989,8 +944,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
                || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
-  su2double *Normal = new su2double[nDim];
-
   Temperature_Ref       = config->GetTemperature_Ref();
   rho_cp_solid          = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
 
@@ -1002,7 +955,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       if (geometry->nodes->GetDomain(iPoint)) {
 
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        const su2double* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
@@ -1023,13 +976,13 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
       if (geometry->nodes->GetDomain(iPoint)) {
 
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, Normal);
 
         thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2)/rho_cp_solid;
 
-        if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-            (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+        if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+            (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
           Tinterface        = nodes->GetSolution(iPoint,0);
           Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3)/Temperature_Ref;
@@ -1206,8 +1159,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
                || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
   bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   eddy_viscosity    = 0.0;
@@ -1373,7 +1326,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   }
 
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
-  if (config->GetTime_Marching() == TIME_STEPPING) {
+  if (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -1554,18 +1507,18 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
-  su2double Area_Children, Area_Parent, *Solution_Fine, *Solution;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
 
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
 
   if (restart && (TimeIter == 0)) {
 
-    Solution = new su2double[nVar];
+    su2double Solution[MAXNVAR];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
@@ -1583,7 +1536,6 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
       solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
-    delete [] Solution;
   }
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
@@ -1599,7 +1551,7 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
     }
 
     if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
-        (config->GetTime_Marching() == DT_STEPPING_2ND)) {
+        (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
 
       /*--- Load an additional restart file for a 2nd-order restart ---*/
 
@@ -1656,9 +1608,9 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        time discretization scheme (1st- or 2nd-order).---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+        if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
           Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+        if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
           Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                             +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
@@ -1670,9 +1622,9 @@ void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       if (implicit) {
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
-          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
 

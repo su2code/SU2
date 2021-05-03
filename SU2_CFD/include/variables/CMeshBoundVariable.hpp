@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ class CMeshBoundVariable final : public CMeshVariable {
 private:
 
   MatrixType Boundary_Displacement;  /*!< \brief Store the reference coordinates of the mesh. */
-
+  MatrixType Boundary_Velocity;      /*!< \brief Store the boundary velocities of the mesh. */
   CVertexMap<unsigned> VertexMap;    /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
@@ -85,6 +85,34 @@ public:
   inline void SetBound_Disp(unsigned long iPoint, unsigned long iDim, su2double val_BoundDisp) override {
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     Boundary_Displacement(iPoint,iDim) = val_BoundDisp;
+  }
+
+  /*!
+   * \brief Get the value of the displacement imposed at the boundary.
+   * \return Value of the boundary velocity.
+   */
+  inline su2double GetBound_Vel(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return Boundary_Velocity(iPoint,iDim);
+  }
+
+    /*!
+   * \brief Set the boundary displacements.
+   * \param[in] val_BoundVel - Pointer to the boundary velocities.
+   */
+  inline void SetBound_Vel(unsigned long iPoint, const su2double *val_BoundVel) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Boundary_Velocity(iPoint,iDim) = val_BoundVel[iDim];
+  }
+
+  /*!
+   * \brief Set the boundary velocity.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundVel - Value of the boundary velocities.
+   */
+  inline void SetBound_Vel(unsigned long iPoint, unsigned long iDim, su2double val_BoundVel) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    Boundary_Velocity(iPoint,iDim) = val_BoundVel;
   }
 
   /*!

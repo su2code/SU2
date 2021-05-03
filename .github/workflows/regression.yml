@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP]
+        config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
             flags: '-Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
@@ -32,6 +32,10 @@ jobs:
             flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
           - config_set: BaseOMP
             flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+          - config_set: ReverseOMP
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+          - config_set: ForwardOMP
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files

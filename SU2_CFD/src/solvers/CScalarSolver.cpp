@@ -360,7 +360,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 
 /*--- use preconditioner for scalar transport equations ---*/
- const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+ const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 //if (incompressible) SetPreconditioner(geometry, solver_container, config);
 
 
@@ -381,8 +381,8 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     /// TODO: This could be the SetTime_Step of this solver.
      // nijso: we use a global cfl scaling factor
     //Delta = Vol / (config->GetCFLRedCoeff_Scalar()*solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
-    su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-    //su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
+    //su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    su2double dt = config->GetCFLRedCoeff_Scalar() * flowNodes->GetDelta_Time(iPoint);
     nodes->SetDelta_Time(iPoint, dt);
 
     /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
@@ -413,6 +413,9 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     }
   }
 
+  //SetPreconditioner()
+
+
   SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Residual_RMS[iVar] += resRMS[iVar];
@@ -428,7 +431,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
@@ -490,8 +493,6 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  //cout << "iter = " << iter << endl;
-  
   SU2_OMP_MASTER {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
@@ -524,7 +525,7 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
         /* We impose a limit on the maximum percentage that the
          scalar variables can change over a nonlinear iteration. */
-        
+
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
@@ -553,9 +554,9 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
 
   const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   /*--- Flow solution, needed to get density. ---*/
 
@@ -816,8 +817,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent;
   const su2double *Solution_Fine = nullptr;
-  //bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-  //                  (config->GetTime_Marching() == DT_STEPPING_2ND));
+  //bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+  //                  (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   //bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   //unsigned short iZone = config->GetiZone();
   //unsigned short nZone = config->GetnZone();
@@ -864,7 +865,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
    Therefore, we must reduce skipVars here if energy is inactive so that
    the turbulent variables are read correctly. ---*/
 
-  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 

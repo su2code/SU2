@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
-  CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>() {
+  CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>() {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
@@ -48,9 +48,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -74,7 +74,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
@@ -238,13 +238,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   su2double Mach     = config->GetMach();
   su2double Reynolds = config->GetReynolds();
 
-  bool unsteady      = (config->GetTime_Marching() != NO);
+  bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
   bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
                         (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
-  bool boussinesq    = (config->GetKind_DensityModel() == BOUSSINESQ);
+  bool boussinesq    = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
   /*--- Compute dimensional free-stream values. ---*/
 
@@ -453,7 +453,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   for (auto& fluidModel : FluidModel) {
 
     switch (config->GetKind_FluidModel()) {
-      
+
       case CONSTANT_DENSITY:
         fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
@@ -578,16 +578,16 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     switch (config->GetKind_DensityModel()) {
 
-      case CONSTANT:
+      case INC_DENSITYMODEL::CONSTANT:
         if (energy) cout << "Energy equation is active and decoupled." << endl;
         else cout << "No energy equation." << endl;
         break;
 
-      case BOUSSINESQ:
+      case INC_DENSITYMODEL::BOUSSINESQ:
         if (energy) cout << "Energy equation is active and coupled through Boussinesq approx." << endl;
         break;
 
-      case VARIABLE:
+      case INC_DENSITYMODEL::VARIABLE:
         if (energy) cout << "Energy equation is active and coupled for variable density." << endl;
         break;
 
@@ -621,7 +621,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     if (viscous){
 
       switch(config->GetKind_ViscosityModel()){
-      case CONSTANT_VISCOSITY:
+      case VISCOSITYMODEL::CONSTANT:
         ModelTable << "CONSTANT_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -630,7 +630,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case SUTHERLAND:
+      case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -647,7 +647,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case POLYNOMIAL_VISCOSITY:
+      case VISCOSITYMODEL::POLYNOMIAL:
         ModelTable << "POLYNOMIAL_VISCOSITY";
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           stringstream ss;
@@ -661,7 +661,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       }
 
       switch(config->GetKind_ConductivityModel()){
-      case CONSTANT_PRANDTL:
+      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
         ModelTable << "CONSTANT_PRANDTL";
         NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();
         Unit.str("");
@@ -670,16 +670,16 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();
         break;
 
-      case CONSTANT_CONDUCTIVITY:
-        ModelTable << "CONSTANT_CONDUCTIVITY";
+      case CONDUCTIVITYMODEL::CONSTANT:
+        ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
-      case POLYNOMIAL_CONDUCTIVITY:
-        ModelTable << "POLYNOMIAL_CONDUCTIVITY";
+      case CONDUCTIVITYMODEL::POLYNOMIAL:
+        ModelTable << "POLYNOMIAL";
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           stringstream ss;
           ss << iVar;
@@ -845,9 +845,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Set the primitive variables ---*/
 
-  SU2_OMP_MASTER
-  ErrorCounter = 0;
-  SU2_OMP_BARRIER
+  ompMasterAssignBarrier(ErrorCounter, 0);
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
@@ -860,6 +858,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -882,6 +881,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   if (outlet) {
     SU2_OMP_MASTER
     GetOutlet_Properties(geometry, config, iMesh, Output);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -944,6 +944,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
     if (!physical) nonPhysicalPoints++;
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 }
@@ -1073,6 +1074,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -1096,6 +1098,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   SU2_OMP_MASTER
   ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
@@ -1241,6 +1244,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
+  END_SU2_OMP_FOR
   } // end color loop
 
   if (ReducerStrategy) {
@@ -1263,6 +1267,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -1281,14 +1286,14 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool rotating_frame = config->GetRotating_Frame();
   const bool axisymmetric   = config->GetAxisymmetric();
   const bool body_force     = config->GetBody_Force();
-  const bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
+  const bool boussinesq     = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
   const bool flame          = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
   const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
-  const bool streamwise_periodic             = config->GetKind_Streamwise_Periodic();
+  const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   if (body_force) {
@@ -1321,6 +1326,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (boussinesq) {
@@ -1353,6 +1359,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (rotating_frame) {
@@ -1387,6 +1394,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (axisymmetric) {
@@ -1411,6 +1419,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         nodes->SetAuxVar(iPoint, 0, AuxVar);
 
       }
+      END_SU2_OMP_FOR
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
 
@@ -1474,6 +1483,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (radiation) {
@@ -1516,6 +1526,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
 
     }
+    END_SU2_OMP_FOR
 
   }
 
@@ -1529,6 +1540,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
         nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
       }
+      END_SU2_OMP_FOR
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1568,6 +1580,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     } // for iPoint
+    END_SU2_OMP_FOR
 
     if(!streamwise_periodic_temperature && energy) {
 
@@ -1607,6 +1620,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
             LinSysRes.AddBlock(iPoint, residual);
 
           }// for iVertex
+          END_SU2_OMP_FOR
         }// if periodic inlet boundary
       }// for iMarker
 
@@ -1620,7 +1634,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1642,6 +1656,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         }
 
       }
+      END_SU2_OMP_FOR
     }
   }
 }
@@ -1776,9 +1791,11 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
+    END_SU2_OMP_FOR
 
     SU2_OMP_CRITICAL
     MaxVel2 = max(MaxVel2, maxVel2);
+    END_SU2_OMP_CRITICAL
 
     SU2_OMP_BARRIER
 
@@ -1788,6 +1805,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -1798,6 +1816,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
     nodes->SetBetaInc2(iPoint, BetaInc2);
+  END_SU2_OMP_FOR
 
 }
 
@@ -1809,10 +1828,10 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   //su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
   //su2double  Velocity[MAXNDIM] = {0.0};
 
-  const bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool energy           = config->GetEnergy_Equation();
-  const bool flame            = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+  bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool energy           = config->GetEnergy_Equation();
+  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -2033,6 +2052,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -2051,7 +2071,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  unsigned short Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
+  INLET_TYPE Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2106,7 +2126,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      case VELOCITY_INLET:
+      case INLET_TYPE::VELOCITY_INLET:
 
         /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
 
@@ -2125,7 +2145,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Stagnation pressure has been specified at the inlet. ---*/
 
-      case PRESSURE_INLET:
+      case INLET_TYPE::PRESSURE_INLET:
 
         /*--- Retrieve the specified total pressure for the inlet. ---*/
 
@@ -2196,6 +2216,9 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         break;
 
+      default:
+        SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
+        break;
     }
 
     /*--- Access density at the node. This is either constant by
@@ -2274,6 +2297,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     if (implicit)
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
   }
+  END_SU2_OMP_FOR
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -2290,7 +2314,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double Normal[MAXNDIM] = {0.0};
 
-  unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
+  INC_OUTLET_TYPE Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -2331,7 +2355,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      case PRESSURE_OUTLET:
+      case INC_OUTLET_TYPE::PRESSURE_OUTLET:
 
         /*--- Retrieve the specified back pressure for this outlet. ---*/
 
@@ -2351,7 +2375,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- A mass flow target has been specified for the outlet. ---*/
 
-      case MASS_FLOW_OUTLET:
+      case INC_OUTLET_TYPE::MASS_FLOW_OUTLET:
 
         /*--- Retrieve the specified target mass flow at the outlet. ---*/
 
@@ -2471,6 +2495,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -2488,12 +2513,12 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
   su2double Density, Cp;
 
-  const bool implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool first_order  = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  const bool second_order = (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const bool energy       = config->GetEnergy_Equation();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool energy = config->GetEnergy_Equation();
   const bool flame        = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
-  const short flagEnergy  = (!energy || flame); 
+  const short flagEnergy  = (!energy || flame);
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2502,7 +2527,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     U[ndim+1] = Density*Cp*V[ndim+1];
   };
 
- 
   /*--- Store the physical time step ---*/
 
   TimeStep = config->GetDelta_UnstTimeND();
@@ -2564,6 +2588,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
+    END_SU2_OMP_FOR
   }
 
   else {
@@ -2607,6 +2632,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -2643,6 +2669,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -2703,6 +2730,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -2729,7 +2757,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   bool Evaluate_BC = false;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
     Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
-    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
       Evaluate_BC = true;
   }
 
@@ -2985,4 +3013,6 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
     }
     nodes->SetSolution(iPoint,nDim+1, Temperature_Inf);
   }
+  END_SU2_OMP_FOR
+
 }

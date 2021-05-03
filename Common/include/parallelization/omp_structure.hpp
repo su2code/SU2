@@ -12,7 +12,7 @@
  *       e.g. SU2_OMP_PARALLEL. Exotic pragmas of limited portability should be
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
- * \author P. Gomes
+ * \author P. Gomes, J. Blühdorn
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -20,7 +20,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,9 @@
 
 #pragma once
 
-#include "../basic_types/datatype_structure.hpp"
+#include <cstddef>
+
+#include "../code_config.hpp"
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)
@@ -46,11 +48,18 @@
 #define PRAGMIZE(X) _Pragma(#X)
 #endif
 
-/*--- Detect compilation with OpenMP support, protect agaisnt
- *    using OpenMP with Reverse AD (not supported yet). ---*/
-#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE)
-#define HAVE_OMP
+#if defined(HAVE_OMP)
 #include <omp.h>
+
+#if defined(HAVE_OPDI)
+#if defined(HAVE_OMPT)
+#include "opdi/backend/ompt/omptBackend.hpp"
+#else
+#include "opdi/backend/macro/macroBackend.hpp"
+#endif
+#include "codi/externals/codiOpdiTool.hpp"
+#include "opdi.hpp"
+#endif
 
 /*--- The generic start of OpenMP constructs. ---*/
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
@@ -106,6 +115,11 @@ inline void omp_destroy_lock(omp_lock_t*){}
 
 #endif // end OpenMP detection
 
+/*--- Initialization and finalization ---*/
+
+void omp_initialize();
+void omp_finalize();
+
 /*--- Detect SIMD support (version 4+, after Jul 2013). ---*/
 #ifdef _OPENMP
 #if _OPENMP >= 201307
@@ -125,8 +139,11 @@ inline void omp_destroy_lock(omp_lock_t*){}
 
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
-#define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
+
+#ifndef HAVE_OPDI
+
+#define SU2_OMP_MASTER SU2_OMP(master)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
 #define SU2_OMP_CRITICAL SU2_OMP(critical)
 
@@ -134,8 +151,39 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #define SU2_OMP_PARALLEL_(ARGS) SU2_OMP(parallel ARGS)
 #define SU2_OMP_PARALLEL_ON(NTHREADS) SU2_OMP(parallel num_threads(NTHREADS))
 
+#define SU2_OMP_FOR_(ARGS) SU2_OMP(for ARGS)
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
+
+#define SU2_NOWAIT nowait
+
+#define END_SU2_OMP_MASTER
+#define END_SU2_OMP_CRITICAL
+#define END_SU2_OMP_PARALLEL
+#define END_SU2_OMP_FOR
+
+#else
+
+#define SU2_OMP_MASTER OPDI_MASTER()
+#define SU2_OMP_BARRIER OPDI_BARRIER()
+#define SU2_OMP_CRITICAL OPDI_CRITICAL()
+
+#define SU2_OMP_PARALLEL OPDI_PARALLEL()
+#define SU2_OMP_PARALLEL_(ARGS) OPDI_PARALLEL(ARGS)
+#define SU2_OMP_PARALLEL_ON(NTHREADS) OPDI_PARALLEL(num_threads(NTHREADS))
+
+#define SU2_OMP_FOR_(ARGS) OPDI_FOR(ARGS)
+#define SU2_OMP_FOR_DYN(CHUNK) OPDI_FOR(schedule(dynamic,CHUNK))
+#define SU2_OMP_FOR_STAT(CHUNK) OPDI_FOR(schedule(static,CHUNK))
+
+#define SU2_NOWAIT OPDI_NOWAIT
+
+#define END_SU2_OMP_MASTER OPDI_END_MASTER
+#define END_SU2_OMP_CRITICAL OPDI_END_CRITICAL
+#define END_SU2_OMP_PARALLEL OPDI_END_PARALLEL
+#define END_SU2_OMP_FOR OPDI_END_FOR
+
+#endif
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
@@ -184,6 +232,7 @@ void parallelCopy(size_t size, const T* src, U* dst)
 {
   SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = src[i];
+  END_SU2_OMP_FOR
 }
 
 /*!
@@ -197,6 +246,7 @@ void parallelSet(size_t size, T val, U* dst)
 {
   SU2_OMP_FOR_STAT(2048)
   for(size_t i=0; i<size; ++i) dst[i] = val;
+  END_SU2_OMP_FOR
 }
 
 /*!
@@ -210,6 +260,7 @@ inline void atomicAdd(T rhs, T& lhs)
 {
   SU2_OMP_CRITICAL
   lhs += rhs;
+  END_SU2_OMP_CRITICAL
 }
 template<class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
 inline void atomicAdd(T rhs, T& lhs)

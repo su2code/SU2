@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,16 +59,12 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != NO) {
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Solution_time_n.resize(nPoint,nVar);
     Solution_time_n1.resize(nPoint,nVar);
   }
   else if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-  }
-
-  if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()) {
-    Solution_Adj_Old.resize(nPoint,nVar);
   }
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
@@ -113,6 +109,7 @@ void CVariable::Restore_BGSSolution_k() {
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
 void CVariable::RegisterSolution(bool input, bool push_index) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(input) {
@@ -131,16 +128,21 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CVariable::RegisterSolution_time_n() {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n(iPoint,iVar));
+  END_SU2_OMP_FOR
 }
 
 void CVariable::RegisterSolution_time_n1() {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for(unsigned long iVar=0; iVar<nVar; ++iVar)
       AD::RegisterInput(Solution_time_n1(iPoint,iVar));
+  END_SU2_OMP_FOR
 }

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,7 @@ protected:
 
   MatrixType Solution_Pred;         /*!< \brief Predictor of the solution for FSI purposes */
   MatrixType Solution_Pred_Old;     /*!< \brief Predictor of the solution at time n for FSI purposes */
+  MatrixType Solution_Vel_Pred;     /*!< \brief Predictor of the velocity solution for FSI purposes */
 
   MatrixType Reference_Geometry;    /*!< \brief Reference solution for optimization problems */
 
@@ -252,12 +253,25 @@ public:
   inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return Solution_Accel_time_n[iPoint]; }
 
   /*!
+   * \brief Set the value of the solution velocity predictor.
+   */
+  inline void SetSolution_Vel_Pred(unsigned long iPoint) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = Solution_Vel(iPoint,iVar);
+  }
+
+  /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_pred - Pointer to the residual vector.
    */
   inline void SetSolution_Pred(unsigned long iPoint, const su2double *val_solution_pred) final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Pred(iPoint,iVar) = val_solution_pred[iVar];
   }
+
+  /*!
+   * \brief Get the velocity solution.
+   * \return Pointer to velocity solution vector.
+   */
+  inline const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const final { return Solution_Vel_Pred[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.

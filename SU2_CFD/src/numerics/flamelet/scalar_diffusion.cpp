@@ -35,7 +35,7 @@ CAvgGrad_transportedScalar::CAvgGrad_transportedScalar(unsigned short val_nDim,
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
 {
   Proj_Mean_GradScalarVar_Normal = new su2double [nVar] ();
   Proj_Mean_GradScalarVar_Edge = new su2double [nVar] ();
@@ -157,6 +157,8 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
 
  const su2double Sc_t = config->GetSchmidt_Turb();
  const bool inc_rans = (config->GetKind_Solver() == INC_RANS);
+ const bool flame  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+ su2double Mass_Diffusivity_Lam;
 
  for (auto iVar = 0u; iVar < nVar; iVar++) {
 
@@ -166,7 +168,13 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
       (rho * D_{i,m} + mu_t/Sc_t ) * grad(Y_i))
       with D_{i,m} the mass diffusion coefficient of species i into the mixture m
     */
-    su2double Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+
+   if (flame)
+     /* --- in case of combustion, Diffusion_Coeff from the lookup table is actually the complete diffusivity rho*D--- */
+     Mass_Diffusivity_Lam = 0.5 * (Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+   else 
+     /* --- in case of species transport, Diffusion_Coeff is the binary diffusion coefficient --- */
+     Mass_Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
     su2double Mass_Diffusivity_Tur = 0.0;
     if (inc_rans) 
@@ -181,8 +189,6 @@ void CAvgGrad_transportedScalar_general::FinishResidualCalc(const CConfig* confi
     if (implicit) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          //Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
-          //Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
           Jacobian_i[iVar][jVar] = -Mass_Diffusivity*proj_vector_ij;
           Jacobian_j[iVar][jVar] =  Mass_Diffusivity*proj_vector_ij;
         } else {

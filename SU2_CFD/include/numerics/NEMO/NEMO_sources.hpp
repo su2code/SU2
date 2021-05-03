@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,12 +38,12 @@
  */
 class CSource_NEMO : public CNEMONumerics {
 private:
- 
+
   int    *alphak, *betak;
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction
   su2double *dkf, *dkb, *dRfok, *dRbok;
-  vector<su2double> Cvvsst, ws; 
+  vector<su2double> Cvvsst, ws;
 
   su2double* residual = nullptr;        /*!< \brief The source residual. */
 
@@ -79,7 +79,7 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void ComputeKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
- 
+
   /*!
    * \brief Residual of the translational to vibrational energy.
    * \param[in] config - Definition of the particular problem.
@@ -89,7 +89,7 @@ public:
   /*!
    * \brief Residual of axissymetric source term.
    * \param[in] config - Definition of the particular problem.
-   */ 
+   */
   ResidualType<> ComputeAxisymmetric(const CConfig* config) final;
 };
 

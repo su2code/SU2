@@ -95,5 +95,10 @@ build/
 # ninja binary (build system)
 ninja
 
+<<<<<<< HEAD
 # vscode config files
 .vscode/*
+=======
+# Ignore vscode folder
+.vscode/
+>>>>>>> develop

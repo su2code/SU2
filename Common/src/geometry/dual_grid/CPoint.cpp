@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -63,7 +63,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   Volume.resize(npoint) = su2double(0.0);
   Periodic_Volume.resize(npoint) = su2double(0.0);
 
-  if (config->GetTime_Marching() != NO) {
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Volume_n.resize(npoint) = su2double(0.0);
     Volume_nM1.resize(npoint) = su2double(0.0);
   }
@@ -113,7 +113,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
     /*--- Structures for storing old node coordinates for computing grid
      *    velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of CMeshSolver, these coordinates are stored as solutions to the mesh problem. ---*/
-    if (config->GetGrid_Movement() && (config->GetTime_Marching() != NO)) {
+    if (config->GetGrid_Movement() && (config->GetTime_Marching() != TIME_MARCHING::STEADY)) {
       Coord_n.resize(npoint,nDim) = su2double(0.0);
       Coord_p1.resize(npoint,nDim) = su2double(0.0);
       Coord_n1.resize(npoint,nDim) = su2double(0.0);

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -278,7 +278,7 @@ passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned lon
   unsigned long iPoint;
   su2double vertexWallTemp(0.0);
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -309,7 +309,7 @@ vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsig
   vector<su2double> HeatFlux (3,0.0);
   vector<passivedouble> HeatFluxPassive (3,0.0);
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -343,7 +343,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   su2double laminar_viscosity, thermal_conductivity, dTdn;
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
@@ -602,6 +602,7 @@ void CSinglezoneDriver::SetInitialMesh() {
         /*--- Set the grid velocity for this coarse node. ---*/
         geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
       }
+      END_SU2_OMP_FOR
       /*--- Push back the volume. ---*/
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
@@ -610,6 +611,7 @@ void CSinglezoneDriver::SetInitialMesh() {
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDriver::BoundaryConditionsUpdate(){

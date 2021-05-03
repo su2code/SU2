@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,10 +113,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
 
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
-  nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  su2double nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   if (config->GetKind_Trans_Model() == BC) {
     nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
+
+  Solution_Inf[0] = nu_tilde_Inf;
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
@@ -234,6 +236,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
         auto Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Compute the DES length scale ---*/
@@ -279,6 +282,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -287,7 +291,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition    = (config->GetKind_Trans_Model() == LM);
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
@@ -377,6 +381,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
   if (harmonic_balance) {
 
@@ -392,6 +397,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         LinSysRes(iPoint,iVar) += Source*Volume;
       }
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -408,6 +414,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
   }
@@ -415,9 +422,10 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short WallType; su2double Roughness_Height;
+  WALL_TYPE WallType;
+  su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == ROUGH ) rough_wall = true;
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -473,6 +481,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -513,7 +522,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), &nu_tilde_Inf);
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -533,6 +542,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -620,6 +630,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -705,6 +716,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -793,6 +805,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -881,6 +894,7 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1030,6 +1044,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
 //        Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -1123,6 +1138,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1227,6 +1243,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -1887,6 +1904,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     nodes->SetDES_LengthScale(iPoint, lengthScale);
 
   }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
@@ -1957,7 +1975,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+    Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
   }
 
 }

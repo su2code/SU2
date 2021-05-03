@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -556,8 +556,8 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
                                    bool val_correct_grad, const CConfig* config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
 
-  energy                 = config->GetEnergy_Equation();
-  flame                  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+  energy   = config->GetEnergy_Equation();
+  flame    = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 }
 
 CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* config) {

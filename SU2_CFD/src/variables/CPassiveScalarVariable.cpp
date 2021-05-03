@@ -41,8 +41,8 @@ CPassiveScalarVariable::CPassiveScalarVariable(su2double *val_scalar_inf, unsign
   Solution_Old = Solution;
   
   /*--- Allocate and initialize solution for the dual time strategy ---*/
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   if (dual_time) {
     Solution_time_n  = Solution;

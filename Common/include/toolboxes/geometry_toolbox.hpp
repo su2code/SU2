@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,16 @@
 namespace GeometryToolbox {
 
 /*! \return ||a-b||^2 */
-template<class T, typename Int>
-inline T SquaredDistance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T SquaredDistance(Int nDim, const T* a, const U* b) {
   T d(0);
   for(Int i = 0; i < nDim; i++) d += pow(a[i]-b[i], 2);
   return d;
 }
 
 /*! \return ||a-b|| */
-template<class T, typename Int>
-inline T Distance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T Distance(Int nDim, const T* a, const U* b) {
   return sqrt(SquaredDistance(nDim, a, b));
 }
 

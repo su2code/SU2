@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
   Flux = new su2double [nVar];

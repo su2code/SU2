@@ -42,6 +42,7 @@ class CSourcePieceWise_transportedScalar_general final : public CNumerics {
 private:
   su2double *Residual = nullptr;
   su2double **Jacobian_i = nullptr;
+  bool flame;
   su2double *scalar_sources = nullptr;
 
   su2double source_pv;
@@ -58,58 +59,59 @@ private:
     su2double yinv,Density_i,Velocity_i[3];
     if (Coord_i[1] > EPS){
 
-    AD::SetPreaccIn(Coord_i[1]);
+      AD::SetPreaccIn(Coord_i[1]);
 
-    yinv = 1.0/Coord_i[1];
+      yinv = 1.0/Coord_i[1];
 
-    /*--- the incompressible density. Note that this is different for compressible flows ---*/
+      /*--- the incompressible density. Note that this is different for compressible flows ---*/
 
-    Density_i = V_i[nDim+2];
+      Density_i = V_i[nDim+2];
 
-    /*--- Set primitive variables at points iPoint. ---*/
+      /*--- Set primitive variables at points iPoint. ---*/
     
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      Velocity_i[iDim] = V_i[iDim+1];
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        Velocity_i[iDim] = V_i[iDim+1];
 
-    /*--- Inviscid component of the source term. ---*/
+      /*--- Inviscid component of the source term. ---*/
     
-    for (auto iVar=0u; iVar < nVar; iVar++)
-      Residual[iVar] = yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1]; 
+      for (auto iVar=0u; iVar < nVar; iVar++)
+        Residual[iVar] = yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1]; 
 
-    if (implicit) {
-      
-      for (auto iVar=0u; iVar < nVar; iVar++) {
-        for (auto jVar=0u; jVar < nVar; jVar++) {
-          if (iVar == jVar) Jacobian_i[iVar][jVar] = Velocity_i[1];
-          Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i;
+      if (implicit) {
+        for (auto iVar=0u; iVar < nVar; iVar++) {
+          for (auto jVar=0u; jVar < nVar; jVar++) {
+            if (iVar == jVar) Jacobian_i[iVar][jVar] = Velocity_i[1];
+            Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i;
+          }
         }
       }
-      
-    }
 
-    /*--- Add the viscous terms if necessary. ---*/
+      /*--- Add the viscous terms if necessary. ---*/
     
-    if (viscous) {
-      
-      for (auto iVar=0u; iVar < nVar; iVar++){
-        Residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
-      } 
-    }
-
-     } else {
-    
-    for (auto iVar=0u; iVar < nVar; iVar++)
-      Residual[iVar] = 0.0;
-    
-    if (implicit) {
-      for (auto iVar=0u; iVar < nVar; iVar++) {
-        for (auto jVar=0u; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+      if (viscous) {
+      // nijso: in case of flamelet, diffusion_coeff is actually rho*D
+      //        and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
+        for (auto iVar=0u; iVar < nVar; iVar++){
+          if (flame)
+            Residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
+          else
+            Residual[iVar] -= Volume*yinv*Density_i*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
+        } 
       }
-    }
-    
-  }
 
+    } else {
+    
+      for (auto iVar=0u; iVar < nVar; iVar++)
+        Residual[iVar] = 0.0;
+  
+      if (implicit) {
+        for (auto iVar=0u; iVar < nVar; iVar++) {
+          for (auto jVar=0u; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+    
+    }
 
   }
 
@@ -129,7 +131,7 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
-    /*!
+  /*!
    * \brief Set the value of the progress variable source term for the flamelet model.
    * \param[in] val_sourcepv_i - Value of the source term at point i.
    * \param[in] val_sourcepv_j - Value of the source term at point j.

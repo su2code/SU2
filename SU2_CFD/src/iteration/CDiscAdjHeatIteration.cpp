@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,15 +34,15 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long iPoint;
   unsigned short TimeIter = config[val_iZone]->GetTimeIter();
-  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST);
-  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool dual_time_2nd = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
   unsigned short iMesh;
   int Direct_Iter;
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config[val_iZone]->GetTime_Marching()) {
+  if (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Direct_Iter = SU2_TYPE::Int(config[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2;
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
@@ -182,21 +182,21 @@ void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry****
 }
 
 void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                          unsigned short iZone, unsigned short iInst, unsigned short kind_recording) {
-  if (kind_recording == SOLUTION_VARIABLES || kind_recording == SOLUTION_AND_MESH) {
+                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
 
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
     solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (kind_recording == MESH_COORDS) {
+  if (kind_recording == RECORDING::MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
   /*--- Register the variables of the mesh deformation ---*/
-  if (kind_recording == MESH_DEFORM) {
+  if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -207,8 +207,10 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                             CConfig** config, unsigned short iZone, unsigned short iInst,
-                                            unsigned short kind_recording) {
-  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE) || (kind_recording == SOLUTION_AND_MESH)) {
+                                            RECORDING kind_recording) {
+  if ((kind_recording == RECORDING::MESH_COORDS) ||
+      (kind_recording == RECORDING::CLEAR_INDICES) ||
+      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
@@ -227,9 +229,8 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            COutput* output, unsigned short iZone, unsigned short iInst) {
-  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  geometry[iZone][iInst][MESH_0]->RegisterOutput_Coordinates(config[iZone]);
+  solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
 
 void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry,
@@ -240,8 +241,8 @@ void CDiscAdjHeatIteration::Update(COutput* output, CIntegration**** integration
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][ADJHEAT_SOL]->SetConvergence(false);
     }
@@ -257,14 +258,4 @@ bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integratio
                             config[val_iZone]->GetInnerIter());
 
   return output->GetConvergence();
-}
-
-void CDiscAdjHeatIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
-                                   unsigned long InnerIter, bool StopCalc, unsigned short val_iZone,
-                                   unsigned short val_iInst) {}
-
-void CDiscAdjHeatIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
 }

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,10 @@ int main(int argc, char *argv[]) {
 
   char config_file_name[MAX_STRING_SIZE];
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   /*--- MPI initialization, and buffer setting ---*/
 
 #if defined(HAVE_OMP) && defined(HAVE_MPI)
@@ -48,6 +52,11 @@ int main(int argc, char *argv[]) {
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
+
+  /*--- AD initialization ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().initialize();
+#endif
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
@@ -69,7 +78,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_DOT);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT);
 
   const auto nZone = config->GetnZone();
 
@@ -88,7 +97,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_DOT, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DOT, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -105,10 +114,10 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_DOT, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
@@ -406,8 +415,16 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
 
-  /*--- Finalize MPI parallelization ---*/
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
+#endif
+
+  /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 

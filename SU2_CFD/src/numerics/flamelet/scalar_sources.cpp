@@ -33,10 +33,11 @@ CSourcePieceWise_transportedScalar_general::CSourcePieceWise_transportedScalar_g
                                                    const CConfig* config) :
                           CNumerics(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   axisymmetric = config->GetAxisymmetric();
   viscous = config->GetViscous();
   implicit = (config->GetKind_TimeIntScheme_Scalar() == EULER_IMPLICIT);
+  flame  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   Residual       = new su2double [nVar];
   scalar_sources = new su2double [nVar];
@@ -65,6 +66,9 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
   AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); 
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+
+  //if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE)
+  //  AD::SetPreaccIn(sourcepv_i);
 
   //unsigned short iDim;
 
