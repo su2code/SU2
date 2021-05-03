@@ -262,6 +262,8 @@
 		35D63007259987B8008DF28B /* blas_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D63006259987B7008DF28B /* blas_structure.cpp */; };
 		35D6301625998877008DF28B /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301325998877008DF28B /* mpi_structure.cpp */; };
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
+		40C54DB12640BE100057F3DD /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */; };
+		40C54DBD2640C3DA0057F3DD /* omp_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C54DBC2640C3D90057F3DD /* omp_structure.cpp */; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -854,6 +856,10 @@
 		35D6301425998877008DF28B /* vectorization.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = vectorization.hpp; sourceTree = "<group>"; };
 		35D6301525998877008DF28B /* omp_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = omp_structure.hpp; sourceTree = "<group>"; };
 		35D6301725999185008DF28B /* CSquareMatrixCM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSquareMatrixCM.cpp; sourceTree = "<group>"; };
+		40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CNewtonIntegration.cpp; sourceTree = "<group>"; };
+		40C54DB32640BE280057F3DD /* CNewtonIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNewtonIntegration.hpp; sourceTree = "<group>"; };
+		40C54DB82640C1DE0057F3DD /* libmpi.40.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi.40.dylib; path = "../../../../../../usr/local/Cellar/open-mpi/4.0.5/lib/libmpi.40.dylib"; sourceTree = "<group>"; };
+		40C54DBC2640C3D90057F3DD /* omp_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = omp_structure.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -874,6 +880,7 @@
 				354900E82537E0050095B597 /* Common */,
 				3549021A2537E0280095B597 /* SU2_CFD */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				40C54DB72640C1DE0057F3DD /* Frameworks */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -1292,6 +1299,7 @@
 			children = (
 				354902302537E0280095B597 /* CSingleGridIntegration.hpp */,
 				354902312537E0280095B597 /* CMultiGridIntegration.hpp */,
+				40C54DB32640BE280057F3DD /* CNewtonIntegration.hpp */,
 				354902322537E0280095B597 /* CIntegrationFactory.hpp */,
 				354902332537E0280095B597 /* CStructuralIntegration.hpp */,
 				354902342537E0280095B597 /* CFEM_DG_Integration.hpp */,
@@ -1596,6 +1604,7 @@
 		354902D82537E0280095B597 /* integration */ = {
 			isa = PBXGroup;
 			children = (
+				40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */,
 				354902D92537E0280095B597 /* CFEM_DG_Integration.cpp */,
 				354902DA2537E0280095B597 /* CIntegration.cpp */,
 				354902DB2537E0280095B597 /* CStructuralIntegration.cpp */,
@@ -1668,34 +1677,34 @@
 		354903072537E0280095B597 /* solvers */ = {
 			isa = PBXGroup;
 			children = (
-				357BEE46256D589B00423D14 /* CNEMOEulerSolver.cpp */,
-				357BEE47256D589B00423D14 /* CNEMONSSolver.cpp */,
-				354903082537E0280095B597 /* CIncEulerSolver.cpp */,
-				354903092537E0280095B597 /* CTurbSolver.cpp */,
 				3549030A2537E0280095B597 /* CAdjEulerSolver.cpp */,
-				3549030B2537E0280095B597 /* CTurbSSTSolver.cpp */,
-				3549030C2537E0280095B597 /* CDiscAdjFEASolver.cpp */,
-				3549030D2537E0280095B597 /* CRadP1Solver.cpp */,
-				3549030E2537E0280095B597 /* CFEASolver.cpp */,
-				3549030F2537E0280095B597 /* CHeatSolver.cpp */,
-				354903102537E0280095B597 /* CTemplateSolver.cpp */,
-				354903112537E0280095B597 /* CTransLMSolver.cpp */,
-				354903122537E0280095B597 /* CAdjTurbSolver.cpp */,
-				354903132537E0280095B597 /* CIncNSSolver.cpp */,
-				354903142537E0280095B597 /* CSolverFactory.cpp */,
-				354903152537E0280095B597 /* CBaselineSolver_FEM.cpp */,
-				354903162537E0280095B597 /* CSolver.cpp */,
-				354903172537E0280095B597 /* CMeshSolver.cpp */,
-				354903182537E0280095B597 /* CDiscAdjMeshSolver.cpp */,
-				354903192537E0280095B597 /* CTurbSASolver.cpp */,
 				3549031A2537E0280095B597 /* CAdjNSSolver.cpp */,
-				3549031B2537E0280095B597 /* CNSSolver.cpp */,
+				354903122537E0280095B597 /* CAdjTurbSolver.cpp */,
+				354903202537E0280095B597 /* CBaselineSolver.cpp */,
+				354903152537E0280095B597 /* CBaselineSolver_FEM.cpp */,
 				3549031C2537E0280095B597 /* CDiscAdjSolver.cpp */,
+				3549030C2537E0280095B597 /* CDiscAdjFEASolver.cpp */,
+				354903182537E0280095B597 /* CDiscAdjMeshSolver.cpp */,
 				3549031D2537E0280095B597 /* CEulerSolver.cpp */,
+				3549030E2537E0280095B597 /* CFEASolver.cpp */,
 				3549031E2537E0280095B597 /* CFEM_DG_EulerSolver.cpp */,
 				3549031F2537E0280095B597 /* CFEM_DG_NSSolver.cpp */,
-				354903202537E0280095B597 /* CBaselineSolver.cpp */,
+				3549030F2537E0280095B597 /* CHeatSolver.cpp */,
+				354903082537E0280095B597 /* CIncEulerSolver.cpp */,
+				354903132537E0280095B597 /* CIncNSSolver.cpp */,
+				354903172537E0280095B597 /* CMeshSolver.cpp */,
+				357BEE46256D589B00423D14 /* CNEMOEulerSolver.cpp */,
+				357BEE47256D589B00423D14 /* CNEMONSSolver.cpp */,
+				3549031B2537E0280095B597 /* CNSSolver.cpp */,
+				3549030D2537E0280095B597 /* CRadP1Solver.cpp */,
 				354903212537E0280095B597 /* CRadSolver.cpp */,
+				354903162537E0280095B597 /* CSolver.cpp */,
+				354903142537E0280095B597 /* CSolverFactory.cpp */,
+				354903102537E0280095B597 /* CTemplateSolver.cpp */,
+				354903112537E0280095B597 /* CTransLMSolver.cpp */,
+				354903192537E0280095B597 /* CTurbSASolver.cpp */,
+				354903092537E0280095B597 /* CTurbSolver.cpp */,
+				3549030B2537E0280095B597 /* CTurbSSTSolver.cpp */,
 			);
 			path = solvers;
 			sourceTree = "<group>";
@@ -2124,12 +2133,21 @@
 			isa = PBXGroup;
 			children = (
 				35D6301125998877008DF28B /* mpi_structure.hpp */,
+				40C54DBC2640C3D90057F3DD /* omp_structure.cpp */,
 				35D6301225998877008DF28B /* special_vectorization.hpp */,
 				35D6301325998877008DF28B /* mpi_structure.cpp */,
 				35D6301425998877008DF28B /* vectorization.hpp */,
 				35D6301525998877008DF28B /* omp_structure.hpp */,
 			);
 			path = parallelization;
+			sourceTree = "<group>";
+		};
+		40C54DB72640C1DE0057F3DD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				40C54DB82640C1DE0057F3DD /* libmpi.40.dylib */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -2193,6 +2211,7 @@
 				3549038E2537E0290095B597 /* CFEMDataSorter.cpp in Sources */,
 				354903712537E0280095B597 /* CDiscAdjMultizoneDriver.cpp in Sources */,
 				354903B22537E0290095B597 /* CDiscAdjMeshSolver.cpp in Sources */,
+				40C54DBD2640C3DA0057F3DD /* omp_structure.cpp in Sources */,
 				354903732537E0280095B597 /* CDummyDriver.cpp in Sources */,
 				3549039E2537E0290095B597 /* CAdjHeatOutput.cpp in Sources */,
 				354901E62537E0050095B597 /* CMMSNSTwoHalfCirclesSolution.cpp in Sources */,
@@ -2283,6 +2302,7 @@
 				354903B92537E0290095B597 /* CFEM_DG_NSSolver.cpp in Sources */,
 				354901F62537E0050095B597 /* CPyramid.cpp in Sources */,
 				354902132537E0050095B597 /* CGeometry.cpp in Sources */,
+				40C54DB12640BE100057F3DD /* CNewtonIntegration.cpp in Sources */,
 				3549039B2537E0290095B597 /* CBaselineOutput.cpp in Sources */,
 				354902162537E0050095B597 /* CSysVector.cpp in Sources */,
 				354902082537E0050095B597 /* CCGNSMeshReaderFVM.cpp in Sources */,
@@ -2491,12 +2511,16 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../externals/CLI11;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				LIBRARY_SEARCH_PATHS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -2547,12 +2571,16 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../externals/CLI11;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				LIBRARY_SEARCH_PATHS = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-Wno-inconsistent-missing-override",
 				);
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
