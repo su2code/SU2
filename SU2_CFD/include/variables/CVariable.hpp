@@ -1822,21 +1822,10 @@ public:
   inline su2double GetSolution_time_n1(unsigned long iPoint, unsigned long iVar) const { return Solution_time_n1(iPoint,iVar); }
 
   /*!
-   * \brief  A virtual member. Set the value of the velocity solution predictor.
-   */
-  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
-
-  /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
-
-  /*!
-   * \brief  A virtual member. Get the velocity solution predictor.
-   * \return Pointer to the velocity solution vector.
-   */
-  inline virtual const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief  A virtual member. Get the solution at time n.

@@ -40,14 +40,12 @@ void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeome
                                                 unsigned long Vertex_Struct, unsigned long Point_Struct) {
   /*--- The displacements come from the predicted solution, but they are no longer incremental ---*/
   auto DisplacementDonor = struct_solution->GetNodes()->GetSolution_Pred(Point_Struct);
+  unsigned short nDim = struct_geometry->GetnDim();
 
-  for (auto iVar = 0u; iVar < nVar; iVar++)
-    Donor_Variable[iVar] = DisplacementDonor[iVar];
-
-  if (struct_config->GetTime_Domain()) {
-    auto VelocityDonor = struct_solution->GetNodes()->GetSolution_Vel_Pred(Point_Struct);
-    for (auto iVar = nVar/2; iVar < nVar; iVar++)//Assuming dynamic interface always has nVar = 2*nDim, 2D: 4, 3D: 6
-      Donor_Variable[iVar] = VelocityDonor[iVar-nVar/2];
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    Donor_Variable[iDim] = DisplacementDonor[iDim];
+    if (struct_config->GetTime_Domain())
+      Donor_Variable[iDim+nDim] = DisplacementDonor[iDim+nDim];
   }
 }
 
@@ -59,12 +57,14 @@ void CDisplacementsInterface::SetTarget_Variable(CSolver *mesh_solver, CGeometry
     /*--- Impose the boundary displacements ---*/
     mesh_solver->GetNodes()->SetBound_Disp(Point_Mesh,Target_Variable);
   } else {
-    /*--- Impose the boundary displacements ---*/
-    for (auto iVar = 0u; iVar < nVar/2; iVar++)
-      mesh_solver->GetNodes()->SetBound_Disp(Point_Mesh,iVar,Target_Variable[iVar]);
+    unsigned short nDim = flow_geometry->GetnDim();
 
-    /*--- Impose the boundary velocities ---*/
-    for (auto iVar = nVar/2; iVar < nVar; iVar++)
-      mesh_solver->GetNodes()->SetBound_Vel(Point_Mesh,iVar-nVar/2,Target_Variable[iVar]);
+    /*--- Impose the boundary displacements ---*/
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      mesh_solver->GetNodes()->SetBound_Disp(Point_Mesh,iDim,Target_Variable[iDim]);
+
+      /*--- Impose the boundary velocities ---*/
+      mesh_solver->GetNodes()->SetBound_Vel(Point_Mesh,iDim,Target_Variable[iDim+nDim]);
+    }
   }
 }

@@ -2611,8 +2611,6 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *
       } break;
     }
 
-    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
-
   }
   END_SU2_OMP_PARALLEL
 
@@ -2726,9 +2724,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config
 
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
     nodes->SetSolution_Old(iPoint, dispCalc);
-
-    /*--- Set predicted velocity to update in multizone iterations ---*/
-    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
 
     /*--- Apply the Aitken relaxation ---*/
     su2double newDispPred[MAXNVAR] = {0.0};
@@ -3184,11 +3179,6 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
       nodes->SetSolution_Pred(iPoint, nodes->GetSolution(iPoint));
       nodes->SetSolution_Pred_Old(iPoint, nodes->GetSolution(iPoint));
-    }
-
-    if (dynamic) {
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        nodes->SetSolution_Vel_Pred(iPoint);
     }
 
     if (discrete_adjoint) {

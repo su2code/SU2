@@ -47,8 +47,6 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (nDim==2) Stress.resize(nPoint,3);
   else         Stress.resize(nPoint,6);
 
-  Solution_Vel_Pred.resize(nPoint,nDim);
-
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nDim; iVar++)
@@ -68,13 +66,6 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
-    if (dynamic_analysis) {
-      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-        for (unsigned long iVar = 0; iVar < nDim; iVar++) {
-          Solution_Vel_Pred(iPoint, iVar) = Solution(iPoint,iVar+nDim);
-        }
-      }
-    }
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
