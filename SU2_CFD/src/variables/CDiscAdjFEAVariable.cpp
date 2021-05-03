@@ -32,7 +32,7 @@
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel, unsigned long npoint,
   unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) : CVariable(npoint, ndim, nvar, config) {
 
-  Solution_Direct.resize(nPoint,nVar);
+  Solution_Direct.resize(nPoint,nDim);
 
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
   Sensitivity_Old.resize(nPoint,nDim) = su2double(0.0);
@@ -62,5 +62,8 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *disp, const su2double 
 
   Dynamic_Derivative.resize(nPoint,nVar) = su2double(0.0);
   Dynamic_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
+
+  Solution_Direct_Vel.resize(nPoint,nDim) = su2double(0.0);
+  Solution_Direct_Accel.resize(nPoint,nDim) = su2double(0.0);
 
 }

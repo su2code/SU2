@@ -45,6 +45,9 @@ protected:
   MatrixType Dynamic_Derivative;
   MatrixType Dynamic_Derivative_n;
 
+  MatrixType Solution_Direct_Vel;
+  MatrixType Solution_Direct_Accel;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] disp - Pointer to the adjoint value (initialization value).
@@ -113,6 +116,18 @@ public:
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
+  inline void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Vel(iPoint,iVar) = val_solution_direct[iVar];
+  }
+
+  inline void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Accel(iPoint,iVar) = val_solution_direct[iVar];
+  }
+
   inline su2double* GetSolution_Direct(unsigned long iPoint) final { return Solution_Direct[iPoint]; }
+
+  inline su2double* GetSolution_Vel_Direct(unsigned long iPoint) final { return Solution_Direct_Vel[iPoint]; }
+
+  inline su2double* GetSolution_Accel_Direct(unsigned long iPoint) final { return Solution_Direct_Accel[iPoint]; }
 
 };

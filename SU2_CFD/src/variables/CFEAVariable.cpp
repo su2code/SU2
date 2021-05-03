@@ -49,23 +49,28 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
 
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (unsigned long iVar = 0; iVar < nDim; iVar++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_fea[iVar];
 
   if (dynamic_analysis) {
+    Solution_Vel.resize(nPoint,nVar);
+    Solution_Accel.resize(nPoint,nVar);
+
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-      for (unsigned long iVar = nDim; iVar < 2*nDim; iVar++) {
-        Solution(iPoint,iVar) = val_fea[iVar+nDim];
-      }
-      for (unsigned long iVar = 2*nDim; iVar < 3*nDim; iVar++) {
-        Solution(iPoint,iVar) = val_fea[iVar+2*nDim];
+      for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+        Solution_Vel(iPoint,iVar) = val_fea[iVar+nVar];
+        Solution_Accel(iPoint,iVar) = val_fea[iVar+2*nVar];
       }
     }
+    Solution_Vel_time_n = Solution_Vel;
+    Solution_Accel_time_n = Solution_Accel;
+
   }
 
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
+    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
@@ -90,6 +95,10 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
     AuxVar.resize(nPoint);
   }
 }
+
+void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
+
+void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }
 
 void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {

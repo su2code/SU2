@@ -1500,6 +1500,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
+              if (config->GetTime_Domain()) {
+                bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel(iPoint, iVar);
+                bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel(iPoint, iVar);
+              }
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -1647,6 +1651,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+              if (config->GetTime_Domain()) {
+                base_nodes->SetSolution_Vel(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
+                base_nodes->SetSolution_Accel(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+              }
             }
             break;
           case MESH_DISPLACEMENTS:
