@@ -1208,8 +1208,13 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
+  //inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
 
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, su2double *scalar = nullptr) { return true; }
+  
   /*!
    * \brief A virtual member.
    */
@@ -2337,6 +2342,12 @@ public:
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
 
+  inline virtual void SetDiffusivity(unsigned long iPoint, su2double val_diffusivity, unsigned short val_ivar) { }
+  
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  
+  inline virtual su2double* GetDiffusivity(unsigned long iPoint) { return NULL; }
+  
   inline virtual void SetDynamic_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
 
   inline virtual void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
@@ -2364,6 +2375,15 @@ public:
   inline virtual su2double GetSolution_Old_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
+
+  inline virtual su2double GetScalarSources(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  inline virtual su2double GetScalarLookups(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  
+  inline virtual su2double *GetScalarSources(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double *GetScalarLookups(unsigned long iPoint) { return nullptr; }
 
    /*!
    * \brief A virtual member: Set the recovered pressure for streamwise periodic flow.

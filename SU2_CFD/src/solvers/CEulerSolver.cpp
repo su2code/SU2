@@ -1373,6 +1373,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     if (viscous) {
       GetFluidModel()->SetLaminarViscosityModel(config);
       GetFluidModel()->SetThermalConductivityModel(config);
+      GetFluidModel()->SetMassDiffusivityModel(config);
     }
 
   }
@@ -4552,6 +4553,18 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
       break;
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+      break;
+    case SURFACE_CO:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_CO(0);
+      break;
+    case SURFACE_NOX:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
+      break;
+    case SURFACE_TEMP:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+      break;
+    case AVG_TEMPERATURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
       break;
     default:
       break;

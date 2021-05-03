@@ -1084,6 +1084,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
+    FluidModel->SetMassDiffusivityModel(config);
 
   }
 

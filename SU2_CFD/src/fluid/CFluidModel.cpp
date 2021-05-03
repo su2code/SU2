@@ -37,6 +37,9 @@
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
+#include "../../include/fluid/CConstantDiffusivity.hpp"
+#include "../../include/fluid/CConstantSchmidtRANS.hpp"
+#include "../../include/fluid/CConstantSchmidt.hpp"
 
 void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
@@ -50,6 +53,12 @@ void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
     case VISCOSITYMODEL::POLYNOMIAL:
       LaminarViscosity = unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
+      break;
+    case VISCOSITYMODEL::FLAMELET:
+      /* do nothing. Viscosity is obtained from the table and set in setTDState_T */
+      break;
+    default:
+      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
 }
@@ -81,8 +90,33 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
             new CPolynomialConductivity<N_POLY_COEFFS>(config->GetKt_PolyCoeffND()));
       }
       break;
+    case CONDUCTIVITYMODEL::FLAMELET:
+      /* do nothing. Conductivity is obtained from the table and set in setTDState_T */
+      break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
   }
+}
+
+void CFluidModel::SetMassDiffusivityModel (const CConfig* config) {
+  switch (config->GetKind_DiffusivityModel()) {
+    case DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY:
+      MassDiffusivity = unique_ptr<CConstantDiffusivity>(new CConstantDiffusivity(config->GetDiffusivity_ConstantND()));
+      break;
+    case DIFFUSIVITYMODEL::CONSTANT_SCHMIDT:
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
+        MassDiffusivity = unique_ptr<CConstantSchmidtRANS>(new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb()));
+      } else {
+        MassDiffusivity = unique_ptr<CConstantSchmidt>(new CConstantSchmidt(config->GetSchmidt_Lam()));
+      }
+      break;
+    case DIFFUSIVITYMODEL::FLAMELET:
+      /* do nothing. Diffusivity is obtained from the table and set in setTDState_T */
+      break;
+    default:
+      SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);
+      break;
+  }
+  
 }

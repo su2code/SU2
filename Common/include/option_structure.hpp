@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -421,6 +421,8 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,     /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_RADIATION_SYS = 23, /*!< \brief One-physics case, the code is solving the radiation model. */
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
+  RUNTIME_SCALAR_SYS = 25,    /*!< \brief One-physics case, the code is solving the scalar model. */
+  RUNTIME_ADJSCALAR_SYS = 26, /*!< \brief One-physics case, the code is solving the adjoint scalar model. */
 };
 
 const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
@@ -437,6 +439,9 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
+const int SCALAR_SOL = 11;     /*!< \brief Position of the scalar transport solution in the solver container array. */
+const int ADJSCALAR_SOL = 12;  /*!< \brief Position of the adjoint scalar transport solution in the solver container array. */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -489,15 +494,16 @@ static const MapType<string, ENUM_SPACE> Space_Map = {
  * \brief Types of fluid model
  */
 enum ENUM_FLUIDMODEL {
-  STANDARD_AIR = 0,       /*!< \brief Standard air gas model. */
-  IDEAL_GAS = 1,          /*!< \brief Ideal gas model. */
-  VW_GAS = 2,             /*!< \brief Van Der Waals gas model. */
-  PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
-  CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
-  INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
-  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
+  STANDARD_AIR         = 0, /*!< \brief Standard air gas model. */
+  IDEAL_GAS            = 1, /*!< \brief Ideal gas model. */
+  VW_GAS               = 2, /*!< \brief Van Der Waals gas model. */
+  PR_GAS               = 3, /*!< \brief Perfect Real gas model. */
+  CONSTANT_DENSITY     = 4, /*!< \brief Constant density gas model. */
+  INC_IDEAL_GAS        = 5, /*!< \brief Incompressible ideal gas model. */
+  INC_IDEAL_GAS_POLY   = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
+  MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
+  SU2_NONEQ            = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
+  FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -508,6 +514,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
+  MakePair("FLAMELET_FLUID_MODEL", FLAMELET_FLUID_MODEL)
   MakePair("SU2_NONEQ", SU2_NONEQ)
 };
 
@@ -590,34 +597,43 @@ static const MapType<string, FREESTREAM_OPTION> FreeStreamOption_Map = {
 /*!
  * \brief Types of viscosity model
  */
+
 enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
+  FLAMELET, /*!< \brief flamelet combustion model */
 };
 static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
+
 };
 
 /*!
  * \brief Types of thermal conductivity model
  */
+
 enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
+  FLAMELET, /*!< \brief flamelet combustion model */ 
 };
 static const MapType<string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
+
 };
 
 /*!
  * \brief Types of turbulent thermal conductivity model
  */
+
 enum class CONDUCTIVITYMODEL_TURB {
   NONE, /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
   CONSTANT_PRANDTL, /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
@@ -628,7 +644,22 @@ static const MapType<string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map =
 };
 
 /*!
- * \brief Types of unsteady mesh motion
+ * \brief types of mass diffusivity models
+ */
+enum class DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+  FLAMELET,             /*!< \brief flamelet model */
+};
+
+static const MapType<string, DIFFUSIVITYMODEL> DiffusivityModel_Map = {
+  MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
+  MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
+  MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
+};
+
+/*!
+ * \brief types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {
   NO_MOVEMENT = 0,          /*!< \brief Simulation on a static mesh. */
@@ -675,7 +706,7 @@ enum ENUM_GUST_TYPE {
   SINE = 2,         /*!< \brief Sine shaped gust */
   ONE_M_COSINE = 3, /*!< \brief 1-cosine shaped gust */
   VORTEX = 4,       /*!< \brief A gust made from vortices */
-  EOG = 5           /*!< \brief An extreme operating gust */
+  EOG = 5,          /*!< \brief An extreme operating gust */
 };
 static const MapType<string, ENUM_GUST_TYPE> Gust_Type_Map = {
   MakePair("NONE", NO_GUST)
@@ -862,7 +893,23 @@ static const MapType<string, ENUM_TRANS_MODEL> Trans_Model_Map = {
 };
 
 /*!
- * \brief Types of subgrid scale models
+ * \brief types of scalar transport models
+ */
+enum ENUM_SCALAR_MODEL {
+  NO_SCALAR_MODEL   = 0,  /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR    = 1,  /*!< \brief Passive scalar transport model. */
+  PROGRESS_VARIABLE = 2,  /*!< \brief Progress variable combustion model. */
+  CUSTOM_SCALAR     = 3,  /*!< \brief Custom scalar transport model. */
+};
+static const MapType<string, ENUM_SCALAR_MODEL> Scalar_Model_Map = {
+  MakePair("NONE", NO_SCALAR_MODEL)
+  MakePair("PASSIVE_SCALAR", PASSIVE_SCALAR)
+  MakePair("PROGRESS_VARIABLE", PROGRESS_VARIABLE)
+  MakePair("CUSTOM_SCALAR", CUSTOM_SCALAR)
+};
+
+/*!
+ * \brief types of subgrid scale models
  */
 enum ENUM_SGS_MODEL {
   NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
@@ -1477,7 +1524,11 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  SURFACE_CO = 80,
+  SURFACE_NOX = 81,
+  SURFACE_TEMP = 82,
 };
+
 static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
   MakePair("LIFT", LIFT_COEFFICIENT)
@@ -1529,6 +1580,9 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("AVG_CO", SURFACE_CO)
+  MakePair("AVG_NOX", SURFACE_NOX)
+  MakePair("AVG_TEMP", SURFACE_TEMP)
 };
 
 /*!
@@ -2201,6 +2255,20 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
 };
 
+  /* the order matters: */
+  /* enthalpy and progress variable are the first and second entry in the lookup table */
+  enum FLAMELET_SCALAR_VARIABLES {
+    I_PROG_VAR,
+    I_ENTHALPY,
+    I_CO,
+    I_NOX,
+  };
+
+  enum FLAMELET_SCALAR_SOURCES {
+    I_SRC_TOT_PROG_VAR,
+    I_SRC_TOT_CO,
+    I_SRC_TOT_NOX,
+  };
 /*!
  * \brief Types of streamwise periodicity.
  */

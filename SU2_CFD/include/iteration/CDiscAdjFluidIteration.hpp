@@ -40,6 +40,7 @@ class CFluidIteration;
 class CDiscAdjFluidIteration final : public CIteration {
  private:
   const bool turbulent;                      /*!< \brief Stores the turbulent flag. */
+  const bool scalar;
 
   /*!
    * \brief load unsteady solution for unsteady problems
@@ -59,7 +60,8 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] config - Definition of the particular problem.
    */
   explicit CDiscAdjFluidIteration(const CConfig *config) : CIteration(config),
-    turbulent(config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS) {}
+    turbulent(config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS),
+    scalar(config->GetKind_Scalar_Model() !=NO_SCALAR_MODEL) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

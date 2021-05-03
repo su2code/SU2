@@ -3310,6 +3310,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   vector<string> columnNames;
   vector<string> columnValues;
 
+  unsigned int nVar_Scalar = 0;
+  if (config->GetKind_FluidModel()!=NO_SCALAR_MODEL) nVar_Scalar = solver[MESH_0][SCALAR_SOL]->GetnVar();
+
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
@@ -3317,7 +3320,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  const unsigned short nCol_InletFile = 2 + nDim + nVar_Turb + nVar_Scalar;
 
   /*--- for incompressible flow, we can switch the energy equation off ---*/
   /*--- for now, we write the temperature even if we are not using it ---*/
@@ -3400,9 +3403,29 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
       case SST: case SST_SUST:
         /*--- 2-equation turbulence model (SST) ---*/
-        columnName << "TKE        " << setw(24) << "DISSIPATION";
+        columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
         break;
+    }
+
+    switch(config->GetKind_Scalar_Model()){
+      case NO_SCALAR_MODEL:
+      break;
+      case PASSIVE_SCALAR:
+        for (auto iVar=0; iVar<nVar_Scalar; iVar++){
+          columnName << "SCALAR_"<< iVar << setw(24);
+          columnValue << config->GetInlet_ScalarVal(Marker_Tag)[iVar] <<"\t";
+        }
+      break;
+      case PROGRESS_VARIABLE:
+        columnName << "PROGVAR    " << setw(24) << "ENTHALPY   " << setw(24) << "CO         " << setw(24) << "NO         ";
+        columnValue << config->GetInlet_ScalarVal(Marker_Tag)[I_PROG_VAR] <<"\t";
+        columnValue << config->GetInlet_ScalarVal(Marker_Tag)[I_ENTHALPY] <<"\t";
+        columnValue << config->GetInlet_ScalarVal(Marker_Tag)[I_CO] <<"\t";
+        columnValue << config->GetInlet_ScalarVal(Marker_Tag)[I_NOX] <<"\t";
+
+      break;
+
     }
 
     columnNames.push_back(columnName.str());   

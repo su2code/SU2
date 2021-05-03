@@ -308,8 +308,9 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = nullptr;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  bool scalar_model = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
   bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
 
@@ -327,9 +328,14 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
       }
     }
 
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (scalar_model) {
+      scalar = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+
     /*--- Incompressible flow, primitive variables --- */
 
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 
@@ -351,6 +357,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const bool flame  = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -365,7 +372,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   /*--- Get the specified wall heat flux or temperature from config ---*/
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0;
-
+  // nijso: do we need to modify heatflux bc for combustion model?
   if (kind_boundary == HEAT_FLUX)
     Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
   else if (kind_boundary == ISOTHERMAL)
@@ -418,7 +425,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
     }
 
-    if (!energy) continue;
+    if (!energy || flame) continue;
 
     if (kind_boundary == HEAT_FLUX) {
 

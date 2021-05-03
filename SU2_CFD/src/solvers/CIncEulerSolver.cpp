@@ -31,8 +31,8 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
+#include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
-
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
@@ -261,6 +261,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Depending on the density model chosen, select a fluid model. ---*/
 
+  su2double *dummy_scalar;
+  unsigned short n_scalars;
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -294,6 +296,17 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
+
+    case FLAMELET_FLUID_MODEL:
+
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      auxFluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
+      n_scalars = auxFluidModel->GetNScalars();
+      dummy_scalar = new su2double[n_scalars]();
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
@@ -443,10 +456,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case CONSTANT_DENSITY:
         fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case INC_IDEAL_GAS:
         fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
       case INC_IDEAL_GAS_POLY:
@@ -458,9 +473,14 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
           fluidModel->SetCpModel(config);
         }
-        break;
-        /// TODO: Why is this outside?
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
+        break;
+
+      case FLAMELET_FLUID_MODEL:
+        fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
+        delete[] dummy_scalar;
+        break;
     }
 
     if (viscous) {
@@ -495,7 +515,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       fluidModel->SetLaminarViscosityModel(config);
       fluidModel->SetThermalConductivityModel(config);
-
+      fluidModel->SetMassDiffusivityModel(config);
     }
 
   }
@@ -1084,6 +1104,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool energy     = config->GetEnergy_Equation();
+  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1163,7 +1185,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
        incompressible flow, only the temperature and density need to be
        checked. Pressure is the dynamic pressure (can be negative). ---*/
 
-      if (config->GetEnergy_Equation()) {
+      if (energy && !flame) {
         bool neg_temperature_i = (Primitive_i[nDim+1] < 0.0);
         bool neg_temperature_j = (Primitive_j[nDim+1] < 0.0);
 
@@ -1268,6 +1290,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
+  const bool flame          = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
   const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -1636,7 +1659,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       END_SU2_OMP_FOR
     }
   }
-
 }
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -1803,21 +1825,23 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   unsigned short iDim, jDim, iVar, jVar;
 
-  su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
-  su2double  Velocity[MAXNDIM] = {0.0};
+  //su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+  //su2double  Velocity[MAXNDIM] = {0.0};
 
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
+  const bool flame      = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
 
   /*--- Access the primitive variables at this node. ---*/
 
-  Density     = nodes->GetDensity(iPoint);
-  BetaInc2    = nodes->GetBetaInc2(iPoint);
-  Cp          = nodes->GetSpecificHeatCp(iPoint);
-  oneOverCp   = 1.0/Cp;
-  Temperature = nodes->GetTemperature(iPoint);
+  su2double Density     = nodes->GetDensity(iPoint);
+  su2double BetaInc2    = nodes->GetBetaInc2(iPoint);
+  su2double Cp          = nodes->GetSpecificHeatCp(iPoint);
+  su2double oneOverCp   = 1.0/Cp;
+  su2double Temperature = nodes->GetTemperature(iPoint);
 
+  su2double  Velocity[MAXNDIM] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
 
@@ -1825,6 +1849,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
+  su2double dRhodT;
   if (variable_density) {
     dRhodT = -Density/Temperature;
   } else {
@@ -1843,7 +1868,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
-    if (energy) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
+    if (energy && !flame) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -1859,7 +1884,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim++)
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -1877,7 +1902,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][0] = -1.0*Velocity[iDim]/Density;
 
-    if (energy) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
+    if (energy && !flame) Preconditioner[nDim+1][0] = -1.0*Temperature/Density;
     else        Preconditioner[nDim+1][0] = 0.0;
 
 
@@ -1894,7 +1919,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     for (iDim = 0; iDim < nDim; iDim ++)
       Preconditioner[iDim+1][nDim+1] = 0.0;
 
-    if (energy) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
+    if (energy && !flame) Preconditioner[nDim+1][nDim+1] = oneOverCp/Density;
     else        Preconditioner[nDim+1][nDim+1] = 0.0;
 
   }
@@ -2492,6 +2517,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
+  const bool flame        = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
+  const short flagEnergy  = (!energy || flame);
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
@@ -2541,7 +2568,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
 
-      for (iVar = 0; iVar < nVar-!energy; iVar++) {
+      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (second_order)
@@ -2557,7 +2584,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy) delta *= Cp;
+        if (energy && !flame) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2601,7 +2628,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-        for (iVar = 0; iVar < nVar-!energy; iVar++)
+        for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
@@ -2639,7 +2666,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Cp = nodes->GetSpecificHeatCp(iPoint);
           V2U(Density, Cp, V_time_n, U_time_n);
 
-          for (iVar = 0; iVar < nVar-!energy; iVar++)
+          for (iVar = 0; iVar < nVar-flagEnergy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
         END_SU2_OMP_FOR
@@ -2683,7 +2710,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
 
-      for (iVar = 0; iVar < nVar-!energy; iVar++) {
+      for (iVar = 0; iVar < nVar-flagEnergy; iVar++) {
         if (first_order)
           LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (second_order)
@@ -2699,7 +2726,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         for (iDim = 0; iDim < nDim; iDim++)
           Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
 
-        if (energy) delta *= Cp;
+        if (energy && !flame) delta *= Cp;
         Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
       }
     }
@@ -2880,10 +2907,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
           }
 
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
-
+           su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+           cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot << endl;
+           cout << "target mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot_Target << endl;
+           su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+           cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
         }
       }
 

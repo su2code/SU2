@@ -160,10 +160,11 @@ class Project(object):
             # look for existing designs
             folders = glob.glob(self._design_folder)
             if len(folders)>0:
-                sys.stdout.write('Removing old designs in 10s.')
-                sys.stdout.flush()
-                if warn: time.sleep(10)
-                sys.stdout.write(' Done!\n\n')
+                for countdown in range(10, 0, -1):
+                    sys.stdout.write('Removing old designs in %is. \r' % countdown)
+                    sys.stdout.flush()
+                    if warn: time.sleep(1)
+                sys.stdout.write('\n Done!\n\n')
                 for f in folders: shutil.rmtree(f)
             #: if existing designs
             
