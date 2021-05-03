@@ -849,7 +849,8 @@ int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsig
 int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned long *startIndex,
                                     const unsigned long* nNeighbor, const su2double *coord,
                                     unsigned long centralNode, su2double** element){
-
+//return Build_3D_surface_element(map, startIndex, nNeighbor,
+//coord, centralNode, element);
     /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface quadrilateral element around the node and stores it into "element" ---*/
     /*--- Returns the number of points included in the element ---*/
 

@@ -273,6 +273,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     }
   }
 
+  delete[] iVertex_to_iLocalVertex;
 
 
   /*--- Now these arrays of all processes must be joined to a single/global arrays. For this,
