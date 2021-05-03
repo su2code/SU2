@@ -2574,7 +2574,6 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *
 
   const unsigned short predOrder = config->GetPredictorOrder();
   const su2double Delta_t = config->GetDelta_DynTime();
-  const bool dynamic = config->GetTime_Domain();
 
   if(predOrder > 2 && rank == MASTER_NODE)
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
