@@ -2885,7 +2885,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   }
 
   if (iPoint_Global != geometry->GetGlobal_nPointDomain())
-    SU2_MPI::Error("The solution file does not match the mesh.",CURRENT_FUNCTION);
+    SU2_MPI::Error("The solution file does not match the mesh, currently only binary files can be interpolated.",
+                   CURRENT_FUNCTION);
 
 }
 
@@ -3126,8 +3127,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   if (size != SINGLE_NODE && size % 2)
     SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
 
-  if (config->GetStructuralProblem())
-    SU2_MPI::Error("Cannot interpolate the restart file for FEA problems.", CURRENT_FUNCTION);
+  if (config->GetStructuralProblem() || config->GetFEMSolver())
+    SU2_MPI::Error("Cannot interpolate the restart file for FEM problems.", CURRENT_FUNCTION);
 
   /* Challenges:
    *  - Do not use too much memory by gathering the restart data in all ranks.
@@ -3137,7 +3138,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
    *  - Find the closest target point for each donor, which does not match all targets.
    *  - "Diffuse" the data to neighbor points.
    *  Complexity is approx. Nlt + (Nlt + Nd) log(Nlt) where Nlt is the LOCAL number
-   *  of target points, Nd the TOTAL number of donors. */
+   *  of target points and Nd the TOTAL number of donors. */
 
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
@@ -3210,13 +3211,15 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
     /*--- Find the closest target for each donor. ---*/
 
-    vector<su2double> targetDist(nPointDonorMax);
-    vector<unsigned long> iTarget(nPointDonorMax);
+    vector<su2double> targetDist(donorVars.rows());
+    vector<unsigned long> iTarget(donorVars.rows());
 
+    SU2_OMP_PARALLEL_(for schedule(dynamic,4*OMP_MIN_SIZE))
     for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
       int r=0;
       adt.DetermineNearestNode(donorVars[iDonor], targetDist[iDonor], iTarget[iDonor], r);
     }
+    END_SU2_OMP_PARALLEL
 
     /*--- Keep the closest donor for each target (this is separate for OpenMP). ---*/
 
@@ -3237,8 +3240,11 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   /*--- Recursively diffuse the nearest neighbor data. ---*/
 
   auto nDonor = isMapped;
+  bool done = false;
 
-  for (bool done=false; !done; ++nRecurse) {
+  SU2_OMP_PARALLEL
+  while (!done) {
+    SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       /*--- Do not change points that are already interpolated. ---*/
       if (isMapped[iPoint]) continue;
@@ -3262,14 +3268,32 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
         nDonor[iPoint] = true;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Repeat while all points are not mapped. ---*/
-    done = true;
+
+    SU2_OMP_MASTER {
+      done = true;
+      ++nRecurse;
+    }
+    END_SU2_OMP_MASTER
+
+    bool myDone = true;
+
+    SU2_OMP_FOR_STAT(16*OMP_MIN_SIZE)
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       isMapped[iPoint] = nDonor[iPoint];
-      done &= nDonor[iPoint];
+      myDone &= nDonor[iPoint];
     }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_ATOMIC
+    done &= myDone;
+
+    SU2_OMP_BARRIER
   }
+  END_SU2_OMP_PARALLEL
+
   } // everything goes out of scope except "localVars"
 
   /*--- Move to Restart_Data in "funny" order. ---*/
