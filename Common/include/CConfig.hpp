@@ -432,8 +432,8 @@ private:
 
   /* Gradient smoothing options */
   bool SmoothGradient;            /*!< \brief Flag for enabling gradient smoothing. */
-  su2double SmoothingParam;       /*!< \brief Parameter for the Laplace part in gradient smoothing. */
-  su2double SmoothingParamSecond; /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps1;        /*!< \brief Parameter for the identity part in gradient smoothing. */
+  su2double SmoothingEps2;        /*!< \brief Parameter for the Laplace part in gradient smoothing. */
   bool SepDim;                    /*!< \brief Flag for enabling separated calculation for every dimension. */
   bool SecOrdQuad;                /*!< \brief Flag for using second order quadrature rules in numerical integration. */
   bool SmoothOnSurface;           /*!< \brief Flag for assembling the system only on the surface. */
@@ -9360,13 +9360,13 @@ public:
    * \brief Gets the factor epsilon in front of the Laplace term
    * \return epsilon
    */
-  su2double GetSmoothingParam(void) const { return SmoothingParam; }
+  su2double GetSmoothingEps1(void) const { return SmoothingEps1; }
 
   /*!
    * \brief Gets the factor zeta in front of the identity term
    * \return zeta
    */
-  su2double GetSmoothingParamSecond(void) const { return SmoothingParamSecond; }
+  su2double GetSmoothingEps2(void) const { return SmoothingEps2; }
 
   /*!
    * \brief Check if we split in the dimensions

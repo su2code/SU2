@@ -1945,9 +1945,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Switch to activate gradient smoothing */
   addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
   /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
-  addDoubleOption("SMOOTHING_PARAM",SmoothingParam, 1.0);
+  addDoubleOption("SMOOTHING_EPSILON1",SmoothingEps1, 1.0);
   /* DESCRIPTION: Zeta of the identity term in the Laplace Beltrami Operator */
-  addDoubleOption("SMOOTHING_PARAM_SECOND",SmoothingParamSecond, 1.0);
+  addDoubleOption("SMOOTHING_EPSILON2",SmoothingEps2, 1.0);
   /* DESCRIPTION: Switch to calculate dimensions separated */
   addBoolOption("SEPARATE_DIMENSIONS",SepDim, false);
   /* DESCRIPTION: Switch to calculate dimensions separated */

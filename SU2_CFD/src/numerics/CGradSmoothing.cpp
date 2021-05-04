@@ -85,8 +85,8 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
   su2double Weight, Jac_X, val_HiHj, GradNiXGradNj = 0;
 
-  su2double epsilon = config->GetSmoothingParam();
-  su2double zeta = config->GetSmoothingParamSecond();
+  su2double epsilon1 = config->GetSmoothingEps1();
+  su2double epsilon2 = config->GetSmoothingEps2();
 
   element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
   nNode = element->GetnNodes();
@@ -116,7 +116,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
         for (iDim = 0; iDim < nDim; iDim++) {
           for (jDim = 0; jDim < nDim; jDim++) {
             if (iDim == jDim) {
-              val_DHiDHj[iDim][jDim] = Weight * Jac_X * epsilon * epsilon * GradNiXGradNj;
+              val_DHiDHj[iDim][jDim] = Weight * Jac_X * epsilon2 * GradNiXGradNj;
             } else {
               val_DHiDHj[iDim][jDim] = 0;
             }
@@ -150,7 +150,7 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
     for (iShape = 0; iShape < nNode; iShape++) {
       for (jShape = 0; jShape < nNode; jShape++) {
-        val_HiHj = Weight * Jac_X * zeta * Ni_Vec[iShape] * Ni_Vec[jShape];
+        val_HiHj = Weight * Jac_X * epsilon1 * Ni_Vec[iShape] * Ni_Vec[jShape];
         element->Add_HiHj(val_HiHj, iShape, jShape);
       }
     }
