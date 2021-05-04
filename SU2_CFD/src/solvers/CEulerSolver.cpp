@@ -304,6 +304,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   counter_local = 0;
 
+  //cout << endl << "CEulerSolver::CEulerSolver" << endl;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     Density = nodes->GetDensity(iPoint);
@@ -1532,20 +1534,20 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
   }
 
- // std::ofstream outfile;
- // outfile.open("gamma.txt", std::ios_base::app);
- // outfile << "T, gamma" << "\n"; 
- // int np = 30100;
- // vector<su2double> TT, Gammaa; TT.resize(np); Gammaa.resize(np);
- // for ( int i = 100; i < np; i++){
- //   TT[i] = i;
- //   auxFluidModel->SetTDState_PT(Pressure_FreeStream, TT[i]);
- //   Gammaa[i] = auxFluidModel->GetGamma();
- //   outfile << TT[i] << ", " << Gammaa[i] << "\n"; 
- // }
-//
- // exit(0);
+  //std::ofstream outfile;
+  //outfile.open("gamma-su2.csv", std::ios_base::app);
+  //outfile << "T, gamma" << "\n"; 
+  //int np = 30100;
+  //vector<su2double> TT, Gammaa; TT.resize(np); Gammaa.resize(np);
+  //for ( int i = 100; i < np; i++){
+  //  TT[i] = i;
+  //  auxFluidModel->SetTDState_PT(Pressure_FreeStream, TT[i]);
+  //  Gammaa[i] = auxFluidModel->GetGamma();
+  //  outfile << TT[i] << ", " << Gammaa[i] << "\n"; 
+  //}
 
+ 
+  //cout << endl << "CEulerSolver::SetNondimensionalization" << endl;
 
   if (free_stream_temp) {
     auxFluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -1790,12 +1792,6 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   Energy_FreeStreamND = GetFluidModel()->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
-  cout << "GetFluidModel()=" << GetFluidModel()<< endl;
-  cout << "GetFluidModel()->GetStaticEnergy()=" << GetFluidModel()->GetStaticEnergy()<< endl;
-  cout << "ModVel_FreeStreamND=" << ModVel_FreeStreamND<< endl;
-  cout << "ModVel_FreeStreamND=" << ModVel_FreeStreamND<< endl;
-  cout << "Energy_FreeStreamND=" << Energy_FreeStreamND<< endl;
-
   if (tkeNeeded) Energy_FreeStreamND += Tke_FreeStreamND;
 
   config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -2016,6 +2012,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   }
 
+  cout << setprecision(10) << "Density_FreeStream=" << config->GetDensity_FreeStream() << endl;
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -2352,6 +2349,8 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
+  //cout << endl << "CEulerSolver::SetPrimitive_Variables" << endl;
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -2662,6 +2661,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   SU2_OMP_MASTER
   ErrorCounter = 0;
 
+  //cout << endl << "CEulerSolver::Upwind_Residual" << endl;
+
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -2684,6 +2685,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto iPoint = geometry->edges->GetNode(iEdge,0);
     auto jPoint = geometry->edges->GetNode(iEdge,1);
+
+    //cout << endl << "iPoint=" << iPoint << endl;
+    //cout << endl << "jPoint=" << jPoint << endl;
 
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
@@ -2833,6 +2837,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto residual = numerics->ComputeResidual(config);
 
+    //for (int iVar = 0; iVar < nVar; iVar++) cout << "res[" << iVar << "]=" << residual[iVar] << endl;
+
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
     if ((kind_dissipation != NO_ROELOWDISS) && (MGLevel != MESH_0)) {
@@ -2892,16 +2898,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
                                                   su2double *primitive, su2double *secondary) {
 
-  su2double density = primitive[nDim+2];
+  //su2double density = primitive[nDim+2];
   su2double pressure = primitive[nDim+1];
+  su2double temperature = primitive[0];
 
   su2double velocity2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     velocity2 += pow(primitive[iDim+1], 2);
 
-  fluidModel->SetTDState_Prho(pressure, density);
+  //cout << endl << "CEulerSolver::ComputeConsistentExtrapolation" << endl;
 
-  primitive[0] = fluidModel->GetTemperature();
+  fluidModel->SetTDState_PT(pressure, temperature);
+
+  //primitive[0] = fluidModel->GetTemperature();
+  primitive[nDim+2] = fluidModel->GetDensity();
   primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2;
   primitive[nDim+4] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
@@ -5652,11 +5662,15 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
+  //cout << endl << "CEulerSolver::BC_Far_Field" << endl;
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    //cout << endl << "iPoint=" << iPoint << endl;
+
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
@@ -5825,19 +5839,30 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      //Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
 
       /*--- Store new primitive state for computing the flux. ---*/
 
       V_infty[0] = Pressure/(Gas_Constant*Density);
+      V_infty[nDim+4] = SoundSpeed;
+
+      GetFluidModel()->SetTDState_PT(Pressure, V_infty[0]);
+      Energy = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2;
+
+      //cout << setprecision(10) << "Gas_Constant=" << Gas_Constant << endl;
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = Velocity[iDim];
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
+      
 
-
+      cout << setprecision(10) << "Temperature=" << V_infty[0] << endl;
+      cout << setprecision(10) << "Pressure=" << Pressure << endl;
+      cout << setprecision(10) << "Density=" << Density << endl;
+      cout << setprecision(10) << "Energy=" << Energy << endl;
+      cout << setprecision(10) << "SoundSpeed=" << SoundSpeed << endl;   
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -5850,8 +5875,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- Compute the convective residual using an upwind scheme ---*/
-
+      //cout << endl << "iPoint=" << iPoint << endl;
       auto residual = conv_numerics->ComputeResidual(config);
+
+      //for (int iVar = 0; iVar < nVar; iVar++) cout << "res[" << iVar << "]=" << residual[iVar] << endl;
+
+
 
       /*--- Update residual value ---*/
 

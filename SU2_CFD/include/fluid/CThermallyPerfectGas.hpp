@@ -43,8 +43,10 @@ class CThermallyPerfectGas : public CFluidModel {
   su2double Gas_Constant{0.0};            /*!< \brief Gas Constant. */
   bool ComputeEntropy{true};              /*!< \brief Whether or not to compute entropy. */
   int ns, i;
-  vector<su2double> rhos, energy, PT, temp;
+  vector<su2double> rhos, energy, PT, temp, MolarMass, Cv_ks, Cvtrs, Cvves, rhoenergy;
   const su2double *cs;
+  su2double RuSI{UNIVERSAL_GAS_CONSTANT};/*!< \brief Universal gas constant [J/(mol*K)] */
+  su2double Ru{1000.0*RuSI};             /*!< \brief Universal gas constant [J/(kmol*K)] */
 
  public:
   /*!
@@ -111,6 +113,8 @@ class CThermallyPerfectGas : public CFluidModel {
    *
    */
   void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
+
+  //su2double ComputeGamma(vector<su2double> rhos);
 
 };
 #endif

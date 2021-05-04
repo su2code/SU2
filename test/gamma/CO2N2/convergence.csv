@@ -1,2 +1,2 @@
-VARIABLES = \
 "Time_Iter","Outer_Iter","Inner_Iter",    "rms[Rho]"    ,    "rms[RhoU]"   ,    "rms[RhoV]"   ,    "rms[RhoE]"   
+          0,           0,           0,      -12.14581945,      -8.841521688,      -11.20566486,       5.380617656

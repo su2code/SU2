@@ -160,6 +160,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
   su2double staticEnergy = GetEnergy(iPoint)-0.5*Velocity2(iPoint);
 
   /*--- Check will be moved inside fluid model plus error description strings ---*/
+  //cout << endl << "CEulerVariable::SetPrimVar" << endl;
 
   FluidModel->SetTDState_rhoe(density, staticEnergy);
 
