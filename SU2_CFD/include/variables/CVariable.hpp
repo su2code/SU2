@@ -1718,6 +1718,7 @@ public:
    * \param[in] solution_direct - Value of the direct solution.
    */
   inline virtual void SetSolution_Direct(unsigned long iPoint, const su2double *solution_direct) {}
+  inline virtual void SetSolution_Direct(unsigned long iPoint, unsigned long iVar, const su2double solution_direct) {}
 
   /*!
    * \brief A virtual member. Get the direct solution for the adjoint solver.
@@ -1811,13 +1812,13 @@ public:
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
    * \param[in] solution_direct - Value of the direct velocity solution.
    */
-  inline virtual void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *sol) {}
+  inline virtual void SetSolution_Vel_Direct(unsigned long iPoint, unsigned long iVar, const su2double sol) {}
 
   /*!
    * \brief A virtual member. Set the direct acceleration solution for the adjoint solver.
    * \param[in] solution_direct - Value of the direct acceleration solution.
    */
-  inline virtual void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *sol) {}
+  inline virtual void SetSolution_Accel_Direct(unsigned long iPoint, unsigned long iVar, const su2double sol) {}
 
   /*!
    * \brief A virtual member. Get the direct velocity solution for the adjoint solver.
@@ -1883,11 +1884,11 @@ public:
    */
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
-  /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
-   */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  // /*!
+  //  * \brief Get the solution of the problem.
+  //  * \return Pointer to the solution vector.
+  //  */
+  // inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1896,11 +1897,11 @@ public:
    */
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
+  // /*!
+  //  * \brief Get the solution at time n.
+  //  * \return Pointer to the solution (at time n) vector.
+  //  */
+  // inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
 
   /*!
@@ -1941,11 +1942,11 @@ public:
    */
   inline virtual su2double GetSolution_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
-  /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
-   */
-  inline virtual su2double *GetSolution_Accel(unsigned long iPoint) { return nullptr; }
+  // /*!
+  //  * \brief Get the solution of the problem.
+  //  * \return Pointer to the solution vector.
+  //  */
+  // inline virtual su2double *GetSolution_Accel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
@@ -1954,11 +1955,11 @@ public:
    */
   inline virtual su2double GetSolution_Accel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  inline virtual su2double *GetSolution_Accel_time_n(unsigned long iPoint) { return nullptr; }
+  // /*!
+  //  * \brief Get the solution at time n.
+  //  * \return Pointer to the solution (at time n) vector.
+  //  */
+  // inline virtual su2double *GetSolution_Accel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief  A virtual member. Set the value of the velocity solution predictor.
@@ -2142,7 +2143,10 @@ public:
     * \brief A virtual member.
     */
   inline virtual void Register_femSolution_time_n(bool input, bool push_index) {}
-
+  inline virtual void Register_femSolution(bool input, bool push_index) {}
+  inline virtual void GetfemAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) {}
+  inline virtual void GetfemAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) {}
+  inline virtual void SetfemAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {}
   /*!
    * \brief A virtual member.
    */

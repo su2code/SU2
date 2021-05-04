@@ -2601,24 +2601,24 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *
 
     switch (predOrder) {
       case 1: {
-        const su2double* solDisp = nodes->GetSolution(iPoint);
-        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
+        // const su2double* solDisp = nodes->GetSolution(iPoint);
+        // const su2double* solVel = nodes->GetSolution_Vel(iPoint);
         su2double valPred[MAXNVAR] = {0.0};
 
         for (iDim=0; iDim < nDim; iDim++)
-          valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
+          valPred[iDim] = nodes->GetSolution(iPoint,iDim) + Delta_t*nodes->GetSolution_Vel(iPoint,iDim);
 
         nodes->SetSolution_Pred(iPoint, valPred);
       } break;
 
       case 2: {
-        const su2double* solDisp = nodes->GetSolution(iPoint);
-        const su2double* solVel = nodes->GetSolution_Vel(iPoint);
-        const su2double* solVel_tn = nodes->GetSolution_Vel_time_n(iPoint);
+        // const su2double* solDisp = nodes->GetSolution(iPoint);
+        // const su2double* solVel = nodes->GetSolution_Vel(iPoint);
+        // const su2double* solVel_tn = nodes->GetSolution_Vel_time_n(iPoint);
         su2double valPred[MAXNVAR] = {0.0};
 
         for (iDim=0; iDim < nDim; iDim++)
-          valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
+          valPred[iDim] = nodes->GetSolution(iPoint,iDim) + 0.5*Delta_t*(3*nodes->GetSolution_Vel(iPoint,iDim)-nodes->GetSolution_Vel_time_n(iPoint,iDim));
 
         nodes->SetSolution_Pred(iPoint, valPred);
       } break;
@@ -3191,8 +3191,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   if (dynamic) {
     nodes->Set_Solution_time_n();
-    nodes->SetSolution_Vel_time_n();
-    nodes->SetSolution_Accel_time_n();
+    // nodes->SetSolution_Vel_time_n();
+    // nodes->SetSolution_Accel_time_n();
   }
 
   if (fluid_structure) {

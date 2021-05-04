@@ -112,16 +112,16 @@ public:
     return Dynamic_Derivative_n(iPoint,iVar);
   }
 
-  inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
+  inline void SetSolution_Direct(unsigned long iPoint, unsigned long iVar, const su2double val_solution_direct) final {
+    Solution_Direct(iPoint,iVar) = val_solution_direct;
   }
 
-  inline void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Vel(iPoint,iVar) = val_solution_direct[iVar];
+  inline void SetSolution_Vel_Direct(unsigned long iPoint, unsigned long iVar, const su2double val_solution_direct) final {
+    Solution_Direct_Vel(iPoint,iVar) = val_solution_direct;
   }
 
-  inline void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Accel(iPoint,iVar) = val_solution_direct[iVar];
+  inline void SetSolution_Accel_Direct(unsigned long iPoint, unsigned long iVar, const su2double val_solution_direct) final {
+    Solution_Direct_Accel(iPoint,iVar) = val_solution_direct;
   }
 
   inline su2double* GetSolution_Direct(unsigned long iPoint) final { return Solution_Direct[iPoint]; }

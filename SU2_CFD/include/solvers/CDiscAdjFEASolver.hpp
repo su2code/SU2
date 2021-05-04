@@ -38,8 +38,8 @@
  */
 class CDiscAdjFEASolver final : public CSolver {
 private:
-  static constexpr size_t MAXNVAR = 3;  /*!< \brief Max number of variables, for static arrays. */
-
+  static constexpr size_t MAXNVAR = 9;  /*!< \brief Max number of variables, for static arrays. */
+//CVC: How to only set to 9 for dynamic?
   unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
 

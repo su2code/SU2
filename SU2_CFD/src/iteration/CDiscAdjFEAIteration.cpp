@@ -90,13 +90,13 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 
     dirNodes->Set_Solution_time_n();
 
-    /*--- Push solution back to correct array ---*/
+    // /*--- Push solution back to correct array ---*/
 
-    dirNodes->SetSolution_Accel_time_n();
+    // dirNodes->SetSolution_Accel_time_n();
 
-    /*--- Push solution back to correct array ---*/
+    // /*--- Push solution back to correct array ---*/
 
-    dirNodes->SetSolution_Vel_time_n();
+    // dirNodes->SetSolution_Vel_time_n();
 
     /*--- Load solution timestep n ---*/
 
@@ -105,15 +105,21 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
     /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
 
     for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
+      for (unsigned short iVar = 0; iVar < solvers0[FEA_SOL]->GetnVar(); iVar++){
+        adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
+      }
     }
 
     for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Accel_Direct(iPoint, dirNodes->GetSolution_Accel(iPoint));
+      for (unsigned short iVar = 0; iVar < solvers0[FEA_SOL]->GetnVar(); iVar++){
+        adjNodes->SetSolution_Accel_Direct(iPoint, iVar, dirNodes->GetSolution_Accel(iPoint, iVar));
+      }
     }
 
     for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Vel_Direct(iPoint, dirNodes->GetSolution_Vel(iPoint));
+      for (unsigned short iVar = 0; iVar < solvers0[FEA_SOL]->GetnVar(); iVar++){
+        adjNodes->SetSolution_Vel_Direct(iPoint, iVar, dirNodes->GetSolution_Vel(iPoint, iVar));
+      }
     }
 
   } else {
