@@ -268,6 +268,17 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		40084FAF24B8E8330040AA28 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				40084FAE24B8E8330040AA28 /* libROM.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8DD76F690486A84900D96B5E /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 8;
@@ -867,6 +878,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40707E002579BE6F00808AF6 /* libmpi.40.dylib in Frameworks */,
+				40707E0125886B0800808AF6 /* Accelerate.framework in Frameworks */,
+				40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */,
+				40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2157,8 +2172,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_CFD" */;
 			buildPhases = (
-				8DD76F640486A84900D96B5E /* Sources */,
 				8DD76F660486A84900D96B5E /* Frameworks */,
+				40084FAF24B8E8330040AA28 /* Embed Libraries */,
+				8DD76F640486A84900D96B5E /* Sources */,
 				8DD76F690486A84900D96B5E /* CopyFiles */,
 			);
 			buildRules = (
@@ -2518,7 +2534,9 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
+					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LIBROM",
 				);
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
@@ -2578,7 +2596,9 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
+					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LIBROM",
 				);
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = SU2_CFD;
@@ -2622,7 +2642,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+				);
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -2656,7 +2681,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+				);
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};

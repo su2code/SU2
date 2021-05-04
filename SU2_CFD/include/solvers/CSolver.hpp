@@ -38,6 +38,7 @@
 #include <set>
 #include <stdlib.h>
 #include <stdio.h>
+#include <chrono>
 
 #include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"
@@ -55,6 +56,12 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
+
+#ifdef HAVE_LIBROM
+#include "BasisGenerator.h"
+#include "QDEIM.h"
+#include "DEIM.h"
+#endif
 
 using namespace std;
 
@@ -183,10 +190,25 @@ public:
   CSysSolve<su2double>  System;
 #endif
 
+  vector<std::vector<double>> TrialBasis;   /*!< \brief vector to store trial basis / Phi from offline POD computation. (rom) */
+  vector<double> GenCoordsY;                /*!< \brief vector to store generalized coordinate solution. (rom) */
+  vector<double> Weights;
+  vector<double> Mask;                      /*!< \brief vector to store selected nodes. (rom)  */
+  set<unsigned long> MaskNeighbors;             /*!< \brief vector to store selected nodes' neighbors. (rom) */
+  vector<unsigned long> Edge_masked;        /*!<\brief vector to store masked edges (rom) */
+  unsigned long nEdge_masked;               /*!<\brief number of masked edges (rom) */
+  su2double ReducedResNorm_Old;             /*!<\brief previous value of the reduced residual norm (rom) */
+  su2double ReducedResNorm_Cur;             /*!<\brief previous value of the reduced residual norm (rom) */
+  bool RomConverged;                        /*!<\brief whether or not the reduced order model has converged (rom) */
+
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
 
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
+  
+  #ifdef HAVE_LIBROM
+    std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
+  #endif
 
   vector<string> fields;
   /*!
@@ -1450,6 +1472,7 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1460,6 +1483,103 @@ public:
                                                CSolver **solver_container,
                                                CConfig *config) { }
 
+  /*!
+   * \brief Update the solution for reduced order modelling.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ROM_Iteration(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CConfig *config) { }
+  
+#ifdef HAVE_LIBROM
+  /*!
+   * \brief Save snapshot or POD data using libROM
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] converged - Whether or not solution has converged.
+  */
+  void SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged);
+#endif
+  
+  /*!
+   * \brief Set up ROM-specific variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetROM_Variables(unsigned long nPoint,
+                        unsigned long nPointDomain,
+                        unsigned short nVar,
+                        CGeometry *geometry,
+                        CConfig *config);
+  
+  /*!
+   * \brief Convergence bool for reduced order models.
+   */
+  bool GetRom_Convergence(void);
+  
+  /*!
+   * \brief Set the initial reduced residual, this is useful for the convergence history.
+   * \param[in] val_residual - Value of the norm of the reduced residual to store.
+   */
+  inline void SetResOld_ROM(su2double val_residual) { ReducedResNorm_Old = val_residual; }
+  
+  /*!
+    * \brief Set the current reduced residual, this is useful for the convergence history.
+    * \param[in] val_residual - Value of the norm of the reduced residual to store.
+    */
+   inline void SetRes_ROM(su2double val_residual) { ReducedResNorm_Cur = val_residual; }
+
+  /*!
+   * \brief Get the current reduced residual, this is useful for the convergence history.
+   * \return Value of the norm of the reduced residual.
+   */
+  inline su2double GetRes_ROM(void) const { return ReducedResNorm_Cur; }
+  
+  /*!
+   * \brief Create mask for hyper-reduction using QDEIM method and libROM.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Create mask for hyper-reduction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Mask_Selection(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Return true if provided point is a selected node (for hyper-reduction).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool MaskedNode(unsigned long iPoint);
+  
+  /*!
+   * \brief Convert masked nodes to masked edges.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindMaskedEdges(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Check for ROM convergence.
+   * \param[out] bool - returns value of bool RomConverged
+   */
+  bool GetROMConvergence();
+  
+  /*!
+   * \brief Check for ROM convergence
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ReducedRes - Value of the reduced residual.
+   */
+  void CheckROMConvergence(CConfig *config, double ReducedRes);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

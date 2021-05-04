@@ -111,6 +111,7 @@ private:
   su2double StartTime;
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
+  Reduced_Model,            /*!< \brief Flag to know if code is producing a reduced order model. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -721,8 +722,12 @@ private:
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
+  unsigned short POD_Basis_Gen;       /*!< \brief Type of POD basis generation (static or incremental). */
+  unsigned long nHyper_Nodes;         /*!< \brief Number of hyper-reduction nodes desired. */
+  unsigned short nPOD_Modes;          /*!< \brief Number of POD mdoes desired. */
+  bool libROM;                        /*!< \brief Toggle saving to libROM. */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
+  bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
@@ -745,6 +750,11 @@ private:
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
+  Rom_FileName,                  /*!< \brief POD modes input file for reduced order model computation. */
+  Init_Snapshot_FileName,        /*!< \brief Initial snapshot filename for reduced order model computation. */
+  Init_Coord_FileName,           /*!< \brief Initial reduced coordinates filename for reduced order model computation. */
+  Ref_Snapshot_FileName,         /*!< \brief Reference snapshot filename for reduced order model computation. */
+  libROMbase_FileName,           /*!< \brief Base filename for libROM file saving. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
@@ -1216,7 +1226,8 @@ private:
 
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default);
+                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                            bool & Reduced_Model, const bool & Reduced_Model_default);
 
   void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable);
@@ -5171,6 +5182,70 @@ public:
   string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
 
   /*!
+   * \brief Get the name of the file with the POD modes for the reduced order model
+   *      problem.
+   * \return Name of the file with the POD modes.
+   */
+  string GetRom_FileName(void) const { return Rom_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the reference snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the reference snapshot.
+   */
+  string GetRef_Snapshot_FileName(void) const { return Ref_Snapshot_FileName; }
+  
+  /*!
+   * \brief Get the name of the file with the initial snapshot for the reduced order
+   *      model problem.
+   * \return Name of the file with the initial snapshot.
+   */
+  string GetInit_Snapshot_FileName(void) const { return Init_Snapshot_FileName; }
+
+  /*!
+   * \brief Get the name of the file with the initial reduced coordinates for the reduced order
+   *      model problem.
+   * \return Name of the file with the initial snapshot.
+  */
+  string GetInit_Coord_FileName(void) const { return Init_Coord_FileName; }
+  
+  /*!
+   * \brief Static or incremental toggle for POD basis generation type.
+   * \return Type of POD generation type
+   */
+  unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
+  
+  /*!
+   * \brief Get the name of the file for libROM to save.
+   * \return Name of filename for libROM to save to.
+   */
+  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
+  
+  /*!
+   * \brief Get whether or not to save to libROM.
+   * \return True if specified in config file.
+   */
+  bool GetSave_libROM(void) const {return libROM; }
+  
+  /*!
+   * \brief Get the name of the file with the residual of the problem.
+   * \return Name of the file with the residual of the problem.
+   */
+  string GetResidual_FileName(void);
+
+  /*!
    * \brief Get the format of the input/output grid.
    * \return Format of the input/output grid.
    */
@@ -6020,6 +6095,12 @@ public:
    */
   bool GetContinuous_Adjoint(void) const { return ContinuousAdjoint; }
 
+  /*!
+   * \brief Determines if problem is a reduced order modelling problem
+   * \return true if ROM
+   */
+  bool GetReduced_Model(void) const { return Reduced_Model; }
+  
   /*!
    * \brief Determines if problem is viscous
    * \return true if Viscous

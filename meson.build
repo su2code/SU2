@@ -18,7 +18,8 @@ if build_machine.system() != 'windows'
     default_warning_flags += ['-Wno-empty-body']
   endif
   default_warning_flags += ['-Wno-unused-parameter',
-                            '-Wno-deprecated-declarations']
+                            '-Wno-deprecated-declarations',
+                            '-Wno-inconsistent-missing-override']
 
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
@@ -169,6 +170,26 @@ elif get_option('enable-openblas')
 
 endif
 
+if get_option('enable-librom')
+
+   su2_cpp_args += '-DHAVE_LIBROM'
+
+   assert(get_option('enable-mkl') or get_option('enable-openblas'),
+          'libROM support requires either mkl or openblas')
+
+   librom_dep = dependency('ROM', required: false)
+
+   if not librom_dep.found()
+     librom_root = get_option('librom_root')
+     librom_dep = declare_dependency(include_directories: librom_root, compile_args: ['-std=c++11', '-I../'+librom_root],
+                                     link_args: ['-L'+librom_root+'/build', '-lROM'])
+   endif
+
+   su2_deps += librom_dep
+
+
+ endif
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''
@@ -234,6 +255,7 @@ message('''---------------------------------------------------------------------
          OpenBlas:       @8@
          PaStiX:         @9@
          Mixed Float:    @10@
+         libROM:         @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -248,7 +270,7 @@ message('''---------------------------------------------------------------------
          Use './ninja -C @11@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:

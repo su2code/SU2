@@ -50,6 +50,7 @@ void CSinglezoneDriver::StartSolver() {
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
+  bool libROM = config_container[MESH_0]->GetSave_libROM();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -94,6 +95,13 @@ void CSinglezoneDriver::StartSolver() {
 
     Output(TimeIter);
 
+    /*--- Save iteration solution for libROM ---*/
+    #ifdef HAVE_LIBROM
+        if (libROM) {
+          solver_container[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[0][INST_0][MESH_0], geometry_container[0][INST_0][0], config_container[0], StopCalc);
+        }
+    #endif
+    
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -235,7 +243,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
-  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached;
+  bool TimeDomain, InnerConvergence, TimeConvergence, FinalTimeReached, MaxIterationsReached, rom, RomConvergence;
 
   nInnerIter = config_container[ZONE_0]->GetnInner_Iter();
   InnerIter  = config_container[ZONE_0]->GetInnerIter();
@@ -244,7 +252,21 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   CurTime    = output_container[ZONE_0]->GetHistoryFieldValue("CUR_TIME");
 
   TimeDomain = config_container[ZONE_0]->GetTime_Domain();
-
+  rom        = config_container[ZONE_0]->GetReduced_Model();
+  
+  /*--- Check whether the ROM solver has converged TODO --- */
+  
+  if (rom) {
+    RomConvergence = output_container[ZONE_0]->GetConvergence();
+    if (RomConvergence) {
+      StopCalc = true;
+      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "ROM criteria satisfied." << endl;
+      output_container[ZONE_0]->PrintConvergenceSummary();
+      cout << "-------------------------------------------------------------------------" << endl;
+      return StopCalc;
+    }
+  }
 
   /*--- Check whether the inner solver has converged --- */
 

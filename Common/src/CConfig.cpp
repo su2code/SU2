@@ -423,10 +423,11 @@ void CConfig::addConvectFEMOption(const string name, unsigned short & space_fiel
 
 void CConfig::addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                           bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                          bool & Restart_Flow, const bool & Restart_Flow_default) {
+                          bool & Restart_Flow, const bool & Restart_Flow_default,
+                          bool & Reduced_Model, const bool & Reduced_Model_default) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
+  COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default, Reduced_Model, Reduced_Model_default);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1074,7 +1075,7 @@ void CConfig::SetConfig_Options() {
   const bool discAdjDefault = false;
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, false, Reduced_Model, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -1930,6 +1931,28 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Reduced Order Modelling specific variables  \ingroup Config */
+  /*--- Options related to reduced order modelling ---*/
+  
+  /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
+  addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
+  /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
+  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
+  /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
+  addStringOption("INITIAL_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
+  /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
+  addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
+  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM (Reduced order modelling)  \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
+  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM", libROM, false);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, STATIC_POD);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
+  addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
+  /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
+  addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
+  
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
@@ -5671,7 +5694,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (fea) cout << "No restart solution, initialize from undeformed configuration." << endl;
         else cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
-
+    
+    if (Reduced_Model) {
+      cout << "Reduced order model definitions:" << endl;
+      cout << "   Test basis file name:         " << Rom_FileName << "." << endl;
+      cout << "   Inital solution file name:    " << Init_Snapshot_FileName << "." << endl;
+      cout << "   Reference solution file name: " << Ref_Snapshot_FileName << "." << endl;
+    }
+    
     if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FileName << "." << endl;
 

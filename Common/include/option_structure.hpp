@@ -503,12 +503,14 @@ const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,               /*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,   /*!< \brief Continuous adjoint problem */
-  DISCRETE_ADJOINT = 2      /*!< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2,     /*!< \brief AD-based discrete adjoint problem. */
+  ROM = 3
 };
 static const MapType<string, ENUM_MATH_PROBLEM> Math_Problem_Map = {
   MakePair("DIRECT", DIRECT)
   MakePair("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
   MakePair("DISCRETE_ADJOINT", DISCRETE_ADJOINT)
+  MakePair("ROM", ROM)
 };
 
 /*!
@@ -1717,6 +1719,18 @@ enum ENUM_TAB_OUTPUT {
 static const MapType<string, ENUM_TAB_OUTPUT> TabOutput_Map = {
   MakePair("CSV", TAB_CSV)
   MakePair("TECPLOT", TAB_TECPLOT)
+};
+
+/*!
+ * \brief Type of POD basis generation
+ */
+enum ENUM_POD_OUTPUT {
+  STATIC_POD = 1,            /*!< \brief Comma-separated values format for the solution output. */
+  INCREMENTAL_POD = 2        /*!< \brief Tecplot format for the solution output. */
+};
+static const MapType<string, ENUM_POD_OUTPUT> POD_Map = {
+  MakePair("STATIC_POD", STATIC_POD)
+  MakePair("INCREMENTAL_POD", INCREMENTAL_POD)
 };
 
 /*!

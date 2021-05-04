@@ -95,6 +95,9 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
+  MatrixType Solution_Ref;       /*!< \brief Reference solution used for reduced order modeling. */
+  MatrixType Solution_Red;       /*!< \brief Solution in reduced coordinates. */
+
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
@@ -317,6 +320,31 @@ public:
    */
   inline void AddSolution(unsigned long iPoint, const su2double *solution) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution(iPoint, iVar) += solution[iVar];
+  }
+
+  /*! \brief Set reference solution using input file.
+   */
+  inline void Set_RefSolution(unsigned long iPoint, const su2double *solution) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Ref(iPoint, iVar) = solution[iVar];
+  }
+  
+  /*! \brief Set reference solution using input file.
+   */
+  inline void Set_RefSolution(unsigned long iPoint, unsigned long iVar, const su2double solution) {
+    Solution_Ref(iPoint, iVar) = solution;
+  }
+
+  /*! \brief Get reference solution for reduced order modeling.
+   */
+  inline su2double Get_RefSolution(unsigned long iPoint, unsigned long iVar) { return Solution_Ref(iPoint, iVar); }
+
+  /*!
+   * \brief Add a value to the reference solution.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  inline void AddROMSolution(unsigned long iPoint, unsigned long iVar, su2double solution) {
+    Solution(iPoint, iVar) = Solution_Ref(iPoint, iVar) + solution;
   }
 
   /*!
@@ -1691,6 +1719,8 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  inline virtual su2double **GetReynoldsStressTensor(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief A virtual member.

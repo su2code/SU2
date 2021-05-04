@@ -89,6 +89,10 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
+  
+  #ifdef HAVE_LIBROM
+    u_basis_generator  = NULL;
+  #endif
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -185,6 +189,10 @@ CSolver::~CSolver(void) {
   delete [] Restart_Data;
 
   delete VerificationSolution;
+
+  #ifdef HAVE_LIBROM
+    if (u_basis_generator != NULL) u_basis_generator = nullptr;
+  #endif
 
 }
 
@@ -3943,4 +3951,674 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
+}
+
+
+#ifdef HAVE_LIBROM
+void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
+  
+  bool unsteady = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                  (config->GetTime_Marching() == DT_STEPPING_2ND) ||
+                  (config->GetTime_Marching() == TIME_STEPPING));
+  unsigned long iPoint, total_index;
+  unsigned short iVar;
+  
+  string filename = config->GetlibROMbase_FileName();
+  unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
+  unsigned long TimeIter = config->GetTimeIter();
+  unsigned long nTimeIter = config->GetnTime_Iter();
+  int dim = int(nPointDomain * nVar);
+  bool incremental = false;
+  //bool StopCalc = ((TimeIter+1) == nTimeIter);
+
+  // Get solver nodes
+  CVariable* nodes = GetNodes();
+  
+  /*--- Define SVD basis generator ---*/
+  
+  CAROM::Options svd_options = CAROM::Options(dim, 2).setMaxBasisDimension(int(0.1*dim));
+ 
+  if (!u_basis_generator) {
+    if (pod_basis == STATIC_POD) {
+      std::cout << "Creating static basis generator." << std::endl;
+    }
+    else {
+      std::cout << "Creating incremental basis generator." << std::endl;
+      svd_options.setIncrementalSVD(1.0e-2, config->GetDelta_UnstTimeND(),
+                                    1.0e-2, config->GetDelta_UnstTimeND()*100, true).setDebugMode(false);
+      incremental = true;
+    }
+    
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
+    
+    // Print nodes for each rank for now
+    std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
+    
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + to_string(rank) + ".csv");
+        for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+          unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+          auto Coord = geometry->nodes->GetCoord(iPoint);
+          f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
+        }
+    f.close();
+  }
+
+   if (unsteady) {
+      double* u = new double[nPointDomain*nVar];
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+         for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar + iVar;
+            u[total_index] = nodes->GetSolution(iPoint,iVar);
+         }
+      }
+      
+      // give solution and time steps to libROM:
+      double dt = config->GetDelta_UnstTimeND();
+      double t =  config->GetCurrent_UnstTime();
+      std::cout << "Taking sample" << std::endl;
+      u_basis_generator->takeSample(u, t, dt);
+      // not implemented yet: u_basis_generator->computeNextSampleTime(u, rhs, t);
+      // bool u_samples = u_basis_generator->isNextSample(t);
+      delete[] u;
+   }
+   
+  /*--- End collection of data and save POD ---*/
+  
+   if (converged) {
+
+      if (!unsteady) {
+         double* u = new double[nPointDomain*nVar];
+         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+               total_index = iPoint*nVar + iVar;
+               u[total_index] = nodes->GetSolution(iPoint, iVar);
+            }
+         }
+         
+         // dt is different for each node, so just use a placeholder dt for now
+         double dt = base_nodes->GetDelta_Time(0);
+         double t = dt*TimeIter;
+         std::cout << "Taking sample" << std::endl;
+         u_basis_generator->takeSample(u, t, dt);
+
+         delete[] u;
+      }
+      
+      if (pod_basis == STATIC_POD) {
+         u_basis_generator->writeSnapshot();
+      }
+      std::cout << "Computing SVD" << std::endl;
+      int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+      std::cout << "Basis dimension: " << rom_dim << std::endl;
+      u_basis_generator->endSamples();
+      std::cout << "ROM Sampling ended" << std::endl;
+   }
+}
+#endif
+
+
+void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar,
+                               CGeometry *geometry, CConfig *config) {
+  // Explanation of certain ROM-specific variables:
+  // TrialBasis   ...POD-built reduced basis, Phi
+  // GenCoordsY   ...generalized coordinate vector, y
+  // Solution_Ref ...reference solution, w, typically a snapshot
+  
+  std::cout << "Setting up ROM variables" << std::endl;
+  
+  ReducedResNorm_Old = 0;
+  
+  /*--- Get solver nodes ---*/
+  CVariable* nodes = GetNodes();
+  
+  /*--- Get number of desired POD modes ---*/
+  unsigned short nModes  = config->GetnPOD_Modes();
+  
+  /*--- Read data from the following three files: ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  string ref_filename  = config->GetRef_Snapshot_FileName();
+  string init_filename = config->GetInit_Snapshot_FileName();
+  string init_coord_filename = config->GetInit_Coord_FileName();
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  ifstream in_phi(phi_filename);
+  unsigned short s = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      TrialBasis.push_back({});
+      unsigned short modes = 0;
+      while (getline(sep, field, ',')) {
+        if (modes < nModes) {
+          TrialBasis[s].push_back(stod(field));
+          modes++;
+        }
+      }
+      s++;
+    }
+  }
+  else std::cout << "ERROR: Did not read file for POD matrix (ROM)." << std::endl;
+  
+  unsigned long nsnaps = TrialBasis[0].size();
+  unsigned long iPoint, i, iVar;
+  double *ref_sol = new double[nPointDomain * nVar]();
+  double *init_sol = new double[nPointDomain * nVar]();
+  
+  /*--- Reference Solution (read from file) ---*/
+  
+  ifstream in_ref(ref_filename);
+  s = 0; iPoint = 0; iVar = 0;
+  
+  if (in_ref) {
+    std::string line;
+    
+    while (getline(in_ref, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        ref_sol[s] = stod(field);
+        nodes->Set_RefSolution(iPoint, iVar, ref_sol[s]);
+        s++;
+        if (s % 4 == 0) iPoint++;
+        if (iVar == 3) iVar = 0; else iVar++;
+      }
+    }
+  }
+  else std::cout << "ERROR: Did not read file for reference solution (ROM)." << std::endl;
+  
+  /*--- Initial Solution / Coordinates (read from file) ---*/
+  
+  ifstream in_init(init_filename);
+  ifstream in_init_coord(init_coord_filename);
+  s = 0; iPoint = 0; iVar = 0;
+  
+  if (in_init) {
+    /*--- Use initial solution to find reduced coordinates ---*/
+    std::string line;
+    
+    while (getline(in_init, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        init_sol[s] = stod(field);
+        nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+        nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+        s++;
+        if (s % 4 == 0) iPoint++;
+        if (iVar == 3) iVar = 0; else iVar++;
+      }
+    }
+    
+    /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+    
+    for (i = 0; i < nsnaps; i++) {
+      double sum = 0.0;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+        }
+      }
+      GenCoordsY.push_back(sum);
+    }
+  }
+  else if (in_init_coord){
+    /*--- Use initial coordinates to find inital solution ---*/
+    std::string line;
+    
+    while (getline(in_init_coord, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        if (s < nModes) {
+          GenCoordsY.push_back(stod(field));
+          s++;
+        }
+      }
+    }
+    
+    /*--- Compute and set initial solution from generalized coordinates, w0 = w_ref + Phi * y0 ---*/
+    
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        su2double init_sol2 = 0.0;
+        for (unsigned long j = 0; j < nsnaps; j++) {
+          init_sol2 += TrialBasis[iPoint*nVar + iVar][j] * GenCoordsY[j];
+        }
+        nodes->SetSolution(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
+        nodes->SetSolution_Old(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
+      }
+    }
+  }
+  else std::cout << "ERROR: Did not read file for initial solution or coordinates (ROM)." << std::endl;
+
+  delete[] ref_sol;
+  delete[] init_sol;
+}
+
+bool CSolver::GetRom_Convergence() {
+  return RomConverged;
+}
+
+#ifdef HAVE_LIBROM
+void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  unsigned long iPoint, iVar, nsnaps;
+  int num_cols;
+  int firstrun = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+        s++;
+      }
+      firstrun++;
+    }
+  }
+  else {
+    SU2_MPI::Error("Phi matrix was not read from file.", CURRENT_FUNCTION);
+  }
+  
+  nsnaps = Phi.size();
+  num_cols = (int)nsnaps;
+  double* PhiNodes = new double[nsnaps*nPointDomain](); // TODO: parallel case?
+  int tally = 0;
+  
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned long n = 0; n < nsnaps; n++) {
+      double norm_phi = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        norm_phi += Phi[0][iPoint*nVar + iVar] * Phi[0][iPoint*nVar + iVar];
+      }
+      
+      PhiNodes[tally] =  sqrt(norm_phi);
+      tally++;
+    }
+  }
+  //int argc; char* argv[0];
+  //MPI_Init(&argc, &argv);
+  bool gnat = true; // false if QDEIM is requested
+  CAROM::Matrix* u;
+  std::string fname;
+  
+  if (gnat) {
+    u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, false);
+  }
+  else {
+    u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, true);
+  }
+  
+  int* f_sampled_row = new int[desired_nodes] {0};
+  int* f_sampled_rows_per_proc = new int[desired_nodes] {0};
+  CAROM::Matrix f_basis_sampled_inv = CAROM::Matrix(desired_nodes, num_cols, false);
+  
+  if (gnat) {
+    std::cout << "Performing GNAT." << std::endl;
+    CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    fname = "masked_nodes_airfoil_GNAT_"+to_string(desired_nodes)+".csv";
+  }
+  else {
+    std::cout << "Performing QDEIM." << std::endl;
+    CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+    fname = "masked_nodes_airfoil_QDEIM_"+to_string(desired_nodes)+".csv";
+  }
+  
+  for (int i = 0; i < desired_nodes; i++){
+    Mask.push_back(f_sampled_row[i]);
+  }
+  
+  sort(Mask.begin(),Mask.end());
+  
+  ofstream fs;
+  fs.open(fname);
+  for(int i=0; i < (int)Mask.size(); i++){
+    fs << Mask[i] << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+}
+#endif
+
+void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+  
+#ifdef HAVE_LIBROM
+  bool gnat = false;
+  if (gnat) {
+    Mask_Selection_QDEIM(geometry, config);
+    return;
+  }
+#endif
+  
+  auto t_start = std::chrono::high_resolution_clock::now();
+  // This function selects the masks E and E' using the Phi matrix and mesh data
+  
+  bool read_mask_from_file = false;
+  
+
+  
+  /*--- Get solver nodes ---*/
+  //CVariable* nodes = GetNodes();
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  if (desired_nodes > nPointDomain) {
+    SU2_MPI::Error("Number of nodes desired for hyper-reduction must be less than total number of nodes.", CURRENT_FUNCTION); }
+  
+  if (desired_nodes == 0) read_mask_from_file = true;
+  
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  int firstrun = 0;
+  
+  if (!read_mask_from_file) {
+    std::cout << "Using greedy algorithm to compute " << desired_nodes << " nodes." << std::endl;
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+          Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+          s++;
+      }
+      firstrun++;
+    }
+  }
+  
+  //unsigned long nsnaps = Phi.size();
+  unsigned long nsnaps = 10;
+  unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
+  
+  std::vector<double> PhiNodes;
+  for (i = 0; i < nPointDomain; i++) {
+  
+    double norm_phi = 0.0;
+    for (iVar = 0; iVar < nVar; iVar++) {
+      norm_phi += Phi[0][i*nVar + iVar] * Phi[0][i*nVar + iVar];
+    }
+  
+    PhiNodes.push_back( sqrt(norm_phi) );
+  }
+  
+  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
+    
+  for (i = 0; i < nodestoAdd; i++) {
+    nodewithMax = std::distance(PhiNodes.begin(),
+                                std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+    Mask.push_back(nodewithMax);
+    PhiNodes[nodewithMax] = -100000.0;
+  }
+    
+  std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
+  std::vector<std::vector<double>> U, masked_U;
+
+  
+  
+
+  for (ivec = 1; ivec < nsnaps; ivec++) {
+    
+    U.push_back(Phi[ivec-1]);
+    
+    PhiNodes.clear();
+    gappy_Phi.clear();
+    masked_U.clear();
+    masked_Phi.clear();
+      
+    for (j = 0; j < ivec; j++) {
+      masked_U.push_back({});
+    }
+    
+    // loop through nodes to add masked Phi entries in correct order
+    for (imask = 0; imask < nPointDomain; imask++) {
+      if (MaskedNode(imask)) {
+        for (iVar = 0; iVar < nVar; iVar++) { masked_Phi.push_back(Phi[ivec][imask*nVar+iVar]); }
+
+        for (j = 0; j < ivec; j++) {
+          for (iVar = 0; iVar < nVar; iVar++) { masked_U[j].push_back(U[j][imask*nVar+iVar]); }
+        }
+      }
+    }
+      
+    // compute gappy reconstruction: GappyPhi = A*B*c
+    
+    for (ii = 0; ii < nPointDomain; ii++) {
+      double norm_phi = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        
+        unsigned long total_index = ii*nVar+iVar;
+        gappy_Phi.push_back({});
+        ubar_phibar.clear();
+        
+        // B*c
+        for (j = 0; j < ivec; j++) {
+          ubar_phibar.push_back({});
+          for (k = 0; k < masked_Phi.size(); k++) {
+            ubar_phibar[j] += masked_U[j][k] * masked_Phi[k];
+          }
+        }
+        
+        // A*(B*c)
+        for (j = 0; j < ivec; j++) {
+          gappy_Phi[total_index] += U[j][total_index] * ubar_phibar[j];
+        }
+        
+        double diff = Phi[ivec][total_index] - gappy_Phi[total_index];
+        norm_phi += diff * diff;
+      }
+      
+      PhiNodes.push_back( sqrt(norm_phi) );
+    }
+    
+    
+    /*--- Add nodes corresponding to a single Phi vector ---*/
+    nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
+    for (inode = 0; inode < nodestoAdd; inode++) {
+        
+      nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+      PhiNodes[nodewithMax] = -100000.0;
+      
+      if (MaskedNode(nodewithMax) == false) { Mask.push_back(nodewithMax); }
+      else { nodestoAdd++; }
+      
+      if (Mask.size() >= desired_nodes) break;
+    }
+  }
+  }
+  
+  /*--- Masked Nodes (read from file) ---*/
+  
+  if (read_mask_from_file) {
+    std::cout << "Using all nodes for hyper-reduction." << std::endl;
+    for (int i = 0; i < (int)nPointDomain; i++){
+      Mask.push_back(i);
+    }
+    //std::cout << "Using precomputed nodes." << std::endl;
+    //std::string file_name = "masked_nodes_airfoil_4500.csv";
+    //std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << file_name << std::endl;
+    //ifstream in_ref(file_name);
+    //
+    //if (in_ref) {
+    //  std::string line;
+    //  int s = 0;
+    //
+    //  while (getline(in_ref, line)) {
+    //    stringstream sep(line);
+    //    string field;
+    //    while (getline(sep, field, ',') && (s<desired_nodes)) {
+    //      Mask.push_back(stod(field));
+    //      s++;
+    //    }
+    //  }
+    //}
+  }
+  
+  sort(Mask.begin(),Mask.end());
+  
+  if (!read_mask_from_file) {
+  ofstream fs;
+  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
+  fs.open(fname);
+  for(int i=0; i < (int)Mask.size(); i++){
+    fs << Mask[i] << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  }
+  
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+  std::cout << "Mask selection for ROM completed in " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+}
+
+
+bool CSolver::MaskedNode(unsigned long iPoint) {
+
+  if (std::find(Mask.begin(), Mask.end(), iPoint) != Mask.end())
+    return true;
+  else
+    return false;
+}
+
+
+void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
+  // output: Masked Edges
+  
+  unsigned long iEdge, iPoint, jPoint, kNeigh;
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
+    
+    if (MaskedNode(iPoint)) {
+      Edge_masked.push_back(iEdge);
+      if (!MaskedNode(jPoint)) MaskNeighbors.insert(jPoint);
+    }
+    else if (MaskedNode(jPoint)) {
+      Edge_masked.push_back(iEdge);
+      if (!MaskedNode(iPoint)) MaskNeighbors.insert(iPoint);
+    }
+    
+  }
+  
+  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  ofstream fs;
+  std::string fname = "masked_nodes_neighs_"+to_string(desired_nodes)+".csv";
+  fs.open(fname);
+  set <unsigned long> :: iterator itr;
+  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
+    fs << *itr << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+  /*--- Include neighbors of neighbors for viscous part of residual ---*/
+  
+  switch( config->GetKind_Solver() ) {
+
+    case NAVIER_STOKES: case INC_NAVIER_STOKES: {
+      // Get neighbor of neighbor
+      
+      std::vector<unsigned long> temp_neighs;
+      
+      // locate all neighbors of neighbors but dont pull any Masked/Selected nodes
+      for (unsigned long i : MaskNeighbors) {
+        
+        for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(i); kNeigh++) {
+          jPoint = geometry->nodes->GetPoint(i,kNeigh);
+          
+          if (!MaskedNode(jPoint)) {
+            temp_neighs.push_back(jPoint);
+          }
+        }
+      }
+      
+      for (unsigned long i : temp_neighs) {
+        MaskNeighbors.insert(i);
+      }
+      
+    }
+       
+  }
+  
+  //ofstream fs;
+  //std::string fname = "masked_nodes_neighs.csv";
+  fs.open(fname);
+  //set <unsigned long> :: iterator itr;
+  for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
+    fs << *itr << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+  std::string fname2 = "masked_nodes_edges.csv";
+  fs.open(fname2);
+  for (unsigned long i : Edge_masked) {
+    fs << i << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+}
+
+bool CSolver::GetROMConvergence() {
+  return RomConverged;
+}
+
+void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
+
+  unsigned long InnerIter = config->GetInnerIter();
+
+  if (InnerIter == 0) {
+    RomConverged = false;
+    SetResOld_ROM(ReducedRes);
+  }
+  
+  else {
+    if (1.0 / ReducedRes >= 1e13) {
+      RomConverged = true;
+      return;
+    }
+    
+    else if (ReducedResNorm_Cur == ReducedRes) {
+      if (InnerIter > 5) RomConverged = true;
+      else RomConverged = false;
+    }
+    
+    else if (ReducedRes > ReducedResNorm_Cur) {
+      //RomConverged = true;
+      std::cout << "ROM Residual Increased." << std::endl;
+    }
+    
+    else {
+      RomConverged = false;
+    }
+  }
+  SetRes_ROM(ReducedRes);
 }

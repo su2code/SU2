@@ -804,9 +804,19 @@ public:
   void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Provide the mass flow rate.
-   * \param val_marker Surface where the coeficient is going to be computed.
-   * \return Value of the mass flow rate on the surface <i>val_marker</i>.
+   * \brief Update the solution using reduced order modelling methods (LSPG).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ROM_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
+  
+  /*!
+   * \brief Compute the pressure forces and all the adimensional coefficients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
   inline su2double GetInflow_MassFlow(unsigned short val_marker) const final { return Inflow_MassFlow[val_marker]; }
 
