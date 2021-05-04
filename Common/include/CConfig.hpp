@@ -393,17 +393,14 @@ private:
   short *Marker_All_SendRecv;                /*!< \brief Information about if the boundary is sended (+), received (-). */
   short *Marker_All_PerBound;                /*!< \brief Global index for periodic bc using the grid information. */
 
-  unsigned long nExtIter;           /*!< \brief Number of external iterations. */
   unsigned long ExtIter;            /*!< \brief Current external iteration number. */
   unsigned long ExtIter_OffSet;     /*!< \brief External iteration number offset. */
   unsigned long IntIter;            /*!< \brief Current internal iteration number. */
   unsigned long OuterIter;          /*!< \brief Current Outer iterations for multizone problems. */
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
-  long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
-  long Dyn_RestartIter;             /*!< \brief Iteration number to restart a dynamic structural analysis. */
   su2double PhysicalTime;           /*!< \brief Physical time at the current iteration in the solver for unsteady problems. */
 
   unsigned short nLevels_TimeAccurateLTS;   /*!< \brief Number of time levels for time accurate local time stepping. */
@@ -8324,22 +8321,19 @@ public:
   void GEMMProfilingCSV(void);
 
   /*!
-   *
    * \brief Set freestream turbonormal for initializing solution.
    */
   void SetFreeStreamTurboNormal(const su2double* turboNormal);
 
   /*!
-   *
    * \brief Set freestream turbonormal for initializing solution.
    */
   const su2double* GetFreeStreamTurboNormal(void) const { return FreeStreamTurboNormal; }
 
   /*!
-   *
    * \brief Set multizone properties.
    */
-  void SetMultizone(CConfig *driver_config, CConfig **config_container);
+  void SetMultizone(const CConfig *driver_config, const CConfig* const* config_container);
 
   /*!
    * \brief Get the verbosity level of the console output.

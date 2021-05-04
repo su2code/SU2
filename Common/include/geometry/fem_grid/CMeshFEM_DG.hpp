@@ -252,7 +252,7 @@ public:
    * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.
    * \param[in] iZone              - The currently active zone number.
    */
-  void InitStaticMeshMovement(CConfig              *config,
+  void InitStaticMeshMovement(const CConfig        *config,
                               const unsigned short Kind_Grid_Movement,
                               const unsigned short iZone);
 

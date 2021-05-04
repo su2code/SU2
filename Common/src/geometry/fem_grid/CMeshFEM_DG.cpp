@@ -2296,7 +2296,7 @@ long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) const {
   return -1;
 }
 
-void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+void CMeshFEM_DG::InitStaticMeshMovement(const CConfig        *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 

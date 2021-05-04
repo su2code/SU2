@@ -226,7 +226,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
       /*--- Static mesh processing.  ---*/
 
-      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], surface_movement[iZone]);
+      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
 
     }
 
@@ -2562,7 +2562,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
 }
 
-void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CSurfaceMovement* surface_movement){
+void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geometry){
 
   unsigned short iMGlevel, iMGfine;
   unsigned short Kind_Grid_Movement;
@@ -2622,8 +2622,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
       if (rank == MASTER_NODE)
         cout << endl << " Setting the moving wall velocities." << endl;
 
-      assert(surface_movement != nullptr && "A surface_movement was not instantiated.");
-      surface_movement->Moving_Walls(geometry[MESH_0], config, iZone, 0);
+      geometry[MESH_0]->SetWallVelocity(config, true);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
         setting the moving wall velocities for the finest mesh. ---*/

@@ -885,34 +885,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetRotationalVelocity(CConfig *config, bool print = false);
+  void SetRotationalVelocity(const CConfig *config, bool print = false);
 
   /*!
    * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetShroudVelocity(CConfig *config);
+  void SetShroudVelocity(const CConfig *config);
 
   /*!
    * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetTranslationalVelocity(CConfig *config, bool print = false);
+  void SetTranslationalVelocity(const CConfig *config, bool print = false);
+
+  /*!
+   * \brief Set the translational/rotational velocity for all moving walls.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print - Display information on screen.
+   */
+  void SetWallVelocity(const CConfig *config, bool print = false);
 
   /*!
    * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time step.
    */
-  void SetGridVelocity(CConfig *config, unsigned long iter);
+  void SetGridVelocity(const CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {}
+  inline virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {}
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE

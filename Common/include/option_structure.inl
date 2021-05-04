@@ -58,11 +58,11 @@ public:
     auto it = m.find(option_value[0]);
 
     if (it == m.cend()) {
-      string str = name;
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
+      stringstream ss;
+      ss << name << ": invalid option value " << option_value[0] << ".\nDid you mean";
+      for (auto& item : m) ss << ", " << item.first;
+      ss << "?";
+      return ss.str();
     }
     // If it is there, set the option value
     field = it->second;
@@ -224,11 +224,11 @@ public:
       auto it = m.find(option_value[i]);
 
       if (it == m.cend()) {
-        string str = name;
-        str.append(": invalid option value ");
-        str.append(option_value[i]);
-        str.append(". Check current SU2 options in config_template.cfg.");
-        return str;
+        stringstream ss;
+        ss << name << ": invalid option value " << option_value[i] << ".\nDid you mean";
+        for (auto& item : m) ss << ", " << item.first;
+        ss << "?";
+        return ss.str();
       }
       // If it is there, set the option value
       field[i] = it->second;
