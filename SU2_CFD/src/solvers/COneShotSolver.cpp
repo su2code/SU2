@@ -152,3 +152,325 @@ void  COneShotSolver::UpdateAuxiliaryGeometryVariables(CGeometry **geometry_cont
   }
 
 }
+
+su2double COneShotSolver::EvaluateGeometryFunction(CGeometry* geometry, CConfig* config, unsigned int iPlane) {
+
+  unsigned short nPlane;
+  su2double ThicknessValue;
+  su2double *Plane_P0, *Plane_Normal;
+  su2double Wing_Volume = 0.0, Wing_MinThickness = 0.0, Wing_MaxThickness = 0.0, Wing_MinChord = 0.0, Wing_MaxChord = 0.0, Wing_MinLERadius = 0.0, Wing_MaxLERadius = 0.0, Wing_MinToC = 0.0, Wing_MaxToC = 0.0, Wing_ObjFun_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0;
+
+  std::vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Variable_Airfoil;
+
+  /*--- Evaluation of the objective function ---*/
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------- Evalute Geometry Objective ----------------------" << endl;
+
+  /*--- Set the number of sections, and allocate the memory ---*/
+
+  Plane_P0 = new su2double[3];
+  Plane_Normal = new su2double[3];
+
+  /// possible advanced preprocessing???
+
+  geometry->ComputeSurf_Curvature(config);
+  geometry->SetPositive_ZArea(config);
+
+  /*--- Create plane structure ---*/
+
+  if (geometry->GetnDim() == 2) {
+    Plane_Normal[0] = 0.0;   Plane_P0[0] = 0.0;
+    Plane_Normal[1] = 1.0;   Plane_P0[1] = 0.0;
+    Plane_Normal[2] = 0.0;   Plane_P0[2] = 0.0;
+  }
+  else if (geometry->GetnDim() == 3) {
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
+      Plane_Normal[1] = 1.0;    Plane_P0[1] = config->GetLocationStations(iPlane);
+      Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
+    }
+  }
+
+  /*--- Compute the wing and fan description (only 3D). ---*/
+
+  if (geometry->GetnDim() == 3) {
+
+      if (rank == MASTER_NODE) {
+        cout << "Computing the wing continuous description." << endl << endl;
+      }
+
+      geometry->Compute_Wing(config, true,
+                             Wing_Volume, Wing_MinThickness, Wing_MaxThickness, Wing_MinChord, Wing_MaxChord,
+                             Wing_MinLERadius, Wing_MaxLERadius, Wing_MinToC, Wing_MaxToC, Wing_ObjFun_MinToC,
+                             Wing_MaxTwist, Wing_MaxCurvature, Wing_MaxDihedral);
+
+  }
+
+  geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
+                                     Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+                                     Variable_Airfoil, true, config);
+
+  if (rank == MASTER_NODE) {
+
+    cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
+
+    if (Xcoord_Airfoil.size() > 1) {
+
+        ThicknessValue  = geometry->Compute_MaxThickness(Plane_P0, Plane_Normal, config, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil);
+
+        if (config->GetSystemMeasurements() == US)  cout << "Thickness: " << ThicknessValue << " in, " << endl;
+        else cout << "Thickness: " << ThicknessValue << " m, " << endl;
+    }
+  }
+
+  return ThicknessValue;
+
+}
+
+
+vector<su2double> COneShotSolver::EvaluateGeometryGradient(CGeometry* geometry, CSurfaceMovement* surface_movement, CConfig *config) {
+
+
+  ///*
+  /// Set DV Values to FD step beforehand. otherwise undefined behaviour of the FFD_Box deformation!
+  ///
+  /// Why is nDV_Total not used here???
+  ///
+  /// Copy Boundary from geometry to surface back afterwards for safety!
+  ///
+
+
+  unsigned short  iDV, iFFDBox, iPlane, nPlane;
+  su2double *ThicknessValue, *ThicknessValue_New, *Gradient, delta_eps,
+            **Plane_P0, **Plane_Normal;
+
+  su2double Wing_Volume = 0.0, Wing_MinThickness = 0.0, Wing_MaxThickness = 0.0, Wing_MinChord = 0.0, Wing_MaxChord = 0.0, Wing_MinLERadius = 0.0, Wing_MaxLERadius = 0.0, Wing_MinToC = 0.0, Wing_MaxToC = 0.0, Wing_ObjFun_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
+            Wing_Volume_New = 0.0, Wing_MinThickness_New = 0.0, Wing_MaxThickness_New = 0.0, Wing_MinChord_New = 0.0, Wing_MaxChord_New = 0.0, Wing_MinLERadius_New = 0.0, Wing_MaxLERadius_New = 0.0, Wing_MinToC_New = 0.0, Wing_MaxToC_New = 0.0, Wing_ObjFun_MinToC_New = 0.0, Wing_MaxTwist_New = 0.0, Wing_MaxCurvature_New = 0.0, Wing_MaxDihedral_New = 0.0;
+
+  std::vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
+  std::vector<su2double> Sum_Gradient(config->GetnDV(), 0.0);
+  bool Local_MoveSurface, MoveSurface = false;
+
+  /// base evaluation
+
+  /*--- Set the number of sections, and allocate the memory ---*/
+
+  if (geometry->GetnDim() == 2) nPlane = 1;
+  else nPlane = config->GetnLocationStations();
+
+  Plane_P0 = new su2double*[nPlane];
+  Plane_Normal = new su2double*[nPlane];
+  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
+    Plane_P0[iPlane] = new su2double[3];
+    Plane_Normal[iPlane] = new su2double[3];
+  }
+
+  ThicknessValue = new su2double[nPlane];
+  ThicknessValue_New = new su2double[nPlane];
+  Gradient = new su2double[nPlane];
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    ThicknessValue[iPlane] = 0.0;
+    ThicknessValue_New[iPlane] = 0.0;
+    Gradient[iPlane] = 0.0;
+  }
+
+  geometry->ComputeSurf_Curvature(config);
+  geometry->SetPositive_ZArea(config);
+
+  /*--- Create plane structure ---*/
+
+  if (geometry->GetnDim() == 2) {
+    Plane_Normal[0][0] = 0.0;   Plane_P0[0][0] = 0.0;
+    Plane_Normal[0][1] = 1.0;   Plane_P0[0][1] = 0.0;
+    Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
+  }
+  else if (geometry->GetnDim() == 3) {
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
+      Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = config->GetLocationStations(iPlane);
+      Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+    }
+  }
+
+  /*--- Compute the wing and fan description (only 3D). ---*/
+
+  if (geometry->GetnDim() == 3) {
+      geometry->Compute_Wing(config, true,
+                             Wing_Volume, Wing_MinThickness, Wing_MaxThickness, Wing_MinChord, Wing_MaxChord,
+                             Wing_MinLERadius, Wing_MaxLERadius, Wing_MinToC, Wing_MaxToC, Wing_ObjFun_MinToC,
+                             Wing_MaxTwist, Wing_MaxCurvature, Wing_MaxDihedral);
+  }
+
+  for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
+                                     Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                                     Variable_Airfoil[iPlane], true, config);
+  }
+
+  if (rank == MASTER_NODE) {
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        ThicknessValue[iPlane]  = geometry->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+      }
+    }
+  }
+
+  /// gradient part
+
+  /*--- Copy coordinates to the surface structure ---*/
+  surface_movement->CopyBoundary(geometry, config);
+
+  /*--- Definition of the FFD deformation class ---*/
+  CFreeFormDefBox** FFDBox = nullptr;
+  FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+  for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = nullptr;
+
+  if (rank == MASTER_NODE)
+    cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
+
+  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+
+    /*--- Free Form deformation based ---*/
+
+    if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+        (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ) {
+
+        /*--- Read the FFD information in the first iteration ---*/
+
+        if (iDV == 0) {
+
+          if (rank == MASTER_NODE) cout << "Read the FFD information from mesh file." << endl;
+
+          /*--- Read the FFD information from the grid file ---*/
+
+          surface_movement->ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
+
+          /*--- If the FFDBox was not defined in the input file ---*/
+
+          if (!surface_movement->GetFFDBoxDefinition()) {
+            SU2_MPI::Error("The input grid doesn't have the entire FFD information!", CURRENT_FUNCTION);
+          }
+
+          for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+
+            if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
+            surface_movement->CheckFFDDimension(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+
+            if (rank == MASTER_NODE) cout << "Check the FFD box intersections with the solid surfaces." << endl;
+            surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+          }
+
+          if (rank == MASTER_NODE)
+            cout <<"-------------------------------------------------------------------------" << endl;
+
+        }
+
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 3D deformation of the surface." << endl;
+        }
+
+        /*--- Apply the control point change ---*/
+
+        MoveSurface = false;
+
+        for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+
+          switch ( config->GetDesign_Variable(iDV) ) {
+            case FFD_CONTROL_POINT_2D : Local_MoveSurface = surface_movement->SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_CONTROL_POINT :    Local_MoveSurface = surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          }
+
+          /*--- Recompute cartesian coordinates using the new control points position ---*/
+
+          if (Local_MoveSurface) {
+            MoveSurface = true;
+            surface_movement->SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, true);
+          }
+
+        }
+
+      }
+
+      /*--- Hicks Henne design variable ---*/
+
+      else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        MoveSurface = true;
+        surface_movement->SetHicksHenne(geometry, config, iDV, true);
+      }
+
+      if (MoveSurface) {
+
+        /*--- Compute the gradient for the volume. In 2D this is just
+         the gradient of the area. ---*/
+
+        if (geometry->GetnDim() == 3) {
+
+            geometry->Compute_Wing(config, false,
+                                   Wing_Volume_New, Wing_MinThickness_New, Wing_MaxThickness_New, Wing_MinChord_New,
+                                   Wing_MaxChord_New, Wing_MinLERadius_New, Wing_MaxLERadius_New, Wing_MinToC_New, Wing_MaxToC_New,
+                                   Wing_ObjFun_MinToC_New, Wing_MaxTwist_New, Wing_MaxCurvature_New, Wing_MaxDihedral_New);
+
+
+        }
+
+        /*--- Create airfoil structure ---*/
+
+        for (iPlane = 0; iPlane < nPlane; iPlane++) {
+          geometry->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, -1E6, 1E6, -1E6, 1E6, nullptr,
+                                           Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                                           Variable_Airfoil[iPlane], false, config);
+        }
+
+      }
+
+      /*--- Compute gradient ---*/
+
+      if (rank == MASTER_NODE) {
+
+        delta_eps = config->GetDV_Value(iDV);
+
+        if (delta_eps == 0) {
+          SU2_MPI::Error("The finite difference steps is zero!!", CURRENT_FUNCTION);
+        }
+
+        if (MoveSurface) {  
+
+          for (iPlane = 0; iPlane < nPlane; iPlane++) {
+            if (Xcoord_Airfoil[iPlane].size() > 1) {
+
+                ThicknessValue_New[iPlane] = geometry->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+                Gradient[1*nPlane + iPlane] = (ThicknessValue_New[iPlane] - ThicknessValue[iPlane]) / delta_eps;
+
+            }
+          }
+
+        }
+
+        else {
+
+            for (iPlane = 0; iPlane < nPlane; iPlane++) {
+              Gradient[iPlane] = 0.0;
+            }
+
+        }
+      }
+
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Sum_Gradient[iDV] += Gradient[iPlane];
+    }
+
+  }
+
+  /// add mpi broadcast for vector here!!!
+
+  return Sum_Gradient;
+}

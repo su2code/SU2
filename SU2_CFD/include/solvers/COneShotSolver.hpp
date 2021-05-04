@@ -99,4 +99,14 @@ public:
    */
   void UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config);
 
+  /*!
+   * \brief Evaluate a geometric property for optimization.
+   */
+  su2double EvaluateGeometryFunction(CGeometry* geometry, CConfig *config, unsigned int iPlane);
+
+  /*!
+   * \brief Evaluate the gradient of a geometric property for optimization.
+   */
+  vector<su2double> EvaluateGeometryGradient(CGeometry* geometry, CSurfaceMovement* surface_movement, CConfig* config);
+
 };

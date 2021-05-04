@@ -4411,6 +4411,16 @@ public:
   virtual void UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config) {}
 
   /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double EvaluateGeometryFunction(CGeometry* geometry, CConfig *config, unsigned int iPlane) { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual vector<su2double> EvaluateGeometryGradient(CGeometry* geometry, CSurfaceMovement* surface_movement, CConfig* config) { return vector<su2double>(); }
+
+  /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.
    * \param[in] val_implicit_periodic - Flag controlling implicit treatment for periodic BCs.
    */

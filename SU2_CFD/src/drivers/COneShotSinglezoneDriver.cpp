@@ -322,16 +322,24 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
 
   unsigned short Kind_ConstrFunc, nConstr=config->GetnConstr();
   su2double FunctionValue = 0.0;
+  unsigned int iPlane=0;
 
   for (auto iConstr=0; iConstr < nConstr; iConstr++){
 
     ConstrFunc[iConstr] = 0.0;
     Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
-    FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
-    // The sign in this equation is a matter of convention, just ensure, that you choose the multiplier accordingly.
-    ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
-    if (rank == MASTER_NODE) {
-      AD::RegisterOutput(ConstrFunc[iConstr]);
+    if (Kind_ConstrFunc != THICKNESS_CONSTRAINT) {
+      FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
+      // The sign in this equation is a matter of convention, just ensure, that you choose the multiplier accordingly.
+      ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
+      if (rank == MASTER_NODE) {
+        AD::RegisterOutput(ConstrFunc[iConstr]);
+      }
+    } else if (Kind_ConstrFunc == THICKNESS_CONSTRAINT) {
+      FunctionValue = solver[MainSolver]->EvaluateGeometryFunction(geometry, config, iPlane);
+      // The sign in this equation is a matter of convention, just ensure, that you choose the multiplier accordingly.
+      ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
+      iPlane++;
     }
   }
 
@@ -340,8 +348,11 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
 void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
 
   for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
-    if (rank == MASTER_NODE){
-      SU2_TYPE::SetDerivative(ConstrFunc[iConstr], SU2_TYPE::GetValue(seeding[iConstr]));
+    // For geometric constraint the gradient is obtained using FD
+    if (config->GetKind_ConstrFunc(iConstr) != THICKNESS_CONSTRAINT) {
+      if (rank == MASTER_NODE){
+        SU2_TYPE::SetDerivative(ConstrFunc[iConstr], SU2_TYPE::GetValue(seeding[iConstr]));
+      }
     }
   }
 
@@ -467,7 +478,18 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
   } else {
     solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
   }
+
+  // TODO: find a way to include preconditioning of geometry gradients too???
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
+
+  // Add the geometric gradients if needed
+  for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
+    if (config->GetKind_ConstrFunc(iConstr)==THICKNESS_CONSTRAINT) {
+      // gradient += solver[MainSolver]->EvaluateGeometryGradient(geometry, surface_movement[ZONE_0], config);
+      break;
+    }
+  }
+
 }
 
 void COneShotSinglezoneDriver::WriteOneShotHistoryHeader() {
