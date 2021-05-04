@@ -47,42 +47,40 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (nDim==2) Stress.resize(nPoint,3);
   else         Stress.resize(nPoint,6);
 
-  // if (dynamic_analysis) Solution.resize(nPoint,3*nDim);
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_fea[iVar];
 
   if (dynamic_analysis) {
+    Solution_Vel.resize(nPoint,nVar);
+    Solution_Accel.resize(nPoint,nVar);
+
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
       for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-        Solution(iPoint,iVar+nDim) = val_fea[iVar+nVar];
-        Solution(iPoint,iVar+2*nDim) = val_fea[iVar+2*nVar];
+        Solution_Vel(iPoint,iVar) = val_fea[iVar+nVar];
+        Solution_Accel(iPoint,iVar) = val_fea[iVar+2*nVar];
       }
     }
+    Solution_Vel_time_n = Solution_Vel;
+    Solution_Accel_time_n = Solution_Accel;
 
-    Solution_time_n = Solution;
     if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-      AD_InputIndex.resize(nPoint,3*nDim) = -1;
-      AD_OutputIndex.resize(nPoint,3*nDim) = -1;
-      if (config->GetTime_Domain()) {
-        AD_Time_n_InputIndex.resize(nPoint,3*nDim) = -1;
-        AD_Time_n_OutputIndex.resize(nPoint,3*nDim) = -1;
-      }
+      AD_Vel_InputIndex.resize(nPoint,nDim) = -1;
+      AD_Vel_OutputIndex.resize(nPoint,nDim) = -1;
+      AD_Vel_Time_n_InputIndex.resize(nPoint,nDim) = -1;
+      AD_Vel_Time_n_OutputIndex.resize(nPoint,nDim) = -1;
+      AD_Accel_InputIndex.resize(nPoint,nDim) = -1;
+      AD_Accel_OutputIndex.resize(nPoint,nDim) = -1;
+      AD_Accel_Time_n_InputIndex.resize(nPoint,nDim) = -1;
+      AD_Accel_Time_n_OutputIndex.resize(nPoint,nDim) = -1;
     }
   }
 
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
-    if (dynamic_analysis) {
-      Solution_Vel_Pred.resize(nPoint,nVar);
-      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-        for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-          Solution_Vel_Pred(iPoint,iVar) = Solution(iPoint,iVar+nDim);
-        }
-      }
-    }
+    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
@@ -108,60 +106,147 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   }
 }
 
-void CFEAVariable::SetSolution_Vel_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n(iPoint,iVar+nDim) = Solution(iPoint,iVar+nDim);
-    }
-  }
-}
+void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }
 
-void CFEAVariable::SetSolution_Accel_time_n() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n(iPoint,iVar+2*nDim) = Solution(iPoint,iVar+2*nDim);
-    }
-  }
-}
+void CFEAVariable::SetSolution_Accel_time_n() { Solution_Accel_time_n = Solution_Accel; }
 
-void CFEAVariable::Register_femSolution(bool input, bool push_index) {
+void CFEAVariable::Register_femSolution(bool input, bool push_index, bool dynamic) {
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<int(Solution.size()/nPoint); ++iVar) {
+    for(unsigned long iVar=0; iVar<nDim; ++iVar) {
       if(input) {
         if(push_index) {
           AD::RegisterInput(Solution(iPoint,iVar));
+          if (dynamic) {
+            AD::RegisterInput(Solution_Vel(iPoint,iVar));
+            AD::RegisterInput(Solution_Accel(iPoint,iVar));
+          }
         }
         else {
           AD::RegisterInput(Solution(iPoint,iVar), false);
           AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
+          if (dynamic) {
+            AD::RegisterInput(Solution_Vel(iPoint,iVar), false);
+            AD::SetIndex(AD_Vel_InputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
+            AD::RegisterInput(Solution_Accel(iPoint,iVar), false);
+            AD::SetIndex(AD_Accel_InputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
+          }
         }
       }
       else {
         AD::RegisterOutput(Solution(iPoint,iVar));
         if(!push_index)
           AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
+        if (dynamic) {
+          AD::RegisterOutput(Solution_Vel(iPoint,iVar));
+          if(!push_index)
+            AD::SetIndex(AD_Vel_OutputIndex(iPoint,iVar), Solution_Vel(iPoint,iVar));
+          AD::RegisterOutput(Solution_Accel(iPoint,iVar));
+          if(!push_index)
+            AD::SetIndex(AD_Accel_OutputIndex(iPoint,iVar), Solution_Accel(iPoint,iVar));
+        }
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
-void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index) {
+void CFEAVariable::Register_femSolution_time_n(bool input, bool push_index, bool dynamic) {
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<int(Solution.size()/nPoint); ++iVar) {
+    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
       if(input) {
         if(push_index) {
           AD::RegisterInput(Solution_time_n(iPoint,iVar));
+          if (dynamic) {
+            AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar));
+            AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar));
+          }
         }
         else {
           AD::RegisterInput(Solution_time_n(iPoint,iVar), false);
           AD::SetIndex(AD_Time_n_InputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+          if (dynamic) {
+            AD::RegisterInput(Solution_Vel_time_n(iPoint,iVar), false);
+            AD::SetIndex(AD_Vel_Time_n_InputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
+            AD::RegisterInput(Solution_Accel_time_n(iPoint,iVar), false);
+            AD::SetIndex(AD_Accel_Time_n_InputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
+          }
         }
       }
       else {
         AD::RegisterOutput(Solution_time_n(iPoint,iVar));
         if(!push_index)
           AD::SetIndex(AD_Time_n_OutputIndex(iPoint,iVar), Solution_time_n(iPoint,iVar));
+        if (dynamic) {
+          AD::RegisterOutput(Solution_Vel_time_n(iPoint,iVar));
+          if(!push_index)
+            AD::SetIndex(AD_Vel_Time_n_OutputIndex(iPoint,iVar), Solution_Vel_time_n(iPoint,iVar));
+          AD::RegisterOutput(Solution_Accel_time_n(iPoint,iVar));
+          if(!push_index)
+            AD::SetIndex(AD_Accel_Time_n_OutputIndex(iPoint,iVar), Solution_Accel_time_n(iPoint,iVar));
+        }
       }
+    }
+  }
+}
+
+void CFEAVariable::SetfemAdjointSolution(unsigned long iPoint, const su2double *adj_sol, bool dynamic) {
+  if (!dynamic) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      SU2_TYPE::SetDerivative(Solution(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+  }
+  else {
+    for (unsigned long iVar = 0; iVar < 3*nDim; iVar++)
+      SU2_TYPE::SetDerivative(Solution(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+  }
+}
+
+void CFEAVariable::SetfemAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol, bool dynamic) {
+  for (unsigned long iVar = 0; iVar < nDim; iVar++) {
+    AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
+    if (dynamic) {
+      AD::SetDerivative(AD_Vel_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar+nDim]));
+      AD::SetDerivative(AD_Accel_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar+2*nDim]));
+    }
+  }
+}
+
+void CFEAVariable::GetfemAdjointSolution(unsigned long iPoint, su2double *adj_sol, bool dynamic) {
+  for (unsigned long iVar = 0; iVar < nDim; iVar++) {
+    adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution(iPoint,iVar));
+    if (dynamic) {
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel(iPoint,iVar));
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel(iPoint,iVar));
+    }
+  }
+}
+
+void CFEAVariable::GetfemAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol, bool dynamic) {
+  for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+    adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
+    if (dynamic) {
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_InputIndex(iPoint,iVar));
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_InputIndex(iPoint,iVar));
+    }
+  }
+}
+
+void CFEAVariable::GetfemAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol, bool dynamic) {
+  for (unsigned long iVar = 0; iVar < nVar; iVar++) {
+    adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
+    if (dynamic) {
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel_time_n(iPoint,iVar));
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n(iPoint,iVar));
+    }
+  }
+}
+
+void CFEAVariable::GetfemAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol, bool dynamic) {
+  for (unsigned long iVar = 0; iVar < nDim; iVar++) {
+    adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
+    if (dynamic) {
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_Time_n_InputIndex(iPoint,iVar));
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_Time_n_InputIndex(iPoint,iVar));
     }
   }
 }
