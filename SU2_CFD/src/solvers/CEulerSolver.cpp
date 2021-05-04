@@ -5844,7 +5844,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Store new primitive state for computing the flux. ---*/
 
-      V_infty[0] = Pressure/(Gas_Constant*Density);
+      V_infty[0] = config->GetTemperature_FreeStream();  //Pressure/(Gas_Constant*Density);
       V_infty[nDim+4] = SoundSpeed;
 
       GetFluidModel()->SetTDState_PT(Pressure, V_infty[0]);
@@ -5858,11 +5858,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+3] = Energy + Pressure/Density;
       
 
-      cout << setprecision(10) << "Temperature=" << V_infty[0] << endl;
-      cout << setprecision(10) << "Pressure=" << Pressure << endl;
-      cout << setprecision(10) << "Density=" << Density << endl;
-      cout << setprecision(10) << "Energy=" << Energy << endl;
-      cout << setprecision(10) << "SoundSpeed=" << SoundSpeed << endl;   
+      //cout << setprecision(10) << "Temperature=" << V_infty[0] << endl;
+      //cout << setprecision(10) << "Pressure=" << Pressure << endl;
+      //cout << setprecision(10) << "Density=" << Density << endl;
+      //cout << setprecision(10) << "Energy=" << Energy << endl;
+      //cout << setprecision(10) << "SoundSpeed=" << SoundSpeed << endl;   
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -8265,18 +8265,22 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
-        Energy = P_Exit/(Density*Gamma_Domain_Minus_One) + 0.5*Velocity2;
+        //Energy = P_Exit/(Density*Gamma_Domain_Minus_One) + 0.5*Velocity2;
         if (tkeNeeded) Energy += GetTke_Inf();
 
         /*--- Conservative variables, using the derived quantities ---*/
         V_outlet[0] = Pressure / ( Gas_Constant * Density);
+
         GetFluidModel()->SetTDState_PT(Pressure, V_outlet[0]);
+        Energy = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2;
         Gamma_outlet = GetFluidModel()->GetGamma();
+
         for (iDim = 0; iDim < nDim; iDim++)
           V_outlet[iDim+1] = Velocity[iDim];
         V_outlet[nDim+1] = Pressure;
         V_outlet[nDim+2] = Density;
         V_outlet[nDim+3] = Energy + Pressure/Density;
+        V_outlet[nDim+4] = SoundSpeed;
 
       }
 
