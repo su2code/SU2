@@ -227,9 +227,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
-  if ((config_container[ZONE_0]->GetVisualize_Volume_Def() ||
-       config_container[ZONE_0]->GetVisualize_Surface_Def()) &&
-      config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
+  if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
     
     for (iZone = 0; iZone < nZone; iZone++){
       
@@ -345,13 +343,11 @@ int main(int argc, char *argv[]) {
     output[iZone]->SetVolume_Filename("volume_deformed");
     output[iZone]->SetSurface_Filename("surface_deformed");
     
-    if (config_container[iZone]->GetVisualize_Volume_Def()){
-      for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
-        unsigned short* FileFormat = config_container[iZone]->GetVolumeOutputFiles();
-        if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
-          output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
-      }
-    } 
+    for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
+      unsigned short* FileFormat = config_container[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+        output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
+    }
        
   }
 

@@ -614,8 +614,6 @@ private:
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
   Deform_PoissonRatio,               /*!< \brief Poisson's ratio for volume deformation stiffness model */
   Deform_StiffLayerSize;             /*!< \brief Size of the layer of highest stiffness for wall distance-based mesh stiffness */
-  bool Visualize_Surface_Def;        /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
-  bool Visualize_Volume_Def;         /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;           /*!< \brief FFD symmetry plane. */
 
   su2double Mach;             /*!< \brief Mach number. */
@@ -656,10 +654,9 @@ private:
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
-  bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Restart_CFL,                  /*!< \brief Restart CFL (for direct, adjoint, and linearized problems).*/
-  Wrt_Binary_Restart,           /*!< \brief Write binary SU2 native restart files.*/
+  bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/  
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
+  Restart_CFL,                  /*!< \brief Restart CFL (for direct, adjoint, and linearized problems).*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
@@ -4081,18 +4078,6 @@ public:
   su2double GetDeform_StiffLayerSize(void) const { return Deform_StiffLayerSize; }
 
   /*!
-   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Volume_Def(void) const { return Visualize_Volume_Def; }
-
-  /*!
-   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Surface_Def(void) const { return Visualize_Surface_Def; }
-
-  /*!
    * \brief Define the FFD box with a symetry plane.
    * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
@@ -5234,6 +5219,12 @@ public:
   bool GetRestart(void) const { return Restart; }
 
   /*!
+   * \brief Flag for whether binary SU2 native restart files are read.
+   * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
+   */
+  bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
    * \brief Sets restart information
    */
   void SetRestart(bool val_restart);
@@ -5248,18 +5239,6 @@ public:
    * \brief Sets restart information
    */
   void SetRestart_CFL(bool val_restart);
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are written.
-   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
-   */
-  bool GetWrt_Binary_Restart(void) const { return Wrt_Binary_Restart; }
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are read.
-   * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
-   */
-  bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
 
   /*!
    * \brief Provides the number of varaibles.

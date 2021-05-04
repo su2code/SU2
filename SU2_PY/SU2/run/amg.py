@@ -110,7 +110,7 @@ def amg ( config , stderr = False ):
     sys.stdout.write('The %s folder was deleted\n' % adap_dir)
     sys.stdout.flush()
     
-    cur_dir = './ini'
+    cur_dir = './ite0'
     os.makedirs(cur_dir)
     os.chdir(cur_dir)
     os.symlink(os.path.join(cwd, config.MESH_FILENAME), config.MESH_FILENAME)
@@ -162,39 +162,15 @@ def amg ( config , stderr = False ):
         sys.stdout.write("\nGenerating GMF background surface mesh.\n")
         sys.stdout.flush()
         amgio.py_ConvertSU2toGMF(config_amg['adap_back'], "", "amg_back", "")
-        config_amg['adap_back'] = os.path.join(cwd, "adap/ini/amg_back.meshb")
+        config_amg['adap_back'] = os.path.join(cwd, "adap/ite0/amg_back.meshb")
 
-    #--- Remesh options: background surface mesh
-    config_amg['options'] = "-back " + config_amg['adap_back']
-
-    #--- Remesh options: invert background mesh
-    if 'PYADAP_INV_BACK' in config:
-        if(config['PYADAP_INV_BACK'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -inv-back'
-
-    #--- Remesh options: metric orthogonal adaptation
-    if 'PYADAP_ORTHO' in config:
-        if(config['PYADAP_ORTHO'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
-
-    #--- Remesh options: ridge detection
-    if 'PYADAP_RDG' not in config:
-        config_amg['options'] = config_amg['options'] + ' -nordg'
-    else:
-        if(config['PYADAP_RDG'] == 'NO'):
-            config_amg['options'] = config_amg['options'] + ' -nordg'
+    su2amg.set_remesh_flags(config_amg, config)
 
     #--- Compute initial solution if needed, else link current files
     
     config_cfd = copy.deepcopy(config)
     for opt in adap_options:
         config_cfd.pop(opt, None)
-
-    #--- Only write CSV if both WRT_BINARY and READ_BINARY exist and are set to NO
-    sol_ext = ".dat"
-    if ('WRT_BINARY_RESTART' in config) and ('READ_BINARY_RESTART' in config):
-        if (config_cfd.WRT_BINARY_RESTART == "NO") and (config_cfd.READ_BINARY_RESTART == "NO"):
-            sol_ext = ".csv"
 
     #--- Check config for filenames if restarting
     if config['RESTART_SOL'] == 'YES':
@@ -218,13 +194,13 @@ def amg ( config , stderr = False ):
     stdout_hdl = open('su2.out','w') # new targets
     if (stderr):
         stderr_hdl = open('su2.err','w')
-    
-    success = False
-    val_out = [False]
 
     sav_stdout, sys.stdout = sys.stdout, stdout_hdl 
     if (stderr):
         sav_stderr, sys.stderr = sys.stderr, stderr_hdl
+
+    #--- Only allow binary restarts since WRT_BINARY_RESTART is deprecated
+    sol_ext = ".dat"
 
     cur_meshfil = config['MESH_FILENAME']
     cur_solfil  = "restart_flow" + sol_ext
@@ -322,6 +298,8 @@ def amg ( config , stderr = False ):
         sys.stdout.flush()
         
         for iSub in range(nSub):
+
+            global_iter += 1
             
             # Prints
             pad_cpt = ("(%d/%d)" % (iSub+1, nSub)).ljust(9)
@@ -424,9 +402,6 @@ def amg ( config , stderr = False ):
             if (stderr):
                 stderr_hdl = open('su2.err','w')
             
-            success = False
-            val_out = [False]
-            
             sys.stdout.write(' %s Running CFD\n' % pad_nul)
             sys.stdout.flush()
         
@@ -478,7 +453,6 @@ def amg ( config , stderr = False ):
                     
             #--- Print convergence history
 
-            global_iter += 1
             npoin = su2amg.get_su2_npoin(cur_meshfil)
             su2amg.plot_results(history_format, history_filename, global_iter, npoin)
             

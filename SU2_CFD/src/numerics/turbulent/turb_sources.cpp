@@ -825,9 +825,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     diverg += PrimVar_Grad_i[iDim+1][iDim];
     
   const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
-  const bool stress_limited = (TurbVar_i[1] < VorticityMag_i*F2_i/a1);
-  // const su2double zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
-  // const bool stress_limited = (TurbVar_i[1] < StrainMag_i*F2_i/a1);
 
   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -854,9 +851,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
 
+  const bool div_positive = (diverg > 0);
   const bool pk_limited  = (pk > pkmax);
   const bool pk_positive = (pk > 0);
   const bool pw_positive = (pw > 0);
+  const bool stress_limited = (TurbVar_i[1] < VorticityMag_i*F2_i/a1);
     
   pk = min(pk, pkmax);
     
@@ -912,26 +911,24 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   if (exact_jacobian) {
     /*--- k production Jacobian ---*/
 
-    if (pk_limited) {
-      Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
-      Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
-    }
-    else if (pk_positive) {
-      Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-      Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
-    }
-    // if (pk_positive) {
-    //   // Jacobian_i[0][0] -= TWO3*max(diverg,0.0)*Volume;
-    //   Jacobian_i[0][0] -= TWO3*diverg*Volume;
+    // if (pk_limited) {
+    //   Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
+    //   Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
+    // }
+    // else if (pk_positive) {
+    //   Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
     //   Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
     // }
+    Jacobian_i[0][0] -= TWO3*diverg*Volume*(pk_positive && div_positive);
+    // Jacobian_i[0][0] -= TWO3*diverg*Volume;
+    // Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(pk_positive && div_positive && !stress_limited);
+    Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(zeta,2.)*Volume*(pk_positive && div_positive);
+    // Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(pk_positive);
      
     /*--- omega production Jacobian ---*/
 
-    if (!stress_limited && pw_positive) {
-      Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-      // Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
-    }
+    // Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume*(pw_positive && div_positive && !stress_limited);
+    Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume*(pw_positive && div_positive);
 
     /*--- Cross-diffusion Jacobian ---*/
 

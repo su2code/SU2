@@ -5886,7 +5886,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
 
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
-    if (geometry->node[iPoint]->GetSolidBoundary()) {
+    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
       //--- Correct if any of the neighbors belong to the volume
       unsigned short counter = 0;
       for (auto iNeigh = 0u; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -6064,7 +6064,7 @@ void CSolver::ComputeMetric(CSolver   **solver,
   }
   
   //--- Apply correction to wall boundary
-//  CorrectBoundMetric(geometry, config);
+  CorrectBoundMetric(geometry, config);
 
   if(nDim == 2) NormalizeMetric2(geometry, config);
   else          NormalizeMetric3(geometry, config);

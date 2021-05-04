@@ -116,6 +116,28 @@ def set_cfl(config, cfl_iSiz):
                                           + str(cfl_params[3]) \
                                           + ")"
 
+def set_remesh_flags(config_amg, config_su2):
+
+    #--- Background surface mesh
+    config_amg['options'] = "-back " + config_amg['adap_back']
+
+    #--- Invert background mesh
+    if 'PYADAP_INV_BACK' in config_su2:
+        if(config_su2['PYADAP_INV_BACK'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -inv-back'
+
+    #--- Metric orthogonal adaptation
+    if 'PYADAP_ORTHO' in config_su2:
+        if(config_su2['PYADAP_ORTHO'] == 'YES'):
+            config_amg['options'] = config_amg['options'] + ' -cart3d-only'
+
+    #--- Ridge detection
+    if 'PYADAP_RDG' not in config_su2:
+        config_amg['options'] = config_amg['options'] + ' -nordg'
+    else:
+        if(config_su2['PYADAP_RDG'] == 'NO'):
+            config_amg['options'] = config_amg['options'] + ' -nordg'
+
 def set_flow_config_ini(config, cur_solfil):
     config.CONV_FILENAME    = "history"
     config.RESTART_FILENAME = cur_solfil
@@ -198,76 +220,6 @@ def get_su2_dim(filename):
             keepon = False
         
     return dim
-
-def get_min_cfl(history_format):
-
-    #--- Set the file name and format
-    if (history_format == 'TECPLOT'):
-        solname  = 'history.dat'
-        headerline = 1
-    else:
-        solname  = 'history.csv'
-        headerline = 0
-
-    #--- Load the header information
-    with open(solname, 'rb') as f:
-        for i, line in enumerate(f):
-            if i == headerline:
-                header = line.decode('ascii')
-                break
-
-    #--- Get the column with min CFL
-    headertags = header.split(",")
-    for i in range(len(headertags)):
-        if ("Min CFL" in headertags[i]):
-            col = i
-            break
-
-    #--- Get data from last line of file
-    with open(solname, 'rb') as f:
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != b'\n':
-            f.seek(-2, os.SEEK_CUR) 
-        last_line = f.readline().decode('ascii')
-
-    data = last_line.split(",")
-
-    return float(data[col])
-
-def get_min_cfl_turb(history_format):
-
-    #--- Set the file name and format
-    if (history_format == 'TECPLOT'):
-        solname  = 'history.dat'
-        headerline = 1
-    else:
-        solname  = 'history.csv'
-        headerline = 0
-
-    #--- Load the header information
-    with open(solname, 'rb') as f:
-        for i, line in enumerate(f):
-            if i == headerline:
-                header = line.decode('ascii')
-                break
-
-    #--- Get the column with min CFL
-    headertags = header.split(",")
-    for i in range(len(headertags)):
-        if ("Min CFL Turb" in headertags[i]):
-            col = i
-            break
-
-    #--- Get data from last line of file
-    with open(solname, 'rb') as f:
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != b'\n':
-            f.seek(-2, os.SEEK_CUR) 
-        last_line = f.readline().decode('ascii')
-
-    data = last_line.split(",")
-
-    return float(data[col])
 
 def get_su2_npoin(filename):
     
