@@ -159,9 +159,8 @@ class CDiscAdjFEAIteration final : public CIteration {
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the zone.
    */
-  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                      unsigned short iInst);
-  using CIteration::RegisterOutput;
+  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
+                      unsigned short iZone, unsigned short iInst) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the FEM iteration.

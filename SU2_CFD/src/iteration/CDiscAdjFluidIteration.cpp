@@ -86,8 +86,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
             geometries[iMesh]->nodes->SetCoord_n1();
           }
           if (config[iZone]->GetDynamic_Grid()) {
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_n();
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_nM1();
+            geometries[iMesh]->nodes->SetVolume_n();
+            geometries[iMesh]->nodes->SetVolume_nM1();
           }
         }
       }
@@ -111,7 +111,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
             geometries[iMesh]->nodes->SetCoord_n();
           }
           if (config[iZone]->GetDynamic_Grid()) {
-              geometry[iZone][iInst][iMesh]->nodes->SetVolume_n();
+            geometries[iMesh]->nodes->SetVolume_n();
           }
         }
       }
@@ -135,9 +135,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       /*--- Temporarily store the loaded volumes in to old containers ---*/
       if (config[iZone]->GetDynamic_Grid()) {
         for (auto iMesh=0; iMesh<=config[iZone]->GetnMGLevels();iMesh++) {
-          geometry[iZone][iInst][iMesh]->nodes->SetVolume_Old();
-          geometry[iZone][iInst][iMesh]->nodes->SetVolume_n_Old();
-          geometry[iZone][iInst][iMesh]->nodes->SetVolume_nM1_Old();
+          geometries[iMesh]->nodes->SetVolume_Old();
+          geometries[iMesh]->nodes->SetVolume_n_Old();
+          geometries[iMesh]->nodes->SetVolume_nM1_Old();
         }
       }
 
@@ -157,18 +157,18 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
           for (auto iMesh=0; iMesh<=config[iZone]->GetnMGLevels();iMesh++) {
             /*--- If negative iteration number, set default ---*/
             if (Direct_Iter - 2 < 0) {
-              for(auto iPoint=0ul; iPoint<geometry[iZone][iInst][iMesh]->GetnPoint();iPoint++) {
-                geometry[iZone][iInst][iMesh]->nodes->SetVolume(iPoint,0.0);
+              for(auto iPoint=0ul; iPoint<geometries[iMesh]->GetnPoint();iPoint++) {
+                geometries[iMesh]->nodes->SetVolume(iPoint,0.0);
               }
             }
 
             /*--- Set currently loaded volume to Volume_nM1 ---*/
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_n();
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_nM1();
+            geometries[iMesh]->nodes->SetVolume_n();
+            geometries[iMesh]->nodes->SetVolume_nM1();
 
             /*--- Set Volume_n and Volume from old containers ---*/
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_n_from_OldnM1();
-            geometry[iZone][iInst][iMesh]->nodes->SetVolume_from_Oldn();
+            geometries[iMesh]->nodes->SetVolume_n_from_OldnM1();
+            geometries[iMesh]->nodes->SetVolume_from_Oldn();
           }
         }
       }
@@ -398,13 +398,6 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
 
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    /*--- If mesh deformation defined in config, extract here as well ---*/
-    if (config[iZone]->GetDeform_Mesh()) {
-      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
-
-      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
-    }
   }
   if (turbulent && !frozen_visc) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
@@ -469,16 +462,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-      /*--- If mesh deformation defined in config, register here as well ---*/
-      if (config[iZone]->GetDeform_Mesh()) {
-
-        /*--- Undeformed mesh coordinates ---*/
-        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-        /*--- Boundary displacements ---*/
-        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-      }
     }
 
     if (turbulent && !frozen_visc) {
@@ -591,7 +574,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 }
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                            COutput* output, unsigned short iZone, unsigned short iInst) {
+                                            unsigned short iZone, unsigned short iInst) {
 
   SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 

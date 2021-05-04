@@ -53,8 +53,6 @@ protected:
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
-  const bool dynamic_analysis = false; /*!< \brief True in dynamic problems */
-
   /*!
    * \brief Wrappers to solution to access velocity and acceleration by name.
    */

@@ -28,7 +28,7 @@
 #include "../../include/variables/CDiscAdjVariable.hpp"
 
 CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config) {
+  : CVariable(npoint, ndim, nvar, config, true) {
 
   bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);

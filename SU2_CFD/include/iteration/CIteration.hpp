@@ -278,7 +278,7 @@ class CIteration {
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
-  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
 
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,

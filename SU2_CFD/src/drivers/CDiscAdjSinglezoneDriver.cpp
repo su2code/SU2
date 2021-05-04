@@ -285,7 +285,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
 

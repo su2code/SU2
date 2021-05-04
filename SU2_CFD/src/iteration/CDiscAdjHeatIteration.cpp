@@ -228,7 +228,7 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
 }
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
-                                           COutput* output, unsigned short iZone, unsigned short iInst) {
+                                           unsigned short iZone, unsigned short iInst) {
 
   solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }

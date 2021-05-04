@@ -614,9 +614,6 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
       /*--- Non-dimensionalize velocity ---*/
       val_vel /= config->GetVelocity_Ref();
 
-      // Debug: Force zero grid velocity
-      if (config->GetWrt_Performance()) val_vel = 0.0;
-
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }

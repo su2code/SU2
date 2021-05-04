@@ -29,7 +29,7 @@
 
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
                                          unsigned long nvar, bool unsteady, CConfig *config) :
-  CVariable(npoint, ndim, nvar, config) {
+  CVariable(npoint, ndim, nvar, config, true) {
 
   Solution_Direct.resize(nPoint,nVar);
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);

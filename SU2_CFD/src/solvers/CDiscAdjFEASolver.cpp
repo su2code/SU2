@@ -308,7 +308,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint solution at time n ---*/
 
-      nodes->Set_Solution_time_n(iPoint,Solution);
+      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
 
   }
@@ -361,7 +361,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
-  const bool dynamic = (config->GetTime_Domain());
+  const bool dynamic = config->GetTime_Domain();
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
 
   su2double Solution[MAXNVAR] = {0.0};
@@ -392,7 +392,6 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     else
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
-
 }
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){

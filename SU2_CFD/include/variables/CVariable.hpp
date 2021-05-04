@@ -135,8 +135,9 @@ public:
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] adjoint - True if derived class is an adjoint variable.
    */
-  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint = false);
 
   /*!
    * \brief Destructor of the class.
@@ -2132,7 +2133,7 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < Solution.cols(); iVar++)
       SU2_TYPE::SetDerivative(Solution(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
@@ -2141,7 +2142,7 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < AD_OutputIndex.cols(); iVar++)
       AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
@@ -2227,6 +2228,10 @@ public:
 
   inline virtual su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const {return 0.0;}
 
+  inline virtual void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
+
+  inline virtual su2double GetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
   inline virtual void SetTauWall(unsigned long iPoint, su2double val_tau_wall) {}
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
@@ -2235,10 +2240,6 @@ public:
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
-
-  inline virtual void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  inline virtual su2double GetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
    /*!
    * \brief A virtual member: Set the recovered pressure for streamwise periodic flow.

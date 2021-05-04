@@ -170,7 +170,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the instance.
    */
-  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                       unsigned short iZone, unsigned short iInst) override;
 
   /*!

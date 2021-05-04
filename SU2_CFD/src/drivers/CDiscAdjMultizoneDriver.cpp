@@ -209,16 +209,15 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
-  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
-  bool time_domain = driver_config->GetTime_Domain();
+  const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  const bool time_domain = driver_config->GetTime_Domain();
 
   /*--- Reset external and solution ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver != nullptr) {
+      if (solver && solver->GetAdjoint())
         solver->GetNodes()->SetExternalZero();
-      }
     }
     Set_Solution_To_BGSSolution_k(iZone);
   }
@@ -697,7 +696,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
       DirectIteration(iZone, kind_recording);
 
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
-                                                         config_container, output_container[iZone], iZone, INST_0);
+                                                         config_container, iZone, INST_0);
       AD::Push_TapePosition(); /// leave_zone
     }
   }
@@ -946,7 +945,9 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
 void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
-  Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
+  if (Cross_Terms.empty()) {
+    Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
+  }
 
   for(unsigned short iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short jZone = 0; jZone < nZone; jZone++) {

@@ -179,10 +179,11 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
     /*--- Register topology optimization densities (note direct solver) ---*/
 
     solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-  }
-  /*--- Register mesh coordinates for geometric sensitivities ---*/
 
-  geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+    /*--- Register mesh coordinates for geometric sensitivities ---*/
+
+    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+  }
 }
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
@@ -278,8 +279,10 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
   dir_solver->CompleteComms(structural_geometry, config[iZone], SOLUTION_FEA);
 
-  structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
-  structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  if (kind_recording == RECORDING::MESH_COORDS) {
+    structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
+    structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  }
 
   }
   END_SU2_OMP_PARALLEL

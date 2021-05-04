@@ -153,7 +153,7 @@ class CDiscAdjHeatIteration final : public CIteration {
    * \param[in] iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instance layer.
    */
-  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                       unsigned short iZone, unsigned short iInst) override;
 
   /*!
