@@ -34,7 +34,6 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.8 "Falcon"
  */
 class CUpwAUSMPWplus_NEMO : public CNEMONumerics {
 private:
