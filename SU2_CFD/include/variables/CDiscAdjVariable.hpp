@@ -43,12 +43,6 @@ private:
   MatrixType DualTime_Derivative;
   MatrixType DualTime_Derivative_n;
 
-  MatrixType Solution_Geometry;
-  MatrixType Solution_Geometry_Old;
-  MatrixType Geometry_Direct;
-
-  MatrixType Solution_Geometry_BGS_k;
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -107,63 +101,5 @@ public:
   }
 
   inline su2double* GetSolution_Direct(unsigned long iPoint) override { return Solution_Direct[iPoint]; }
-
-  /*!
-   * \brief Set the restart geometry (coordinate of the converged solution)
-   * \param[in] val_geometry_direct - Value of the restart coordinate.
-   */
-  inline void SetGeometry_Direct(unsigned long iPoint, const su2double *val_geometry_direct) override {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Geometry_Direct(iPoint,iDim) = val_geometry_direct[iDim];
-  }
-
-  /*!
-   * \brief Get the restart geometry (coordinate of the converged solution).
-   * \return Pointer to the restart coordinate vector.
-   */
-  inline su2double *GetGeometry_Direct(unsigned long iPoint) override { return Geometry_Direct[iPoint]; }
-
-  /*!
-   * \brief Get the restart geometry (coordinate of the converged solution).
-   * \return Coordinate iDim of the geometry_direct vector.
-   */
-  inline su2double GetGeometry_Direct(unsigned long iPoint, unsigned long iDim) const override { return Geometry_Direct(iPoint,iDim); }
-
-  /*!
-   * \brief Get the geometry solution.
-   * \param[in] iDim - Index of the coordinate.
-   * \return Value of the solution for the index <i>iDim</i>.
-   */
-  inline su2double GetSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override { return Solution_Geometry(iPoint,iDim); }
-
-  /*!
-   * \brief Set the value of the mesh solution (adjoint).
-   * \param[in] val_solution_geometry - Solution of the problem (acceleration).
-   */
-  inline void SetSolution_Geometry(unsigned long iPoint, const su2double *val_solution_geometry) override {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Solution_Geometry(iPoint,iDim) = val_solution_geometry[iDim];
-  }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] val_solution_geometry - Solution of the problem (acceleration).
-   */
-  inline void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double val_solution_geometry) override {
-    Solution_Geometry(iPoint,iVar) = val_solution_geometry;
-  }
-
-  /*!
-   * \brief Set the value of the mesh solution (adjoint).
-   */
-  void Set_OldSolution_Geometry() override;
-
-  /*!
-   * \brief Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
-    return Solution_Geometry_Old(iPoint,iDim);
-  }
 
 };

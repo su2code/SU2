@@ -72,9 +72,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     AD_OutputIndex.resize(nPoint,nVar) = -1;
     if (config->GetTime_Domain()) {
       AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Time_n_OutputIndex.resize(nPoint,nVar) = -1;
       AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Time_n1_OutputIndex.resize(nPoint,nVar) = -1;
     }
   }
 
@@ -117,7 +115,7 @@ void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.d
 void CVariable::RegisterSolution(bool input, bool push_index) {
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+    for(unsigned long iVar=0; iVar<Solution.cols(); ++iVar) {
       if(input) {
         if(push_index) {
           AD::RegisterInput(Solution(iPoint,iVar));
@@ -140,7 +138,7 @@ void CVariable::RegisterSolution(bool input, bool push_index) {
 void CVariable::RegisterSolution_time_n(bool push_index) {
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+    for(unsigned long iVar=0; iVar<Solution.cols(); ++iVar) {
       if(push_index) {
           AD::RegisterInput(Solution_time_n(iPoint,iVar));
         }
@@ -156,7 +154,7 @@ void CVariable::RegisterSolution_time_n(bool push_index) {
 void CVariable::RegisterSolution_time_n1(bool push_index) {
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
+    for(unsigned long iVar=0; iVar<Solution.cols(); ++iVar) {
       if(push_index) {
         AD::RegisterInput(Solution_time_n1(iPoint,iVar));
       }

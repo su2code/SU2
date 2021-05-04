@@ -50,17 +50,15 @@ private:
 public:
   /*!
    * \overload
-   * \param[in] disp - Pointer to the adjoint value (initialization value).
-   * \param[in] vel - Pointer to the adjoint value (initialization value).
-   * \param[in] accel - Pointer to the adjoint value (initialization value).
+   * \param[in] sol - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] unsteady - Allocate velocity and acceleration.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel, const su2double *accel,
-                           unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config);
+  CDiscAdjFEABoundVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
+                           unsigned long nvar, bool unsteady, CConfig *config);
 
   /*!
    * \brief Destructor of the class.

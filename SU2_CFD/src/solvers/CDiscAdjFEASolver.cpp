@@ -37,7 +37,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   const bool dynamic = (config->GetTime_Domain());
 
-  nVar = direct_solver->GetnVar();
+  nVar = dynamic? 3*direct_solver->GetnVar() : direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
   /*-- Store some information about direct solver ---*/
@@ -68,7 +68,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*--- Initialize the adjoint solution. ---*/
 
   vector<su2double> init(nVar,1e-16);
-  nodes = new CDiscAdjFEABoundVariable(init.data(), init.data(), init.data(), nPoint, nDim, nVar, dynamic, config);
+  nodes = new CDiscAdjFEABoundVariable(init.data(), nPoint, nDim, nVar, dynamic, config);
   SetBaseClassPointerToNodes();
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
@@ -138,28 +138,16 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->GetNodes()->SetSolution(iPoint, nodes->GetSolution_Direct(iPoint));
-  }
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    for (iVar = 0; iVar < nVar; iVar++)
+      direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
 
-  if (config->GetTime_Domain()){
-    /*--- Reset the solution to the initial (converged) solution ---*/
+  /*--- Reset the input for time n ---*/
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->GetNodes()->SetSolution_Accel(iPoint, nodes->GetSolution_Accel_Direct(iPoint));
-    }
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->GetNodes()->SetSolution_Vel(iPoint, nodes->GetSolution_Vel_Direct(iPoint));
-    }
-
-    /*--- Reset the input for time n ---*/
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
+  if (config->GetTime_Domain()) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      for (iVar = 0; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
-      }
-    }
   }
 
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
@@ -181,13 +169,13 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  direct_solver->GetNodes()->Register_femSolution(input, push_index, dynamic);
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (dynamic) {
 
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
 
-    direct_solver->GetNodes()->Register_femSolution_time_n(input, push_index, dynamic);
+    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
   }
 
 }
@@ -257,11 +245,10 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   const bool input = false;
   const bool push_index = !config->GetMultizone_Problem();
-  const bool dynamic = config->GetTime_Domain();
 
   /*--- Register variables as output of the solver iteration ---*/
 
-  direct_solver->GetNodes()->Register_femSolution(input, push_index, dynamic);
+  direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
 }
 
@@ -291,10 +278,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- Extract the adjoint solution ---*/
 
     if(multizone) {
-      direct_solver->GetNodes()->GetfemAdjointSolution_LocalIndex(iPoint,Solution,dynamic);
+      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
-      direct_solver->GetNodes()->GetfemAdjointSolution(iPoint,Solution,dynamic);
+      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     }
 
     /*--- Store the adjoint solution ---*/
@@ -313,10 +300,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       /*--- Extract the adjoint solution at time n ---*/
 
       if(multizone) {
-        direct_solver->GetNodes()->GetfemAdjointSolution_time_n_LocalIndex(iPoint,Solution,dynamic);
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
       }
       else {
-        direct_solver->GetNodes()->GetfemAdjointSolution_time_n(iPoint,Solution,dynamic);
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
       }
 
       /*--- Store the adjoint solution at time n ---*/
@@ -382,47 +369,39 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   unsigned short iVar;
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
-    }
-    if(deform_mesh){
-      for (iVar = 0; iVar < nDim; iVar++){
-        Solution[iVar] += nodes->GetSourceTerm_DispAdjoint(iPoint,iVar);
-      }
-    }
-    if (dynamic){
-      for (iVar = 0; iVar < nVar; iVar++){
+
+    if (dynamic) {
+      for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += nodes->GetDynamic_Derivative_n(iPoint,iVar);
-      }
-      if (deform_mesh){
-        for (iVar = nDim; iVar < 2*nDim; iVar++){
-          Solution[iVar] += nodes->GetSourceTerm_VelAdjoint(iPoint,iVar-nDim);
-        }
-      }
-    }
-    if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->SetfemAdjointSolution_LocalIndex(iPoint,Solution,dynamic);
-    }
-    else {
-      direct_solver->GetNodes()->SetfemAdjointSolution(iPoint,Solution,dynamic);
     }
 
+    if (deform_mesh) {
+      for (iVar = 0; iVar < nDim; iVar++)
+        Solution[iVar] += nodes->GetSourceTerm_DispAdjoint(iPoint,iVar);
+
+      if (dynamic) {
+        for (iVar = 0; iVar < nDim; iVar++)
+          Solution[nDim+iVar] += nodes->GetSourceTerm_VelAdjoint(iPoint,iVar);
+      }
+    }
+
+    if (config->GetMultizone_Problem())
+      direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
+    else
+      direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
 
 }
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
 
-  unsigned short iVar;
-
-  if (config_container->GetTime_Domain()){
-    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
-      for (iVar=0; iVar < nVar; iVar++){
+  if (config_container->GetTime_Domain()) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+      for (auto iVar=0u; iVar < nVar; iVar++)
         nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
-      }
-    }
   }
-
 }
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){

@@ -45,12 +45,6 @@ protected:
 
   VectorType VonMises_Stress;       /*!< \brief Von Mises stress. */
 
-  MatrixType Solution_Vel;          /*!< \brief Velocity of the nodes. */
-  MatrixType Solution_Vel_time_n;   /*!< \brief Velocity of the nodes at time n. */
-
-  MatrixType Solution_Accel;        /*!< \brief Acceleration of the nodes. */
-  MatrixType Solution_Accel_time_n; /*!< \brief Acceleration of the nodes at time n. */
-
   MatrixType Solution_Pred;         /*!< \brief Predictor of the solution for FSI purposes */
   MatrixType Solution_Pred_Old;     /*!< \brief Predictor of the solution at time n for FSI purposes */
   MatrixType Solution_Vel_Pred;     /*!< \brief Predictor of the velocity solution for FSI purposes */
@@ -59,14 +53,35 @@ protected:
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
-  su2matrix<int> AD_Vel_InputIndex;
-  su2matrix<int> AD_Vel_OutputIndex;
-  su2matrix<int> AD_Vel_Time_n_InputIndex;
-  su2matrix<int> AD_Vel_Time_n_OutputIndex;
-  su2matrix<int> AD_Accel_InputIndex;
-  su2matrix<int> AD_Accel_OutputIndex;
-  su2matrix<int> AD_Accel_Time_n_InputIndex;
-  su2matrix<int> AD_Accel_Time_n_OutputIndex;
+  const bool dynamic_analysis = false; /*!< \brief True in dynamic problems */
+
+  /*!
+   * \brief Wrappers to solution to access velocity and acceleration by name.
+   */
+  FORCEINLINE su2double& Solution_Vel(unsigned long iPoint, unsigned long iVar) {
+    return Solution(iPoint,iVar+nVar);
+  }
+  FORCEINLINE const su2double& Solution_Vel(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint,iVar+nVar);
+  }
+  FORCEINLINE su2double& Solution_Accel(unsigned long iPoint, unsigned long iVar) {
+    return Solution(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE const su2double& Solution_Accel(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE su2double& Solution_Vel_time_n(unsigned long iPoint, unsigned long iVar) {
+    return Solution_time_n(iPoint,iVar+nVar);
+  }
+  FORCEINLINE const su2double& Solution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const {
+    return Solution_time_n(iPoint,iVar+nVar);
+  }
+  FORCEINLINE su2double& Solution_Accel_time_n(unsigned long iPoint, unsigned long iVar) {
+    return Solution_time_n(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE const su2double& Solution_Accel_time_n(unsigned long iPoint, unsigned long iVar) const {
+    return Solution_time_n(iPoint,iVar+2*nVar);
+  }
 
   /*!
    * \brief Constructor of the class.
@@ -144,12 +159,6 @@ public:
 
   /*!
    * \brief Set the value of the velocity (Structural Analysis) at time n.
-   * \param[in] val_solution - Solution of the problem (acceleration).
-   */
-  void SetSolution_Vel_time_n() final;
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis) at time n.
    * \param[in] val_solution_vel_time_n - Pointer to the residual vector.
    */
   inline void SetSolution_Vel_time_n(unsigned long iPoint, const su2double *val_solution_vel_time_n) final {
@@ -176,7 +185,7 @@ public:
    * \brief Get the solution of the problem.
    * \return Pointer to the solution vector.
    */
-  inline su2double *GetSolution_Vel(unsigned long iPoint) final { return Solution_Vel[iPoint]; }
+  inline su2double *GetSolution_Vel(unsigned long iPoint) final { return &Solution_Vel(iPoint,0); }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -191,7 +200,7 @@ public:
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Vel_time_n(unsigned long iPoint) final { return Solution_Vel_time_n[iPoint]; }
+  inline su2double *GetSolution_Vel_time_n(unsigned long iPoint) final { return &Solution_Vel_time_n(iPoint,0); }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -220,11 +229,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the acceleration (Structural Analysis) at time n.
-   */
-  void SetSolution_Accel_time_n() final;
-
-  /*!
    * \overload
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution_accel_time_n - Value of the old solution for the index <i>iVar</i>.
@@ -244,7 +248,7 @@ public:
    * \brief Get the solution of the problem.
    * \return Pointer to the solution vector.
    */
-  inline su2double *GetSolution_Accel(unsigned long iPoint) final { return Solution_Accel[iPoint]; }
+  inline su2double *GetSolution_Accel(unsigned long iPoint) final { return &Solution_Accel(iPoint,0); }
 
   /*!
    * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
@@ -259,7 +263,7 @@ public:
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return Solution_Accel_time_n[iPoint]; }
+  inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return &Solution_Accel_time_n(iPoint,0); }
 
   /*!
    * \brief Set the value of the solution velocity predictor.
@@ -343,25 +347,5 @@ public:
    * \brief Get the pointer to the reference geometry
    */
   inline const su2double* GetReference_Geometry(unsigned long iPoint) const final { return Reference_Geometry[iPoint]; }
-
-  /*!
-   * \brief Register the variables in the solution time_n array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void Register_femSolution_time_n(bool input, bool push_index, bool dynamic) final;
-
-  void Register_femSolution(bool input, bool push_index, bool dynamic) final;
-
-  void SetfemAdjointSolution(unsigned long iPoint, const su2double *adj_sol, bool dynamic) final;
-
-  void SetfemAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol, bool dynamic) final;
-
-  void GetfemAdjointSolution(unsigned long iPoint, su2double *adj_sol, bool dynamic) final;
-
-  void GetfemAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol, bool dynamic) final;
-
-  void GetfemAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol, bool dynamic) final;
-
-  void GetfemAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol, bool dynamic) final;
 
 };

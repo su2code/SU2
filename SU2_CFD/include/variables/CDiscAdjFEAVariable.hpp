@@ -40,27 +40,21 @@ class CDiscAdjFEAVariable : public CVariable {
 protected:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
   MatrixType Sensitivity_Old; /* Previous time sensitivity holder since inner iterations in FSI problems overwrite sensitivity*/
+
   MatrixType Solution_Direct;
-
-  MatrixType Dynamic_Derivative;
   MatrixType Dynamic_Derivative_n;
-
-  MatrixType Solution_Direct_Vel;
-  MatrixType Solution_Direct_Accel;
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] disp - Pointer to the adjoint value (initialization value).
-   * \param[in] vel - Pointer to the adjoint value (initialization value).
-   * \param[in] accel - Pointer to the adjoint value (initialization value).
+   * \param[in] sol - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] unsteady - Allocate velocity and acceleration.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEAVariable(const su2double *disp, const su2double *vel, const su2double *accel,
-                      unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config);
+  CDiscAdjFEAVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
+                      unsigned long nvar, bool unsteady, CConfig *config);
 
 public:
   /*!
@@ -96,16 +90,8 @@ public:
    */
   inline su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const final { return Sensitivity_Old(iPoint,iDim);}
 
-  inline void SetDynamic_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) final {
-    Dynamic_Derivative(iPoint,iVar) = der;
-  }
-
   inline void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) final {
     Dynamic_Derivative_n(iPoint,iVar) = der;
-  }
-
-  inline su2double GetDynamic_Derivative(unsigned long iPoint, unsigned long iVar) const final {
-    return Dynamic_Derivative(iPoint,iVar);
   }
 
   inline su2double GetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar) const final {
@@ -116,18 +102,6 @@ public:
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  inline void SetSolution_Vel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Vel(iPoint,iVar) = val_solution_direct[iVar];
-  }
-
-  inline void SetSolution_Accel_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Direct_Accel(iPoint,iVar) = val_solution_direct[iVar];
-  }
-
   inline su2double* GetSolution_Direct(unsigned long iPoint) final { return Solution_Direct[iPoint]; }
-
-  inline su2double* GetSolution_Vel_Direct(unsigned long iPoint) final { return Solution_Direct_Vel[iPoint]; }
-
-  inline su2double* GetSolution_Accel_Direct(unsigned long iPoint) final { return Solution_Direct_Accel[iPoint]; }
 
 };

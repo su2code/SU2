@@ -90,14 +90,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 
     dirNodes->Set_Solution_time_n();
 
-    /*--- Push solution back to correct array ---*/
-
-    dirNodes->SetSolution_Accel_time_n();
-
-    /*--- Push solution back to correct array ---*/
-
-    dirNodes->SetSolution_Vel_time_n();
-
     /*--- Load solution timestep n ---*/
 
     LoadDynamic_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter);
@@ -106,14 +98,6 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 
     for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
       adjNodes->SetSolution_Direct(iPoint, dirNodes->GetSolution(iPoint));
-    }
-
-    for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Accel_Direct(iPoint, dirNodes->GetSolution_Accel(iPoint));
-    }
-
-    for (iPoint = 0; iPoint < geometry0->GetnPoint(); iPoint++) {
-      adjNodes->SetSolution_Vel_Direct(iPoint, dirNodes->GetSolution_Vel(iPoint));
     }
 
   } else {

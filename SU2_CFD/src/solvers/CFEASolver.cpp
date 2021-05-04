@@ -3189,11 +3189,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
-  if (dynamic) {
-    nodes->Set_Solution_time_n();
-    nodes->SetSolution_Vel_time_n();
-    nodes->SetSolution_Accel_time_n();
-  }
+  if (dynamic) nodes->Set_Solution_time_n();
 
   if (fluid_structure) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {

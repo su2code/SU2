@@ -25,12 +25,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CDiscAdjFEABoundVariable.hpp"
 
-CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel,
-  const su2double *accel, unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config) :
-    CDiscAdjFEAVariable(disp, vel, accel, npoint, ndim, nvar, unsteady, config) {
+CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
+                                                   unsigned long nvar, bool unsteady, CConfig *config) :
+  CDiscAdjFEAVariable(sol, npoint, ndim, nvar, unsteady, config) {
 
   VertexMap.Reset(nPoint);
 }
