@@ -32,16 +32,12 @@
 CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
-  Solution_Direct.resize(nPoint,nVar);
-  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                   (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for (unsigned long iVar = 0; iVar < nVar; ++iVar)
-      Solution(iPoint,iVar) = sol[iVar];
+  bool fsi = config->GetFSI_Simulation();
 
-  /*--- Additional container for dual-time stepping simulations ---*/
-  if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-      (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
+  if (dual_time) {
     DualTime_Derivative.resize(nPoint,nVar) = su2double(0.0);
     DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 
@@ -49,7 +45,14 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
   }
 
-  if (config->GetFSI_Simulation()) {
+  Solution_Direct.resize(nPoint,nVar);
+  Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+    for (unsigned long iVar = 0; iVar < nVar; ++iVar)
+      Solution(iPoint,iVar) = sol[iVar];
+
+  if (fsi) {
     Geometry_Direct.resize(nPoint,nDim) = su2double(0.0);
     Solution_Geometry.resize(nPoint,nDim) = su2double(1e-16);
     Solution_Geometry_Old.resize(nPoint,nDim) = su2double(0.0);
@@ -61,3 +64,5 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     External.resize(nPoint,nVar) = su2double(0.0);
   }
 }
+
+void CDiscAdjVariable::Set_OldSolution_Geometry() { Solution_Geometry_Old = Solution_Geometry; }

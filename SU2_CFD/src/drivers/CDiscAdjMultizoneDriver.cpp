@@ -134,7 +134,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    if (driver_config->GetTime_Domain()) // TobiKattmann:: Remove the error and introduce time iteration
+    if (driver_config->GetTime_Domain())
       SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
                      CURRENT_FUNCTION);
   }
@@ -173,7 +173,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
   ComputeAdjoints(iZone, eval_transfer);
 
   /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-  // TobiKattmann:: Make sure to extract correct sensitivities here
+
   iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                               solver_container, numerics_container, config_container,
                                               surface_movement, grid_movement, FFDBox, iZone, INST_0);
@@ -420,8 +420,6 @@ void CDiscAdjMultizoneDriver::Run() {
           Update_Cross_Term(iZone, jZone);
         }
       }
-
-      // TobiKattmann:: Add dual time terms dG/du from n+1 and N+2 to external
 
       /*--- Compute residual from Solution and Solution_BGS_k and update the latter. ---*/
 

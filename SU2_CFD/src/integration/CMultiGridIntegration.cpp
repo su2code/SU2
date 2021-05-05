@@ -40,7 +40,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short iInst) {
 
   bool direct;
-  switch (config[iZone]->GetKind_Solver()) { // TobiKattmann: why no HEAT_EQUATION or INC stuff here? explanation of direct
+  switch (config[iZone]->GetKind_Solver()) {
     case EULER:
     case NAVIER_STOKES:
     case NEMO_EULER:

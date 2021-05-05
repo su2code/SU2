@@ -1757,6 +1757,17 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  inline virtual void Set_OldSolution_Geometry() {}
+
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] solution - old adjoint solution for coordinate iDim
+   */
+  inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
    * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
    * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
    *       If this method is overriden, the BGSSolution_k ones proabably have to be too.
@@ -2260,30 +2271,12 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the solution at time n. TK:: unused func
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
    * \brief Get the adjoint values of the solution at time n.
    * \param[out] adj_sol - The adjoint values of the solution.
    */
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the adjoint values of the solution at time n-1. TK:: unused func
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n1(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n1(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
