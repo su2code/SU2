@@ -3124,6 +3124,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
 void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *config) {
 
+  if (geometry->GetGlobal_nPointDomain() == 0) return;
+
   if (size != SINGLE_NODE && size % 2)
     SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
 
