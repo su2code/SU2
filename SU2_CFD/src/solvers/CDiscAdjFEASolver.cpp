@@ -26,7 +26,6 @@
  */
 
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
-#include "../../include/variables/CDiscAdjFEAVariable.hpp"
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
                                      unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
@@ -68,7 +67,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*--- Initialize the adjoint solution. ---*/
 
   vector<su2double> init(nVar,1e-16);
-  nodes = new CDiscAdjFEABoundVariable(init.data(), nPoint, nDim, nVar, dynamic, config);
+  nodes = new CDiscAdjFEABoundVariable(init.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
@@ -374,7 +373,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
     if (dynamic) {
       for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] += nodes->GetDynamic_Derivative_n(iPoint,iVar);
+        Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
     }
 
     if (deform_mesh) {
@@ -399,7 +398,7 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   if (config_container->GetTime_Domain()) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       for (auto iVar=0u; iVar < nVar; iVar++)
-        nodes->SetDynamic_Derivative_n(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
+        nodes->SetDual_Time_Derivative(iPoint, iVar, nodes->GetSolution_time_n(iPoint, iVar));
   }
 }
 

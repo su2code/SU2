@@ -2220,18 +2220,6 @@ public:
    */
   inline virtual su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
-  inline virtual void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  inline virtual void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  inline virtual su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const {return 0.0;}
-
-  inline virtual su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const {return 0.0;}
-
-  inline virtual void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  inline virtual su2double GetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
   inline virtual void SetTauWall(unsigned long iPoint, su2double val_tau_wall) {}
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }

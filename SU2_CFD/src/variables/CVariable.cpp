@@ -59,20 +59,25 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
-    Solution_time_n.resize(nPoint,nVar);
-    Solution_time_n1.resize(nPoint,nVar);
-  }
-  else if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain())
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-  }
 
-  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint() && !adjoint) {
-    AD_InputIndex.resize(nPoint,nVar) = -1;
-    AD_OutputIndex.resize(nPoint,nVar) = -1;
-    if (config->GetTime_Domain()) {
-      AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-      AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    Solution_time_n1.resize(nPoint,nVar);
+
+  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
+    if (adjoint) {
+      External.resize(nPoint,nVar) = su2double(0.0);
+    }
+    else {
+      AD_InputIndex.resize(nPoint,nVar) = -1;
+      AD_OutputIndex.resize(nPoint,nVar) = -1;
+
+      if (config->GetTime_Domain())
+        AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+        AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
     }
   }
 

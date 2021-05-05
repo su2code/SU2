@@ -28,8 +28,8 @@
 #include "../../include/variables/CDiscAdjFEABoundVariable.hpp"
 
 CDiscAdjFEABoundVariable::CDiscAdjFEABoundVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
-                                                   unsigned long nvar, bool unsteady, CConfig *config) :
-  CDiscAdjFEAVariable(sol, npoint, ndim, nvar, unsteady, config) {
+                                                   unsigned long nvar, CConfig *config) :
+  CDiscAdjVariable(sol, npoint, ndim, nvar, config) {
 
   VertexMap.Reset(nPoint);
 }

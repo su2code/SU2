@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CDiscAdjFEAVariable.hpp"
+#include "CDiscAdjVariable.hpp"
 #include "../../../Common/include/containers/CVertexMap.hpp"
 
 /*!
@@ -37,7 +37,7 @@
  * \author R. Sanchez.
  * \version 7.1.1 "Blackbird"
  */
-class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
+class CDiscAdjFEABoundVariable final : public CDiscAdjVariable {
 private:
 
   MatrixType FlowTraction_Sens;        /*!< \brief Adjoint of the flow tractions. */
@@ -54,11 +54,10 @@ public:
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
-   * \param[in] unsteady - Allocate velocity and acceleration.
    * \param[in] config - Definition of the particular problem.
    */
   CDiscAdjFEABoundVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
-                           unsigned long nvar, bool unsteady, CConfig *config);
+                           unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
