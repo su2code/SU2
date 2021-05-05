@@ -107,7 +107,8 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
         solvers0[MESH_SOL]->LoadRestart(geometries, solver[iZone][iInst], config[iZone], Direct_Iter, true);
       }
 
-    } else if ((TimeIter > 0) && dual_time) {
+    }
+    else if ((TimeIter > 0) && dual_time) {
       /*---
       Here the primal solutions (only working variables) are loaded and put in the correct order
       into containers. For ALE the mesh coordinates have to be put into the
@@ -149,20 +150,16 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
         auto solvers = solver[iZone][iInst][iMesh];
 
         for (auto iPoint = 0ul; iPoint < geometries[iMesh]->GetnPoint(); iPoint++) {
-          solvers[FLOW_SOL]->GetNodes()->SetSolution(
-              iPoint, solvers[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
+          solvers[FLOW_SOL]->GetNodes()->SetSolution(iPoint, solvers[FLOW_SOL]->GetNodes()->GetSolution_time_n(iPoint));
 
           if (grid_IsMoving) {
-            geometries[iMesh]->nodes->SetCoord(
-                iPoint, geometries[iMesh]->nodes->GetCoord_n(iPoint));
+            geometries[iMesh]->nodes->SetCoord(iPoint, geometries[iMesh]->nodes->GetCoord_n(iPoint));
           }
           if (turbulent) {
-            solvers[TURB_SOL]->GetNodes()->SetSolution(
-                iPoint, solvers[TURB_SOL]->GetNodes()->GetSolution_time_n(iPoint));
+            solvers[TURB_SOL]->GetNodes()->SetSolution(iPoint, solvers[TURB_SOL]->GetNodes()->GetSolution_time_n(iPoint));
           }
           if (heat) {
-            solvers[HEAT_SOL]->GetNodes()->SetSolution(
-                iPoint, solvers[HEAT_SOL]->GetNodes()->GetSolution_time_n(iPoint));
+            solvers[HEAT_SOL]->GetNodes()->SetSolution(iPoint, solvers[HEAT_SOL]->GetNodes()->GetSolution_time_n(iPoint));
           }
         }
       }
@@ -234,7 +231,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
         }
       }
 
-    }  // else if Ext_Iter > 0
+    }  // else if TimeIter > 0
 
     /*--- Compute & set Grid Velocity via finite differences of the Coordinates. ---*/
     if (grid_IsMoving)

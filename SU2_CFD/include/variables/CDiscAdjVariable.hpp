@@ -37,7 +37,7 @@
  */
 class CDiscAdjVariable final : public CVariable {
 private:
-  MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node. */
   MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
   MatrixType DualTime_Derivative; /*!< \brief Container holding all dual time contributions to the adjoint variable. */
   MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */

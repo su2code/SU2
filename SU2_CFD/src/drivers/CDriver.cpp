@@ -121,7 +121,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   SetContainers_Null();
 
   /*--- Preprocessing of the config files. In this routine, the config file is read
-   and it is determined whether a problem is single physics or multiphysics. . ---*/
+   and it is determined whether a problem is single physics or multiphysics. . ---*/ //TK:: not true we already instantiated a multizone/singlezone driver in SU2_CFD
 
   Input_Preprocessing(config_container, driver_config);
 

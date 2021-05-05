@@ -303,7 +303,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
 void CDiscAdjSinglezoneDriver::SetAdj_ObjFunction(){
 
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  const auto IterAvg_Obj = config->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
   CWindowingTools windowEvaluator = CWindowingTools();

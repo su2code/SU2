@@ -851,9 +851,6 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
-  const unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
-  const unsigned short leave_izone = iZone*2 + ITERATION_READY;
-
   AD::ClearAdjoints();
 
   /*--- Initialize the adjoints in iZone ---*/
@@ -862,6 +859,9 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
                                                         config_container, iZone, INST_0);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+  const unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
+  const unsigned short leave_izone = iZone*2 + ITERATION_READY;
 
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
@@ -893,10 +893,12 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 
         for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
-          if (solver && solver->GetAdjoint()) { // TobiKattmann::What is this solver variable?
-            auto nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-            auto nVar = solver->GetnVar();
+
+          auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
+          if (solver && solver->GetAdjoint()) {
+
+            const auto nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+            const auto nVar = solver->GetnVar();
             Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
           }
         }
@@ -906,8 +908,6 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 }
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
-
-  unsigned long ExtIter = 0;
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
@@ -921,7 +921,9 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
       }
     }
+
     /*--- If a mesh update is required due to the transfer of data ---*/
+    const unsigned long ExtIter = 0;
     if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
 
     Has_Deformation(iZone) = DeformMesh;
