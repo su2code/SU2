@@ -37,16 +37,16 @@
  */
 class CDiscAdjVariable final : public CVariable {
 private:
-  MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node. */
-  MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
-  MatrixType DualTime_Derivative; /*!< \brief Container holding all dual time contributions to the adjoint variable. */
-  MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
+  MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Solution_Direct;
+  MatrixType DualTime_Derivative;
+  MatrixType DualTime_Derivative_n;
 
-  MatrixType Solution_Geometry; /*!< \brief TK:: Description missing. */
-  MatrixType Solution_Geometry_Old; /*!< \brief TK:: Description missing. */
-  MatrixType Geometry_Direct; /*!< \brief TK:: Description missing. */
+  MatrixType Solution_Geometry;
+  MatrixType Solution_Geometry_Old;
+  MatrixType Geometry_Direct;
 
-  MatrixType Solution_Geometry_BGS_k; /*!< \brief TK:: Description missing. */
+  MatrixType Solution_Geometry_BGS_k;
 
 public:
   /*!
@@ -66,63 +66,31 @@ public:
 
   /*!
    * \brief Set the sensitivity at the node
-   * \param[in] iPoint - Point index
    * \param[in] iDim - spacial component
    * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override {
-    Sensitivity(iPoint,iDim) = val;
-  }
+  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override { Sensitivity(iPoint,iDim) = val;}
 
   /*!
    * \brief Get the Sensitivity at the node
-   * \param[in] iPoint - Point index
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override {
-    return Sensitivity(iPoint,iDim);
-  }
+  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity(iPoint,iDim); }
 
-  /*!
-   * \brief Set/store the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
-   */
-  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override {
-    DualTime_Derivative(iPoint,iVar) = der;
-  }
+  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
 
-  /*!
-   * \brief Set/store the dual time contributions to the adjoint variable for upcoming timestep.
-   */
-  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override {
-    DualTime_Derivative_n(iPoint,iVar) = der;
-  }
+  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative_n(iPoint,iVar) = der; }
 
-  /*!
-   * \brief Return the dual time contributions to the adjoint variable. Contains contributions from 2 timesteps for dual time 2nd order.
-   */
-  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override {
-    return DualTime_Derivative(iPoint,iVar);
-  }
+  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative(iPoint,iVar); }
 
-  /*!
-   * \brief Return the dual time contributions to the adjoint variable for upcoming timestep.
-   */
-  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override {
-    return DualTime_Derivative_n(iPoint,iVar);
-  }
+  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const override { return DualTime_Derivative_n(iPoint,iVar); }
 
-  /*!
-   * \brief Set/store the primal solution for all variables of one point.
-   */
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) override {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  /*!
-   * \brief Returns the primal solution for all variables of one point.
-   */
   inline su2double* GetSolution_Direct(unsigned long iPoint) override { return Solution_Direct[iPoint]; }
 
   /*!
@@ -144,18 +112,14 @@ public:
    * \brief Get the restart geometry (coordinate of the converged solution).
    * \return Coordinate iDim of the geometry_direct vector.
    */
-  inline su2double GetGeometry_Direct(unsigned long iPoint, unsigned long iDim) const override {
-    return Geometry_Direct(iPoint,iDim);
-  }
+  inline su2double GetGeometry_Direct(unsigned long iPoint, unsigned long iDim) const override { return Geometry_Direct(iPoint,iDim); }
 
   /*!
    * \brief Get the geometry solution.
    * \param[in] iDim - Index of the coordinate.
    * \return Value of the solution for the index <i>iDim</i>.
    */
-  inline su2double GetSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
-    return Solution_Geometry(iPoint,iDim);
-  }
+  inline su2double GetSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override { return Solution_Geometry(iPoint,iDim); }
 
   /*!
    * \brief Set the value of the mesh solution (adjoint).
@@ -172,6 +136,19 @@ public:
    */
   inline void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double val_solution_geometry) override {
     Solution_Geometry(iPoint,iVar) = val_solution_geometry;
+  }
+
+  /*!
+   * \brief Set the value of the mesh solution (adjoint).
+   */
+  void Set_OldSolution_Geometry() override;
+
+  /*!
+   * \brief Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  inline su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const override {
+    return Solution_Geometry_Old(iPoint,iDim);
   }
 
 };
