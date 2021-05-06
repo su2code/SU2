@@ -326,7 +326,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if(multizone) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -374,7 +374,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      if(multizone) {
+      if(config->GetMultizone_Problem()) {
         direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
       }
       else {
@@ -391,7 +391,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      if(multizone) {
+      if(config->GetMultizone_Problem()) {
         direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
       }
       else {
