@@ -928,7 +928,7 @@ def main():
     flatplate_unsteady.cfg_dir   = "navierstokes/flatplate"
     flatplate_unsteady.cfg_file  = "lam_flatplate_unst.cfg"
     flatplate_unsteady.test_iter = 3
-    flatplate_unsteady.test_vals = [5.3006e-06, -8.579224, -7.909266, -5.826207, -5.418487, -3.102897, 0.002118, -0.564798]
+    flatplate_unsteady.test_vals = [7.9509e-06, -8.868859, -8.231652, -6.283262, -5.466675, -3.391163, 0.002078, -0.343642]
     flatplate_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
     flatplate_unsteady.timeout   = 1600
     flatplate_unsteady.tol       = 0.00001
