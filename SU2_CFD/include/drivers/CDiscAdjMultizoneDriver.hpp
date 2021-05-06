@@ -151,10 +151,10 @@ protected:
 
   /*!
    * \brief Evaluate sensitivites for the current adjoint solution and output files.
-   * \param[in] iOuterIter - Current outer iteration.
+   * \param[in] Iter - Current outer or time iteration.
    * \param[in] StopCalc - Final iteration flag (converged or reached max number of iters).
    */
-  void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
+  void EvaluateSensitivities(unsigned long Iter, bool StopCalc);
 
   /*!
    * \brief Setup the matrix of cross-terms. Allocate necessary memory and initialize to zero.

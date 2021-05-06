@@ -434,7 +434,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
         AD::ResetInput(Coord[iDim]);
       }
 
-      if (!(config->GetTime_Domain()) || config->GetMultizone_Problem()) {
+      if (!config->GetTime_Domain()) {
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
         nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim) + Sensitivity);

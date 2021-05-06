@@ -140,7 +140,11 @@ void CDiscAdjMultizoneDriver::StartSolver() {
       cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
-  while ( TimeIter < driver_config->GetnTime_Iter()) {
+  /*--- Size and initialize the matrix of cross-terms. ---*/
+
+  InitializeCrossTerms();
+
+  while (TimeIter < driver_config->GetnTime_Iter()) {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -153,17 +157,27 @@ void CDiscAdjMultizoneDriver::StartSolver() {
         config_container[iZone]->SetPhysicalTime(0.0);
     }
 
-    /*--- Size and initialize the matrix of cross-terms. ---*/
+    if (TimeIter) {
+      /*--- Reset cross-terms before new time iterations. ---*/
+      for (auto& matOfMat : Cross_Terms)
+        for (auto& vecOfMat : matOfMat)
+          for (auto& mat : vecOfMat)
+            mat = 0.0;
 
-    InitializeCrossTerms();
+      /*--- Reset external and solution ---*/
+      /// TODO: Init with dual time derivative instead.
+      for (iZone = 0; iZone < nZone; iZone++) {
+        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+          auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+          if (solver && solver->GetAdjoint()) solver->GetNodes()->SetExternalZero();
+        }
+        Set_Solution_To_BGSSolution_k(iZone);
+      }
+    }
 
     /*--- We directly start the discrete adjoint computation. ---*/
 
     Run();
-
-    /*--- Output the solution in files for each time iteration. ---*/
-
-    Output(TimeIter);
 
     TimeIter++;
   }
@@ -208,24 +222,13 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  unsigned long wrt_sol_freq = 9999;
+  unsigned long wrt_sol_freq = 99999;
   const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   const bool time_domain = driver_config->GetTime_Domain();
 
-  /*--- Reset external and solution ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint())
-        solver->GetNodes()->SetExternalZero();
-    }
-    Set_Solution_To_BGSSolution_k(iZone);
-  }
-
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    if (!time_domain)
-      wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
     iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                                    solver_container, numerics_container, config_container, surface_movement,
@@ -464,55 +467,17 @@ void CDiscAdjMultizoneDriver::Run() {
 
     bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
 
-    if (checkSensitivity)
+    if (checkSensitivity && !time_domain)
       EvaluateSensitivities(iOuterIter, StopCalc);
   }
 
-  /*--- Add current time sensitivity ---*/
-  /*--- Cumulative sensitivity stored here in order to exclude summation within outer iteration ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    auto solvers = solver_container[iZone][INST_0][MESH_0];
-    auto geometry = geometry_container[iZone][INST_0][MESH_0];
-    int IDX_SOL = NO_SOLVER;
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        if(config_container[iZone]->GetDeform_Mesh()) IDX_SOL = ADJMESH_SOL;
-        else IDX_SOL = ADJFLOW_SOL;
-        break;
-      case DISC_ADJ_HEAT:
-        IDX_SOL = ADJHEAT_SOL;
-        break;
-      case DISC_ADJ_FEM:
-        IDX_SOL = ADJFEA_SOL;
-        break;
-      default:
-        SU2_MPI::Error("Chosen discrete adjoint solver not yet supported for calculation of sensitivities", CURRENT_FUNCTION);
-        break;
-    }
-
-    su2double Sensitivity;
-    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-
-          /*--- Current time iteration sensitivity ---*/
-          Sensitivity = solvers[IDX_SOL]->GetNodes()->GetSensitivity(iPoint, iDim);
-
-          /*--- Update old sensitivity container ---*/
-          solvers[IDX_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, Sensitivity +
-            solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
-
-          /*--- Update sensitivity ---*/
-          solvers[IDX_SOL]->GetNodes()->SetSensitivity(
-            iPoint, iDim, solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
-      }
-    }
+  if (time_domain) {
+    EvaluateSensitivities(TimeIter, false);
   }
+
 }
 
-void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc) {
+void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool StopCalc) {
 
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
@@ -589,14 +554,10 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
   AD::ClearAdjoints();
 
-  if (!driver_config->GetTime_Domain()) {
-    for (iZone = 0; iZone < nZone; iZone++) {
+  /*--- Output files. ---*/
 
-      output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
-                                              config_container[iZone],
-                                              solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
-    }
-  }
+  Output(Iter);
+
 }
 
 void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
