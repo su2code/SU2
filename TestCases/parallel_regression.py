@@ -923,6 +923,18 @@ def main():
     unst_inc_turb_naca0015_sa.unsteady  = True
     test_list.append(unst_inc_turb_naca0015_sa)
 
+    # Flat plate
+    flatplate_unsteady           = TestCase('flatplate_unsteady')
+    flatplate_unsteady.cfg_dir   = "navierstokes/flatplate"
+    flatplate_unsteady.cfg_file  = "lam_flatplate_unst.cfg"
+    flatplate_unsteady.test_iter = 3
+    flatplate_unsteady.test_vals = [7.9509e-06, -8.868859, -8.231652, -6.283262, -5.466675, -3.391163, 0.002078, -0.343642]
+    flatplate_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
+    flatplate_unsteady.timeout   = 1600
+    flatplate_unsteady.tol       = 0.00001
+    flatplate_unsteady.unsteady  = True
+    test_list.append(flatplate_unsteady)
+
     ######################################
     ### NICFD                          ###
     ######################################

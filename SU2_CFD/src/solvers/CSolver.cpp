@@ -45,6 +45,8 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/C1DInterpolation.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/CMarkerProfileReaderFVM.hpp"
 
 
@@ -2857,11 +2859,9 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
-  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
 
-    getline (restart_file, text_line);
-
-    vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
+    if (!getline (restart_file, text_line)) break;
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -2869,6 +2869,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
+
+      vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
 
       /*--- Store the solution (starting with node coordinates) --*/
 
@@ -2882,16 +2884,19 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     }
   }
 
+  if (iPoint_Global != geometry->GetGlobal_nPointDomain())
+    SU2_MPI::Error("The solution file does not match the mesh, currently only binary files can be interpolated.",
+                   CURRENT_FUNCTION);
+
 }
 
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  unsigned short iVar;
   val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
-  int nRestart_Vars = 5, nFields;
-  Restart_Vars = new int[5];
+  const int nRestart_Vars = 5;
+  Restart_Vars = new int[nRestart_Vars];
   fields.clear();
 
 #ifndef HAVE_MPI
@@ -2925,9 +2930,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. ---*/
 
-  nFields = Restart_Vars[1];
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -2935,7 +2941,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    variable string vector with the Point_ID tag that wasn't written. ---*/
 
   fields.push_back("Point_ID");
-  for (iVar = 0; iVar < nFields; iVar++) {
+  for (auto iVar = 0u; iVar < nFields; iVar++) {
     ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
     if (ret != (unsigned long)CGNS_STRING_SIZE) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
@@ -2945,12 +2951,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[nFields*nPointFile];
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data, sizeof(passivedouble), nFields*geometry->GetnPointDomain(), fhw);
-  if (ret != (unsigned long)nFields*geometry->GetnPointDomain()) {
+  ret = fread(Restart_Data, sizeof(passivedouble), nFields*nPointFile, fhw);
+  if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
 
@@ -2966,20 +2972,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   SU2_MPI::Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
-  unsigned long iPoint_Global, index, iChar;
-  string field_buf;
-
-  int ierr;
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  int ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
-  /*--- Error check opening the file. ---*/
-
-  if (ierr) {
-    SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
-  }
+  if (ierr) SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
 
   /*--- First, read the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, read the
@@ -3002,9 +3000,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
                    string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
-  /*--- Store the number of fields to be read for clarity. ---*/
+  /*--- Store the number of fields and points to be read for clarity. ---*/
 
-  nFields = Restart_Vars[1];
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -3026,16 +3025,15 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    we need them for writing visualization files (SU2_SOL). ---*/
 
   fields.push_back("Point_ID");
-  for (iVar = 0; iVar < nFields; iVar++) {
-    index = iVar*CGNS_STRING_SIZE;
-    field_buf.append("\"");
-    for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+  for (auto iVar = 0u; iVar < nFields; iVar++) {
+    const auto index = iVar*CGNS_STRING_SIZE;
+    string field_buf("\"");
+    for (int iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
       str_buf[iChar] = mpi_str_buf[index + iChar];
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
     fields.push_back(field_buf.c_str());
-    field_buf.clear();
   }
 
   /*--- Free string buffer memory. ---*/
@@ -3055,17 +3053,40 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    that will be placed in the restart. Here, we are collecting each one of the
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
-  int *blocklen = new int[geometry->GetnPointDomain()];
-  MPI_Aint *displace = new MPI_Aint[geometry->GetnPointDomain()];
-  int counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
-      blocklen[counter] = nFields;
-      displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
-      counter++;
+  int nBlock;
+  int *blocklen = nullptr;
+  MPI_Aint *displace = nullptr;
+
+  if (nPointFile == geometry->GetGlobal_nPointDomain() ||
+      config->GetKind_SU2() == SU2_COMPONENT::SU2_SOL) {
+    /*--- No interpolation, each rank reads the indices it needs. ---*/
+    nBlock = geometry->GetnPointDomain();
+
+    blocklen = new int[nBlock];
+    displace = new MPI_Aint[nBlock];
+    int counter = 0;
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
+      if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+        blocklen[counter] = nFields;
+        displace[counter] = iPoint_Global*nFields*sizeof(passivedouble);
+        counter++;
+      }
     }
   }
-  MPI_Type_create_hindexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  else {
+    /*--- Interpolation required, read large blocks of data. ---*/
+    nBlock = 1;
+
+    blocklen = new int[nBlock];
+    displace = new MPI_Aint[nBlock];
+
+    const auto partitioner = CLinearPartitioner(nPointFile,0);
+
+    blocklen[0] = nFields*partitioner.GetSizeOnRank(rank);
+    displace[0] = nFields*partitioner.GetFirstIndexOnRank(rank)*sizeof(passivedouble);;
+  }
+
+  MPI_Type_create_hindexed(nBlock, blocklen, displace, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
@@ -3075,11 +3096,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*geometry->GetnPointDomain()];
+  const int bufSize = nBlock*blocklen[0];
+  Restart_Data = new passivedouble[bufSize];
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data, nFields*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
+  MPI_File_read_all(fhw, Restart_Data, bufSize, MPI_DOUBLE, &status);
 
   /*--- All ranks close the file after writing. ---*/
 
@@ -3094,6 +3116,207 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
 #endif
 
+  if (nPointFile != geometry->GetGlobal_nPointDomain() &&
+      config->GetKind_SU2() != SU2_COMPONENT::SU2_SOL) {
+    InterpolateRestartData(geometry, config);
+  }
+}
+
+void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *config) {
+
+  if (geometry->GetGlobal_nPointDomain() == 0) return;
+
+  if (size != SINGLE_NODE && size % 2)
+    SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
+
+  if (config->GetStructuralProblem() || config->GetFEMSolver())
+    SU2_MPI::Error("Cannot interpolate the restart file for FEM problems.", CURRENT_FUNCTION);
+
+  /* Challenges:
+   *  - Do not use too much memory by gathering the restart data in all ranks.
+   *  - Do not repeat too many computations in all ranks.
+   * Solution?:
+   *  - Build a local ADT for the domain points (not the restart points).
+   *  - Find the closest target point for each donor, which does not match all targets.
+   *  - "Diffuse" the data to neighbor points.
+   *  Complexity is approx. Nlt + (Nlt + Nd) log(Nlt) where Nlt is the LOCAL number
+   *  of target points and Nd the TOTAL number of donors. */
+
+  const unsigned long nFields = Restart_Vars[1];
+  const unsigned long nPointFile = Restart_Vars[2];
+  const auto t0 = SU2_MPI::Wtime();
+  auto nRecurse = 0;
+
+  if (rank == MASTER_NODE) {
+    cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
+            "the mesh (" << geometry->GetGlobal_nPointDomain() << ").\n"
+            "A recursive nearest neighbor interpolation will be performed." << endl;
+  }
+
+  su2activematrix localVars(nPointDomain, nFields);
+  localVars = su2double(0.0);
+  {
+  su2vector<uint8_t> isMapped(nPoint);
+  isMapped = false;
+
+  /*--- ADT of local target points. ---*/
+  {
+  const auto& coord = geometry->nodes->GetCoord();
+  vector<unsigned long> index(nPointDomain);
+  iota(index.begin(), index.end(), 0ul);
+
+  CADTPointsOnlyClass adt(nDim, nPointDomain, coord.data(), index.data(), false);
+  vector<unsigned long>().swap(index);
+
+  /*--- Copy local donor restart data, which will circulate over all ranks. ---*/
+
+  const auto partitioner = CLinearPartitioner(nPointFile,0);
+
+  unsigned long nPointDonorMax = 0;
+  for (int i=0; i<size; ++i)
+    nPointDonorMax = max(nPointDonorMax, partitioner.GetSizeOnRank(i));
+
+  su2activematrix sendBuf(nPointDonorMax, nFields);
+
+  for (auto iPoint = 0ul; iPoint < nPointDonorMax; ++iPoint) {
+    const auto iPointDonor = min(iPoint,partitioner.GetSizeOnRank(rank)-1ul);
+    for (auto iVar = 0ul; iVar < nFields; ++iVar)
+      sendBuf(iPoint,iVar) = Restart_Data[iPointDonor*nFields+iVar];
+  }
+
+  delete [] Restart_Data;
+  Restart_Data = nullptr;
+
+  /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
+
+  su2activematrix donorVars(nPointDonorMax, nFields);
+  vector<su2double> donorDist(nPointDomain, 1e12);
+
+  /*--- Circle over all ranks. ---*/
+
+  const int dst = (rank+1) % size; // send to next
+  const int src = (rank-1+size) % size; // receive from prev.
+  const int count = sendBuf.size();
+
+  for (int iStep = 0; iStep < size; ++iStep) {
+
+    swap(sendBuf, donorVars);
+
+    if (iStep) {
+      /*--- Odd ranks send and then receive, and vice versa. ---*/
+      if (rank%2) SU2_MPI::Send(sendBuf.data(), count, MPI_DOUBLE, dst, 0, SU2_MPI::GetComm());
+      else SU2_MPI::Recv(donorVars.data(), count, MPI_DOUBLE, src, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+
+      if (rank%2==0) SU2_MPI::Send(sendBuf.data(), count, MPI_DOUBLE, dst, 0, SU2_MPI::GetComm());
+      else SU2_MPI::Recv(donorVars.data(), count, MPI_DOUBLE, src, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+    }
+
+    /*--- Find the closest target for each donor. ---*/
+
+    vector<su2double> targetDist(donorVars.rows());
+    vector<unsigned long> iTarget(donorVars.rows());
+
+    SU2_OMP_PARALLEL_(for schedule(dynamic,4*OMP_MIN_SIZE))
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      int r=0;
+      adt.DetermineNearestNode(donorVars[iDonor], targetDist[iDonor], iTarget[iDonor], r);
+    }
+    END_SU2_OMP_PARALLEL
+
+    /*--- Keep the closest donor for each target (this is separate for OpenMP). ---*/
+
+    for (auto iDonor = 0ul; iDonor < donorVars.rows(); ++iDonor) {
+      const auto iPoint = iTarget[iDonor];
+      const auto dist = targetDist[iDonor];
+
+      if (dist < donorDist[iPoint]) {
+        donorDist[iPoint] = dist;
+        isMapped[iPoint] = true;
+        for (auto iVar = 0ul; iVar < donorVars.cols(); ++iVar)
+          localVars(iPoint,iVar) = donorVars(iDonor,iVar);
+      }
+    }
+  }
+  } // everything goes out of scope except "localVars" and "isMapped"
+
+  /*--- Recursively diffuse the nearest neighbor data. ---*/
+
+  auto nDonor = isMapped;
+  bool done = false;
+
+  SU2_OMP_PARALLEL
+  while (!done) {
+    SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      /*--- Do not change points that are already interpolated. ---*/
+      if (isMapped[iPoint]) continue;
+
+      /*--- Boundaries to boundaries and domain to domain. ---*/
+      const bool boundary_i = geometry->nodes->GetSolidBoundary(iPoint);
+
+      for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+        if (!isMapped[jPoint]) continue;
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+
+        nDonor[iPoint]++;
+
+        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
+          localVars(iPoint,iVar) += localVars(jPoint,iVar);
+      }
+
+      if (nDonor[iPoint] > 0) {
+        for (auto iVar = 0ul; iVar < localVars.cols(); ++iVar)
+          localVars(iPoint,iVar) /= nDonor[iPoint];
+        nDonor[iPoint] = true;
+      }
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Repeat while all points are not mapped. ---*/
+
+    SU2_OMP_MASTER {
+      done = true;
+      ++nRecurse;
+    }
+    END_SU2_OMP_MASTER
+
+    bool myDone = true;
+
+    SU2_OMP_FOR_STAT(16*OMP_MIN_SIZE)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+      isMapped[iPoint] = nDonor[iPoint];
+      myDone &= nDonor[iPoint];
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_ATOMIC
+    done &= myDone;
+
+    SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_PARALLEL
+
+  } // everything goes out of scope except "localVars"
+
+  /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
+
+  Restart_Data = new passivedouble[nPointDomain*nFields];
+  Restart_Vars[2] = nPointDomain;
+
+  int counter = 0;
+  for (auto iPoint_Global = 0ul; iPoint_Global < geometry->GetGlobal_nPointDomain(); ++iPoint_Global) {
+    const auto iPoint = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+    if (iPoint >= 0) {
+      for (auto iVar = 0ul; iVar < nFields; ++iVar)
+        Restart_Data[counter*nFields+iVar] = SU2_TYPE::GetValue(localVars(iPoint,iVar));
+      counter++;
+    }
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "Number of recursions: " << nRecurse << ".\n"
+            "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
+  }
 }
 
 void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
@@ -3335,7 +3558,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   if (time_stepping)
     profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
 
- 
+
   // create vector of column names
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3346,7 +3569,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
     su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
     auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
-    std::stringstream columnName,columnValue;    
+    std::stringstream columnName,columnValue;
 
     columnValue << setprecision(15);
     columnValue << std::scientific;
@@ -3357,28 +3580,28 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     }
 
     columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
-    if(nDim==3) columnName << "COORD-Z    " << setw(24); 
-    
+    if(nDim==3) columnName << "COORD-Z    " << setw(24);
+
     if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
-          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
           break;
         case INLET_TYPE::MASS_FLOW:
-          columnName << "DENSITY    " << setw(24) << "VELOCITY   " << setw(24); 
+          columnName << "DENSITY    " << setw(24) << "VELOCITY   " << setw(24);
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;        }
     } else {
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
-        /*--- incompressible conditions ---*/  
+        /*--- incompressible conditions ---*/
         case INLET_TYPE::VELOCITY_INLET:
-          columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24); 
+          columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24);
           break;
         case INLET_TYPE::PRESSURE_INLET:
-          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24); 
+          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
           break;
         default:
           SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
@@ -3405,7 +3628,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
     }
 
-    columnNames.push_back(columnName.str());   
+    columnNames.push_back(columnName.str());
     columnValues.push_back(columnValue.str());
 
   }

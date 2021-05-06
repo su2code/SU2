@@ -213,6 +213,13 @@ protected:
 
 private:
 
+  /*!
+   * \brief Interpolate Restart_Data after reading it.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InterpolateRestartData(const CGeometry *geometry, const CConfig *config);
+
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
    most derived type possible, e.g. CEulerSolver has nodes of CEulerVariable* and not CVariable*.
    This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
