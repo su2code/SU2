@@ -2018,9 +2018,8 @@ public:
 
   /*!
    * \brief A virtual member. Register the reference coordinates of the mesh.
-   * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline virtual void Register_MeshCoord(bool input) { }
+  inline virtual void Register_MeshCoord() { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
@@ -2092,9 +2091,8 @@ public:
 
   /*!
    * \brief A virtual member. Register the boundary displacements of the mesh.
-   * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  inline virtual void Register_BoundDisp(bool input) { }
+  inline virtual void Register_BoundDisp() { }
 
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the boundary displacements.

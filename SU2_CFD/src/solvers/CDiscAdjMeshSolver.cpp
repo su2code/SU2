@@ -103,17 +103,15 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register reference mesh coordinates ---*/
-  bool input = true;
-  direct_solver->GetNodes()->Register_MeshCoord(input);
+  direct_solver->GetNodes()->Register_MeshCoord();
 
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
   SU2_OMP_MASTER {
-    /*--- Register boundary displacements as input ---*/
-    bool input = true;
-    direct_solver->GetNodes()->Register_BoundDisp(input);
+    /*--- Register boundary displacements as input. ---*/
+    direct_solver->GetNodes()->Register_BoundDisp();
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
