@@ -47,7 +47,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
-    const int Direct_Iter = SU2_TYPE::Int(config[iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(TimeIter) - 2 + dual_time;
+    const int Direct_Iter = static_cast<int>(config[iZone]->GetUnst_AdjointIter()) - static_cast<int>(TimeIter) - 2 + dual_time;
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
 

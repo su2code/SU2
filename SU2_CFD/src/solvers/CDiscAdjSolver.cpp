@@ -483,7 +483,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    /*--- Set the adjoint values of the primal (TK::??) solution. ---*/
+    /*--- Set the adjoint values of the primal solution. ---*/
     if(config->GetMultizone_Problem()) {
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     }
