@@ -31,8 +31,8 @@
 
 CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
                                          unsigned long  nPoints,
-                                         su2double      *coor,
-                                         unsigned long  *pointID,
+                                         const su2double *coor,
+                                         const unsigned long *pointID,
                                          const bool     globalTree) {
 
   /* Allocate some thread-safe working variables if required. */
