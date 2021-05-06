@@ -1576,11 +1576,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
     }
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-#else
-  MaxDiff = my_MaxDiff;
-#endif
 
   if (rank == MASTER_NODE)
     cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;

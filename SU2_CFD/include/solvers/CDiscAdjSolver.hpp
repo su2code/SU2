@@ -108,7 +108,7 @@ public:
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
-   *         before evaluation of the tape.
+   *        before evaluation of the tape.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */

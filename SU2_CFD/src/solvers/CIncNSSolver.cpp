@@ -43,7 +43,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {
     case D_VISCOSITY:

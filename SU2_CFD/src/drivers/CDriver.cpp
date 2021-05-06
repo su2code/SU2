@@ -120,8 +120,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   SetContainers_Null();
 
-  /*--- Preprocessing of the config files. In this routine, the config file is read
-   and it is determined whether a problem is single physics or multiphysics. . ---*/
+  /*--- Preprocessing of the config files. ---*/
 
   Input_Preprocessing(config_container, driver_config);
 
@@ -288,10 +287,10 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   Mpoints            = 0.0;
   MpointsDomain      = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    Mpoints       +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MpointsDomain +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
-    MDOFs         += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MDOFsDomain   += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    Mpoints       += geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MpointsDomain += geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    MDOFs         += DOFsPerPoint*geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain   += DOFsPerPoint*geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
@@ -544,11 +543,11 @@ void CDriver::Postprocessing() {
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
     cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
-    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << setw(20) << "Core-hrs:" << setw(12) << size*TotalTime/(60.0*60.0) << endl;
     cout << setw(25) << "Cores:" << setw(12) << size << " | ";
-    cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
-    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/(su2double)size << " | ";
-    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/(su2double)size << endl;
+    cout << setw(20) << "DOFs/point:" << setw(12) << DOFsPerPoint << endl;
+    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/size << " | ";
+    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/size << endl;
     cout << setw(25) << "Ghost/Owned Point Ratio:" << setw(12) << (Mpoints-MpointsDomain)/MpointsDomain << " | " << endl;
     cout << endl;
     cout << "Preprocessing phase:" << endl;
@@ -560,9 +559,9 @@ void CDriver::Postprocessing() {
     cout << setw(20) << "Compute Time (%):" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
     cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount << " | ";
     if (IterCount != 0) {
-      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/Mpoints << " | ";
-      cout << setw(20) << "Mpoints/s:" << setw(12)<< Mpoints*(su2double)IterCount/UsedTimeCompute << endl;
+      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/IterCount << endl;
+      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< size*UsedTimeCompute/IterCount/Mpoints << " | ";
+      cout << setw(20) << "Mpoints/s:" << setw(12)<< Mpoints*IterCount/UsedTimeCompute << endl;
     } else cout << endl;
     cout << endl;
     cout << "Output phase:" << endl;
@@ -570,10 +569,10 @@ void CDriver::Postprocessing() {
     cout << setw(20) << "Output Time (%):" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
-      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/OutputCount << endl;
       if (BandwidthSum > 0) {
-        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
-        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/OutputCount << " | ";
+        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/OutputCount/size << endl;
       }
     } else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl;
