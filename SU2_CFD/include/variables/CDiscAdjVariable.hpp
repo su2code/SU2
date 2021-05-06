@@ -37,11 +37,11 @@
  */
 class CDiscAdjVariable : public CVariable {
 private:
-  MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
-  MatrixType Sensitivity_Old; /* Previous time sensitivity holder since inner iterations in FSI problems overwrite sensitivity*/
-  MatrixType Solution_Direct;
-  MatrixType DualTime_Derivative;
-  MatrixType DualTime_Derivative_n;
+  MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node. */
+  MatrixType Sensitivity_Old; /*!< \brief Previous time sensitivity holder since inner iterations in FSI problems overwrite sensitivity. */
+  MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
+  MatrixType DualTime_Derivative; /*!< \brief Container holding all/sum-of dual time contributions to the adjoint variable. */
+  MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
 
 public:
   /*!
@@ -61,45 +61,75 @@ public:
 
   /*!
    * \brief Set the sensitivity at the node
-   * \param[in] iDim - spacial component
-   * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) final { Sensitivity(iPoint,iDim) = val;}
+  inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    Sensitivity(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Set the previous time sensitivity at the node
-   * \param[in] iDim - dimension
-   * \param[in] val - value of the Sensitivity
    */
-  inline void SetSensitivity_Old(unsigned long iPoint, unsigned long iDim, su2double val) final { Sensitivity_Old(iPoint,iDim) = val;}
+  inline void SetSensitivity_Old(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    Sensitivity_Old(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Get the Sensitivity at the node
-   * \param[in] iDim - spacial component
-   * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const final { return Sensitivity(iPoint,iDim); }
+  inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const final {
+    return Sensitivity(iPoint,iDim);
+  }
 
   /*!
    * \brief Get the previous time sensitivity at the node
-   * \param[in] iDim - dimension
-   * \return value of the Sensitivity
    */
-  inline su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const final { return Sensitivity_Old(iPoint,iDim); }
+  inline su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const final {
+    return Sensitivity_Old(iPoint,iDim);
+  }
 
-  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) { DualTime_Derivative(iPoint,iVar) = der; }
+  /*!
+   * \brief Set/store the dual time contributions to the adjoint variable.
+   *        Contains sum of contributions from 2 timesteps for dual time 2nd order.
+   */
+  inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {
+    DualTime_Derivative(iPoint,iVar) = der;
+  }
 
-  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) { DualTime_Derivative_n(iPoint,iVar) = der; }
+  /*!
+   * \brief Set/store the dual time contributions to the adjoint variable for upcoming timestep.
+   */
+  inline void SetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {
+    DualTime_Derivative_n(iPoint,iVar) = der;
+  }
 
-  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const { return DualTime_Derivative(iPoint,iVar); }
+  /*!
+   * \brief Return the dual time contributions to the adjoint variable.
+   *        Contains sum of contributions from 2 timesteps for dual time 2nd order.
+   */
+  inline su2double GetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar) const {
+    return DualTime_Derivative(iPoint,iVar);
+  }
 
-  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const { return DualTime_Derivative_n(iPoint,iVar); }
+  /*!
+   * \brief Return the dual time contributions to the adjoint variable for upcoming timestep.
+   */
+  inline su2double GetDual_Time_Derivative_n(unsigned long iPoint, unsigned long iVar) const {
+    return DualTime_Derivative_n(iPoint,iVar);
+  }
 
+  /*!
+   * \brief Set/store the primal solution for all variables of one point.
+   */
   inline void SetSolution_Direct(unsigned long iPoint, const su2double *val_solution_direct) final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution_Direct(iPoint,iVar) = val_solution_direct[iVar];
   }
 
-  inline su2double* GetSolution_Direct(unsigned long iPoint) final { return Solution_Direct[iPoint]; }
+  /*!
+   * \brief Returns the primal solution for all variables of one point.
+   */
+  inline su2double* GetSolution_Direct(unsigned long iPoint) final {
+    return Solution_Direct[iPoint];
+  }
 
 };
