@@ -63,7 +63,7 @@ protected:
   Non_Physical_Counter;          /*!< \brief Number of consecutive iterations that a point has been treated first-order.
                                   After a specified number of successful reconstructions, the point can be returned to second-order. */
 
-  VectorType UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
+  VectorType UnderRelaxation;  /*!< \brief Value of the under-relaxation parameter local to the control volume. */
   VectorType LocalCFL;         /*!< \brief Value of the CFL number local to the control volume. */
 
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
@@ -77,8 +77,8 @@ protected:
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
-  MatrixType AuxVar;             /*!< \brief Auxiliar variable for gradient computation. */
-  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxilliary variables  of the problem. */
+  MatrixType AuxVar;             /*!< \brief Auxiliary variable for gradient computation. */
+  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxiliary variables  of the problem. */
 
   VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
@@ -88,8 +88,8 @@ protected:
   MatrixType Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
 
   MatrixType Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
-  MatrixType Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
-  MatrixType Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  MatrixType Residual_Old;    /*!< \brief Auxiliary structure for residual smoothing. */
+  MatrixType Residual_Sum;    /*!< \brief Auxiliary structure for residual smoothing. */
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
@@ -2271,30 +2271,12 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
    * \brief Get the adjoint values of the solution at time n.
    * \param[out] adj_sol - The adjoint values of the solution.
    */
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the adjoint values of the solution at time n-1.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n1(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n1(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!

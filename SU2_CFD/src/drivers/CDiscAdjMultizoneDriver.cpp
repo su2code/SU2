@@ -201,7 +201,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
-  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  const auto nOuterIter = driver_config->GetnOuter_Iter();
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -288,13 +288,13 @@ void CDiscAdjMultizoneDriver::Run() {
      *    if the current recording is different from them.
      *
      *    To set the tape appropriately, the following recording methods are provided:
-     *    (1) NONE: All information from a previous recording is removed.
+     *    (1) CLEAR_INDICES: All information from a previous recording is removed.
      *    (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
      *    (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
      *    (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
      *
      *    By default, all (state and mesh coordinate variables) will be declared as output,
-     *    since it does not change the computational effort. ---*/
+     *    since it does not change the computational effort, just the memory consumption of the tape. ---*/
 
 
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
@@ -828,18 +828,17 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY;
-  unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
+  const auto IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  if (time_stepping){
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY){
     if (TimeIter < IterAvg_Obj){
       // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
       auto windowEvaluator = CWindowingTools();
       su2double weight = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj-1);
       seeding = weight / IterAvg_Obj;
     }
-    else{
+    else {
       seeding = 0.0;
     }
   }
@@ -850,9 +849,6 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
-  unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
-  unsigned short leave_izone = iZone*2 + ITERATION_READY;
-
   AD::ClearAdjoints();
 
   /*--- Initialize the adjoints in iZone ---*/
@@ -862,9 +858,12 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
+  const unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
+  const unsigned short leave_izone = iZone*2 + ITERATION_READY;
+
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  /*--- Compute adjoints of transfer and mesh deformation routines, only stricktly needed
+  /*--- Compute adjoints of transfer and mesh deformation routines, only strictly needed
    *    on the last inner iteration. Structural problems have some minor issue and we
    *    need to evaluate this section on every iteration. ---*/
 
@@ -882,8 +881,8 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
   Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
 
-  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+  for(auto iZone = 0u; iZone < nZone; iZone++) {
+    for (auto jZone = 0u; jZone < nZone; jZone++) {
       if (iZone != jZone || interface_container[jZone][iZone] != nullptr) {
 
         /*--- If jZone contributes to iZone in the primal problem, then
@@ -891,11 +890,13 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
+        for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+
+          auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
           if (solver && solver->GetAdjoint()) {
-            unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-            unsigned short nVar = solver->GetnVar();
+
+            const auto nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+            const auto nVar = solver->GetnVar();
             Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
           }
         }
@@ -905,8 +906,6 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 }
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
-
-  unsigned long ExtIter = 0;
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
@@ -920,7 +919,9 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
       }
     }
+
     /*--- If a mesh update is required due to the transfer of data ---*/
+    const unsigned long ExtIter = 0;
     if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
 
     Has_Deformation(iZone) = DeformMesh;

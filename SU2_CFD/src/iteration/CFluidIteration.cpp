@@ -66,7 +66,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
-   steady or an unsteady simulaiton */
+   steady or an unsteady simulation */
 
   InnerIter = config[val_iZone]->GetInnerIter();
 
@@ -249,27 +249,13 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
   if (config[val_iZone]->GetSinglezone_Driver()) {
+
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
                                                                            config[val_iZone]);
-
-    if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) {
-      /*--- Read the target pressure ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_Cp() == YES)
-      //        output->SetCp_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-
-      //      /*--- Read the target heat flux ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_HeatFlux() == YES)
-      //        output->SetHeatFlux_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-    }
   }
 }
 

@@ -392,8 +392,8 @@ void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_contai
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
 
-      Temp_i = nodes->GetSolution(iPoint,0);
-      Temp_j = nodes->GetSolution(jPoint,0);
+      Temp_i = nodes->GetTemperature(iPoint);
+      Temp_j = nodes->GetTemperature(jPoint);
 
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
       numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
@@ -447,8 +447,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       Temp_j_Grad = nodes->GetGradient(jPoint);
       numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
-      Temp_i = nodes->GetSolution(iPoint,0);
-      Temp_j = nodes->GetSolution(jPoint,0);
+      Temp_i = nodes->GetTemperature(iPoint);
+      Temp_j = nodes->GetTemperature(jPoint);
 
       /* Second order reconstruction */
       if (muscl) {
@@ -548,8 +548,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
     /*--- Primitive variables w/o reconstruction ---*/
-    Temp_i = nodes->GetSolution(iPoint,0);
-    Temp_j = nodes->GetSolution(jPoint,0);
+    Temp_i = nodes->GetTemperature(iPoint);
+    Temp_j = nodes->GetTemperature(jPoint);
     numerics->SetTemperature(Temp_i, Temp_j);
 
     /*--- Eddy viscosity to compute thermal conductivity ---*/
@@ -681,7 +681,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
         dist_ij = sqrt(dist_ij);
 
-        dTdn = -(nodes->GetSolution(Point_Normal,0) - Twall)/dist_ij;
+        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
         if(flow) {
           thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
@@ -813,7 +813,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         if (dynamic_grid)
           conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-        conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
+        conv_numerics->SetTemperature(nodes->GetTemperature(iPoint), config->GetInlet_Ttotal(Marker_Tag)/config->GetTemperature_Ref());
 
         /*--- Compute the residual using an upwind scheme ---*/
 
@@ -845,7 +845,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
         dist_ij = sqrt(dist_ij);
 
-        dTdn = -(nodes->GetSolution(Point_Normal,0) - Twall)/dist_ij;
+        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
         thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
 
@@ -911,7 +911,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           if (dynamic_grid)
             conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-          conv_numerics->SetTemperature(nodes->GetSolution(iPoint,0), nodes->GetSolution(Point_Normal,0));
+          conv_numerics->SetTemperature(nodes->GetTemperature(iPoint), nodes->GetTemperature(Point_Normal));
 
           /*--- Compute the residual using an upwind scheme ---*/
 
@@ -984,7 +984,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
             (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-          Tinterface        = nodes->GetSolution(iPoint,0);
+          Tinterface        = nodes->GetTemperature(iPoint);
           Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3)/Temperature_Ref;
 
           HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
@@ -1059,7 +1059,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
           dist = sqrt(dist);
 
-          dTdn = (Twall - nodes->GetSolution(iPointNormal,0))/dist;
+          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
 
           if(flow) {
             thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
@@ -1085,7 +1085,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
           iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-          Twall = nodes->GetSolution(iPoint,0);
+          Twall = nodes->GetTemperature(iPoint);
 
           Coord = geometry->nodes->GetCoord(iPoint);
           Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
@@ -1097,7 +1097,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
           dist = sqrt(dist);
 
-          dTdn = (Twall - nodes->GetSolution(iPointNormal,0))/dist;
+          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
 
           if(flow) {
             thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();

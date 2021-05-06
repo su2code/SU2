@@ -157,7 +157,7 @@ protected:
   void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
 
   /*!
-   * \brief Setup the matrix of cross-terms.
+   * \brief Setup the matrix of cross-terms. Allocate necessary memory and initialize to zero.
    */
   void InitializeCrossTerms();
 

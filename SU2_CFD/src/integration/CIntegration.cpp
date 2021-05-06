@@ -172,7 +172,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
+   accumulated correctly during the communications. ---*/
 
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);

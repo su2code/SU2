@@ -72,4 +72,10 @@ public:
   inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
+  /*!
+   * \brief Get the temperature of the point.
+   * \return Value of the temperature of the point.
+   */
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Solution(iPoint,0); }
+
 };
