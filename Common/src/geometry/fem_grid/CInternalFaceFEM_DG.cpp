@@ -32,6 +32,18 @@
 /*---        Public member functions of CInternalFaceFEM_DG.        ---*/
 /*---------------------------------------------------------------------*/
 
+void CInternalFaceFEM_DG::AllocateResiduals(CConfig        *config,
+                                            unsigned short nVar) {
+
+  /*--- Determine the number of padded solution DOFs of the adjacent
+        elements and allocate the memory for the residual. ---*/
+  const unsigned short nDOFsPadSide0 = standardElemFlow->elem0->GetNSolDOFsPad();
+  const unsigned short nDOFsPadSide1 = standardElemFlow->elem1->GetNSolDOFsPad();
+
+  resDOFsSide0.resize(nDOFsPadSide0,nVar);
+  resDOFsSide1.resize(nDOFsPadSide1,nVar);
+}
+
 vector<ColMajorMatrix<su2double> > &CInternalFaceFEM_DG::ComputeGradSolSide0IntPoints(
                                                     CVolumeElementFEM_DG *volElem) {
 
@@ -181,4 +193,12 @@ void CInternalFaceFEM_DG::SetWallDistance(su2double val) {
   const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
   wallDistance.resize(nIntPad);
   wallDistance.setConstant(val);
+}
+
+void CInternalFaceFEM_DG::ResidualBasisFunctionsSide0(ColMajorMatrix<su2double> &scalarDataInt) {
+  standardElemFlow->elem0->ResidualBasisFunctions(scalarDataInt, resDOFsSide0);
+}
+
+void CInternalFaceFEM_DG::ResidualBasisFunctionsSide1(ColMajorMatrix<su2double> &scalarDataInt) {
+  standardElemFlow->elem1->ResidualBasisFunctions(scalarDataInt, resDOFsSide1);
 }

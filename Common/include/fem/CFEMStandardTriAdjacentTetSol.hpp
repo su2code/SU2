@@ -79,6 +79,19 @@ public:
   ~CFEMStandardTriAdjacentTetSol() = default;
 
   /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, that returns the padded number of solution DOFs of the volume element.
+   * \return The padded number of solution DOFs of the adjacent volume element.
+   */
+  inline unsigned short GetNSolDOFsPad(void) const override {
+   const unsigned short nSol = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
+   return PaddedValue(nSol);
+  }
+
+  /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
   /*-----------------------------------------------------------------------------------*/
 
@@ -98,6 +111,17 @@ public:
    */
   void SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
                     ColMajorMatrix<su2double> &matSolInt) override;
+
+  /*!
+   * \brief Function, that updates the residuals of the DOFs with the integral of the
+   *        product of the given scalar data and the basis function. The integral is
+   *        approximated by the weighted sum of the data in the integration points.
+   * \param[in]     scalarDataInt - The scalar data in the integration points that must
+   *                                be multiplied by the basis functions.
+   * \param[in,out] resDOFs       - The residual of the DOFs that must be updated.
+   */
+  void ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                              ColMajorMatrix<su2double> &resDOFs) override;
 
 private:
 

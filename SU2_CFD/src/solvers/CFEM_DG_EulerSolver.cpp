@@ -113,9 +113,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
   EntropyVarFreeStream[0]      =  (Gamma-s)*ovgm1 - 0.5*pInv*Density_Inf*V2_Inf;
   EntropyVarFreeStream[nVar-1] = -pInv*Density_Inf;
 
-  /*--- Parallel loop over the volume elements, if supperted. ---*/
+  /*--- Start of the parallel region. ---*/
   SU2_OMP_PARALLEL
   {
+    /*--- Parallel loop over the volume elements. ---*/
 #ifdef HAVE_OMP
     const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemTot, omp_get_num_threads(), 64);
 #endif
@@ -130,6 +131,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
       /*--- Initialize the solution to a uniform flow. This is overruled
             when a restart takes place. ---*/
       volElem[i].SetConstantSolution(EntropyVarFreeStream.data(), nVar, 0);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Parallel loop over the interior faces. ---*/
+    const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+    const unsigned long  nFaces      = nMatchingInternalFacesWithHaloElem[nTimeLevels];
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_face = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_face)
+    for(unsigned long i=0; i<nFaces; ++i) {
+
+      /*--- Allocate the memory to store the residuals. ---*/
+      matchingInternalFaces[i].AllocateResiduals(config, nVar);
     }
     END_SU2_OMP_FOR
   }
@@ -3642,28 +3657,24 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     /*---         the elements on the left and right side of the face.     ---*/
     /*------------------------------------------------------------------------*/
 
-  }
-  END_SU2_OMP_FOR
+    /*--- Initialize the residual to zero. ---*/
+    matchingInternalFaces[l].resDOFsSide0.setConstant(0.0);
+    matchingInternalFaces[l].resDOFsSide1.setConstant(0.0);
 
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
+    /*--- Add the contribution from the fluxes. Note that for side 1 
+          the fluxes must be negated because for side 1 the normal
+          is inward pointing. ---*/
+    matchingInternalFaces[l].ResidualBasisFunctionsSide0(fluxes);
+    
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntPad; ++i)
+        fluxes(i,j) = -fluxes(i,j);
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
+    matchingInternalFaces[l].ResidualBasisFunctionsSide1(fluxes);
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(

@@ -63,11 +63,24 @@ public:
   su2activevector wallDistance;      /*!< \brief The wall distance to the viscous walls for
                                                  the integration points of this face. */
 
+  ColMajorMatrix<su2double> resDOFsSide0;         /*!< \brief The contribution of this face to the residual
+                                                              in the solution DOFs of the element on side0. */
+  ColMajorMatrix<su2double> resDOFsSide1;         /*!< \brief The contribution of this face to the residual
+                                                              in the solution DOFs of the element on side1. */
+
   CFEMStandardInternalFaceGrid *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
   CFEMStandardInternalFaceSol  *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
                                                                         standard flow solution variables. */
   CFEMStandardInternalFaceSol  *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the
                                                                         pressure for an incompressible flow. */
+
+  /*!
+   * \brief Function, which allocate the memory for the residuals.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar   - Number of flow variables.
+   */
+  void AllocateResiduals(CConfig        *config,
+                         unsigned short nVar);
 
   /*!
    * \brief Function, which computes the gradients w.r.t. the parametric coordinates
@@ -122,6 +135,24 @@ public:
    */
   void MetricTermsIntegrationPoints(const unsigned short         nDim,
                                     vector<CVolumeElementFEM_DG> &volElem);
+
+  /*!
+   * \brief Function, which adds to the residual of element on side 0
+   *        the contribution coming from the multiplication with the
+   *        basis functions.
+   * \param[in] scalarDataInt - The scalar data in the integration points
+   *                            to be multiplied by the basis functions.
+   */
+  void ResidualBasisFunctionsSide0(ColMajorMatrix<su2double> &scalarDataInt);
+
+  /*!
+   * \brief Function, which adds to the residual of element on side 1
+   *        the contribution coming from the multiplication with the
+   *        basis functions.
+   * \param[in] scalarDataInt - The scalar data in the integration points
+   *                            to be multiplied by the basis functions.
+   */
+  void ResidualBasisFunctionsSide1(ColMajorMatrix<su2double> &scalarDataInt);
 
   /*!
    * \brief Function, which sets the wall distances to the given value.

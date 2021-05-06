@@ -147,3 +147,8 @@ void CFEMStandardQuadAdjacentHexSol::SolIntPoints(ColMajorMatrix<su2double> &mat
     for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
       matSolInt(i,j) = matSolInt(0,j);
 }
+
+void CFEMStandardQuadAdjacentHexSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                                                            ColMajorMatrix<su2double> &resDOFs) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}

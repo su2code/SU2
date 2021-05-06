@@ -97,3 +97,8 @@ void CFEMStandardQuadAdjacentPrismSol::SolIntPoints(ColMajorMatrix<su2double> &m
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(legBasisInt, matSolDOF.cols(), matSolDOF, matSolInt, nullptr);
 }
+
+void CFEMStandardQuadAdjacentPrismSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
+                                                              ColMajorMatrix<su2double> &resDOFs) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
