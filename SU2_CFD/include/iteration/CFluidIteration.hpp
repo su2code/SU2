@@ -110,6 +110,16 @@ class CFluidIteration : public CIteration {
   void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) override;
 
   /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) override;
+
+  /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  // void InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid) override;
+
+  /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.

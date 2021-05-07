@@ -30,12 +30,11 @@
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() {
   Density = Pressure = TangVelocity = 0.0;
 }
-CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(su2double density,
-                                                             su2double pressure, 
-                                                             su2double *velocity, 
+CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitive,
                                                              unsigned short nDim,
-                                                             su2double tangVel) : Density(density), Pressure(pressure), TangVelocity(tangVel) {
-  Velocity.assign(velocity, velocity + nDim );
+                                                             su2double tangVel) : Density(TurboPrimitive[0]), Pressure(TurboPrimitive[1]), TangVelocity(tangVel) {
+  // Velocity.assign(TurboPrimitive+2, TurboPrimitive + nDim+2 );
+  Velocity = {TurboPrimitive.begin()+2, TurboPrimitive.end()};
 }
 
 CTurbomachineryCombinedPrimitiveStates::CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState& inletPrimitiveState, 

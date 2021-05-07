@@ -302,7 +302,7 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetTurboPerformance_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerformance> TurboPerf, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
 
   void SetTurboMultiZonePerformance_Output(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short OuterIter);

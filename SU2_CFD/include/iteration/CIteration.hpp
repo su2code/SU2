@@ -58,6 +58,8 @@ class CIteration {
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
 
+  std::shared_ptr<CTurbomachineryPerformance> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -239,6 +241,16 @@ class CIteration {
    * \brief Monitors turbo computation (pressure and turbo ramps).
    */
   virtual void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {};
+
+  /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {};
+
+    /*!
+   * \brief Monitors turbo computation (pressure and turbo ramps).
+   */
+  virtual void InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid) {};
 
   /*!
    * \brief A virtual member.

@@ -2788,7 +2788,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
   if (rank == MASTER_NODE) cout<<"Max number of span-wise sections among all zones: "<< nSpanMax<<"."<< endl;
 
 
-  if (rank == MASTER_NODE) cout<<"Initialize solver containers for average and performance quantities." << endl;
+  if (rank == MASTER_NODE) cout<<"Initialize solver containers for average quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config[iZone]);
   }
@@ -2825,10 +2825,10 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     config[ZONE_0]->SetnBlades(iZone, nBlades);
   }
 
-  if (rank == MASTER_NODE) cout<<"Initialize solver containers for turbomachinery-performance quantities." << endl;
-  for (iZone = 0; iZone < nZone; iZone++) {
-    solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboPerformance(geometry[iZone][INST_0][MESH_0],config[iZone]);
-  }
+  // if (rank == MASTER_NODE) cout<<"Initialize solver containers for turbomachinery-performance quantities." << endl;
+  // for (iZone = 0; iZone < nZone; iZone++) {
+  //   solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboPerformance(geometry[iZone][INST_0][MESH_0],config[iZone]);
+  // }
 
   if (rank == MASTER_NODE){
     for (iZone = 0; iZone < nZone; iZone++) {
