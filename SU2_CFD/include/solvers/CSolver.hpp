@@ -1472,7 +1472,6 @@ public:
                                               CSolver **solver_container,
                                               CConfig *config) { }
 
-
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -42,6 +42,7 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   eves.resize(nSpecies,0.0);
   hs.resize(nSpecies,0.0);
   ws.resize(nSpecies,0.0);
+  taus.resize(nSpecies,0.0);
   DiffusionCoeff.resize(nSpecies,0.0);
   Enthalpy_Formation.resize(nSpecies,0.0);
   Ref_Temperature.resize(nSpecies,0.0);
@@ -150,7 +151,7 @@ su2double CNEMOGas::ComputeGamma(){
 
 su2double CNEMOGas::ComputerhoCvve() {
 
-    Cvves = ComputeSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle(Tve);
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -264,7 +265,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
   /*--- Calculate supporting quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++)
-    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+    Vel[iDim] = V[VEL_INDEX+iDim];
   v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
 
   /*--- Species density derivatives ---*/

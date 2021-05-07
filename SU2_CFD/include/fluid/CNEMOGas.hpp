@@ -79,6 +79,7 @@ protected:
   hs,                                    /*!< \brief Species enthalpies */
   MolarFractions,                        /*!< \brief Species molar fractions */
   ws,                                    /*!< \brief Species net production rates */
+  taus,                                  /*!< \brief Relaxtion time scales */
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
@@ -101,6 +102,7 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
+   * \param[in] Ms   - Mass fraction of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -114,17 +116,27 @@ public:
   /*!
    * \brief Compute species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
+  virtual vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) = 0;
 
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
 
-  /*!
-   * \brief Compute species net production rates.
+    /*!
+   * \brief Get vibrational energy source term.
    */
-  virtual vector<su2double>& ComputeNetProductionRates() = 0;
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V,
+                                                       su2double* eve, su2double* cvve,
+                                                       su2double* dTdU, su2double* dTvedU,
+                                                       su2double **val_jacobian) = 0;
+
+  /*!
+   * \brief Populate chemical source term jacobian. 
+   */
+  virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve,
+                                 su2double* cvve, su2double* dTdU, su2double* dTvedU,
+                                 su2double **val_jacobian){};
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -133,6 +145,13 @@ public:
 
   /*!
    * \brief Compute vector of species V-E energy.
+   */
+   virtual void GetEveSourceTermJacobian(su2double *V,su2double *eve, su2double *cvve,
+                                         su2double *dTdU, su2double* dTvedU,
+                                         su2double **val_jacobian){};
+
+  /*!
+   * \brief Get vector of species V-E energy.
    */
   virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
 

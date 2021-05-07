@@ -84,6 +84,9 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
+  unsigned short iDim, iVar, iMarker;
+  unsigned long iPoint, iVertex;
+
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual_RMS.resize(nVar,0.0);
@@ -526,8 +529,9 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
-
-      if ((iVar == 0) || (iVar == nVar - 1)) {
+      unsigned short tmp = 1; //DELETE ME toDO
+      if (nVar == 5) tmp = 2;
+      if ((iVar == 0) || (iVar == nVar - tmp)) {
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {

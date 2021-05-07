@@ -638,11 +638,15 @@ vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
   return Cvtrs;
 }
 
-vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(){
+vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
+  /*--- Rename cause im lazy TODO ---*/
+  Tve = val_T;
+
+  /*--- Loop through species ---*/
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- If requesting electron specific heat ---*/
@@ -781,11 +785,19 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
   return eves;
 }
 
-vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
+vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double *V,
+                                                                su2double* eve, su2double *cvve,
+                                                                su2double* dTdU, su2double* dTvedU,
+                                                                su2double **val_jacobian){
 
+  /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
+  /*---                          ---*/
+
+  /*--- Initialize variables ---*/
   unsigned short ii, iReaction;
-  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
+  su2double Keq;
+  ws.resize(nSpecies,0.0);
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -793,12 +805,11 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
   //       source term.
   T_min   = 800.0;
   epsilon = 80;
+
   /*--- Define preferential dissociation coefficient ---*/
-  //alpha = 0.3;
+  //alpha = 0.3; //TODO: make this a config option?
 
-  for( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    ws[iSpecies] = 0.0;
-
+  /*--- Loop over all reactions ---*/
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
     /*--- Determine the rate-controlling temperature ---*/
@@ -817,8 +828,8 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
     ComputeKeqConstants(iReaction);
 
     /*--- Calculate Keq ---*/
-    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
-        + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
+    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb) +
+                A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
 
     /*--- Calculate rate coefficients ---*/
     kf  = ArrheniusCoefficient[iReaction] * exp(ArrheniusEta[iReaction]*log(Thf)) * exp(-ArrheniusTheta[iReaction]/Thf);
@@ -857,8 +868,140 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
       if (iSpecies != nSpecies)
         ws[iSpecies] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn);
     }
-  }
+
+    if (implicit) {
+      ChemistryJacobian(iReaction, V, eve, cvve, dTdU, dTvedU, val_jacobian);
+    }
+
+  } //iReaction
+
   return ws;
+}
+
+void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, 
+                                  su2double* eve, su2double *cvve,
+                                  su2double* dTdU, su2double* dTvedU,
+                                  su2double **val_jacobian) {
+
+  unsigned short ii, iVar, jVar, iSpecies;
+  unsigned short nEve = nSpecies+nDim+1;
+  unsigned short nVar = nSpecies+nDim+2;
+
+  /*--- Initializing derivative variables ---*/
+  dkf.resize(nVar,0.0);      dkb.resize(nVar,0.0);
+  dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
+  alphak.resize(nSpecies,0); betak.resize(nSpecies,0);
+
+  for (iVar=0;iVar<nVar;iVar++){
+   dkf[iVar]=0.0; dRfok[iVar]=0.0;
+   dkb[iVar]=0.0; dRbok[iVar]=0.0;
+  }
+  
+  for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
+   alphak[iSpecies]=0; betak[iSpecies]=0;
+  }
+
+  /*--- Extract additional Arrhenius information ---*/
+  su2double eta   = ArrheniusEta[iReaction];
+  su2double theta = ArrheniusTheta[iReaction];
+
+  /*--- Derivative of modified temperature wrt Trxnf ---*/
+  dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
+                                                  + epsilon*epsilon));
+  dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
+                                                  + epsilon*epsilon));
+
+  /*--- Fwd rate coefficient derivatives ---*/
+  coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    dkf[iVar] = coeff * ( af*Trxnf/T*dTdU[iVar] +
+                          bf*Trxnf/Tve*dTvedU[iVar] );
+  }
+
+  /*--- Bkwd rate coefficient derivatives ---*/
+  coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    dkb[iVar] = coeff*( ab*Trxnb/T*dTdU[iVar] + bb*Trxnb/Tve*dTvedU[iVar])
+                      - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
+                      - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb *
+                      ( ab*Trxnb/T*dTdU[iVar] + bb*Trxnb/Tve*dTvedU[iVar]);
+  }
+
+  /*--- Rxn rate derivatives ---*/
+  for (ii = 0; ii < 3; ii++) {
+
+    /*--- Products ---*/
+    iSpecies = Reactions(iReaction,1,ii);
+    if (iSpecies != nSpecies)
+      betak[iSpecies]++;
+
+    /*--- Reactants ---*/
+    iSpecies = Reactions(iReaction,0,ii);
+    if (iSpecies != nSpecies)
+      alphak[iSpecies]++;
+  }
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+
+    // Fwd
+    dRfok[iSpecies] =  0.001*alphak[iSpecies]/MolarMass[iSpecies] *
+                       pow(0.001*rhos[iSpecies]/MolarMass[iSpecies],
+                       max(0, alphak[iSpecies]-1));
+
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      if (jSpecies != iSpecies)
+        dRfok[iSpecies] *= pow(0.001*rhos[jSpecies]/MolarMass[jSpecies],
+                                                       alphak[jSpecies]);
+    dRfok[iSpecies] *= 1000.0;
+
+    // Bkw
+    dRbok[iSpecies] =  0.001*betak[iSpecies]/MolarMass[iSpecies] *
+                       pow(0.001*rhos[iSpecies]/MolarMass[iSpecies],
+                       max(0, betak[iSpecies]-1));
+
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      if (jSpecies != iSpecies)
+        dRbok[iSpecies] *= pow(0.001*rhos[jSpecies]/MolarMass[jSpecies],
+                                                        betak[jSpecies]);
+    dRbok[iSpecies] *= 1000.0;
+  }
+
+  for (ii = 0; ii < 3; ii++) {
+
+    /*--- Products ---*/
+    iSpecies = Reactions(iReaction,1,ii);
+    if (iSpecies != nSpecies) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        val_jacobian[iSpecies][iVar] += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]); //TODO * Volume;
+        val_jacobian[nEve][iVar]     += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
+                                                                eve[iSpecies];//TODO * Volume;
+      }
+
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_jacobian[nEve][jVar] += MolarMass[iSpecies] * (fwdRxn-bkwRxn)* cvve[iSpecies] *
+                                                                             dTvedU[jVar];//TODO * Volume;
+      }
+    }
+
+    /*--- Reactants ---*/
+    iSpecies = Reactions(iReaction,0,ii);
+    if (iSpecies != nSpecies) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        val_jacobian[iSpecies][iVar] -= MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]);//TODO * Volume;
+        val_jacobian[nEve][iVar] -=     MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+                                                                dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
+                                                                                         eve[iSpecies];//TODO * Volume;
+      }
+
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
+                                                                              dTvedU[jVar];//TODO * Volume;
+      }
+    }
+  } // ii
 }
 
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
@@ -913,25 +1056,29 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
 su2double CSU2TCLib::ComputeEveSourceTerm(){
 
+  /*---                                                                    ---*/
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
-  // Note: Electronic energy not implemented
-  // Note: Landau-Teller formulation
-  // Note: Millikan & White relaxation time (requires P in Atm.)
-  // Note: Park limiting cross section
-  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
-  vector<su2double> MolarFrac, eve_eq, eve;
+    // Note: Electronic energy not implemented
+    // Note: Landau-Teller formulation
+    // Note: Millikan & White relaxation time (requires P in Atm.)
+    // Note: Park limiting cross section
+  /*---                                                                    ---*/
+
+  /*---Initialize and zero variables ---*/
+  su2double mu, A_sr, B_sr, num, denom, Cs, sig_s,
+  tau_sr, tauP, tauMW;
+  vector<su2double> MolarFrac;
 
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
 
-  omegaVT = 0.0;
-  omegaCV = 0.0;
-
+  su2double omegaVT = 0.0;
+  su2double omegaCV = 0.0;
 
   /*--- Calculate mole fractions ---*/
-  N    = 0.0;
-  conc = 0.0;
+  su2double N    = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     conc += rhos[iSpecies] / MolarMass[iSpecies];
     N    += rhos[iSpecies] / MolarMass[iSpecies] * AVOGAD_CONSTANT;
@@ -939,6 +1086,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 
+  /*--- Compute Eve and Eve* ---*/
   eve_eq = ComputeSpeciesEve(T);
   eve    = ComputeSpeciesEve(Tve);
 
@@ -966,11 +1114,11 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
-    taus = tauMW + tauP;
+    taus[iSpecies] = tauMW + tauP;
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
-                                 eve[iSpecies]) / taus;
+                                 eve[iSpecies]) / taus[iSpecies];
   }
 
   /*--- Vibrational energy change due to chemical reactions ---*/
@@ -982,6 +1130,31 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   omega = omegaVT + omegaCV;
 
   return omega;
+
+}
+
+void CSU2TCLib::GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
+
+  unsigned short iVar;	
+  unsigned short nEv  = nSpecies+nDim+1;
+  unsigned short nVar = nSpecies+nDim+2;
+
+  /*--- Compute Cvvs ---*/
+  cvve_eq.resize(nSpecies,0.0);
+  cvve_eq = ComputeSpeciesCvVibEle(T);
+
+  /*--- Loop through species ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+
+    for (iVar = 0; iVar < nVar; iVar++) { 
+
+      val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -
+                                                                cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
+    }
+  }
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 
 }
 
@@ -1048,12 +1221,14 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
+
   /*--- Calculate mixture molar mass (kg/mol) ---*/
   // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
   M = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
   M = M*1E-3;
+
   /*---+++                  +++---*/
   /*--- Diffusion coefficients ---*/
   /*---+++                  +++---*/
@@ -1073,6 +1248,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
   }
+
   /*--- Calculate species-mixture diffusion coefficient --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     DiffusionCoeff[iSpecies] = 0.0;
@@ -1130,8 +1306,7 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
   ks.resize(nSpecies,0.0);
   kves.resize(nSpecies,0.0);
 
-
-  Cvves = ComputeSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle(Tve);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
@@ -1151,151 +1326,159 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 
 void CSU2TCLib::DiffusionCoeffGY(){
 
-  su2double Mi, Mj, pi, kb, gam_i, gam_j, gam_t, denom, d1_ij, D_ij, Omega_ij;
-
-  pi   = PI_NUMBER;
-  kb   = BOLTZMANN_CONSTANT;
+  su2double pi = PI_NUMBER;
+  su2double kb = BOLTZMANN_CONSTANT;
 
   /*--- Calculate mixture gas constant ---*/
-  gam_t = 0.0;
+  su2double gam_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
+
     /*--- Calculate molar concentration ---*/
-    Mi      = MolarMass[iSpecies];
-    gam_i   = rhos[iSpecies] / (Density*Mi);
-    denom = 0.0;
+    su2double Mi    = MolarMass[iSpecies];
+    su2double gam_i = rhos[iSpecies] / (Density*Mi);
+    su2double denom = 0.0;
     for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
       if (jSpecies != iSpecies) {
-        Mj    = MolarMass[jSpecies];
-        gam_j = rhos[iSpecies] / (Density*Mj);
+
+        su2double Mj    = MolarMass[jSpecies];
+        su2double gam_j = rhos[iSpecies] / (Density*Mj);
+
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-            * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
-            + Omega00(iSpecies,jSpecies,1)*log(T)
-            + Omega00(iSpecies,jSpecies,2));
+        su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+                            * pow(T, Omega00(iSpecies,jSpecies,0)*log(T)*log(T)
+                                   + Omega00(iSpecies,jSpecies,1)*log(T)
+                                   + Omega00(iSpecies,jSpecies,2));
         /*--- Calculate "delta1_ij" ---*/
-        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+        su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-        D_ij = kb*T/(Pressure*d1_ij);
-        denom += gam_j/D_ij;
+        su2double D_ij = kb*T/(Pressure*d1_ij);
+        su2double denom += gam_j/D_ij;
       }
     }
     if (ionization) {
       jSpecies = nSpecies-1;
-      Mj       = MolarMass[jSpecies];
-      gam_j    = rhos[iSpecies] / (Density*Mj);
+      su2double Mj       = MolarMass[jSpecies];
+      su2double gam_j    = rhos[iSpecies] / (Density*Mj);
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+      su2double Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega00(iSpecies,jSpecies,1)*log(Tve)
           + Omega00(iSpecies,jSpecies,2));
 
       /*--- Calculate "delta1_ij" ---*/
-      d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+      su2double d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
     }
 
     /*--- Assign species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
-  if (ionization) {
-    iSpecies = nSpecies-1;
+  // if (ionization) {
+  //   iSpecies = nSpecies-1;
 
-    /*--- Initialize the species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = 0.0;
+  //   /*--- Initialize the species diffusion coefficient ---*/
+  //   DiffusionCoeff[iSpecies] = 0.0;
 
-    /*--- Calculate molar concentration ---*/
-    Mi      = MolarMass[iSpecies];
-    gam_i   = rhos[iSpecies] / (Density*Mi);
-    denom = 0.0;
-    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      if (iSpecies != jSpecies) {
-        Mj    = MolarMass[jSpecies];
-        gam_j = rhos[iSpecies] / (Density*Mj);
+  //   /*--- Calculate molar concentration ---*/
+  //   Mi      = MolarMass[iSpecies];
+  //   gam_i   = rhos[iSpecies] / (Density*Mi);
+  //   denom = 0.0;
+  //   for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+  //     if (iSpecies != jSpecies) {
+  //       Mj    = MolarMass[jSpecies];
+  //       gam_j = rhos[iSpecies] / (Density*Mj);
 
-        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
-            * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-            + Omega00(iSpecies,jSpecies,1)*log(Tve)
-            + Omega00(iSpecies,jSpecies,2));
+  //       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+  //       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
+  //           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+  //           + Omega00(iSpecies,jSpecies,1)*log(Tve)
+  //           + Omega00(iSpecies,jSpecies,2));
 
-        /*--- Calculate "delta1_ij" ---*/
-        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+  //       /*--- Calculate "delta1_ij" ---*/
+  //       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
 
-        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-        D_ij = kb*Tve/(Pressure*d1_ij);
-        denom += gam_j/D_ij;
-      }
-    }
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*MolarMass[iSpecies]*(1-MolarMass[iSpecies]*gam_i) / denom;
-  }
+  //       /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+  //       D_ij = kb*Tve/(Pressure*d1_ij);
+  //       denom += gam_j/D_ij;
+  //     }
+  //   }
+  //   DiffusionCoeff[iSpecies] = gam_t*gam_t*MolarMass[iSpecies]*(1-MolarMass[iSpecies]*gam_i) / denom;
+  // }
 }
 
 void CSU2TCLib::ViscosityGY(){
 
-  su2double Mi, Mj, pi, Na, gam_i, gam_j, denom, Omega_ij, d2_ij;
+  su2double pi = PI_NUMBER;
+  su2double Na = AVOGAD_CONSTANT;
+  su2double Mu = 0.0;
 
-  pi   = PI_NUMBER;
-  Na   = AVOGAD_CONSTANT;
-  Mu = 0.0;
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    denom = 0.0;
+
+    su2double denom = 0.0;
+
     /*--- Calculate molar concentration ---*/
-    Mi    = MolarMass[iSpecies];
-    gam_i = rhos[iSpecies] / (Density*Mi);
+    su2double Mi    = MolarMass[iSpecies];
+    su2double gam_i = rhos[iSpecies] / (Density*Mi);
+
     for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      Mj    = MolarMass[jSpecies];
-      gam_j = rhos[jSpecies] / (Density*Mj);
+      su2double Mj    = MolarMass[jSpecies];
+      su2double gam_j = rhos[jSpecies] / (Density*Mj);
+
       /*--- Calculate "delta" quantities ---*/
-      Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+      su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(T, Omega11(iSpecies,jSpecies,0)*log(T)*log(T)
           + Omega11(iSpecies,jSpecies,1)*log(T)
           + Omega11(iSpecies,jSpecies,2));
-      d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+      su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+
       /*--- Add to denominator of viscosity ---*/
-      denom += gam_j*d2_ij;
+      su2double denom += gam_j*d2_ij;
     }
     if (ionization) {
       jSpecies = nSpecies-1;
-      Mj    = MolarMass[jSpecies];
-      gam_j = rhos[jSpecies] / (Density*Mj);
+      su2double Mj    = MolarMass[jSpecies];
+      su2double gam_j = rhos[jSpecies] / (Density*Mj);
+
       /*--- Calculate "delta" quantities ---*/
-      Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+      su2double Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
           * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega11(iSpecies,jSpecies,1)*log(Tve)
           + Omega11(iSpecies,jSpecies,2));
-      d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-      denom += gam_j*d2_ij;
+      su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+      su2double denom += gam_j*d2_ij;
     }
     /*--- Calculate species laminar viscosity ---*/
-    Mu += (Mi/Na * gam_i) / denom;
+    su2double Mu += (Mi/Na * gam_i) / denom;
   }
-  if (ionization) {
-    iSpecies = nSpecies-1;
-    denom = 0.0;
-    /*--- Calculate molar concentration ---*/
-    Mi    = MolarMass[iSpecies];
-    gam_i = rhos[iSpecies] / (Density*Mi);
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      Mj    = MolarMass[jSpecies];
-      gam_j = rhos[jSpecies] / (Density*Mj);
-      /*--- Calculate "delta" quantities ---*/
-      Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
-          * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
-          + Omega11(iSpecies,jSpecies,1)*log(Tve)
-          + Omega11(iSpecies,jSpecies,2));
-      d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-      /*--- Add to denominator of viscosity ---*/
-      denom += gam_j*d2_ij;
-    }
-    Mu += (Mi/Na * gam_i) / denom;
-  }
+  // if (ionization) {
+  //   iSpecies = nSpecies-1;
+  //   denom = 0.0;
+  //   /*--- Calculate molar concentration ---*/
+  //   Mi    = MolarMass[iSpecies];
+  //   gam_i = rhos[iSpecies] / (Density*Mi);
+  //   for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+  //     Mj    = MolarMass[jSpecies];
+  //     gam_j = rhos[jSpecies] / (Density*Mj);
+  //     /*--- Calculate "delta" quantities ---*/
+  //     Omega_ij = 1E-20 * Omega11(iSpecies,jSpecies,3)
+  //         * pow(Tve, Omega11(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
+  //         + Omega11(iSpecies,jSpecies,1)*log(Tve)
+  //         + Omega11(iSpecies,jSpecies,2));
+  //     d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+  //     /*--- Add to denominator of viscosity ---*/
+  //     denom += gam_j*d2_ij;
+  //   }
+  //   Mu += (Mi/Na * gam_i) / denom;
+  // }
 }
 
 void CSU2TCLib::ThermalConductivitiesGY(){
@@ -1311,7 +1494,8 @@ void CSU2TCLib::ThermalConductivitiesGY(){
   }
 
   /*--- Mixture vibrational-electronic specific heat ---*/
-  Cvves = ComputeSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle(Tve);
+
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
@@ -1371,17 +1555,12 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
-  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tmin, Tmax;
-  bool Bconvg;
-  unsigned short iIter, maxBIter;
-
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
-
-  rhoE_f   = 0.0;
-  rhoE_ref = 0.0;
-  rhoCvtr  = 0.0;
+  su2double rhoE_f   = 0.0;
+  su2double rhoE_ref = 0.0;
+  su2double rhoCvtr  = 0.0;
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
@@ -1391,27 +1570,27 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  Tmin  = 50.0; Tmax = 8E4;
-  Tve_o = 50.0; Tve2 = 8E4;
+  su2double Tmin  = 50.0; su2double Tmax = 8E4;
+  su2double Tve_o = 50.0; su2double Tve2 = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
   if      (T < Tmin) T = Tmin;
   else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  Btol     = 1.0E-6;    // Tolerance for the Bisection method
-  maxBIter = 50;        // Maximum Bisection method iterations
+  su2double        Btol     = 1.0E-6;    // Tolerance for the Bisection method
+  unsigned short maxBIter = 50;        // Maximum Bisection method iterations
 
   //Initialize solution
   Tve   = T;
 
   // Execute the root-finding method
-  Bconvg = false;
+  bool Bconvg = false;
 
-  for (iIter = 0; iIter < maxBIter; iIter++) {
+  for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;
     val_eves = ComputeSpeciesEve(Tve);
-    rhoEve_t = 0.0;
+    su2double rhoEve_t = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
     if (fabs(rhoEve_t - rhoEve) < Btol) {
       Bconvg = true;

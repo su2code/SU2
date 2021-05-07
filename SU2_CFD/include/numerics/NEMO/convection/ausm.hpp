@@ -34,17 +34,30 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 'Blackbird'
+ * \version 7.1.1 "Blackbird"
  */
 class CUpwAUSM_NEMO : public CNEMONumerics {
 private:
-  su2double *FcL, *FcR;
-  //su2double *FcLR;
-  //su2double *dmLP, *dmRM, *dpLP, *dpRM;
-  //su2double *daL, *daR;
+  su2double *FcL, *FcR, *FcLR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel;
-  //su2double  Proj_ModJac_Tensor_ij;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+
+  /************************************/
+  //DELETE ME TODO: ROE JACOBIAN STUFF
+  /*__________________________________*/
+
+    su2double *Diff_U;
+    su2double *RoeU, *RoeV;
+    vector<su2double> roe_eves;
+    su2double *ProjFlux_i, *ProjFlux_j;
+    su2double *Lambda, *Epsilon;
+    su2double **P_Tensor, **invP_Tensor;
+    su2double RoeSoundSpeed;
+    su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+    su2double R;
+    su2double *RoedPdU;
 
 public:
 

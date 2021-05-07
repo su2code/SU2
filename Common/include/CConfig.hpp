@@ -727,7 +727,7 @@ private:
   unsigned short nPOD_Modes;          /*!< \brief Number of POD mdoes desired. */
   bool libROM;                        /*!< \brief Toggle saving to libROM. */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
-  bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
+  bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
