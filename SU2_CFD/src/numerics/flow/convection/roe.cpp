@@ -171,7 +171,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   /*--- P tensor ---*/
 
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-  
+
   /*--- Projected velocity adjusted for mesh motion ---*/
 
   ProjVelocity = 0.0;
@@ -260,11 +260,6 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Compute inverse P tensor ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-  cout <<"delete me"<<endl;
-  for (iVar=0; iVar<nVar;iVar++){
-          for (jVar=0;jVar<nVar;jVar++){
-                  cout <<invP_Tensor[iVar][jVar]<<endl;
-          }}
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)

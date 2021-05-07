@@ -231,46 +231,40 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     Lambda[nSpecies+nDim+1] = ProjVelocity;
     
     /*--- Harten and Hyman (1983) entropy correction ---*/
-    //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    //  Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-    //                                     ProjVelocity_j-Lambda[iDim] ));
-    //for (iDim = 0; iDim < nDim-1; iDim++)
-    //  Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-    //                                          ProjVelocity_j-Lambda[iDim] ));
-    //Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
-    //                                 (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
-    //Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
-    //                                 (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-    //Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-    //                                          ProjVelocity_j-Lambda[iDim] ));
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                         ProjVelocity_j-Lambda[iDim] ));
+    for (iDim = 0; iDim < nDim-1; iDim++)
+      Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+    Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
+                                     (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
+    Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
+                                     (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
+    Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
     for (iVar = 0; iVar < nVar; iVar++)
       if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
         Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
       else
         Lambda[iVar] = fabs(Lambda[iVar]);
-    
+
     /*--- Calculate inviscid projected Jacobians ---*/
     // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
     if (implicit){
       GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, Jacobian_i);
       GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, Jacobian_j);
     }
-    cout<<"Pjpjpjpjpjpjpjpjpjpj"<<endl;  
+
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
+
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
         Proj_ModJac_Tensor_ij = 0.0;
-        for (unsigned short kVar = 0; kVar < nVar; kVar++){
-          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
+        for (unsigned short kVar = 0; kVar < nVar; kVar++)
+          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
-          if (iVar==0 && jVar==0){
-            cout<<"P: "<<P_Tensor[iVar][kVar]<<endl;
-            cout<<"L: "<<Lambda[kVar]<<endl;
-            cout<<"i: "<<invP_Tensor[kVar][jVar]<<endl;
-          }
-
-	}
         Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
         Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
@@ -499,12 +493,5 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   //     }
   //   }
   // }
-  cout <<"delete me"<<endl;
-  for (unsigned iVar = 0; iVar < 5; iVar++) {
-    for (unsigned jVar = 0; jVar < 5; jVar++) {
-      cout <<"Jac I: " << Jacobian_i[iVar][jVar] <<endl;
-    }
-  }
-
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }
