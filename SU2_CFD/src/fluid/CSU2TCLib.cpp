@@ -879,9 +879,9 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
 }
 
 void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, 
-                                          su2double* eve, su2double *cvve,
-                                          su2double* dTdU, su2double* dTvedU,
-                                          su2double **val_jacobian) {
+                                  su2double* eve, su2double *cvve,
+                                  su2double* dTdU, su2double* dTvedU,
+                                  su2double **val_jacobian) {
 
   unsigned short ii, iVar, jVar, iSpecies;
   unsigned short nEve = nSpecies+nDim+1;
@@ -892,14 +892,31 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
   dRfok.resize(nVar,0.0);    dRbok.resize(nVar,0.0);
   alphak.resize(nSpecies,0); betak.resize(nSpecies,0);
 
+  for (iVar=0;iVar<nVar;iVar++){
+   dkf[iVar]=0.0; dRfok[iVar]=0.0;
+   dkb[iVar]=0.0; dRbok[iVar]=0.0;
+  }
+  
+  for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
+   alphak[iSpecies]=0; betak[iSpecies]=0;
+  }
+
+  /*--- Extract additional Arrhenius information ---*/
+  su2double eta   = ArrheniusEta[iReaction];
+  su2double theta = ArrheniusTheta[iReaction];
+
   /*--- Derivative of modified temperature wrt Trxnf ---*/
   dThf = 0.5 * (1.0 + (Trxnf-T_min)/sqrt((Trxnf-T_min)*(Trxnf-T_min)
                                                   + epsilon*epsilon));
   dThb = 0.5 * (1.0 + (Trxnb-T_min)/sqrt((Trxnb-T_min)*(Trxnb-T_min)
                                                   + epsilon*epsilon));
 
+  //TODO
+  cout<<"iReaction!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: "<<iReaction<<endl;
+  
   /*--- Fwd rate coefficient derivatives ---*/
   coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
+  cout <<"Coeff f: "<<coeff<<endl;
   for (iVar = 0; iVar < nVar; iVar++) {
     dkf[iVar] = coeff * ( af*Trxnf/T*dTdU[iVar] +
                           bf*Trxnf/Tve*dTvedU[iVar] );
@@ -907,6 +924,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
 
   /*--- Bkwd rate coefficient derivatives ---*/
   coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
+  cout <<"Coeff b: "<<coeff<<endl;
   for (iVar = 0; iVar < nVar; iVar++) {
     dkb[iVar] = coeff*( ab*Trxnb/T*dTdU[iVar] + bb*Trxnb/Tve*dTvedU[iVar])
                       - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
@@ -916,18 +934,26 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
 
   /*--- Rxn rate derivatives ---*/
   for (ii = 0; ii < 3; ii++) {
-
+    cout <<"ii: "<<ii<<endl;	  
+    cout <<"iReaction: "<<iReaction<<endl;
+    cout <<"ab: "<<alphak[iSpecies]<<endl;
+    cout <<"bb: "<<betak[iSpecies]<<endl;
     /*--- Products ---*/
     iSpecies = Reactions(iReaction,1,ii);
+    cout <<"Product S: "<<iSpecies<<endl;
     if (iSpecies != nSpecies)
       betak[iSpecies]++;
 
     /*--- Reactants ---*/
     iSpecies = Reactions(iReaction,0,ii);
+    cout <<"React S: "<<iSpecies<<endl;
     if (iSpecies != nSpecies)
       alphak[iSpecies]++;
+  
+    cout << "alpha: "<<alphak[iSpecies]<<endl;
+    cout <<"beta: "<<betak[iSpecies]<<endl;
   }
-
+  
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     // Fwd
@@ -957,9 +983,11 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
 
     /*--- Products ---*/
     iSpecies = Reactions(iReaction,1,ii);
+    
     if (iSpecies != nSpecies) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        val_jacobian[iSpecies][iVar] += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
+
+	val_jacobian[iSpecies][iVar] += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                                 dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]); //TODO * Volume;
         val_jacobian[nEve][iVar]     += MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                                 dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) *
@@ -971,11 +999,12 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
                                                                              dTvedU[jVar];//TODO * Volume;
       }
     }
-
+    
     /*--- Reactants ---*/
     iSpecies = Reactions(iReaction,0,ii);
     if (iSpecies != nSpecies) {
       for (iVar = 0; iVar < nVar; iVar++) {
+	
         val_jacobian[iSpecies][iVar] -= MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
                                                                 dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]);//TODO * Volume;
         val_jacobian[nEve][iVar] -=     MolarMass[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar] -
@@ -984,7 +1013,7 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
       }
 
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
+	val_jacobian[nEve][jVar] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn) * cvve[iSpecies] *
                                                                               dTvedU[jVar];//TODO * Volume;
       }
     }
@@ -1126,23 +1155,24 @@ void CSU2TCLib::GetEveSourceTermImplicit(su2double *V, su2double *eve, su2double
   unsigned short nEv  = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
   
-  cvve_eq.resize(nSpecies,0.0);
 
+  /*--- Compute Cvvs ---*/
+  cvve_eq.resize(nSpecies,0.0);
+  cvve_eq = ComputeSpeciesCvVibEle(T);
+ 
   /*--- Loop through species ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
-    /*--- Compute Cvvs ---*/
-    cvve_eq = ComputeSpeciesCvVibEle(T);
+    for (iVar = 0; iVar < nVar; iVar++) { 
 
-    for (iVar = 0; iVar < nVar; iVar++) {
       val_jacobian[nEv][iVar] += rhos[iSpecies]/taus[iSpecies]*(cvve_eq[iSpecies]*dTdU[iVar] -
-                                                                 cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
+                                                                cvve[iSpecies]*dTvedU[iVar]);//TODO*Volume;
     }
-    
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
+  }  
+ 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 
-  }
 }
 
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
@@ -1217,6 +1247,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
   /*---+++                  +++---*/
   /*--- Diffusion coefficients ---*/
   /*---+++                  +++---*/
+  /*--- Solve for binary diffusion coefficients ---*/
   /*--- Solve for binary diffusion coefficients ---*/
   // Note: Dij = Dji, so only loop through req'd indices
   // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol

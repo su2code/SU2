@@ -947,22 +947,34 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
       Lambda[iDim] = ProjVelocity;
     Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
     Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-
+    
     /*--- Compute inverse P ---*/
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-
+   
+  cout <<"delete me"<<endl;
+  for (iVar=0; iVar<nVar;iVar++){
+          for (jVar=0;jVar<nVar;jVar++){
+                  cout <<invP_Tensor[iVar][jVar]<<endl;
+          }}
+ 
     /*--- Jacobias of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
-
+    
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        Proj_ModJac_Tensor_ij = 0.0;
+	Proj_ModJac_Tensor_ij = 0.0;
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-        for (kVar = 0; kVar < nVar; kVar++)
+        for (kVar = 0; kVar < nVar; kVar++){
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*fabs(Lambda[kVar])*invP_Tensor[kVar][jVar];
-        Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+	  if (iVar==0 && jVar==0){
+	    cout<<"P: "<<P_Tensor[iVar][kVar]<<endl;
+	    cout<<"L: "<<Lambda[kVar]<<endl;
+	    cout<<"i: "<<invP_Tensor[kVar][jVar]<<endl;
+	  }
+        }
+	Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
         Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
       }
     }
