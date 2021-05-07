@@ -264,6 +264,9 @@
 		35D6301825999185008DF28B /* CSquareMatrixCM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6301725999185008DF28B /* CSquareMatrixCM.cpp */; };
 		40C54DB12640BE100057F3DD /* CNewtonIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C54DB02640BE100057F3DD /* CNewtonIntegration.cpp */; };
 		40C54DBD2640C3DA0057F3DD /* omp_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40C54DBC2640C3D90057F3DD /* omp_structure.cpp */; };
+		40C54DC22641EEB00057F3DD /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40C54DC12641EEB00057F3DD /* Accelerate.framework */; };
+		40C54DC42641EED30057F3DD /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 40C54DC32641EED20057F3DD /* libROM.dylib */; };
+		40C54DC52641EED30057F3DD /* libROM.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 40C54DC32641EED20057F3DD /* libROM.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		E9D6EE572316522800618E36 /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -274,7 +277,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				40084FAE24B8E8330040AA28 /* libROM.dylib in Embed Libraries */,
+				40C54DC52641EED30057F3DD /* libROM.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -871,6 +874,8 @@
 		40C54DB32640BE280057F3DD /* CNewtonIntegration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNewtonIntegration.hpp; sourceTree = "<group>"; };
 		40C54DB82640C1DE0057F3DD /* libmpi.40.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmpi.40.dylib; path = "../../../../../../usr/local/Cellar/open-mpi/4.0.5/lib/libmpi.40.dylib"; sourceTree = "<group>"; };
 		40C54DBC2640C3D90057F3DD /* omp_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = omp_structure.cpp; sourceTree = "<group>"; };
+		40C54DC12641EEB00057F3DD /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		40C54DC32641EED20057F3DD /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/libROM.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -878,10 +883,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				40707E002579BE6F00808AF6 /* libmpi.40.dylib in Frameworks */,
-				40707E0125886B0800808AF6 /* Accelerate.framework in Frameworks */,
-				40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */,
-				40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */,
+				40C54DC22641EEB00057F3DD /* Accelerate.framework in Frameworks */,
+				40C54DC42641EED30057F3DD /* libROM.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2160,6 +2163,8 @@
 		40C54DB72640C1DE0057F3DD /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				40C54DC32641EED20057F3DD /* libROM.dylib */,
+				40C54DC12641EEB00057F3DD /* Accelerate.framework */,
 				40C54DB82640C1DE0057F3DD /* libmpi.40.dylib */,
 			);
 			name = Frameworks;
@@ -2527,9 +2532,16 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					../../externals/CLI11,
+					/Users/jessie/Software/libROM,
+				);
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = (
+					"<Multiple",
+					"values>",
+					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
@@ -2589,9 +2601,16 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					../../externals/CLI11,
+					/Users/jessie/Software/libROM,
+				);
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = (
+					"<Multiple",
+					"values>",
+					"/usr/local/Cellar/open-mpi/4.0.4_1/lib",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (

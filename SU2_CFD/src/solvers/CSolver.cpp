@@ -3957,9 +3957,9 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 #ifdef HAVE_LIBROM
 void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
   
-  bool unsteady = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                  (config->GetTime_Marching() == DT_STEPPING_2ND) ||
-                  (config->GetTime_Marching() == TIME_STEPPING));
+  bool unsteady = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                  (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
+                  (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING));
   unsigned long iPoint, total_index;
   unsigned short iVar;
   
