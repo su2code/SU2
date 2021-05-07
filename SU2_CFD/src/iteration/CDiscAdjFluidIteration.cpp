@@ -461,13 +461,14 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
   }
 
-  /*--- Register the variables of the mesh deformation ---*/
-  /*--- Undeformed mesh coordinates ---*/
-  solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+  if (config[iZone]->GetDeform_Mesh()) {
+    /*--- Register the variables of the mesh deformation ---*/
+    /*--- Undeformed mesh coordinates ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  /*--- Boundary displacements ---*/
-  solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
-
+    /*--- Boundary displacements ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+  }
   }
   END_SU2_OMP_PARALLEL
 }
