@@ -150,6 +150,17 @@ protected:
   bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
 
   /*!
+   * \brief Run inner iterations using a Krylov method (GMRES atm).
+   */
+  void KrylovInnerIters(unsigned short iZone);
+
+  /*!
+   * \brief Evaluate the gradient of the objective function and add to "External".
+   * \return "True" if the gradient is numerically 0.
+   */
+  bool EvaluateObjectiveFunctionGradient();
+
+  /*!
    * \brief Evaluate sensitivites for the current adjoint solution and output files.
    * \param[in] Iter - Current outer or time iteration.
    * \param[in] StopCalc - Final iteration flag (converged or reached max number of iters).
@@ -216,6 +227,11 @@ protected:
    * \param[in] iZone - Zone index.
    */
   void Add_Solution_To_External(unsigned short iZone);
+
+  /*!
+   * \brief Puts dual time derivative vector to External.
+   */
+  void Set_DualTimeDer_To_External();
 
   /*!
    * \brief Add External_Old vector to Solution.

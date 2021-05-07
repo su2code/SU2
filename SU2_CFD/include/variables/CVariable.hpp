@@ -370,9 +370,9 @@ public:
   void SetExternalZero();
 
   /*!
-   * \brief Set old External to the value of the current variables.
+   * \brief Set Dual-time derivative contributions to the external.
    */
-  void Set_OldExternal();
+  inline virtual void Set_DualTimeDer_To_External() { SetExternalZero(); }
 
   /*!
    * \brief A virtual member.

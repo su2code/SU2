@@ -362,6 +362,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   const bool dynamic = config->GetTime_Domain();
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
+  const bool multizone = config->GetMultizone_Problem();
 
   su2double Solution[MAXNVAR] = {0.0};
 
@@ -371,7 +372,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
 
-    if (dynamic) {
+    if (dynamic && !multizone) {
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
     }
@@ -386,7 +387,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
     }
 
-    if (config->GetMultizone_Problem())
+    if (multizone)
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
     else
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);

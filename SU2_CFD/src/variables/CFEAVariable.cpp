@@ -31,8 +31,19 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
                            unsigned long nvar, CConfig *config) :
   CVariable(npoint, ndim, config->GetTime_Domain()? 3*nvar : nvar, config) {
 
-  /*--- In time domain CVariable::nVar is mult. by 3 ^^^ (for vel. and accel.) and the original value then restored. ---*/
+  /*--- In time domain CVariable::nVar is mult. by 3 ^^^ (for vel. and accel.)
+   * and the original value then restored (below). ---*/
   nVar = nvar;
+  /*--- This simplifies the discrete adjoint of this solver, as it allows an abstract
+   * treatment of the "state" (disp. vel. accel.) whose details are only important
+   * for the primal solver. In time domain the primal "believes" it has nVar variables,
+   * which it uses for linear solvers, and then handles velocity and acceleration
+   * explicitly (for time integration). Whereas the discrete adjoint "thinks" the
+   * primal solution has 3*nVar variables. This is a little different from simply
+   * giving names to parts of the solution, it requires the methods of CVariable that
+   * deal with adjoints to deduce "nVar" from the container, rather than relying on
+   * the nVar member (which is manipulated above, so that CVariable::SetSolution, etc.
+   * still work as expected for the primal solver). ---*/
 
   const bool dynamic_analysis   = config->GetTime_Domain();
   const bool body_forces        = config->GetDeadLoad();

@@ -164,15 +164,13 @@ void CDiscAdjMultizoneDriver::StartSolver() {
           for (auto& mat : vecOfMat)
             mat = 0.0;
 
-      /*--- Reset external and solution ---*/
-      /// TODO: Init with dual time derivative instead.
-      for (iZone = 0; iZone < nZone; iZone++) {
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-          auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-          if (solver && solver->GetAdjoint()) solver->GetNodes()->SetExternalZero();
-        }
-        Set_Solution_To_BGSSolution_k(iZone);
-      }
+      /*--- Init external with dual time derivative. ---*/
+      Set_DualTimeDer_To_External();
+
+//      // PG: Why this?
+//      for (iZone = 0; iZone < nZone; iZone++) {
+//        Set_Solution_To_BGSSolution_k(iZone);
+//      }
     }
 
     /*--- We directly start the discrete adjoint computation. ---*/
@@ -220,6 +218,57 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
                                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
 }
 
+void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
+
+  /*--- Use FGMRES to solve the adjoint system, the RHS is -External,
+   * the solution are the iZone adjoint variables + External,
+   * Recall that External also contains the OF gradient. ---*/
+
+  GetAdjointRHS(iZone, AdjRHS[iZone]);
+
+  Add_External_To_Solution(iZone);
+
+  GetAllSolutions(iZone, true, AdjSol[iZone]);
+
+  const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
+  const auto product = AdjointProduct(this, iZone);
+
+  /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
+  const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
+  config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
+  LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
+
+  Scalar eps = 1.0;
+  for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
+    Scalar eps_l = 0.0;
+    Scalar tol_l = KrylovTol / eps;
+    auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
+    iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                             tol_l, iter, eps_l, monitor, config_container[iZone]);
+    totalIter -= iter+1;
+    eps *= eps_l;
+  }
+
+  /*--- Store the solution and restore user settings. ---*/
+  SetAllSolutions(iZone, true, AdjSol[iZone]);
+  config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
+
+  /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
+  AdjSol[iZone] += AdjRHS[iZone];
+  SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
+
+  /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
+   * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
+  eval_transfer = true;
+  Iterate(iZone, product.iInnerIter);
+
+  /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
+   * This is set without the "External" (by adding RHS above) so that it can be added
+   * again in the next outer iteration with new contributions from other zones. ---*/
+  SetAllSolutions(iZone, true, AdjSol[iZone]);
+
+}
+
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 99999;
@@ -256,38 +305,12 @@ void CDiscAdjMultizoneDriver::Run() {
     }
   }
 
-  /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
+  /*--- If the gradient of the objective function is 0 so are the adjoint variables.
+   * Unless in unsteady problems where there are other contributions to the RHS. ---*/
 
-  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-  SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-  RecordingState = RECORDING::CLEAR_INDICES;
+  const auto zeroGrad = EvaluateObjectiveFunctionGradient();
 
-  AD::ClearAdjoints();
-  SetAdj_ObjFunction();
-  AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
-
-  /*--- Initialize External with the objective function gradient. ---*/
-
-  su2double rhs_norm = 0.0;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                solver_container, numerics_container, config_container,
-                                                surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
-    Add_Solution_To_External(iZone);
-
-    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (solver && solver->GetAdjoint())
-        for (unsigned short iVar=0; iVar < solver->GetnVar(); ++iVar)
-          rhs_norm += solver->GetRes_RMS(iVar);
-    }
-  }
-
-  /*--- If the gradient of the objective function is 0 so are the adjoint variables. ---*/
-
-  if (rhs_norm < EPS) {
+  if (zeroGrad && !time_domain) {
     if (rank == MASTER_NODE) {
       cout << "\nThe gradient of the objective function is numerically 0.";
       cout << "\nThis implies that the adjoint variables are also 0.\n\n";
@@ -376,52 +399,9 @@ void CDiscAdjMultizoneDriver::Run() {
         }
       }
       else {
-        /*--- Use FGMRES to solve the adjoint system, the RHS is -External,
-         * the solution are the iZone adjoint variables + External,
-         * Recall that External also contains the OF gradient. ---*/
+        /*--- Use Krylov method to drive inner iterations of this zone. ---*/
 
-        GetAdjointRHS(iZone, AdjRHS[iZone]);
-
-        Add_External_To_Solution(iZone);
-
-        GetAllSolutions(iZone, true, AdjSol[iZone]);
-
-        const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
-        const auto product = AdjointProduct(this, iZone);
-
-        /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
-        const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
-        config_container[iZone]->SetScreen_Wrt_Freq(2, nInnerIter[iZone]);
-        LinSolver[iZone].SetMonitoringFrequency(wrtFreq);
-
-        Scalar eps = 1.0;
-        for (auto totalIter = nInnerIter[iZone]; totalIter >= KrylovMinIters && eps > KrylovTol;) {
-          Scalar eps_l = 0.0;
-          Scalar tol_l = KrylovTol / eps;
-          auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-          iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
-                                                   tol_l, iter, eps_l, monitor, config_container[iZone]);
-          totalIter -= iter+1;
-          eps *= eps_l;
-        }
-
-        /*--- Store the solution and restore user settings. ---*/
-        SetAllSolutions(iZone, true, AdjSol[iZone]);
-        config_container[iZone]->SetScreen_Wrt_Freq(2, wrtFreq);
-
-        /*--- Set the old solution such that iterating gives meaningful residuals. ---*/
-        AdjSol[iZone] += AdjRHS[iZone];
-        SetAllSolutionsOld(iZone, true, AdjSol[iZone]);
-
-        /*--- Iterate to evaluate cross terms and residuals, this cannot happen within GMRES
-         * because the vectors it multiplies by the Jacobian are not the actual solution. ---*/
-        eval_transfer = true;
-        Iterate(iZone, product.iInnerIter);
-
-        /*--- Set the solution as obtained from GMRES, otherwise it would be GMRES+Iterate once.
-         * This is set without the "External" (by adding RHS above) so that it can be added
-         * again in the next outer iteration with new contributions from other zones. ---*/
-        SetAllSolutions(iZone, true, AdjSol[iZone]);
+        KrylovInnerIters(iZone);
       }
 
       /*--- Off-diagonal (coupling term) BGS update. ---*/
@@ -475,6 +455,40 @@ void CDiscAdjMultizoneDriver::Run() {
     EvaluateSensitivities(TimeIter, false);
   }
 
+}
+
+bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
+
+  /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
+
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  RecordingState = RECORDING::CLEAR_INDICES;
+
+  AD::ClearAdjoints();
+  SetAdj_ObjFunction();
+  AD::ComputeAdjoint(OBJECTIVE_FUNCTION, START);
+
+  /*--- Initialize External with the objective function gradient. ---*/
+
+  su2double rhs_norm = 0.0;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
+                                                solver_container, numerics_container, config_container,
+                                                surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+    Add_Solution_To_External(iZone);
+
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && solver->GetAdjoint())
+        for (unsigned short iVar=0; iVar < solver->GetnVar(); ++iVar)
+          rhs_norm += solver->GetRes_RMS(iVar);
+    }
+  }
+
+  return rhs_norm < EPS;
 }
 
 void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool StopCalc) {
@@ -580,7 +594,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
-    case RECORDING::CLEAR_INDICES:       cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
     default: break;
@@ -962,6 +976,17 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
     auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
     if (solver && solver->GetAdjoint())
       solver->Add_Solution_To_External();
+  }
+}
+
+void CDiscAdjMultizoneDriver::Set_DualTimeDer_To_External() {
+
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && solver->GetAdjoint())
+        solver->GetNodes()->Set_DualTimeDer_To_External();
+    }
   }
 }
 

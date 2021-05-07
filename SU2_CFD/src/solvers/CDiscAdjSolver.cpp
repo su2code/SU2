@@ -475,8 +475,10 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                           config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool multizone = config->GetMultizone_Problem();
 
-  su2double Solution[MAXNVAR] = {0.0}; /*!< \brief Local container to manipulate the adjoint solution. */
+  /*--- Local container to manipulate the adjoint solution. ---*/
+  su2double Solution[MAXNVAR] = {0.0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -487,20 +489,18 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
-    if (dual_time) {
+    if (dual_time && !multizone) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
 
     /*--- Set the adjoint values of the primal solution. ---*/
-    if(config->GetMultizone_Problem()) {
+    if (multizone)
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
+    else
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
-    }
-  } // for iPoint
+  }
   END_SU2_OMP_FOR
 }
 

@@ -117,4 +117,9 @@ public:
     return Solution_Direct[iPoint];
   }
 
+  /*!
+   * \brief Set Dual-time derivative contributions to the external.
+   */
+  void Set_DualTimeDer_To_External() final;
+
 };
