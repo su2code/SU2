@@ -185,11 +185,9 @@ su2double COneShotSolver::EvaluateGeometryFunction(CGeometry* geometry, CConfig*
     Plane_Normal[2] = 0.0;   Plane_P0[2] = 0.0;
   }
   else if (geometry->GetnDim() == 3) {
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
-      Plane_Normal[1] = 1.0;    Plane_P0[1] = config->GetLocationStations(iPlane);
-      Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
-    }
+    Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
+    Plane_Normal[1] = 1.0;    Plane_P0[1] = config->GetLocationStations(iPlane);
+    Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
   }
 
   /*--- Compute the wing and fan description (only 3D). ---*/
@@ -250,7 +248,13 @@ vector<su2double> COneShotSolver::EvaluateGeometryGradient(CGeometry* geometry, 
 
   std::vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   std::vector<su2double> Sum_Gradient(config->GetnDV(), 0.0);
+  su2double* SumGradientBuffer;
   bool Local_MoveSurface, MoveSurface = false;
+
+  SumGradientBuffer = new su2double[config->GetnDV()];
+  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
+    SumGradientBuffer[iDV]=0.0;
+  }
 
   /// base evaluation
 
@@ -258,6 +262,11 @@ vector<su2double> COneShotSolver::EvaluateGeometryGradient(CGeometry* geometry, 
 
   if (geometry->GetnDim() == 2) nPlane = 1;
   else nPlane = config->GetnLocationStations();
+
+  Xcoord_Airfoil = new vector<su2double>[nPlane];
+  Ycoord_Airfoil = new vector<su2double>[nPlane];
+  Zcoord_Airfoil = new vector<su2double>[nPlane];
+  Variable_Airfoil = new vector<su2double>[nPlane];
 
   Plane_P0 = new su2double*[nPlane];
   Plane_Normal = new su2double*[nPlane];
@@ -448,7 +457,7 @@ vector<su2double> COneShotSolver::EvaluateGeometryGradient(CGeometry* geometry, 
             if (Xcoord_Airfoil[iPlane].size() > 1) {
 
                 ThicknessValue_New[iPlane] = geometry->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
-                Gradient[1*nPlane + iPlane] = (ThicknessValue_New[iPlane] - ThicknessValue[iPlane]) / delta_eps;
+                Gradient[iPlane] = (ThicknessValue_New[iPlane] - ThicknessValue[iPlane]) / delta_eps;
 
             }
           }
@@ -465,12 +474,29 @@ vector<su2double> COneShotSolver::EvaluateGeometryGradient(CGeometry* geometry, 
       }
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Sum_Gradient[iDV] += Gradient[iPlane];
+      SumGradientBuffer[iDV] += Gradient[iPlane];
     }
 
   }
 
   /// add mpi broadcast for vector here!!!
+  SU2_MPI::Bcast(SumGradientBuffer, config->GetnDV(), MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+
+  for (auto iDV=0; iDV<config->GetnDV(); iDV++) {
+    Sum_Gradient[iDV] = SumGradientBuffer[iDV];
+  }
+
+  /// delete variables
+  delete [] SumGradientBuffer;
+  delete [] Xcoord_Airfoil; delete [] Ycoord_Airfoil; delete [] Zcoord_Airfoil;
+
+  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
+    delete [] Plane_P0[iPlane];
+    delete [] Plane_Normal[iPlane];
+  }
+  delete [] Plane_P0;
+  delete [] Plane_Normal;
 
   return Sum_Gradient;
+
 }

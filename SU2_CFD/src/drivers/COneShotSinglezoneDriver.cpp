@@ -469,6 +469,12 @@ su2double COneShotSinglezoneDriver::ComputeCombFunction() {
 
 void COneShotSinglezoneDriver::ComputePreconditioner() {
 
+   vector<su2double> geoGrad;
+   vector<su2double> storage(config->GetnDV_Total(), 0.0);
+   unsigned int iDV, iDV_Value, iDV_index, nDV_Value;
+   unsigned int nDV = config->GetnDV();
+   su2double** DV_Value = config->GetDV_Pointer();
+
   /*--- get the sensitivities from the adjoint solver to work with ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[ADJFLOW_SOL]);
 
@@ -482,12 +488,50 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
   // TODO: find a way to include preconditioning of geometry gradients too???
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
 
+  iDV_index = 0;
+  ofstream tostore("tostore" +  std::to_string(rank) + ".txt");
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      storage[iDV_index] = DV_Value[iDV][iDV_Value];
+      tostore << DV_Value[iDV][iDV_Value] << endl;
+      DV_Value[iDV][iDV_Value] = 0.001;
+      iDV_index++;
+    }
+  }
+  tostore.close();
+
   // Add the geometric gradients if needed
   for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
     if (config->GetKind_ConstrFunc(iConstr)==THICKNESS_CONSTRAINT) {
-      // gradient += solver[MainSolver]->EvaluateGeometryGradient(geometry, surface_movement[ZONE_0], config);
+      geoGrad = solver[MainSolver]->EvaluateGeometryGradient(geometry, surface_movement[ZONE_0], config);
+      if (rank==MASTER_NODE) { cout << "Huhu." << endl; }
       break;
     }
+  }
+
+  ofstream fromstore("fromstore" +  std::to_string(rank) + ".txt");
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      DV_Value[iDV][iDV_Value] = storage[iDV_index];
+      fromstore << DV_Value[iDV][iDV_Value] << endl;
+      iDV_index++;
+    }
+  }
+  fromstore.close();
+
+
+    ofstream outGrad ("geometric_gradient" + std::to_string(rank) + ".csv");
+    outGrad.precision(17);
+    for (iDV = 0; iDV < geoGrad.size(); iDV++) {
+      outGrad << geoGrad[iDV] << ",";
+    }
+    outGrad.close();
+
+
+  for (auto iDV = 0; iDV < geoGrad.size(); iDV++) {
+    gradient[iDV] += geoGrad[iDV];
   }
 
 }
