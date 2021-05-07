@@ -2195,24 +2195,14 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
   
 
   // TODO: Summary Print is hard coded, CONFIG file option to be added
-<<<<<<< HEAD
-  if(curOuterIter%10 == 0 && rank == MASTER_NODE && true) {
-    auto BladePerformance = solver_container[FLOW_SOL]->GetTurbomachineryPerformance()->GetBladesPerformances();
-    auto nSpan = 1;//config->GetnSpan_iZones(config->GetnZone()-1);
-=======
   if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
     auto BladePerformance = TurboPerf->GetBladesPerformances();
     auto nSpan = config->GetnSpan_iZones(config->GetnZone()-1);
->>>>>>> 858b283192f45f339b48bb805262dad44a02a29e
 
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
 
-<<<<<<< HEAD
     if (true){
-=======
-    if (val_iZone == config->GetnZone()-1 && OuterIter%10==0 && OuterIter!=1){
->>>>>>> 858b283192f45f339b48bb805262dad44a02a29e
       TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
       TurboInOut.AddColumn("Properties", 25);
       TurboInOut.AddColumn("Inlet", 25);
