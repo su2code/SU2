@@ -433,6 +433,8 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
+  driver_output->SetTurboMultiZonePerformance_Output(solver_container,geometry_container,config_container,driver_config->GetOuterIter());
+
   driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
                                             driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
@@ -631,7 +633,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
                 config_container[donorZone], config_container[targetZone], iMarkerInt );
       }
 
-      if(targetZone==nZone-1) {
+      if(true) {
         for (donorZone = 0; donorZone < nZone-1; donorZone++) {
           if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
             interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);

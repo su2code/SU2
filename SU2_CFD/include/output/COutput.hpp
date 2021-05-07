@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 class CGeometry;
 class CSolver;
@@ -303,6 +304,8 @@ public:
    */
   void SetTurboPerformance_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iZone);
+
+  void SetTurboMultiZonePerformance_Output(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short OuterIter);
 
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
