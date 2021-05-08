@@ -38,7 +38,7 @@ class CAdjFlowIncOutput final: public COutput {
 private:
 
   unsigned short turb_model; /*!< \brief The kind of turbulence model*/
-  unsigned short rad_model;  /*!< \brief The kind of radiation model */
+  RADIATION_MODEL rad_model; /*!< \brief The kind of radiation model */
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
 
@@ -101,12 +101,5 @@ public:
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInit_Residuals(CConfig *config) override;
-
-  /*!
-   * \brief Check whether the averaged values should be updated
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> averages should be updated.
-   */
-  bool SetUpdate_Averages(CConfig *config) override;
 
 };

@@ -6589,7 +6589,7 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 }
 
-void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+void CMeshFEM_DG::InitStaticMeshMovement(const CConfig        *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 

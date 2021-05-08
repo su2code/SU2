@@ -1785,7 +1785,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
     RefTemp = Temperature_Inf;
     RefDensity = Density_Inf;
-    if (dynamic_grid) {
+    if (dynamic_grid && !config->GetFSI_Simulation()) {
       Mach2Vel = sqrt(Gamma * Gas_Constant * RefTemp);
       Mach_Motion = config->GetMach_Motion();
       RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
@@ -2504,9 +2504,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       if (roughwall) {
-        unsigned short WallType; su2double Roughness_Height;
+        WALL_TYPE WallType;
+        su2double Roughness_Height;
         tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-        if (WallType == ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
+        if (WallType == WALL_TYPE::ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
       }
       Density = nodes->GetDensity(iPoint);
 

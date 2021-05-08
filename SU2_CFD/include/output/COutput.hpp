@@ -653,6 +653,12 @@ protected:
   }
 
   /*!
+   * \brief Write screen and history output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputScreenAndHistory(CConfig *config);
+
+  /*!
    * \brief Set the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
@@ -734,13 +740,6 @@ protected:
    * \return <TRUE> if the residuals should be initialized.
    */
   inline virtual bool SetInit_Residuals(CConfig *config) {return false;}
-
-  /*!
-   * \brief Check whether the averaged values should be updated
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> averages should be updated.
-   */
-  inline virtual bool SetUpdate_Averages(CConfig *config){return false;}
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.

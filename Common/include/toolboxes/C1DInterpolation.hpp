@@ -38,8 +38,6 @@ using namespace std;
 class C1DInterpolation{
 protected:
   bool Point_Match = false; /*!< \brief to make sure all points from the inlet data match the vertex coordinates */
-  vector<su2double> X;      /*!< \brief x for inlet data */
-  vector<su2double> Data;   /*!< \brief f(x) for inlet data */
 
 public:
   /*!
@@ -52,7 +50,7 @@ public:
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
    */
-  virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data){}
+  virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) = 0;
 
   /*!
    * \brief virtual method for evaluating the value of the respective Spline.
@@ -80,7 +78,7 @@ public:
    * \param[in] Data - the f(x) values.
    */
   CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
-      SetSpline(X,Data);
+    SetSpline(X,Data);
   }
 
   /*!
@@ -110,7 +108,7 @@ public:
    * \param[in] Data - the f(x) values.
    */
   CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
-      SetSpline(X,Data);
+    SetSpline(X,Data);
   }
 
   /*!

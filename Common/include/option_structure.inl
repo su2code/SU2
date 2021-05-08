@@ -58,11 +58,11 @@ public:
     auto it = m.find(option_value[0]);
 
     if (it == m.cend()) {
-      string str = name;
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
+      stringstream ss;
+      ss << name << ": invalid option value " << option_value[0] << ".\nDid you mean";
+      for (auto& item : m) ss << ", " << item.first;
+      ss << "?";
+      return ss.str();
     }
     // If it is there, set the option value
     field = it->second;
@@ -224,11 +224,11 @@ public:
       auto it = m.find(option_value[i]);
 
       if (it == m.cend()) {
-        string str = name;
-        str.append(": invalid option value ");
-        str.append(option_value[i]);
-        str.append(". Check current SU2 options in config_template.cfg.");
-        return str;
+        stringstream ss;
+        ss << name << ": invalid option value " << option_value[i] << ".\nDid you mean";
+        for (auto& item : m) ss << ", " << item.first;
+        ss << "?";
+        return ss.str();
       }
       // If it is there, set the option value
       field[i] = it->second;
@@ -455,50 +455,47 @@ class COptionMathProblem : public COptionBase {
 
 public:
   COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
-    this->name = option_field_name;
-    this->cont_adjoint_def = cont_adjoint_default;
-    this->disc_adjoint_def = disc_adjoint_default;
-    this->restart_def = restart_default;
+    name = option_field_name;
+    cont_adjoint_def = cont_adjoint_default;
+    disc_adjoint_def = disc_adjoint_default;
+    restart_def = restart_default;
   }
 
   ~COptionMathProblem() override {};
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    string out = optionCheckMultipleValues(option_value, "unsigned short", name);
     if (out.compare("") != 0) {
       return out;
     }
-    if (option_value[0] == "ADJOINT") {
-      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    else if (option_value[0] == "ADJOINT") {
+      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", name);
     }
-    if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
-      return badValue(option_value, "math problem", this->name);
-    }
-    if (option_value[0] == "DIRECT") {
-      this->cont_adjoint = false;
-      this->disc_adjoint = false;
-      this->restart = false;
+    else if (option_value[0] == "DIRECT") {
+      cont_adjoint = false;
+      disc_adjoint = false;
+      restart = false;
       return "";
     }
-    if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->cont_adjoint= true;
-      this->disc_adjoint = false;
-      this->restart= true;
+    else if (option_value[0] == "CONTINUOUS_ADJOINT") {
+      cont_adjoint= true;
+      disc_adjoint = false;
+      restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT") {
-      this->disc_adjoint = true;
-      this->cont_adjoint= false;
-      this->restart = true;
+    else if (option_value[0] == "DISCRETE_ADJOINT") {
+      disc_adjoint = true;
+      cont_adjoint= false;
+      restart = true;
       return "";
     }
-    return "option in math problem map not considered in constructor";
+    return badValue(option_value, "math problem", name);
   }
 
   void SetDefault() override {
-    this->cont_adjoint = this->cont_adjoint_def;
-    this->disc_adjoint = this->disc_adjoint_def;
-    this->restart = this->restart_def;
+    cont_adjoint = cont_adjoint_def;
+    disc_adjoint = disc_adjoint_def;
+    restart = restart_def;
   }
 
 };

@@ -765,9 +765,9 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
-    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-    bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
+    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+    bool fsi = (config[val_iZone]->GetFSI_Simulation());
     bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
@@ -2954,7 +2954,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2962,7 +2962,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2978,30 +2978,36 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
+          default:
+            break;
+
         }
         switch (config[val_iZone]->GetKind_ConductivityModel()) {
 
-          case CONSTANT_PRANDTL:
+          case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
             Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
             Breakdown_file << "Prandtl: " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
             break;
 
-          case CONSTANT_CONDUCTIVITY:
-            Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT:
+            Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
 
         if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
           switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
-            case CONSTANT_PRANDTL_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
               break;
-            case NO_CONDUCTIVITY_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::NONE:
+              Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
               Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
               break;
           }
@@ -3298,7 +3304,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
       if (viscous) {
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Constant Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3306,7 +3312,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3322,7 +3328,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
-          case POLYNOMIAL_VISCOSITY:
+          case VISCOSITYMODEL::POLYNOMIAL:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
@@ -3343,19 +3349,19 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         if (energy) {
           switch (config[val_iZone]->GetKind_ConductivityModel()) {
 
-            case CONSTANT_PRANDTL:
+            case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
               Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Prandtl (Laminar): " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
               break;
 
-            case CONSTANT_CONDUCTIVITY:
-              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+            case CONDUCTIVITYMODEL::CONSTANT:
+              Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
               break;
 
-            case POLYNOMIAL_CONDUCTIVITY:
-              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            case CONDUCTIVITYMODEL::POLYNOMIAL:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL "<< endl;
               Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
               for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
                 Breakdown_file << config[val_iZone]->GetKt_PolyCoeff(iVar);
@@ -3374,12 +3380,12 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
           if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
             switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
-              case CONSTANT_PRANDTL_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
                 Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
                 break;
-              case NO_CONDUCTIVITY_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::NONE:
+                Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
                 Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
                 break;
             }

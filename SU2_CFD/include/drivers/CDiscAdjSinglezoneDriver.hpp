@@ -39,9 +39,9 @@ class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
 
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
-  unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
-  unsigned short MainVariables,                 /*!< \brief The kind of recording linked to the main variables of the problem.*/
-                 SecondaryVariables;            /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
+  RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
+  RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
+  RECORDING SecondaryVariables;                 /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
   int MainSolver;                               /*!< \brief Index of the main adjoint solver. */
   su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
   CIteration* direct_iteration;                 /*!< \brief A pointer to the direct iteration.*/
@@ -94,13 +94,13 @@ public:
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void SetRecording(unsigned short kind_recording);
+  void SetRecording(RECORDING kind_recording);
 
   /*!
    * \brief Run one iteration of the solver.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void DirectRun(unsigned short kind_recording);
+  void DirectRun(RECORDING kind_recording);
 
   /*!
    * \brief Set the objective function.
@@ -116,7 +116,7 @@ public:
    * \brief Print out the direct residuals.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void Print_DirectResidual(unsigned short kind_recording);
+  void Print_DirectResidual(RECORDING kind_recording);
 
   /*!
    * \brief Record the main computational path.
