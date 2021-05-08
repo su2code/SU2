@@ -489,7 +489,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
-    if (dual_time) {
+    if (dual_time && !multizone) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }

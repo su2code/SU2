@@ -125,9 +125,42 @@ CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 
 }
 
+void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
+
+  const bool time_domain = driver_config->GetTime_Domain();
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    /*--- Set current time iteration ---*/
+    config_container[iZone]->SetTimeIter(TimeIter);
+
+    if (time_domain)
+      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+    else
+      config_container[iZone]->SetPhysicalTime(0.0);
+
+    /*--- Preprocess the iteration of each zone. ---*/
+
+    iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
+                                                   solver_container, numerics_container, config_container, surface_movement,
+                                                   grid_movement, FFDBox, iZone, INST_0);
+  }
+
+  if (TimeIter) {
+    /*--- Reset cross-terms before new time iterations. ---*/
+    for (auto& matOfMat : Cross_Terms)
+      for (auto& vecOfMat : matOfMat)
+        for (auto& mat : vecOfMat)
+          mat = 0.0;
+
+    /*--- Initialize external with dynamic contributions. ---*/
+    Set_External_To_DualTimeDer();
+  }
+
+}
+
 void CDiscAdjMultizoneDriver::StartSolver() {
 
-  bool time_domain = driver_config->GetTime_Domain();
+  const bool time_domain = driver_config->GetTime_Domain();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -140,49 +173,48 @@ void CDiscAdjMultizoneDriver::StartSolver() {
       cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
+  /*--- General setup. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+
+    /*--- Set BGS_Solution_k to Solution, this is needed to restart
+     * correctly as the first OF gradient will overwrite the solution. ---*/
+
+    Set_BGSSolution_k_To_Solution(iZone);
+
+    /*--- Prepare Krylov or quasi-Newton methods. ---*/
+
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    const auto nPointDomain = geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain();
+    const auto nVar = GetTotalNumberOfVariables(iZone, true);
+
+    if (config_container[iZone]->GetNewtonKrylov() &&
+        config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
+      AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
+      AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
+      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
+    }
+    else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
+      FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
+    }
+  }
+
   /*--- Size and initialize the matrix of cross-terms. ---*/
 
   InitializeCrossTerms();
 
+  /*--- Run time iterations. ---*/
+
   while (TimeIter < driver_config->GetnTime_Iter()) {
 
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      /*--- Set current time iteration ---*/
-      config_container[iZone]->SetTimeIter(TimeIter);
-
-      if (time_domain)
-        config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
-      else
-        config_container[iZone]->SetPhysicalTime(0.0);
-    }
-
-    if (TimeIter) {
-      /*--- Reset cross-terms before new time iterations. ---*/
-      for (auto& matOfMat : Cross_Terms)
-        for (auto& vecOfMat : matOfMat)
-          for (auto& mat : vecOfMat)
-            mat = 0.0;
-
-      /*--- Reset external and solution ---*/
-      /// TODO: Init with dual time derivative instead.
-      for (iZone = 0; iZone < nZone; iZone++) {
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-          auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-          if (solver && solver->GetAdjoint()) solver->GetNodes()->SetExternalZero();
-        }
-        Set_Solution_To_BGSSolution_k(iZone);
-      }
-      // /*--- Init external with dual time derivative. ---*/
-      // Set_DualTimeDer_To_External();
-    }
-
-    /*--- We directly start the discrete adjoint computation. ---*/
+    Preprocess(TimeIter);
 
     Run();
 
     TimeIter++;
   }
+
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
@@ -275,39 +307,8 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  unsigned long wrt_sol_freq = 99999;
   const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   const bool time_domain = driver_config->GetTime_Domain();
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
-
-    iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
-                                                   solver_container, numerics_container, config_container, surface_movement,
-                                                   grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Set BGS_Solution_k to Solution, this is needed to restart
-     *    correctly as the OF gradient will overwrite the solution. ---*/
-
-    Set_BGSSolution_k_To_Solution(iZone);
-
-    /*--- Prepare Krylov or quasi-Newton methods. ---*/
-
-    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
-    const auto nPointDomain = geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain();
-    const auto nVar = GetTotalNumberOfVariables(iZone, true);
-
-    if (config_container[iZone]->GetNewtonKrylov() &&
-        config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
-      AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
-      AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
-      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
-    }
-    else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
-      FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
-    }
-  }
 
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
    * Unless in unsteady problems where there are other contributions to the RHS. ---*/
@@ -535,37 +536,20 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool Sto
     auto solvers = solver_container[iZone][INST_0][MESH_0];
     auto geometry = geometry_container[iZone][INST_0][MESH_0];
 
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-
-        if(Has_Deformation(iZone)) {
-          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJFLOW_SOL]);
-        } else {
-          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, config);
-        }
-        break;
-
-      case DISC_ADJ_HEAT:
-
-        if(Has_Deformation(iZone)) {
-          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJHEAT_SOL]);
-        } else {
-          solvers[ADJHEAT_SOL]->SetSensitivity(geometry, config);
-        }
-        break;
-
-      case DISC_ADJ_FEM:
-
-        solvers[ADJFEA_SOL]->SetSensitivity(geometry, config);
-        break;
-
-      default:
-        if (rank == MASTER_NODE)
-          cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
-        break;
+    int IDX_SOL = -1;
+    if (config->GetFluidProblem()) IDX_SOL = ADJFLOW_SOL;
+    else if (config->GetHeatProblem()) IDX_SOL = ADJHEAT_SOL;
+    else if (config->GetStructuralProblem()) IDX_SOL = ADJFEA_SOL;
+    else {
+      if (rank == MASTER_NODE)
+        cout << "WARNING: Sensitivities not set for one of the specified discrete adjoint solvers!" << endl;
+      continue;
     }
+
+    if (Has_Deformation(iZone))
+      solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[IDX_SOL]);
+    else
+      solvers[IDX_SOL]->SetSensitivity(geometry, config);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
@@ -983,13 +967,13 @@ void CDiscAdjMultizoneDriver::Add_Solution_To_External(unsigned short iZone) {
   }
 }
 
-void CDiscAdjMultizoneDriver::Set_DualTimeDer_To_External() {
+void CDiscAdjMultizoneDriver::Set_External_To_DualTimeDer() {
 
   for (unsigned short iZone = 0; iZone < nZone; iZone++) {
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
       if (solver && solver->GetAdjoint())
-        solver->GetNodes()->Set_DualTimeDer_To_External();
+        solver->GetNodes()->Set_External_To_DualTimeDer();
     }
   }
 }

@@ -45,7 +45,7 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
       Solution(iPoint,iVar) = sol[iVar];
 }
 
-void CDiscAdjVariable::Set_DualTimeDer_To_External() {
+void CDiscAdjVariable::Set_External_To_DualTimeDer() {
   assert(External.size() == DualTime_Derivative.size());
   parallelCopy(External.size(), DualTime_Derivative.data(), External.data());
 }

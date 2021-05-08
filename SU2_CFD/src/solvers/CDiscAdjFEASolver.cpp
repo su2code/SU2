@@ -372,7 +372,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
 
-    if (dynamic) {
+    if (dynamic && !multizone) {
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
     }

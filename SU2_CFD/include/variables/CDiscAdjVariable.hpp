@@ -120,6 +120,6 @@ public:
   /*!
    * \brief Set Dual-time derivative contributions to the external.
    */
-  void Set_DualTimeDer_To_External() final;
+  void Set_External_To_DualTimeDer() final;
 
 };

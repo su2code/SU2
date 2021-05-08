@@ -372,7 +372,7 @@ public:
   /*!
    * \brief Set Dual-time derivative contributions to the external.
    */
-  inline virtual void Set_DualTimeDer_To_External() { SetExternalZero(); }
+  inline virtual void Set_External_To_DualTimeDer() { SetExternalZero(); }
 
   /*!
    * \brief A virtual member.
