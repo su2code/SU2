@@ -244,7 +244,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   long iPoint_Local = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned long counter = 0;
-  su2double Solution[MAXNVAR]; 
+  su2double Solution[MAXNVAR];
   for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
@@ -362,7 +362,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
             **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
 
-  su2double Vector_i[MAXNDIM], Vector_j[MAXNDIM];
+  vector<su2double> Vector_i(nDim, 0.0);
+  vector<su2double> Vector_j(nDim, 0.0);
 
   if(flow) {
 
