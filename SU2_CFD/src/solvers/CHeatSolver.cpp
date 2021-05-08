@@ -28,17 +28,8 @@
 #include "../../include/solvers/CHeatSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CHeatSolver::CHeatSolver(void) : CSolver() { }
-
-CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-
-  flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-          (config->GetKind_Solver() == INC_RANS) ||
-          (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-          (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
-
-  heat_equation = ((config->GetKind_Solver() == HEAT_EQUATION) ||
-                   (config->GetKind_Solver() == DISC_ADJ_HEAT));
+CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver(),
+             flow(config->GetFluidProblem()), heat_equation(config->GetHeatProblem()) {
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -627,12 +618,10 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double Wall_HeatFlux;
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   if(config->GetIntegrated_HeatFlux()) {
 
     string HeatFlux_Tag, Marker_Tag;
-
-    // Find out which heat flux wall to get the right surface area
 
     for (auto iMarker_HeatFlux = 0u; iMarker_HeatFlux < config->GetnMarker_HeatFlux(); iMarker_HeatFlux++ ) {
 
@@ -644,10 +633,6 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
       }
     }
   }
-  else {
-    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  }
-
   Wall_HeatFlux = Wall_HeatFlux/config->GetHeat_Flux_Ref();
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
