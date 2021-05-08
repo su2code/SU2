@@ -367,10 +367,8 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
   }
 }
 
-void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
-                                     CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                            unsigned short iZone, unsigned short iInst, bool CrossTerm) {
 
   SU2_OMP_PARALLEL_(if(solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->GetHasHybridParallel())) {
 

@@ -178,9 +178,8 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0, false);
+    iteration->IterateDiscAdj(geometry_container, solver_container,
+                              config_container, ZONE_0, INST_0, false);
 
     /*--- Monitor the pseudo-time ---*/
 
@@ -438,7 +437,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0, false);
+  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
 

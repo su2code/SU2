@@ -139,10 +139,8 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
   }
 }
 
-void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
-                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                                          unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -151,9 +149,6 @@ void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration
 
   solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[val_iZone][val_iInst][MESH_0],
                                                                              config[val_iZone]);
-  if (config[val_iZone]->GetTime_Domain()) {
-    integration[val_iZone][val_iInst][ADJFEA_SOL]->SetConvergence(false);
-  }
 }
 
 void CDiscAdjFEAIteration::SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config,

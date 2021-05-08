@@ -133,7 +133,7 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 void CAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   switch (config[val_iZone]->GetKind_Solver()) {
     case ADJ_EULER:
       config[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS);

@@ -2999,7 +2999,8 @@ void CFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetInnerIter(IntIter);
-      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+      iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container,
+                                                  config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 
     /*--- Check convergence in each zone --*/
@@ -3174,7 +3175,7 @@ void CTurbomachineryDriver::Run() {
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+                                        surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -3417,7 +3418,7 @@ void CHBDriver::Run() {
   for (iInst = 0; iInst < nInstHB; iInst++)
     iteration_container[ZONE_0][iInst]->Iterate(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, ZONE_0, iInst, false);
+        surface_movement, grid_movement, FFDBox, ZONE_0, iInst);
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 

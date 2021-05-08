@@ -44,7 +44,7 @@ void CFEMFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
 void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Update global parameters ---*/
 
   if (config[val_iZone]->GetKind_Solver() == FEM_EULER || config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)

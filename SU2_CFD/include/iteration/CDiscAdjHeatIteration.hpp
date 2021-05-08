@@ -57,7 +57,7 @@ class CDiscAdjHeatIteration final : public CIteration {
   explicit CDiscAdjHeatIteration(const CConfig *config) : CIteration(config) {}
 
   /*!
-   * \brief Perform a single iteration of the adjoint fluid system.
+   * \brief Perform a single iteration of the adjoint heat problem.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -76,27 +76,19 @@ class CDiscAdjHeatIteration final : public CIteration {
                   unsigned short val_iInst) override;
 
   /*!
-   * \brief Perform a single iteration of the adjoint fluid system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
+   * \brief Perform a single iteration of the adjoint heat problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance layer.
+   * \param[in] val_iInst - Index of the instance.
    * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-               CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-               CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-               unsigned short val_iInst, bool CrossTerm) override;
+  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) override;
 
   /*!
-   * \brief Perform a single iteration of the adjoint fluid system.
+   * \brief Perform a single iteration of the adjoint heat problem.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -115,7 +107,7 @@ class CDiscAdjHeatIteration final : public CIteration {
               unsigned short val_iInst) override;
 
   /*!
-   * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
+   * \brief Monitors the convergence and other metrics for the discrete adjoint heat problem.
    */
   bool Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,

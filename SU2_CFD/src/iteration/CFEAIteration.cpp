@@ -31,7 +31,7 @@
 void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                            unsigned short val_iInst, bool CrossTerm) {
+                            unsigned short val_iInst) {
   bool StopCalc = false;
   unsigned long IntIter = 0;
 
@@ -267,7 +267,7 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
                           unsigned short val_iInst) {
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
-          val_iInst, false);
+          val_iInst);
 
   if (multizone && !config[val_iZone]->GetTime_Domain()) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), false, val_iZone, val_iInst);

@@ -55,7 +55,7 @@ void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, 
 void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                              CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+                              CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
 
   const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -286,7 +286,7 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
 
     /*--- Run a single iteration of the solver ---*/
     Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
-            INST_0, false);
+            INST_0);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,

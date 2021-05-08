@@ -67,7 +67,7 @@ class CAdjFluidIteration : public CFluidIteration {
   void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-               unsigned short val_iInst, bool CrossTerm) override;
+               unsigned short val_iInst) override;
 
   /*!
    * \brief Updates the containers for the adjoint fluid system.

@@ -230,9 +230,8 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 
   /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
 
-  iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                              solver_container, numerics_container, config_container,
-                                              surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+  iteration_container[iZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
+                                                     config_container, iZone, INST_0, false);
 
   /*--- Use QN driver to improve the solution. ---*/
 
@@ -419,9 +418,8 @@ void CDiscAdjMultizoneDriver::Run() {
            *    that is, for the cases iZone != jZone we are evaluating cross derivatives between zones. ---*/
 
           config_container[jZone]->SetInnerIter(0);
-          iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
-                                                      solver_container, numerics_container, config_container,
-                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0, true);
+          iteration_container[jZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
+                                                             config_container, jZone, INST_0, true);
 
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
@@ -480,9 +478,8 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
-                                                solver_container, numerics_container, config_container,
-                                                surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+    iteration_container[iZone][INST_0]->IterateDiscAdj(geometry_container, solver_container,
+                                                       config_container, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
 
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
@@ -695,7 +692,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
   /*--- Iterate the zone as a block a single time ---*/
   direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
+                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
   /*--- Print residuals in the first iteration ---*/
 
