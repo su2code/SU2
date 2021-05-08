@@ -94,17 +94,16 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
   }
   END_SU2_OMP_FOR
 
-  /*--- Set indices to zero ---*/
-
-  RegisterVariables(geometry, config, true);
-
 }
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  /*--- Register reference mesh coordinates ---*/
-  direct_solver->GetNodes()->Register_MeshCoord();
-
+  SU2_OMP_MASTER {
+    /*--- Register reference mesh coordinates ---*/
+    direct_solver->GetNodes()->Register_MeshCoord();
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){

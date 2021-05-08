@@ -49,9 +49,7 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
 }
 
 void CMeshVariable::Register_MeshCoord() {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       AD::RegisterInput(Mesh_Coord(iPoint,iDim));
-  END_SU2_OMP_FOR
 }
