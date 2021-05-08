@@ -164,13 +164,17 @@ void CDiscAdjMultizoneDriver::StartSolver() {
           for (auto& mat : vecOfMat)
             mat = 0.0;
 
-      /*--- Init external with dual time derivative. ---*/
-      Set_DualTimeDer_To_External();
-
-//      // PG: Why this?
-//      for (iZone = 0; iZone < nZone; iZone++) {
-//        Set_Solution_To_BGSSolution_k(iZone);
-//      }
+      /*--- Reset external and solution ---*/
+      /// TODO: Init with dual time derivative instead.
+      for (iZone = 0; iZone < nZone; iZone++) {
+        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+          auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+          if (solver && solver->GetAdjoint()) solver->GetNodes()->SetExternalZero();
+        }
+        Set_Solution_To_BGSSolution_k(iZone);
+      }
+      // /*--- Init external with dual time derivative. ---*/
+      // Set_DualTimeDer_To_External();
     }
 
     /*--- We directly start the discrete adjoint computation. ---*/

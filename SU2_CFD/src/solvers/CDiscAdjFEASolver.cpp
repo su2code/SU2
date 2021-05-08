@@ -372,7 +372,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
 
-    if (dynamic && !multizone) {
+    if (dynamic) {
       for (iVar = 0; iVar < nVar; iVar++)
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
     }
@@ -451,8 +451,8 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
       ofstream myfile2_res;
 
       switch (config->GetDV_FEA()) {
-        case YOUNG_MODULUS:
-          myfile2_res.open("grad_young.opt");
+        case YOUNG_MODULUS: case DENSITY_VAL:
+          myfile2_res.open("grad_dv.opt");
           myfile2_res << "INDEX"
                     << "\t"
                     << "GRAD" << endl;
