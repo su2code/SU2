@@ -78,7 +78,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 13;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -200,7 +200,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -469,6 +469,8 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
+const int BFM_SOL = 11;     /*!< \brief Position of the Body-Force Model solver */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -2295,6 +2297,26 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("MMS_INC_EULER",            MMS_INC_EULER)
   MakePair("MMS_INC_NS",               MMS_INC_NS)
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
+};
+
+enum ENUM_BODY_FORCE_TYPE {
+    CONSTANT_BF = 0,			/*!< \brief Constant body force over domain using vector. */
+    VARIABLE_BF = 1,				/*!< \brief Body force model that is spatially varying. */
+};
+
+static const map<string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = {
+        MakePair("CONSTANT_BF", CONSTANT_BF)
+        MakePair("VARIABLE_BF", VARIABLE_BF)
+};
+
+enum ENUM_BODY_FORCE_PARAMETERS {
+  I_ROTATION_FACTOR = 0,
+  I_BLOCKAGE_FACTOR = 1,
+  I_CAMBER_NORMAL_AXIAL = 2,
+  I_CAMBER_NORMAL_TANGENTIAL = 3,
+  I_CAMBER_NORMAL_RADIAL = 4,
+  I_LEADING_EDGE_AXIAL = 5,
+  N_BFM_PARAMS = 6,
 };
 
 #undef MakePair

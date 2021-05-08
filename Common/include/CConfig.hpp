@@ -537,7 +537,9 @@ private:
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
+  Kind_CHT_Coupling,            /*!< \brief Kind of coupling method used at CHT interfaces. */
+  Kind_BFM;                     /*!< \brief Kind of BFM formulation. */
+
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
@@ -772,7 +774,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  BFM_FileName;                  /*!< \brief BFM geometry input file */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1024,6 +1027,7 @@ private:
   su2double *ExtraRelFacGiles;          /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
+  unsigned short Body_Force_Type;       /*!< \brief type of body-force model. */
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5175,6 +5179,11 @@ public:
   string GetMesh_FileName(void) const { return Mesh_FileName; }
 
   /*!
+  * \brief Get name of BFM input file.
+  * \return File name of BFM geometry input file.
+  */
+  string GetBFM_FileName(void) const { return BFM_FileName; }
+  /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
    * \return File name of the output grid.
@@ -5766,6 +5775,18 @@ public:
    */
   const su2double* GetBody_Force_Vector(void) const { return Body_Force_Vector; }
 
+  /*!
+   * \brief Get information regarding type of body force
+   * \return Type of body force
+   */
+  unsigned short GetBody_Force_Type(void) {return Body_Force_Type; }
+
+  bool GetBFM(void) {if(GetBody_Force() == VARIABLE_BF){
+    return true;
+  }else{
+    return false;
+  }
+  }
   /*!
    * \brief Get information about the volumetric heat source.
    * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
