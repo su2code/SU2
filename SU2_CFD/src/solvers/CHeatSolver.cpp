@@ -353,16 +353,16 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
             **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
 
-  vector<su2double> Vector_i(nDim, 0.0);
-  vector<su2double> Vector_j(nDim, 0.0);
+  su2double Vector_i[MAXNDIM] = {0};
+  su2double Vector_j[MAXNDIM] = {0};
 
   if(flow) {
 
     nVarFlow = solver_container[FLOW_SOL]->GetnVar();
 
     /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
-    vector<su2double> Primitive_Flow_i(nVarFlow, 0.0);
-    vector<su2double> Primitive_Flow_j(nVarFlow, 0.0);
+    su2double Primitive_Flow_i[MAXNVAR] = {0};
+    su2double Primitive_Flow_j[MAXNVAR] = {0};
 
     for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -419,7 +419,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
         Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
 
-        numerics->SetPrimitive(Primitive_Flow_i.data(), Primitive_Flow_j.data());
+        numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
         numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
       }
 
