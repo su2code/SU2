@@ -40,10 +40,14 @@
  */
 class ReadBFMInput{
 private:
+  string version_input_file;
+
+
   unsigned short n_blade_rows{1};
-  vector<unsigned long> n_axial_points;
-  vector<unsigned long> n_radial_points;
-  vector<unsigned long> n_tangential_points;
+  vector<unsigned long> n_axial_points{};
+  vector<unsigned long> n_radial_points{};
+  vector<unsigned long> n_tangential_points{};
+  vector<string> variable_names{};
 
   vector<CVectorOfMatrix> *axial_coordinate = NULL;
   vector<CVectorOfMatrix> *radial_coordinate = NULL;
@@ -70,6 +74,18 @@ private:
 
   void ReadInputFile(string file_name);
 
+  string SkipToFlag(ifstream *file_stream, string flag);
+  void SetNAxialPoints(unsigned long n_input, unsigned short i_row){n_axial_points.at(i_row) = n_input;}
+
+  void SetNRadialPoints(unsigned long n_input, unsigned short i_row){n_radial_points.at(i_row) = n_input;}
+
+  void SetNTangentialPoints(unsigned long n_input, unsigned short i_row){n_tangential_points.at(i_row) = n_input;}
+
+  void SetNBladeRows(unsigned short n_input)
+  {
+    n_blade_rows = n_input;
+  }
+  
 public:
   /*!
    * \brief Constructor of the class.
@@ -100,20 +116,8 @@ public:
 
   unsigned long GetNTangentialPoints(unsigned short i_row){return n_tangential_points.at(i_row);}
 
-  void SetNBladeRows(unsigned short n_input)
-  {
-    n_blade_rows = n_input;
-    n_axial_points.resize(n_blade_rows);
-    n_radial_points.resize(n_blade_rows);
-    n_tangential_points.resize(n_blade_rows);
-  }
+  
 
-  void SetNAxialPoints(unsigned long n_input, unsigned short i_row){n_axial_points.at(i_row) = n_input;}
-
-  void SetNRadialPoints(unsigned long n_input, unsigned short i_row){n_radial_points.at(i_row) = n_input;}
-
-  void SetNTangentialPoints(unsigned long n_input, unsigned short i_row){n_tangential_points.at(i_row) = n_input;}
-
-
+  
 
 };
