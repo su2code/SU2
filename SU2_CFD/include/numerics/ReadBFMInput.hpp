@@ -68,6 +68,8 @@ private:
     }
   }
 
+  void ReadInputFile(string file_name);
+
 public:
   /*!
    * \brief Constructor of the class.

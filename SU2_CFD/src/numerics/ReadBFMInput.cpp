@@ -32,6 +32,10 @@ ReadBFMInput::ReadBFMInput(CConfig *config, string file_inputname)
 
 }
 
+void ReadBFMInput::ReadInputFile(string input_file)
+{
+    
+}
 ReadBFMInput::~ReadBFMInput(void) 
 {
     if(axial_coordinate != NULL){
