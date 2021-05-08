@@ -152,4 +152,5 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
   }
   return ResidualType<>(Flux, nullptr, nullptr);
+
 }

@@ -78,7 +78,7 @@ public:
    * \brief Compute species V-E specific heats at constant volume.
    */
   vector<su2double>& ComputeSpeciesCvVibEle(su2double val_T) final;
-    
+
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
@@ -107,7 +107,7 @@ public:
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
-  
+
   /*!
    * \brief Get vibration enery source term jacobian.
    */

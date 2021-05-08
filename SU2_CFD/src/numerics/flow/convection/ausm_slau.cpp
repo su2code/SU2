@@ -382,12 +382,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual(const CCo
     else
       ApproximateJacobian(Jacobian_i, Jacobian_j);
   }
-  
-  //delete me 
-  cout <<"delete meeeeeeeee"<<endl;
-  for (iVar=0;iVar<nVar;iVar++)
-    for (unsigned short jVar=0;jVar<nVar;jVar++)
-      cout <<"jac i"<<Jacobian_i[iVar][jVar]<<endl;
+
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 
 }
@@ -968,5 +963,5 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
-  return ResidualType<>(Flux,NULL,NULL);
+  return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }

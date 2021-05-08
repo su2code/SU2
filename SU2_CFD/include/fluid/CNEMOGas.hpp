@@ -122,7 +122,7 @@ public:
    * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
-  
+
     /*!
    * \brief Get vibrational energy source term.
    */
@@ -130,14 +130,14 @@ public:
                                                        su2double* eve, su2double* cvve,
                                                        su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
-  
+
   /*!
    * \brief Populate chemical source term jacobian. 
    */
   virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve,
                                  su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                  su2double **val_jacobian){};
-  
+
   /*!
    * \brief Compute vibrational energy source term.
    */
@@ -154,7 +154,7 @@ public:
    * \brief Get vector of species V-E energy.
    */
   virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
-  
+
   /*!
    * \brief Compute species enthalpies.
    */
