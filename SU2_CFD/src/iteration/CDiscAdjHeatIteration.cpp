@@ -76,8 +76,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
 
       LoadUnsteady_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter);
     }
-
-    if ((TimeIter > 0) && dual_time) {
+    else if ((TimeIter > 0) && dual_time) {
       /*--- Load solution timestep n - 2 ---*/
 
       LoadUnsteady_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter - 2);
@@ -126,9 +125,11 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
   /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
   if (TimeIter == 0 || dual_time) {
-    for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
-      solvers[MESH_0][ADJHEAT_SOL]->GetNodes()->SetSolution_Direct(
-          iPoint, solvers[MESH_0][HEAT_SOL]->GetNodes()->GetSolution(iPoint));
+    for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+      for (auto iPoint = 0ul; iPoint < geometry[val_iZone][val_iInst][iMesh]->GetnPoint(); iPoint++) {
+        solvers[iMesh][ADJHEAT_SOL]->GetNodes()->SetSolution_Direct(
+            iPoint, solvers[iMesh][HEAT_SOL]->GetNodes()->GetSolution(iPoint));
+      }
     }
   }
 
@@ -141,16 +142,16 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolve
                                                   int val_DirectIter) {
 
   if (val_DirectIter >= 0) {
-    if (rank == MASTER_NODE && val_iZone == ZONE_0)
-      cout << " Loading heat solution from direct iteration " << val_DirectIter << "." << endl;
+    if (rank == MASTER_NODE)
+      cout << " Loading heat solution from direct iteration " << val_DirectIter << " for zone " << val_iZone << "." << endl;
 
     solver[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(
         geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], val_DirectIter, false);
   }
   else {
     /*--- If there is no solution file we set the freestream condition ---*/
-    if (rank == MASTER_NODE && val_iZone == ZONE_0)
-      cout << " Setting freestream conditions at direct iteration " << val_DirectIter << "." << endl;
+    if (rank == MASTER_NODE)
+      cout << " Setting freestream conditions at direct iteration " << val_DirectIter << " for zone " << val_iZone << "." << endl;
 
     for (auto iMesh = 0u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       solver[val_iZone][val_iInst][iMesh][HEAT_SOL]->SetFreeStream_Solution(config[val_iZone]);
