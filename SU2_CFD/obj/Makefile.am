@@ -51,6 +51,8 @@ endif
 libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
+  ../src/fluid/CThermallyPerfectGas.cpp \
+  ../include/fluid/CThermallyPerfectGas.hpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
