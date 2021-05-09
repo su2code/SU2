@@ -49,7 +49,6 @@ private:
     unsigned short size = 0;
     su2double* val = nullptr;         /*!< \brief Value of the variable. */
     int* AD_Idx = nullptr;            /*!< \brief Derivative index in the AD tape. */
-    bool localIdx = false;
     su2double* LocalSens = nullptr;   /*!< \brief Local sensitivity (domain). */
     su2double* GlobalSens = nullptr;  /*!< \brief Global sensitivity (mpi). */
     su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (time domain). */
@@ -69,7 +68,6 @@ private:
 
     void clear() {
       size = 0;
-      localIdx = false;
       delete [] val;
       delete [] AD_Idx;
       delete [] LocalSens;
@@ -77,20 +75,15 @@ private:
       delete [] TotalSens;
     }
 
-    void Register(bool push_index) {
-      for (auto i = 0u; i < size; ++i) AD::RegisterInput(val[i], push_index);
-    }
-
-    void SetIndex() {
-      for (auto i = 0u; i < size; ++i) AD::SetIndex(AD_Idx[i], val[i]);
-      localIdx = true;
+    void Register() {
+      for (auto i = 0u; i < size; ++i) {
+        AD::RegisterInput(val[i], false);
+        AD::SetIndex(AD_Idx[i], val[i]);
+      }
     }
 
     void GetDerivative() {
-      if (localIdx)
-        for (auto i = 0u; i < size; ++i) LocalSens[i] = AD::GetDerivative(AD_Idx[i]);
-      else
-        for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
+      for (auto i = 0u; i < size; ++i) LocalSens[i] = AD::GetDerivative(AD_Idx[i]);
 
       SU2_MPI::Allreduce(LocalSens, GlobalSens, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }

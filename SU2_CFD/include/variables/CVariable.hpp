@@ -2112,80 +2112,43 @@ public:
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
-   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterSolution(bool input, bool push_index = true);
+  void RegisterSolution(bool input);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  void RegisterSolution_time_n(bool push_index);
+  void RegisterSolution_time_n();
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  void RegisterSolution_time_n1(bool push_index);
+  void RegisterSolution_time_n1();
 
   /*!
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < Solution.cols(); iVar++)
-      SU2_TYPE::SetDerivative(Solution(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Set the adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
     for (unsigned long iVar = 0; iVar < AD_OutputIndex.cols(); iVar++)
       AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
    * \brief Get the adjoint values of the solution.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void GetAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+  inline void GetAdjointSolution(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < AD_InputIndex.cols(); iVar++)
       adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
   }
 
-  /*!
-   * \brief Get the adjoint values of the solution at time n.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
-  }
-
-  inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < AD_Time_n_InputIndex.cols(); iVar++)
       adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
   }
 
-  /*!
-   * \brief Get the adjoint values of the solution at time n-1.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
-  }
-
-  inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar));
   }

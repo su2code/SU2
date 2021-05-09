@@ -154,18 +154,17 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   const bool time_n1_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_n_needed  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
-  const bool push_index     = !config->GetMultizone_Problem();
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
   /*--- Boolean true indicates that an input is registered ---*/
-  direct_solver->GetNodes()->RegisterSolution(true, push_index);
+  direct_solver->GetNodes()->RegisterSolution(true);
 
   if (time_n_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
+    direct_solver->GetNodes()->RegisterSolution_time_n();
 
   if (time_n1_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n1(push_index);
+    direct_solver->GetNodes()->RegisterSolution_time_n1();
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -293,11 +292,9 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
-  const bool push_index   = !config->GetMultizone_Problem();
-
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
 
-  direct_solver->GetNodes()->RegisterSolution(false, push_index);
+  direct_solver->GetNodes()->RegisterSolution(false);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
@@ -326,12 +323,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
-      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
-      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
-    }
+    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
 
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
 
@@ -374,12 +366,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      if(config->GetMultizone_Problem()) {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
-      }
-      else {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-      }
+      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
 
       if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
@@ -391,12 +378,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      if(config->GetMultizone_Problem()) {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
-      }
-      else {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
-      }
+      direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
 
       if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
     }
@@ -496,10 +478,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Set the adjoint values of the primal solution. ---*/
-    if (multizone)
-      direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
-    else
-      direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
+
+    direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
   END_SU2_OMP_FOR
 }
@@ -514,22 +494,9 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-    auto Coord = geometry->nodes->GetCoord(iPoint);
-
     for (auto iDim = 0u; iDim < nDim; iDim++) {
 
-      su2double Sensitivity = 0.0;
-
-      if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-      }
-      else {
-        Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-      }
-
-      /*--- Set the index manually to zero. ---*/
-
-      AD::ResetInput(Coord[iDim]);
+      su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 

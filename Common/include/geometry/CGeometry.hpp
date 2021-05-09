@@ -1250,9 +1250,8 @@ public:
 
   /*!
    * \brief Register the coordinates of the mesh nodes.
-   * \param[in] config
    */
-  void RegisterCoordinates(const CConfig *config) const;
+  void RegisterCoordinates() const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.

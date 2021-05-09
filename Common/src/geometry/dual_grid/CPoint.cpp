@@ -73,7 +73,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
     }
   }
 
-  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
+  if (config->GetDiscrete_Adjoint()) {
     AD_InputIndex.resize(npoint,nDim) = 0;
     AD_OutputIndex.resize(npoint,nDim) = 0;
   }
@@ -145,17 +145,6 @@ void CPoint::SetPoints(const vector<vector<unsigned long> >& pointsMatrix) {
 
   Point = CCompressedSparsePatternUL(pointsMatrix);
   Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize()+1, long(-1));
-}
-
-void CPoint::SetIndex(unsigned long iPoint, bool input) {
-  for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-    if(input) {
-      AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
-    }
-    else {
-      AD::SetIndex(AD_OutputIndex(iPoint,iDim), Coord(iPoint,iDim));
-    }
-  }
 }
 
 void CPoint::SetVolume_n() {

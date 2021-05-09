@@ -2475,18 +2475,12 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(const CConfig *config) const {
+void CGeometry::RegisterCoordinates() const {
   const bool input = true;
-  const bool push_index = config->GetMultizone_Problem()? false : true;
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
-    }
-    if(!push_index) {
-      nodes->SetIndex(iPoint, input);
-    }
+    nodes->RegisterCoordinates(iPoint, input);
   }
   END_SU2_OMP_FOR
 }
