@@ -137,6 +137,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
   }
 
+  config->SetDelta_UnstTimeND(config->GetDelta_UnstTime() / config->GetTime_Ref());
+
   /*--- Store the value of the temperature and the heat flux density at the boundaries,
    used for communications with donor cells ---*/
 
@@ -1358,7 +1360,7 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/

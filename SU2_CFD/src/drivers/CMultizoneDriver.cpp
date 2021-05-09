@@ -244,6 +244,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
+    else if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetHeatProblem()) {
+      /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+      solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                              solver_container[iZone][INST_0],
+                                                                              config_container[iZone], TimeIter);
+    }
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
