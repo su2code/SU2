@@ -175,10 +175,10 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
 
     solver[iZone][iInst][MESH_0][FEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
 
-  }
-  /*--- Register mesh coordinates for geometric sensitivities ---*/
+    /*--- Register mesh coordinates for geometric sensitivities ---*/
 
-  geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
+    geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
+  }
 }
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,

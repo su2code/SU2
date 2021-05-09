@@ -98,18 +98,19 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  SU2_OMP_MASTER {
-    /*--- Register reference mesh coordinates ---*/
-    direct_solver->GetNodes()->Register_MeshCoord();
-  }
-  END_SU2_OMP_MASTER
-  SU2_OMP_BARRIER
+  /*--- Register reference mesh coordinates ---*/
+  direct_solver->GetNodes()->Register_MeshCoord();
+
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
+  /*--- Register boundary displacements as input.
+   * Except for FSI, where they are determined by the FEA solver. ---*/
+
+  if (config->GetFSI_Simulation()) return;
+
   SU2_OMP_MASTER {
-    /*--- Register boundary displacements as input. ---*/
     direct_solver->GetNodes()->Register_BoundDisp();
   }
   END_SU2_OMP_MASTER
@@ -139,17 +140,15 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  /*--- Extract the sensitivities of the boundary displacements ---*/
+  /*--- Extract the sensitivities of the boundary displacements, except for FSI. ---*/
+
+  if (config->GetFSI_Simulation()) return;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
-    /*--- Extract the adjoint solution of the boundary displacements ---*/
-
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjoint_BoundDisp(iPoint,Solution);
-
-    /*--- Store the sensitivities of the boundary displacements ---*/
 
     nodes->SetBoundDisp_Sens(iPoint,Solution);
 

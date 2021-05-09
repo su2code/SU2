@@ -494,9 +494,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
+    auto Coord = geometry->nodes->GetCoord(iPoint);
+
     for (auto iDim = 0u; iDim < nDim; iDim++) {
 
       su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+      AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 

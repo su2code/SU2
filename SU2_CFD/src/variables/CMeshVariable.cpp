@@ -31,9 +31,6 @@
 CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
-  /*--- Booleans that determine the kind of problems ---*/
-  bool time_domain = config->GetTime_Domain();
-
   /*--- Store the dimensionality of the problem ---*/
   nDim = ndim;
 
@@ -41,15 +38,16 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
   Mesh_Coord.resize(nPoint,nDim) = su2double(0.0);
   WallDistance.resize(nPoint) = su2double(1e-9);
 
+  if (config->GetDiscrete_Adjoint())
+    AD_InputIndex.resize(nPoint,nDim) = -1;
+
   /*--- Initialize the variables necessary when the problem is time domain ---*/
-  if (time_domain) {
+  if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
     Solution_time_n1.resize(nPoint,nDim) = su2double(0.0);
   }
 }
 
 void CMeshVariable::Register_MeshCoord() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      AD::RegisterInput(Mesh_Coord(iPoint,iDim));
+  RegisterContainer(true, Mesh_Coord, AD_InputIndex);
 }

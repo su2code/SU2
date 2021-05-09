@@ -93,9 +93,11 @@ public:
   /*!
    * \brief Recover the value of the adjoint of the mesh coordinates.
    */
-  inline void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) const final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      adj_mesh[iDim] = SU2_TYPE::GetDerivative(Mesh_Coord(iPoint,iDim));
+  inline void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      adj_mesh[iDim] = AD::GetDerivative(AD_InputIndex(iPoint,iDim));
+      AD::ResetInput(Mesh_Coord(iPoint,iDim));
+    }
   }
 
 };

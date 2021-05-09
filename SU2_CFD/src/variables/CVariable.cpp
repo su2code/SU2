@@ -117,23 +117,6 @@ void CVariable::Restore_BGSSolution_k() {
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
-namespace {
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
-    const auto nPoint = variable.rows();
-    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-      for(unsigned long iVar=0; iVar<variable.cols(); ++iVar) {
-
-        if (input) AD::RegisterInput(variable(iPoint,iVar), false);
-        else AD::RegisterOutput(variable(iPoint,iVar));
-
-        AD::SetIndex(ad_index(iPoint,iVar), variable(iPoint,iVar));
-      }
-    }
-    END_SU2_OMP_FOR
-  }
-}
-
 void CVariable::RegisterSolution(bool input) {
   RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
 }

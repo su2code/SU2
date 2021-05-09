@@ -114,6 +114,21 @@ protected:
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
   }
 
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for(unsigned long iVar=0; iVar<variable.cols(); ++iVar) {
+
+        if (input) AD::RegisterInput(variable(iPoint,iVar), false);
+        else AD::RegisterOutput(variable(iPoint,iVar));
+
+        AD::SetIndex(ad_index(iPoint,iVar), variable(iPoint,iVar));
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
 public:
   /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
@@ -2024,7 +2039,7 @@ public:
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
    */
-  inline virtual void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) const { }
+  inline virtual void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.

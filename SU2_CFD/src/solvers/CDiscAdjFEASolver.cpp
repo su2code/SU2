@@ -394,9 +394,12 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
+    auto Coord = geometry->nodes->GetCoord(iPoint);
+
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+      AD::ResetInput(Coord[iDim]);
 
       if (!time_domain) {
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);

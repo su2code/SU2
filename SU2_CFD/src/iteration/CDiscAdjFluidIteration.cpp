@@ -418,7 +418,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (config[iZone]->GetFluidProblem()) {
+  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -459,8 +459,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
   }
 
-  if (config[iZone]->GetDeform_Mesh()) {
-    /*--- Register the variables of the mesh deformation ---*/
+  if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -563,7 +562,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->AddRadiation()) {
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[iZone]->GetFluidProblem()) {
+  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
