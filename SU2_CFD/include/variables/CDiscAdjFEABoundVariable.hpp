@@ -117,6 +117,7 @@ public:
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SourceTerm_VelAdjoint(iPoint,iDim);
   }
+
   /*!
    * \brief Get whether a node is on the boundary
    */
