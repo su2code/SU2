@@ -943,7 +943,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
-        DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
+        DeformMesh |= Transfer_Data(jZone, iZone);
       }
     }
 
