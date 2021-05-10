@@ -171,7 +171,7 @@ void CMultizoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() << "." << endl;
+      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() - driver_config->GetRestart_Iter() << "." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/

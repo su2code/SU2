@@ -76,7 +76,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
 
       LoadUnsteady_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter);
     }
-    else if ((TimeIter > 0) && dual_time) {
+    if ((TimeIter > 0) && dual_time) {
       /*--- Load solution timestep n - 2 ---*/
 
       LoadUnsteady_Solution(geometry, solver, config, val_iZone, val_iInst, Direct_Iter - 2);
