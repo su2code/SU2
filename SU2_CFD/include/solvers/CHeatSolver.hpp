@@ -41,7 +41,10 @@ protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
-  unsigned short nVarFlow, nMarker, CurrentMesh;
+  const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
+  const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
+
+  unsigned short nVarFlow, nMarker;
   vector<vector<su2double> > HeatFlux;
   vector<su2double> HeatFlux_per_Marker;
   su2double Total_HeatFlux;
@@ -64,11 +67,6 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHeatSolver(void);
 
   /*!
    * \brief Constructor of the class.
