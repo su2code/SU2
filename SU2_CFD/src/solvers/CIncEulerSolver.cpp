@@ -2958,13 +2958,13 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    write it to the restart if it is active. Therefore, we must reduce nVar
    here if energy is inactive so that the restart is read correctly. ---*/
 
-  bool energy = config->GetEnergy_Equation();
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  unsigned short nVar_Restart = nVar;
-  if (!(energy || weakly_coupled_heat)) nVar_Restart--;
   su2double Solution[MAXNVAR] = {0.0};
-  Solution[nVar-1] = GetTemperature_Inf();
+
+  auto nVar_Restart = nVar;
+  if (!(config->GetEnergy_Equation() || config->GetWeakly_Coupled_Heat())) {
+    nVar_Restart--;
+    Solution[nVar-1] = GetTemperature_Inf();
+  }
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 

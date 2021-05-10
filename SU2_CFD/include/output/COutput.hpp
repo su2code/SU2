@@ -653,7 +653,7 @@ protected:
   }
 
   /*!
-   * \brief OutputScreenAndHistory
+   * \brief Write screen and history output.
    * \param[in] config - Definition of the particular problem.
    */
   void OutputScreenAndHistory(CConfig *config);
