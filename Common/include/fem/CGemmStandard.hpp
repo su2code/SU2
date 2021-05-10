@@ -60,12 +60,16 @@ public:
 
   /*!
    * \overload
-   * \param[in] val_M - First matrix dimension of A and C in the gemm call.
-   * \param[in] val_N - Second matrix dimension of B and C in the gemm call.
-   * \param[in] val_K - First matrix dimension of B and second matrix dimension
-   *                    of A in the gemm call.
+   * \param[in] val_M         - First matrix dimension of A and C in the gemm call.
+   * \param[in] val_N         - Second matrix dimension of B and C in the gemm call.
+   * \param[in] val_K         - First matrix dimension of B and second matrix dimension
+   *                            of A in the gemm call.
+   * \param[in] val_gemm_type - Type of the gemm call, either DOFS_TO_INT or INT_TO_DOFS.
    */
-  CGemmStandard(const int val_M, const int val_N, const int val_K);
+  CGemmStandard(const int val_M,
+                const int val_N,
+                const int val_K,
+                const int val_gemm_type);
 
   /*!
    * \brief Destructor.
@@ -77,20 +81,19 @@ public:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
-   * \brief Function, which carries out the gemm product to obtain the data
-   *        in the integration points of the face from the DOFs of the volume.
-   * \param[in]  basis    - Tensor to create the required data.
-   * \param[in]  nVar     - Number of items to be created per integration point.
-   *                        When a jitted gemm call is used, this must be equal to N.
-   * \param[in]  dataDOFs - The data in the DOFs.
-   * \param[out] dataInt  - The to be created data in the integration points.
-   * \param[out] config   - Object used for the timing of the gemm call.
+   * \brief Function, which carries out the gemm product to obtain the required data.
+   * \param[in]  A      - Matrix in the C = A*B.
+   * \param[in]  nVar   - Number of items to be created per integration point.
+   *                      When a jitted gemm call is used, this must be equal to N.
+   * \param[in]  B      - The input data.
+   * \param[out] C      - The data to be created data.
+   * \param[out] config - Object used for the timing of the gemm call.
    */
-  void DOFs2Int(ColMajorMatrix<passivedouble> &basis,
-                const int                     nVar,
-                ColMajorMatrix<su2double>     &dataDOFs,
-                ColMajorMatrix<su2double>     &dataInt,
-                const CConfig                 *config);
+  void gemm(ColMajorMatrix<passivedouble> &A,
+            const int                     nVar,
+            ColMajorMatrix<su2double>     &B,
+            ColMajorMatrix<su2double>     &C,
+            const CConfig                 *config);
 
 private:
 
@@ -100,6 +103,10 @@ private:
                        of A in the gemm call. */
 
   int MP;  /*!< \brief Padded value of M. */
+  int LDB; /*!< \brief Leading dimension of matrix B, LDB >= K. */
+
+  bool initZero; /*!< \brief Whether or not C must be initialized to zero
+                             in the gemm call. */
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
   void *jitterFace;             /*!< \brief Pointer to the data for the jitted gemm function. */

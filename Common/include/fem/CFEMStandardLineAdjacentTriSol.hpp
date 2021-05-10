@@ -139,4 +139,6 @@ private:
                                                                      basis functions in the integration points.
                                                                      It is a vector, because there are derivatives
                                                                      in two directions. */
+
+  ColMajorMatrix<passivedouble> legBasisIntTranspose;    /*!< \brief Transpose of legBasisInt. */
 };

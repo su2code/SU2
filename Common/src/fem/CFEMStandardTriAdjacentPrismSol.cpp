@@ -81,6 +81,15 @@ CFEMStandardTriAdjacentPrismSol::CFEMStandardTriAdjacentPrismSol(const unsigned 
   for(unsigned short i=nIntegration; i<nIntegrationPad; ++i)
     for(unsigned short j=0; j<nDOFs; ++j)
       legBasisInt(i,j) = legBasisInt(0,j);
+
+  /*--- Create the transpose of legBasisInt. ---*/
+  nDOFsPad = PaddedValue(nDOFs);
+  legBasisIntTranspose.resize(nDOFsPad, nIntegration); legBasisIntTranspose.setConstant(0.0);
+
+  for(unsigned short j=0; j<nIntegration; ++j) {
+    for(unsigned short i=0; i<nDOFs; ++i)
+      legBasisIntTranspose(i,j) = legBasisInt(j,i);
+  }
 }
 
 void CFEMStandardTriAdjacentPrismSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -89,9 +98,9 @@ void CFEMStandardTriAdjacentPrismSol::GradSolIntPoints(ColMajorMatrix<su2double>
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the gradient of the solution in the integration
         points of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(derLegBasisInt[0], matSolDOF.cols(), matSolDOF, matGradSolInt[0], nullptr);
-  gemmDOFs2Int->DOFs2Int(derLegBasisInt[1], matSolDOF.cols(), matSolDOF, matGradSolInt[1], nullptr);
-  gemmDOFs2Int->DOFs2Int(derLegBasisInt[2], matSolDOF.cols(), matSolDOF, matGradSolInt[2], nullptr);
+  gemmDOFs2Int->gemm(derLegBasisInt[0], matSolDOF.cols(), matSolDOF, matGradSolInt[0], nullptr);
+  gemmDOFs2Int->gemm(derLegBasisInt[1], matSolDOF.cols(), matSolDOF, matGradSolInt[1], nullptr);
+  gemmDOFs2Int->gemm(derLegBasisInt[2], matSolDOF.cols(), matSolDOF, matGradSolInt[2], nullptr);
 }
 
 void CFEMStandardTriAdjacentPrismSol::SolIntPoints(ColMajorMatrix<su2double> &matSolDOF,
@@ -100,10 +109,13 @@ void CFEMStandardTriAdjacentPrismSol::SolIntPoints(ColMajorMatrix<su2double> &ma
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the solution in the integration points
         of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(legBasisInt, matSolDOF.cols(), matSolDOF, matSolInt, nullptr);
+  gemmDOFs2Int->gemm(legBasisInt, matSolDOF.cols(), matSolDOF, matSolInt, nullptr);
 }
 
 void CFEMStandardTriAdjacentPrismSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                                                              ColMajorMatrix<su2double> &resDOFs) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- Call the generic functionality of gemmInt2DOFs with the appropriate
+        arguments to compute the residuals in the DOFs of the adjacent element. ---*/
+  gemmInt2DOFs->gemm(legBasisIntTranspose, scalarDataInt.cols(), scalarDataInt, resDOFs, nullptr);
 }

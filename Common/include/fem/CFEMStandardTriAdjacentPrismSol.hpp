@@ -139,4 +139,6 @@ private:
   vector<ColMajorMatrix<passivedouble> > derLegBasisInt; /*!< \brief The values of the derivatives of the Legendre
                                                                      basis functions in the integration points. It is a vector,
                                                                      because there are derivatives in three directions. */
+  
+  ColMajorMatrix<passivedouble> legBasisIntTranspose;    /*!< \brief Transpose of legBasisInt. */
 };

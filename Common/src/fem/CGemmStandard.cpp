@@ -32,7 +32,10 @@
 /*                  Public member functions of CGemmStandard.                       */
 /*----------------------------------------------------------------------------------*/
 
-CGemmStandard::CGemmStandard(const int val_M, const int val_N, const int val_K)
+CGemmStandard::CGemmStandard(const int val_M,
+                             const int val_N,
+                             const int val_K,
+                             const int val_gemm_type)
   : CGemmBase() {
 
   /*--- Copy the arguments into the member variables. ---*/
@@ -43,14 +46,29 @@ CGemmStandard::CGemmStandard(const int val_M, const int val_N, const int val_K)
   /*--- Create the padded value of M. ---*/
   MP = CFEMStandardElementBase::PaddedValue(M);
 
+  /*--- Determine the gemm type and set some values accordingly. ---*/
+  switch( val_gemm_type ) {
+    case DOFS_TO_INT: {
+      initZero = true;
+      LDB      = K;
+      break;
+    }
+
+    case INT_TO_DOFS: {
+      initZero = false;
+      LDB      = CFEMStandardElementBase::PaddedValue(K);
+      break;
+    }
+  }
+
   /*--- Check if the jitted GEMM call must be created. ---*/
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 
   /*--- Create the GEMM Kernel and check if it went okay. ---*/
   passivedouble alpha = 1.0;
-  passivedouble beta  = 0.0;
+  passivedouble beta  = initZero ? 0.0 : 1.0;
   mkl_jit_status_t status = mkl_jit_create_dgemm(&jitterFace, MKL_COL_MAJOR, MKL_NOTRANS,
-                                                 MKL_NOTRANS, MP, N, K, alpha, MP, K, beta, MP);
+                                                 MKL_NOTRANS, MP, N, K, alpha, MP, LDB, beta, MP);
 
   if(status == MKL_JIT_ERROR)
     SU2_MPI::Error(string("Jitted gemm kernel could not be created"), CURRENT_FUNCTION);
@@ -72,31 +90,33 @@ CGemmStandard::~CGemmStandard() {
 #endif
 }
 
-void CGemmStandard::DOFs2Int(ColMajorMatrix<passivedouble> &basis,
-                             const int                     nVar,
-                             ColMajorMatrix<su2double>     &dataDOFs,
-                             ColMajorMatrix<su2double>     &dataInt,
-                             const CConfig                 *config) {
+void CGemmStandard::gemm(ColMajorMatrix<passivedouble> &A,
+                         const int                     nVar,
+                         ColMajorMatrix<su2double>     &B,
+                         ColMajorMatrix<su2double>     &C,
+                         const CConfig                 *config) {
+
+  /*--- A couple of checks to see if this function is used correctly. ---*/
+  assert(MP   == A.rows());
+  assert(MP   == C.rows());
+  assert(LDB  == B.rows());
+  assert(K    == A.cols());
+  assert(nVar == C.cols());
+  assert(nVar == B.cols());
 
   /*--- Check if the jitted gemm call can be used. ---*/
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 
-  /*--- A couple of checks to see if this function is used correctly. ---*/
+  /*--- An additional check when the jitted gemm is used. ---*/
   assert(nVar == N);
-  assert(MP   == basis.rows());
-  assert(MP   == dataInt.rows());
-  assert(K    == dataDOFs.rows());
-  assert(K    == basis.cols());
-  assert(nVar == dataInt.cols());
-  assert(nVar == dataDOFs.cols());
 
-/*--- Carry out the timing, if desired and call the jitted gemm function. ---*/
+  /*--- Carry out the timing, if desired and call the jitted gemm function. ---*/
 #ifdef PROFILE
   double timeGemm;
   if( config ) config->GEMM_Tick(&timeGemm);
 #endif
 
-  gemmFace(jitterFace, basis.data(), dataDOFs.data(), dataInt.data());
+  gemmFace(jitterFace, A.data(), B.data(), C.data());
 
 #ifdef PROFILE
   if( config ) config->GEMM_Tock(timeGemm, M, N, K);
@@ -105,7 +125,7 @@ void CGemmStandard::DOFs2Int(ColMajorMatrix<passivedouble> &basis,
 #else
 
   /*--- Use the interface to the more standard BLAS functionality. ---*/
-  blasFunctions.gemm(MP, nVar, K, basis.rows(), dataDOFs.rows(), dataInt.rows(),
-                     true, basis.data(), dataDOFs.data(), dataInt.data(), config);
+  blasFunctions.gemm(MP, nVar, K, A.rows(), B.rows(), C.rows(), initZero,
+                     A.data(), B.data(), C.data(), config);
 #endif
 }

@@ -77,7 +77,7 @@ void CFEMStandardLineAdjacentTriGrid::CoorIntPoints(const bool                no
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the coordinates in the integration points
         of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(lagBasisInt, 2, matCoorDOF, matCoorInt, nullptr);
+  gemmDOFs2Int->gemm(lagBasisInt, 2, matCoorDOF, matCoorInt, nullptr);
 }
 
 void CFEMStandardLineAdjacentTriGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -86,8 +86,8 @@ void CFEMStandardLineAdjacentTriGrid::DerivativesCoorIntPoints(const bool       
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the derivatives of the coordinates in the
         integration points of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 2, matCoorDOF, matDerCoorInt[0], nullptr);
-  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 2, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->gemm(derLagBasisInt[0], 2, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->gemm(derLagBasisInt[1], 2, matCoorDOF, matDerCoorInt[1], nullptr);
 }
 
 /*----------------------------------------------------------------------------------*/

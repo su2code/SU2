@@ -115,7 +115,7 @@ void CFEMStandardQuadAdjacentPrismGrid::CoorIntPoints(const bool                
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the coordinates in the integration points
         of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
+  gemmDOFs2Int->gemm(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
 }
 
 void CFEMStandardQuadAdjacentPrismGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -124,9 +124,9 @@ void CFEMStandardQuadAdjacentPrismGrid::DerivativesCoorIntPoints(const bool     
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the derivatives of the coordinates in the
         integration points of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
-  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
-  gemmDOFs2Int->DOFs2Int(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
+  gemmDOFs2Int->gemm(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->gemm(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->gemm(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
 }
 
 /*----------------------------------------------------------------------------------*/

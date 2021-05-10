@@ -70,6 +70,10 @@ CGemmFaceHex::CGemmFaceHex(const int val_M, const int val_Type, const int val_K)
     }
 
     case CGemmBase::INT_TO_DOFS: {
+
+      /*--- Tensor product to create the data in the DOFs of the adjacent
+            hexahedron from the integration points of the quadrilateral face.
+            Create the map with function pointers for this tensor product. ---*/
       cout << endl;
       cout << "Tensor product INT_TO_DOFS, M: " << M << ", K: " << K
            << " not implemented yet in " << CURRENT_FUNCTION << endl;
