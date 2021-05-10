@@ -116,9 +116,13 @@ using su2mixedfloat = passivedouble;
 
 /*--- Detect if OpDiLib has to be used. ---*/
 #if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+#ifndef __INTEL_COMPILER
 #define HAVE_OPDI
+#else
+#warning Hybrid parallel reverse mode AD cannot be used with Intel compilers.
 #endif
 
 #if (_OPENMP >= 201811 && !defined(FORCE_OPDI_MACRO_BACKEND)) || defined(FORCE_OPDI_OMPT_BACKEND)
 #define HAVE_OMPT
+#endif
 #endif
