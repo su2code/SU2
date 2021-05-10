@@ -3612,7 +3612,7 @@ public:
    */
   inline virtual void SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
-    /*!
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
