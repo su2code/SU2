@@ -63,9 +63,11 @@ CNumerics::ResidualType<> CSourcePieceWise_transportedScalar_general::ComputeRes
   AD::StartPreacc();
   AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(scalar_sources, nVar);
-  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); 
-  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+
+  // FIXME dan: the next two lines crashes when I run SU2_CFD_AD on the asym probe case
+  // AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+  // AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
 
   //if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE)
   //  AD::SetPreaccIn(sourcepv_i);
