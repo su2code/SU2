@@ -1683,11 +1683,14 @@ public:
   virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const { return nullptr; }
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] geometry - Geometry associated to the ADT
+   * \param[in] config - Config associated to the ADT
    */
-  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
+  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry=nullptr) {}
 
   /*!
    * \brief Set wall distances a specific value
@@ -1701,6 +1704,11 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
+
+  /*!
+   * \brief Virtual function to set roughness values.
+   */
+  virtual void SetGlobalMarkerRoughness(const CConfig* config) {}
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.

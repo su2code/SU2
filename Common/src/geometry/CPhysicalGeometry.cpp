@@ -11017,15 +11017,12 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
 
 }
 
-void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *WallADT) {
+void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig *config, const CGeometry* geometry) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
-
-  /*--- Store marker list and roughness in a global array. ---*/
-  if (config->GetnRoughWall() > 0) SetGlobalMarkerRoughness(config);
 
   SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
@@ -11041,12 +11038,15 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
 
       WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
-      nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
+      if(dist < nodes->GetWall_Distance(iPoint)){
+        nodes->SetWall_Distance(iPoint, dist);
 
-      if (config->GetnRoughWall() > 0) {
-        auto index = GlobalMarkerStorageDispl[rankID] + markerID;
-        auto localRoughness = GlobalRoughness_Height[index];
-        nodes->SetRoughnessHeight(iPoint, localRoughness);
+        if (config->GetnRoughWall() > 0) {
+          const CPhysicalGeometry* ph_geometry = dynamic_cast<const CPhysicalGeometry*>(geometry);
+          auto index = ph_geometry->GlobalMarkerStorageDispl[rankID] + markerID;
+          su2double localRoughness = ph_geometry->GlobalRoughness_Height[index];
+          nodes->SetRoughnessHeight(iPoint, localRoughness);
+        }
       }
     }
     END_SU2_OMP_FOR

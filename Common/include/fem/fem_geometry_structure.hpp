@@ -1227,11 +1227,14 @@ protected:
   void SetWallDistance(su2double val) override;
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] geometry - ignored
+   * \param[in] config - ignored
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry = nullptr) override;
 };
 
 /*!

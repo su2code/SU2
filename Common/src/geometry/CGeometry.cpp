@@ -3923,14 +3923,19 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
       CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      const CConfig *config = config_container[iZone];
+      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
+        /*--- Along with finding the closest walls, we collect their roughnesses. ---*/
+        if (config_container[iZone]->GetnRoughWall() > 0)
+          geometry->SetGlobalMarkerRoughness(config);
+
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config, geometry);
         }
       }
     }
