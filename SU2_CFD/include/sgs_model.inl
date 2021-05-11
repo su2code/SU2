@@ -700,3 +700,126 @@ inline void CSIGMAModel::ComputeGradEddyViscosity_3D(const su2double rho,
   cout << "CSIGMAModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
   exit(1);
 }
+
+inline CAMDModel::CAMDModel(void) : CSGSModel() {
+
+  const_AMD = 0.3;
+}
+
+inline CAMDModel::~CAMDModel(void){}
+
+inline su2double CAMDModel::ComputeEddyViscosity_2D(const su2double rho,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
+  cout << "CAMDModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline su2double CAMDModel::ComputeEddyViscosity_3D(const su2double rho,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dudz,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double dvdz,
+                                                    const su2double dwdx,
+                                                    const su2double dwdy,
+                                                    const su2double dwdz,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
+
+  su2double S11 = dudx;
+  su2double S12 = 0.5*(dudy+dvdx);
+  su2double S13 = 0.5*(dudz+dwdx);
+  su2double S22 = dvdy;
+  su2double S23 = 0.5*(dvdz+dwdy);
+  su2double S33 = dwdy;
+
+  const su2double beta11 =     (dudx*dudx + dudy*dudy + dudz*dudz)*S11;
+  const su2double beta12 = 2.0*(dudx*dvdx + dudy*dvdy + dudz*dvdz)*S12;
+  const su2double beta13 = 2.0*(dudx*dwdx + dudy*dwdy + dudz*dwdz)*S13;
+  const su2double beta22 =     (dvdx*dvdx + dvdy*dvdy + dvdz*dvdz)*S22;
+  const su2double beta23 = 2.0*(dvdx*dwdx + dvdy*dwdy + dvdz*dwdz)*S23;
+  const su2double beta33 =     (dwdx*dwdx + dwdy*dwdy + dwdz*dwdz)*S33;
+
+  const su2double alpha1 = dudx*dudx + dudy*dudy + dudz*dudz;
+  const su2double alpha2 = dvdx*dvdx + dvdy*dvdy + dvdz*dvdz;
+  const su2double alpha3 = dwdx*dwdx + dwdy*dwdy + dwdz*dwdz;
+
+  const su2double lenScale2 = lenScale * lenScale;
+  su2double B = -lenScale2*(beta11 + beta12 + beta13 + beta22 + beta23 + beta33);
+      B = max(B,0.0);
+
+  const su2double denon = alpha1 + alpha2 + alpha3;
+
+  const su2double nuEddy_AMD = B/denon;
+
+ /* Return the SGS dynamic viscosity. */
+ return rho*const_AMD*nuEddy_AMD;
+
+}
+
+inline void CAMDModel::ComputeGradEddyViscosity_2D(const su2double rho,
+                                                   const su2double drhodx,
+                                                   const su2double drhody,
+                                                   const su2double dudx,
+                                                   const su2double dudy,
+                                                   const su2double dvdx,
+                                                   const su2double dvdy,
+                                                   const su2double d2udx2,
+                                                   const su2double d2udy2,
+                                                   const su2double d2udxdy,
+                                                   const su2double d2vdx2,
+                                                   const su2double d2vdy2,
+                                                   const su2double d2vdxdy,
+                                                   const su2double lenScale,
+                                                   const su2double distToWall,
+                                                   su2double &dMuTdx,
+                                                   su2double &dMuTdy) {
+  cout << "CAMDModel::ComputeGradEddyViscosity_2D: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CAMDModel::ComputeGradEddyViscosity_3D(const su2double rho,
+                                                   const su2double drhodx,
+                                                   const su2double drhody,
+                                                   const su2double drhodz,
+                                                   const su2double dudx,
+                                                   const su2double dudy,
+                                                   const su2double dudz,
+                                                   const su2double dvdx,
+                                                   const su2double dvdy,
+                                                   const su2double dvdz,
+                                                   const su2double dwdx,
+                                                   const su2double dwdy,
+                                                   const su2double dwdz,
+                                                   const su2double d2udx2,
+                                                   const su2double d2udy2,
+                                                   const su2double d2udz2,
+                                                   const su2double d2udxdy,
+                                                   const su2double d2udxdz,
+                                                   const su2double d2udydz,
+                                                   const su2double d2vdx2,
+                                                   const su2double d2vdy2,
+                                                   const su2double d2vdz2,
+                                                   const su2double d2vdxdy,
+                                                   const su2double d2vdxdz,
+                                                   const su2double d2vdydz,
+                                                   const su2double d2wdx2,
+                                                   const su2double d2wdy2,
+                                                   const su2double d2wdz2,
+                                                   const su2double d2wdxdy,
+                                                   const su2double d2wdxdz,
+                                                   const su2double d2wdydz,
+                                                   const su2double lenScale,
+                                                   const su2double distToWall,
+                                                   su2double &dMuTdx,
+                                                   su2double &dMuTdy,
+                                                   su2double &dMuTdz) {
+  cout << "CAMDModel::ComputeGradEddyViscosity_3D: Not implemented yet" << endl;
+  exit(1);
+}

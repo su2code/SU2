@@ -152,6 +152,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       SGSModel     = new CSIGMAModel;
       SGSModelUsed = true;
       break;
+    case AMD:
+      SGSModel     = new CAMDModel;
+      SGSModelUsed = true;
+      break;
     default:
       SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
   }

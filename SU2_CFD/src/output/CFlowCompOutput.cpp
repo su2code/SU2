@@ -341,7 +341,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   if (config->GetKind_Solver() == NAVIER_STOKES){
     switch (config->GetKind_SGS_Model()) {
-      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA:
+      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA: case AMD:
         AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
         break;
       case NONE: case IMPLICIT_LES:
@@ -506,7 +506,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == NAVIER_STOKES){
     switch (config->GetKind_SGS_Model()) {
-      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA:
+      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA: case AMD:
         SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
         break;
       case NONE: case IMPLICIT_LES:

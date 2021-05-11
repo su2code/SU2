@@ -5481,6 +5481,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case WALE:         cout << "WALE"         << endl; break;
           case VREMAN:       cout << "VREMAN"       << endl; break;
           case SIGMA:        cout << "SIGMA"        << endl; break;
+          case AMD:          cout << "AMD"        << endl; break;
         }
         break;
       case RANS:     case DISC_ADJ_RANS:
@@ -5522,6 +5523,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case WALE:         cout << "WALE"         << endl; break;
           case VREMAN:       cout << "VREMAN"       << endl; break;
           case SIGMA:        cout << "SIGMA"        << endl; break;
+          case AMD:          cout << "AMD"        << endl; break;
           default:
             SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
 
