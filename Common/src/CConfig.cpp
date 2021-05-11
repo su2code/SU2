@@ -1793,6 +1793,11 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief HYBRID_CENTRAL_UPWIND \n DESCRIPTION: If a hybrid central upwind scheme should be used \ingroup Config*/
   addBoolOption("HYBRID_CENTRAL_UPWIND", Hybrid_Central_Upwind, false);
+  /*!\brief HYBRID_CENTRAL_UPWIND \n DESCRIPTION: If a hybrid central upwind scheme + wiggle detector should be used \ingroup Config*/
+  addBoolOption("USE_WIGGLE_DETECTOR", Use_Wiggle_Detector, true);
+  /*!\brief HYBRID_CENTRAL_UPWIND \n DESCRIPTION: Intensity of the local wiggle  \ingroup Config*/
+  addDoubleOption("WIGGLE_INTENSITY", Wiggle_Intensity, 0.0001);
+
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);

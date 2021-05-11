@@ -3303,11 +3303,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       
       su2double Sigma = config->GetMin_LowDissipation();
-      WiggleDetector(Coord_i, Gradient_i, V_i,
-                     Coord_j, Gradient_j, V_j,
-                     nDim, Sigma);
+      if (config->GetUse_Wiggle_Detector()){
+        su2double WiggleIntensity = config->GetLocal_Wiggle_Intensity();
+        
+        WiggleDetector(Coord_i, Gradient_i, V_i,
+                       Coord_j, Gradient_j, V_j,
+                       nDim, WiggleIntensity, Sigma);
 //      if (nodes->GetNon_Physical(iPoint) ||
 //          nodes->GetNon_Physical(jPoint)) Sigma = 1.0;
+      }
       
       for (iVar = 0; iVar < nVar; iVar++)
       {
@@ -3412,7 +3416,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 void CEulerSolver::WiggleDetector(su2double *Coord_i, su2double **Gradient_i, su2double *V_i,
                                   su2double *Coord_j, su2double **Gradient_j, su2double *V_j,
-                                  unsigned short nDim, su2double& WiggleDetector){
+                                  unsigned short nDim, su2double WiggleIntensity, su2double& WiggleDetector){
   
   
   su2double Vector_ij[MAXNDIM] = {0.0};
@@ -3443,8 +3447,8 @@ void CEulerSolver::WiggleDetector(su2double *Coord_i, su2double **Gradient_i, su
     }
     
     
-    if ((Project_Grad_i*Project_Grad_c < -1e-4) &&
-        (Project_Grad_j*Project_Grad_c < -1e-4)){
+    if ((Project_Grad_i*Project_Grad_c < -WiggleIntensity) &&
+        (Project_Grad_j*Project_Grad_c < -WiggleIntensity)){
       WiggleDetector_ij = 1.0;
     }
     WiggleDetector = fmax(WiggleDetector, WiggleDetector_ij);

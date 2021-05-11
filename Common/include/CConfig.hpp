@@ -534,7 +534,9 @@ private:
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   Use_Accurate_Jacobians,  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
-  Hybrid_Central_Upwind;   /*!< \brief Use of a hybrid central upwind scheme for WMLES/DDES. */
+  Hybrid_Central_Upwind,   /*!< \brief Use of a hybrid central upwind scheme for WMLES/DDES. */
+  Use_Wiggle_Detector;     /*!< \brief Use of wiggle detector coupled with a hybrid central upwind scheme for WMLES/DDES. */
+  su2double Wiggle_Intensity; /*!< \brief Intensity of the local wiggle. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
@@ -4332,7 +4334,19 @@ public:
    * \return yes/no.
    */
   bool GetHybrid_Central_Upwind(void) const { return Hybrid_Central_Upwind; }
+  
+  /*!
+   * \brief Get whether to use Wiggle Detectors coupled with Central Upwind schemes.
+   * \return yes/no.
+   */
+  bool GetUse_Wiggle_Detector(void) const { return Use_Wiggle_Detector; }
 
+  /*!
+   * \brief Get the value of the wiggle intensity.
+   * \return Wiggle Intensity
+   */
+  su2double GetLocal_Wiggle_Intensity(void) const { return Wiggle_Intensity; }
+  
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.

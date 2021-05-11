@@ -554,7 +554,7 @@ public:
    */
   static void WiggleDetector(su2double *Coord_i, su2double **Gradient_i, su2double *V_i,
                              su2double *Coord_j, su2double **Gradient_j, su2double *V_j,
-                             unsigned short nDim, su2double& WiggleDetector);
+                             unsigned short nDim, su2double WiggleIntensity, su2double& WiggleDetector);
   
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
