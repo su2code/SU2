@@ -110,12 +110,12 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Primitive_Aux.resize(nPoint,nPrimVar) = su2double(0.0);
   Secondary.resize(nPoint,nPrimVar) = su2double(0.0);
   
-  dPdU.resize(nPoint, nVar)      = su2double(0.0);
-  dTdU.resize(nPoint, nVar)      = su2double(0.0);
-  dTvedU.resize(nPoint, nVar)    = su2double(0.0);
-  Cvves.resize(nPoint, nSpecies) = su2double(0.0);
-  eves.resize(nPoint, nSpecies)  = su2double(0.0);
-  Gamma.resize(nPoint)           = su2double(0.0);
+  dPdU.resize(nPoint, nVar)             = su2double(0.0);
+  dTdU.resize(nPoint, nVar)             = su2double(0.0);
+  dTvedU.resize(nPoint, nVar)           = su2double(0.0);
+  Cvves.resize(nPoint, nSpecies)        = su2double(0.0);
+  eves.resize(nPoint, nSpecies)         = su2double(0.0);
+  Gamma.resize(nPoint)                  = su2double(0.0);
   
   /*--- Compressible flow, gradients primitive variables ---*/
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);

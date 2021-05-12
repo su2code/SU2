@@ -1143,6 +1143,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /* DESCRIPTION: Specfify catalytic efficiency of wall if using gamma model */
   addDoubleOption("CATALYTIC_EFFICIENCY", CatalyticEfficiency, 1.0);
+  /* DESCRIPTION: Specfify radiative wall */
+  addBoolOption("RADIATIVE_WALL", RadiativeWall, false);
 
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
 

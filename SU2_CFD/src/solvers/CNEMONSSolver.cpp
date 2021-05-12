@@ -669,10 +669,15 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
   su2double *V;
   bool ionization = config->GetIonization();
+  bool radiative  = config->GetRadiative_Wall();
 
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
     exit(1);
+  }
+
+  if (radiative) {
+    BC_Radiative_Wall(geometry, solution_container, conv_numerics, sour_numerics, config, val_marker);
   }
 
   /*--- Extract required indices ---*/
@@ -878,12 +883,14 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
         Yj[iSpecies]  = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       
       // Naive Gamma Model
-      Yst[0] = (1-cat_eff) * Yj[0];
-      Yst[1] = (1-cat_eff) * Yj[1];
-      Yst[2] = Yj[2];
-      Yst[3] = cat_eff * Yj[0] + Yj[3];
-      Yst[4] = cat_eff * Yj[1] + Yj[4];
-
+      if (nSpecies == 5){
+        Yst[0] = (1-cat_eff) * Yj[0];
+        Yst[1] = (1-cat_eff) * Yj[1];
+        Yst[2] = Yj[2];
+        Yst[3] = cat_eff * Yj[0] + Yj[3];
+        Yst[4] = cat_eff * Yj[1] + Yj[4];
+      }
+        
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
@@ -978,6 +985,53 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] dVdU[iVar];
   delete [] dVdU;
+}
+
+void CNEMONSSolver::BC_Radiative_Wall(CGeometry *geometry,
+                                                CSolver **solution_container,
+                                                CNumerics *conv_numerics,
+                                                CNumerics *sour_numerics,
+                                                CConfig *config,          
+                                                unsigned short val_marker){
+  bool implicit;
+  unsigned short iDim, iSpecies, iVar;
+  unsigned long iVertex, iPoint;
+  su2double Stefan_Boltzmann, emiss, Tw, *Normal, Area;
+
+  //TODO: Add valmarker for radiative wall, streamline
+  //TODO: Add variable emissivity
+  emiss = 1.0;
+
+  Stefan_Boltzmann = STEFAN_BOLTZMANN;  
+
+  /*--- Identify the boundary ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->nodes->GetDomain(iPoint)) {
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      Area = GeometryToolbox::Norm(nDim, Normal);
+
+      /*--- Initialize the viscous residual to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Res_Visc[iVar] = 0.0;
+
+      /*---------Get wall temperatuer on specified boundary--------*/
+      Tw = config->GetIsothermal_Temperature(Marker_Tag);
+
+      Res_Visc[nSpecies+nDim] += emiss*Area*Stefan_Boltzmann*pow(Tw,4);
+
+      /*--- Viscous contribution to the residual at the wall ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+    }
+  }
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,

@@ -1121,7 +1121,7 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   su2double CatalyticEfficiency;            /*!< \brief Wall catalytic efficiency */
-
+  bool RadiativeWall;                       /*!< \brief Radiative wall */
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -3627,6 +3627,12 @@ public:
    * \return wall catalytic efficiency value.
    */
   su2double GetCatalytic_Efficiency(void) const { return CatalyticEfficiency; }
+
+  /*!
+   * \brief Get radiative wall.
+   * \return Boolean value specifying if wasll is radiative.
+   */
+  bool GetRadiative_Wall(void) const { return RadiativeWall; }
 
   /*!
    * \brief Fluid model that we are using.
