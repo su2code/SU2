@@ -281,7 +281,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
 }
 
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config) {
+void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, vector<su2double> additionalGrad) {
 
   /// Set to 0
   Jacobian.SetValZero();
@@ -292,6 +292,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 
   /// calculate the original gradinet
   CalculateOriginalGradient(geometry, grid_movement, config);
+
+  /// if there was an initialization, add it too the original gradient
+  if (additionalGrad.size()==deltaP.size()) {
+    for (auto iDV = 0; iDV < deltaP.size(); iDV++) {
+      deltaP[iDV] += additionalGrad[iDV];
+    }
+  }
 
   /// compute the Hessian column by column
   if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;

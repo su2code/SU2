@@ -4359,7 +4359,8 @@ public:
                                         CNumerics **numerics,
                                         CSurfaceMovement *surface_movement,
                                         CVolumetricMovement *grid_movement,
-                                        CConfig *config) { }
+                                        CConfig *config,
+                                        vector<su2double> additionalGrad={}) { }
 
   /*!
    * \brief A virtual member.

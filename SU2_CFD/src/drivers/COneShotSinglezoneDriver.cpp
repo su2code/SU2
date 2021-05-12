@@ -337,7 +337,6 @@ void COneShotSinglezoneDriver::SetConstrFunction(){
       }
     } else if (Kind_ConstrFunc == THICKNESS_CONSTRAINT) {
       FunctionValue = solver[MainSolver]->EvaluateGeometryFunction(geometry, config, iPlane);
-      // The sign in this equation is a matter of convention, just ensure, that you choose the multiplier accordingly.
       ConstrFunc[iConstr] = config->GetConstrFuncScale(iConstr)*(FunctionValue - config->GetConstrFuncTarget(iConstr));
       iPlane++;
     }
@@ -475,52 +474,50 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
    unsigned int nDV = config->GetnDV();
    su2double** DV_Value = config->GetDV_Pointer();
 
+   /*--- Add the geometric gradients if needed ---*/
+   for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
+     if (config->GetKind_ConstrFunc(iConstr)==THICKNESS_CONSTRAINT) {
+
+       iDV_index=0;
+       for (iDV = 0; iDV  < nDV; iDV++){
+         nDV_Value =  config->GetnDV_Value(iDV);
+         for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+           storage[iDV_index] = DV_Value[iDV][iDV_Value];
+           DV_Value[iDV][iDV_Value] = 0.001;
+           iDV_index++;
+         }
+       }
+
+       geoGrad = solver[MainSolver]->EvaluateGeometryGradient(geometry, surface_movement[ZONE_0], config);
+
+       iDV_index=0;
+       for (iDV = 0; iDV  < nDV; iDV++){
+         nDV_Value =  config->GetnDV_Value(iDV);
+         for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+           DV_Value[iDV][iDV_Value] = storage[iDV_index];
+           iDV_index++;
+         }
+       }
+
+       break;
+     }
+   }
+
   /*--- get the sensitivities from the adjoint solver to work with ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,config,solver[ADJFLOW_SOL]);
 
   /*--- precondition gradient and extract the result. ---*/
   if (config->GetSobMode()==ONLY_GRAD) {
     solver[GRADIENT_SMOOTHING]->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+    for (auto iDV = 0; iDV < geoGrad.size(); iDV++) {
+      gradient[iDV] += geoGrad[iDV];
+    }
   } else {
-    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config);
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[MainSolver], numerics[GRADIENT_SMOOTHING], surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0], config, geoGrad);
   }
 
-  // TODO: find a way to include preconditioning of geometry gradients too???
+  // get the treated gradient back
   gradient = solver[GRADIENT_SMOOTHING]->GetDeltaP();
-
-  iDV_index = 0;
-  ofstream tostore("tostore" +  std::to_string(rank) + ".txt");
-  for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      storage[iDV_index] = DV_Value[iDV][iDV_Value];
-      tostore << DV_Value[iDV][iDV_Value] << endl;
-      DV_Value[iDV][iDV_Value] = 0.001;
-      iDV_index++;
-    }
-  }
-  tostore.close();
-
-  // Add the geometric gradients if needed
-  for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
-    if (config->GetKind_ConstrFunc(iConstr)==THICKNESS_CONSTRAINT) {
-      geoGrad = solver[MainSolver]->EvaluateGeometryGradient(geometry, surface_movement[ZONE_0], config);
-      if (rank==MASTER_NODE) { cout << "Huhu." << endl; }
-      break;
-    }
-  }
-
-  ofstream fromstore("fromstore" +  std::to_string(rank) + ".txt");
-  for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value[iDV][iDV_Value] = storage[iDV_index];
-      fromstore << DV_Value[iDV][iDV_Value] << endl;
-      iDV_index++;
-    }
-  }
-  fromstore.close();
-
 
     ofstream outGrad ("geometric_gradient" + std::to_string(rank) + ".csv");
     outGrad.precision(17);
@@ -529,10 +526,6 @@ void COneShotSinglezoneDriver::ComputePreconditioner() {
     }
     outGrad.close();
 
-
-  for (auto iDV = 0; iDV < geoGrad.size(); iDV++) {
-    gradient[iDV] += geoGrad[iDV];
-  }
 
 }
 
