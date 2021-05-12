@@ -107,10 +107,6 @@ class CPhysicalGeometry final : public CGeometry {
   su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
 
 public:
-  vector<int> GlobalMarkerStorageDispl;
-  vector<su2double> GlobalRoughness_Height;
-
-public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
   using CGeometry::SetControlVolume;
@@ -772,10 +768,10 @@ public:
    * \details The ADT might belong to another zone, giving rise to lower wall distances
    * than those already stored.
    * \param[in] WallADT - The ADT to reduce the wall distance
-   * \param[in] geometry - Physical geometry associated to the ADT
-   * \param[in] config - Config associated to the ADT
+   * \param[in] config - ignored
+   * \param[in] iZone - zone whose markers made the ADT
    */
-  void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry=nullptr) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone=numeric_limits<unsigned short>::max()) override;
 
   /*!
    * \brief Set wall distances a specific value
@@ -785,11 +781,6 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
-
-  /*!
-   * \brief Set roughness values for markers in a global array.
-   */
-  void SetGlobalMarkerRoughness(const CConfig* config) override;
 
   /*!
    * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.

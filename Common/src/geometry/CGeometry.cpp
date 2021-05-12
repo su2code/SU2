@@ -29,6 +29,7 @@
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -3922,20 +3923,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
-      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      const CConfig *config = config_container[iZone];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config);
+      unique_ptr<CADTElemClass> WallADT = geometry_container[iZone][iInst][MESH_0]->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
-        /*--- Along with finding the closest walls, we collect their roughnesses. ---*/
-        if (config_container[iZone]->GetnRoughWall() > 0)
-          geometry->SetGlobalMarkerRoughness(config);
-
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config, geometry);
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config_container[jZone], iZone);
         }
       }
     }
@@ -3945,6 +3940,37 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       for (int iZone = 0; iZone < nZone; iZone++){
         CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
+      }
+    }
+    /*--- Otherwise, set wall roughnesses. ---*/
+    if(!allEmpty){
+      /*--- Store all wall roughnesses in a common data structure. ---*/
+      // prepare parameters for collective communication
+      MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
+      mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
+      mpi_env.mpi_index = MPI_UNSIGNED_LONG;
+      mpi_env.mpi_data = MPI_DOUBLE;
+      mpi_env.comm=SU2_MPI::GetComm();
+      SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
+      SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
+      // [iZone][iMarker] -> roughness, for this rank
+      auto roughness_f =
+        make_pair( nZone, [=](unsigned long iZone){
+          const CConfig* config = config_container[iZone];
+          return make_pair( geometry_container[iZone][iInst][MESH_0]->GetnMarker() , [=](unsigned long iMarker){
+            return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          });
+        });
+      NdFlattener<su2double,1,unsigned long> roughness_local;
+      roughness_local.initialize_or_refresh(roughness_f);
+      // [rank][iZone][iMarker] -> roughness
+      NdFlattener<su2double,2,unsigned long> roughness_global;
+      roughness_global.initialize_or_refresh(mpi_env, &(roughness_local));
+      // use it to update roughnesses
+      for(int jZone=0; jZone<nZone; jZone++){
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+        }
       }
     }
   }

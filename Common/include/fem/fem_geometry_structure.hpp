@@ -1231,10 +1231,10 @@ protected:
    * \details The ADT might belong to another zone, giving rise to lower wall distances
    * than those already stored.
    * \param[in] WallADT - The ADT to reduce the wall distance
-   * \param[in] geometry - ignored
-   * \param[in] config - ignored
+   * \param[in] config - Config of this geometry (not the ADT zone's geometry)
+   * \param[in] iZone - ignored
    */
-  void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry = nullptr) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone=numeric_limits<unsigned short>::max()) override;
 };
 
 /*!

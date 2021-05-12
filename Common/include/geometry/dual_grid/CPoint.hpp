@@ -32,6 +32,7 @@
 #include "../../containers/container_decorators.hpp"
 #include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
+#include "../../ndflattener.hpp"
 
 using namespace std;
 
@@ -85,7 +86,14 @@ private:
   su2vector<bool> Agglomerate;                 /*!< \brief This flag indicates if the element has been agglomerated. */
 
   su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
+
+  /*--- Closest element on a viscous wall, and distance to it. ---*/
   su2activevector Wall_Distance;          /*!< \brief Distance to the nearest wall. */
+  su2vector<int> ClosestWall_Rank; /*!< \brief Rank of process holding the closest wall element. */
+  su2vector<unsigned short> ClosestWall_Zone; /*!< \brief Zone index of closest wall element. */
+  su2vector<unsigned short> ClosestWall_Marker; /*!< \brief Marker index of closest wall element, for given rank and zone index. */
+  su2vector<unsigned long> ClosestWall_Elem; /*!< \brief Element index of closest wall element, for givenrank, zone and marker index. */
+
   su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
@@ -415,8 +423,22 @@ public:
    * \brief Set the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \param[in] distance - Value of the distance.
+   * \param[in] rankID - Rank of process holding the closest wall element.
+   * \param[in] zoneID - Zone index of closest wall element.
+   * \param[in] markerID - Marker index of closest wall element.
+   * \param[in] elemID - Element index of closest wall element.
    */
-  inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
+  inline void SetWall_Distance(unsigned long iPoint, su2double distance,
+                               int rankID = -1,
+                               unsigned short zoneID = numeric_limits<unsigned short>::max(),
+                               unsigned short markerID = numeric_limits<unsigned short>::max(),
+                               unsigned long elemID = numeric_limits<unsigned long>::max() ) {
+    Wall_Distance(iPoint) = distance;
+    ClosestWall_Rank(iPoint) = rankID;
+    ClosestWall_Zone(iPoint) = zoneID;
+    ClosestWall_Marker(iPoint) = markerID;
+    ClosestWall_Elem(iPoint) = elemID;
+  }
 
   /*!
    * \brief Get the value of the distance to the nearest wall.
@@ -829,4 +851,9 @@ public:
    */
   void SetIndex(unsigned long iPoint, bool input);
 
+  /*!
+   * \brief Set wall roughnesses according to stored closest wall information.
+   * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
+   */
+  void SetWallRoughness(NdFlattener<su2double,2,unsigned long> const& roughness);
 };

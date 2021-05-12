@@ -1687,10 +1687,10 @@ public:
    * \details The ADT might belong to another zone, giving rise to lower wall distances
    * than those already stored.
    * \param[in] WallADT - The ADT to reduce the wall distance
-   * \param[in] geometry - Geometry associated to the ADT
-   * \param[in] config - Config associated to the ADT
+   * \param[in] config - Config of this geometry (not the ADT zone's geometry)
+   * \param[in] iZone - Zone whose markers made the ADT
    */
-  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry=nullptr) {}
+  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone = numeric_limits<unsigned short>::max()) {}
 
   /*!
    * \brief Set wall distances a specific value
@@ -1704,11 +1704,6 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
-
-  /*!
-   * \brief Virtual function to set roughness values.
-   */
-  virtual void SetGlobalMarkerRoughness(const CConfig* config) {}
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.
