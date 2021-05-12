@@ -1234,7 +1234,7 @@ protected:
    * \param[in] geometry - ignored
    * \param[in] config - ignored
    */
-  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry = nullptr) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry = nullptr) override;
 };
 
 /*!

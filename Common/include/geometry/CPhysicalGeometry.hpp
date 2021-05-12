@@ -775,7 +775,7 @@ public:
    * \param[in] geometry - Physical geometry associated to the ADT
    * \param[in] config - Config associated to the ADT
    */
-  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry=nullptr) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig *config = nullptr, const CGeometry* geometry=nullptr) override;
 
   /*!
    * \brief Set wall distances a specific value
@@ -789,7 +789,7 @@ public:
   /*!
    * \brief Set roughness values for markers in a global array.
    */
-  virtual void SetGlobalMarkerRoughness(const CConfig* config) override;
+  void SetGlobalMarkerRoughness(const CConfig* config) override;
 
   /*!
    * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
