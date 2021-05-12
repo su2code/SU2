@@ -2716,7 +2716,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
                                            CInterface*** interface){
 
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
-  unsigned short nSpanMax = 0;
+  unsigned short nSpanMax = 0, nMesh = config[ZONE_0]->GetnMGLevels();
   bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
   mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
@@ -2726,17 +2726,19 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config[iZone]->GetBoolTurbomachinery()){
-      geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
-      geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
-      if (rank == MASTER_NODE) cout <<"Number of span-wise sections in Zone "<< iZone<<": "<< config[iZone]->GetnSpanWiseSections() <<"."<< endl;
-      if (config[iZone]->GetnSpanWiseSections() > nSpanMax){
-        nSpanMax = config[iZone]->GetnSpanWiseSections();
+      for(iMesh = 0; iMesh> nMesh; iMesh++){
+        geometry[iZone][INST_0][iMesh]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
+        geometry[iZone][INST_0][iMesh]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
+        if (rank == MASTER_NODE) cout <<"Number of span-wise sections in Zone "<< iZone<<": "<< config[iZone]->GetnSpanWiseSections() <<"."<< endl;
+        if (config[iZone]->GetnSpanWiseSections() > nSpanMax){
+          nSpanMax = config[iZone]->GetnSpanWiseSections();
+        }
+
+        config[ZONE_0]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
+
+        geometry[iZone][INST_0][iMesh]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
+        geometry[iZone][INST_0][iMesh]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
       }
-
-      config[ZONE_0]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
-
-      geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
-      geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
     }
   }
 

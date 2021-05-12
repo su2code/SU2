@@ -9465,7 +9465,7 @@ void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   if ((config->GetnMarker_Periodic() != 0) && (config->GetnMGLevels() > 0)) {
     if (rank == MASTER_NODE)
       cout << "WARNING: Periodicity has been detected. Disabling multigrid. "<< endl;
-    config->SetMGLevels(0);
+    // config->SetMGLevels(0);
   }
 
 }
