@@ -335,8 +335,8 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
   auto solvers = solver[iZone][iInst];
 
   if (DirectIter >= 0) {
-    if (rank == MASTER_NODE && iZone == ZONE_0)
-      cout << " Loading flow solution from direct iteration " << DirectIter << "." << endl;
+    if (rank == MASTER_NODE)
+      cout << " Loading flow solution from direct iteration " << DirectIter << " for zone " << iZone << "." << endl;
 
     solvers[MESH_0][FLOW_SOL]->LoadRestart(geometry[iZone][iInst], solvers, config[iZone], DirectIter, true);
 
@@ -348,8 +348,8 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     }
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
-    if (rank == MASTER_NODE && iZone == ZONE_0)
-      cout << " Setting freestream conditions at direct iteration " << DirectIter << "." << endl;
+    if (rank == MASTER_NODE)
+      cout << " Setting freestream conditions at direct iteration " << DirectIter << " for zone " << iZone << "." << endl;
 
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
