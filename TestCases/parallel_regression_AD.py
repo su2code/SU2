@@ -308,19 +308,6 @@ def main():
     discadj_fsi2.tol       = 1e-16
     test_list.append(discadj_fsi2)
 
-    ## Unsteady multi physics framework
-    #dyn_discadj_fsi           = TestCase('dyn_discadj_fsi')
-    #dyn_discadj_fsi.cfg_dir   = "disc_adj_fsi/dyn_fsi"
-    #dyn_discadj_fsi.cfg_file  = "config.cfg"
-    #dyn_discadj_fsi.test_iter = 2
-    #dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
-    #dyn_discadj_fsi.timeout   = 1600
-    #dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
-    #dyn_discadj_fsi.test_file = "grad_dv.opt"
-    #dyn_discadj_fsi.unsteady  = True
-    #pass_list.append(dyn_discadj_fsi.run_filediff())
-    #test_list.append(dyn_discadj_fsi)
-
     ###################################
     ### Coupled CHT Adjoint         ###
     ###################################
@@ -432,6 +419,23 @@ def main():
     naca_restart_shape_opt.tol       = 0.00001
     pass_list.append(naca_restart_shape_opt.run_opt())
     test_list.append(naca_restart_shape_opt)
+
+    ####################################################################
+    ###  Unsteady Disc. Adj. Coupled FSI                             ###
+    ####################################################################
+
+    # Unsteady multi physics framework
+    dyn_discadj_fsi           = TestCase('dyn_discadj_fsi')
+    dyn_discadj_fsi.cfg_dir   = "disc_adj_fsi/dyn_fsi"
+    dyn_discadj_fsi.cfg_file  = "config.cfg"
+    dyn_discadj_fsi.test_iter = 2
+    dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    dyn_discadj_fsi.timeout   = 1600
+    dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
+    dyn_discadj_fsi.test_file = "grad_dv.opt"
+    dyn_discadj_fsi.unsteady  = True
+    pass_list.append(dyn_discadj_fsi.run_filediff())
+    test_list.append(dyn_discadj_fsi)
 
     # Tests summary
     print('==================================================================')
