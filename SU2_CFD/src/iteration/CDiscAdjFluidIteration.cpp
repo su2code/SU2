@@ -123,7 +123,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
 
-      /*--- Temporarily store the loaded volumes in to old containers ---*/
+      /*--- Temporarily store the loaded volumes into old containers ---*/
       if (config[iZone]->GetDynamic_Grid()) {
         for (auto iMesh=0; iMesh<=config[iZone]->GetnMGLevels();iMesh++) {
           geometries[iMesh]->nodes->SetVolume_Old();
