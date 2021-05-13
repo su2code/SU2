@@ -80,9 +80,9 @@ public:
    * \param[in] iDim   - Index of the dimension.
    * \return Value of the reconstruction variables gradient at a node.
    */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
+  //inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+  //  return Gradient_Reconstruction(iPoint,iVar,iDim);
+  //}
 
   /*!
    * \brief Set the value of the reconstruction variables gradient at a node.
@@ -91,9 +91,9 @@ public:
    * \param[in] iDim   - Index of the dimension.
    * \param[in] value  - Value of the reconstruction gradient component.
    */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
+  //inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+  //  Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  //}
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
