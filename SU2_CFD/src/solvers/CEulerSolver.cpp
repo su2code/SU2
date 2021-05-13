@@ -41,18 +41,6 @@
 #include <vector>
 #include <chrono>
 
-//extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
-//                       int*, passivedouble*, int*, int*);
-/* Prototypes for Lapack functions, if MKL or LAPACK is used. */
-//#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
-//extern "C" void dgeqrf_(int*, int*, passivedouble*, int*, passivedouble*,
-//                       passivedouble*, int*, int*);
-//
-//extern "C" void dormqr_(char*, char*, const int*, const int*, const int*,
-//                        const passivedouble*, const int*, const passivedouble*, const passivedouble*,
-//                        const int*, const passivedouble*, const int*, const int*);
-//#endif
-
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -2749,29 +2737,38 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
   
-  SU2_OMP_MASTER
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-  SU2_OMP_BARRIER
+  /*--- Set shared residual variables to 0 and declare local ones for current thread to work on. ---*/
+
+  SetResToZero();
   
   /*--- Find residual ---*/
   
   vector<double> r(m,0.0);
   int index = 0;
   
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  /*--- Add pseudotime term to Jacobian. ---*/
+  // TODO: Does ROM need this?
+  
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
       iPoint = Mask[iPoint_mask];
 
+    /*--- Multigrid contribution to residual. ---*/
+      
     su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
+    if (nodes->GetDelta_Time(iPoint) == 0.0) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
+    }
+      
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      //LinSysSol[total_index] = 0.0;
+      LinSysSol[total_index] = 0.0;
 
       su2double Res = fabs(LinSysRes[total_index]);
       resRMS[iVar] += Res*Res;
@@ -2841,13 +2838,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
   }
   fs.close();
-  
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
   
   /*--- Container for reduced residual ---*/
   

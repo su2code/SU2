@@ -128,8 +128,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   Allocate(*config);
 
-  /*--- Allocate Jacobians for implicit time-stepping ---*/
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+  /*--- Allocate Jacobians for implicit time-stepping or for ROM solution ---*/
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT or config->GetReduced_Model()) {
 
     /*--- Jacobians and vector  structures for implicit computations ---*/
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
@@ -453,12 +453,13 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, jVar;
   bool err;
-
+  
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   /*--- Set booleans based on config settings ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  bool rom = config->GetReduced_Model();
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
@@ -491,7 +492,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar])
         err = true;
-    if (implicit)
+    if (implicit or rom)
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
           if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
@@ -502,7 +503,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     if (!err) {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (implicit) {
+      if (implicit or rom) {
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
         Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
         Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
@@ -522,7 +523,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
-
+  const bool rom              = (config->GetReduced_Model());
+  
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -666,7 +668,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     bool err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    if (implicit)
+    if (implicit or rom)
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
           if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
@@ -677,7 +679,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     if (!err) {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (implicit) {
+      if (implicit or rom) {
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
@@ -822,6 +824,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool monoatomic = config->GetMonoatomic();
   bool viscous    = config->GetViscous();
   bool rans       = (config->GetKind_Turb_Model() != NONE);
+  bool rom        = config->GetReduced_Model();
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -863,7 +866,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
           if (residual[iVar] != residual[iVar]) err = true;
-        if (implicit)
+        if (implicit or rom)
           for (iVar = 0; iVar < nVar; iVar++)
             for (jVar = 0; jVar < nVar; jVar++)
               if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
@@ -888,7 +891,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       err = false;
       for (iVar = 0; iVar < nVar; iVar++)
         if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
+      if (implicit or rom)
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
@@ -896,7 +899,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- Apply the vibrational relaxation terms to the linear system ---*/
       if (!err) {
         LinSysRes.SubtractBlock(iPoint, residual);
-        if (implicit)
+        if (implicit or rom)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       } else
         eVib_local++;
@@ -973,7 +976,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
           if (residual[iVar] != residual[iVar]) err = true;
-        if (implicit)
+        if (implicit or rom)
           for (iVar = 0; iVar < nVar; iVar++)
             for (jVar = 0; jVar < nVar; jVar++)
               if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
@@ -981,7 +984,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Apply the update to the linear system ---*/
         if (!err) {
           LinSysRes.AddBlock(iPoint, residual);
-          if (implicit)
+          if (implicit or rom)
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         }else
           eAxi_local++;
