@@ -830,8 +830,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
          minus the coordinates of the reference mesh file ---*/
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
-        su2double vel = Restart_Data[index+iDim+6];
-        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, vel);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -866,8 +864,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    domain and on the boundaries. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
-  /*--- For time-domain problems, we need to compute the grid velocities ---*/
-  if (time_domain){
+  /*--- For time-domain problems, we need to compute the grid velocities. ---*/
+  if (time_domain && !config->GetFSI_Simulation()) {
     /*--- Update the old geometry (coordinates n and n-1) ---*/
     Restart_OldGeometry(geometry[MESH_0], config);
     /*--- Once Displacement_n and Displacement_n1 are filled,
@@ -928,8 +926,10 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;
-    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - iStep;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
+    if (!config->GetDiscrete_Adjoint())
+      Unst_RestartIter = static_cast<int>(config->GetRestart_Iter()) - iStep;
+    else
+      Unst_RestartIter = static_cast<int>(config->GetUnst_AdjointIter()) - config->GetTimeIter() - iStep - 1;
 
     if (Unst_RestartIter < 0) {
 

@@ -5235,7 +5235,7 @@ public:
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, unsigned long Iter) const;
+  string GetFilename(string filename, string ext, int Iter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.

@@ -999,10 +999,13 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   }
 
   if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
+
+    const bool update_geo = !config->GetFSI_Simulation();
+
     /*--- Load an additional restart file for a 2nd-order restart ---*/
 
     solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter() - 1,
-                                                    true);
+                                                    update_geo);
 
     /*--- Load an additional restart file for the turbulence model ---*/
     if (rans)

@@ -158,14 +158,14 @@ void CSinglezoneDriver::Run() {
 
 void CSinglezoneDriver::Postprocess() {
 
-    iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+  iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+      numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- A corrector step can help preventing numerical instabilities ---*/
+
+  if (config_container[ZONE_0]->GetRelaxation())
+    iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-    /*--- A corrector step can help preventing numerical instabilities ---*/
-
-    if (config_container[ZONE_0]->GetRelaxation())
-      iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
 

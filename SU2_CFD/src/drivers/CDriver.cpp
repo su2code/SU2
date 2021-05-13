@@ -250,17 +250,6 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
                             interface_types, interface_container, interpolator_container);
   }
 
-  if(fsi && (config_container[ZONE_0]->GetRestart() || config_container[ZONE_0]->GetDiscrete_Adjoint())){
-    if (rank == MASTER_NODE)cout << endl <<"Restarting Fluid and Structural Solvers." << endl;
-
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
-                       config_container[iZone], true);
-      }
-    }
-  }
-
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
     if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
     Turbomachinery_Preprocessing(config_container, geometry_container, solver_container, interface_container);
@@ -1137,169 +1126,55 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
 void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
-  bool euler, ns, turbulent,
-  NEMO_euler, NEMO_ns,
-  adj_euler, adj_ns, adj_turb,
-  heat, fem, fem_euler, fem_ns, fem_dg_flow,
-  template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
-  int val_iter = 0;
-
-  /*--- Initialize some useful booleans ---*/
-
-  euler            = false;  ns           = false;  turbulent   = false;
-  NEMO_euler       = false;  NEMO_ns      = false;
-  adj_euler        = false;  adj_ns       = false;  adj_turb    = false;
-  fem_euler        = false;  fem_ns       = false;  fem_dg_flow = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  disc_adj_turb    = false;
-  heat             = false;  disc_adj_heat    = false;
-  template_solver  = false;
-
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
-  bool restart      = config->GetRestart();
-  bool restart_flow = config->GetRestart_Flow();
-  bool no_restart   = false;
+  const bool restart = config->GetRestart();
+  const bool restart_flow = config->GetRestart_Flow();
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
-  bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
-  bool time_domain = (config->GetTime_Domain()); // Dynamic simulation (FSI).
+  int val_iter = 0;
 
-  if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+  const bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
+  const bool time_domain = config->GetTime_Domain();
+  const bool dt_step_2nd = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
+                           !config->GetStructuralProblem() && !config->GetFEMSolver() &&
+                           !adjoint && time_domain;
+
+  if (time_domain) {
+    if (adjoint) val_iter = config->GetUnst_AdjointIter() - 1;
+    else val_iter = config->GetRestart_Iter() - 1 - dt_step_2nd;
   }
 
-  if (time_stepping) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-  }
-
-  /*--- Assign booleans ---*/
-
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NEMO_EULER : NEMO_euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case NEMO_NAVIER_STOKES: NEMO_ns = true; break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case FEM_EULER : fem_euler = true; break;
-    case FEM_NAVIER_STOKES: fem_ns = true; break;
-    case FEM_RANS : fem_ns = true; break;
-    case FEM_LES : fem_ns = true; break;
-    case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_FEM_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-    case DISC_ADJ_HEAT: heat = true; disc_adj_heat = true; break;
-
-  }
-
-  /*--- Determine the kind of FEM solver used for the flow. ---*/
-
-  switch( config->GetKind_FEM_Flow() ) {
-    case DG: fem_dg_flow = true; break;
-  }
-
-  /*--- Load restarts for any of the active solver containers. Note that
-   these restart routines fill the fine grid and interpolate to all MG levels. ---*/
+  /*--- Restart direct solvers. ---*/
 
   if (restart || restart_flow) {
-    if (euler || ns) {
-      SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
-      solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-      END_SU2_OMP_PARALLEL
-    }
-    if (NEMO_euler || NEMO_ns) {
-      solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (turbulent) {
-      SU2_OMP_PARALLEL_(if(solver[MESH_0][TURB_SOL]->GetHasHybridParallel()))
-      solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-      END_SU2_OMP_PARALLEL
-    }
-    if (config->AddRadiation()) {
-      solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (fem) {
-      if (time_domain) {
-        if (config->GetRestart()) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-        else val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto sol = solver[MESH_0][iSol];
+      if (sol && !sol->GetAdjoint()) {
+        /*--- Note that the mesh solver always loads the most recent file (and not -2). ---*/
+        SU2_OMP_PARALLEL_(if(sol->GetHasHybridParallel()))
+        sol->LoadRestart(geometry, solver, config, val_iter + (iSol==MESH_SOL && dt_step_2nd), update_geo);
+        END_SU2_OMP_PARALLEL
       }
-      solver[MESH_0][FEA_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (fem_euler || fem_ns) {
-      if (fem_dg_flow)
-        solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (heat) {
-      solver[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
   }
+
+  /*--- Restart adjoint solvers. ---*/
 
   if (restart) {
-    if (template_solver) {
-      no_restart = true;
+    if ((config->GetKind_Solver() == TEMPLATE_SOLVER) ||
+        (config->GetKind_Solver() == ADJ_RANS && !config->GetFrozen_Visc_Cont())) {
+      SU2_MPI::Error("A restart capability has not been implemented yet for this solver.\n"
+                     "Please set RESTART_SOL= NO and try again.", CURRENT_FUNCTION);
     }
-    if (heat) {
-      solver[MESH_0][HEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (adj_euler || adj_ns) {
-      solver[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (adj_turb) {
-      no_restart = true;
-    }
-    if (disc_adj) {
-      solver[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-      if (disc_adj_turb)
-        solver[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-      if (disc_adj_heat)
-        solver[MESH_0][ADJHEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-      if (config->AddRadiation())
-        solver[MESH_0][ADJRAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (disc_adj_fem) {
-        if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-        solver[MESH_0][ADJFEA_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-    }
-    if (disc_adj_heat) {
-      solver[MESH_0][ADJHEAT_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto sol = solver[MESH_0][iSol];
+      if (sol && sol->GetAdjoint())
+        sol->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
   }
-
-  if ((restart || restart_flow) && config->GetDeform_Mesh() && update_geo){
-    /*--- Always restart with the last state ---*/
-    if (config->GetRestart()) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
-  }
-
-  /*--- Exit if a restart was requested for a solver that is not available. ---*/
-
-  if (no_restart) {
-    SU2_MPI::Error(string("A restart capability has not been implemented yet for this solver.\n") +
-                   string("Please set RESTART_SOL= NO and try again."), CURRENT_FUNCTION);
-  }
-
-  /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
-
 
 }
 
