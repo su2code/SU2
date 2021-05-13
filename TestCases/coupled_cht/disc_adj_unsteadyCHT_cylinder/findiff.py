@@ -1,7 +1,6 @@
 # FADO script: Finite Differences of unsteady CHT
 
 from FADO import *
-import subprocess
 
 # Design variables ----------------------------------------------------- #
 
@@ -75,4 +74,3 @@ for iLoop in range(0, nDV, 1):
 #end
 
 his.close()
-
