@@ -27,4 +27,4 @@ Note that the script can be used with the files as they are. Necessary adaptions
 The script deforms the mesh and runs the primal for each of the 18 Design Variables.
 Afterwards the baseline mesh is evaluated and then the Discrete Adjoint.
 Use `postprocess.py` to print the absolute difference and relative difference in percent to screen.
-
+The relative differences in percent are <0.15% for all Design Variables (2021-05-14).
