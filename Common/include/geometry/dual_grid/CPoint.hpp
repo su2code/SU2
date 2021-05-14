@@ -855,5 +855,15 @@ public:
    * \brief Set wall roughnesses according to stored closest wall information.
    * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
    */
-  void SetWallRoughness(NdFlattener<3> const& roughness);
+  template<typename Roughness_type>
+  void SetWallRoughness(Roughness_type const& roughness){
+    for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
+      int rankID = ClosestWall_Rank[iPoint];
+      unsigned short zoneID = ClosestWall_Zone[iPoint];
+      unsigned short markerID = ClosestWall_Marker[iPoint];
+      if(rankID != -1){
+        SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
+      }
+    }
+  }
 };
