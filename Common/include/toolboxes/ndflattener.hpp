@@ -77,10 +77,10 @@ namespace helpers {
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
     typedef IndexAccumulator<N-1,K,Data,Index> LookupType; /*!< Return type of operator[] */
     typedef const LookupType LookupType_const; /*!< Return type of operator[], const version */
-    /*! \brief Read one more index. */
-    LookupType operator[] (Index i){
-      return LookupType(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
-    }
+    /* \brief Read one more index. */
+    /*LookupType operator[] (Index i){
+      return LookupType(static_cast<typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+    }*/
     /*! \brief Read one more index, const version. */
     LookupType_const operator[] (Index i) const {
       return LookupType(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
@@ -93,12 +93,12 @@ namespace helpers {
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
     typedef Data* LookupType; /*!< Return type of operator[] */
     typedef const Data* LookupType_const; /*!< Return type of operator[], const version */
-    /*! \brief Read the last-but-one index.
+    /* \brief Read the last-but-one index.
      * \return Pointer to the corresponding section in the data array in layer K=1.
      */
-    LookupType operator[] (Index i){
+    /*LookupType operator[] (Index i){
       return static_cast<const typename Base::Nd_type::Base*>(this->nd)->GetData() + this->nd->GetIndices()[this->offset+i];
-    }
+    }*/
     /*! \brief Read the last-but-one index, const version.
      * \return Const pointer to the corresponding section in the data array in layer K=1.
      */
@@ -531,11 +531,11 @@ public:
     return nNodes;
   }
 
-  /*! \brief Look-up with IndexAccumulator.
+  /* \brief Look-up with IndexAccumulator.
    */
-  typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType operator[](Index i0){
+  /*typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType operator[](Index i0){
     return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
-  }
+  }*/
   /*! \brief Look-up with IndexAccumulator, const version.
    */
   typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType_const operator[](Index i0) const {
