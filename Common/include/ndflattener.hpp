@@ -34,9 +34,11 @@
 #include <vector>
 #include "parallelization/mpi_structure.hpp"
 
+template<size_t K, typename Data=su2double, typename Index=unsigned long>
+class NdFlattener;
 
 namespace helpers {
-template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
+  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
   struct NdFlattener_MPI_Environment {
     MPI_Allgatherv_type MPI_Allgatherv;
     MPI_Datatype_type mpi_data;
@@ -44,6 +46,67 @@ template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_
     MPI_Communicator_type comm;
     int rank; int size;
   };
+
+  /*! \class IndexAccumulator
+   * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
+   * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
+   *  - For N==2, the structure has already read all indices but two. So after this method has read the last-but-one
+   *    index, return a pointer to the corresponding section of the data array in layer K=1.
+   *  - For N>2, more indices have to be read, return an IndexAccumulator<N-1>.
+   * \tparam N - Number of missing parameters
+   * \tparam K - number of indices of accessed NdFlattener
+   * \tparam Data - Data type of accessed NdFlattener
+   * \tparam Index - Index type of accessed NdFlattener
+   */
+  /*! \class IndexAccumulator_Base
+   * \brief Parent class of IndexAccumulator.
+   * \details IndexAccumulator provides the operator[] method.
+   */
+  template<size_t N, size_t K, typename Data, typename Index>
+  class IndexAccumulator_Base {
+  protected:
+    typedef NdFlattener<N,Data,Index> Nd_type; /*!< \brief Access this level of the NdFlattener next. */
+    const Nd_type* nd; /*!< \brief The accessed NdFlattener. */
+    const Index offset; /*!< \brief Index in the currently accessed layer. */
+    IndexAccumulator_Base(const Nd_type* nd, Index offset): nd(nd), offset(offset) {}
+  };
+  template<size_t N, size_t K, typename Data, typename Index>
+  class IndexAccumulator : public IndexAccumulator_Base<N,K,Data,Index>{
+  public:
+    typedef IndexAccumulator_Base<N,K,Data,Index> Base;
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+    typedef IndexAccumulator<N-1,K,Data,Index> LookupType; /*!< Return type of operator[] */
+    typedef const LookupType LookupType_const; /*!< Return type of operator[], const version */
+    /*! \brief Read one more index. */
+    LookupType operator[] (Index i){
+      return LookupType(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+    }
+    /*! \brief Read one more index, const version. */
+    LookupType_const operator[] (Index i) const {
+      return LookupType(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+    }
+  };
+  template<size_t K, typename Data, typename Index>
+  class IndexAccumulator<2,K,Data,Index> : public IndexAccumulator_Base<2,K,Data,Index>{
+  public:
+    typedef IndexAccumulator_Base<2,K,Data,Index> Base;
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+    typedef Data* LookupType; /*!< Return type of operator[] */
+    typedef const Data* LookupType_const; /*!< Return type of operator[], const version */
+    /*! \brief Read the last-but-one index.
+     * \return Pointer to the corresponding section in the data array in layer K=1.
+     */
+    LookupType operator[] (Index i){
+      return static_cast<const typename Base::Nd_type::Base*>(this->nd)->GetData() + this->nd->GetIndices()[this->offset+i];
+    }
+    /*! \brief Read the last-but-one index, const version.
+     * \return Const pointer to the corresponding section in the data array in layer K=1.
+     */
+    LookupType_const operator[] (Index i) const {
+      return static_cast<const typename Base::Nd_type::Base*>(this->nd)->GetData() + this->nd->GetIndices()[this->offset+i];
+    }
+  };
+
 } // namespace helpers
 
 static helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
@@ -69,8 +132,8 @@ Get_Nd_MPI_Env() {
  * it can be refreshed in the same way after the the pointer-to-pointer-... array's
  * values (but not its structure) have changed.
  *
- * \tparam Data - Type of stored array data
  * \tparam K - number of indices
+ * \tparam Data - Type of stored array data
  * \tparam Index - Type of index
  */
 
@@ -106,11 +169,12 @@ Get_Nd_MPI_Env() {
  * allocate it and fill it with data during the second iteration.
  */
 
-template<typename Data, size_t K, typename Index>
-class NdFlattener: public NdFlattener<Data,K-1,Index>{
+template<size_t K, typename Data, typename Index>
+class NdFlattener: public NdFlattener<K-1,Data,Index>{
+
 public:
-  typedef NdFlattener<Data,K-1,Index> Base; // could also be named LowerLayer
-  typedef NdFlattener<Data,K,Index> CurrentLayer;
+  typedef NdFlattener<K-1,Data,Index> Base; // could also be named LowerLayer
+  typedef NdFlattener<K,Data,Index> CurrentLayer;
   typedef typename Base::LowestLayer LowestLayer; // the K=1 class
 
 private:
@@ -126,6 +190,11 @@ private:
 
   /*! \brief Indices in the lower layer's indices or data array */
   std::vector<Index> indices;
+
+  /*=== Getters ===*/
+public:
+  Index* GetIndices() {return indices.data();}
+  const Index* GetIndices() const {return indices.data();}
 
   /*=== Outputting ===*/
 
@@ -420,6 +489,12 @@ protected:
     
 
   /*=== Access to data and numbers of children ===*/
+  // There are two ways to access data:
+  // - nd.get(i_1, ..., i_K) for reading
+  // - nd[i_1]...[i_{K-1}] returns a pointer to the data array, so you can
+  //   read and write nd[i_1]...[i_K].
+  // If you have indices i_1, ..., i_k and are interested in the bound for i_{k+1},
+  // use getNChildren(i_1,...,i_k).
 protected:
   template<class ...ARGS>
   Data get_withoffset(Index offset, Index i1, ARGS... i2) const {
@@ -432,10 +507,12 @@ protected:
   Index getNChildren_withoffset(Index offset, Index i) const {
     return indices[offset+i+1] - indices[offset+i];
   }
+
 public:
-  /*! \brief Index look-up.
+  /*! \brief Reading access.
    *
    * The number of parameters must be K.
+   * If you also need write access, use the nd[i1]...[iK] interface.
    */
   template<class ...ARGS>
   Data get(ARGS... i) const {
@@ -454,19 +531,34 @@ public:
     return nNodes;
   }
 
-
+  /*! \brief Look-up with IndexAccumulator.
+   */
+  typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType operator[](Index i0){
+    return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
+  }
+  /*! \brief Look-up with IndexAccumulator, const version.
+   */
+  typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType_const operator[](Index i0) const {
+    return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
+  }
 };
 
 template<typename Data, typename Index>
-class NdFlattener<Data, 1, Index> {
+class NdFlattener<1, Data, Index> {
 public:
-  typedef NdFlattener<Data, 1, Index> CurrentLayer;
+  typedef NdFlattener<1, Data, Index> CurrentLayer;
   typedef CurrentLayer LowestLayer;
 
 private:
   Index nNodes=0;
   Index iNode=0;
   std::vector<Data> data;
+
+
+  /*=== Getters ===*/
+public:
+  Data* GetData() {return data.data();}
+  const Data* GetData() const {return data.data();}
 
   /*=== Outputting ===*/
 protected:
@@ -558,5 +650,7 @@ public:
 
 
 };
+
+
 
 

@@ -186,13 +186,13 @@ void CPoint::SetCoord_Old() {
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
 
-void CPoint::SetWallRoughness(NdFlattener<su2double,3,unsigned long> const& roughness){
+void CPoint::SetWallRoughness(NdFlattener<3> const& roughness){
   for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
     int rankID = ClosestWall_Rank[iPoint];
     unsigned short zoneID = ClosestWall_Zone[iPoint];
     unsigned short markerID = ClosestWall_Marker[iPoint];
     if(rankID != -1){
-      SetRoughnessHeight(iPoint, roughness.get(rankID, zoneID, markerID));
+      SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
     }
   }
 }

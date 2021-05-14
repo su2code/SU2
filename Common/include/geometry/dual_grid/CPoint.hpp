@@ -855,5 +855,5 @@ public:
    * \brief Set wall roughnesses according to stored closest wall information.
    * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
    */
-  void SetWallRoughness(NdFlattener<su2double,3,unsigned long> const& roughness);
+  void SetWallRoughness(NdFlattener<3> const& roughness);
 };
