@@ -32,7 +32,7 @@
 #include "../../containers/container_decorators.hpp"
 #include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
-#include "../../ndflattener.hpp"
+#include "../../toolboxes/ndflattener.hpp"
 
 using namespace std;
 

@@ -29,7 +29,7 @@
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
-#include "../../include/ndflattener.hpp"
+#include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),

@@ -32,7 +32,7 @@
 #include <cassert>
 #include <sstream>
 #include <vector>
-#include "parallelization/mpi_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
 
 template<size_t K, typename Data=su2double, typename Index=unsigned long>
 class NdFlattener;
