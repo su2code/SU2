@@ -3961,10 +3961,10 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
             return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
           });
         });
-      NdFlattener<su2double,1,unsigned long> roughness_local;
+      NdFlattener<su2double,2,unsigned long> roughness_local;
       roughness_local.initialize_or_refresh(roughness_f);
       // [rank][iZone][iMarker] -> roughness
-      NdFlattener<su2double,2,unsigned long> roughness_global;
+      NdFlattener<su2double,3,unsigned long> roughness_global;
       roughness_global.initialize_or_refresh(mpi_env, &(roughness_local));
       // use it to update roughnesses
       for(int jZone=0; jZone<nZone; jZone++){

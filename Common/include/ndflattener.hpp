@@ -55,16 +55,16 @@ struct MPI_Environment {
  * values (but not its structure) have changed.
  *
  * \tparam Data - Type of stored array data
- * \tparam K - (number of layers) = (number of indices) - 1
+ * \tparam K - number of indices
  * \tparam Index - Type of index
  */
 
 /* --- Implementation details---
- * If you array has (K+1) indices, instantiate this class with template parameter K,
+ * If your array has K indices, instantiate this class with template parameter K,
  * which is derived recursively from this class with template parameter (K-1). 
- * In each layer, there is an array: Of type Data for K=0, and of type Index for K>0.
+ * In each layer, there is an array: Of type Data for K=1, and of type Index for K>1.
  *
- * The data array of K=0 contains the values of the array A in lexicographic ordering:
+ * The data array of K=1 contains the values of the array A in lexicographic ordering:
  * [0]...[0][0][0], [0]...[0][0][1], ..., [0]...[0][0][something], 
  * [0]...[0][1][0], [0]...[0][1][1], ..., [0]...[0][1][something],
  * ...,
@@ -76,11 +76,11 @@ struct MPI_Environment {
  * Note that they might have different lengths, so "something" might stand for different
  * values here. Last-index lists can also be empty.
  *
- * The indices array of K=1 contains the indices of the (K=0)-data array at which a new
+ * The indices array of K=2 contains the indices of the (K=1)-data array at which a new
  * last-index list starts. If a last-index list is empty, the are repetitive entries in the 
  * indices array.
  *
- * The indices array of K=2 contains the indices of the (K=1)-indices array at which the 
+ * The indices array of K=3 contains the indices of the (K=2)-indices array at which the
  * last-but-two index increases by one or drops to zero. If the last-but-two index is increased
  * by more than one, there are repetitive entries.
  *
@@ -96,16 +96,17 @@ class NdFlattener: public NdFlattener<Data,K-1,Index>{
 public:
   typedef NdFlattener<Data,K-1,Index> Base; // could also be named LowerLayer
   typedef NdFlattener<Data,K,Index> CurrentLayer;
-  typedef typename Base::LowestLayer LowestLayer; // the K=0 class
+  typedef typename Base::LowestLayer LowestLayer; // the K=1 class
 
 private:
   /*! \brief Number of nodes in this layer.
    * 
-   * For the layer K=0, nNodes will be the number of data points.
+   * For the layer K=1, nNodes will be the number of data points.
+   * For a layer K>1, nNodes will be the number of sublists.
    */
   Index nNodes=0; 
 
-  /*! \brief Iterator used at construction, runs from 0 to nNodes. */
+  /*! \brief Iterator used at construction, runs from 0 to (nNodes-1). */
   Index iNode=0;
 
   /*! \brief Indices in the lower layer's indices or data array */
@@ -150,6 +151,7 @@ public:
   /*! \brief Basic constructor.
    * 
    * Called recursively when a derived class (higher K) is constructed.
+   * Allocation is done later with initialize_or_refresh.
    */
   NdFlattener() {};
 
@@ -157,7 +159,7 @@ public:
    * \details Either a 'recursive function' or 'collective communication'
    * may be used. When the NdFlattener does not hold data yet, it is 
    * initialized, meaning that the data are collected and the indices arrays
-   * are formed. Otherwise it is refreshed, meaning that the data are 
+   * are allocated and filled. Otherwise it is refreshed, meaning that the data are
    * recollected under the assumption that the indices arrays did not change.
    */
   template<class ...ARGS>
@@ -249,7 +251,7 @@ protected:
    *
    * \param f - the 'recursive function'
    * \param refresh - if true, the object is already initialized and only the data
-   *   in layer 0 have to be overwritten
+   *   in layer 1 have to be overwritten
    * \tparam f_type - to allow for any type of the 'recursive function'
    */
   template<class f_type>
@@ -270,40 +272,40 @@ protected:
   /*=== Construct with Allgatherv ===*/
 
 public:
-  /*! \brief Initialize a flattener with (K+1) indices by combining distributed flatteners with K indices each.
+  /*! \brief Initialize a flattener with K indices by combining distributed flatteners with (K-1) indices each.
    *
    * The new first index will encode the rank of the process. Data is exchanged in MPI::Allgatherv-style
    * collective communication.
    * \param[in] mpi_env - The MPI environment used for communication.
-   * \param[in] local_version - The local NdFlattener structure.
+   * \param[in] local_version - The local NdFlattener structure with (K-1) indices.
    */
   template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
   void initialize( 
     MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
     Base const* local_version 
   ) {
-    Index** Nodes_all = new Index*[K+1]; // [k][r] is number of all nodes in layer k, rank r in the new structure
-    for(int k=0; k<K+1; k++)
+    Index** Nodes_all = new Index*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
+    for(int k=0; k<K; k++)
       Nodes_all[k] = nullptr;
-    Nodes_all[K] = new Index[mpi_env.size]; // {1, 1, ..., 1}
+    Nodes_all[K-1] = new Index[mpi_env.size]; // {1, 1, ..., 1}
     int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
     int* ones = new int[mpi_env.size]; // {1,1, ...}
     for(int r=0; r<mpi_env.size; r++){
-      nNodes += Nodes_all[K][r] = 1;
+      nNodes += Nodes_all[K-1][r] = 1;
       displs[r] = r;
       ones[r] = 1;
     }
-    Base::count_g(mpi_env, Nodes_all, local_version, displs, ones); // set the lower layers' nNodes and Nodes_all
+    Base::count_g(mpi_env, Nodes_all, local_version, displs, ones); // set the lower layers' nNodes and Nodes_all[k]
 
     allocate();
 
     indices[0] = 0;
     for(int r=0; r<mpi_env.size; r++){
-      indices[r+1] = indices[r] + Nodes_all[K-1][r];
+      indices[r+1] = indices[r] + Nodes_all[K-2][r];
     }
     Base::set_g(mpi_env, Nodes_all, local_version);
     
-    for(int k=0; k<K+1; k++){
+    for(int k=0; k<K; k++){
       delete[] Nodes_all[k];
     }
     delete[] Nodes_all;
@@ -341,10 +343,10 @@ public:
   }
 
 protected:
-  /*! \brief Gather the distributed flatteners' arrays into the allocated arrays.
+  /*! \brief Count the distributed flatteners' numbers of nodes, and set nNodes.
    *
    * \param[in] mpi_env - MPI environment for communication
-   * \param[out] Nodes_all - [k][r] is set to number of nodes in layer k, rank r.
+   * \param[out] Nodes_all - [k][r] is set to number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be send to the other processes
    * \param[in] displs - {0,1,...,size-1}
    * \param[in] ones - {1,1,...,1}
@@ -355,21 +357,21 @@ protected:
          CurrentLayer const* local_version,
          int const* displs, int const* ones )
   { 
-    assert( Nodes_all[K]==nullptr);
-    Nodes_all[K] = new Index[mpi_env.size];
+    assert( Nodes_all[K-1]==nullptr);
+    Nodes_all[K-1] = new Index[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[K], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
-      nNodes += Nodes_all[K][r];
+      nNodes += Nodes_all[K-1][r];
     }
     Base::count_g(mpi_env, Nodes_all, local_version->cast_to_Base(), displs, ones);
   }
 
-  /*! \brief Gather the distributed flatteners' arrays into the allocated arrays.
+  /*! \brief Gather the distributed flatteners' data and index arrays into the allocated arrays.
    *
    * \param[in] mpi_env - MPI environment for communication
-   * \param[in] Nodes_all - [k][r] is the number of nodes in layer k, rank r.
+   * \param[in] Nodes_all - [k][r] is the number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be send to the other processes
    */
   template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
@@ -381,13 +383,13 @@ protected:
     int* Nodes_all_K_as_int = new int[mpi_env.size];
     int* Nodes_all_k_cumulated = new int[mpi_env.size+1]; // [r] is number of nodes in the current layer, summed over all processes with rank below r 
     // plus one. Used as displacements in Allgatherv, but we do not want to transfer the initial zeros and rather the last element of indices, 
-    // which is the local nNodes of the layer below. Note that MPI needs indices in type 'int'.
+    // which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.
     Nodes_all_k_cumulated[0] = 1;
     for(int r=0; r<mpi_env.size; r++){
-      Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K][r];
-      Nodes_all_K_as_int[r] = Nodes_all[K][r];
+      Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
+      Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
     }
-    mpi_env.MPI_Allgatherv( local_version->indices+1, Nodes_all[K][mpi_env.rank], mpi_env.mpi_index, indices, Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv( local_version->indices+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices, Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
     // shift indices 
     for(int r=1; r<mpi_env.size; r++){
       Index first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
@@ -422,7 +424,7 @@ protected:
 public:
   /*! \brief Index look-up.
    *
-   * The number of parameters must be (K+1).
+   * The number of parameters must be K.
    */
   template<class ...ARGS>
   Data get(ARGS... i) const {
@@ -430,14 +432,14 @@ public:
   }
   /*! \brief Look-up of length of the next-layer sublist.
    *
-   * Specify less than (K+1) indices. When the function returns N,
+   * Specify less than K indices. When the function returns N,
    * the next index must lie inside {0, 1, ..., N-1}.
    */
   template<class ...ARGS>
   Index getNChildren(ARGS... i) const {
     return getNChildren_withoffset(0, i...);
   }
-  Index getNChildren() const { // should not be called be recursion
+  Index getNChildren() const { // should not be called by recursion
     return nNodes;
   }
 
@@ -445,9 +447,9 @@ public:
 };
 
 template<typename Data, typename Index>
-class NdFlattener<Data, 0, Index> {
+class NdFlattener<Data, 1, Index> {
 public:
-  typedef NdFlattener<Data, 0, Index> CurrentLayer;
+  typedef NdFlattener<Data, 1, Index> CurrentLayer;
   typedef CurrentLayer LowestLayer;
 
 private:

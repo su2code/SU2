@@ -186,7 +186,7 @@ void CPoint::SetCoord_Old() {
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
 
-void CPoint::SetWallRoughness(NdFlattener<su2double,2,unsigned long> const& roughness){
+void CPoint::SetWallRoughness(NdFlattener<su2double,3,unsigned long> const& roughness){
   for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
     int rankID = ClosestWall_Rank[iPoint];
     unsigned short zoneID = ClosestWall_Zone[iPoint];
