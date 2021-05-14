@@ -285,7 +285,7 @@ public:
     Base const* local_version 
   ) {
     Index** Nodes_all = new Index*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
-    for(int k=0; k<K; k++)
+    for(size_t k=0; k<K; k++)
       Nodes_all[k] = nullptr;
     Nodes_all[K-1] = new Index[mpi_env.size]; // {1, 1, ..., 1}
     int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
@@ -305,7 +305,7 @@ public:
     }
     Base::set_g(mpi_env, Nodes_all, local_version);
     
-    for(int k=0; k<K; k++){
+    for(size_t k=0; k<K; k++){
       delete[] Nodes_all[k];
     }
     delete[] Nodes_all;
