@@ -3944,28 +3944,18 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
     /*--- Otherwise, set wall roughnesses. ---*/
     if(!allEmpty){
-      /*--- Store all wall roughnesses in a common data structure. ---*/
-      // prepare parameters for collective communication
-      MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
-      mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
-      mpi_env.mpi_index = MPI_UNSIGNED_LONG;
-      mpi_env.mpi_data = MPI_DOUBLE;
-      mpi_env.comm=SU2_MPI::GetComm();
-      SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
-      SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
+      /*--- Store all wall roughnesses in a common data structure. ---*/      
       // [iZone][iMarker] -> roughness, for this rank
       auto roughness_f =
-        make_pair( nZone, [=](unsigned long iZone){
+        make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
           const CConfig* config = config_container[iZone];
-          return make_pair( geometry_container[iZone][iInst][MESH_0]->GetnMarker() , [=](unsigned long iMarker){
+          return make_pair( geometry_container[iZone][iInst][MESH_0]->GetnMarker() , [config](unsigned long iMarker){
             return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
           });
         });
-      NdFlattener<su2double,2,unsigned long> roughness_local;
-      roughness_local.initialize_or_refresh(roughness_f);
+      NdFlattener<su2double,2,unsigned long> roughness_local(roughness_f);
       // [rank][iZone][iMarker] -> roughness
-      NdFlattener<su2double,3,unsigned long> roughness_global;
-      roughness_global.initialize_or_refresh(mpi_env, &(roughness_local));
+      NdFlattener<su2double,3,unsigned long> roughness_global(Get_Nd_MPI_Env(), &(roughness_local));
       // use it to update roughnesses
       for(int jZone=0; jZone<nZone; jZone++){
         if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){

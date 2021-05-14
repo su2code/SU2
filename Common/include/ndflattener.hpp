@@ -31,17 +31,32 @@
 #include <utility>
 #include <cassert>
 #include <sstream>
+#include <vector>
+#include "parallelization/mpi_structure.hpp"
 
 
-
+namespace helpers {
 template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-struct MPI_Environment {
-  MPI_Allgatherv_type MPI_Allgatherv;
-  MPI_Datatype_type mpi_data;
-  MPI_Datatype_type mpi_index;
-  MPI_Communicator_type comm;
-  int rank; int size;
-};
+  struct NdFlattener_MPI_Environment {
+    MPI_Allgatherv_type MPI_Allgatherv;
+    MPI_Datatype_type mpi_data;
+    MPI_Datatype_type mpi_index;
+    MPI_Communicator_type comm;
+    int rank; int size;
+  };
+} // namespace helpers
+
+static helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
+Get_Nd_MPI_Env() {
+  helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
+  mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
+  mpi_env.mpi_index = MPI_UNSIGNED_LONG;
+  mpi_env.mpi_data = MPI_DOUBLE;
+  mpi_env.comm=SU2_MPI::GetComm();
+  SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
+  SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
+  return mpi_env;
+}
 
 /*!
  * \class NdFlattener
@@ -110,50 +125,53 @@ private:
   Index iNode=0;
 
   /*! \brief Indices in the lower layer's indices or data array */
-  Index* indices=nullptr;
-
-  /*! \brief Return a const pointer to the base class (one layer down).
-   */
-  Base const* cast_to_Base() const {
-    return (Base const*)this;
-  }
+  std::vector<Index> indices;
 
   /*=== Outputting ===*/
 
 public:
-  /*! \brief Return a python-style list string.
+  /*! \brief Write in Python-list style.
    *
    * Like this: [[1, 2], [10, 20, 30]]
    */
-  std::string toPythonString() const {
-    return toPythonString_fromto(0, getNChildren());
+  friend std::ostream& operator<<(std::ostream& output, NdFlattener const& nd) {
+    nd.toPythonString_fromto(output, 0, nd.getNChildren());
+    return output;
   }
+
 protected:
-  /*! \brief Return a python-style list string, using the data of the
+  /*! \brief Write to stream in Python-list style, using the data of the
    * indices array between 'from' (inclusive) and 'to' (exclusive).
    *
    * Like this: [[1, 2], [10, 20, 30]]
+   * \param[in] output - Stream
    * \param[in] from - Beginning of the representation in the indices array.
    * \param[in] to - Ending of the representation in the indices array.
    */
-  std::string toPythonString_fromto(Index from, Index to) const {
-    std::string result = "[";
+  void toPythonString_fromto(std::ostream& output, Index from, Index to) const {
+    output << "[";
     for(Index i=from; i<to; ){
-      result += Base::toPythonString_fromto(indices[i], indices[i+1]);
-      if(++i<to) result += ", ";
+      Base::toPythonString_fromto(output, indices[i], indices[i+1]);
+      if(++i<to) output << ", ";
     }
-    result += "]";
-    return result;
+    output << "]";
   }
 
 public:
 
-  /*! \brief Basic constructor.
+  /*! \brief Basic constructor. Afterwards, initialization can be done with initialize_or_refresh.
    * 
    * Called recursively when a derived class (higher K) is constructed.
-   * Allocation is done later with initialize_or_refresh.
    */
   NdFlattener() {};
+
+  /*! \brief Constructor which calls initialize_or_refresh.
+   *
+   */
+  template<class... ARGS>
+  NdFlattener(ARGS... args) {
+    initialize_or_refresh(args...);
+  };
 
   /*! \brief Initialize or refresh the NdFlattener.
    * \details Either a 'recursive function' or 'collective communication'
@@ -175,21 +193,14 @@ public:
    * \returns true if the NdFlattener has been initialized
    */
   bool initialized(){
-    return (indices!=nullptr);
+    return indices.size()>0;
   }
-
-
-  virtual ~NdFlattener(void) {
-    if(indices!=nullptr)
-      delete[] indices;
-  }
-
 
 protected:
   /*! \brief Allocate the indices array after \a nNodes has been determined.
    */
   void allocate() {
-    indices = new Index[nNodes+1];
+    indices.reserve(nNodes+1);
     indices[0] = 0;
     Base::allocate();
   }
@@ -279,9 +290,9 @@ public:
    * \param[in] mpi_env - The MPI environment used for communication.
    * \param[in] local_version - The local NdFlattener structure with (K-1) indices.
    */
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
+  template<typename MPI_Environment_type>
   void initialize( 
-    MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
+    MPI_Environment_type const& mpi_env,
     Base const* local_version 
   ) {
     Index** Nodes_all = new Index*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
@@ -322,9 +333,9 @@ public:
    * \param[in] mpi_env - The MPI environment used for communication.
    * \param[in] local_version - The local NdFlattener structure.
    */
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
+  template<typename MPI_Environment_type>
   void refresh( 
-    MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
+    MPI_Environment_type const& mpi_env,
     Base const* local_version 
   ) {
     Index* Nodes_all_0 = nullptr;
@@ -334,8 +345,8 @@ public:
       displs[r] = r;
       ones[r] = 1;
     }
-    LowestLayer::count_g(mpi_env, &Nodes_all_0, (LowestLayer const*)local_version, displs, ones); 
-    LowestLayer::set_g(mpi_env, &Nodes_all_0, (LowestLayer const*)local_version);
+    LowestLayer::count_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const*>(local_version), displs, ones);
+    LowestLayer::set_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const*>(local_version));
 
     delete[] Nodes_all_0; // allocated by count_g
     delete[] displs;
@@ -351,8 +362,8 @@ protected:
    * \param[in] displs - {0,1,...,size-1}
    * \param[in] ones - {1,1,...,1}
    */
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-  void count_g(MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
+  template<typename MPI_Environment_type>
+  void count_g(MPI_Environment_type const& mpi_env,
          Index** Nodes_all,
          CurrentLayer const* local_version,
          int const* displs, int const* ones )
@@ -365,7 +376,7 @@ protected:
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r];
     }
-    Base::count_g(mpi_env, Nodes_all, local_version->cast_to_Base(), displs, ones);
+    Base::count_g(mpi_env, Nodes_all, static_cast<const Base*>(local_version), displs, ones);
   }
 
   /*! \brief Gather the distributed flatteners' data and index arrays into the allocated arrays.
@@ -374,8 +385,8 @@ protected:
    * \param[in] Nodes_all - [k][r] is the number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be send to the other processes
    */
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-  void set_g(MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
+  template<typename MPI_Environment_type>
+  void set_g(MPI_Environment_type const& mpi_env,
          Index** Nodes_all,
          CurrentLayer const* local_version )
   { 
@@ -389,7 +400,7 @@ protected:
       Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
       Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
     }
-    mpi_env.MPI_Allgatherv( local_version->indices+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices, Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv( local_version->indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
     // shift indices 
     for(int r=1; r<mpi_env.size; r++){
       Index first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
@@ -402,7 +413,7 @@ protected:
     delete[] Nodes_all_K_as_int;
     delete[] Nodes_all_k_cumulated;
 
-    Base::set_g(mpi_env, Nodes_all, local_version->cast_to_Base());
+    Base::set_g(mpi_env, Nodes_all, static_cast<const Base*>(local_version));
   }
 
     
@@ -455,32 +466,25 @@ public:
 private:
   Index nNodes=0;
   Index iNode=0;
-  Data* data=nullptr;
+  std::vector<Data> data;
 
   /*=== Outputting ===*/
 protected:
-  std::string toPythonString_fromto(Index from, Index to) const {
-    std::stringstream result;
-    result  << "[";
+  void toPythonString_fromto(std::ostream& output, Index from, Index to) const {
+    output  << "[";
     for(Index i=from; i<to; ){
-      result << data[i];
-      if(++i<to) result << ", ";
+      output << data[i];
+      if(++i<to) output << ", ";
     }
-    result << "]";
-    return result.str();
+    output << "]";
   }
 
 public:
   NdFlattener(void) {}
 
-  virtual ~NdFlattener(void) {
-    if(data!=nullptr)
-      delete[] data;
-  }
-
 protected:
   void allocate(){
-    data = new Data[nNodes];
+    data.reserve(nNodes);
   }
 
   void reset_iNode(){
@@ -505,8 +509,8 @@ protected:
   
   /*=== Construct with Allgatherv ===*/
 protected:
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-  void count_g(MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> const& mpi_env, 
+  template<typename MPI_Environment_type>
+  void count_g(MPI_Environment_type const& mpi_env,
          Index** Nodes_all,
          CurrentLayer const* local_version,
          int const* displs, int const* ones)
@@ -521,8 +525,8 @@ protected:
     }
   }
 
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-  void set_g(MPI_Environment<MPI_Allgatherv_type, MPI_Datatype_type, MPI_Communicator_type> mpi_env, 
+  template<typename MPI_Environment_type>
+  void set_g(MPI_Environment_type const& mpi_env,
          Index** Nodes_all,
          CurrentLayer const* local_version )
   { 
@@ -536,7 +540,7 @@ protected:
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv( local_version->data, Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data, Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
+    mpi_env.MPI_Allgatherv( local_version->data.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
     delete[] Nodes_all_0_as_int;
     delete[] Nodes_all_0_cumulated;
   }
