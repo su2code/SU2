@@ -340,7 +340,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741]
+    da_unsteadyCHT_cylinder.test_vals = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.0000e+00, 3.6840e+00, 2.9483e-01]
     da_unsteadyCHT_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_unsteadyCHT_cylinder.timeout   = 1600
     da_unsteadyCHT_cylinder.tol       = 0.00001
