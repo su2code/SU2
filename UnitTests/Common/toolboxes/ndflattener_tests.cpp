@@ -62,6 +62,15 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     REQUIRE( nd2[1][i] == 2.0 + rank + i );
   }
 
+  /*-- Check structure again, with checked look-up. --*/
+  REQUIRE( nd2.checked()[0].size() == 2 );
+  REQUIRE( nd2.checked()[0][0] == 0.0 );
+  REQUIRE( nd2.checked()[0][1] == 1.0 );
+  REQUIRE( nd2.checked()[1].size() == 3 + rank );
+  for(int i=0; i<3+rank; i++){
+    REQUIRE( nd2.checked()[1][i] == 2.0 + rank + i );
+  }
+
   /*-- Modify structure. --*/
   nd2[0][0] = 0.7;
   nd2[0].data()[1] = 1.7;
@@ -69,14 +78,15 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   /*-- gather flattening structures of all processes --*/
   NdFlattener<3> nd3(Get_Nd_MPI_Env(), &nd2);
 
-  /*-- Check gathered structure --*/
+  /*-- Check gathered structure, partly with checked look-up. --*/
   for(int r=0; r<size; r++){
     REQUIRE( nd3.getNChildren(r) == 2 );
     REQUIRE( nd3.get(r, 0, 0) == 0.7 );
     REQUIRE( nd3[r][0][1] == 1.7 );
-    REQUIRE( nd3.getNChildren(r,1) == 3 + rank );
+    auto tmp = nd3.checked()[r][1];
+    REQUIRE( tmp.size() == 3 + rank );
     for(int i=0; i<3+rank; i++){
-      REQUIRE( nd3[r][1][i] == 2.0 + rank + i );
+      REQUIRE( tmp[i] == 2.0 + rank + i );
     }
   }
     
@@ -87,9 +97,9 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     REQUIRE( nd3.getNChildren(r) == 2 );
     REQUIRE( nd3.get(r, 0, 0) == 0.5 );
     REQUIRE( nd3[r][0][1] == 1.0 );
-    REQUIRE( nd3.getNChildren(r,1) == 3 + rank );
+    REQUIRE( nd3.checked()[r][1].size() == 3 + rank );
     for(int i=0; i<3+rank; i++){
-      REQUIRE( nd3[r][1][i] == 2.0 + rank + i );
+      REQUIRE( nd3.checked()[r][1][i] == 2.0 + rank + i );
     }
   }
 

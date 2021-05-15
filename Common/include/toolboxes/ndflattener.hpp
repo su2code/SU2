@@ -173,7 +173,9 @@ namespace helpers {
   protected:
     Nd_type* nd; /*!< \brief The accessed NdFlattener. */
     const typename Nd_type::Index offset; /*!< \brief Index in the currently accessed layer. */
-    IndexAccumulator_Base(Nd_type* nd, typename Nd_type::Index offset): nd(nd), offset(offset) {}
+    //const typename Nd_type::Index size; /*!< \brief Exclusive upper bound for the next index. */
+    IndexAccumulator_Base(Nd_type* nd, typename Nd_type::Index offset):
+      nd(nd), offset(offset) {}
 
   };
 
@@ -200,9 +202,50 @@ namespace helpers {
      * \param[in] i - Index.
      */
     LookupType operator[] (typename Nd_type::Index i) {
+      //const typename Nd_type::Index new_offset = this->nd->GetIndices()[this->offset+i];
+      //const typename Nd_type::Index new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
       return LookupType(static_cast<Nd_Base_type*>(this->nd),this->nd->GetIndices()[this->offset+i]);
     }
   };
+
+  template<size_t _N, typename _Nd_type>
+  class IndexAccumulator_Checked : public IndexAccumulator<_N,_Nd_type>{
+  public:
+    static constexpr size_t N = _N;
+    using Nd_type = _Nd_type;
+    typedef IndexAccumulator<_N,_Nd_type> Base;
+
+  protected:
+    /*! Exclusive upper bound for the next index. */
+    const typename Nd_type::Index _size;
+
+  public:
+    template<class ...ARGS>
+    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {};
+
+    /*! Return type of operator[]. */
+    using LookupType = IndexAccumulator_Checked<N-1, typename Base::Nd_Base_type>;
+
+    /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
+     * previous indices.
+     * \param[in] i - Index.
+     */
+    LookupType operator[] (typename Nd_type::Index i) {
+      if(i>=_size){
+        SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
+      }
+      const typename Nd_type::Index new_offset = this->nd->GetIndices()[this->offset+i];
+      const typename Nd_type::Index new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
+      return LookupType(new_size, static_cast<typename Base::Nd_Base_type*>(this->nd),new_offset);
+    }
+
+    /*! \brief Return exclusive upper bound for next index.
+     */
+    typename Nd_type::Index size() const {
+      return _size;
+    }
+  };
+
   template<typename _Nd_type>
   class IndexAccumulator<1,_Nd_type> : public IndexAccumulator_Base<1,_Nd_type>{
   public:
@@ -236,6 +279,36 @@ namespace helpers {
      */
     LookupType* data() {
       return &(this->operator[](0));
+    }
+  };
+
+  template<typename _Nd_type>
+  class IndexAccumulator_Checked<1,_Nd_type> : public IndexAccumulator<1,_Nd_type>{
+  public:
+    static constexpr size_t N = 1;
+    using Nd_type = _Nd_type;
+    typedef IndexAccumulator<1,_Nd_type> Base;
+
+  protected:
+    /*! Exclusive upper bound for the next index. */
+    const typename Nd_type::Index _size;
+
+  public:
+    template<class ...ARGS>
+    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {};
+
+    /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
+     * \param[in] i - Last index.
+     */
+    typename Base::LookupType& operator[] (typename Nd_type::Index i) {
+      if(i>=_size){
+        SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
+      }
+      return Base::operator[](i);
+    }
+
+    typename Nd_type::Index size() const {
+      return _size;
     }
   };
 
@@ -650,6 +723,16 @@ public:
    */
   helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data,Index> > operator[](Index i0) const {
     return helpers::IndexAccumulator<K, const NdFlattener<K,Data,Index> >(this,0)[i0];
+  }
+  /*! \brief Look-up with IndexAccumulator_Checked, non-const version.
+   */
+  helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data,Index> > checked() {
+    return helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data,Index> >(size(),this,0);
+  }
+  /*! \brief Look-up with IndexAccumulator_Checked, const version.
+   */
+  helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data,Index> > checked() const {
+    return helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data,Index> >(size(),this,0);
   }
 };
 
