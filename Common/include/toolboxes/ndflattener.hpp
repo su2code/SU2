@@ -437,7 +437,7 @@ public:
   template<class... ARGS>
   NdFlattener(ARGS... args) {
     initialize_or_refresh(args...);
-  };
+  }
 
   /*! \brief Initialize or refresh the NdFlattener.
    * \details Either a 'recursive function' or 'collective communication'
