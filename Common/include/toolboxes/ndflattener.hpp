@@ -439,7 +439,7 @@ public:
    * \returns true if the NdFlattener has been initialized
    */
   bool initialized(){
-    return indices.size()>0;
+    return nNodes>0;
   }
 
 protected:
@@ -519,7 +519,9 @@ protected:
       if(!refresh){
         indices[iNode+1] = indices[iNode] + f.second(iChild).first;
       } else {
-        assert( indices[iNode+1] == indices[iNode] + f.second(iChild).first );
+        if( indices[iNode+1] != indices[iNode] + f.second(iChild).first ){
+          SU2_MPI::Error("NdFlattener: Structure has changed, cannot refresh.", CURRENT_FUNCTION);
+        }
       }
       iNode++;
     }

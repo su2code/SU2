@@ -48,7 +48,8 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   });
 
   /*-- Read into flattening structure --*/
-  NdFlattener<2> nd2(f);
+  NdFlattener<2> nd2;
+  nd2.initialize_or_refresh(f);
 
   /*-- Modify A -> this should not alter nd2 at this point --*/
   A[0][0] = 0.5;
@@ -84,9 +85,9 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     REQUIRE( nd3.checked()[r].size() == 2 );
     REQUIRE( nd3[r][0][0] == 0.7 );
     REQUIRE( nd3[r][0][1] == 1.7 );
-    REQUIRE( nd3.checked()[r][1].size() == 3 + rank );
-    for(int i=0; i<3+rank; i++){
-      REQUIRE( nd3.checked()[r][1][i] == 2.0 + rank + i );
+    REQUIRE( nd3.checked()[r][1].size() == 3 + r );
+    for(int i=0; i<3+r; i++){
+      REQUIRE( nd3.checked()[r][1][i] == 2.0 + r + i );
     }
   }
     
@@ -98,9 +99,9 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     REQUIRE( nd3.checked()[r].size() == 2 );
     REQUIRE( nd3[r][0][0] == 0.5 );
     REQUIRE( nd3[r][0][1] == 1.0 );
-    REQUIRE( nd3.checked()[r][1].size() == 3 + rank );
-    for(int i=0; i<3+rank; i++){
-      REQUIRE( nd3.checked()[r][1][i] == 2.0 + rank + i );
+    REQUIRE( nd3.checked()[r][1].size() == 3 + r );
+    for(int i=0; i<3+r; i++){
+      REQUIRE( nd3.checked()[r][1][i] == 2.0 + r + i );
     }
   }
 
