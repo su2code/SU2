@@ -52,6 +52,8 @@
  *
  * It might be safer to explicitly capture what you need in the lambda expressions.
  *
+ * You can also construct an NdFlattener without any arguments, and use NdFlattener::initialize(f_local).
+ *
  * f_local is
  *  - a pair of an (exclusive) upper bound for the first index and a function that maps the first index to
  *  - a pair of an (exclusive) upper bound for the second index and a function that maps the second index to
@@ -66,6 +68,24 @@
  *     NdFlattener<3> nd_global(Get_Nd_MPI_Env(), &nd_local);
  *
  * nd_global's first index is the rank, then the indices of nd_local follow.
+ * Get_Nd_MPI_Env returns a helpers:NdFlattener_MPI_Environment struct suitable to gather su2double data over
+ * unsigned long indices. If you deviate from these default datatypes, you need to define the MPI environment
+ * structure yourself.
+ *
+ * You can also construct an NdFlattener without any arguments, and use NdFlattener::initialize(mpi_env, &nd_local).
+ *
+ * # Refreshing
+ * If only the data but not the indices (i.e. the structure of sublists' lengths) have changed, you can refresh
+ * them with the call
+ *
+ *     nd_local.refresh(f_local); // , or
+ *     nd_global(Get_Nd_MPI_Env(), &nd_local); // respectively.
+ *
+ * An NdFlattener constructed or initialized from a "recursive function" or "collective communication" must be
+ * refreshed in the same way.
+ *
+ * We also provide a function NdFlattener::initialize_or_refresh, that initializes if not initialized, and refreshes
+ * otherwise.
  *
  * # Look-up
  * You can access the NdFlattener via a "[]...[]" interface that resembles multidimensional arrays
