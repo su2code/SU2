@@ -333,7 +333,7 @@ namespace helpers {
 
 } // namespace helpers
 
-static helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
+inline helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
 Get_Nd_MPI_Env() {
   helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
   mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
