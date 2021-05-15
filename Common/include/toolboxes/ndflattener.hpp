@@ -68,35 +68,34 @@
  * nd_global's first index is the rank, then the indices of nd_local follow.
  *
  * # Look-up
- * We usually provide two interfaces to access an NdFlattener:
- *  - A "[]...[]" interface that resembles multidimensional arrays or pointer-to-pointer-... arrays.
- *  - A function get which additionally checks whether all indices are within the bounds dictated by
- *    the data and the previous indices.
+ * You can access the NdFlattener via a "[]...[]" interface that resembles multidimensional arrays
+ * or pointer-to-pointer-... arrays. If you provide all of the K indices, this returns a reference
+ * to the data element. If the NdFlattener is declared const, the reference is also const. If you
+ * provide less than K indices, you obtain an IndexAccumulator object to which you can later pass more
+ * indices. With respect to the above example:
  *
- * You can get a reference to a single data element like this:
+ *     std::cout << nd_global[rank][zone][marker];
+ *     auto nd_g_rank = nd_global[rank];
+ *     nd_g_rank[zone][marker] += 1.0;
  *
- *     nd_global[rank][zone][marker] += 0.1;
- *     nd_global.get(rank, zone, marker) += 0.2;
+ * If you want to check that every index is in the correct range dictated by the NdFlattener and the
+ * previous indices, call NdFlattener::checked() before interacting with the "[]...[]" interface.
+ * Now you can obtain IndexAccumulator_Checked objects which you can also query for the (exclusive)
+ * upper bound for the next index:
+ *
+ *     auto nd_g_rank = nd_global.checked()[rank];
+ *     nd_g_rank[zone][marker] += 1.0;
+ *     std::cout << nd_g_rank[zone].size();
  *
  * When all indices except the last one are fixed, the corresponding data is stored contiguously and a pointer
  * to this 1D array can be retrieved by
  *
  *     nd_global[rank][zone].data()
- *     nd_global.get(rank, zone).data()
+ *     nd_global.checked()[rank][zone].data()
  *
- * You can get the (exclusive) upper bound for the next index of an incomplete index tuple like this:
- *
- *     // no index given
- *     nd_global.size()
- *     // one index given
- *     nd_global[rank].size();
- *     nd_global.get(rank).size();
- *     // two indices given
- *     nd_global[rank][zone].size();
- *     nd_global.get(rank, zone).size();
- *
- * # Another example
- * You can find another example in UnitTests/Common/toolboxes/ndflattener_tests.cpp.
+ * # Unit tests
+ * The interface described here is tested in UnitTests/Common/toolboxes/ndflattener_tests.cpp, which may also
+ * serve as an addition example of how to use the NdFlattener.
  */
 
 //  --- Implementation details---
@@ -663,57 +662,12 @@ protected:
     Base::set_g(mpi_env, Nodes_all, static_cast<const Base*>(local_version));
   }
 
-    
-    
-
-  /*=== Access to data and numbers of children ===*/
-  // There are two ways to access data:
-  // - nd.get(i_1, ..., i_K) for reading
-  // - nd[i_1]...[i_{K-1}] returns a pointer to the data array, so you can
-  //   read and write nd[i_1]...[i_K].
-  // If you have indices i_1, ..., i_k and are interested in the bound for i_{k+1},
-  // use getNChildren(i_1,...,i_k).
-protected:
-  template<class ...ARGS>
-  Data get_withoffset(Index offset, Index i1, ARGS... i2) const {
-    return Base::get_withoffset(indices[offset+i1], i2...);
-  }
-  template<class ...ARGS>
-  Index getNChildren_withoffset(Index offset, Index i1, ARGS... i2) const {
-    return Base::getNChildren_withoffset(indices[offset+i1], i2...);
-  }
-  Index getNChildren_withoffset(Index offset, Index i) const {
-    return indices[offset+i+1] - indices[offset+i];
-  }
-
+  /*== Data access ==*/
 public:
-  /*! \brief Reading access.
-   *
-   * The number of parameters must be K.
-   * If you also need write access, use the nd[i1]...[iK] interface.
-   */
-  template<class ...ARGS>
-  Data get(ARGS... i) const {
-    return get_withoffset(0, i...);
-  }
-  /*! \brief Look-up of length of the next-layer sublist.
-   *
-   * Specify less than K indices. When the function returns N,
-   * the next index must lie inside {0, 1, ..., N-1}.
-   */
-  template<class ...ARGS>
-  Index getNChildren(ARGS... i) const {
-    return getNChildren_withoffset(0, i...);
-  }
-  Index size() const { // should not be called by recursion
+  Index size() const { // should not be called by recursion, is incorrect in lower layers!
     return nNodes;
   }
 
-  /* \brief Look-up with IndexAccumulator.
-   */
-  /*typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType operator[](Index i0){
-    return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
-  }*/
   /*! \brief Look-up with IndexAccumulator, non-const version.
    */
   helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data,Index> > operator[](Index i0) {
@@ -835,16 +789,33 @@ protected:
   }
 
 
-  /*== Access to data and numbers of children ==*/
-protected:
-  Data get_withoffset(Index offset, Index i) const{
-    return data[offset+i];
-  }
+  /*== Access to data ==*/
+  // Calling the following functions is a bit strange, because if you have only one level,
+  // you do not really benefit from NdFlattener's functionality.
 public:
-  Data get(Index i) const{
-    return get_withoffset(0, i);
+  Index size() const { // should not be called by recursion, is incorrect in lower layers!
+    return nNodes;
   }
-
+  /*! \brief Data look-up, non-const version.
+   */
+  Data& operator[](Index i0) {
+    return data[i0];
+  }
+  /*! \brief Data look-up, const version.
+   */
+  const Data& operator[](Index i0) const {
+    return data[0];
+  }
+  /*! \brief Look-up with IndexAccumulator_Checked, non-const version.
+   */
+  helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data,Index> > checked() {
+    return helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data,Index> >(size(),this,0);
+  }
+  /*! \brief Look-up with IndexAccumulator_Checked, const version.
+   */
+  helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data,Index> > checked() const {
+    return helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data,Index> >(size(),this,0);
+  }
 
 };
 
