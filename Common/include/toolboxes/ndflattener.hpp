@@ -205,7 +205,7 @@ namespace helpers {
     using Nd_type = _Nd_type;
     typedef IndexAccumulator_Base<_N,_Nd_type> Base;
 
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
 
     /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
      */
@@ -240,7 +240,7 @@ namespace helpers {
 
   public:
     template<class ...ARGS>
-    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {};
+    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {}
 
     /*! Return type of operator[]. */
     using LookupType = IndexAccumulator_Checked<N-1, typename Base::Nd_Base_type>;
@@ -272,7 +272,7 @@ namespace helpers {
     using Nd_type = _Nd_type;
     typedef IndexAccumulator_Base<1,_Nd_type> Base;
 
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
 
     /*! Return type of operator[].
      * \details Data type of NdFlattener, but do also preserve constness.
@@ -314,7 +314,7 @@ namespace helpers {
 
   public:
     template<class ...ARGS>
-    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {};
+    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {}
 
     /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
      * \param[in] i - Last index.
