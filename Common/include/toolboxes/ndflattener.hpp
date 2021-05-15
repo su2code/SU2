@@ -34,110 +34,6 @@
 #include <vector>
 #include "../parallelization/mpi_structure.hpp"
 
-template<size_t K, typename Data=su2double, typename Index=unsigned long>
-class NdFlattener;
-
-namespace helpers {
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
-  struct NdFlattener_MPI_Environment {
-    MPI_Allgatherv_type MPI_Allgatherv;
-    MPI_Datatype_type mpi_data;
-    MPI_Datatype_type mpi_index;
-    MPI_Communicator_type comm;
-    int rank; int size;
-  };
-
-  /*! \class IndexAccumulator
-   * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
-   * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
-   *  - For N==1, the structure has already read all indices but one. So after this method has read the last
-   *    index, return a reference to the data.
-   *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
-   *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
-   * \tparam N - Number of missing parameters
-   * \tparam K - number of indices of accessed NdFlattener
-   * \tparam Data - Data type of accessed NdFlattener
-   * \tparam Index - Index type of accessed NdFlattener
-   */
-  /*! \class IndexAccumulator_Base
-   * \brief Parent class of IndexAccumulator.
-   * \details IndexAccumulator provides the operator[] method.
-   */
-  template<size_t N, size_t K, typename Data, typename Index>
-  class IndexAccumulator_Base {
-  protected:
-    typedef NdFlattener<N,Data,Index> Nd_type; /*!< \brief Access this level of the NdFlattener next. */
-    const Nd_type* nd; /*!< \brief The accessed NdFlattener. */
-    const Index offset; /*!< \brief Index in the currently accessed layer. */
-    IndexAccumulator_Base(const Nd_type* nd, Index offset): nd(nd), offset(offset) {}
-  };
-  template<size_t N, size_t K, typename Data, typename Index>
-  class IndexAccumulator : public IndexAccumulator_Base<N,K,Data,Index>{
-  public:
-    typedef IndexAccumulator_Base<N,K,Data,Index> Base;
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
-    typedef IndexAccumulator<N-1,K,Data,Index> LookupType; /*!< Return type of operator[] */
-    typedef const LookupType LookupType_const; /*!< Return type of operator[], const version */
-    /* \brief Read one more index. */
-    /*LookupType operator[] (Index i){
-      return LookupType(static_cast<typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
-    }*/
-    /*! \brief Read one more index, const version. */
-    LookupType_const operator[] (Index i) const {
-      return LookupType_const(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
-    }
-  };
-  template<size_t K, typename Data, typename Index>
-  class IndexAccumulator<2,K,Data,Index> : public IndexAccumulator_Base<2,K,Data,Index>{
-  public:
-    typedef IndexAccumulator_Base<2,K,Data,Index> Base;
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
-    typedef Data* LookupType; /*!< Return type of operator[] */
-    typedef const Data* LookupType_const; /*!< Return type of operator[], const version */
-    /* \brief Read the last-but-one index.
-     * \return Pointer to the corresponding section in the data array in layer K=1.
-     */
-    /*LookupType operator[] (Index i){
-      return static_cast<const typename Base::Nd_type::Base*>(this->nd)->GetData() + this->nd->GetIndices()[this->offset+i];
-    }*/
-    /*! \brief Read the last-but-one index, const version.
-     * \return Const pointer to the corresponding section in the data array in layer K=1.
-     */
-    LookupType_const operator[] (Index i) const {
-      return static_cast<const typename Base::Nd_type::Base*>(this->nd)->GetData() + this->nd->GetIndices()[this->offset+i];
-    }
-  };
-
-} // namespace helpers
-
-static helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
-Get_Nd_MPI_Env() {
-  helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
-  mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
-  mpi_env.mpi_index = MPI_UNSIGNED_LONG;
-  mpi_env.mpi_data = MPI_DOUBLE;
-  mpi_env.comm=SU2_MPI::GetComm();
-  SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
-  SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
-  return mpi_env;
-}
-
-/*!
- * \class NdFlattener
- * \brief Serialize pointer-to-pointer-... array into one 1D array, keeping track
- * of the offsets in few additional 1D arrays.
- *
- * The pointer-to-pointer-... array can be provided by a nested lambda function
- * ('recursive function') or by gathering such arrays from MPI processes ('collective
- * communication'). After initializing an NdFlattener with either of these data, 
- * it can be refreshed in the same way after the the pointer-to-pointer-... array's
- * values (but not its structure) have changed.
- *
- * \tparam K - number of indices
- * \tparam Data - Type of stored array data
- * \tparam Index - Type of index
- */
-
 // --- Usage
 /*! \page ndflattener_usage Usage of NdFlattener
  * To demonstrate the usage of NdFlattener, let us collect information that depends on
@@ -198,16 +94,19 @@ Get_Nd_MPI_Env() {
  *     // two indices given
  *     nd_global[rank][zone].size();
  *     nd_global.get(rank, zone).size();
+ *
+ * # Another example
+ * You can find another example in UnitTests/Common/toolboxes/ndflattener_tests.cpp.
  */
 
 //  --- Implementation details---
 /*! \page ndflattener_implementationdetails Implementation details of NdFlattener
  * If your array has K indices, instantiate this class with template parameter K,
- * which is derived recursively from this class with template parameter (K-1). 
+ * which is derived recursively from this class with template parameter (K-1).
  * In each layer, there is an array: Of type Data for K=1, and of type Index for K>1.
  *
  * The data array of K=1 contains the values of the array A in lexicographic ordering:
- * [0]...[0][0][0], [0]...[0][0][1], ..., [0]...[0][0][something], 
+ * [0]...[0][0][0], [0]...[0][0][1], ..., [0]...[0][0][something],
  * [0]...[0][1][0], [0]...[0][1][1], ..., [0]...[0][1][something],
  * ...,
  * [0]...[1][0][0], [0]...[1][0][1], ..., [0]...[1][0][something],
@@ -219,7 +118,7 @@ Get_Nd_MPI_Env() {
  * values here. Last-index lists can also be empty.
  *
  * The indices array of K=2 contains the indices of the (K=1)-data array at which a new
- * last-index list starts. If a last-index list is empty, the are repetitive entries in the 
+ * last-index list starts. If a last-index list is empty, the are repetitive entries in the
  * indices array.
  *
  * The indices array of K=3 contains the indices of the (K=2)-indices array at which the
@@ -228,15 +127,147 @@ Get_Nd_MPI_Env() {
  *
  * Etc. etc, up to the indices array at layer K.
  *
- * To form such a structure, we typically iterate twice through the pointer-to-pointer-... 
- * array: The first time we get to know how much space to reserve in each layer, then we 
+ * To form such a structure, we typically iterate twice through the pointer-to-pointer-...
+ * array: The first time we get to know how much space to reserve in each layer, then we
  * allocate it and fill it with data during the second iteration.
  */
 
-template<size_t K, typename Data, typename Index>
-class NdFlattener: public NdFlattener<K-1,Data,Index>{
+
+template<size_t K, typename Data=su2double, typename Index=unsigned long>
+class NdFlattener;
+
+namespace helpers {
+  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
+  struct NdFlattener_MPI_Environment {
+    MPI_Allgatherv_type MPI_Allgatherv;
+    MPI_Datatype_type mpi_data;
+    MPI_Datatype_type mpi_index;
+    MPI_Communicator_type comm;
+    int rank; int size;
+  };
+
+  /*! \class IndexAccumulator
+   * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
+   * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
+   *  - For N==1, the structure has already read all indices but one. So after this method has read the last
+   *    index, return a reference to the data.
+   *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
+   *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
+   * \tparam N - Number of missing parameters
+   * \tparam Nd_type - Type of the accessed NdFlattener, should be NdFlattener<N,...>
+   */
+  /*! \class IndexAccumulator_Base
+   * \brief Parent class of IndexAccumulator.
+   * \details IndexAccumulator provides the operator[] method.
+   */
+  template<size_t _N, typename _Nd_type>
+  class IndexAccumulator_Base {
+  public:
+    static constexpr size_t N = _N;
+    using Nd_type = _Nd_type;
+
+    /*== Conditional is part of the standard library since C++14, keep it here for C++11 compatibility. ==*/
+    template<bool B, class T, class F> struct conditional { typedef T type; };
+    template<class T, class F> struct conditional<false, T, F> { typedef F type; };
+
+  protected:
+    Nd_type* nd; /*!< \brief The accessed NdFlattener. */
+    const typename Nd_type::Index offset; /*!< \brief Index in the currently accessed layer. */
+    IndexAccumulator_Base(Nd_type* nd, typename Nd_type::Index offset): nd(nd), offset(offset) {}
+
+  };
+
+  template<size_t _N, typename _Nd_type>
+  class IndexAccumulator : public IndexAccumulator_Base<_N,_Nd_type>{
+  public:
+    static constexpr size_t N = _N;
+    using Nd_type = _Nd_type;
+    typedef IndexAccumulator_Base<_N,_Nd_type> Base;
+
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+
+    /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
+     */
+    using Nd_Base_type = typename Base::template conditional<
+      std::is_const<Nd_type>::value,
+      const typename Nd_type::Base,
+      typename Nd_type::Base
+    >::type;
+    /*! Return type of operator[]. */
+    using LookupType = IndexAccumulator<N-1, Nd_Base_type>;
+
+    /*! \brief Read one more index.
+     * \param[in] i - Index.
+     */
+    LookupType operator[] (typename Nd_type::Index i) {
+      return LookupType(static_cast<Nd_Base_type*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+    }
+  };
+  template<typename _Nd_type>
+  class IndexAccumulator<1,_Nd_type> : public IndexAccumulator_Base<1,_Nd_type>{
+  public:
+    static constexpr size_t N = 1;
+    using Nd_type = _Nd_type;
+    typedef IndexAccumulator_Base<1,_Nd_type> Base;
+
+    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {};
+
+    /*! Return type of operator[].
+     * \details Data type of NdFlattener, but do also preserve constness.
+     */
+    using LookupType = typename Base::template conditional<
+      std::is_const<Nd_type>::value,
+      typename Nd_type::Data,
+      const typename Nd_type::Data
+    >::type;
+
+    /*! \brief Return (possibly const) reference to the corresponding data element.
+     * \param[in] i - Last index.
+     */
+    LookupType operator[] (typename Nd_type::Index i) {
+      return this->nd->GetData() [ this->offset+i ];
+    }
+  };
+
+} // namespace helpers
+
+static helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
+Get_Nd_MPI_Env() {
+  helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
+  mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
+  mpi_env.mpi_index = MPI_UNSIGNED_LONG;
+  mpi_env.mpi_data = MPI_DOUBLE;
+  mpi_env.comm=SU2_MPI::GetComm();
+  SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
+  SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
+  return mpi_env;
+}
+
+/*!
+ * \class NdFlattener
+ * \brief Serialize pointer-to-pointer-... array into one 1D array, keeping track
+ * of the offsets in few additional 1D arrays.
+ *
+ * The pointer-to-pointer-... array can be provided by a nested lambda function
+ * ('recursive function') or by gathering such arrays from MPI processes ('collective
+ * communication'). After initializing an NdFlattener with either of these data, 
+ * it can be refreshed in the same way after the the pointer-to-pointer-... array's
+ * values (but not its structure) have changed.
+ *
+ * \tparam K - number of indices
+ * \tparam Data - Type of stored array data
+ * \tparam Index - Type of index
+ */
+
+
+template<size_t _K, typename _Data, typename _Index>
+class NdFlattener: public NdFlattener<_K-1,_Data,_Index>{
 
 public:
+  static constexpr size_t K = _K;
+  using Data = _Data;
+  using Index = _Index;
+
   typedef NdFlattener<K-1,Data,Index> Base; // could also be named LowerLayer
   typedef NdFlattener<K,Data,Index> CurrentLayer;
   typedef typename Base::LowestLayer LowestLayer; // the K=1 class
@@ -268,7 +299,7 @@ public:
    * Like this: [[1, 2], [10, 20, 30]]
    */
   friend std::ostream& operator<<(std::ostream& output, NdFlattener const& nd) {
-    nd.toPythonString_fromto(output, 0, nd.getNChildren());
+    nd.toPythonString_fromto(output, 0, nd.size());
     return output;
   }
 
@@ -591,7 +622,7 @@ public:
   Index getNChildren(ARGS... i) const {
     return getNChildren_withoffset(0, i...);
   }
-  Index getNChildren() const { // should not be called by recursion
+  Index size() const { // should not be called by recursion
     return nNodes;
   }
 
@@ -600,16 +631,25 @@ public:
   /*typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType operator[](Index i0){
     return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
   }*/
+  /*! \brief Look-up with IndexAccumulator, non-const version.
+   */
+  helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data,Index> > operator[](Index i0) {
+    return helpers::IndexAccumulator<K,NdFlattener<K,Data,Index> >(this,0)[i0];
+  }
   /*! \brief Look-up with IndexAccumulator, const version.
    */
-  typename helpers::IndexAccumulator<K,K,Data,Index>::LookupType_const operator[](Index i0) const {
-    return helpers::IndexAccumulator<K,K,Data,Index>(this,0)[i0];
+  helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data,Index> > operator[](Index i0) const {
+    return helpers::IndexAccumulator<K, const NdFlattener<K,Data,Index> >(this,0)[i0];
   }
 };
 
-template<typename Data, typename Index>
-class NdFlattener<1, Data, Index> {
+template<typename _Data, typename _Index>
+class NdFlattener<1, _Data, _Index> {
 public:
+  static constexpr size_t K = 1;
+  using Data = _Data;
+  using Index = _Index;
+
   typedef NdFlattener<1, Data, Index> CurrentLayer;
   typedef CurrentLayer LowestLayer;
 

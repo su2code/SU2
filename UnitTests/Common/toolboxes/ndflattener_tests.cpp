@@ -41,8 +41,8 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     A[1][i] = 2.0 + rank + i;
 
   /*-- Accessor --*/
-  auto f = std::make_pair( (size_t)2,  [A](int i) {
-    return std::make_pair( (size_t)(i==0?2:(3+rank)), [A,i](int j){
+  auto f = std::make_pair( (size_t)2,  [rank,A](int i) {
+    return std::make_pair( (size_t)(i==0?2:(3+rank)), [rank,A,i](int j){
       return  A[i][j];
     });
   });
@@ -50,7 +50,7 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   /*-- Read into flattening structure --*/
   NdFlattener<2> nd2(f);
 
-  /*-- Modify A -> this should not alter n at this point --*/
+  /*-- Modify A -> this should not alter nd2 at this point --*/
   A[0][0] = 0.5;
 
   /*-- Check structure --*/
