@@ -54,7 +54,7 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   A[0][0] = 0.5;
 
   /*-- Check structure --*/
-  REQUIRE( nd2.getNChildren() == 2 );
+  REQUIRE( nd2.size() == 2 );
   REQUIRE( nd2.get( 0, 0) == 0.0 );
   REQUIRE( nd2[0][1] == 1.0 );
   REQUIRE( nd2.getNChildren(1) == 3 + rank );
@@ -62,21 +62,25 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     REQUIRE( nd2[1][i] == 2.0 + rank + i );
   }
 
+  /*-- Modify structure. --*/
+  nd2[0][0] = 0.7;
+  nd2[0].data()[1] = 1.7;
+
   /*-- gather flattening structures of all processes --*/
   NdFlattener<3> nd3(Get_Nd_MPI_Env(), &nd2);
 
   /*-- Check gathered structure --*/
   for(int r=0; r<size; r++){
     REQUIRE( nd3.getNChildren(r) == 2 );
-    REQUIRE( nd3.get(r, 0, 0) == 0.0 );
-    REQUIRE( nd3[r][0][1] == 1.0 );
+    REQUIRE( nd3.get(r, 0, 0) == 0.7 );
+    REQUIRE( nd3[r][0][1] == 1.7 );
     REQUIRE( nd3.getNChildren(r,1) == 3 + rank );
     for(int i=0; i<3+rank; i++){
       REQUIRE( nd3[r][1][i] == 2.0 + rank + i );
     }
   }
     
-  /*-- reread modified A and check again --*/
+  /*-- reread modified A and check again. --*/
   nd2.initialize_or_refresh(f);
   nd3.refresh(Get_Nd_MPI_Env(), &nd2);
   for(int r=0; r<size; r++){

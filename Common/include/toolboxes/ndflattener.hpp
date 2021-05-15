@@ -217,15 +217,25 @@ namespace helpers {
      */
     using LookupType = typename Base::template conditional<
       std::is_const<Nd_type>::value,
-      typename Nd_type::Data,
-      const typename Nd_type::Data
+      const typename Nd_type::Data,
+      typename Nd_type::Data
     >::type;
 
     /*! \brief Return (possibly const) reference to the corresponding data element.
      * \param[in] i - Last index.
      */
-    LookupType operator[] (typename Nd_type::Index i) {
+    LookupType& operator[] (typename Nd_type::Index i) {
       return this->nd->GetData() [ this->offset+i ];
+    }
+
+    /*! \brief Return (possibly const) pointer to data.
+     * \details If all indices except the last one are fixed, the corresponding data
+     * is stored contiguously. Return a pointer to the beginning of the
+     * block. If this IndexAccumulator was generated from a non-const NdFlattener, the
+     * pointer is non-const, otherwise it is const.
+     */
+    LookupType* data() {
+      return &(this->operator[](0));
     }
   };
 
