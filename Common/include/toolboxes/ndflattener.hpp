@@ -50,9 +50,10 @@ namespace helpers {
   /*! \class IndexAccumulator
    * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
    * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
-   *  - For N==2, the structure has already read all indices but two. So after this method has read the last-but-one
-   *    index, return a pointer to the corresponding section of the data array in layer K=1.
-   *  - For N>2, more indices have to be read, return an IndexAccumulator<N-1>.
+   *  - For N==1, the structure has already read all indices but one. So after this method has read the last
+   *    index, return a reference to the data.
+   *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
+   *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
    * \tparam N - Number of missing parameters
    * \tparam K - number of indices of accessed NdFlattener
    * \tparam Data - Data type of accessed NdFlattener
@@ -83,7 +84,7 @@ namespace helpers {
     }*/
     /*! \brief Read one more index, const version. */
     LookupType_const operator[] (Index i) const {
-      return LookupType(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+      return LookupType_const(static_cast<const typename Base::Nd_type::Base*>(this->nd),this->nd->GetIndices()[this->offset+i]);
     }
   };
   template<size_t K, typename Data, typename Index>
@@ -137,7 +138,70 @@ Get_Nd_MPI_Env() {
  * \tparam Index - Type of index
  */
 
-/* --- Implementation details---
+// --- Usage
+/*! \page ndflattener_usage Usage of NdFlattener
+ * To demonstrate the usage of NdFlattener, let us collect information that depends on
+ * the rank, zone index, and marker index.
+ *
+ * # Form the local NdFlattener
+ * by a "recursive function" like this:
+ *
+ *     auto f_local =
+ *     make_pair( nZone, [=](unsigned long iZone){
+ *       return make_pair( (Geometry of iZone)->GetnMarker() , [=](unsigned long iMarker){
+ *         return YOUR_PROPERTY(iZone, iMarker);
+ *       });
+ *     });
+ *     NdFlattener<2> nd_local(f_local);
+ *
+ * It might be safer to explicitly capture what you need in the lambda expressions.
+ *
+ * f_local is
+ *  - a pair of an (exclusive) upper bound for the first index and a function that maps the first index to
+ *  - a pair of an (exclusive) upper bound for the second index and a function that maps the second index to
+ *  - (iterate this if there are more layers)
+ *  - the value corresponding to these indices.
+ * The template parameter "2" is the number of indices. The data type (default: su2double) and the index type
+ * (default: unsigned long) are further optional template parameters.
+ *
+ * # Form the global NdFlattener
+ * by "collective communication" like this:
+ *
+ *     NdFlattener<3> nd_global(Get_Nd_MPI_Env(), &nd_local);
+ *
+ * nd_global's first index is the rank, then the indices of nd_local follow.
+ *
+ * # Look-up
+ * We usually provide two interfaces to access an NdFlattener:
+ *  - A "[]...[]" interface that resembles multidimensional arrays or pointer-to-pointer-... arrays.
+ *  - A function get which additionally checks whether all indices are within the bounds dictated by
+ *    the data and the previous indices.
+ *
+ * You can get a reference to a single data element like this:
+ *
+ *     nd_global[rank][zone][marker] += 0.1;
+ *     nd_global.get(rank, zone, marker) += 0.2;
+ *
+ * When all indices except the last one are fixed, the corresponding data is stored contiguously and a pointer
+ * to this 1D array can be retrieved by
+ *
+ *     nd_global[rank][zone].data()
+ *     nd_global.get(rank, zone).data()
+ *
+ * You can get the (exclusive) upper bound for the next index of an incomplete index tuple like this:
+ *
+ *     // no index given
+ *     nd_global.size()
+ *     // one index given
+ *     nd_global[rank].size();
+ *     nd_global.get(rank).size();
+ *     // two indices given
+ *     nd_global[rank][zone].size();
+ *     nd_global.get(rank, zone).size();
+ */
+
+//  --- Implementation details---
+/*! \page ndflattener_implementationdetails Implementation details of NdFlattener
  * If your array has K indices, instantiate this class with template parameter K,
  * which is derived recursively from this class with template parameter (K-1). 
  * In each layer, there is an array: Of type Data for K=1, and of type Index for K>1.
