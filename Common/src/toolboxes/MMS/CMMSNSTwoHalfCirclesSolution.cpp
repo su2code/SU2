@@ -79,7 +79,7 @@ CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nD
   a_T2 = -0.85;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
@@ -98,11 +98,11 @@ CMMSNSTwoHalfCirclesSolution::CMMSNSTwoHalfCirclesSolution(unsigned short val_nD
     SU2_MPI::Error("Standard air or ideal gas must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Sutherland must be selected for viscosity for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Two Half Circles case",
                    CURRENT_FUNCTION);
 }

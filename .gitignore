@@ -94,3 +94,6 @@ build/
 
 # ninja binary (build system)
 ninja
+
+# Ignore vscode folder
+.vscode/

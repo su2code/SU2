@@ -38,7 +38,7 @@
  * \author S. R. Copeland, F. Palacios, W. Maier.
  * \version 7.1.1 "Blackbird"
  */
-class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
+class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE> {
 protected:
 
   su2double
@@ -90,7 +90,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNEMOEulerSolver() : CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>() {}
+  CNEMOEulerSolver() : CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
 
   /*!
      * \overload

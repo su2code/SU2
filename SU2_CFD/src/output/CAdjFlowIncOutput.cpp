@@ -439,7 +439,7 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (weakly_coupled_heat){
     Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
   }
-  if (config->GetKind_RadiationModel() != NONE){
+  if (config->GetKind_RadiationModel() != RADIATION_MODEL::NONE){
     Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
   }
 
@@ -526,14 +526,7 @@ void CAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CS
 
 bool CAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curTimeIter < 2));
-
-}
-
-bool CAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
+         (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));
 
 }

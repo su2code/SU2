@@ -67,6 +67,7 @@ protected:
 
   class Identity : public CPreconditioner<Scalar> {
   public:
+    inline bool IsIdentity() const override { return true; }
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
   };
 
@@ -94,7 +95,7 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  int RecordingState = NONE;      /*!< \brief The kind of recording that the tape currently holds. */
+  RECORDING RecordingState = RECORDING::CLEAR_INDICES;      /*!< \brief The kind of recording that the tape currently holds. */
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
@@ -169,7 +170,7 @@ protected:
   void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
 
   /*!
-   * \brief Setup the matrix of cross-terms.
+   * \brief Setup the matrix of cross-terms. Allocate necessary memory and initialize to zero.
    */
   void InitializeCrossTerms();
 
@@ -179,7 +180,7 @@ protected:
    * \param[in] tape_type - indicator which part of a solution update will be recorded.
    * \param[in] record_zone - zone where solution update will be recorded.
    */
-  void SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone);
+  void SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone);
 
   /*!
    * \brief Transfer data between zones and update grids when required.
@@ -191,13 +192,13 @@ protected:
    * \param[in] iZone - Zone in which we run an iteration.
    * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
-  void DirectIteration(unsigned short iZone, unsigned short kind_recording);
+  void DirectIteration(unsigned short iZone, RECORDING kind_recording);
 
   /*!
    * \brief Set the objective function.
    * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
-  void SetObjFunction(unsigned short kind_recording);
+  void SetObjFunction(RECORDING kind_recording);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.

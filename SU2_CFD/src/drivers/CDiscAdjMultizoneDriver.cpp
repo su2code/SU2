@@ -221,8 +221,8 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  unsigned long wrt_sol_freq = 99999;
-  unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  unsigned long wrt_sol_freq = 999999;
+  const auto nOuterIter = driver_config->GetnOuter_Iter();
 
   InputIndices.resize(nZone);
   OutputIndices.resize(nZone);
@@ -251,7 +251,7 @@ void CDiscAdjMultizoneDriver::Run() {
         config_container[iZone]->GetnQuasiNewtonSamples() >= KrylovMinIters) {
       AdjRHS[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
       AdjSol[iZone].Initialize(nPoint, nPointDomain, nVar, nullptr);
-      LinSolver[iZone].SetRecomputeResidual(false);
+      LinSolver[iZone].SetToleranceType(LinearToleranceType::RELATIVE);
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
@@ -271,9 +271,9 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
 
-  SetRecording(NONE, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-  SetRecording(SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
-  RecordingState = NONE;
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  RecordingState = RECORDING::CLEAR_INDICES;
 
   AD::ClearAdjoints();
   SetAdj_ObjFunction();
@@ -324,21 +324,21 @@ void CDiscAdjMultizoneDriver::Run() {
      *    if the current recording is different from them.
      *
      *    To set the tape appropriately, the following recording methods are provided:
-     *    (1) NONE: All information from a previous recording is removed.
+     *    (1) CLEAR_INDICES: All information from a previous recording is removed.
      *    (2) SOLUTION_VARIABLES: State variables of all solvers in a zone as input.
      *    (3) MESH_COORDS / MESH_DEFORM: Mesh coordinates as input.
      *    (4) SOLUTION_AND_MESH: Mesh coordinates and state variables as input.
      *
      *    By default, all (state and mesh coordinate variables) will be declared as output,
-     *    since it does not change the computational effort. ---*/
+     *    since it does not change the computational effort, just the memory consumption of the tape. ---*/
 
 
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
-    if (RecordingState != SOLUTION_VARIABLES) {
-      SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-      SetRecording(SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
+    if (RecordingState != RECORDING::SOLUTION_VARIABLES) {
+      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -497,11 +497,11 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
 
   /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
-  SetRecording(MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
@@ -577,7 +577,7 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
   }
 }
 
-void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
+void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
 
   AD::Reset();
 
@@ -597,15 +597,16 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
-    case NONE:        cout << "Clearing the computational graph." << endl; break;
-    case MESH_COORDS: cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case SOLUTION_VARIABLES:   cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    case RECORDING::CLEAR_INDICES:       cout << "Clearing the computational graph." << endl; break;
+    case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    default: break;
     }
   }
 
   /*--- Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
-  if(kind_recording != NONE) {
+  if(kind_recording != RECORDING::CLEAR_INDICES) {
 
     AD::StartRecording();
 
@@ -617,10 +618,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
        *    if a zone has mesh deformation its recording type needs to change to MESH_DEFORM
        *    as those sensitivities are managed by the adjoint mesh solver instead. ---*/
 
-      unsigned short type_recording = kind_recording;
+      RECORDING type_recording = kind_recording;
 
-      if (Has_Deformation(iZone) && (kind_recording == MESH_COORDS)) {
-        type_recording = MESH_DEFORM;
+      if (Has_Deformation(iZone) && (kind_recording == RECORDING::MESH_COORDS)) {
+        type_recording = RECORDING::MESH_DEFORM;
       }
 
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
@@ -641,7 +642,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
    *    It is necessary to include data transfer and mesh updates in this section as some functions
    *    computed in one zone depend explicitly on the variables of others through that path. --- */
 
-  if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == MESH_COORDS)) {
+  if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == RECORDING::MESH_COORDS)) {
     HandleDataTransfer();
     for (iZone = 0; iZone < nZone; iZone++) {
       if (Has_Deformation(iZone)) {
@@ -660,7 +661,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
      *    For recording w.r.t. mesh coordinates the transfer was included before the
      *    objective function, so we do not repeat it here. ---*/
 
-    if (kind_recording != MESH_COORDS) {
+    if (kind_recording != RECORDING::MESH_COORDS) {
       HandleDataTransfer();
     }
 
@@ -678,11 +679,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  if (kind_recording != NONE && driver_config->GetWrt_AD_Statistics()) {
+  if (kind_recording != RECORDING::CLEAR_INDICES && driver_config->GetWrt_AD_Statistics()) {
     if (rank == MASTER_NODE) AD::PrintStatistics();
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
-      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      su2double myMem = AD::getGlobalTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
       SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
@@ -699,7 +700,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   RecordingState = kind_recording;
 }
 
-void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned short kind_recording) {
+void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING kind_recording) {
 
   /*--- Do one iteration of the direct solver ---*/
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
@@ -713,7 +714,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
   /*--- Print residuals in the first iteration ---*/
 
-  if (rank == MASTER_NODE && kind_recording == SOLUTION_VARIABLES) {
+  if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
 
     auto solvers = solver_container[iZone][INST_0][MESH_0];
 
@@ -753,7 +754,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
       case DISC_ADJ_FEM:
         cout << " Zone " << iZone << " (structure)  - ";
-        if(config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS)
+        if(config_container[iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE)
           cout << "log10[RTOL-A]  : " << log10(solvers[FEA_SOL]->GetRes_FEM(1)) << endl;
         else
           cout << "log10[RMS Ux]  : " << log10(solvers[FEA_SOL]->GetRes_RMS(0)) << endl;
@@ -765,7 +766,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
   }
 }
 
-void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
+void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
   ObjFunc = 0.0;
 
@@ -858,7 +859,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
-    if (kind_recording == SOLUTION_VARIABLES) {
+    if (kind_recording == RECORDING::SOLUTION_VARIABLES) {
       cout << " Objective function                   : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
         cout << " (" << ObjFunc_Index << ")\n";
@@ -870,18 +871,17 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
 void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
-  bool time_stepping = config_container[ZONE_0]->GetTime_Marching() != STEADY;
-  unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
+  const auto IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
   su2double seeding = 1.0;
 
-  if (time_stepping){
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY){
     if (TimeIter < IterAvg_Obj){
       // Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0
       auto windowEvaluator = CWindowingTools();
       su2double weight = windowEvaluator.GetWndWeight(config_container[ZONE_0]->GetKindWindow(), TimeIter, IterAvg_Obj-1);
       seeding = weight / IterAvg_Obj;
     }
-    else{
+    else {
       seeding = 0.0;
     }
   }
@@ -892,9 +892,6 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
-  unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
-  unsigned short leave_izone = iZone*2 + ITERATION_READY;
-
   AD::ClearAdjoints();
 
   /*--- Initialize the adjoints in iZone ---*/
@@ -904,9 +901,12 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
+  const unsigned short enter_izone = iZone*2+1 + ITERATION_READY;
+  const unsigned short leave_izone = iZone*2 + ITERATION_READY;
+
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
-  /*--- Compute adjoints of transfer and mesh deformation routines, only stricktly needed
+  /*--- Compute adjoints of transfer and mesh deformation routines, only strictly needed
    *    on the last inner iteration. Structural problems have some minor issue and we
    *    need to evaluate this section on every iteration. ---*/
 
@@ -924,8 +924,8 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
   Cross_Terms.resize(nZone, vector<vector<su2passivematrix> >(nZone));
 
-  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
-    for (unsigned short jZone = 0; jZone < nZone; jZone++) {
+  for(auto iZone = 0u; iZone < nZone; iZone++) {
+    for (auto jZone = 0u; jZone < nZone; jZone++) {
       if (iZone != jZone || interface_container[jZone][iZone] != nullptr) {
 
         /*--- If jZone contributes to iZone in the primal problem, then
@@ -933,11 +933,13 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 
         Cross_Terms[iZone][jZone].resize(MAX_SOLS);
 
-        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
-          CSolver* solver = solver_container[jZone][INST_0][MESH_0][iSol];
+        for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+
+          auto solver = solver_container[jZone][INST_0][MESH_0][iSol];
           if (solver && solver->GetAdjoint()) {
-            unsigned long nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
-            unsigned short nVar = solver->GetnVar();
+
+            const auto nPoint = geometry_container[jZone][INST_0][MESH_0]->GetnPoint();
+            const auto nVar = solver->GetnVar();
             Cross_Terms[iZone][jZone][iSol].resize(nPoint,nVar) = 0.0;
           }
         }
@@ -947,8 +949,6 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 }
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
-
-  unsigned long ExtIter = 0;
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
@@ -962,7 +962,9 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
       }
     }
+
     /*--- If a mesh update is required due to the transfer of data ---*/
+    const unsigned long ExtIter = 0;
     if (DeformMesh) DynamicMeshUpdate(iZone, ExtIter);
 
     Has_Deformation(iZone) = DeformMesh;

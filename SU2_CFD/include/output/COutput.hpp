@@ -80,6 +80,8 @@ protected:
   char char_histfile[200];  /*! \brief Temporary variable to store the history filename */
   ofstream histFile;        /*! \brief Output file stream for the history */
 
+  bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
+
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
     INTEGER,         /*!< \brief Integer format. Example: 34 */
@@ -426,6 +428,12 @@ public:
   bool GetConvergence() const {return convergence;}
 
   /*!
+   * \brief Set the value of the convergence flag.
+   * \param[in] conv - New value of the convergence flag.
+   */
+  void SetConvergence(const bool conv) {convergence = conv;}
+
+  /*!
      * \brief  Monitor the time convergence of the specified windowed-time-averaged ouput
      * \param[in] config - Definition of the particular problem.
      * \param[in] Iteration - Index of the current iteration.
@@ -433,18 +441,6 @@ public:
      */
   bool MonitorTimeConvergence(CConfig *config, unsigned long Iteration);
 
-  /*!
-   * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
-   * \return Boolean indicating whether the problem is converged.
-   */
-  bool GetTimeConvergence()const {return TimeConvergence;} /*! \brief Indicates, if the time loop is converged. COnvergence criterion: Windowed time average */
-
-
-  /*!
-   * \brief Set the value of the convergence flag.
-   * \param[in] conv - New value of the convergence flag.
-   */
-  void SetConvergence(bool conv) {convergence = conv;}
 
   /*!
    * \brief Print a list of all history output fields to screen.
@@ -467,6 +463,15 @@ public:
    */
   bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                        unsigned long iter, bool force_writing = false);
+
+  /*!
+   * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
+   *        Delays solver stop, if Cauchy time convergence criterion is fullfilled, but 2nd order
+   *        time marching is active, to ensure that enough restart files are written.
+   * \param[in] config - Definition of the particular problem.
+   * \return <TRUE> if Solver has converged and has run another iteration.
+   */
+  bool GetCauchyCorrectedTimeConvergence(const CConfig *config);
 
   /*!
    * \brief Allocates the appropriate file writer based on the chosen format and writes sorted data to file.
@@ -648,6 +653,12 @@ protected:
   }
 
   /*!
+   * \brief Write screen and history output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void OutputScreenAndHistory(CConfig *config);
+
+  /*!
    * \brief Set the history fields common for all solvers.
    * \param[in] config - Definition of the particular problem.
    */
@@ -731,13 +742,6 @@ protected:
   inline virtual bool SetInit_Residuals(CConfig *config) {return false;}
 
   /*!
-   * \brief Check whether the averaged values should be updated
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> averages should be updated.
-   */
-  inline virtual bool SetUpdate_Averages(CConfig *config){return false;}
-
-  /*!
    * \brief Set the values of the volume output fields for a surface point.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -797,4 +801,3 @@ protected:
   inline virtual void SetAdditionalScreenOutput(CConfig *config){}
 
 };
-

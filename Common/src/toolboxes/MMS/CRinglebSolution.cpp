@@ -51,7 +51,7 @@ CRinglebSolution::CRinglebSolution(unsigned short val_nDim,
   tGamOvGm1 = Gamma*tovGm1;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the Ringleb case",
                    CURRENT_FUNCTION);
 

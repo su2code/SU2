@@ -26,48 +26,50 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-template <class Tenum>
-class COptionEnum : public COptionBase {
+template <class Tenum, class TField>
+class COptionEnum final : public COptionBase {
 
-  map<string, Tenum> m;
-  unsigned short & field; // Reference to the feildname
-  Tenum def; // Default value
-  string name; // identifier for the option
+  const map<string, Tenum>& m;
+  TField& field; // Reference to the fieldname
+  const Tenum def; // Default value
+  const string name; // identifier for the option
 
 public:
-  COptionEnum(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field) {
-    this->m = m;
-    this->def = default_value;
-    this->name = option_field_name;
+  COptionEnum() = delete;
+
+  COptionEnum(string option_field_name, const map<string, Tenum>& m_, TField& option_field, Tenum default_value) :
+    m(m_),
+    field(option_field),
+    def(default_value),
+    name(std::move(option_field_name)) {
   }
 
-  ~COptionEnum() override {};
+  ~COptionEnum() = default;
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check if there is more than one string
-    string out = optionCheckMultipleValues(option_value, "enum", this->name);
+    string out = optionCheckMultipleValues(option_value, "enum", name);
     if (out.compare("") != 0) {
       return out;
     }
 
     // Check to see if the enum value is in the map
-    if (this->m.find(option_value[0]) == m.end()) {
-      string str;
-      str.append(this->name);
-      str.append(": invalid option value ");
-      str.append(option_value[0]);
-      str.append(". Check current SU2 options in config_template.cfg.");
-      return str;
+    auto it = m.find(option_value[0]);
+
+    if (it == m.cend()) {
+      stringstream ss;
+      ss << name << ": invalid option value " << option_value[0] << ".\nDid you mean";
+      for (auto& item : m) ss << ", " << item.first;
+      ss << "?";
+      return ss.str();
     }
     // If it is there, set the option value
-    Tenum val = this->m[option_value[0]];
-    this->field = val;
+    field = it->second;
     return "";
   }
 
-  void SetDefault() override {
-    this->field = this->def;
-  }
+  void SetDefault() override { field = def; }
 };
 
 template<typename Scalar>
@@ -105,12 +107,12 @@ public:
     return badValue(option_value, typeName, name);
   }
 
-  void SetDefault() override {
+  void SetDefault() final {
     field = def;
   }
 };
 
-class COptionDouble : public COptionScalar<su2double> {
+class COptionDouble final : public COptionScalar<su2double> {
 public:
   template<class... Ts>
   COptionDouble(Ts&&... args) :
@@ -118,7 +120,7 @@ public:
   }
 };
 
-class COptionInt : public COptionScalar<int> {
+class COptionInt final : public COptionScalar<int> {
 public:
   template<class... Ts>
   COptionInt(Ts&&... args) :
@@ -126,7 +128,7 @@ public:
   }
 };
 
-class COptionULong : public COptionScalar<unsigned long> {
+class COptionULong final : public COptionScalar<unsigned long> {
 public:
   template<class... Ts>
   COptionULong(Ts&&... args) :
@@ -134,7 +136,7 @@ public:
   }
 };
 
-class COptionUShort : public COptionScalar<unsigned short> {
+class COptionUShort final : public COptionScalar<unsigned short> {
 public:
   template<class... Ts>
   COptionUShort(Ts&&... args) :
@@ -142,7 +144,7 @@ public:
   }
 };
 
-class COptionLong : public COptionScalar<long> {
+class COptionLong final : public COptionScalar<long> {
 public:
   template<class... Ts>
   COptionLong(Ts&&... args) :
@@ -150,7 +152,7 @@ public:
   }
 };
 
-class COptionString : public COptionScalar<string> {
+class COptionString final : public COptionScalar<string> {
 public:
   template<class... Ts>
   COptionString(Ts&&... args) :
@@ -158,7 +160,7 @@ public:
   }
 };
 
-class COptionBool : public COptionScalar<bool> {
+class COptionBool final : public COptionScalar<bool> {
 public:
   template<class... Ts>
   COptionBool(Ts&&... args) :
@@ -186,55 +188,59 @@ public:
   }
 };
 
-template <class Tenum>
-class COptionEnumList : public COptionBase {
+template <class Tenum, class TField>
+class COptionEnumList final : public COptionBase {
 
-  map<string, Tenum> m;
-  unsigned short * & field; // Reference to the feildname
-  string name; // identifier for the option
-  unsigned short & size;
+  const map<string, Tenum>& m;
+  TField*& field;
+  unsigned short& mySize;
+  const string name;
 
 public:
-  COptionEnumList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, unsigned short & list_size) : field(option_field) , size(list_size) {
-    this->m = m;
-    this->name = option_field_name;
+  COptionEnumList() = delete;
+
+  COptionEnumList(string option_field_name, const map<string,Tenum>& m_, TField*& option_field, unsigned short& list_size) :
+    m(m_),
+    field(option_field),
+    mySize(list_size),
+    name(option_field_name) {
   }
 
-  ~COptionEnumList() override {};
+  ~COptionEnumList() = default;
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
-      this->size = 0;
+      mySize = 0;
       return "";
     }
     // size is the length of the option list
-    this->size = option_value.size();
-    unsigned short * enums = new unsigned short[size];
-    for (int i  = 0; i < this->size; i++) {
+    mySize = option_value.size();
+    field = new TField[mySize];
+
+    for (unsigned short i = 0; i < mySize; i++) {
       // Check to see if the enum value is in the map
-      if (this->m.find(option_value[i]) == m.end()) {
-        string str;
-        str.append(this->name);
-        str.append(": invalid option value ");
-        str.append(option_value[i]);
-        str.append(". Check current SU2 options in config_template.cfg.");
-        return str;
+
+      auto it = m.find(option_value[i]);
+
+      if (it == m.cend()) {
+        stringstream ss;
+        ss << name << ": invalid option value " << option_value[i] << ".\nDid you mean";
+        for (auto& item : m) ss << ", " << item.first;
+        ss << "?";
+        return ss.str();
       }
       // If it is there, set the option value
-      enums[i] = this->m[option_value[i]];
+      field[i] = it->second;
     }
-    this->field = enums;
     return "";
   }
 
-  void SetDefault() override {
-    // No default to set
-    size = 0;
-  }
+  void SetDefault() override { mySize = 0; }
 };
 
 template<class Type>
-class COptionArray : public COptionBase {
+class COptionArray final : public COptionBase {
   string name; // Identifier for the option
   const int size; // Number of elements
   Type* field; // Reference to the field
@@ -297,9 +303,9 @@ public:
     typeName(type_name) {
   }
 
-  ~COptionScalarList() override = default;
+  ~COptionScalarList() = default;
 
-  string SetValue(vector<string> option_value) override {
+  string SetValue(vector<string> option_value) final {
     COptionBase::SetValue(option_value);
     // The size is the length of option_value
     mySize = option_value.size();
@@ -315,7 +321,6 @@ public:
       istringstream is(option_value[i]);
       Scalar val;
       if (!(is >> val)) {
-        delete [] field;
         return badValue(option_value, typeName+" list", name);
       }
       field[i] = std::move(val);
@@ -323,12 +328,12 @@ public:
     return "";
   }
 
-  void SetDefault() override {
+  void SetDefault() final {
     mySize = 0; // There is no default value for list
   }
 };
 
-class COptionDoubleList : public COptionScalarList<su2double> {
+class COptionDoubleList final : public COptionScalarList<su2double> {
 public:
   template<class... Ts>
   COptionDoubleList(Ts&&... args) :
@@ -336,7 +341,7 @@ public:
   }
 };
 
-class COptionShortList : public COptionScalarList<short> {
+class COptionShortList final : public COptionScalarList<short> {
 public:
   template<class... Ts>
   COptionShortList(Ts&&... args) :
@@ -344,7 +349,7 @@ public:
   }
 };
 
-class COptionUShortList : public COptionScalarList<unsigned short> {
+class COptionUShortList final : public COptionScalarList<unsigned short> {
 public:
   template<class... Ts>
   COptionUShortList(Ts&&... args) :
@@ -352,7 +357,7 @@ public:
   }
 };
 
-class COptionStringList : public COptionScalarList<string> {
+class COptionStringList final : public COptionScalarList<string> {
 public:
   template<class... Ts>
   COptionStringList(Ts&&... args) :
@@ -450,50 +455,47 @@ class COptionMathProblem : public COptionBase {
 
 public:
   COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
-    this->name = option_field_name;
-    this->cont_adjoint_def = cont_adjoint_default;
-    this->disc_adjoint_def = disc_adjoint_default;
-    this->restart_def = restart_default;
+    name = option_field_name;
+    cont_adjoint_def = cont_adjoint_default;
+    disc_adjoint_def = disc_adjoint_default;
+    restart_def = restart_default;
   }
 
   ~COptionMathProblem() override {};
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
-    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    string out = optionCheckMultipleValues(option_value, "unsigned short", name);
     if (out.compare("") != 0) {
       return out;
     }
-    if (option_value[0] == "ADJOINT") {
-      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", this->name);
+    else if (option_value[0] == "ADJOINT") {
+      return badValue(option_value, "math problem (try CONTINUOUS_ADJOINT)", name);
     }
-    if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()) {
-      return badValue(option_value, "math problem", this->name);
-    }
-    if (option_value[0] == "DIRECT") {
-      this->cont_adjoint = false;
-      this->disc_adjoint = false;
-      this->restart = false;
+    else if (option_value[0] == "DIRECT") {
+      cont_adjoint = false;
+      disc_adjoint = false;
+      restart = false;
       return "";
     }
-    if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->cont_adjoint= true;
-      this->disc_adjoint = false;
-      this->restart= true;
+    else if (option_value[0] == "CONTINUOUS_ADJOINT") {
+      cont_adjoint= true;
+      disc_adjoint = false;
+      restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT") {
-      this->disc_adjoint = true;
-      this->cont_adjoint= false;
-      this->restart = true;
+    else if (option_value[0] == "DISCRETE_ADJOINT") {
+      disc_adjoint = true;
+      cont_adjoint= false;
+      restart = true;
       return "";
     }
-    return "option in math problem map not considered in constructor";
+    return badValue(option_value, "math problem", name);
   }
 
   void SetDefault() override {
-    this->cont_adjoint = this->cont_adjoint_def;
-    this->disc_adjoint = this->disc_adjoint_def;
-    this->restart = this->restart_def;
+    cont_adjoint = cont_adjoint_def;
+    disc_adjoint = disc_adjoint_def;
+    restart = restart_def;
   }
 
 };
