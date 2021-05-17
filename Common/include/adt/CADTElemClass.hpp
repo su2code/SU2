@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "./CADTBaseClass.hpp"
 #include "./CBBoxTargetClass.hpp"
 #include "../parallelization/omp_structure.hpp"
@@ -140,10 +141,11 @@ public:
                                       su2double       &dist,
                                       unsigned short  &markerID,
                                       unsigned long   &elemID,
-                                      int             &rankID) {
+                                      int             &rankID,
+                                      su2double       *weightsInterpol) {
     const auto iThread = omp_get_thread_num();
     DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread],
-              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
+              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID, weightsInterpol);
   }
 
   /*!
@@ -170,7 +172,8 @@ public:
                                     su2double       &dist,
                                     unsigned short  &markerID,
                                     unsigned long   &elemID,
-                                    int             &rankID) const;
+                                    int             &rankID,
+                                    su2double       *weightsInterpol) const;
 
 private:
 
@@ -348,7 +351,9 @@ private:
    */
   void Dist2ToElement(const unsigned long elemID,
                       const su2double     *coor,
-                      su2double           &dist2Elem) const;
+                      su2double           &dist2Elem,
+                      unsigned short      &nInterpol,
+                      su2double           *weightsInterpol) const;  
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -362,7 +367,8 @@ private:
   void Dist2ToLine(const unsigned long i0,
                    const unsigned long i1,
                    const su2double     *coor,
-                   su2double           &dist2Line) const;
+                   su2double           &dist2Line,
+                   su2double           *weightsInterpol) const ;  
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -388,7 +394,8 @@ private:
                             const su2double     *coor,
                             su2double           &r,
                             su2double           &s,
-                            su2double           &dist2Quad) const;
+                            su2double           &dist2Quad,
+                            su2double           *weightsInterpol) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -410,7 +417,8 @@ private:
                        const su2double     *coor,
                        su2double           &dist2Tria,
                        su2double           &r,
-                       su2double           &s) const;
+                       su2double           &s,
+                       su2double           *weightsInterpol) const;  
 
 
 };

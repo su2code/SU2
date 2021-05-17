@@ -3873,9 +3873,6 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
   VTK_TypeElem      = val_VTK_TypeElem;
   swapFaceInElement = val_swapFaceInElement;
 
-  /*--- Create dummy variable to store inverse of Vandermonde matrix temporarily. ---*/
-  vector<su2double> matVandermondeInvDummy;
-
   /*--- Determine the constant in the penalty parameter in the viscous
         discretization. This constant depends on the element type as
         well as its polynomial degree. ---*/
@@ -3887,7 +3884,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
-                                                rDOFsFace, matVandermondeInvDummy,
+                                                rDOFsFace, matVandermondeFaceInv,
                                                 lagBasisFaceIntegration,
                                                 drLagBasisFaceIntegration);
       SubConnForPlottingLine(nPolyElem, subConnForPlotting);
@@ -3897,7 +3894,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
       LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,    rIntegration,
                                                     sIntegration, nDOFsFace,
                                                     rDOFsFace,    sDOFsFace,
-                                                    matVandermondeInvDummy,
+                                                    matVandermondeFaceInv,
                                                     lagBasisFaceIntegration,
                                                     drLagBasisFaceIntegration,
                                                     dsLagBasisFaceIntegration);
@@ -3908,7 +3905,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,    rIntegration,
                                                          sIntegration, nDOFsFace,
                                                          rDOFsFace,    sDOFsFace,
-                                                         matVandermondeInvDummy,
+                                                         matVandermondeFaceInv,
                                                          lagBasisFaceIntegration,
                                                          drLagBasisFaceIntegration,
                                                          dsLagBasisFaceIntegration);
@@ -4059,4 +4056,6 @@ void CFEMStandardBoundaryFace::Copy(const CFEMStandardBoundaryFace &other) {
   matDerBasisElemIntegrationTranspose = other.matDerBasisElemIntegrationTranspose;
 
   subConnForPlotting = other.subConnForPlotting;
+
+  matVandermondeFaceInv = other.matVandermondeFaceInv;
 }
