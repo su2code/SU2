@@ -70,10 +70,28 @@ CGemmFaceQuad::CGemmFaceQuad(const int val_M, const int val_Type, const int val_
     }
 
     case CGemmBase::INT_TO_DOFS: {
-      cout << endl;
-      cout << "Tensor product INT_TO_DOFS, M: " << M << ", K: " << K
-           << " not implemented yet in " << CURRENT_FUNCTION << endl;
-      cout << endl;
+
+      /*--- Tensor product to update the residuals of the adjacent quadrilateral
+            from the data in the integration points of the line. Create the map
+            with function pointers for this tensor product. ---*/
+      map<CUnsignedShort2T, TPDR2D> mapFunctions;
+      CreateMapTensorProductSurfaceResVolumeDOFs2D(mapFunctions);
+
+      /*--- Try to find the combination of K and M in mapFunctions. If not found,
+            write a clear error message that this tensor product is not supported. ---*/
+      CUnsignedShort2T KM(K, M);
+      auto MI = mapFunctions.find(KM);
+      if(MI == mapFunctions.end()) {
+        std::ostringstream message;
+        message << "The tensor product TensorProductSurfaceResVolumeDOFs2D_" << K
+                << "_" << M << " not created by the automatic source code "
+                << "generator. Modify this automatic source code creator";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+
+      /*--- Set the function pointer to carry out tensor product. ---*/
+      TensorProductResSurfIntPoints = MI->second;
+
       break;
     }
 
@@ -92,4 +110,15 @@ void CGemmFaceQuad::DOFs2Int(vector<ColMajorMatrix<passivedouble> > &tensor,
   TensorProductDataSurfIntPoints(N, faceID_Elem, dataDOFs.rows(), dataInt.rows(),
                                  tensor[0].data(), tensor[1].data(), dataDOFs.data(),
                                  dataInt.data());
+}
+
+void CGemmFaceQuad::Int2DOFs(vector<ColMajorMatrix<passivedouble> > &tensor,
+                             const int                              faceID_Elem,
+                             const int                              N,
+                             ColMajorMatrix<su2double>              &dataInt,
+                             ColMajorMatrix<su2double>              &dataDOFs) {
+
+  TensorProductResSurfIntPoints(N, faceID_Elem, dataInt.rows(), dataDOFs.rows(),
+                                tensor[0].data(), tensor[1].data(), dataInt.data(),
+                                dataDOFs.data());
 }

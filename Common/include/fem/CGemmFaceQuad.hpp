@@ -33,6 +33,7 @@
 #include "CGemmBase.hpp"
 #include "../CConfig.hpp"
 #include "../tensor_products/TensorProductSurfaceIntPoints2D.hpp"
+#include "../tensor_products/TensorProductSurfaceResVolumeDOFs2D.hpp"
 
 using namespace std;
 
@@ -89,6 +90,21 @@ public:
                 ColMajorMatrix<su2double>              &dataDOFs,
                 ColMajorMatrix<su2double>              &dataInt);
 
+  /*!
+   * \brief Function, which carries out the tensor product to compute the residual in
+   *        the DOFs of the volume from the data in the integration points of the face.
+   * \param[in]     tensor      - Tensor to create the required data.
+   * \param[in]     faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]     N           - Number of items in the DOFs and integration points.
+   * \param[in]     dataInt     - The input data in the integration points.
+   * \param[in,out] dataRes     - The residual in the volume DOFs to be updated.
+   */
+  void Int2DOFs(vector<ColMajorMatrix<passivedouble> > &tensor,
+                const int                              faceID_Elem,
+                const int                              N,
+                ColMajorMatrix<su2double>              &dataInt,
+                ColMajorMatrix<su2double>              &dataDOFs);
+
 private:
 
   int M;   /*!< \brief First tensor dimensions of A and C in the gemm call. */
@@ -100,4 +116,8 @@ private:
 
   TPIS2D TensorProductDataSurfIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
                                                                to compute the data in the surface integration points. */
+
+  TPDR2D TensorProductResSurfIntPoints = nullptr;  /*!< \brief Function pointer to carry out the tensor product
+                                                               to compute the residual contribution from the data in
+                                                               integration points of the line element. */
 };

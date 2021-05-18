@@ -141,4 +141,8 @@ private:
   vector<ColMajorMatrix<passivedouble> > tensorDSolDs;  /*!< \brief The two 1D components of the tensor to compute
                                                                     the derivative in s-direction of the solution
                                                                     on the face of the quad. */
+
+  vector<ColMajorMatrix<passivedouble> > tensorSolTranspose; /*!< \brief The two 1D components of the transpose of
+                                                                         tensorSol. Needed to compute the residuals
+                                                                         of the volume DOFs from the surface fluxes. */
 };

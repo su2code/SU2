@@ -92,6 +92,17 @@ CFEMStandardLineAdjacentQuadSol::CFEMStandardLineAdjacentQuadSol(const unsigned 
     tensorDSolDr[0] = derLegN; tensorDSolDr[1] = legT;
     tensorDSolDs[0] = legN;    tensorDSolDs[1] = derLegT;
   }
+
+  /*--- Set the components of the transpose tensors. ---*/
+  tensorSolTranspose.resize(2);
+  tensorSolTranspose[0] = tensorSol[0];
+
+  tensorSolTranspose[1].resize(nDOFsPad, nIntegration); tensorSolTranspose[1].setConstant(0.0);
+
+  for(unsigned short j=0; j<nIntegration; ++j) {
+    for(unsigned short i=0; i<nDOFs; ++i)
+      tensorSolTranspose[1](i,j) = tensorSol[1](j,i);
+  }
 }
 
 void CFEMStandardLineAdjacentQuadSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -126,5 +137,9 @@ void CFEMStandardLineAdjacentQuadSol::SolIntPoints(ColMajorMatrix<su2double> &ma
 
 void CFEMStandardLineAdjacentQuadSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                                                              ColMajorMatrix<su2double> &resDOFs) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- Call the general functionality of gemmInt2DOFs with the appropriate
+        arguments to compute the residual in the DOFs of the volume. ---*/
+  gemmInt2DOFs->Int2DOFs(tensorSolTranspose, faceID_Elem, scalarDataInt.cols(),
+                         scalarDataInt, resDOFs);
 }

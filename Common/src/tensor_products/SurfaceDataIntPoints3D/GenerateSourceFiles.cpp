@@ -200,9 +200,9 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
     includeFile << " * \\param[in]  ldb        - Leading dimension of B when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  ldc        - Leading dimension of C when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  swapTanDir - Whether or not to swap the tangential directions of the result." << std::endl;
-    includeFile << " * \\param[in]  An         - Componnent of the A tensor normal to the face." << std::endl;
-    includeFile << " * \\param[in]  At0        - Componnent of the A tensor in the first tangential direction." << std::endl;
-    includeFile << " * \\param[in]  At1        - Componnent of the A tensor in the second tangential direction." << std::endl;
+    includeFile << " * \\param[in]  An         - Component of the A tensor normal to the face." << std::endl;
+    includeFile << " * \\param[in]  At0        - Component of the A tensor in the first tangential direction." << std::endl;
+    includeFile << " * \\param[in]  At1        - Component of the A tensor in the second tangential direction." << std::endl;
     includeFile << " * \\param[in]  B          - Tensor, which contains the data to be interpolated." << std::endl;
     includeFile << " * \\param[out] C          - Result of the tensor product C = A*B." << std::endl;
     includeFile << " */" << std::endl;
@@ -443,9 +443,9 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
      a special situation, so take care of it. */
   if(nDOFs1D == 1) {
 
-   sourceFile << std::endl;
-   sourceFile << "    /*--- Tensor product in normal direction which generates the data on the face. ---*/" << std::endl;
-   sourceFile << "    bFace[0][0] = an[0]*b[0][0][0];" << std::endl;
+    sourceFile << std::endl;
+    sourceFile << "    /*--- Tensor product in normal direction which generates the data on the face. ---*/" << std::endl;
+    sourceFile << "    bFace[0][0] = an[0]*b[0][0][0];" << std::endl;
   }
   else {
 

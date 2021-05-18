@@ -57,8 +57,8 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -78,8 +78,8 @@ void TensorProductSurfaceIntPoints2D_1_2(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -99,8 +99,8 @@ void TensorProductSurfaceIntPoints2D_1_3(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -120,8 +120,8 @@ void TensorProductSurfaceIntPoints2D_1_4(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -141,8 +141,8 @@ void TensorProductSurfaceIntPoints2D_1_5(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -162,8 +162,8 @@ void TensorProductSurfaceIntPoints2D_2_2(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -183,8 +183,8 @@ void TensorProductSurfaceIntPoints2D_2_3(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -204,8 +204,8 @@ void TensorProductSurfaceIntPoints2D_2_4(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -225,8 +225,8 @@ void TensorProductSurfaceIntPoints2D_2_5(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -246,8 +246,8 @@ void TensorProductSurfaceIntPoints2D_3_3(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -267,8 +267,8 @@ void TensorProductSurfaceIntPoints2D_3_4(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -288,8 +288,8 @@ void TensorProductSurfaceIntPoints2D_3_5(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -309,8 +309,8 @@ void TensorProductSurfaceIntPoints2D_3_6(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -330,8 +330,8 @@ void TensorProductSurfaceIntPoints2D_3_7(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -351,8 +351,8 @@ void TensorProductSurfaceIntPoints2D_3_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -372,8 +372,8 @@ void TensorProductSurfaceIntPoints2D_4_4(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -393,8 +393,8 @@ void TensorProductSurfaceIntPoints2D_4_5(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -414,8 +414,8 @@ void TensorProductSurfaceIntPoints2D_4_6(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -435,8 +435,8 @@ void TensorProductSurfaceIntPoints2D_4_7(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -456,8 +456,8 @@ void TensorProductSurfaceIntPoints2D_4_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -477,8 +477,8 @@ void TensorProductSurfaceIntPoints2D_5_5(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -498,8 +498,8 @@ void TensorProductSurfaceIntPoints2D_5_6(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -519,8 +519,8 @@ void TensorProductSurfaceIntPoints2D_5_7(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -540,8 +540,8 @@ void TensorProductSurfaceIntPoints2D_5_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -561,8 +561,8 @@ void TensorProductSurfaceIntPoints2D_6_6(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -582,8 +582,8 @@ void TensorProductSurfaceIntPoints2D_6_7(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -603,8 +603,8 @@ void TensorProductSurfaceIntPoints2D_6_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -624,8 +624,8 @@ void TensorProductSurfaceIntPoints2D_6_9(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -645,8 +645,8 @@ void TensorProductSurfaceIntPoints2D_7_7(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -666,8 +666,8 @@ void TensorProductSurfaceIntPoints2D_7_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -687,8 +687,8 @@ void TensorProductSurfaceIntPoints2D_7_9(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -708,8 +708,8 @@ void TensorProductSurfaceIntPoints2D_7_8(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -729,8 +729,8 @@ void TensorProductSurfaceIntPoints2D_8_12(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -750,8 +750,8 @@ void TensorProductSurfaceIntPoints2D_8_13(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -771,8 +771,8 @@ void TensorProductSurfaceIntPoints2D_9_9(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -792,8 +792,8 @@ void TensorProductSurfaceIntPoints2D_9_13(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -813,8 +813,8 @@ void TensorProductSurfaceIntPoints2D_9_14(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
@@ -834,8 +834,8 @@ void TensorProductSurfaceIntPoints2D_10_10(const int           N,
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
- * \param[in]  An     - Componnent of the A tensor normal to the line.
- * \param[in]  At     - Componnent of the A tensor tangential to the line.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */

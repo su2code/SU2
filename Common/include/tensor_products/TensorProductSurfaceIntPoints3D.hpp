@@ -60,9 +60,9 @@ void CreateMapTensorProductSurfaceIntPoints3D(map<CUnsignedShort2T, TPIS3D> &map
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -85,9 +85,9 @@ void TensorProductSurfaceIntPoints3D_1_2(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -110,9 +110,9 @@ void TensorProductSurfaceIntPoints3D_1_3(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -135,9 +135,9 @@ void TensorProductSurfaceIntPoints3D_1_4(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -160,9 +160,9 @@ void TensorProductSurfaceIntPoints3D_1_5(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -185,9 +185,9 @@ void TensorProductSurfaceIntPoints3D_2_2(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -210,9 +210,9 @@ void TensorProductSurfaceIntPoints3D_2_3(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -235,9 +235,9 @@ void TensorProductSurfaceIntPoints3D_2_4(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -260,9 +260,9 @@ void TensorProductSurfaceIntPoints3D_2_5(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -285,9 +285,9 @@ void TensorProductSurfaceIntPoints3D_3_3(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -310,9 +310,9 @@ void TensorProductSurfaceIntPoints3D_3_4(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -335,9 +335,9 @@ void TensorProductSurfaceIntPoints3D_3_5(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -360,9 +360,9 @@ void TensorProductSurfaceIntPoints3D_3_6(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -385,9 +385,9 @@ void TensorProductSurfaceIntPoints3D_3_7(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -410,9 +410,9 @@ void TensorProductSurfaceIntPoints3D_3_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -435,9 +435,9 @@ void TensorProductSurfaceIntPoints3D_4_4(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -460,9 +460,9 @@ void TensorProductSurfaceIntPoints3D_4_5(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -485,9 +485,9 @@ void TensorProductSurfaceIntPoints3D_4_6(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -510,9 +510,9 @@ void TensorProductSurfaceIntPoints3D_4_7(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -535,9 +535,9 @@ void TensorProductSurfaceIntPoints3D_4_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -560,9 +560,9 @@ void TensorProductSurfaceIntPoints3D_5_5(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -585,9 +585,9 @@ void TensorProductSurfaceIntPoints3D_5_6(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -610,9 +610,9 @@ void TensorProductSurfaceIntPoints3D_5_7(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -635,9 +635,9 @@ void TensorProductSurfaceIntPoints3D_5_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -660,9 +660,9 @@ void TensorProductSurfaceIntPoints3D_6_6(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -685,9 +685,9 @@ void TensorProductSurfaceIntPoints3D_6_7(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -710,9 +710,9 @@ void TensorProductSurfaceIntPoints3D_6_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -735,9 +735,9 @@ void TensorProductSurfaceIntPoints3D_6_9(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -760,9 +760,9 @@ void TensorProductSurfaceIntPoints3D_7_7(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -785,9 +785,9 @@ void TensorProductSurfaceIntPoints3D_7_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -810,9 +810,9 @@ void TensorProductSurfaceIntPoints3D_7_9(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -835,9 +835,9 @@ void TensorProductSurfaceIntPoints3D_7_8(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -860,9 +860,9 @@ void TensorProductSurfaceIntPoints3D_8_12(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -885,9 +885,9 @@ void TensorProductSurfaceIntPoints3D_8_13(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -910,9 +910,9 @@ void TensorProductSurfaceIntPoints3D_9_9(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -935,9 +935,9 @@ void TensorProductSurfaceIntPoints3D_9_13(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -960,9 +960,9 @@ void TensorProductSurfaceIntPoints3D_9_14(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
@@ -985,9 +985,9 @@ void TensorProductSurfaceIntPoints3D_10_10(const int           N,
  * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
  * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
  * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
- * \param[in]  An         - Componnent of the A tensor normal to the face.
- * \param[in]  At0        - Componnent of the A tensor in the first tangential direction.
- * \param[in]  At1        - Componnent of the A tensor in the second tangential direction.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
  * \param[in]  B          - Tensor, which contains the data to be interpolated.
  * \param[out] C          - Result of the tensor product C = A*B.
  */
