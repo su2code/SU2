@@ -2900,18 +2900,6 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       config_container[iZone]->SetPhysicalTime(0.0);
   }
 
-//  /*--- Read the target pressure ---*/
-
-//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-//    output[ZONE_0]->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
-
-//  /*--- Read the target heat flux ---*/
-
-//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-//    output[ZONE_0]->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
-
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
 
   if(!fsi) {

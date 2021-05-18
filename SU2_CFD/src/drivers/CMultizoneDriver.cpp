@@ -171,7 +171,7 @@ void CMultizoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() << "." << endl;
+      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() - driver_config->GetRestart_Iter() << "." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -243,6 +243,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
       solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
+    }
+    else if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetHeatProblem()) {
+      /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+      solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                              solver_container[iZone][INST_0],
+                                                                              config_container[iZone], TimeIter);
     }
   }
 

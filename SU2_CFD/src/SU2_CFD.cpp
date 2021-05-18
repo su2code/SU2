@@ -27,7 +27,7 @@
 
 #include "../include/SU2_CFD.hpp"
 
-/* Include file, needed for the runtime NaN catching. */
+/* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
 using namespace std;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
-  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+  // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Create a pointer to the main SU2 Driver ---*/
 
