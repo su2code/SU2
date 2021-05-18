@@ -1941,7 +1941,7 @@ public:
   /*!
    * \brief  A virtual member. Set the value of the velocity solution predictor.
    */
-  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_pred) { }
 
   /*!
    * \brief  A virtual member. Set the value of the old solution.
