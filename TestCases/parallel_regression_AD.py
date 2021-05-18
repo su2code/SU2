@@ -432,7 +432,7 @@ def main():
     dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     dyn_discadj_fsi.timeout   = 1600
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
-    dyn_discadj_fsi.test_file = "grad_dv.opt"
+    dyn_discadj_fsi.test_file = "grad_young.opt"
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)

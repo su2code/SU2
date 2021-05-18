@@ -443,32 +443,6 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
     }
   }
 
-  // Temporary Output
-  if (config->GetAdvanced_FEAElementBased()) {
-    if (rank == MASTER_NODE) {
-
-      /*--- Header of the temporary dv sensitivity output file ---*/
-      ofstream myfile2_res;
-
-      switch (config->GetDV_FEA()) {
-        case YOUNG_MODULUS: case DENSITY_VAL:
-          myfile2_res.open("grad_dv.opt");
-          myfile2_res << "INDEX"
-                    << "\t"
-                    << "GRAD" << endl;
-          myfile2_res.precision(15);
-
-          for (unsigned short iDV = 0; iDV < nDV; iDV++) {
-            myfile2_res << iDV;
-            myfile2_res << "\t";
-            myfile2_res << scientific << GetTotal_Sens_DVFEA(iDV);//Total_Sens_DV[iDV];
-            myfile2_res << endl;
-          }
-          myfile2_res.close();
-          break;
-      }
-    }
-  }
 }
 
 void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
