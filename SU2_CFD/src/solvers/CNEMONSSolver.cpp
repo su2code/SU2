@@ -33,7 +33,7 @@
 
 /*--- Explicit instantiation of the parent class of CNEMOEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>;
+template class CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
 CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
                CNEMOEulerSolver(geometry, config, iMesh, true) {

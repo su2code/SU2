@@ -58,15 +58,15 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
 
-  const bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                        (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                        (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
-   steady or an unsteady simulaiton */
+   steady or an unsteady simulation */
 
   InnerIter = config[val_iZone]->GetInnerIter();
 
@@ -141,6 +141,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
+    END_SU2_OMP_PARALLEL
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -166,8 +167,8 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
 
   /*--- Dual time stepping strategy ---*/
 
-  if ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)) {
+  if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+      (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
 
     for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
@@ -248,27 +249,13 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
   if (config[val_iZone]->GetSinglezone_Driver()) {
+
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
                                                                            config[val_iZone]);
-
-    if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
-        config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) {
-      /*--- Read the target pressure ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_Cp() == YES)
-      //        output->SetCp_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-
-      //      /*--- Read the target heat flux ---*/
-
-      //      if (config[val_iZone]->GetInvDesign_HeatFlux() == YES)
-      //        output->SetHeatFlux_InverseDesign(solver[val_iZone][val_iInst][MESH_0][FLOW_SOL],geometry[val_iZone][val_iInst][MESH_0],
-      //        config[val_iZone], config[val_iZone]->GetExtIter());
-    }
   }
 }
 

@@ -62,7 +62,7 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
   epsilon = 0.001;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
@@ -78,7 +78,7 @@ CMMSIncNSSolution::CMMSIncNSSolution(unsigned short val_nDim,
     SU2_MPI::Error("Constant density fluid model must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the MMS incompressible NS case",
                    CURRENT_FUNCTION);
 

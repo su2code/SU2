@@ -32,7 +32,7 @@
 CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config) {
 
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
+  bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   bool body_forces        = config->GetDeadLoad();
   bool incremental_load   = config->GetIncrementalLoad();
   bool prestretch_fem     = config->GetPrestretch();  // Structure is prestretched
@@ -69,6 +69,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (fsi_analysis) {
     Solution_Pred = Solution;
     Solution_Pred_Old = Solution;
+    if (dynamic_analysis) Solution_Vel_Pred = Solution_Vel;
   }
 
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/

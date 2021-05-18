@@ -63,7 +63,7 @@ protected:
   Non_Physical_Counter;          /*!< \brief Number of consecutive iterations that a point has been treated first-order.
                                   After a specified number of successful reconstructions, the point can be returned to second-order. */
 
-  VectorType UnderRelaxation;  /*!< \brief Value of the under-relxation parameter local to the control volume. */
+  VectorType UnderRelaxation;  /*!< \brief Value of the under-relaxation parameter local to the control volume. */
   VectorType LocalCFL;         /*!< \brief Value of the CFL number local to the control volume. */
 
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
@@ -77,8 +77,8 @@ protected:
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
-  MatrixType AuxVar;             /*!< \brief Auxiliar variable for gradient computation. */
-  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxilliary variables  of the problem. */
+  MatrixType AuxVar;             /*!< \brief Auxiliary variable for gradient computation. */
+  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxiliary variables  of the problem. */
 
   VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
@@ -88,10 +88,8 @@ protected:
   MatrixType Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
 
   MatrixType Res_TruncError;  /*!< \brief Truncation error for multigrid cycle. */
-  MatrixType Residual_Old;    /*!< \brief Auxiliar structure for residual smoothing. */
-  MatrixType Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
-
-  MatrixType Solution_Adj_Old;   /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  MatrixType Residual_Old;    /*!< \brief Auxiliary structure for residual smoothing. */
+  MatrixType Residual_Sum;    /*!< \brief Auxiliary structure for residual smoothing. */
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
@@ -212,14 +210,6 @@ public:
    * \return Pointer to the old solution vector.
    */
   inline su2double GetSolution_Old(unsigned long iPoint, unsigned long iVar) const { return Solution_Old(iPoint,iVar); }
-
-  /*!
-   * \brief Get the old solution of the discrete adjoint problem (for multiphysics subiterations)
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline su2double GetSolution_Old_Adj(unsigned long iPoint, unsigned long iVar) const { return Solution_Adj_Old(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the old solution.
@@ -1975,10 +1965,21 @@ public:
   inline virtual void Set_OldSolution_Accel() {}
 
   /*!
+   * \brief  A virtual member. Set the value of the velocity solution predictor.
+   */
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
+
+  /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
+
+  /*!
+   * \brief  A virtual member. Get the velocity solution predictor.
+   * \return Pointer to the velocity solution vector.
+   */
+  inline virtual const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief  A virtual member. Get the solution at time n.
@@ -2074,10 +2075,22 @@ public:
   inline virtual su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief A virtual member. Get the value of the velocity imposed at the boundary.
+   * \return Value of the boundary velocity.
+   */
+  inline virtual su2double GetBound_Vel(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] val_BoundVel - Pointer to the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, const su2double *val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
@@ -2085,6 +2098,13 @@ public:
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundVel - Value of the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, unsigned long iDim, const su2double val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
@@ -2251,30 +2271,12 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
    * \brief Get the adjoint values of the solution at time n.
    * \param[out] adj_sol - The adjoint values of the solution.
    */
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the adjoint values of the solution at time n-1.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_time_n1(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_time_n1(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!

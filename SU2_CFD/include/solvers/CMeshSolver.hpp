@@ -89,6 +89,14 @@ protected:
   void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Compute the grid velocity form the velocity at deformable boundary.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
    * \brief Update the coarse multigrid levels after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -99,8 +107,18 @@ protected:
    * \brief Check the boundary vertex that are going to be moved.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] velocity_transfer - Boolean for deforming displacement or velocity
    */
-  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config, bool velocity_transfer);
+
+  /*!
+   * \brief Apply forced displacement boundary conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Index of the marker.
+   * \param[in] velocity - Boolean for deforming displacement or velocity.
+   */
+  void BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity);
 
 public:
   /*!

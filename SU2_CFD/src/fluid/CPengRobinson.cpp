@@ -130,7 +130,7 @@ void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
 
   dTde_rho = 1 / Cv;
 
-  Zed = Pressure / (Gas_Constant * Temperature * Density);
+  Zed = Pressure / (Gas_Constant * Temperature * rho);
 
   AD::SetPreaccOut(Temperature);
   AD::SetPreaccOut(SoundSpeed2);
