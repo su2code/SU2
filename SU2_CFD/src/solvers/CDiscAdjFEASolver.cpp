@@ -271,7 +271,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Solution for acceleration (u'') and velocity (u') at time n ---*/
 
-  if (dynamic){
+  if (dynamic && !CrossTerm){
 
     /*--- NOW: The solution at time n ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -282,7 +282,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Store the adjoint solution at time n ---*/
 
-      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
     }
 
   }

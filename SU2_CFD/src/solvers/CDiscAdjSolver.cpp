@@ -362,25 +362,25 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   END_SU2_OMP_MASTER
 
   /*--- Extract and store the adjoint of the primal solution at time n ---*/
-  if (time_n_needed) {
+  if (time_n_needed && !CrossTerm) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
 
-      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
 
   /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
-  if (time_n1_needed) {
+  if (time_n1_needed && !CrossTerm) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
       direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
 
-      if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
+      nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
