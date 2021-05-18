@@ -236,64 +236,41 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 }
 
-void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
-
-  const bool dynamic = config->GetTime_Domain();
-  const bool multizone = config->GetMultizone_Problem();
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  su2double Solution[MAXNVAR] = {0.0};
-
-  /*--- Set Residuals to zero ---*/
-
-  SetResToZero();
+void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
    *    contains contributions from other zones but on extraction it does not. ---*/
 
-  if(!multizone) nodes->Set_OldSolution();
+  if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  /*--- Extract and store the adjoint solution ---*/
 
-    /*--- Extract the adjoint solution ---*/
-
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
-
-    /*--- Store the adjoint solution ---*/
-
     nodes->SetSolution(iPoint,Solution);
-
   }
 
-  /*--- Solution for acceleration (u'') and velocity (u') at time n ---*/
+  if (CrossTerm) return;
 
-  if (dynamic){
+  /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
-    /*--- NOW: The solution at time n ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Extract the adjoint solution at time n ---*/
-
+  if (config->GetTime_Domain()) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-
-      /*--- Store the adjoint solution at time n ---*/
-
-      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
     }
-
   }
-
-  /*--- TODO: Need to set the MPI solution in the previous TS ---*/
 
   /*--- Set the residuals ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+  SetResToZero();
+
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++){
+      su2double residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
 
       Residual_RMS[iVar] += residual*residual;
       AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));

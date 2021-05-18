@@ -297,18 +297,14 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(false);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
 
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
 
   const su2double relax = (config->GetInnerIter()==0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
-  su2double Solution[MAXNVAR] = {0.0};
-
-  /*--- Set Residuals to zero ---*/
-
-  SetResToZero();
+  /*--- Thread-local residual variables. ---*/
 
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   const su2double* coordMax[MAXNVAR] = {nullptr};
@@ -316,13 +312,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the old solution and compute residuals. ---*/
 
-  if(!config->GetMultizone_Problem()) nodes->Set_OldSolution();
+  if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
     /*--- Extract the adjoint solution ---*/
 
+    su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
 
     /*--- Relax and store the adjoint solution, compute the residuals. ---*/
@@ -343,6 +340,11 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
+  if (CrossTerm) return;
+
+  SetResToZero();
 
   /*--- Reduce residual information over all threads in this rank. ---*/
   SU2_OMP_CRITICAL
@@ -365,10 +367,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   if (time_n_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-
+      su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-
-      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
@@ -377,10 +378,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   if (time_n1_needed) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-
+      su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
-
-      if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
+      nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
