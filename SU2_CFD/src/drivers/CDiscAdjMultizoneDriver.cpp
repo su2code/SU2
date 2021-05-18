@@ -446,16 +446,16 @@ void CDiscAdjMultizoneDriver::Run() {
 
     AD::ClearAdjoints();
 
-    /*--- Compute the geometrical sensitivities and write them to file. ---*/
+    /*--- Compute the geometrical sensitivities and write them to file, except for time_domain. ---*/
 
-    bool checkSensitivity = StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0));
+    if (time_domain) continue;
 
-    if (checkSensitivity && !time_domain)
+    if (StopCalc || ((iOuterIter % wrt_sol_freq == 0) && (iOuterIter != 0)))
       EvaluateSensitivities(iOuterIter, StopCalc);
   }
 
   if (time_domain) {
-    EvaluateSensitivities(TimeIter, false);
+    EvaluateSensitivities(TimeIter, (TimeIter+1) == driver_config->GetnTime_Iter());
   }
 
 }
@@ -493,7 +493,7 @@ bool CDiscAdjMultizoneDriver::EvaluateObjectiveFunctionGradient() {
   return rhs_norm < EPS;
 }
 
-void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool StopCalc) {
+void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool force_writing) {
 
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
@@ -547,15 +547,21 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool Sto
       solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[IDX_SOL]);
     else
       solvers[IDX_SOL]->SetSensitivity(geometry, config);
+
+    iteration_container[iZone][INST_0]->Postprocess(output_container[iZone], integration_container, geometry_container,
+                                                    solver_container, numerics_container, config_container,
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
   AD::ClearAdjoints();
 
-  /*--- Output files. ---*/
+  /*--- Output files (CMultizoneDriver::Output uses StopCalc to force file output). ---*/
 
+  swap(StopCalc, force_writing);
   Output(Iter);
+  swap(StopCalc, force_writing);
 
 }
 
