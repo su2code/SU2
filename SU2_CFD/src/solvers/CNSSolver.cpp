@@ -33,7 +33,7 @@
 
 /*--- Explicit instantiation of the parent class of CEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
+template class CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
@@ -86,12 +86,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
    turbulence solver, and post) only temperature and velocity are needed ---*/
 
   const auto nPrimVarGrad_bak = nPrimVarGrad;
-  if (Output) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    nPrimVarGrad = 1+nDim;
-    SU2_OMP_BARRIER
-  }
+  if (Output) ompMasterAssignBarrier(nPrimVarGrad, 1+nDim);
 
   if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
@@ -113,11 +108,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  if (Output) {
-    SU2_OMP_MASTER
-    nPrimVarGrad = nPrimVarGrad_bak;
-    SU2_OMP_BARRIER
-  }
+  if (Output) ompMasterAssignBarrier(nPrimVarGrad, nPrimVarGrad_bak);
 
   /*--- Compute the limiters ---*/
 
@@ -171,6 +162,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
     nonPhysicalPoints += !physical;
 
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 }
@@ -316,6 +308,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
       nodes->SetRoe_Dissipation_NTS(iPoint, delta, config->GetConst_DES());
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -520,6 +513,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
       }
     }
   }
+  END_SU2_OMP_FOR
 
   if (Jacobian_i)
     for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -539,8 +533,8 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 
   su2double Twall = 0.0;
 
-  if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
-      (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+      (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
     /*--- Compute wall temperature from both temperatures ---*/
 
@@ -549,8 +543,8 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 
     Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
   }
-  else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
-           (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+  else if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+           (config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
 
     /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 
@@ -717,6 +711,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       }
     }
   }
+  END_SU2_OMP_FOR
 
   if (Jacobian_i)
     for (auto iVar = 0u; iVar < nVar; iVar++)
@@ -773,8 +768,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
     if (!config->GetViscous_Wall(iMarker)) continue;
 
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    //if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+    //    (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
 
     /*--- Identify the boundary by string name ---*/
 
@@ -969,7 +964,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       }
 
-       /*--- Calculate an updated value for the wall shear stress
+      /*--- Calculate an updated value for the wall shear stress
         using the y+ value, the definition of y+, and the definition of
         the friction velocity. ---*/
           
@@ -981,15 +976,16 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker][iVertex][iDim] = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }
-    }
+    //}
   }
+    END_SU2_OMP_FOR
 
  if (notConvergedCounter>0) {
     cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;

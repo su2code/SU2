@@ -39,7 +39,6 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
-
 }
 
 CSinglezoneDriver::~CSinglezoneDriver(void) {
@@ -119,7 +118,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
 
-  if (config_container[ZONE_0]->GetTime_Marching())
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY)
     config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
@@ -127,6 +126,12 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                            solver_container[ZONE_0][INST_0],
+                                                                            config_container[ZONE_0], TimeIter);
+  }
+  else if ( config_container[ZONE_0]->GetHeatProblem()) {
+    /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+    solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
   }
@@ -223,7 +228,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
                                  solver_container[ZONE_0][INST_0][MESH_0],
                                  numerics_container[ZONE_0][INST_0][MESH_0],
-                                 config_container[ZONE_0], NONE);
+                                 config_container[ZONE_0], RECORDING::CLEAR_INDICES);
 
   /*--- Update the wall distances if the mesh was deformed. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() ||
@@ -272,6 +277,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     /*--- Check whether the outer time integration has reached the final time ---*/
 
     TimeConvergence = GetTimeConvergence();
+
     FinalTimeReached     = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
@@ -314,5 +320,5 @@ void CSinglezoneDriver::Runtime_Options(){
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
-  return output_container[ZONE_0]->GetTimeConvergence();
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

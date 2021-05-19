@@ -32,7 +32,7 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   rotating_frame(config->GetRotating_Frame())
 {
   /*--- Spalart-Allmaras closure constants ---*/
@@ -139,7 +139,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       const su2double chi_1 = 0.002;
       const su2double chi_2 = 50.0;
 
-      su2double tu = config->GetTurbulenceIntensity_FreeStream();
+      /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
+      su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
       su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
 
@@ -758,7 +759,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
                                                    const CConfig* config) :
                           CNumerics(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
   axisymmetric = config->GetAxisymmetric();
 

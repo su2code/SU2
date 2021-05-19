@@ -35,7 +35,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   turb_model = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
-  gridMovement = config->GetGrid_Movement();
+  gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -58,7 +58,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (config->GetDynamic_Grid()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
+    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -312,7 +312,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Grid velocity
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -415,13 +415,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
-  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  // MPI-Rank
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
+  AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
@@ -468,7 +462,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
@@ -567,15 +561,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
   }
 
-  // Mesh quality metrics
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  // MPI-Rank
-  SetVolumeOutputValue("RANK", iPoint, rank);
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
@@ -719,17 +705,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curInnerIter < 2));
+  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
+         (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
 
 }
-
-bool CFlowCompOutput::SetUpdate_Averages(CConfig *config){
-
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
-
-}
-
 
 void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
 

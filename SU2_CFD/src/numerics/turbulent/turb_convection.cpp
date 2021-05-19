@@ -33,7 +33,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
   Flux = new su2double [nVar];

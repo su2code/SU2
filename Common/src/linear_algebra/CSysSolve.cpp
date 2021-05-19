@@ -130,7 +130,6 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 
   if ((nrm <= 0.0) || (nrm != nrm)) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
-    SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
   }
 
@@ -209,7 +208,6 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
   /*--- Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
   }
 
@@ -230,6 +228,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 
       cg_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -350,12 +349,10 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*---  Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
   }
 
   if (m > 5000) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("FGMRES subspace is too large.", CURRENT_FUNCTION);
   }
 
@@ -371,6 +368,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
         for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       }
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -520,6 +518,7 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
     xIsZero = false;
     tol_type = LinearToleranceType::ABSOLUTE;
   }
+  END_SU2_OMP_MASTER
 
   const ScalarType norm0 = b.norm(); // <- Has a barrier
 
@@ -545,7 +544,6 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Check the subspace size ---*/
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
   }
 
@@ -567,6 +565,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       bcg_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -710,7 +709,6 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   const ScalarType omega = SU2_TYPE::GetValue(config->GetLinear_Solver_Smoother_Relaxation());
 
   if (m < 1) {
-    SU2_OMP_MASTER
     SU2_MPI::Error("Number of linear solver iterations must be greater than 0.", CURRENT_FUNCTION);
   }
 
@@ -730,6 +728,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
       smooth_ready = true;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -860,11 +859,14 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
-    TapeActive = AD::globalTape.isActive();
+    TapeActive = AD::getGlobalTape().isActive();
 
-    AD::StartExtFunc(false, false);
-
-    AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
+    SU2_OMP_MASTER {
+      AD::StartExtFunc(false, false);
+      AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
 
     AD::StopRecording();
 #endif
@@ -920,6 +922,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     Residual = residual;
     Iterations = IterLinSol;
   }
+  END_SU2_OMP_MASTER
 
   HandleTemporariesOut(LinSysSol);
 
@@ -928,26 +931,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
   if(TapeActive) {
 
     /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
-    const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_DOT);
+    const bool RequiresTranspose = !mesh_deform || (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT);
 
     if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
     else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
-
-    /*--- Start recording if it was stopped for the linear solver ---*/
-
-    AD::StartRecording();
-
-    AD::SetExtFuncOut(&LinSysSol[0], (int)LinSysSol.GetLocSize());
-
-#ifdef CODI_REVERSE_TYPE
-    AD::FuncHelper->addUserData(&LinSysRes);
-    AD::FuncHelper->addUserData(&LinSysSol);
-    AD::FuncHelper->addUserData(&Jacobian);
-    AD::FuncHelper->addUserData(geometry);
-    AD::FuncHelper->addUserData(config);
-    AD::FuncHelper->addUserData(this);
-    AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
-#endif
 
     /*--- Build preconditioner for the transposed Jacobian ---*/
 
@@ -972,7 +959,30 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
         break;
     }
 
+    /*--- Start recording if it was stopped for the linear solver ---*/
+#ifdef CODI_REVERSE_TYPE
+    AD::StartRecording();
+    SU2_OMP_BARRIER
+
+    SU2_OMP_MASTER {
+      AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
+      AD::FuncHelper->addUserData(&LinSysRes);
+      AD::FuncHelper->addUserData(&LinSysSol);
+      AD::FuncHelper->addUserData(&Jacobian);
+      AD::FuncHelper->addUserData(geometry);
+      AD::FuncHelper->addUserData(config);
+      AD::FuncHelper->addUserData(this);
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+
+    AD::FuncHelper->addToTape(CSysSolve_b<ScalarType>::Solve_b);
+    SU2_OMP_BARRIER
+
+    SU2_OMP_MASTER
     AD::EndExtFunc();
+    END_SU2_OMP_MASTER
+#endif
   }
 
   return IterLinSol;
@@ -1059,7 +1069,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 
   delete precond;
 
+  SU2_OMP_MASTER
   Iterations = IterLinSol;
+  END_SU2_OMP_MASTER
+
   return IterLinSol;
 
 }

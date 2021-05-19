@@ -68,7 +68,7 @@ public:
    * \param[in] dist - distance
    * \return value of the RBF.
    */
-  static su2double Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist);
+  static su2double Get_RadialBasisValue(RADIAL_BASIS type, const su2double radius, const su2double dist);
 
   /*!
    * \brief Compute the RBF "generator" matrix with or without polynomial terms.
@@ -83,7 +83,7 @@ public:
    * \param[out] keepPolynomialRow - Size nDim, signals which (if any) iDim was removed from polynomial term.
    * \param[out] C_inv_trunc - The generator matrix as described above.
    */
-  static void ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial, su2double radius,
+  static void ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial, su2double radius,
                                      const su2activematrix& coords, int& nPolynomial,
                                      vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc);
 

@@ -120,8 +120,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
   SetContainers_Null();
 
-  /*--- Preprocessing of the config files. In this routine, the config file is read
-   and it is determined whether a problem is single physics or multiphysics. . ---*/
+  /*--- Preprocessing of the config files. ---*/
 
   Input_Preprocessing(config_container, driver_config);
 
@@ -225,7 +224,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
       /*--- Static mesh processing.  ---*/
 
-      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], surface_movement[iZone]);
+      StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
 
     }
 
@@ -288,10 +287,10 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   Mpoints            = 0.0;
   MpointsDomain      = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    Mpoints       +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MpointsDomain +=(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
-    MDOFs         += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MDOFsDomain   += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    Mpoints       += geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MpointsDomain += geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    MDOFs         += DOFsPerPoint*geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain   += DOFsPerPoint*geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
@@ -544,11 +543,11 @@ void CDriver::Postprocessing() {
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
     cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
-    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << setw(20) << "Core-hrs:" << setw(12) << size*TotalTime/(60.0*60.0) << endl;
     cout << setw(25) << "Cores:" << setw(12) << size << " | ";
-    cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
-    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/(su2double)size << " | ";
-    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/(su2double)size << endl;
+    cout << setw(20) << "DOFs/point:" << setw(12) << DOFsPerPoint << endl;
+    cout << setw(25) << "Points/core:" << setw(12) << 1.0e6*MpointsDomain/size << " | ";
+    cout << setw(20) << "Ghost points/core:" << setw(12) << 1.0e6*(Mpoints-MpointsDomain)/size << endl;
     cout << setw(25) << "Ghost/Owned Point Ratio:" << setw(12) << (Mpoints-MpointsDomain)/MpointsDomain << " | " << endl;
     cout << endl;
     cout << "Preprocessing phase:" << endl;
@@ -560,9 +559,9 @@ void CDriver::Postprocessing() {
     cout << setw(20) << "Compute Time (%):" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
     cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount << " | ";
     if (IterCount != 0) {
-      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/Mpoints << " | ";
-      cout << setw(20) << "Mpoints/s:" << setw(12)<< Mpoints*(su2double)IterCount/UsedTimeCompute << endl;
+      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/IterCount << endl;
+      cout << setw(25) << "Core-s/iter/Mpoints:" << setw(12)<< size*UsedTimeCompute/IterCount/Mpoints << " | ";
+      cout << setw(20) << "Mpoints/s:" << setw(12)<< Mpoints*IterCount/UsedTimeCompute << endl;
     } else cout << endl;
     cout << endl;
     cout << "Output phase:" << endl;
@@ -570,10 +569,10 @@ void CDriver::Postprocessing() {
     cout << setw(20) << "Output Time (%):" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
-      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/OutputCount << endl;
       if (BandwidthSum > 0) {
-        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
-        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/OutputCount << " | ";
+        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/OutputCount/size << endl;
       }
     } else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl;
@@ -594,7 +593,7 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_CFD, false);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -608,10 +607,10 @@ void CDriver::Input_Preprocessing(CConfig **&config, CConfig *&driver_config) {
     if (driver_config->GetnConfigFiles() > 0){
 
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config[iZone] = new CConfig(driver_config, zone_file_name, SU2_CFD, iZone, nZone, true);
+      config[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_CFD, iZone, nZone, true);
     }
     else{
-      config[iZone] = new CConfig(driver_config, config_file_name, SU2_CFD, iZone, nZone, true);
+      config[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_CFD, iZone, nZone, true);
     }
 
     /*--- Set the MPI communicator ---*/
@@ -702,7 +701,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
       }
 
       /*--- For Streamwise Periodic flow, find a unique reference node on the dedicated inlet marker. ---*/
-      if (config->GetKind_Streamwise_Periodic() != NONE)
+      if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
         geometry[iMesh]->FindUniqueNode_PeriodicBound(config);
 
       /*--- Initialize the communication framework for the periodic BCs. ---*/
@@ -815,6 +814,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
     geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
     geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Visualize a dual control volume if requested ---*/
 
@@ -897,10 +897,12 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   }
 
+  if (config->GetWrt_MultiGrid()) geometry[MESH_0]->ColorMGLevels(config->GetnMGLevels(), geometry);
+
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
-  if (config->GetTime_Marching() && config->GetGrid_Movement()) {
+  if ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetGrid_Movement()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
       /*--- Update cell volume ---*/
@@ -1068,60 +1070,19 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
                                   CConfig *config) const {
 
-  bool euler, ns, turbulent,
-  adj_euler, adj_ns, adj_turb,
-  heat,
-  fem,
-  template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
-  int val_iter = 0;
-  unsigned short iMesh;
-
-  /*--- Initialize some useful booleans ---*/
-
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  disc_adj         = false;
-  fem              = false;  disc_adj_fem     = false;
-  heat             = false;  disc_adj_turb    = false;
-  template_solver  = false;
-
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
+  const bool adjoint = config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint();
 
-  if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == DT_STEPPING_1ST)
-      val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+  int val_iter = 0;
+
+  if (config->GetTime_Domain()) {
+    val_iter = adjoint? config->GetUnst_AdjointIter() : config->GetRestart_Iter();
+    val_iter -= 1;
+    if (!adjoint && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
+      val_iter -= 1;
+    if (!adjoint && !config->GetRestart()) val_iter = 0;
   }
-
-  if (time_stepping) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-  }
-
-  /*--- Assign booleans ---*/
-
-  switch (config->GetKind_Solver()) {
-    case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case INC_EULER: euler = true; break;
-    case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; break;
-    case RANS : case INC_RANS: ns = true; turbulent = true; break;
-    case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
-    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
-  }
-
 
   /*--- Load inlet profile files for any of the active solver containers.
    Note that these routines fill the fine grid data structures for the markers
@@ -1137,31 +1098,16 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
       cout << config->GetInlet_FileName() << endl;
     }
 
-    bool no_profile = false;
-
-    if (euler || ns || adj_euler || adj_ns || disc_adj) {
+    if (solver[MESH_0][FLOW_SOL]) {
       solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
     }
-    if (turbulent || adj_turb || disc_adj_turb) {
+    if (solver[MESH_0][TURB_SOL]) {
       solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
-    }
-
-    if (template_solver) {
-      no_profile = true;
-    }
-    if (heat) {
-      no_profile = true;
-    }
-    if (fem) {
-      no_profile = true;
-    }
-    if (disc_adj_fem) {
-      no_profile = true;
     }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
-    if (no_profile) {
+    if (!config->GetFluidProblem()) {
       SU2_MPI::Error(string("Inlet profile specification via file (C++) has not been \n") +
                      string("implemented yet for this solver.\n") +
                      string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
@@ -1177,12 +1123,10 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */
 
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (euler || ns || adj_euler || adj_ns || disc_adj)
-          solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
-        if (turbulent)
-          solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][FLOW_SOL]) solver[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
+        if (solver[iMesh][TURB_SOL]) solver[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
       }
     }
 
@@ -1220,15 +1164,15 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
   bool time_domain = (config->GetTime_Domain()); // Dynamic simulation (FSI).
 
   if (dual_time) {
     if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+    else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
       val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     else val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
   }
@@ -1280,6 +1224,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (euler || ns) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      END_SU2_OMP_PARALLEL
     }
     if (NEMO_euler || NEMO_ns) {
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1287,6 +1232,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (turbulent) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][TURB_SOL]->GetHasHybridParallel()))
       solver[MESH_0][TURB_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      END_SU2_OMP_PARALLEL
     }
     if (config->AddRadiation()) {
       solver[MESH_0][RAD_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
@@ -1598,6 +1544,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (template_solver).", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1624,6 +1571,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE :
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1643,6 +1591,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for incompressible flows.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1761,6 +1710,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1777,6 +1727,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only FDS is available for incompressible flows.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
         }
@@ -1785,6 +1736,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1834,10 +1786,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
       }
-      else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) {
+      else if (incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);
       }
-      else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ)) {
+      else if (incompressible && (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       }
       else if (config->GetRotating_Frame() == YES) {
@@ -1867,7 +1819,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       /*--- At the moment it is necessary to have the RHT equation in order to have a volumetric heat source. ---*/
       if (config->AddRadiation())
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceRadiation(nDim, nVar_Flow, config);
-      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) &&
+      else if ((incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) &&
                (config->GetEnergy_Equation() && !config->GetStreamwise_Periodic_Temperature()))
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncStreamwisePeriodic_Outlet(nDim, nVar_Flow, config);
       else
@@ -1885,6 +1837,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE :
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1895,6 +1848,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
             SU2_OMP_MASTER
             SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
+            END_SU2_OMP_MASTER
             break;
           }
 
@@ -1948,6 +1902,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1957,6 +1912,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the NEMO Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2028,6 +1984,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Riemann solver not implemented.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2043,6 +2000,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_UPWIND:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2055,6 +2013,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2106,6 +2065,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_UPWIND:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND:
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2115,6 +2075,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2159,6 +2120,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         default:
           SU2_OMP_MASTER
           SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
+          END_SU2_OMP_MASTER
           break;
       }
     }
@@ -2184,6 +2146,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     if (incompressible)
       SU2_OMP_MASTER
       SU2_MPI::Error("Convective schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
+      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -2191,6 +2154,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case NO_CONVECTIVE:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJFLOW option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -2205,6 +2169,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
 
@@ -2233,6 +2198,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION);
+              END_SU2_OMP_MASTER
               break;
           }
         }
@@ -2241,6 +2207,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the continuous adjoint Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2304,12 +2271,14 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     if (!spalart_allmaras)
       SU2_OMP_MASTER
       SU2_MPI::Error("Only the SA turbulence model can be used with the continuous adjoint solver.", CURRENT_FUNCTION);
+      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
       case NO_CONVECTIVE:
         SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJTURB option.", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2318,6 +2287,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       default:
         SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (adjoint turbulence).", CURRENT_FUNCTION);
+        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2342,65 +2312,48 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (fem) {
     /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases. ---*/
     switch (config->GetGeometricConditions()) {
-      case SMALL_DEFORMATIONS:
+      case STRUCT_DEFORMATION::SMALL:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             numerics[MESH_0][FEA_SOL][fea_term] = new CFEALinearElasticity(nDim, nVar_FEM, config);
             break;
-          case NEO_HOOKEAN:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
-            break;
           default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
+            SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
             break;
         }
         break;
-      case LARGE_DEFORMATIONS :
+      case STRUCT_DEFORMATION::LARGE:
         switch (config->GetMaterialModel()) {
-          case LINEAR_ELASTIC:
-            SU2_OMP_MASTER
+          case STRUCT_MODEL::LINEAR_ELASTIC:
             SU2_MPI::Error("Material model does not correspond to geometric conditions.", CURRENT_FUNCTION);
             break;
-          case NEO_HOOKEAN:
-            if (config->GetMaterialCompressibility() == COMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::NEO_HOOKEAN:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::COMPRESSIBLE) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
             }
             break;
-          case KNOWLES:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::KNOWLES:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
             }
             break;
-          case IDEAL_DE:
-            if (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT) {
+          case STRUCT_MODEL::IDEAL_DE:
+            if (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP) {
               numerics[MESH_0][FEA_SOL][fea_term] = new CFEM_IdealDE(nDim, nVar_FEM, config);
             } else {
-              SU2_OMP_MASTER
               SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
             }
             break;
-          default:
-            SU2_OMP_MASTER
-            SU2_MPI::Error("Material model not implemented.", CURRENT_FUNCTION);
-            break;
         }
-        break;
-      default:
-        SU2_OMP_MASTER
-        SU2_MPI::Error("Solver not implemented.", CURRENT_FUNCTION);
         break;
     }
 
     /*--- The following definitions only make sense if we have a non-linear solution. ---*/
-    if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
+    if (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
 
       /*--- This allocates a container for electromechanical effects. ---*/
 
@@ -2476,7 +2429,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
     surface_movement = new CSurfaceMovement();
     surface_movement->CopyBoundary(geometry[MESH_0], config);
-    if (config->GetTime_Marching() == HARMONIC_BALANCE){
+    if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
       iteration->SetGrid_Movement(geometry, surface_movement, grid_movement,  solver, config, 0, iInst);
     }
@@ -2568,7 +2521,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          if (!config[donor]->GetTime_Domain()) interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          else interface[donor][target] = new CDisplacementsInterface(2*nDim, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
@@ -2583,7 +2537,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           const auto fluidZone = heat_target? donor : target;
 
-          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == COMPRESSIBLE))
+          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE))
             interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
           else if (config[fluidZone]->GetWeakly_Coupled_Heat())
             interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
@@ -2628,7 +2582,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
 }
 
-void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CSurfaceMovement* surface_movement){
+void CDriver::StaticMesh_Preprocessing(const CConfig *config, CGeometry** geometry){
 
   unsigned short iMGlevel, iMGfine;
   unsigned short Kind_Grid_Movement;
@@ -2688,8 +2642,7 @@ void CDriver::StaticMesh_Preprocessing(CConfig *config, CGeometry** geometry, CS
       if (rank == MASTER_NODE)
         cout << endl << " Setting the moving wall velocities." << endl;
 
-      assert(surface_movement != nullptr && "A surface_movement was not instantiated.");
-      surface_movement->Moving_Walls(geometry[MESH_0], config, iZone, 0);
+      geometry[MESH_0]->SetWallVelocity(config, true);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
         setting the moving wall velocities for the finest mesh. ---*/
@@ -2962,23 +2915,11 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetInnerIter(Iter);
-    if (config_container[iZone]->GetTime_Marching())
+    if (config_container[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
   }
-
-//  /*--- Read the target pressure ---*/
-
-//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-//    output[ZONE_0]->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
-
-//  /*--- Read the target heat flux ---*/
-
-//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-//    output[ZONE_0]->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
 
@@ -3002,7 +2943,8 @@ void CFluidDriver::Run() {
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
 
-  unsteady = (config_container[MESH_0]->GetTime_Marching() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetTime_Marching() == DT_STEPPING_2ND);
+  unsteady = (config_container[MESH_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+             (config_container[MESH_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   /*--- Zone preprocessing ---*/
 
@@ -3085,7 +3027,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   bool harmonic_balance;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-   harmonic_balance = (config_container[iZone]->GetTime_Marching() == HARMONIC_BALANCE);
+   harmonic_balance = (config_container[iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
     if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0], surface_movement[iZone], grid_movement[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], 0, TimeIter );

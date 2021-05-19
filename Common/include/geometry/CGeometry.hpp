@@ -185,6 +185,8 @@ protected:
   unsigned long edgeColorGroupSize{1};   /*!< \brief Size of the edge groups within each color. */
   unsigned long elemColorGroupSize{1};   /*!< \brief Size of the element groups within each color. */
 
+  ColMajorMatrix<uint8_t> CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
+
 public:
   /*--- Main geometric elements of the grid. ---*/
 
@@ -257,6 +259,8 @@ public:
   vector<su2double> Orthogonality;       /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
   vector<su2double> Aspect_Ratio;        /*!< \brief Measure of dual CV aspect ratio (max face area / min face area).  */
   vector<su2double> Volume_Ratio;        /*!< \brief Measure of dual CV volume ratio (max sub-element volume / min sub-element volume). */
+
+  const ColMajorMatrix<uint8_t>& CoarseGridColor = CoarseGridColor_;  /*!< \brief Coarse grid levels, colorized. */
 
   /*!
    * \brief Constructor of the class.
@@ -882,34 +886,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetRotationalVelocity(CConfig *config, bool print = false);
+  void SetRotationalVelocity(const CConfig *config, bool print = false);
 
   /*!
    * \brief Set the rotational velocity of the points on the shroud markers to 0.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetShroudVelocity(CConfig *config);
+  void SetShroudVelocity(const CConfig *config);
 
   /*!
    * \brief Set the translational velocity at each node.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
    */
-  void SetTranslationalVelocity(CConfig *config, bool print = false);
+  void SetTranslationalVelocity(const CConfig *config, bool print = false);
+
+  /*!
+   * \brief Set the translational/rotational velocity for all moving walls.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print - Display information on screen.
+   */
+  void SetWallVelocity(const CConfig *config, bool print = false);
 
   /*!
    * \brief Set the grid velocity via finite differencing at each node.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iter - Current physical time step.
    */
-  void SetGridVelocity(CConfig *config, unsigned long iter);
+  void SetGridVelocity(const CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {}
+  inline virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {}
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
@@ -1242,13 +1252,7 @@ public:
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
-  void RegisterCoordinates(CConfig *config) const;
-
-  /*!
-   * \brief Register the coordinates of the mesh nodes as output.
-   * \param[in] config
-   */
-  void RegisterOutput_Coordinates(CConfig *config) const;
+  void RegisterCoordinates(const CConfig *config) const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
@@ -1551,7 +1555,8 @@ public:
    * \param[in] search_limit - Max degree of neighborhood considered for neighbor search, avoids excessive work in fine regions.
    * \param[in,out] values - On entry, the "raw" values, on exit, the filtered values.
    */
-  void FilterValuesAtElementCG(const vector<su2double> &filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+  void FilterValuesAtElementCG(const vector<su2double> &filter_radius,
+                               const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                const unsigned short search_limit, su2double *values) const;
 
   /*!
@@ -1601,6 +1606,13 @@ public:
    * \param config - Config
    */
   inline virtual void ComputeMeshQualityStatistics(const CConfig *config) {}
+
+  /*!
+   * \brief Color multigrid levels for visualization.
+   * \param nMGLevels - Number of levels
+   * \param geometry - The levels
+   */
+  void ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry);
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.

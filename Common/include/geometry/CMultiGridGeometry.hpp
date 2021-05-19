@@ -155,7 +155,7 @@ public:
    * \param[in] fine_mesh - Geometry container for the finer mesh level.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) override;
+  void SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.
