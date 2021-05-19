@@ -417,7 +417,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
+//  if (Wall_Function != WALL_FUNCTION::NONE) {
 //    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
 //  }
 
@@ -578,7 +578,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
   }
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
+//  if (Wall_Function != WALL_FUNCTION::NONE) {
 //    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
 //  }
 
@@ -768,16 +768,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
     if (!config->GetViscous_Wall(iMarker)) continue;
 
-    //if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-    //    (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-
     /*--- Identify the boundary by string name ---*/
 
     const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
     /*--- Jump to another BC if it is not wall function ---*/
 
-    if (config->GetWallFunction_Treatment(Marker_Tag) != STANDARD_WALL_FUNCTION)
+    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_WALL_FUNCTION)
       continue;
 
     /*--- Get the specified wall heat flux from config ---*/
