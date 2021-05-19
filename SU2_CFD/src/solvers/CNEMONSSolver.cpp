@@ -793,7 +793,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CSolver **solution_container,
                                                 CNumerics *conv_numerics,
                                                 CNumerics *sour_numerics,
-                                                CConfig *config,					
+                                                CConfig *config,          
                                                 unsigned short val_marker) {
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
@@ -806,8 +806,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar,
       RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double rho, cat_eff, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, *Di, *Vi, *Vj, *Yj, *Yst, *dYdn, SdYdn, **GradY, **dVdU;
+  su2double rho, gam, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
+  dij, *Di, *Vi, *Vj, *Yj, *Yi, *Yst, *dYdn, SdYdn, **GradY, **dVdU;
   vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
@@ -820,7 +820,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   //auto& Yst = FluidModel->GetWall_Catalycity(); Use this one
   //const auto Yst = config->GetGas_Composition();
 
-  cat_eff = config->GetCatalytic_Efficiency();
+  gam = config->GetCatalytic_Efficiency();
 
   /*--- Get universal information ---*/
   RuSI     = UNIVERSAL_GAS_CONSTANT;
@@ -835,6 +835,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
+  Yi    = new su2double[nSpecies];
   Yst   = new su2double[nSpecies];
   dYdn  = new su2double[nSpecies];
   GradY = new su2double*[nSpecies];
@@ -843,7 +844,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   dVdU = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     dVdU[iVar] = new su2double[nVar];
-   	
+    
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -864,7 +865,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       }
       dij = sqrt(dij);
 
-
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       Area = GeometryToolbox::Norm(nDim, Normal);
@@ -879,34 +879,33 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Di   = nodes->GetDiffusionCoeff(iPoint);
       eves = nodes->GetEve(iPoint);
       hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
         Yj[iSpecies]  = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
-      
-      // Naive Gamma Model
-      if (nSpecies == 5){
-        Yst[0] = (1-cat_eff) * Yj[0];
-        Yst[1] = (1-cat_eff) * Yj[1];
-        Yst[2] = Yj[2];
-        Yst[3] = cat_eff * Yj[0] + Yj[3];
-        Yst[4] = cat_eff * Yj[1] + Yj[4];
+        Yi[iSpecies]  = Vi[RHOS_INDEX+iSpecies]/Vi[RHO_INDEX];
       }
-        
+
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
       dTvedU = nodes->GetdTvedU(iPoint);
       
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        dYdn[iSpecies] = (Yst[iSpecies]-Yj[iSpecies])/dij;
-      
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Di[iSpecies]*dYdn[iSpecies];
-	
+      su2double Tw;
+
+      /*--- Identify the boundary ---*/
+      string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+      /*--- Get isothermal wall temp ----*/
+      Tw = config->GetIsothermal_Temperature(Marker_Tag);
+
+      //air_5 (MPP)
+      //TODO: Find a way to generalize
+      //Ignore NO?
+      //Figure out why Yi and Vi[RHOS]/Vi[RHO] give different answers
+      Res_Visc[0] = -gam*Vi[RHOS_INDEX+0]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+      Res_Visc[1] = -gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+      Res_Visc[3] = gam*Vi[RHOS_INDEX+0]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[0]/PI_NUMBER)*Area;
+      Res_Visc[4] = gam*Vi[RHOS_INDEX+1]/Vi[RHO_INDEX]*rho*sqrt(RuSI*Tw/2/Ms[1]/PI_NUMBER)*Area;
+
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc[iSpecies]         = -(-rho*Di[iSpecies]*dYdn[iSpecies]
-                                       +Yst[iSpecies]*SdYdn            )*Area;
         Res_Visc[nSpecies+nDim]   += (Res_Visc[iSpecies]*hs[iSpecies]  )*Area;
         Res_Visc[nSpecies+nDim+1] += (Res_Visc[iSpecies]*eves[iSpecies])*Area;
       }
