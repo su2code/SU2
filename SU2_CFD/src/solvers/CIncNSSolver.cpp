@@ -130,10 +130,19 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
             Temperature_Local     = 0.0;
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    /*--- Only "outlet"/donor periodic marker ---*/
+    if (false) {
+      cout << "iMarker: " << iMarker << endl;
+      cout << "Marker Name: " << config->GetMarker_All_TagBound(iMarker) << endl;
+      cout << "Is Periodic: " << (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) << endl;
+      cout << "Global index for periodic bc: " << config->GetMarker_All_PerBound(iMarker) << endl;
+      if (iMarker < 4) cout << "GetMarker_PerBound: " << config->GetMarker_PerBound(iMarker) << endl;
+      cout << endl;
+    }
+    /*--- Only "outlet"/donor periodic marker. GetnMarker_Periodic counts from 1: First all the inlet marker from
+  the periodic marker pairs and then the all the outlets. I.e. in order to get the outlet of the first pair
+  we need to divide the number of periodic markers by 2 and add 1 (because count starts at 1). ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-        config->GetMarker_All_PerBound(iMarker) == 2) {
+        config->GetMarker_All_PerBound(iMarker) == (config->GetnMarker_Periodic()/2 + 1)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -154,7 +163,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           Average_Density_Local += FaceArea * nodes->GetDensity(iPoint);
 
-          /*--- Due to periodicty, temperatures are equal one the inlet(1) and outlet(2) ---*/
+          /*--- Due to periodicity, temperatures are equal one the inlet(1) and outlet(2) ---*/
           Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
 
         } // if domain
