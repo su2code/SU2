@@ -85,11 +85,9 @@ protected:
 
   void projectOntoSubspace() {
 
-    /*--- save p_R to pn_R as needed for the Newton step ---*/
-    pn_R = p_R;                                           // pn_R: z in original paper
-
-    /*--- Get references ---*/
+    /*--- Get source reference ---*/
     Eigen::Map<Eigen::VectorXd> Eigen_work(work.data(),work.size());
+    /*--- Get target reference ---*/
     Eigen::Map<Eigen::VectorXd> Eigen_p(p.data(),p.size());
 
     /* --- Compute projection onto subspace of unstable/slow modes ---*/
