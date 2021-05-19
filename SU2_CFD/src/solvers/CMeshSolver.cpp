@@ -502,7 +502,14 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
+
+    if (time_domain && config->GetFSI_Simulation()) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+          LinSysSol(iPoint, iDim) = nodes->GetSolution(iPoint, iDim);
+      END_SU2_OMP_FOR
+    }
   }
   END_SU2_OMP_PARALLEL
 
@@ -593,10 +600,18 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
 
   AD::EndPassive(wasActive);
 
+  const su2double velRef = config->GetVelocity_Ref();
+  const su2double invVelRef = 1.0 / velRef;
+
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    LinSysSol.SetValZero();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        LinSysSol(iPoint, iDim) = geometry[MESH_0]->nodes->GetGridVel(iPoint)[iDim] * velRef;
+    END_SU2_OMP_FOR
   }
   END_SU2_OMP_PARALLEL
 
@@ -607,16 +622,9 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
   Solve_System(geometry[MESH_0], config);
 
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double val_vel = LinSysSol(iPoint, iDim);
-
-      /*--- Non-dimensionalize velocity ---*/
-      val_vel /= config->GetVelocity_Ref();
-
-      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
-    }
-  }
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, LinSysSol(iPoint,iDim)*invVelRef);
   END_SU2_OMP_PARALLEL
 }
 

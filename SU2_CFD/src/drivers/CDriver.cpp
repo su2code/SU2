@@ -140,27 +140,21 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
     nInst[iZone] = config_container[iZone]->GetnTimeInstances();
 
-    geometry_container[iZone]    = new CGeometry**    [nInst[iZone]];
-    iteration_container[iZone]   = new CIteration*    [nInst[iZone]];
-    solver_container[iZone]      = new CSolver***     [nInst[iZone]];
-    integration_container[iZone] = new CIntegration** [nInst[iZone]];
-    numerics_container[iZone]    = new CNumerics****  [nInst[iZone]];
-    grid_movement[iZone]         = new CVolumetricMovement* [nInst[iZone]];
+    geometry_container[iZone]    = new CGeometry**    [nInst[iZone]] ();
+    iteration_container[iZone]   = new CIteration*    [nInst[iZone]] ();
+    solver_container[iZone]      = new CSolver***     [nInst[iZone]] ();
+    integration_container[iZone] = new CIntegration** [nInst[iZone]] ();
+    numerics_container[iZone]    = new CNumerics****  [nInst[iZone]] ();
+    grid_movement[iZone]         = new CVolumetricMovement* [nInst[iZone]] ();
 
     /*--- Allocate transfer and interpolation container --- */
 
     interface_container[iZone]    = new CInterface*[nZone] ();
     interpolator_container[iZone].resize(nZone);
 
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
 
       config_container[iZone]->SetiInst(iInst);
-
-      geometry_container[iZone][iInst]    = nullptr;
-      iteration_container[iZone][iInst]   = nullptr;
-      solver_container[iZone][iInst]      = nullptr;
-      integration_container[iZone][iInst] = nullptr;
-      grid_movement[iZone][iInst]         = nullptr;
 
       /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
        based data structure is constructed, i.e. node and cell neighbors are
@@ -319,40 +313,28 @@ void CDriver::SetContainers_Null(){
   interface_types                = nullptr;
   nInst                          = nullptr;
 
-
   /*--- Definition and of the containers for all possible zones. ---*/
 
-  iteration_container            = new CIteration**[nZone];
-  solver_container               = new CSolver****[nZone];
-  integration_container          = new CIntegration***[nZone];
-  numerics_container             = new CNumerics*****[nZone];
-  config_container               = new CConfig*[nZone];
-  geometry_container             = new CGeometry***[nZone];
-  surface_movement               = new CSurfaceMovement*[nZone];
-  grid_movement                  = new CVolumetricMovement**[nZone];
-  FFDBox                         = new CFreeFormDefBox**[nZone];
+  iteration_container            = new CIteration**[nZone] ();
+  solver_container               = new CSolver****[nZone] ();
+  integration_container          = new CIntegration***[nZone] ();
+  numerics_container             = new CNumerics*****[nZone] ();
+  config_container               = new CConfig*[nZone] ();
+  geometry_container             = new CGeometry***[nZone] ();
+  surface_movement               = new CSurfaceMovement*[nZone] ();
+  grid_movement                  = new CVolumetricMovement**[nZone] ();
+  FFDBox                         = new CFreeFormDefBox**[nZone] ();
   interpolator_container.resize(nZone);
-  interface_container            = new CInterface**[nZone];
-  interface_types                = new unsigned short*[nZone];
-  output_container               = new COutput*[nZone];
-  nInst                          = new unsigned short[nZone];
+  interface_container            = new CInterface**[nZone] ();
+  interface_types                = new unsigned short*[nZone] ();
+  output_container               = new COutput*[nZone] ();
+  nInst                          = new unsigned short[nZone] ();
   driver_config                  = nullptr;
   driver_output                  = nullptr;
 
-
   for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone]               = nullptr;
-    integration_container[iZone]          = nullptr;
-    numerics_container[iZone]             = nullptr;
-    config_container[iZone]               = nullptr;
-    geometry_container[iZone]             = nullptr;
-    surface_movement[iZone]               = nullptr;
-    grid_movement[iZone]                  = nullptr;
-    FFDBox[iZone]                         = nullptr;
-    interface_container[iZone]            = nullptr;
-    interface_types[iZone]                = new unsigned short[nZone];
-    output_container[iZone]               = nullptr;
-    nInst[iZone]                          = 1;
+    interface_types[iZone] = new unsigned short[nZone];
+    nInst[iZone] = 1;
   }
 
   strcpy(runtime_file_name, "runtime.dat");
@@ -425,8 +407,7 @@ void CDriver::Postprocessing() {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (interface_container[iZone] != nullptr) {
         for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (interface_container[iZone][jZone] != nullptr)
-            delete interface_container[iZone][jZone];
+          delete interface_container[iZone][jZone];
         delete [] interface_container[iZone];
       }
     }
@@ -435,20 +416,17 @@ void CDriver::Postprocessing() {
   }
 
   if (interface_types != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (interface_types[iZone] != nullptr)
+    for (iZone = 0; iZone < nZone; iZone++)
       delete [] interface_types[iZone];
-    }
     delete [] interface_types;
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone] != nullptr) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++){
-        for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
-          if (geometry_container[iZone][iInst][iMGlevel] != nullptr) delete geometry_container[iZone][iInst][iMGlevel];
-        }
-        if (geometry_container[iZone][iInst] != nullptr) delete [] geometry_container[iZone][iInst];
+        for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++)
+          delete geometry_container[iZone][iInst][iMGlevel];
+        delete [] geometry_container[iZone][iInst];
       }
       delete [] geometry_container[iZone];
     }
@@ -469,10 +447,9 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
-      if (grid_movement[iZone][iInst] != nullptr) delete grid_movement[iZone][iInst];
-    }
-    if (grid_movement[iZone] != nullptr) delete [] grid_movement[iZone];
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      delete grid_movement[iZone][iInst];
+    delete [] grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
@@ -486,11 +463,8 @@ void CDriver::Postprocessing() {
 
   /*--- Deallocate config container ---*/
   if (config_container!= nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone] != nullptr) {
-        delete config_container[iZone];
-      }
-    }
+    for (iZone = 0; iZone < nZone; iZone++)
+      delete config_container[iZone];
     delete [] config_container;
   }
   delete driver_config;
@@ -502,17 +476,12 @@ void CDriver::Postprocessing() {
   /*--- Deallocate output container ---*/
 
   if (output_container!= nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (output_container[iZone] != nullptr) {
-        delete output_container[iZone];
-      }
-    }
+    for (iZone = 0; iZone < nZone; iZone++)
+      delete output_container[iZone];
     delete [] output_container;
   }
 
-
   delete driver_output;
-
 
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
@@ -647,7 +616,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
     unsigned short iMGlevel;
 
-    geometry = new CGeometry*[config->GetnMGLevels()+1];
+    geometry = new CGeometry*[config->GetnMGLevels()+1] ();
 
     if (!fem_solver){
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -745,7 +714,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = new CGeometry *[config->GetnMGLevels()+1];
+  geometry = new CGeometry *[config->GetnMGLevels()+1] ();
 
   /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
@@ -881,6 +850,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     if (config->GetnMGLevels() != requestedMGlevels) {
       delete geometry[iMGlevel];
+      geometry[iMGlevel] = nullptr;
       break;
     }
 
@@ -953,7 +923,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
-  geometry = new CGeometry *[config->GetnMGLevels()+1];
+  geometry = new CGeometry *[config->GetnMGLevels()+1] ();
 
   geometry[MESH_0] = new CMeshFEM_DG(geometry_aux, config);
 
@@ -1029,7 +999,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
 
-  solver = new CSolver**[config->GetnMGLevels()+1];
+  solver = new CSolver**[config->GetnMGLevels()+1] ();
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
@@ -1234,7 +1204,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   nVar_Rad              = 0,
   nVar_Heat             = 0;
 
-  numerics = new CNumerics***[config->GetnMGLevels()+1];
+  numerics = new CNumerics***[config->GetnMGLevels()+1] ();
 
   const su2double *constants = nullptr;
   su2double kine_Inf = 0.0, omega_Inf = 0.0;
@@ -1421,9 +1391,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           numerics[iMGlevel][TEMPLATE_SOL][conv_term] = new CConvective_Template(nDim, nVar_Template, config);
         break;
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (template_solver).", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1448,9 +1416,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1468,9 +1434,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLaxInc_Flow(nDim, nVar_Flow, config); break;
             case JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJSTInc_Flow(nDim, nVar_Flow, config); break;
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for incompressible flows.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1587,9 +1551,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               break;
 
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1604,18 +1566,14 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.\n Currently, only FDS is available for incompressible flows.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
         }
         break;
 
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1714,9 +1672,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -1725,9 +1681,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           switch (config->GetKind_Centered_Flow()) {
             case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config); break;
             default:
-            SU2_OMP_MASTER
             SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
-            END_SU2_OMP_MASTER
             break;
           }
 
@@ -1779,9 +1733,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               break;
 
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
 
@@ -1789,9 +1741,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         break;
 
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the NEMO Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1861,9 +1811,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         break;
 
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Riemann solver not implemented.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1877,9 +1825,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NO_UPWIND:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1890,9 +1836,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         }
         break;
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1942,9 +1886,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NO_UPWIND:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND:
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1952,9 +1894,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         }
         break;
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the transition equations.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -1997,9 +1937,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           break;
 
         default:
-          SU2_OMP_MASTER
           SU2_MPI::Error("Invalid convective scheme for the heat transfer equations.", CURRENT_FUNCTION);
-          END_SU2_OMP_MASTER
           break;
       }
     }
@@ -2023,17 +1961,13 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (adj_euler || adj_ns) {
 
     if (incompressible)
-      SU2_OMP_MASTER
       SU2_MPI::Error("Convective schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
-      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJFLOW option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
 
       case SPACE_CENTERED :
@@ -2046,9 +1980,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             case LAX : numerics[MESH_0][ADJFLOW_SOL][conv_term] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics[MESH_0][ADJFLOW_SOL][conv_term] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
 
@@ -2075,18 +2007,14 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
               }
               break;
             default:
-              SU2_OMP_MASTER
               SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
               break;
           }
         }
         break;
 
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Invalid convective scheme for the continuous adjoint Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
@@ -2148,25 +2076,19 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (adj_turb) {
 
     if (!spalart_allmaras)
-      SU2_OMP_MASTER
       SU2_MPI::Error("Only the SA turbulence model can be used with the continuous adjoint solver.", CURRENT_FUNCTION);
-      END_SU2_OMP_MASTER
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
       case NO_CONVECTIVE:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_ADJTURB option.", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
           numerics[iMGlevel][ADJTURB_SOL][conv_term] = new CUpwSca_AdjTurb(nDim, nVar_Adj_Turb, config);
         break;
       default:
-        SU2_OMP_MASTER
         SU2_MPI::Error("Convective scheme not implemented (adjoint turbulence).", CURRENT_FUNCTION);
-        END_SU2_OMP_MASTER
         break;
     }
 
