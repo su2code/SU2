@@ -61,7 +61,7 @@ protected:
   using CQuasiNewtonInvLeastSquares<Scalar_t>::R;           // basis of unstable space, nbasis many
 
   /*--- Some more storage is needed because of the handling of two separated solution update strategies ---*/
-  su2matrix<Scalar> work2;
+  su2matrix<Scalar> q,q_outer;
   su2matrix<Scalar> p;                  // projected solution
   Eigen::VectorXd p_R;                  // projected solution in terms of basis R
   Eigen::VectorXd pn_R;                 // old projected solution in terms of basis R
@@ -139,7 +139,8 @@ public:
     iSample = 0; iBasis = 0;
     nPtDomain = nptdomain? nptdomain : npt;
     work.resize(npt,nvar);
-    work2.resize(npt,nvar);
+    q.resize(npt,nvar);
+    q_outer(npt,nvar);
     p.resize(npt,nvar);
     X.clear();                              // role here: store history of delta solutions in stable space
     R.clear();                              // role here: store basis of unstable subspace
@@ -260,47 +261,61 @@ public:
     cout << " done." << endl;
   }
 
-  /*!
-   * \brief Compute and return a new approximation.
-   * \note To be used after storing the FP result.
-   */
-  const su2matrix<Scalar>& compute() {
+
+  // Also updates current q (so don't touch outside)
+  void projectSolution(bool outer) {
 
     if (iBasis > 0) {
 
-    /*--- Project solution-to-be-corrected update (loaded at work), store at p, coefficients at p_R. ---*/
+    /*--- Project solution-to-be-corrected update (loaded at address in work), store at p, coefficients at p_R. ---*/
       projectOntoSubspace();
 //      SU2_OMP_SIMD
       for (Index i = 0; i < work.size(); ++i) {
-        work.data()[i] = work.data()[i] - p.data()[i];              // work addresses: q
+        work.data()[i] = work.data()[i] - p.data()[i];      // work addresses: q (subtract uncorrected projected solution)
       }
     } else {
       for (Index i = 0; i < p.size(); ++i)
         p.data()[i] = 0.0;
     }
 
-    /*--- Keep X updated to check for new basis elements. ---*/
+    /*--- Update X to check for new basis elements. ---*/
 
     /*--- Check for need to shift left. ---*/
     if (iSample+1 == X.size()) {
       shiftHistoryLeft(X);
-      iSample--;                                                    // X[0].data not needed anymore
+      iSample--;                                      // X[0].data not needed anymore
     }
+
+    if(outer) std::swap(q,q_outer);                   // q addresses: outer q
 //    SU2_OMP_SIMD
     for (Index i = 0; i < work.size(); ++i) {
-      work2.data()[i] = work.data()[i] - work2.data()[i];           // work2 addresses: delta q
+      q.data()[i] = work.data()[i] - q.data()[i];     // q addresses: delta q
     }
-    std::swap(X[++iSample], work2);                                 // X[iSample] addresses: delta q, address under work2 is free
-    std::swap(work2, work);                                         // work2 addresses: q
+    std::swap(X[++iSample], q);                       // X[iSample] addresses: delta q, address under q is unused
+    std::swap(q, work);                               // q addresses: q ;-)
+    if(outer) std::swap(q,q_outer);                   // q_outer addresses: outer q
+  }
+
+  /*!
+   * \brief Compute and return a new approximation.
+   * \note To be used after storing the FP result.
+   */
+  const su2matrix<Scalar>& compute() {
+
+    /*--- save p_R to pn_R to prepare next Newton step ---*/
+    pn_R = p_R;                                           // pn_R: z in original paper
+
+    /*--- Compute new projection solution p, its coefficients p_R, and new delta solution q ---*/
+    projectSolution(false);
 
     /*--- Newton correction for the slow/unstable part of the solution update. ---*/
     if (iBasis > 0)
       updateProjectedSolution();
 
-    /*--- Set the corrected new solution in work2---*/
+    /*--- Set the corrected new solution at address work, use work2 ---*/
 //    SU2_OMP_SIMD
     for (Index i = 0; i < work.size(); ++i) {
-      work.data()[i] = work2.data()[i] + p.data()[i];               // work addresses: corrected solution
+      work.data()[i] = q.data()[i] + p.data()[i];         // work addresses: corrected solution (add corrected projected solution)
     }
 
     return CQuasiNewtonInvLeastSquares<Scalar_t>::FPresult();

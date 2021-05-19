@@ -186,7 +186,7 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
     if(iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
   }
 
-  /*--- Use (subspace) Newton driver to improve the solution. ---*/
+  /*--- Newton correction for the slow/unstable part (in each iteration). ---*/
 
   if (nNewtonBasisSamples[iZone]) {
 
@@ -197,14 +197,8 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
      * ---*/
 
     GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
-    if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
-      if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
-        fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
-        NewtonUpdateWaitIterations = 0;
-      }
-    }
     fixPtSubspaceCorrector[iZone].compute();
-    if(iInnerIter) SetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+    SetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
   }
 
   /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
@@ -309,6 +303,10 @@ void CDiscAdjMultizoneDriver::Run() {
     return;
   }
 
+  // TODO: we might want to keep basis vectors across outer loops (especially when solution updates become small)?
+  // fixPtSubspaceCorrector[iZone].reset();
+  NewtonUpdateWaitIterations = 0;
+
   /*--- Loop over the number of outer iterations. ---*/
 
   for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
@@ -366,10 +364,6 @@ void CDiscAdjMultizoneDriver::Run() {
         FixPtCorrector[iZone].reset();
         if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, FixPtCorrector[iZone]);
       }
-
-      // TODO: we might want to keep basis vectors across outer loops (especially when solution updates become small)?
-//        fixPtSubspaceCorrector[iZone].reset();
-      NewtonUpdateWaitIterations = 0;
 
       if (!config_container[iZone]->GetNewtonKrylov() || !no_restart || nInnerIter[iZone] < KrylovMinIters) {
 
@@ -461,6 +455,16 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
           Update_Cross_Term(iZone, jZone);
+        }
+      }
+
+      if (nNewtonBasisSamples[iZone]) {
+        if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
+          GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+          if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
+            fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
+            NewtonUpdateWaitIterations = 0;
+          }
         }
       }
 

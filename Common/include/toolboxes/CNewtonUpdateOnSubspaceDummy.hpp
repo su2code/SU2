@@ -74,6 +74,8 @@ public:
    */
   void computeProjectedJacobian(unsigned short iZone, su2matrix<int>& InputIndices, su2matrix<int>& OutputIndices) {}
 
+  void projectSolution() {}
+
   /*!
    * \brief Compute and return a new approximation.
    * \note To be used after storing the FP result.
