@@ -103,7 +103,7 @@ using su2double = codi::RealForward;
 using su2double = double;
 #endif
 
-/*--- This type can be used for (rare) compatiblity cases or for
+/*--- This type can be used for (rare) compatibility cases or for
  * computations that are intended to be (always) passive. ---*/
 using passivedouble = double;
 
