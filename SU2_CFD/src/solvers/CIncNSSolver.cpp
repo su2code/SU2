@@ -103,6 +103,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (wall_functions) {
     SU2_OMP_MASTER
     SetTauWall_WF(geometry, solver_container, config);
+    END_SU2_OMP_MASTER
     // nijso: we have to set this as well??
     // seteddyviscfirstpoint
     SU2_OMP_BARRIER
@@ -865,6 +866,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         // ...? 
 
       }
+      END_SU2_OMP_FOR
     //}
   }
 
