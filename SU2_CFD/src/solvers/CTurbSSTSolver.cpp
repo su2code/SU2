@@ -374,6 +374,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetTurbVars_WF(geometry, solver_container, config, val_marker);
+    END_SU2_OMP_MASTER
+    
     SU2_OMP_BARRIER
     return;
   }
