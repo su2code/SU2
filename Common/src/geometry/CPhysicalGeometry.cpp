@@ -8399,11 +8399,11 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
      are close to 90 degress, poor values are typically below 20 degress. ---*/
 
     if (nodes->GetDomain(iPoint)) {
-      //Orthogonality[iPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
+      Orthogonality[iPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[iPoint]   += area;
     }
     if (nodes->GetDomain(jPoint)) {
-      //Orthogonality[jPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
+      Orthogonality[jPoint] += area*(90.0 - acos(dotProduct)*180.0/PI_NUMBER);
       SurfaceArea[jPoint]   += area;
     }
 

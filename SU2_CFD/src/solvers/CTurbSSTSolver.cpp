@@ -267,7 +267,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     su2double kine  = nodes->GetSolution(iPoint,0);
     su2double omega = nodes->GetSolution(iPoint,1);
-    if ((VorticityMag*F2==0)) {VorticityMag=1;F2=1;}
     su2double zeta  = min(1.0/omega, a1/(VorticityMag*F2));
     su2double muT   = max(rho*kine*zeta,0.0);
 
