@@ -46,7 +46,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
 
-  su2double thermal_conductivity;
+  su2double thermal_conductivity = 0.0;
   su2double heat_flux_density = 0.0;
   su2double conductivity_over_dist = 0.0;
 
