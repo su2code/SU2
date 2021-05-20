@@ -42,88 +42,62 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   const auto nDim = donor_geometry->GetnDim();
 
-  su2double Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
-      thermal_diffusivity, thermal_conductivity=0.0, thermal_conductivityND,
-      heat_flux_density=0.0, conductivity_over_dist=0.0;
-
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
-
   const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
-  const bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION) ||
-                             (donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
+  su2double thermal_conductivity;
+  su2double heat_flux_density;
+  su2double conductivity_over_dist;
+
+  /*--- Compute distance of donor point to PointNormal for T-gradient/heatflux computation ---*/
   const auto Coord = donor_geometry->nodes->GetCoord(Point_Donor);
   const auto PointNormal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   const auto Coord_Normal = donor_geometry->nodes->GetCoord(PointNormal);
 
-  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0;
-
-  su2double Edge_Vector[3] = {0.0};
+  su2double Edge_Vector[MAXNDIM] = {0.0};
   GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
-  su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
+  const auto dist = GeometryToolbox::Norm(nDim, Edge_Vector);
 
   /*--- Retrieve temperature solution and its gradient ---*/
 
-  if (compressible_flow) {
+  const auto Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor);
+  const auto Tnormal = donor_solution->GetNodes()->GetTemperature(PointNormal);
 
-    Twall   = donor_solution->GetNodes()->GetPrimitive(Point_Donor,0);
-    Tnormal = donor_solution->GetNodes()->GetPrimitive(PointNormal,0);
-
-    dTdn = (Twall - Tnormal)/dist;
-  }
-  else if (incompressible_flow) {
-
-    Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor);
-    Tnormal = donor_solution->GetNodes()->GetTemperature(PointNormal);
-
-    dTdn = (Twall - Tnormal)/dist;
-  }
-  else if (heat_equation) {
-    Twall   = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
-    Tnormal = donor_solution->GetNodes()->GetSolution(PointNormal,0);
-
-    // TODO: Check if these improve accuracy, if needed at all
-    //    const auto Normal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
-    //    su2double Area = GeometryToolbox::Norm(nDim, Normal);
-    //    for (iDim = 0; iDim < nDim; iDim++) {
-    //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
-    //    }
-
-    dTdn = (Twall - Tnormal)/dist;
-  }
-  else {
-
-    SU2_MPI::Error("Transfer of conjugate heat variables failed (non-supported donor solver).", CURRENT_FUNCTION);
-  }
+  const auto dTdn = (Twall - Tnormal)/dist;
+  // TODO: Check if these improve accuracy, if needed at all
+  //    const auto Normal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
+  //    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+  //    for (iDim = 0; iDim < nDim; iDim++) {
+  //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
+  //    }
 
   /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) ---*/
 
   if (compressible_flow) {
 
-    su2double Gamma         = donor_config->GetGamma();
-    su2double Gas_Constant  = donor_config->GetGas_ConstantND();
-    su2double Cp            = (Gamma / (Gamma - 1.0)) * Gas_Constant;
+    const auto Gamma = donor_config->GetGamma();
+    const auto Gas_Constant = donor_config->GetGas_ConstantND();
+    const auto Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
 
-    Prandtl_Lam             = donor_config->GetPrandtl_Lam();
-    laminar_viscosity       = donor_solution->GetNodes()->GetLaminarViscosity(Point_Donor); // TDE check for consistency
-    Cp                      = (Gamma / (Gamma - 1.0)) * Gas_Constant;
+    const auto Prandtl_Lam = donor_config->GetPrandtl_Lam();
+    const auto laminar_viscosity = donor_solution->GetNodes()->GetLaminarViscosity(Point_Donor); // TDE check for consistency
 
-    thermal_conductivityND  = Cp*(laminar_viscosity/Prandtl_Lam);
-    heat_flux_density       = thermal_conductivityND*dTdn;
+    const auto thermal_conductivityND = Cp*(laminar_viscosity/Prandtl_Lam);
+    heat_flux_density = thermal_conductivityND*dTdn;
 
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
         (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-      thermal_conductivity    = thermal_conductivityND*donor_config->GetViscosity_Ref();
-      conductivity_over_dist  = thermal_conductivity/dist;
+      thermal_conductivity   = thermal_conductivityND*donor_config->GetViscosity_Ref();
+      conductivity_over_dist = thermal_conductivity/dist;
     }
   }
   else if (incompressible_flow) {
 
     const auto iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
-    thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
+    const auto thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
     heat_flux_density       = thermal_conductivityND*dTdn;
 
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
@@ -140,24 +114,25 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                                  *donor_config->GetViscosity_Ref();
           break;
 
-        default:
+        case CONDUCTIVITYMODEL::POLYNOMIAL:
+          SU2_MPI::Error("Polynomial Conductivity model not implemented for CHT interface.", CURRENT_FUNCTION);
           break;
       }
 
       conductivity_over_dist  = thermal_conductivity/dist;
     }
   }
-  else if (heat_equation) {
+  else if (donor_config->GetHeatProblem()) {
 
     /*--- Heat solver stand-alone case ---*/
 
-    thermal_diffusivity     = donor_config->GetThermalDiffusivity_Solid();
-    heat_flux_density       = thermal_diffusivity*dTdn;
+    const auto thermal_diffusivity = donor_config->GetThermalDiffusivity_Solid();
+    heat_flux_density = thermal_diffusivity*dTdn;
 
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
         (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-      rho_cp_solid            = donor_config->GetSpecific_Heat_Cp()*donor_config->GetDensity_Solid();
+      const auto rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetDensity_Solid();
       conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
     }
   }
