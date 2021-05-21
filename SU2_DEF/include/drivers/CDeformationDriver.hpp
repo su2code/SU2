@@ -27,7 +27,8 @@
  */
 
 #pragma once
-#include "../../../SU2_CFD/include/drivers/CDriver.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 
 /*!
  * \class CDeformationDriver
@@ -35,13 +36,11 @@
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
  */
-class CDeformationDriver : public CDriver {
+class CDeformationDriver {
 protected:
-
-  unsigned long TimeIter;
+  char config_file_name[MAX_STRING_SIZE];
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -53,11 +52,22 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDeformationDriver(void) override;
+  ~CDeformationDriver(void);
 
   /*!
    * \brief [Overload] Launch the computation for single-zone problems.
    */
   void RunSolver();
+
+protected:
+    /*!
+     * \brief Init_Containers
+     */
+    void SetContainers_Null();
+
+    /*!
+     * \brief Read in the config and mesh files.
+     */
+    void Input_Preprocessing(CConfig **&config, CConfig *&driver_config);
 
 };

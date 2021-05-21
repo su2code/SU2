@@ -12,7 +12,7 @@
  * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
+ * modify it under the terms of the GNU Lesser/ General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
@@ -28,18 +28,25 @@
 
 #include "../../include/drivers/CDeformationDriver.hpp"
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../SU2_CFD/include/output/COutput.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
 using namespace std;
 
-CDeformationDriver::CDeformationDriver(char* confFile,
-                       SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                          1,
-                                                          MPICommunicator,
-                                                          false) {
+CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator) {
 
-  /*--- Initialize the counter for TimeIter ---*/
-  TimeIter = 0;
+  /*--- Initialize Medipack (must also be here so it is initialized from python) ---*/
+  #ifdef HAVE_MPI
+    #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+      SU2_MPI::Init_AMPI();
+    #endif
+  #endif
+
+    SU2_MPI::SetComm(MPICommunicator);
+
+  /*--- Copy the config filename ---*/
+  strcpy(config_file_name, confFile);
 }
 
 CDeformationDriver::~CDeformationDriver(void) {
@@ -48,15 +55,12 @@ CDeformationDriver::~CDeformationDriver(void) {
 
 void CDeformationDriver::RunSolver() {
 
-
-  unsigned short iZone, nZone = SINGLE_ZONE;
+    unsigned short iZone, nZone = SINGLE_ZONE;
     su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-    char config_file_name[MAX_STRING_SIZE];
-    int rank, size;
     string str;
 
-    rank = SU2_MPI::GetRank();
-    size = SU2_MPI::GetSize();
+    int rank = SU2_MPI::GetRank();
+    int size = SU2_MPI::GetSize();
 
     /*--- Pointer to different structures that will be used throughout
      the entire code ---*/
@@ -79,7 +83,7 @@ void CDeformationDriver::RunSolver() {
 
     /*--- Definition of the containers per zones ---*/
 
-    config_container = new CConfig*[nZone];
+    config_container   = new CConfig*[nZone];
     geometry_container = new CGeometry*[nZone];
     surface_movement   = new CSurfaceMovement*[nZone];
     grid_movement      = new CVolumetricMovement*[nZone];
@@ -215,9 +219,7 @@ void CDeformationDriver::RunSolver() {
       /*--- Preprocess history --- */
 
       output[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
-
     }
-
 
     /*--- Surface grid deformation using design variables ---*/
 
