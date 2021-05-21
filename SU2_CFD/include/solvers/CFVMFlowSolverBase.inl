@@ -2735,9 +2735,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           sumJhs  += Flux_Tensor[nSpecies+nDim][iDim]*UnitNormal[iDim];
         }
 
-        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven; //+ sumJhs;
+        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;// + sumJhs;
 
-        //cout << "ktr: " << thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven << endl;
+        //cout << "qtr + qve: " << thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven << endl;
         //cout << "sumJhs: " << sumJhs << endl;
 
           if (Flux_Tensor) {
