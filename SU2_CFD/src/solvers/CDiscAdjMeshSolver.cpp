@@ -94,32 +94,29 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
   }
   END_SU2_OMP_FOR
 
-  /*--- Set indices to zero ---*/
-
-  RegisterVariables(geometry, config, true);
-
 }
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
-  /*--- Register reference mesh coordinates ---*/
-  bool input = true;
-  direct_solver->GetNodes()->Register_MeshCoord(input);
-
-}
-
-void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
-
   SU2_OMP_MASTER {
-    /*--- Register boundary displacements as input ---*/
-    bool input = true;
-    direct_solver->GetNodes()->Register_BoundDisp(input);
+    /*--- Register reference mesh coordinates ---*/
+    direct_solver->GetNodes()->Register_MeshCoord();
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
-void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
+
+  SU2_OMP_MASTER {
+    /*--- Register boundary displacements as input. ---*/
+    direct_solver->GetNodes()->Register_BoundDisp();
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
+}
+
+void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
@@ -169,7 +166,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CS
   const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/
-  ExtractAdjoint_Solution(geometry, config);
+  ExtractAdjoint_Solution(geometry, config, false);
 
   /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
   ExtractAdjoint_Variables(geometry, config);

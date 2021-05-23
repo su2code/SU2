@@ -38,8 +38,7 @@
  */
 class CDiscAdjFEASolver final : public CSolver {
 private:
-  static constexpr size_t MAXNVAR = 3;  /*!< \brief Max number of variables, for static arrays. */
-
+  static constexpr size_t MAXNVAR = 9;  /*!< \brief Max number of variables, for static arrays. */
   unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
 
@@ -181,7 +180,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.

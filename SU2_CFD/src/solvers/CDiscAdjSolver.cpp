@@ -162,10 +162,10 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(true, push_index);
 
   if (time_n_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n();
+    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
 
   if (time_n1_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n1();
+    direct_solver->GetNodes()->RegisterSolution_time_n1(push_index);
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -300,7 +300,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(false, push_index);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
@@ -374,9 +374,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-      nodes->Set_Solution_time_n(iPoint,Solution);
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      }
 
+      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
@@ -386,9 +391,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
-      direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
-      nodes->Set_Solution_time_n1(iPoint,Solution);
+      if(config->GetMultizone_Problem()) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      }
 
+      if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
   }
@@ -465,8 +475,10 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                           config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool multizone = config->GetMultizone_Problem();
 
-  su2double Solution[MAXNVAR] = {0.0}; /*!< \brief Local container to manipulate the adjoint solution. */
+  /*--- Local container to manipulate the adjoint solution. ---*/
+  su2double Solution[MAXNVAR] = {0.0};
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -477,20 +489,18 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
-    if (dual_time) {
+    if (dual_time && !multizone) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         Solution[iVar] += nodes->GetDual_Time_Derivative(iPoint,iVar);
       }
     }
 
     /*--- Set the adjoint values of the primal solution. ---*/
-    if(config->GetMultizone_Problem()) {
+    if (multizone)
       direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
+    else
       direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
-    }
-  } // for iPoint
+  }
   END_SU2_OMP_FOR
 }
 
@@ -526,7 +536,6 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
       if (config->GetSens_Remove_Sharp() && geometry->nodes->GetSharpEdge_Distance(iPoint) < eps) {
         Sensitivity = 0.0;
       }
-
       if (!time_stepping) {
         nodes->SetSensitivity(iPoint,iDim, Sensitivity);
       } else {
