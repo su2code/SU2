@@ -3955,7 +3955,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
         });
       NdFlattener<2> roughness_local(roughness_f);
       // [rank][iZone][iMarker] -> roughness
-      NdFlattener<3> roughness_global(Get_Nd_MPI_Env(), roughness_local);
+      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
       // use it to update roughnesses
       for(int jZone=0; jZone<nZone; jZone++){
         if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){

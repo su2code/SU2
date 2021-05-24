@@ -151,16 +151,36 @@
 template<size_t K, typename Data_t_=su2double, typename Index_t_=unsigned long>
 class NdFlattener;
 
-namespace helpers {
-  template<typename MPI_Allgatherv_t, typename MPI_Datatype_t, typename MPI_Communicator_t>
-  struct NdFlattener_MPI_Environment {
-    MPI_Allgatherv_t MPI_Allgatherv_fun;
-    MPI_Datatype_t mpi_data;
-    MPI_Datatype_t mpi_index;
-    MPI_Communicator_t comm;
-    int rank; int size;
-  };
+/*! \struct Nd_MPI_Environment
+ * \brief Contains information for the collective communication of NdFlatteners.
+ *
+ * The default arguments in the constructor are chosen in a sensible way:
+ * - To communicate su2double data, just call ND_MPI_Environment().
+ * - To communicate unsigned long data, call Nd_MPI_Environment(MPI_UNSIGNED_LONG).
+ */
+struct Nd_MPI_Environment {
+  using MPI_Allgather_t = decltype(&(SU2_MPI::Allgather));
+  using MPI_Allgatherv_t = decltype(&(SU2_MPI::Allgatherv));
+  using MPI_Datatype_t = decltype(MPI_INT);
+  using MPI_Communicator_t = typename SU2_MPI::Comm;
+  MPI_Datatype_t mpi_data;
+  MPI_Datatype_t mpi_index;
+  MPI_Communicator_t comm;
+  MPI_Allgather_t MPI_Allgather_fun;
+  MPI_Allgatherv_t MPI_Allgatherv_fun;
+  int rank; int size;
+  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE,
+                     MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
+                     MPI_Communicator_t comm = SU2_MPI::GetComm(),
+                     MPI_Allgather_t MPI_Allgather_fun = &(SU2_MPI::Allgather),
+                     MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv)):
+    mpi_data(mpi_data), mpi_index(mpi_index), comm(comm),
+    MPI_Allgather_fun(MPI_Allgather_fun), MPI_Allgatherv_fun(MPI_Allgatherv_fun),
+    rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize())
+    {}
+};
 
+namespace helpers {
   /*! \class IndexAccumulator
    * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
    * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
@@ -283,18 +303,6 @@ namespace helpers {
   };
 
 } // namespace helpers
-
-inline helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
-Get_Nd_MPI_Env() {
-  helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
-  mpi_env.MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv);
-  mpi_env.mpi_index = MPI_UNSIGNED_LONG;
-  mpi_env.mpi_data = MPI_DOUBLE;
-  mpi_env.comm=SU2_MPI::GetComm();
-  SU2_MPI::Comm_rank(mpi_env.comm, &(mpi_env.rank));
-  SU2_MPI::Comm_size(mpi_env.comm, &(mpi_env.size));
-  return mpi_env;
-}
 
 /*!
  * \class NdFlattener
@@ -581,8 +589,7 @@ protected:
    * \param[in] displs - {0,1,...,size-1}
    * \param[in] ones - {1,1,...,1}
    */
-  template<typename MPI_Environment_type>
-  void count_g(MPI_Environment_type const& mpi_env,
+  void count_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
          CurrentLayer const& local_version,
          int const* displs, int const* ones )
@@ -604,8 +611,7 @@ protected:
    * \param[in] Nodes_all - [k][r] is the number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be sent to the other processes
    */
-  template<typename MPI_Environment_type>
-  void set_g(MPI_Environment_type const& mpi_env,
+  void set_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
          CurrentLayer const& local_version )
   { 
@@ -751,8 +757,7 @@ protected:
   
   /*=== Construct with Allgatherv ===*/
 protected:
-  template<typename MPI_Environment_type>
-  void count_g(MPI_Environment_type const& mpi_env,
+  void count_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
          CurrentLayer const& local_version,
          int const* displs, int const* ones)
@@ -767,8 +772,7 @@ protected:
     }
   }
 
-  template<typename MPI_Environment_type>
-  void set_g(MPI_Environment_type const& mpi_env,
+  void set_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
          CurrentLayer const& local_version )
   { 
