@@ -599,8 +599,8 @@ protected:
          CurrentLayer const& local_version )
   { 
 
-    int* Nodes_all_K_as_int = new int[mpi_env.size];
-    int* Nodes_all_k_cumulated = new int[mpi_env.size+1]; // [r] is number of nodes in the current layer, summed over all processes with rank below r 
+    std::vector<int> Nodes_all_K_as_int(mpi_env.size);
+    std::vector<int> Nodes_all_k_cumulated(mpi_env.size+1); // [r] is number of nodes in the current layer, summed over all processes with rank below r
     // plus one. Used as displacements in Allgatherv, but we do not want to transfer the initial zeros and rather the last element of indices, 
     // which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.
     Nodes_all_k_cumulated[0] = 1;
@@ -608,7 +608,9 @@ protected:
       Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
       Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
     }
-    mpi_env.MPI_Allgatherv_fun( local_version.indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version.indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index,
+      indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(), mpi_env.mpi_index,
+      mpi_env.comm );
     // shift indices 
     for(int r=1; r<mpi_env.size; r++){
       Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
@@ -618,8 +620,6 @@ protected:
         indices[ i ] += shift;
       }
     }
-    delete[] Nodes_all_K_as_int;
-    delete[] Nodes_all_k_cumulated;
 
     Base::set_g(mpi_env, Nodes_all, local_version);
   }
@@ -760,17 +760,17 @@ protected:
   { 
 
 
-    int* Nodes_all_0_as_int = new int[mpi_env.size];
-    int* Nodes_all_0_cumulated = new int[mpi_env.size+1];
+    std::vector<int> Nodes_all_0_as_int(mpi_env.size);
+    std::vector<int> Nodes_all_0_cumulated(mpi_env.size+1);
     Nodes_all_0_cumulated[0] = 0;
     for(int r=0; r<mpi_env.size; r++){
       Nodes_all_0_cumulated[r+1] = Nodes_all_0_cumulated[r] + Nodes_all[0][r];
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv_fun( local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
-    delete[] Nodes_all_0_as_int;
-    delete[] Nodes_all_0_cumulated;
+    mpi_env.MPI_Allgatherv_fun( local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data,
+      data_.data(), Nodes_all_0_as_int.data(), Nodes_all_0_cumulated.data(), mpi_env.mpi_data,
+      mpi_env.comm );
   }
 
 
