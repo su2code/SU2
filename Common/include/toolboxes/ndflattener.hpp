@@ -33,6 +33,7 @@
 #include <sstream>
 #include <vector>
 #include "../parallelization/mpi_structure.hpp"
+#include "../containers/C2DContainer.hpp"
 
 // --- Usage
 /*! \page ndflattener_usage Usage of NdFlattener
@@ -522,11 +523,8 @@ public:
     MPI_Environment_type const& mpi_env,
     Base const& local_version
   ) {
-    Index_t** Nodes_all = new Index_t*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
-    for(size_t k=0; k<K; k++)
-      Nodes_all[k] = nullptr;
-    Nodes_all[K-1] = new Index_t[mpi_env.size]; // {1, 1, ..., 1}
-    for(int r=0; r<mpi_env.size; r++){
+    su2matrix<Index_t> Nodes_all(K,mpi_env.size); // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
+    for(int r=0; r<mpi_env.size; r++){ // the first index decides on the rank, so there is exactly one node per rank
       nNodes += Nodes_all[K-1][r] = 1;
     }
     Base::count_g(mpi_env, Nodes_all, local_version); // set the lower layers' nNodes and Nodes_all[k]
@@ -539,10 +537,6 @@ public:
     }
     Base::set_g(mpi_env, Nodes_all, local_version);
     
-    for(size_t k=0; k<K; k++){
-      delete[] Nodes_all[k];
-    }
-    delete[] Nodes_all;
   }
 
   /*! \brief Refresh the data by MPI collective communication.
@@ -559,11 +553,9 @@ public:
     MPI_Environment_type const& mpi_env,
     Base const& local_version
   ) {
-    Index_t* Nodes_all_0 = nullptr;
-    LowestLayer::count_g(mpi_env, &Nodes_all_0, local_version);
-    LowestLayer::set_g(mpi_env, &Nodes_all_0, local_version);
-
-    delete[] Nodes_all_0; // allocated by count_g
+    su2matrix<Index_t> Nodes_all_0(1,mpi_env.size);
+    LowestLayer::count_g(mpi_env, Nodes_all_0, local_version);
+    LowestLayer::set_g(mpi_env, Nodes_all_0, local_version);
   }
 
 protected:
@@ -574,11 +566,9 @@ protected:
    * \param[in] local_version - local instance to be send to the other processes
    */
   void count_g(Nd_MPI_Environment const& mpi_env,
-         Index_t** Nodes_all,
+         su2matrix<Index_t>& Nodes_all,
          CurrentLayer const& local_version )
   { 
-    assert( Nodes_all[K-1]==nullptr);
-    Nodes_all[K-1] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
     mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], 1, mpi_env.mpi_index, mpi_env.comm );
@@ -595,7 +585,7 @@ protected:
    * \param[in] local_version - local instance to be sent to the other processes
    */
   void set_g(Nd_MPI_Environment const& mpi_env,
-         Index_t** Nodes_all,
+         su2matrix<Index_t> const& Nodes_all,
          CurrentLayer const& local_version )
   { 
 
@@ -741,11 +731,9 @@ protected:
   /*=== Construct with Allgatherv ===*/
 protected:
   void count_g(Nd_MPI_Environment const& mpi_env,
-         Index_t** Nodes_all,
+         su2matrix<Index_t>& Nodes_all,
          CurrentLayer const& local_version )
   { 
-    assert( Nodes_all[0]==nullptr);
-    Nodes_all[0] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
     mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], 1, mpi_env.mpi_index, mpi_env.comm );
@@ -755,7 +743,7 @@ protected:
   }
 
   void set_g(Nd_MPI_Environment const& mpi_env,
-         Index_t** Nodes_all,
+         su2matrix<Index_t> const& Nodes_all,
          CurrentLayer const& local_version )
   { 
 
