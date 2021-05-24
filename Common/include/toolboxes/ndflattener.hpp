@@ -186,10 +186,6 @@ namespace helpers {
     using Nd_t = Nd_t_;
     using Index_t = typename Nd_t::Index_t;
 
-    /*== Conditional is part of the standard library since C++14, keep it here for C++11 compatibility. ==*/
-    template<bool B, class T, class F> struct conditional { typedef T type; };
-    template<class T, class F> struct conditional<false, T, F> { typedef F type; };
-
   protected:
     Nd_t* nd; /*!< \brief The accessed NdFlattener. */
     const Index_t offset; /*!< \brief Index in the currently accessed layer. */
@@ -211,11 +207,11 @@ namespace helpers {
 
     /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
      */
-    using Nd_Base_t = typename Base::template conditional<
+    using Nd_Base_t = su2conditional_t<
       std::is_const<Nd_t>::value,
       const typename Nd_t::Base,
       typename Nd_t::Base
-    >::type;
+    >;
     /*! Return type of operator[]. */
     using LookupType = IndexAccumulator<N-1, Nd_Base_t>;
 
@@ -281,11 +277,11 @@ namespace helpers {
     /*! Return type of operator[].
      * \details Data type of NdFlattener, but do also preserve constness.
      */
-    using LookupType = typename Base::template conditional<
+    using LookupType = su2conditional_t<
       std::is_const<Nd_t>::value,
       const typename Nd_t::Data_t,
       typename Nd_t::Data_t
-    >::type;
+    >;
 
     /*! \brief Return (possibly const) reference to the corresponding data element.
      * \param[in] i - Last index.
