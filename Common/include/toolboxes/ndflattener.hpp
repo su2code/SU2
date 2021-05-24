@@ -148,7 +148,7 @@
  */
 
 
-template<size_t K, typename Data_t=su2double, typename Index=unsigned long>
+template<size_t K, typename Data_t_=su2double, typename Index_t_=unsigned long>
 class NdFlattener;
 
 namespace helpers {
@@ -313,13 +313,13 @@ Get_Nd_MPI_Env() {
  */
 
 
-template<size_t _K, typename Data_t_, typename Index_>
-class NdFlattener: public NdFlattener<_K-1,Data_t_,Index_>{
+template<size_t K_, typename Data_t_, typename Index_t_>
+class NdFlattener: public NdFlattener<K_-1,Data_t_,Index_t_>{
 
 public:
-  static constexpr size_t K = _K;
+  static constexpr size_t K = K_;
   using Data_t = Data_t_;
-  using Index_t = Index_;
+  using Index_t = Index_t_;
 
   using Base = NdFlattener<K-1,Data_t,Index_t>;
   using CurrentLayer = NdFlattener<K,Data_t,Index_t>;
@@ -653,12 +653,12 @@ public:
   }
 };
 
-template<typename Data_t_, typename _Index>
-class NdFlattener<1, Data_t_, _Index> {
+template<typename Data_t_, typename Index_t_>
+class NdFlattener<1, Data_t_, Index_t_> {
 public:
   static constexpr size_t K = 1;
   using Data_t = Data_t_;
-  using Index_t = _Index;
+  using Index_t = Index_t_;
 
   using CurrentLayer = NdFlattener<1, Data_t, Index_t>;
   using LowestLayer = CurrentLayer;
