@@ -172,7 +172,8 @@ struct Nd_MPI_Environment {
   MPI_Allgatherv_t MPI_Allgatherv_fun;
   int rank;
   int size;
-  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE, MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
+  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE,
+                     MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
                      MPI_Communicator_t comm = SU2_MPI::GetComm(),
                      MPI_Allgather_t MPI_Allgather_fun = &(SU2_MPI::Allgather),
                      MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv))
@@ -232,7 +233,11 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
 
   /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
    */
-  using Nd_Base_t = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Base, typename Nd_t::Base>;
+  using Nd_Base_t = su2conditional_t<
+    std::is_const<Nd_t>::value,
+    const typename Nd_t::Base,
+    typename Nd_t::Base
+  >;
   /*! Return type of operator[]. */
   using LookupType = IndexAccumulator<N - 1, Nd_Base_t>;
   using Base::nd;
@@ -267,7 +272,11 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
   /*! Return type of operator[].
    * \details Data type of NdFlattener, but do also preserve constness.
    */
-  using LookupType = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Data_t, typename Nd_t::Data_t>;
+  using LookupType = su2conditional_t<
+    std::is_const<Nd_t>::value,
+    const typename Nd_t::Data_t,
+    typename Nd_t::Data_t
+  >;
   using Base::nd;
   using Base::offset;
   using Base::size;
@@ -503,13 +512,14 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
    */
   template <typename MPI_Environment_type>
   void initialize(MPI_Environment_type const& mpi_env, Base const& local_version) {
-    su2matrix<Index_t> Nodes_all(
-        K, mpi_env.size);  // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
-    for (int r = 0; r < mpi_env.size;
-         r++) {  // the first index decides on the rank, so there is exactly one node per rank
+    // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
+    su2matrix<Index_t> Nodes_all(K, mpi_env.size);
+    // the first index decides on the rank, so there is exactly one node per rank
+    for (int r = 0; r < mpi_env.size; r++) {
       nNodes += Nodes_all[K - 1][r] = 1;
     }
-    Base::count_g(mpi_env, Nodes_all, local_version);  // set the lower layers' nNodes and Nodes_all[k]
+    // set the lower layers' nNodes and Nodes_all[k]
+    Base::count_g(mpi_env, Nodes_all, local_version);
 
     allocate();
 
@@ -563,9 +573,9 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
   void set_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t> const& Nodes_all,
              CurrentLayer const& local_version) {
     std::vector<int> Nodes_all_K_as_int(mpi_env.size);
-    std::vector<int> Nodes_all_k_cumulated(
-        mpi_env.size + 1);  // [r] is number of nodes in the current layer, summed over all processes with rank below r
-    // plus one. Used as displacements in Allgatherv, but we do not want to transfer the initial zeros and rather the
+    std::vector<int> Nodes_all_k_cumulated( mpi_env.size + 1);
+    //< [r] is the number of nodes in the current layer, summed over all processes with rank below r, **plus one**.
+    // Used as displacements in Allgatherv, as we do not want to transfer the initial zeros, but we want to transfer the
     // last element of indices, which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.
     Nodes_all_k_cumulated[0] = 1;
     for (int r = 0; r < mpi_env.size; r++) {
