@@ -184,12 +184,11 @@ namespace helpers {
     using Index_t = typename Nd_t::Index_t;
 
   protected:
-    Nd_t* nd; /*!< \brief The accessed NdFlattener. */
+    Nd_t& nd; /*!< \brief The accessed NdFlattener. */
     const Index_t offset; /*!< \brief Index in the currently accessed layer. */
     const Index_t size_; /*!< \brief Exclusive upper bound for the next index. */
 
-    //const typename Nd_type::Index size; /*!< \brief Exclusive upper bound for the next index. */
-    IndexAccumulator_Base(Nd_t* nd, Index_t offset, Index_t size):
+    IndexAccumulator_Base(Nd_t& nd, Index_t offset, Index_t size):
       nd(nd), offset(offset), size_(size) {}
 
     /*! \brief Return exclusive upper bound for next index.
@@ -220,6 +219,7 @@ namespace helpers {
     /*! Return type of operator[]. */
     using LookupType = IndexAccumulator<N-1, Nd_Base_t>;
     using Base::size;
+    using Base::nd; using Base::offset;
 
     /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
      * previous indices.
@@ -230,9 +230,9 @@ namespace helpers {
       if(Check){
         if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
       }
-      const Index_t new_offset = this->nd->GetIndices()[this->offset+i];
-      const Index_t new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
-      return LookupType(static_cast<Nd_Base_t*>(this->nd),new_offset,new_size);
+      const Index_t new_offset = nd.GetIndices()[offset+i];
+      const Index_t new_size = nd.GetIndices()[offset+i+1] - new_offset;
+      return LookupType(nd,new_offset,new_size);
     }
 
   };
@@ -256,6 +256,7 @@ namespace helpers {
       typename Nd_t::Data_t
     >;
     using Base::size;
+    using Base::nd; using Base::offset;
 
     /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
      * \param[in] i - Last index.
@@ -265,7 +266,7 @@ namespace helpers {
       if(Check){
         if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
       }
-      return this->nd->GetData() [ this->offset+i ];
+      return nd.GetData() [ offset+i ];
     }
 
     /*! \brief Return (possibly const) pointer to data.
@@ -561,8 +562,8 @@ public:
       displs[r] = r;
       ones[r] = 1;
     }
-    LowestLayer::count_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const&>(local_version), displs, ones);
-    LowestLayer::set_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const&>(local_version));
+    LowestLayer::count_g(mpi_env, &Nodes_all_0, local_version, displs, ones);
+    LowestLayer::set_g(mpi_env, &Nodes_all_0, local_version);
 
     delete[] Nodes_all_0; // allocated by count_g
     delete[] displs;
@@ -592,7 +593,7 @@ protected:
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r];
     }
-    Base::count_g(mpi_env, Nodes_all, static_cast<const Base&>(local_version), displs, ones);
+    Base::count_g(mpi_env, Nodes_all, local_version, displs, ones);
   }
 
   /*! \brief Gather the distributed flatteners' data and index arrays into the allocated arrays.
@@ -629,7 +630,7 @@ protected:
     delete[] Nodes_all_K_as_int;
     delete[] Nodes_all_k_cumulated;
 
-    Base::set_g(mpi_env, Nodes_all, static_cast<const Base&>(local_version));
+    Base::set_g(mpi_env, Nodes_all, local_version);
   }
 
   /*== Data access ==*/
@@ -641,12 +642,12 @@ public:
   /*! \brief Look-up with IndexAccumulator, non-const version.
    */
   helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) {
-    return helpers::IndexAccumulator<K,NdFlattener<K,Data_t,Index_t> >(this,0,size())[i0];
+    return helpers::IndexAccumulator<K,NdFlattener<K,Data_t,Index_t> >(*this,0,size())[i0];
   }
   /*! \brief Look-up with IndexAccumulator, const version.
    */
   helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) const {
-    return helpers::IndexAccumulator<K, const NdFlattener<K,Data_t,Index_t> >(this,0,size())[i0];
+    return helpers::IndexAccumulator<K, const NdFlattener<K,Data_t,Index_t> >(*this,0,size())[i0];
   }
 };
 
