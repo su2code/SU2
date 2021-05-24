@@ -207,7 +207,8 @@ namespace helpers {
     using Nd_t = Nd_t_;
     using Index_t = typename Nd_t::Index_t;
 
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
+    IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size):
+      Base(nd, offset, size) {}
 
     /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
      */
@@ -245,7 +246,8 @@ namespace helpers {
     using Nd_t = Nd_t_;
     using Index_t = typename Nd_t::Index_t;
 
-    template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
+    IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size):
+      Base(nd, offset,size) {}
 
     /*! Return type of operator[].
      * \details Data type of NdFlattener, but do also preserve constness.
