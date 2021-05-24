@@ -58,18 +58,9 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   REQUIRE( nd2.size() == 2 );
   REQUIRE( nd2[0][0] == 0.0 );
   REQUIRE( nd2[0][1] == 1.0 );
-  REQUIRE( nd2.checked()[1].size() == 3 + rank );
+  REQUIRE( nd2[1].size() == 3 + rank );
   for(int i=0; i<3+rank; i++){
     REQUIRE( nd2[1][i] == 2.0 + rank + i );
-  }
-
-  /*-- Check structure again, with checked look-up. --*/
-  REQUIRE( nd2.checked()[0].size() == 2 );
-  REQUIRE( nd2.checked()[0][0] == 0.0 );
-  REQUIRE( nd2.checked()[0][1] == 1.0 );
-  REQUIRE( nd2.checked()[1].size() == 3 + rank );
-  for(int i=0; i<3+rank; i++){
-    REQUIRE( nd2.checked()[1][i] == 2.0 + rank + i );
   }
 
   /*-- Modify structure. --*/
@@ -79,29 +70,43 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   /*-- gather flattening structures of all processes --*/
   NdFlattener<3> nd3(Get_Nd_MPI_Env(), &nd2);
 
-  /*-- Check gathered structure, partly with checked look-up. --*/
+  /*-- Check gathered structure, non-const look-up. --*/
   REQUIRE( nd3.size() == size );
   for(int r=0; r<size; r++){
-    REQUIRE( nd3.checked()[r].size() == 2 );
+    REQUIRE( nd3[r].size() == 2 );
     REQUIRE( nd3[r][0][0] == 0.7 );
     REQUIRE( nd3[r][0][1] == 1.7 );
-    REQUIRE( nd3.checked()[r][1].size() == 3 + r );
+    REQUIRE( nd3[r][1].size() == 3 + r );
     for(int i=0; i<3+r; i++){
-      REQUIRE( nd3.checked()[r][1][i] == 2.0 + r + i );
+      REQUIRE( nd3[r][1][i] == 2.0 + r + i );
     }
   }
+
+  /*-- Check gathered structure, const look-up. --*/
+  const NdFlattener<3>& nd3_const = nd3;
+  REQUIRE( nd3_const.size() == size );
+  for(int r=0; r<size; r++){
+    REQUIRE( nd3_const[r].size() == 2 );
+    REQUIRE( nd3_const[r][0][0] == 0.7 );
+    REQUIRE( nd3_const[r][0][1] == 1.7 );
+    REQUIRE( nd3_const[r][1].size() == 3 + r );
+    for(int i=0; i<3+r; i++){
+      REQUIRE( nd3_const[r][1][i] == 2.0 + r + i );
+    }
+  }
+
     
-  /*-- reread modified A and check again. --*/
+  /*-- Reread modified A and check again. --*/
   nd2.initialize_or_refresh(f);
   nd3.refresh(Get_Nd_MPI_Env(), &nd2);
-  REQUIRE( nd3.checked().size() == size );
+  REQUIRE( nd3.size() == size );
   for(int r=0; r<size; r++){
-    REQUIRE( nd3.checked()[r].size() == 2 );
+    REQUIRE( nd3[r].size() == 2 );
     REQUIRE( nd3[r][0][0] == 0.5 );
     REQUIRE( nd3[r][0][1] == 1.0 );
-    REQUIRE( nd3.checked()[r][1].size() == 3 + r );
+    REQUIRE( nd3[r][1].size() == 3 + r );
     for(int i=0; i<3+r; i++){
-      REQUIRE( nd3.checked()[r][1][i] == 2.0 + r + i );
+      REQUIRE( nd3[r][1][i] == 2.0 + r + i );
     }
   }
 
