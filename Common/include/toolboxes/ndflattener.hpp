@@ -526,14 +526,10 @@ public:
     for(size_t k=0; k<K; k++)
       Nodes_all[k] = nullptr;
     Nodes_all[K-1] = new Index_t[mpi_env.size]; // {1, 1, ..., 1}
-    int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
-    int* ones = new int[mpi_env.size]; // {1,1, ...}
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r] = 1;
-      displs[r] = r;
-      ones[r] = 1;
     }
-    Base::count_g(mpi_env, Nodes_all, local_version, displs, ones); // set the lower layers' nNodes and Nodes_all[k]
+    Base::count_g(mpi_env, Nodes_all, local_version); // set the lower layers' nNodes and Nodes_all[k]
 
     allocate();
 
@@ -547,8 +543,6 @@ public:
       delete[] Nodes_all[k];
     }
     delete[] Nodes_all;
-    delete[] displs;
-    delete[] ones;
   }
 
   /*! \brief Refresh the data by MPI collective communication.
@@ -566,18 +560,10 @@ public:
     Base const& local_version
   ) {
     Index_t* Nodes_all_0 = nullptr;
-    int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
-    int* ones = new int[mpi_env.size]; // {1,1, ...}
-    for(int r=0; r<mpi_env.size; r++){
-      displs[r] = r;
-      ones[r] = 1;
-    }
-    LowestLayer::count_g(mpi_env, &Nodes_all_0, local_version, displs, ones);
+    LowestLayer::count_g(mpi_env, &Nodes_all_0, local_version);
     LowestLayer::set_g(mpi_env, &Nodes_all_0, local_version);
 
     delete[] Nodes_all_0; // allocated by count_g
-    delete[] displs;
-    delete[] ones;
   }
 
 protected:
@@ -586,23 +572,20 @@ protected:
    * \param[in] mpi_env - MPI environment for communication
    * \param[out] Nodes_all - [k][r] is set to number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be send to the other processes
-   * \param[in] displs - {0,1,...,size-1}
-   * \param[in] ones - {1,1,...,1}
    */
   void count_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const& local_version,
-         int const* displs, int const* ones )
+         CurrentLayer const& local_version )
   { 
     assert( Nodes_all[K-1]==nullptr);
     Nodes_all[K-1] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], 1, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r];
     }
-    Base::count_g(mpi_env, Nodes_all, local_version, displs, ones);
+    Base::count_g(mpi_env, Nodes_all, local_version);
   }
 
   /*! \brief Gather the distributed flatteners' data and index arrays into the allocated arrays.
@@ -759,14 +742,13 @@ protected:
 protected:
   void count_g(Nd_MPI_Environment const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const& local_version,
-         int const* displs, int const* ones)
+         CurrentLayer const& local_version )
   { 
     assert( Nodes_all[0]==nullptr);
     Nodes_all[0] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], 1, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[0][r];
     }
