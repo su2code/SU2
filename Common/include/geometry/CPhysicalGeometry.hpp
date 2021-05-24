@@ -771,7 +771,7 @@ public:
    * \param[in] config - ignored
    * \param[in] iZone - zone whose markers made the ADT
    */
-  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone=numeric_limits<unsigned short>::max()) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 
   /*!
    * \brief Set wall distances a specific value

@@ -1234,7 +1234,7 @@ protected:
    * \param[in] config - Config of this geometry (not the ADT zone's geometry)
    * \param[in] iZone - ignored
    */
-  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone=numeric_limits<unsigned short>::max()) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 };
 
 /*!
