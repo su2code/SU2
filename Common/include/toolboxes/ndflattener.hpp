@@ -27,13 +27,14 @@
 
 #pragma once
 
-#include <iostream>
-#include <utility>
 #include <cassert>
+#include <iostream>
 #include <sstream>
+#include <utility>
 #include <vector>
-#include "../parallelization/mpi_structure.hpp"
+
 #include "../containers/C2DContainer.hpp"
+#include "../parallelization/mpi_structure.hpp"
 
 // --- Usage
 /*! \page ndflattener_usage Usage of NdFlattener
@@ -149,8 +150,7 @@
  * allocate it and fill it with data during the second iteration.
  */
 
-
-template<size_t K, typename Data_t_=su2double, typename Index_t_=unsigned long>
+template <size_t K, typename Data_t_ = su2double, typename Index_t_ = unsigned long>
 class NdFlattener;
 
 /*! \struct Nd_MPI_Environment
@@ -170,141 +170,129 @@ struct Nd_MPI_Environment {
   MPI_Communicator_t comm;
   MPI_Allgather_t MPI_Allgather_fun;
   MPI_Allgatherv_t MPI_Allgatherv_fun;
-  int rank; int size;
-  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE,
-                     MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
+  int rank;
+  int size;
+  Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE, MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
                      MPI_Communicator_t comm = SU2_MPI::GetComm(),
                      MPI_Allgather_t MPI_Allgather_fun = &(SU2_MPI::Allgather),
-                     MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv)):
-    mpi_data(mpi_data), mpi_index(mpi_index), comm(comm),
-    MPI_Allgather_fun(MPI_Allgather_fun), MPI_Allgatherv_fun(MPI_Allgatherv_fun),
-    rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize())
-    {}
+                     MPI_Allgatherv_t MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv))
+      : mpi_data(mpi_data),
+        mpi_index(mpi_index),
+        comm(comm),
+        MPI_Allgather_fun(MPI_Allgather_fun),
+        MPI_Allgatherv_fun(MPI_Allgatherv_fun),
+        rank(SU2_MPI::GetRank()),
+        size(SU2_MPI::GetSize()) {}
 };
 
 namespace helpers {
-  /*! \class IndexAccumulator
-   * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
-   * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
-   *  - For N==1, the structure has already read all indices but one. So after this method has read the last
-   *    index, return a reference to the data.
-   *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
-   *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
-   * \tparam N - Number of missing parameters
-   * \tparam Nd_t - Type of the accessed NdFlattener, should be NdFlattener<N,...>
-   * \tparam Check - if true, raise error if index to operator[] is not in range
+/*! \class IndexAccumulator
+ * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
+ * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
+ *  - For N==1, the structure has already read all indices but one. So after this method has read the last
+ *    index, return a reference to the data.
+ *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
+ *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
+ * \tparam N - Number of missing parameters
+ * \tparam Nd_t - Type of the accessed NdFlattener, should be NdFlattener<N,...>
+ * \tparam Check - if true, raise error if index to operator[] is not in range
+ */
+/*! \class IndexAccumulator_Base
+ * \brief Parent class of IndexAccumulator.
+ * \details IndexAccumulator provides the operator[] method.
+ */
+template <size_t N_, typename Nd_t_>
+class IndexAccumulator_Base {
+ public:
+  static constexpr size_t N = N_;
+  using Nd_t = Nd_t_;
+  using Index_t = typename Nd_t::Index_t;
+
+ protected:
+  Nd_t& nd;             /*!< \brief The accessed NdFlattener. */
+  const Index_t offset; /*!< \brief Index in the currently accessed layer. */
+  const Index_t size_;  /*!< \brief Exclusive upper bound for the next index. */
+
+  IndexAccumulator_Base(Nd_t& nd, Index_t offset, Index_t size) : nd(nd), offset(offset), size_(size) {}
+
+  /*! \brief Return exclusive upper bound for next index.
    */
-  /*! \class IndexAccumulator_Base
-   * \brief Parent class of IndexAccumulator.
-   * \details IndexAccumulator provides the operator[] method.
+  Index_t size() const { return size_; }
+};
+
+template <size_t N_, typename Nd_t_, bool Check = true>
+class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
+ public:
+  using Base = IndexAccumulator_Base<N_, Nd_t_>;
+  static constexpr size_t N = N_;
+  using Nd_t = Nd_t_;
+  using Index_t = typename Nd_t::Index_t;
+
+  IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size) : Base(nd, offset, size) {}
+
+  /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
    */
-  template<size_t N_, typename Nd_t_>
-  class IndexAccumulator_Base {
-  public:
-    static constexpr size_t N = N_;
-    using Nd_t = Nd_t_;
-    using Index_t = typename Nd_t::Index_t;
+  using Nd_Base_t = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Base, typename Nd_t::Base>;
+  /*! Return type of operator[]. */
+  using LookupType = IndexAccumulator<N - 1, Nd_Base_t>;
+  using Base::nd;
+  using Base::offset;
+  using Base::size;
 
-  protected:
-    Nd_t& nd; /*!< \brief The accessed NdFlattener. */
-    const Index_t offset; /*!< \brief Index in the currently accessed layer. */
-    const Index_t size_; /*!< \brief Exclusive upper bound for the next index. */
-
-    IndexAccumulator_Base(Nd_t& nd, Index_t offset, Index_t size):
-      nd(nd), offset(offset), size_(size) {}
-
-    /*! \brief Return exclusive upper bound for next index.
-     */
-    Index_t size() const {
-      return size_;
+  /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
+   * previous indices.
+   * \param[in] i - Index.
+   */
+  LookupType operator[](Index_t i) const {
+    assert(i < size());
+    if (Check) {
+      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
     }
+    const Index_t new_offset = nd.GetIndices()[offset + i];
+    const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
+    return LookupType(nd, new_offset, new_size);
+  }
+};
 
-  };
+template <typename Nd_t_, bool Check>
+class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_> {
+ public:
+  using Base = IndexAccumulator_Base<1, Nd_t_>;
+  static constexpr size_t N = 1;
+  using Nd_t = Nd_t_;
+  using Index_t = typename Nd_t::Index_t;
 
-  template<size_t N_, typename Nd_t_, bool Check=true>
-  class IndexAccumulator : public IndexAccumulator_Base<N_,Nd_t_>{
-  public:
-    using Base = IndexAccumulator_Base<N_,Nd_t_>;
-    static constexpr size_t N = N_;
-    using Nd_t = Nd_t_;
-    using Index_t = typename Nd_t::Index_t;
+  IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size) : Base(nd, offset, size) {}
 
-    IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size):
-      Base(nd, offset, size) {}
+  /*! Return type of operator[].
+   * \details Data type of NdFlattener, but do also preserve constness.
+   */
+  using LookupType = su2conditional_t<std::is_const<Nd_t>::value, const typename Nd_t::Data_t, typename Nd_t::Data_t>;
+  using Base::nd;
+  using Base::offset;
+  using Base::size;
 
-    /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
-     */
-    using Nd_Base_t = su2conditional_t<
-      std::is_const<Nd_t>::value,
-      const typename Nd_t::Base,
-      typename Nd_t::Base
-    >;
-    /*! Return type of operator[]. */
-    using LookupType = IndexAccumulator<N-1, Nd_Base_t>;
-    using Base::size;
-    using Base::nd; using Base::offset;
-
-    /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
-     * previous indices.
-     * \param[in] i - Index.
-     */
-    LookupType operator[] (Index_t i) const {
-      assert(i<size());
-      if(Check){
-        if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-      }
-      const Index_t new_offset = nd.GetIndices()[offset+i];
-      const Index_t new_size = nd.GetIndices()[offset+i+1] - new_offset;
-      return LookupType(nd,new_offset,new_size);
+  /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
+   * \param[in] i - Last index.
+   */
+  LookupType& operator[](Index_t i) const {
+    assert(i < size());
+    if (Check) {
+      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
     }
+    return nd.GetData()[offset + i];
+  }
 
-  };
+  /*! \brief Return (possibly const) pointer to data.
+   * \details If all indices except the last one are fixed, the corresponding data
+   * is stored contiguously. Return a pointer to the beginning of the
+   * block. If this IndexAccumulator was generated from a non-const NdFlattener, the
+   * pointer is non-const, otherwise it is const.
+   */
+  LookupType* data() const { return &(this->operator[](0)); }
+};
 
-  template<typename Nd_t_, bool Check>
-  class IndexAccumulator<1,Nd_t_,Check> : public IndexAccumulator_Base<1,Nd_t_>{
-  public:
-    using Base = IndexAccumulator_Base<1,Nd_t_>;
-    static constexpr size_t N = 1;
-    using Nd_t = Nd_t_;
-    using Index_t = typename Nd_t::Index_t;
-
-    IndexAccumulator(Nd_t& nd, Index_t offset, Index_t size):
-      Base(nd, offset,size) {}
-
-    /*! Return type of operator[].
-     * \details Data type of NdFlattener, but do also preserve constness.
-     */
-    using LookupType = su2conditional_t<
-      std::is_const<Nd_t>::value,
-      const typename Nd_t::Data_t,
-      typename Nd_t::Data_t
-    >;
-    using Base::size;
-    using Base::nd; using Base::offset;
-
-    /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
-     * \param[in] i - Last index.
-     */
-    LookupType& operator[] (Index_t i) const {
-      assert(i<size());
-      if(Check){
-        if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-      }
-      return nd.GetData() [ offset+i ];
-    }
-
-    /*! \brief Return (possibly const) pointer to data.
-     * \details If all indices except the last one are fixed, the corresponding data
-     * is stored contiguously. Return a pointer to the beginning of the
-     * block. If this IndexAccumulator was generated from a non-const NdFlattener, the
-     * pointer is non-const, otherwise it is const.
-     */
-    LookupType* data() const {
-      return &(this->operator[](0));
-    }
-  };
-
-} // namespace helpers
+}  // namespace helpers
 
 /*!
  * \class NdFlattener
@@ -313,7 +301,7 @@ namespace helpers {
  *
  * The pointer-to-pointer-... array can be provided by a nested lambda function
  * ('recursive function') or by gathering such arrays from MPI processes ('collective
- * communication'). After initializing an NdFlattener with either of these data, 
+ * communication'). After initializing an NdFlattener with either of these data,
  * it can be refreshed in the same way after the the pointer-to-pointer-... array's
  * values (but not its structure) have changed.
  *
@@ -322,41 +310,39 @@ namespace helpers {
  * \tparam Index - Type of index
  */
 
-
-template<size_t K_, typename Data_t_, typename Index_t_>
-class NdFlattener: public NdFlattener<K_-1,Data_t_,Index_t_>{
-
-public:
+template <size_t K_, typename Data_t_, typename Index_t_>
+class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
+ public:
   static constexpr size_t K = K_;
   using Data_t = Data_t_;
   using Index_t = Index_t_;
 
-  using Base = NdFlattener<K-1,Data_t,Index_t>;
-  using CurrentLayer = NdFlattener<K,Data_t,Index_t>;
-  using LowestLayer = typename Base::LowestLayer; // the K=1 class
+  using Base = NdFlattener<K - 1, Data_t, Index_t>;
+  using CurrentLayer = NdFlattener<K, Data_t, Index_t>;
+  using LowestLayer = typename Base::LowestLayer;  // the K=1 class
 
-private:
+ private:
   /*! \brief Number of nodes in this layer.
-   * 
+   *
    * For the layer K=1, nNodes will be the number of data points.
    * For a layer K>1, nNodes will be the number of sublists.
    */
-  Index_t nNodes=0;
+  Index_t nNodes = 0;
 
   /*! \brief Iterator used at construction, runs from 0 to (nNodes-1). */
-  Index_t iNode=0;
+  Index_t iNode = 0;
 
   /*! \brief Indices in the lower layer's indices or data array */
   std::vector<Index_t> indices;
 
   /*=== Getters ===*/
-public:
-  Index_t* GetIndices() {return indices.data();}
-  const Index_t* GetIndices() const {return indices.data();}
+ public:
+  Index_t* GetIndices() { return indices.data(); }
+  const Index_t* GetIndices() const { return indices.data(); }
 
   /*=== Outputting ===*/
 
-public:
+ public:
   /*! \brief Write in Python-list style.
    *
    * Like this: [[1, 2], [10, 20, 30]]
@@ -366,7 +352,7 @@ public:
     return output;
   }
 
-protected:
+ protected:
   /*! \brief Write to stream in Python-list style, using the data of the
    * indices array between 'from' (inclusive) and 'to' (exclusive).
    *
@@ -377,17 +363,16 @@ protected:
    */
   void toPythonString_fromto(std::ostream& output, Index_t from, Index_t to) const {
     output << "[";
-    for(Index_t i=from; i<to; ){
-      Base::toPythonString_fromto(output, indices[i], indices[i+1]);
-      if(++i<to) output << ", ";
+    for (Index_t i = from; i < to;) {
+      Base::toPythonString_fromto(output, indices[i], indices[i + 1]);
+      if (++i < to) output << ", ";
     }
     output << "]";
   }
 
-public:
-
+ public:
   /*! \brief Basic constructor. Afterwards, initialization can be done with initialize_or_refresh.
-   * 
+   *
    * Called recursively when a derived class (higher K) is constructed.
    */
   NdFlattener() {}
@@ -395,21 +380,21 @@ public:
   /*! \brief Constructor which calls initialize_or_refresh.
    *
    */
-  template<class... ARGS>
+  template <class... ARGS>
   NdFlattener(ARGS const&... args) {
     initialize_or_refresh(args...);
   }
 
   /*! \brief Initialize or refresh the NdFlattener.
    * \details Either a 'recursive function' or 'collective communication'
-   * may be used. When the NdFlattener does not hold data yet, it is 
+   * may be used. When the NdFlattener does not hold data yet, it is
    * initialized, meaning that the data are collected and the indices arrays
    * are allocated and filled. Otherwise it is refreshed, meaning that the data are
    * recollected under the assumption that the indices arrays did not change.
    */
-  template<class ...ARGS>
-  void initialize_or_refresh(ARGS const&... args){
-    if( initialized() ){
+  template <class... ARGS>
+  void initialize_or_refresh(ARGS const&... args) {
+    if (initialized()) {
       refresh(args...);
     } else {
       initialize(args...);
@@ -419,36 +404,34 @@ public:
   /*! \brief Initialization status of the NdFlattener.
    * \returns true if the NdFlattener has been initialized
    */
-  bool initialized(){
-    return nNodes>0;
-  }
+  bool initialized() { return nNodes > 0; }
 
-protected:
+ protected:
   /*! \brief Allocate the indices array after \a nNodes has been determined.
    */
   void allocate() {
-    indices.reserve(nNodes+1);
+    indices.reserve(nNodes + 1);
     indices[0] = 0;
     Base::allocate();
   }
 
   /*! \brief Set \a iNode to 0 in all layers.
    */
-  void reset_iNode(){
+  void reset_iNode() {
     iNode = 0;
     Base::reset_iNode();
   }
 
   /*=== Construct from 'recursive function' ===*/
-public:
+ public:
   /*! \brief Initialize from a 'recursive function'.
    *
-   * The function should return a pair. Its first entry is the number of children. 
-   * Its second entry is a function with the same meaning, recursively 
+   * The function should return a pair. Its first entry is the number of children.
+   * Its second entry is a function with the same meaning, recursively
    * one layer down.
    * \param f - the 'recursive function'
    */
-  template<class f_type>
+  template <class f_type>
   void initialize(f_type f) {
     count_f(f);
     allocate();
@@ -458,32 +441,32 @@ public:
   /*! \brief Refresh the data according to the 'recursive function'
    *
    * The NdFlattener must have been constructed with a 'recursive function'.
-   * Now refresh the values with another 'recursive function'. The subarray lengths 
+   * Now refresh the values with another 'recursive function'. The subarray lengths
    * resulting from both 'recursive functions' must coincide, as the indices arrays
    * are not changed.
-   * 
+   *
    * \param f - the 'recursive function'
    * \tparam f_type - to allow for any type of the 'recursive function'
    */
-  template<class f_type>
-  void refresh(f_type f){
+  template <class f_type>
+  void refresh(f_type f) {
     reset_iNode();
     set_f(f, true);
   }
 
-protected:
+ protected:
   /*! \brief Determine the space required for reading the 'recursive function'.
    *
    * \param f - the 'recursive function'
    */
-  template<class f_type>
+  template <class f_type>
   void count_f(f_type f) {
     Index_t nChild = f.first;
-    for(Index_t iChild=0; iChild<nChild; iChild++){
+    for (Index_t iChild = 0; iChild < nChild; iChild++) {
       nNodes++;
       Base::count_f(f.second(iChild));
     }
-  }  
+  }
 
   /*! \brief Read the 'recursive function' into the allocated arrays.
    *
@@ -492,15 +475,15 @@ protected:
    *   in layer 1 have to be overwritten
    * \tparam f_type - to allow for any type of the 'recursive function'
    */
-  template<class f_type>
+  template <class f_type>
   void set_f(f_type f, bool refresh) {
     Index_t nChild = f.first;
-    for(Index_t iChild=0; iChild<nChild; iChild++){
+    for (Index_t iChild = 0; iChild < nChild; iChild++) {
       Base::set_f(f.second(iChild), refresh);
-      if(!refresh){
-        indices[iNode+1] = indices[iNode] + f.second(iChild).first;
+      if (!refresh) {
+        indices[iNode + 1] = indices[iNode] + f.second(iChild).first;
       } else {
-        if( indices[iNode+1] != indices[iNode] + f.second(iChild).first ){
+        if (indices[iNode + 1] != indices[iNode] + f.second(iChild).first) {
           SU2_MPI::Error("NdFlattener: Structure has changed, cannot refresh.", CURRENT_FUNCTION);
         }
       }
@@ -508,10 +491,9 @@ protected:
     }
   }
 
-
   /*=== Construct with Allgatherv ===*/
 
-public:
+ public:
   /*! \brief Initialize a flattener with K indices by combining distributed flatteners with (K-1) indices each.
    *
    * The new first index will encode the rank of the process. Data is exchanged in MPI::Allgatherv-style
@@ -519,62 +501,55 @@ public:
    * \param[in] mpi_env - The MPI environment used for communication.
    * \param[in] local_version - The local NdFlattener structure with (K-1) indices.
    */
-  template<typename MPI_Environment_type>
-  void initialize( 
-    MPI_Environment_type const& mpi_env,
-    Base const& local_version
-  ) {
-    su2matrix<Index_t> Nodes_all(K,mpi_env.size); // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
-    for(int r=0; r<mpi_env.size; r++){ // the first index decides on the rank, so there is exactly one node per rank
-      nNodes += Nodes_all[K-1][r] = 1;
+  template <typename MPI_Environment_type>
+  void initialize(MPI_Environment_type const& mpi_env, Base const& local_version) {
+    su2matrix<Index_t> Nodes_all(
+        K, mpi_env.size);  // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
+    for (int r = 0; r < mpi_env.size;
+         r++) {  // the first index decides on the rank, so there is exactly one node per rank
+      nNodes += Nodes_all[K - 1][r] = 1;
     }
-    Base::count_g(mpi_env, Nodes_all, local_version); // set the lower layers' nNodes and Nodes_all[k]
+    Base::count_g(mpi_env, Nodes_all, local_version);  // set the lower layers' nNodes and Nodes_all[k]
 
     allocate();
 
     indices[0] = 0;
-    for(int r=0; r<mpi_env.size; r++){
-      indices[r+1] = indices[r] + Nodes_all[K-2][r];
+    for (int r = 0; r < mpi_env.size; r++) {
+      indices[r + 1] = indices[r] + Nodes_all[K - 2][r];
     }
     Base::set_g(mpi_env, Nodes_all, local_version);
-    
   }
 
   /*! \brief Refresh the data by MPI collective communication.
    *
    * The NdFlattener must have been constructed by MPI collective communication.
-   * Now refresh the values with another collective communication. The subarray lengths 
+   * Now refresh the values with another collective communication. The subarray lengths
    * resulting from both collective communications must coincide, as the indices arrays
    * are not changed.
    * \param[in] mpi_env - The MPI environment used for communication.
    * \param[in] local_version - The local NdFlattener structure.
    */
-  template<typename MPI_Environment_type>
-  void refresh( 
-    MPI_Environment_type const& mpi_env,
-    Base const& local_version
-  ) {
-    su2matrix<Index_t> Nodes_all_0(1,mpi_env.size);
+  template <typename MPI_Environment_type>
+  void refresh(MPI_Environment_type const& mpi_env, Base const& local_version) {
+    su2matrix<Index_t> Nodes_all_0(1, mpi_env.size);
     LowestLayer::count_g(mpi_env, Nodes_all_0, local_version);
     LowestLayer::set_g(mpi_env, Nodes_all_0, local_version);
   }
 
-protected:
+ protected:
   /*! \brief Count the distributed flatteners' numbers of nodes, and set nNodes.
    *
    * \param[in] mpi_env - MPI environment for communication
    * \param[out] Nodes_all - [k][r] is set to number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be send to the other processes
    */
-  void count_g(Nd_MPI_Environment const& mpi_env,
-         su2matrix<Index_t>& Nodes_all,
-         CurrentLayer const& local_version )
-  { 
+  void count_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t>& Nodes_all, CurrentLayer const& local_version) {
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], 1, mpi_env.mpi_index, mpi_env.comm );
-    for(int r=0; r<mpi_env.size; r++){
-      nNodes += Nodes_all[K-1][r];
+    mpi_env.MPI_Allgather_fun(&(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K - 1], 1, mpi_env.mpi_index,
+                              mpi_env.comm);
+    for (int r = 0; r < mpi_env.size; r++) {
+      nNodes += Nodes_all[K - 1][r];
     }
     Base::count_g(mpi_env, Nodes_all, local_version);
   }
@@ -585,30 +560,28 @@ protected:
    * \param[in] Nodes_all - [k][r] is the number of nodes in layer (k+1), rank r.
    * \param[in] local_version - local instance to be sent to the other processes
    */
-  void set_g(Nd_MPI_Environment const& mpi_env,
-         su2matrix<Index_t> const& Nodes_all,
-         CurrentLayer const& local_version )
-  { 
-
+  void set_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t> const& Nodes_all,
+             CurrentLayer const& local_version) {
     std::vector<int> Nodes_all_K_as_int(mpi_env.size);
-    std::vector<int> Nodes_all_k_cumulated(mpi_env.size+1); // [r] is number of nodes in the current layer, summed over all processes with rank below r
-    // plus one. Used as displacements in Allgatherv, but we do not want to transfer the initial zeros and rather the last element of indices, 
-    // which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.
+    std::vector<int> Nodes_all_k_cumulated(
+        mpi_env.size + 1);  // [r] is number of nodes in the current layer, summed over all processes with rank below r
+    // plus one. Used as displacements in Allgatherv, but we do not want to transfer the initial zeros and rather the
+    // last element of indices, which is the local nNodes of the layer below. Note that MPI needs indices of type 'int'.
     Nodes_all_k_cumulated[0] = 1;
-    for(int r=0; r<mpi_env.size; r++){
-      Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
-      Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
+    for (int r = 0; r < mpi_env.size; r++) {
+      Nodes_all_k_cumulated[r + 1] = Nodes_all_k_cumulated[r] + Nodes_all[K - 1][r];
+      Nodes_all_K_as_int[r] = Nodes_all[K - 1][r];
     }
-    mpi_env.MPI_Allgatherv_fun( local_version.indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index,
-      indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(), mpi_env.mpi_index,
-      mpi_env.comm );
-    // shift indices 
-    for(int r=1; r<mpi_env.size; r++){
+    mpi_env.MPI_Allgatherv_fun(local_version.indices.data() + 1, Nodes_all[K - 1][mpi_env.rank], mpi_env.mpi_index,
+                               indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(),
+                               mpi_env.mpi_index, mpi_env.comm);
+    // shift indices
+    for (int r = 1; r < mpi_env.size; r++) {
       Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
-      Index_t last_entry_to_be_shifted = Nodes_all_k_cumulated[r+1]-1;
-      Index_t shift = indices[ first_entry_to_be_shifted - 1];
-      for(Index_t i=first_entry_to_be_shifted; i<=last_entry_to_be_shifted; i++){
-        indices[ i ] += shift;
+      Index_t last_entry_to_be_shifted = Nodes_all_k_cumulated[r + 1] - 1;
+      Index_t shift = indices[first_entry_to_be_shifted - 1];
+      for (Index_t i = first_entry_to_be_shifted; i <= last_entry_to_be_shifted; i++) {
+        indices[i] += shift;
       }
     }
 
@@ -616,26 +589,26 @@ protected:
   }
 
   /*== Data access ==*/
-public:
-  Index_t size() const { // should not be called by recursion, is incorrect in lower layers!
+ public:
+  Index_t size() const {  // should not be called by recursion, is incorrect in lower layers!
     return nNodes;
   }
 
   /*! \brief Look-up with IndexAccumulator, non-const version.
    */
-  helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) {
-    return helpers::IndexAccumulator<K,NdFlattener<K,Data_t,Index_t> >(*this,0,size())[i0];
+  helpers::IndexAccumulator<K - 1, NdFlattener<K - 1, Data_t, Index_t> > operator[](Index_t i0) {
+    return helpers::IndexAccumulator<K, NdFlattener<K, Data_t, Index_t> >(*this, 0, size())[i0];
   }
   /*! \brief Look-up with IndexAccumulator, const version.
    */
-  helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) const {
-    return helpers::IndexAccumulator<K, const NdFlattener<K,Data_t,Index_t> >(*this,0,size())[i0];
+  helpers::IndexAccumulator<K - 1, const NdFlattener<K - 1, Data_t, Index_t> > operator[](Index_t i0) const {
+    return helpers::IndexAccumulator<K, const NdFlattener<K, Data_t, Index_t> >(*this, 0, size())[i0];
   }
 };
 
-template<typename Data_t_, typename Index_t_>
+template <typename Data_t_, typename Index_t_>
 class NdFlattener<1, Data_t_, Index_t_> {
-public:
+ public:
   static constexpr size_t K = 1;
   using Data_t = Data_t_;
   using Index_t = Index_t_;
@@ -643,154 +616,126 @@ public:
   using CurrentLayer = NdFlattener<1, Data_t, Index_t>;
   using LowestLayer = CurrentLayer;
 
-private:
-  Index_t nNodes=0;
-  Index_t iNode=0;
+ private:
+  Index_t nNodes = 0;
+  Index_t iNode = 0;
   std::vector<Data_t> data_;
 
-
   /*=== Getters ===*/
-public:
-  Data_t* GetData() {return data_.data();}
-  const Data_t* GetData() const {return data_.data();}
+ public:
+  Data_t* GetData() { return data_.data(); }
+  const Data_t* GetData() const { return data_.data(); }
 
   /*=== Outputting ===*/
-protected:
+ protected:
   void toPythonString_fromto(std::ostream& output, Index_t from, Index_t to) const {
-    output  << "[";
-    for(Index_t i=from; i<to; ){
+    output << "[";
+    for (Index_t i = from; i < to;) {
       output << data_[i];
-      if(++i<to) output << ", ";
+      if (++i < to) output << ", ";
     }
     output << "]";
   }
 
-public:
+ public:
   NdFlattener(void) {}
 
-  template<class... ARGS>
+  template <class... ARGS>
   NdFlattener(ARGS const&... args) {
     initialize_or_refresh(args...);
   }
 
-  template<class ...ARGS>
-  void initialize_or_refresh(ARGS const&... args){
-    if( initialized() ){
+  template <class... ARGS>
+  void initialize_or_refresh(ARGS const&... args) {
+    if (initialized()) {
       refresh(args...);
     } else {
       initialize(args...);
     }
   }
 
-  bool initialized(){
-    return nNodes>0;
-  }
+  bool initialized() { return nNodes > 0; }
 
   // Functionality to initialize/refresh from a recursive function
   // could be desirable also for N=1, in order to gather from such
   // NdFlatteners an NdFlattener with N=2.
   // Gathering an NdFlattener with N=1 is not meaningful however.
 
-  template<class f_type>
+  template <class f_type>
   void initialize(f_type f) {
     count_f(f);
     allocate();
     set_f(f, false);
   }
 
-  template<class f_type>
-  void refresh(f_type f){
+  template <class f_type>
+  void refresh(f_type f) {
     reset_iNode();
     set_f(f, true);
   }
 
-protected:
-  void allocate(){
-    data_.reserve(nNodes);
-  }
+ protected:
+  void allocate() { data_.reserve(nNodes); }
 
-  void reset_iNode(){
-    iNode = 0;
-  }
+  void reset_iNode() { iNode = 0; }
 
   /*=== Construct from 'recursive function' ===*/
-protected:
-  template<typename f_type>
-  void count_f(f_type f){
+ protected:
+  template <typename f_type>
+  void count_f(f_type f) {
     nNodes += f.first;
   }
 
-  template<typename f_type>
-  void set_f(f_type f, bool refresh){
+  template <typename f_type>
+  void set_f(f_type f, bool refresh) {
     Index_t nChild = f.first;
-    for(Index_t iChild=0; iChild<nChild; iChild++){
+    for (Index_t iChild = 0; iChild < nChild; iChild++) {
       data_[iNode] = f.second(iChild);
       iNode++;
     }
   }
-  
+
   /*=== Construct with Allgatherv ===*/
-protected:
-  void count_g(Nd_MPI_Environment const& mpi_env,
-         su2matrix<Index_t>& Nodes_all,
-         CurrentLayer const& local_version )
-  { 
+ protected:
+  void count_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t>& Nodes_all, CurrentLayer const& local_version) {
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgather_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], 1, mpi_env.mpi_index, mpi_env.comm );
-    for(int r=0; r<mpi_env.size; r++){
+    mpi_env.MPI_Allgather_fun(&(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], 1, mpi_env.mpi_index,
+                              mpi_env.comm);
+    for (int r = 0; r < mpi_env.size; r++) {
       nNodes += Nodes_all[0][r];
     }
   }
 
-  void set_g(Nd_MPI_Environment const& mpi_env,
-         su2matrix<Index_t> const& Nodes_all,
-         CurrentLayer const& local_version )
-  { 
-
-
+  void set_g(Nd_MPI_Environment const& mpi_env, su2matrix<Index_t> const& Nodes_all,
+             CurrentLayer const& local_version) {
     std::vector<int> Nodes_all_0_as_int(mpi_env.size);
-    std::vector<int> Nodes_all_0_cumulated(mpi_env.size+1);
+    std::vector<int> Nodes_all_0_cumulated(mpi_env.size + 1);
     Nodes_all_0_cumulated[0] = 0;
-    for(int r=0; r<mpi_env.size; r++){
-      Nodes_all_0_cumulated[r+1] = Nodes_all_0_cumulated[r] + Nodes_all[0][r];
+    for (int r = 0; r < mpi_env.size; r++) {
+      Nodes_all_0_cumulated[r + 1] = Nodes_all_0_cumulated[r] + Nodes_all[0][r];
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv_fun( local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data,
-      data_.data(), Nodes_all_0_as_int.data(), Nodes_all_0_cumulated.data(), mpi_env.mpi_data,
-      mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun(local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(),
+                               Nodes_all_0_as_int.data(), Nodes_all_0_cumulated.data(), mpi_env.mpi_data, mpi_env.comm);
   }
-
 
   /*== Access to data ==*/
   // Calling the following functions is a bit strange, because if you have only one level,
   // you do not really benefit from NdFlattener's functionality.
-public:
-  Index_t size() const { // should not be called by recursion, is incorrect in lower layers!
+ public:
+  Index_t size() const {  // should not be called by recursion, is incorrect in lower layers!
     return nNodes;
   }
   /*! \brief Data look-up, non-const version.
    */
-  Data_t& operator[](Index_t i0) {
-    return data_[i0];
-  }
+  Data_t& operator[](Index_t i0) { return data_[i0]; }
   /*! \brief Data look-up, const version.
    */
-  const Data_t& operator[](Index_t i0) const {
-    return data_[i0];
-  }
+  const Data_t& operator[](Index_t i0) const { return data_[i0]; }
 
-  Data_t* data() {
-   return data_.data();
-  }
+  Data_t* data() { return data_.data(); }
 
-  const Data_t* data() const {
-   return data_.data();
-  }
-
+  const Data_t* data() const { return data_.data(); }
 };
-
-
-
-
