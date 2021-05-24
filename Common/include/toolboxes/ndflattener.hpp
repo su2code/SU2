@@ -152,16 +152,16 @@
  */
 
 
-template<size_t K, typename Data=su2double, typename Index=unsigned long>
+template<size_t K, typename Data_t=su2double, typename Index=unsigned long>
 class NdFlattener;
 
 namespace helpers {
-  template<typename MPI_Allgatherv_type, typename MPI_Datatype_type, typename MPI_Communicator_type>
+  template<typename MPI_Allgatherv_t, typename MPI_Datatype_t, typename MPI_Communicator_t>
   struct NdFlattener_MPI_Environment {
-    MPI_Allgatherv_type MPI_Allgatherv;
-    MPI_Datatype_type mpi_data;
-    MPI_Datatype_type mpi_index;
-    MPI_Communicator_type comm;
+    MPI_Allgatherv_t MPI_Allgatherv_fun;
+    MPI_Datatype_t mpi_data;
+    MPI_Datatype_t mpi_index;
+    MPI_Communicator_t comm;
     int rank; int size;
   };
 
@@ -173,74 +173,77 @@ namespace helpers {
    *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
    *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
    * \tparam N - Number of missing parameters
-   * \tparam Nd_type - Type of the accessed NdFlattener, should be NdFlattener<N,...>
+   * \tparam Nd_t - Type of the accessed NdFlattener, should be NdFlattener<N,...>
    */
   /*! \class IndexAccumulator_Base
    * \brief Parent class of IndexAccumulator.
    * \details IndexAccumulator provides the operator[] method.
    */
-  template<size_t _N, typename _Nd_type>
+  template<size_t _N, typename Nd_t_>
   class IndexAccumulator_Base {
   public:
     static constexpr size_t N = _N;
-    using Nd_type = _Nd_type;
+    using Nd_t = Nd_t_;
+    using Index_t = typename Nd_t::Index_t;
 
     /*== Conditional is part of the standard library since C++14, keep it here for C++11 compatibility. ==*/
     template<bool B, class T, class F> struct conditional { typedef T type; };
     template<class T, class F> struct conditional<false, T, F> { typedef F type; };
 
   protected:
-    Nd_type* nd; /*!< \brief The accessed NdFlattener. */
-    const typename Nd_type::Index offset; /*!< \brief Index in the currently accessed layer. */
+    Nd_t* nd; /*!< \brief The accessed NdFlattener. */
+    const Index_t offset; /*!< \brief Index in the currently accessed layer. */
     //const typename Nd_type::Index size; /*!< \brief Exclusive upper bound for the next index. */
-    IndexAccumulator_Base(Nd_type* nd, typename Nd_type::Index offset):
+    IndexAccumulator_Base(Nd_t* nd, Index_t offset):
       nd(nd), offset(offset) {}
 
   };
 
-  template<size_t _N, typename _Nd_type>
-  class IndexAccumulator : public IndexAccumulator_Base<_N,_Nd_type>{
+  template<size_t _N, typename Nd_t_>
+  class IndexAccumulator : public IndexAccumulator_Base<_N,Nd_t_>{
   public:
     static constexpr size_t N = _N;
-    using Nd_type = _Nd_type;
-    typedef IndexAccumulator_Base<_N,_Nd_type> Base;
+    using Nd_t = Nd_t_;
+    typedef IndexAccumulator_Base<_N,Nd_t_> Base;
+    using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
 
     /*! The Base of NdFlattener<K> is NdFlattener<K-1>, but do also preserve constness.
      */
-    using Nd_Base_type = typename Base::template conditional<
-      std::is_const<Nd_type>::value,
-      const typename Nd_type::Base,
-      typename Nd_type::Base
+    using Nd_Base_t = typename Base::template conditional<
+      std::is_const<Nd_t>::value,
+      const typename Nd_t::Base,
+      typename Nd_t::Base
     >::type;
     /*! Return type of operator[]. */
-    using LookupType = IndexAccumulator<N-1, Nd_Base_type>;
+    using LookupType = IndexAccumulator<N-1, Nd_Base_t>;
 
     /*! \brief Read one more index.
      * \param[in] i - Index.
      */
-    LookupType operator[] (typename Nd_type::Index i) {
+    LookupType operator[] (Index_t i) {
       //const typename Nd_type::Index new_offset = this->nd->GetIndices()[this->offset+i];
       //const typename Nd_type::Index new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
-      return LookupType(static_cast<Nd_Base_type*>(this->nd),this->nd->GetIndices()[this->offset+i]);
+      return LookupType(static_cast<Nd_Base_t*>(this->nd),this->nd->GetIndices()[this->offset+i]);
     }
   };
 
-  template<size_t _N, typename _Nd_type>
-  class IndexAccumulator_Checked : public IndexAccumulator<_N,_Nd_type>{
+  template<size_t _N, typename Nd_t_>
+  class IndexAccumulator_Checked : public IndexAccumulator<_N,Nd_t_>{
   public:
     static constexpr size_t N = _N;
-    using Nd_type = _Nd_type;
-    typedef IndexAccumulator<_N,_Nd_type> Base;
+    using Nd_t = Nd_t_;
+    typedef IndexAccumulator<_N,Nd_t_> Base;
+    using Index_t = typename Nd_t::Index_t;
 
   protected:
     /*! Exclusive upper bound for the next index. */
-    const typename Nd_type::Index _size;
+    const Index_t size_;
 
   public:
     template<class ...ARGS>
-    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {}
+    IndexAccumulator_Checked(Index_t size, ARGS... args): Base(args...), size_(size) {}
 
     /*! Return type of operator[]. */
     using LookupType = IndexAccumulator_Checked<N-1, typename Base::Nd_Base_type>;
@@ -249,28 +252,29 @@ namespace helpers {
      * previous indices.
      * \param[in] i - Index.
      */
-    LookupType operator[] (typename Nd_type::Index i) {
-      if(i>=_size){
+    LookupType operator[] (Index_t i) {
+      if(i>=size_){
         SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
       }
-      const typename Nd_type::Index new_offset = this->nd->GetIndices()[this->offset+i];
-      const typename Nd_type::Index new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
+      const Index_t new_offset = this->nd->GetIndices()[this->offset+i];
+      const Index_t new_size = this->nd->GetIndices()[this->offset+i+1] - new_offset;
       return LookupType(new_size, static_cast<typename Base::Nd_Base_type*>(this->nd),new_offset);
     }
 
     /*! \brief Return exclusive upper bound for next index.
      */
-    typename Nd_type::Index size() const {
-      return _size;
+    Index_t size() const {
+      return size_;
     }
   };
 
-  template<typename _Nd_type>
-  class IndexAccumulator<1,_Nd_type> : public IndexAccumulator_Base<1,_Nd_type>{
+  template<typename Nd_t_>
+  class IndexAccumulator<1,Nd_t_> : public IndexAccumulator_Base<1,Nd_t_>{
   public:
     static constexpr size_t N = 1;
-    using Nd_type = _Nd_type;
-    typedef IndexAccumulator_Base<1,_Nd_type> Base;
+    using Nd_t = Nd_t_;
+    typedef IndexAccumulator_Base<1,Nd_t_> Base;
+    using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
 
@@ -278,15 +282,15 @@ namespace helpers {
      * \details Data type of NdFlattener, but do also preserve constness.
      */
     using LookupType = typename Base::template conditional<
-      std::is_const<Nd_type>::value,
-      const typename Nd_type::Data,
-      typename Nd_type::Data
+      std::is_const<Nd_t>::value,
+      const typename Nd_t::Data_t,
+      typename Nd_t::Data_t
     >::type;
 
     /*! \brief Return (possibly const) reference to the corresponding data element.
      * \param[in] i - Last index.
      */
-    LookupType& operator[] (typename Nd_type::Index i) {
+    LookupType& operator[] (Index_t i) {
       return this->nd->GetData() [ this->offset+i ];
     }
 
@@ -301,33 +305,34 @@ namespace helpers {
     }
   };
 
-  template<typename _Nd_type>
-  class IndexAccumulator_Checked<1,_Nd_type> : public IndexAccumulator<1,_Nd_type>{
+  template<typename Nd_t_>
+  class IndexAccumulator_Checked<1,Nd_t_> : public IndexAccumulator<1,Nd_t_>{
   public:
     static constexpr size_t N = 1;
-    using Nd_type = _Nd_type;
-    typedef IndexAccumulator<1,_Nd_type> Base;
+    using Nd_t = Nd_t_;
+    typedef IndexAccumulator<1,Nd_t_> Base;
+    using Index_t = typename Nd_t::Index_t;
 
   protected:
     /*! Exclusive upper bound for the next index. */
-    const typename Nd_type::Index _size;
+    const Index_t size_;
 
   public:
     template<class ...ARGS>
-    IndexAccumulator_Checked(typename Nd_type::Index size, ARGS... args): Base(args...), _size(size) {}
+    IndexAccumulator_Checked(Index_t size, ARGS... args): Base(args...), size_(size) {}
 
     /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
      * \param[in] i - Last index.
      */
-    typename Base::LookupType& operator[] (typename Nd_type::Index i) {
-      if(i>=_size){
+    typename Base::LookupType& operator[] (Index_t i) {
+      if(i>=size_){
         SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
       }
       return Base::operator[](i);
     }
 
-    typename Nd_type::Index size() const {
-      return _size;
+    Index_t size() const {
+      return size_;
     }
   };
 
@@ -336,7 +341,7 @@ namespace helpers {
 inline helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())>
 Get_Nd_MPI_Env() {
   helpers::NdFlattener_MPI_Environment<decltype(&(SU2_MPI::Allgatherv)), decltype(MPI_INT), decltype(SU2_MPI::GetComm())> mpi_env;
-  mpi_env.MPI_Allgatherv = &(SU2_MPI::Allgatherv);
+  mpi_env.MPI_Allgatherv_fun = &(SU2_MPI::Allgatherv);
   mpi_env.mpi_index = MPI_UNSIGNED_LONG;
   mpi_env.mpi_data = MPI_DOUBLE;
   mpi_env.comm=SU2_MPI::GetComm();
@@ -357,21 +362,21 @@ Get_Nd_MPI_Env() {
  * values (but not its structure) have changed.
  *
  * \tparam K - number of indices
- * \tparam Data - Type of stored array data
+ * \tparam Data_t - Type of stored array data
  * \tparam Index - Type of index
  */
 
 
-template<size_t _K, typename _Data, typename _Index>
-class NdFlattener: public NdFlattener<_K-1,_Data,_Index>{
+template<size_t _K, typename Data_t_, typename Index_>
+class NdFlattener: public NdFlattener<_K-1,Data_t_,Index_>{
 
 public:
   static constexpr size_t K = _K;
-  using Data = _Data;
-  using Index = _Index;
+  using Data_t = Data_t_;
+  using Index_t = Index_;
 
-  typedef NdFlattener<K-1,Data,Index> Base; // could also be named LowerLayer
-  typedef NdFlattener<K,Data,Index> CurrentLayer;
+  typedef NdFlattener<K-1,Data_t,Index_t> Base; // could also be named LowerLayer
+  typedef NdFlattener<K,Data_t,Index_t> CurrentLayer;
   typedef typename Base::LowestLayer LowestLayer; // the K=1 class
 
 private:
@@ -380,18 +385,18 @@ private:
    * For the layer K=1, nNodes will be the number of data points.
    * For a layer K>1, nNodes will be the number of sublists.
    */
-  Index nNodes=0; 
+  Index_t nNodes=0;
 
   /*! \brief Iterator used at construction, runs from 0 to (nNodes-1). */
-  Index iNode=0;
+  Index_t iNode=0;
 
   /*! \brief Indices in the lower layer's indices or data array */
-  std::vector<Index> indices;
+  std::vector<Index_t> indices;
 
   /*=== Getters ===*/
 public:
-  Index* GetIndices() {return indices.data();}
-  const Index* GetIndices() const {return indices.data();}
+  Index_t* GetIndices() {return indices.data();}
+  const Index_t* GetIndices() const {return indices.data();}
 
   /*=== Outputting ===*/
 
@@ -414,9 +419,9 @@ protected:
    * \param[in] from - Beginning of the representation in the indices array.
    * \param[in] to - Ending of the representation in the indices array.
    */
-  void toPythonString_fromto(std::ostream& output, Index from, Index to) const {
+  void toPythonString_fromto(std::ostream& output, Index_t from, Index_t to) const {
     output << "[";
-    for(Index i=from; i<to; ){
+    for(Index_t i=from; i<to; ){
       Base::toPythonString_fromto(output, indices[i], indices[i+1]);
       if(++i<to) output << ", ";
     }
@@ -517,8 +522,8 @@ protected:
    */
   template<class f_type>
   void count_f(f_type f) {
-    Index nChild = f.first;
-    for(Index iChild=0; iChild<nChild; iChild++){
+    Index_t nChild = f.first;
+    for(Index_t iChild=0; iChild<nChild; iChild++){
       nNodes++;
       Base::count_f(f.second(iChild));
     }
@@ -533,8 +538,8 @@ protected:
    */
   template<class f_type>
   void set_f(f_type f, bool refresh) {
-    Index nChild = f.first;
-    for(Index iChild=0; iChild<nChild; iChild++){
+    Index_t nChild = f.first;
+    for(Index_t iChild=0; iChild<nChild; iChild++){
       Base::set_f(f.second(iChild), refresh);
       if(!refresh){
         indices[iNode+1] = indices[iNode] + f.second(iChild).first;
@@ -563,10 +568,10 @@ public:
     MPI_Environment_type const& mpi_env,
     Base const* local_version 
   ) {
-    Index** Nodes_all = new Index*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
+    Index_t** Nodes_all = new Index_t*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
     for(size_t k=0; k<K; k++)
       Nodes_all[k] = nullptr;
-    Nodes_all[K-1] = new Index[mpi_env.size]; // {1, 1, ..., 1}
+    Nodes_all[K-1] = new Index_t[mpi_env.size]; // {1, 1, ..., 1}
     int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
     int* ones = new int[mpi_env.size]; // {1,1, ...}
     for(int r=0; r<mpi_env.size; r++){
@@ -606,7 +611,7 @@ public:
     MPI_Environment_type const& mpi_env,
     Base const* local_version 
   ) {
-    Index* Nodes_all_0 = nullptr;
+    Index_t* Nodes_all_0 = nullptr;
     int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
     int* ones = new int[mpi_env.size]; // {1,1, ...}
     for(int r=0; r<mpi_env.size; r++){
@@ -632,15 +637,15 @@ protected:
    */
   template<typename MPI_Environment_type>
   void count_g(MPI_Environment_type const& mpi_env,
-         Index** Nodes_all,
+         Index_t** Nodes_all,
          CurrentLayer const* local_version,
          int const* displs, int const* ones )
   { 
     assert( Nodes_all[K-1]==nullptr);
-    Nodes_all[K-1] = new Index[mpi_env.size];
+    Nodes_all[K-1] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r];
     }
@@ -655,7 +660,7 @@ protected:
    */
   template<typename MPI_Environment_type>
   void set_g(MPI_Environment_type const& mpi_env,
-         Index** Nodes_all,
+         Index_t** Nodes_all,
          CurrentLayer const* local_version )
   { 
 
@@ -668,13 +673,13 @@ protected:
       Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
       Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
     }
-    mpi_env.MPI_Allgatherv( local_version->indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version->indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
     // shift indices 
     for(int r=1; r<mpi_env.size; r++){
-      Index first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
-      Index last_entry_to_be_shifted = Nodes_all_k_cumulated[r+1]-1;
-      Index shift = indices[ first_entry_to_be_shifted - 1];
-      for(Index i=first_entry_to_be_shifted; i<=last_entry_to_be_shifted; i++){
+      Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
+      Index_t last_entry_to_be_shifted = Nodes_all_k_cumulated[r+1]-1;
+      Index_t shift = indices[ first_entry_to_be_shifted - 1];
+      for(Index_t i=first_entry_to_be_shifted; i<=last_entry_to_be_shifted; i++){
         indices[ i ] += shift;
       }
     }
@@ -686,58 +691,58 @@ protected:
 
   /*== Data access ==*/
 public:
-  Index size() const { // should not be called by recursion, is incorrect in lower layers!
+  Index_t size() const { // should not be called by recursion, is incorrect in lower layers!
     return nNodes;
   }
 
   /*! \brief Look-up with IndexAccumulator, non-const version.
    */
-  helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data,Index> > operator[](Index i0) {
-    return helpers::IndexAccumulator<K,NdFlattener<K,Data,Index> >(this,0)[i0];
+  helpers::IndexAccumulator<K-1,NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) {
+    return helpers::IndexAccumulator<K,NdFlattener<K,Data_t,Index_t> >(this,0)[i0];
   }
   /*! \brief Look-up with IndexAccumulator, const version.
    */
-  helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data,Index> > operator[](Index i0) const {
-    return helpers::IndexAccumulator<K, const NdFlattener<K,Data,Index> >(this,0)[i0];
+  helpers::IndexAccumulator<K-1, const NdFlattener<K-1,Data_t,Index_t> > operator[](Index_t i0) const {
+    return helpers::IndexAccumulator<K, const NdFlattener<K,Data_t,Index_t> >(this,0)[i0];
   }
   /*! \brief Look-up with IndexAccumulator_Checked, non-const version.
    */
-  helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data,Index> > checked() {
-    return helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data,Index> >(size(),this,0);
+  helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data_t,Index_t> > checked() {
+    return helpers::IndexAccumulator_Checked<K, NdFlattener<K,Data_t,Index_t> >(size(),this,0);
   }
   /*! \brief Look-up with IndexAccumulator_Checked, const version.
    */
-  helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data,Index> > checked() const {
-    return helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data,Index> >(size(),this,0);
+  helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data_t,Index_t> > checked() const {
+    return helpers::IndexAccumulator_Checked<K, const NdFlattener<K,Data_t,Index_t> >(size(),this,0);
   }
 };
 
-template<typename _Data, typename _Index>
-class NdFlattener<1, _Data, _Index> {
+template<typename Data_t_, typename _Index>
+class NdFlattener<1, Data_t_, _Index> {
 public:
   static constexpr size_t K = 1;
-  using Data = _Data;
-  using Index = _Index;
+  using Data_t = Data_t_;
+  using Index_t = _Index;
 
-  typedef NdFlattener<1, Data, Index> CurrentLayer;
+  typedef NdFlattener<1, Data_t, Index_t> CurrentLayer;
   typedef CurrentLayer LowestLayer;
 
 private:
-  Index nNodes=0;
-  Index iNode=0;
-  std::vector<Data> data;
+  Index_t nNodes=0;
+  Index_t iNode=0;
+  std::vector<Data_t> data;
 
 
   /*=== Getters ===*/
 public:
-  Data* GetData() {return data.data();}
-  const Data* GetData() const {return data.data();}
+  Data_t* GetData() {return data.data();}
+  const Data_t* GetData() const {return data.data();}
 
   /*=== Outputting ===*/
 protected:
-  void toPythonString_fromto(std::ostream& output, Index from, Index to) const {
+  void toPythonString_fromto(std::ostream& output, Index_t from, Index_t to) const {
     output  << "[";
-    for(Index i=from; i<to; ){
+    for(Index_t i=from; i<to; ){
       output << data[i];
       if(++i<to) output << ", ";
     }
@@ -765,8 +770,8 @@ protected:
 
   template<typename f_type>
   void set_f(f_type f, bool refresh){
-    Index nChild = f.first;
-    for(Index iChild=0; iChild<nChild; iChild++){
+    Index_t nChild = f.first;
+    for(Index_t iChild=0; iChild<nChild; iChild++){
       data[iNode] = f.second(iChild);
       iNode++;
     }
@@ -776,15 +781,15 @@ protected:
 protected:
   template<typename MPI_Environment_type>
   void count_g(MPI_Environment_type const& mpi_env,
-         Index** Nodes_all,
+         Index_t** Nodes_all,
          CurrentLayer const* local_version,
          int const* displs, int const* ones)
   { 
     assert( Nodes_all[0]==nullptr);
-    Nodes_all[0] = new Index[mpi_env.size];
+    Nodes_all[0] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[0], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[0], ones, displs, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[0][r];
     }
@@ -792,7 +797,7 @@ protected:
 
   template<typename MPI_Environment_type>
   void set_g(MPI_Environment_type const& mpi_env,
-         Index** Nodes_all,
+         Index_t** Nodes_all,
          CurrentLayer const* local_version )
   { 
 
@@ -805,7 +810,7 @@ protected:
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv( local_version->data.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version->data.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
     delete[] Nodes_all_0_as_int;
     delete[] Nodes_all_0_cumulated;
   }
@@ -815,28 +820,28 @@ protected:
   // Calling the following functions is a bit strange, because if you have only one level,
   // you do not really benefit from NdFlattener's functionality.
 public:
-  Index size() const { // should not be called by recursion, is incorrect in lower layers!
+  Index_t size() const { // should not be called by recursion, is incorrect in lower layers!
     return nNodes;
   }
   /*! \brief Data look-up, non-const version.
    */
-  Data& operator[](Index i0) {
+  Data_t& operator[](Index_t i0) {
     return data[i0];
   }
   /*! \brief Data look-up, const version.
    */
-  const Data& operator[](Index i0) const {
+  const Data_t& operator[](Index_t i0) const {
     return data[0];
   }
   /*! \brief Look-up with IndexAccumulator_Checked, non-const version.
    */
-  helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data,Index> > checked() {
-    return helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data,Index> >(size(),this,0);
+  helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data_t,Index_t> > checked() {
+    return helpers::IndexAccumulator_Checked<1, NdFlattener<1,Data_t,Index_t> >(size(),this,0);
   }
   /*! \brief Look-up with IndexAccumulator_Checked, const version.
    */
-  helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data,Index> > checked() const {
-    return helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data,Index> >(size(),this,0);
+  helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data_t,Index_t> > checked() const {
+    return helpers::IndexAccumulator_Checked<1, const NdFlattener<1,Data_t,Index_t> >(size(),this,0);
   }
 
 };
