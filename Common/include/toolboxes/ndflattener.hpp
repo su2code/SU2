@@ -509,7 +509,7 @@ public:
   template<typename MPI_Environment_type>
   void initialize( 
     MPI_Environment_type const& mpi_env,
-    Base const* local_version 
+    Base const& local_version
   ) {
     Index_t** Nodes_all = new Index_t*[K]; // [k][r] is number of all nodes in layer (k+1), rank r in the new structure
     for(size_t k=0; k<K; k++)
@@ -552,7 +552,7 @@ public:
   template<typename MPI_Environment_type>
   void refresh( 
     MPI_Environment_type const& mpi_env,
-    Base const* local_version 
+    Base const& local_version
   ) {
     Index_t* Nodes_all_0 = nullptr;
     int* displs = new int[mpi_env.size]; // {0, 1, ..., size-1}
@@ -561,8 +561,8 @@ public:
       displs[r] = r;
       ones[r] = 1;
     }
-    LowestLayer::count_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const*>(local_version), displs, ones);
-    LowestLayer::set_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const*>(local_version));
+    LowestLayer::count_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const&>(local_version), displs, ones);
+    LowestLayer::set_g(mpi_env, &Nodes_all_0, static_cast<LowestLayer const&>(local_version));
 
     delete[] Nodes_all_0; // allocated by count_g
     delete[] displs;
@@ -581,30 +581,30 @@ protected:
   template<typename MPI_Environment_type>
   void count_g(MPI_Environment_type const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const* local_version,
+         CurrentLayer const& local_version,
          int const* displs, int const* ones )
   { 
     assert( Nodes_all[K-1]==nullptr);
     Nodes_all[K-1] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv_fun( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[K-1], ones, displs, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[K-1][r];
     }
-    Base::count_g(mpi_env, Nodes_all, static_cast<const Base*>(local_version), displs, ones);
+    Base::count_g(mpi_env, Nodes_all, static_cast<const Base&>(local_version), displs, ones);
   }
 
   /*! \brief Gather the distributed flatteners' data and index arrays into the allocated arrays.
    *
    * \param[in] mpi_env - MPI environment for communication
    * \param[in] Nodes_all - [k][r] is the number of nodes in layer (k+1), rank r.
-   * \param[in] local_version - local instance to be send to the other processes
+   * \param[in] local_version - local instance to be sent to the other processes
    */
   template<typename MPI_Environment_type>
   void set_g(MPI_Environment_type const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const* local_version )
+         CurrentLayer const& local_version )
   { 
 
     int* Nodes_all_K_as_int = new int[mpi_env.size];
@@ -616,7 +616,7 @@ protected:
       Nodes_all_k_cumulated[r+1] = Nodes_all_k_cumulated[r] + Nodes_all[K-1][r];
       Nodes_all_K_as_int[r] = Nodes_all[K-1][r];
     }
-    mpi_env.MPI_Allgatherv_fun( local_version->indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version.indices.data()+1, Nodes_all[K-1][mpi_env.rank], mpi_env.mpi_index, indices.data(), Nodes_all_K_as_int, Nodes_all_k_cumulated, mpi_env.mpi_index, mpi_env.comm );
     // shift indices 
     for(int r=1; r<mpi_env.size; r++){
       Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
@@ -629,7 +629,7 @@ protected:
     delete[] Nodes_all_K_as_int;
     delete[] Nodes_all_k_cumulated;
 
-    Base::set_g(mpi_env, Nodes_all, static_cast<const Base*>(local_version));
+    Base::set_g(mpi_env, Nodes_all, static_cast<const Base&>(local_version));
   }
 
   /*== Data access ==*/
@@ -751,14 +751,14 @@ protected:
   template<typename MPI_Environment_type>
   void count_g(MPI_Environment_type const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const* local_version,
+         CurrentLayer const& local_version,
          int const* displs, int const* ones)
   { 
     assert( Nodes_all[0]==nullptr);
     Nodes_all[0] = new Index_t[mpi_env.size];
     nNodes = 0;
     // gather numbers of nodes in the current layer from all processes
-    mpi_env.MPI_Allgatherv_fun( &(local_version->nNodes), 1, mpi_env.mpi_index, Nodes_all[0], ones, displs, mpi_env.mpi_index, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( &(local_version.nNodes), 1, mpi_env.mpi_index, Nodes_all[0], ones, displs, mpi_env.mpi_index, mpi_env.comm );
     for(int r=0; r<mpi_env.size; r++){
       nNodes += Nodes_all[0][r];
     }
@@ -767,7 +767,7 @@ protected:
   template<typename MPI_Environment_type>
   void set_g(MPI_Environment_type const& mpi_env,
          Index_t** Nodes_all,
-         CurrentLayer const* local_version )
+         CurrentLayer const& local_version )
   { 
 
 
@@ -779,7 +779,7 @@ protected:
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv_fun( local_version->data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
     delete[] Nodes_all_0_as_int;
     delete[] Nodes_all_0_cumulated;
   }

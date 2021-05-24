@@ -68,7 +68,7 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   nd2[0].data()[1] = 1.7;
 
   /*-- gather flattening structures of all processes --*/
-  NdFlattener<3> nd3(Get_Nd_MPI_Env(), &nd2);
+  NdFlattener<3> nd3(Get_Nd_MPI_Env(), nd2);
 
   /*-- Check gathered structure, non-const look-up. --*/
   REQUIRE( nd3.size() == size );
@@ -98,7 +98,7 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     
   /*-- Reread modified A and check again. --*/
   nd2.initialize_or_refresh(f);
-  nd3.refresh(Get_Nd_MPI_Env(), &nd2);
+  nd3.refresh(Get_Nd_MPI_Env(), nd2);
   REQUIRE( nd3.size() == size );
   for(int r=0; r<size; r++){
     REQUIRE( nd3[r].size() == 2 );
@@ -126,7 +126,7 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   REQUIRE( a1_const.data()[0] == -1.0 );
   a1.data()[0] = 2.0 + rank;
   REQUIRE( a1_const[0] == 2.0 + rank );
-  const NdFlattener<2> a2_const(Get_Nd_MPI_Env(), &a1);
+  const NdFlattener<2> a2_const(Get_Nd_MPI_Env(), a1);
   REQUIRE( a2_const.size() == size );
   for(int r=0; r<size; r++){
     REQUIRE( a2_const[r].size() == 3 + r );
