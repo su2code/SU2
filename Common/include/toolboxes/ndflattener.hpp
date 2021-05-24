@@ -246,7 +246,7 @@ namespace helpers {
      * previous indices.
      * \param[in] i - Index.
      */
-    LookupType operator[] (Index_t i) {
+    LookupType operator[] (Index_t i) const {
       assert(i<size());
       if(Check){
         if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
@@ -283,7 +283,7 @@ namespace helpers {
     /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
      * \param[in] i - Last index.
      */
-    LookupType& operator[] (Index_t i) {
+    LookupType& operator[] (Index_t i) const {
       assert(i<size());
       if(Check){
         if(i>=size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
@@ -297,7 +297,7 @@ namespace helpers {
      * block. If this IndexAccumulator was generated from a non-const NdFlattener, the
      * pointer is non-const, otherwise it is const.
      */
-    LookupType* data() {
+    LookupType* data() const {
       return &(this->operator[](0));
     }
   };
