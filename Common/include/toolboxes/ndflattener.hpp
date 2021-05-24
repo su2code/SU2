@@ -179,10 +179,10 @@ namespace helpers {
    * \brief Parent class of IndexAccumulator.
    * \details IndexAccumulator provides the operator[] method.
    */
-  template<size_t _N, typename Nd_t_>
+  template<size_t N_, typename Nd_t_>
   class IndexAccumulator_Base {
   public:
-    static constexpr size_t N = _N;
+    static constexpr size_t N = N_;
     using Nd_t = Nd_t_;
     using Index_t = typename Nd_t::Index_t;
 
@@ -199,12 +199,12 @@ namespace helpers {
 
   };
 
-  template<size_t _N, typename Nd_t_>
-  class IndexAccumulator : public IndexAccumulator_Base<_N,Nd_t_>{
+  template<size_t N_, typename Nd_t_>
+  class IndexAccumulator : public IndexAccumulator_Base<N_,Nd_t_>{
   public:
-    static constexpr size_t N = _N;
+    using Base = IndexAccumulator_Base<N_,Nd_t_>;
+    static constexpr size_t N = N_;
     using Nd_t = Nd_t_;
-    using Base = IndexAccumulator_Base<_N,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
@@ -229,12 +229,12 @@ namespace helpers {
     }
   };
 
-  template<size_t _N, typename Nd_t_>
-  class IndexAccumulator_Checked : public IndexAccumulator<_N,Nd_t_>{
+  template<size_t N_, typename Nd_t_>
+  class IndexAccumulator_Checked : public IndexAccumulator<N_,Nd_t_>{
   public:
-    static constexpr size_t N = _N;
+    using Base = IndexAccumulator<N_,Nd_t_>;
+    static constexpr size_t N = N_;
     using Nd_t = Nd_t_;
-    using Base = IndexAccumulator<_N,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
   protected:
@@ -271,9 +271,9 @@ namespace helpers {
   template<typename Nd_t_>
   class IndexAccumulator<1,Nd_t_> : public IndexAccumulator_Base<1,Nd_t_>{
   public:
+    using Base = IndexAccumulator_Base<1,Nd_t_>;
     static constexpr size_t N = 1;
     using Nd_t = Nd_t_;
-    using Base = IndexAccumulator_Base<1,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
@@ -308,9 +308,9 @@ namespace helpers {
   template<typename Nd_t_>
   class IndexAccumulator_Checked<1,Nd_t_> : public IndexAccumulator<1,Nd_t_>{
   public:
+    using Base = IndexAccumulator<1,Nd_t_>;
     static constexpr size_t N = 1;
     using Nd_t = Nd_t_;
-    using Base = IndexAccumulator<1,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
   protected:
