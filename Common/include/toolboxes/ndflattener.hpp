@@ -66,12 +66,13 @@
  * # Form the global NdFlattener
  * by "collective communication" like this:
  *
- *     NdFlattener<3> nd_global(Get_Nd_MPI_Env(), &nd_local);
+ *     NdFlattener<3> nd_global(Nd_MPI_Environment(), &nd_local);
  *
  * nd_global's first index is the rank, then the indices of nd_local follow.
- * Get_Nd_MPI_Env returns a helpers:NdFlattener_MPI_Environment struct suitable to gather su2double data over
- * unsigned long indices. If you deviate from these default datatypes, you need to define the MPI environment
- * structure yourself.
+ *
+ * The struct Nd_MPI_Environment contains the relevant information about the parallel environment. The default
+ * values are suitable to communicate su2double data. In order to communicate data of another MPI datatype,
+ * use e.g. Nd_MPI_Environment(MPI_UNSIGNED_LONG).
  *
  * You can also construct an NdFlattener without any arguments, and use NdFlattener::initialize(mpi_env, &nd_local).
  *
@@ -80,7 +81,7 @@
  * them with the call
  *
  *     nd_local.refresh(f_local); // , or
- *     nd_global(Get_Nd_MPI_Env(), &nd_local); // respectively.
+ *     nd_global(Nd_MPI_Environment(), &nd_local); // respectively.
  *
  * An NdFlattener constructed or initialized from a "recursive function" or "collective communication" must be
  * refreshed in the same way.
