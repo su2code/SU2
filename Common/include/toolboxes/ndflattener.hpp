@@ -204,7 +204,7 @@ namespace helpers {
   public:
     static constexpr size_t N = _N;
     using Nd_t = Nd_t_;
-    typedef IndexAccumulator_Base<_N,Nd_t_> Base;
+    using Base = IndexAccumulator_Base<_N,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
@@ -234,7 +234,7 @@ namespace helpers {
   public:
     static constexpr size_t N = _N;
     using Nd_t = Nd_t_;
-    typedef IndexAccumulator<_N,Nd_t_> Base;
+    using Base = IndexAccumulator<_N,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
   protected:
@@ -273,7 +273,7 @@ namespace helpers {
   public:
     static constexpr size_t N = 1;
     using Nd_t = Nd_t_;
-    typedef IndexAccumulator_Base<1,Nd_t_> Base;
+    using Base = IndexAccumulator_Base<1,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
     template<class ...ARGS> IndexAccumulator(ARGS... args): Base(args...) {}
@@ -310,7 +310,7 @@ namespace helpers {
   public:
     static constexpr size_t N = 1;
     using Nd_t = Nd_t_;
-    typedef IndexAccumulator<1,Nd_t_> Base;
+    using Base = IndexAccumulator<1,Nd_t_>;
     using Index_t = typename Nd_t::Index_t;
 
   protected:
@@ -375,9 +375,9 @@ public:
   using Data_t = Data_t_;
   using Index_t = Index_;
 
-  typedef NdFlattener<K-1,Data_t,Index_t> Base; // could also be named LowerLayer
-  typedef NdFlattener<K,Data_t,Index_t> CurrentLayer;
-  typedef typename Base::LowestLayer LowestLayer; // the K=1 class
+  using Base = NdFlattener<K-1,Data_t,Index_t>;
+  using CurrentLayer = NdFlattener<K,Data_t,Index_t>;
+  using LowestLayer = typename Base::LowestLayer; // the K=1 class
 
 private:
   /*! \brief Number of nodes in this layer.
@@ -724,8 +724,8 @@ public:
   using Data_t = Data_t_;
   using Index_t = _Index;
 
-  typedef NdFlattener<1, Data_t, Index_t> CurrentLayer;
-  typedef CurrentLayer LowestLayer;
+  using CurrentLayer = NdFlattener<1, Data_t, Index_t>;
+  using LowestLayer = CurrentLayer;
 
 private:
   Index_t nNodes=0;
