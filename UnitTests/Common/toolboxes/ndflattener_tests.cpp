@@ -110,6 +110,31 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
     }
   }
 
+  /*-- Check 1D functionality. --*/
+  NdFlattener<1> a1(
+    std::make_pair( (size_t)(3+rank),  [rank,A](int i) {
+      return A[1][i];
+    })
+  );
+  const NdFlattener<1>& a1_const = a1;
+  REQUIRE( a1.size() == 3 + rank );
+  for(int i=0; i<3+rank; i++){
+    REQUIRE( a1[i] == 2.0 + rank + i );
+    REQUIRE( a1_const[i] == 2.0 + rank + i );
+  }
+  a1[0] = -1.0;
+  REQUIRE( a1_const.data()[0] == -1.0 );
+  a1.data()[0] = 2.0 + rank;
+  REQUIRE( a1_const[0] == 2.0 + rank );
+  const NdFlattener<2> a2_const(Get_Nd_MPI_Env(), &a1);
+  REQUIRE( a2_const.size() == size );
+  for(int r=0; r<size; r++){
+    REQUIRE( a2_const[r].size() == 3 + r );
+    for(int i=0; i<3+r; i++){
+      REQUIRE( a2_const[r][i] == 2.0 + r + i );
+    }
+  }
+
   /*-- free stuff --*/
   delete[] A[0]; delete[] A[1]; delete[] A;
 }

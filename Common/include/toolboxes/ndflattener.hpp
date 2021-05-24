@@ -377,7 +377,7 @@ public:
    * 
    * Called recursively when a derived class (higher K) is constructed.
    */
-  NdFlattener() {};
+  NdFlattener() {}
 
   /*! \brief Constructor which calls initialize_or_refresh.
    *
@@ -663,20 +663,20 @@ public:
 private:
   Index_t nNodes=0;
   Index_t iNode=0;
-  std::vector<Data_t> data;
+  std::vector<Data_t> data_;
 
 
   /*=== Getters ===*/
 public:
-  Data_t* GetData() {return data.data();}
-  const Data_t* GetData() const {return data.data();}
+  Data_t* GetData() {return data_.data();}
+  const Data_t* GetData() const {return data_.data();}
 
   /*=== Outputting ===*/
 protected:
   void toPythonString_fromto(std::ostream& output, Index_t from, Index_t to) const {
     output  << "[";
     for(Index_t i=from; i<to; ){
-      output << data[i];
+      output << data_[i];
       if(++i<to) output << ", ";
     }
     output << "]";
@@ -685,9 +685,45 @@ protected:
 public:
   NdFlattener(void) {}
 
+  template<class... ARGS>
+  NdFlattener(ARGS... args) {
+    initialize_or_refresh(args...);
+  }
+
+  template<class ...ARGS>
+  void initialize_or_refresh(ARGS... args){
+    if( initialized() ){
+      refresh(args...);
+    } else {
+      initialize(args...);
+    }
+  }
+
+  bool initialized(){
+    return nNodes>0;
+  }
+
+  // Functionality to initialize/refresh from a recursive function
+  // could be desirable also for N=1, in order to gather from such
+  // NdFlatteners an NdFlattener with N=2.
+  // Gathering an NdFlattener with N=1 is not meaningful however.
+
+  template<class f_type>
+  void initialize(f_type f) {
+    count_f(f);
+    allocate();
+    set_f(f, false);
+  }
+
+  template<class f_type>
+  void refresh(f_type f){
+    reset_iNode();
+    set_f(f, true);
+  }
+
 protected:
   void allocate(){
-    data.reserve(nNodes);
+    data_.reserve(nNodes);
   }
 
   void reset_iNode(){
@@ -705,7 +741,7 @@ protected:
   void set_f(f_type f, bool refresh){
     Index_t nChild = f.first;
     for(Index_t iChild=0; iChild<nChild; iChild++){
-      data[iNode] = f.second(iChild);
+      data_[iNode] = f.second(iChild);
       iNode++;
     }
   }
@@ -743,7 +779,7 @@ protected:
       Nodes_all_0_as_int[r] = Nodes_all[0][r];
     }
 
-    mpi_env.MPI_Allgatherv_fun( local_version->data.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
+    mpi_env.MPI_Allgatherv_fun( local_version->data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(), Nodes_all_0_as_int, Nodes_all_0_cumulated, mpi_env.mpi_data, mpi_env.comm );
     delete[] Nodes_all_0_as_int;
     delete[] Nodes_all_0_cumulated;
   }
@@ -759,12 +795,20 @@ public:
   /*! \brief Data look-up, non-const version.
    */
   Data_t& operator[](Index_t i0) {
-    return data[i0];
+    return data_[i0];
   }
   /*! \brief Data look-up, const version.
    */
   const Data_t& operator[](Index_t i0) const {
-    return data[i0];
+    return data_[i0];
+  }
+
+  Data_t* data() {
+   return data_.data();
+  }
+
+  const Data_t* data() const {
+   return data_.data();
   }
 
 };
