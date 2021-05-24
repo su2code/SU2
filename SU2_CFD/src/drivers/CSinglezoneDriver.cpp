@@ -129,7 +129,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
   }
-  else if ( config_container[ZONE_0]->GetHeatProblem()) {
+  else if (config_container[ZONE_0]->GetHeatProblem()) {
     /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
     solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],

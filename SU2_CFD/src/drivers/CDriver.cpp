@@ -229,14 +229,9 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     CGeometry::ComputeWallDistance(config_container, geometry_container);
   }
 
+  /*--- Definition of the interface and transfer conditions between different zones. ---*/
 
-  /*--- Definition of the interface and transfer conditions between different zones.
-   *--- The transfer container is defined for zones paired one to one.
-   *--- This only works for a multizone FSI problem (nZone > 1).
-   *--- Also, at the moment this capability is limited to two zones (nZone < 3).
-   *--- This will change in the future. ---*/
-
-  if ( nZone > 1 ) {
+  if (nZone > 1) {
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
@@ -244,8 +239,19 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
                             interface_types, interface_container, interpolator_container);
   }
 
+  if (fsi) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Solver_Restart(solver_container[iZone][iInst], geometry_container[iZone][iInst],
+                       config_container[iZone], true);
+      }
+    }
+  }
+
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
-    if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
+
     Turbomachinery_Preprocessing(config_container, geometry_container, solver_container, interface_container);
   }
 
@@ -861,16 +867,18 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
-  if ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetGrid_Movement()) {
+  if ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetDynamic_Grid()) {
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
       /*--- Update cell volume ---*/
       geometry[iMGlevel]->nodes->SetVolume_n();
       geometry[iMGlevel]->nodes->SetVolume_nM1();
 
-      /*--- Update point coordinates ---*/
-      geometry[iMGlevel]->nodes->SetCoord_n();
-      geometry[iMGlevel]->nodes->SetCoord_n1();
+      if (config->GetGrid_Movement()) {
+        /*--- Update point coordinates ---*/
+        geometry[iMGlevel]->nodes->SetCoord_n();
+        geometry[iMGlevel]->nodes->SetCoord_n1();
+      }
     }
   }
 
@@ -1009,16 +1017,13 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   DOFsPerPoint = 0;
 
-  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
-    if (solver[MESH_0][iSol] != nullptr){
-      DOFsPerPoint += solver[MESH_0][iSol]->GetnVar();
-    }
-  }
+  for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++)
+    if (solver[MESH_0][iSol]) DOFsPerPoint += solver[MESH_0][iSol]->GetnVar();
 
-  bool update_geo = true;
-  if (config->GetFSI_Simulation()) update_geo = false;
+  /*--- Restart solvers, for FSI the geometry cannot be updated because the interpolation classes
+   * should always use the undeformed mesh (otherwise the results would not be repeatable). ---*/
 
-  Solver_Restart(solver, geometry, config, update_geo);
+  if (!fsi) Solver_Restart(solver, geometry, config, true);
 
   /*--- Set up any necessary inlet profiles ---*/
 
@@ -2251,7 +2256,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
     /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
 
-    geometry[MESH_0]->UpdateGeometry(geometry,config);
+    CGeometry::UpdateGeometry(geometry,config);
 
   }
 
