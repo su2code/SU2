@@ -384,7 +384,7 @@ public:
    *
    */
   template<class... ARGS>
-  NdFlattener(ARGS... args) {
+  NdFlattener(ARGS const&... args) {
     initialize_or_refresh(args...);
   }
 
@@ -396,7 +396,7 @@ public:
    * recollected under the assumption that the indices arrays did not change.
    */
   template<class ...ARGS>
-  void initialize_or_refresh(ARGS... args){
+  void initialize_or_refresh(ARGS const&... args){
     if( initialized() ){
       refresh(args...);
     } else {
@@ -687,12 +687,12 @@ public:
   NdFlattener(void) {}
 
   template<class... ARGS>
-  NdFlattener(ARGS... args) {
+  NdFlattener(ARGS const&... args) {
     initialize_or_refresh(args...);
   }
 
   template<class ...ARGS>
-  void initialize_or_refresh(ARGS... args){
+  void initialize_or_refresh(ARGS const&... args){
     if( initialized() ){
       refresh(args...);
     } else {
