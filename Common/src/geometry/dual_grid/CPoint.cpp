@@ -66,6 +66,11 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Volume_n.resize(npoint) = su2double(0.0);
     Volume_nM1.resize(npoint) = su2double(0.0);
+    if (config->GetDynamic_Grid() && config->GetDiscrete_Adjoint()) {
+      Volume_Old.resize(npoint) = su2double(0.0);
+      Volume_n_Old.resize(npoint) = su2double(0.0);
+      Volume_nM1_Old.resize(npoint) = su2double(0.0);
+    }
   }
 
   if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
@@ -167,6 +172,31 @@ void CPoint::SetVolume_n() {
 void CPoint::SetVolume_nM1() {
   assert(Volume_nM1.size() == Volume_n.size());
   parallelCopy(Volume_n.size(), Volume_n.data(), Volume_nM1.data());
+}
+
+void CPoint::SetVolume_Old() {
+  assert(Volume_Old.size() == Volume.size());
+  parallelCopy(Volume.size(), Volume.data(), Volume_Old.data());
+}
+
+void CPoint::SetVolume_n_Old() {
+  assert(Volume_n_Old.size() == Volume_n.size());
+  parallelCopy(Volume_n.size(), Volume_n.data(), Volume_n_Old.data());
+}
+
+void CPoint::SetVolume_nM1_Old() {
+  assert(Volume_nM1_Old.size() == Volume_nM1.size());
+  parallelCopy(Volume_nM1.size(), Volume_nM1.data(), Volume_nM1_Old.data());
+}
+
+void CPoint::SetVolume_n_from_OldnM1() {
+  assert(Volume_n.size() == Volume_nM1_Old.size());
+  parallelCopy(Volume_nM1_Old.size(), Volume_nM1_Old.data(), Volume_n.data());
+}
+
+void CPoint::SetVolume_from_Oldn() {
+  assert(Volume.size() == Volume_n_Old.size());
+  parallelCopy(Volume_n_Old.size(), Volume_n_Old.data(), Volume.data());
 }
 
 void CPoint::SetCoord_n() {
