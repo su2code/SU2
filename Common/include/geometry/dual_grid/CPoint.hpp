@@ -543,7 +543,7 @@ public:
   void SetVolume_n();
 
   /*!
-   * \brief Set the volume of the control volume at time n+1.
+   * \brief Set the volume of the control volume at time n-1.
    */
   void SetVolume_nM1();
 

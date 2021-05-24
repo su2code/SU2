@@ -707,7 +707,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   /*--- Restart the solution from file information ---*/
 
-  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned short iDim, iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent;
@@ -744,6 +744,15 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  if (update_geo && dynamic_grid) {
+    auto notFound = fields.end();
+    if (find(fields.begin(), notFound, string("\"Grid_Velocity_x\"")) == notFound) {
+      if (rank == MASTER_NODE)
+        cout << "\nWARNING: The restart file does not contain grid velocities, these will be set to zero.\n" << endl;
+      steady_restart = true;
+    }
   }
 
   /*--- Load data from the restart into correct containers. ---*/
@@ -829,39 +838,26 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
-  /*--- Update the geometry for flows on deforming meshes ---*/
+  /*--- Update the geometry for flows on deforming meshes. ---*/
 
   if ((dynamic_grid || static_fsi) && update_geo) {
 
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+    CGeometry::UpdateGeometry(geometry, config);
 
     if (dynamic_grid) {
-      geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-      geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
-    }
+      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
-    /*--- Recompute the edges and dual mesh control volumes in the
-     domain and on the boundaries. ---*/
+        /*--- Compute the grid velocities on the coarser levels. ---*/
+        if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh-1], config);
 
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
+        geometry[iMesh]->nodes->SetVolume_n();
+        geometry[iMesh]->nodes->SetVolume_nM1();
 
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      if (dynamic_grid) {
-        geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+        if (config->GetGrid_Movement()) {
+          geometry[iMesh]->nodes->SetCoord_n();
+          geometry[iMesh]->nodes->SetCoord_n1();
+        }
       }
-      geometry[iMesh]->SetMaxLength(config);
     }
   }
 
@@ -973,7 +969,7 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
 
-  if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))) {
+  if (dual_time && TimeIter == config->GetRestart_Iter()) {
     PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
   }
 
@@ -998,27 +994,24 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     }
   }
 
-  if (restart && (TimeIter == config->GetRestart_Iter()) && (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
+  if (restart && (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
 
-    const bool update_geo = !config->GetFSI_Simulation();
+    /*--- Load an additional restart file for a 2nd-order restart. ---*/
 
-    /*--- Load an additional restart file for a 2nd-order restart ---*/
+    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
 
-    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter() - 1,
-                                                    update_geo);
-
-    /*--- Load an additional restart file for the turbulence model ---*/
+    /*--- Load an additional restart file for the turbulence model. ---*/
     if (rans)
-      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, config->GetRestart_Iter() - 1,
-                                                      false);
+      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
     /*--- Push back this new solution to time level N. ---*/
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
-      if (rans) {
-        solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
-      }
+      if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+
+      geometry[iMesh]->nodes->SetVolume_n();
+      if (config->GetGrid_Movement()) geometry[iMesh]->nodes->SetCoord_n();
     }
   }
 }

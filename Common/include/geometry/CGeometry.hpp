@@ -1258,7 +1258,7 @@ public:
    * \param geometry_container - Geometrical definition.
    * \param config - Config
    */
-  void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
+  static void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

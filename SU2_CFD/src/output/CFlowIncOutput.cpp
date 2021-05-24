@@ -64,8 +64,15 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
+  }
+
+  if (gridMovement) {
+    auto notFound = requestedVolumeFields.end();
+    if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
+      requestedVolumeFields.emplace_back("GRID_VELOCITY");
+      nRequestedVolumeFields ++;
+    }
   }
 
   stringstream ss;
@@ -436,7 +443,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-  if (config->GetEnergy_Equation())  
+  if (config->GetEnergy_Equation())
     AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
   switch(config->GetKind_Turb_Model()){

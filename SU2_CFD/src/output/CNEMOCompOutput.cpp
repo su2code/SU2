@@ -44,7 +44,7 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   turb_model    = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
-  gridMovement  = config->GetGrid_Movement();
+  gridMovement  = config->GetDynamic_Grid();
   nSpecies      = config->GetnSpecies();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -72,6 +72,14 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("PRIMITIVE");
     requestedVolumeFields.emplace_back("AUXILIARY");
     nRequestedVolumeFields = requestedVolumeFields.size();
+  }
+
+  if (gridMovement) {
+    auto notFound = requestedVolumeFields.end();
+    if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
+      requestedVolumeFields.emplace_back("GRID_VELOCITY");
+      nRequestedVolumeFields ++;
+    }
   }
 
   stringstream ss;
@@ -327,7 +335,7 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
   // Grid velocity
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -474,7 +482,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (config->GetDynamic_Grid()){
+  if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
