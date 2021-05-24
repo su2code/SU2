@@ -2489,10 +2489,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetDynamic_Grid()){
-    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-  }
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
