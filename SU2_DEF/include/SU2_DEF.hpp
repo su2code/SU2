@@ -32,14 +32,11 @@
 #include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/parallelization/omp_structure.hpp"
 
+#include "drivers/CDeformationDriver.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-
-#include "../../SU2_CFD/include/solvers/CSolver.hpp"
-#include "../../SU2_CFD/include/output/CMeshOutput.hpp"
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
 
 using namespace std;
