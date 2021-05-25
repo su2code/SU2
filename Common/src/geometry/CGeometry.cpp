@@ -3944,12 +3944,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
     /*--- Otherwise, set wall roughnesses. ---*/
     if(!allEmpty){
-      /*--- Store all wall roughnesses in a common data structure. ---*/      
+      /*--- Store all wall roughnesses in a common data structure. ---*/
       // [iZone][iMarker] -> roughness, for this rank
       auto roughness_f =
         make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
           const CConfig* config = config_container[iZone];
-          return make_pair( geometry_container[iZone][iInst][MESH_0]->GetnMarker() , [config](unsigned long iMarker){
+          const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+          return make_pair( nMarker, [config](unsigned long iMarker){
             return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
           });
         });

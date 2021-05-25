@@ -61,8 +61,8 @@ template<bool condition>
 using su2enable_if = typename std::enable_if<condition,bool>::type;
 
 /*--- Compile-time type selection. ---*/
-template<bool B, class T, class F> struct su2conditional { typedef T type; };
-template<class T, class F> struct su2conditional<false, T, F> { typedef F type; };
+template<bool B, class T, class F> struct su2conditional { using type = T; };
+template<class T, class F> struct su2conditional<false, T, F> { using type = F; };
 
 template<bool B, class T, class F>
 using su2conditional_t = typename su2conditional<B,T,F>::type;

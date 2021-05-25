@@ -163,15 +163,17 @@ class NdFlattener;
 struct Nd_MPI_Environment {
   using MPI_Allgather_t = decltype(&(SU2_MPI::Allgather));
   using MPI_Allgatherv_t = decltype(&(SU2_MPI::Allgatherv));
-  using MPI_Datatype_t = decltype(MPI_INT);
+  using MPI_Datatype_t = typename SU2_MPI::Datatype;
   using MPI_Communicator_t = typename SU2_MPI::Comm;
-  MPI_Datatype_t mpi_data;
-  MPI_Datatype_t mpi_index;
+
+  const MPI_Datatype_t mpi_data;
+  const MPI_Datatype_t mpi_index;
   MPI_Communicator_t comm;
   MPI_Allgather_t MPI_Allgather_fun;
   MPI_Allgatherv_t MPI_Allgatherv_fun;
-  int rank;
-  int size;
+  const int rank;
+  const int size;
+
   Nd_MPI_Environment(MPI_Datatype_t mpi_data = MPI_DOUBLE,
                      MPI_Datatype_t mpi_index = MPI_UNSIGNED_LONG,
                      MPI_Communicator_t comm = SU2_MPI::GetComm(),
@@ -209,19 +211,19 @@ class IndexAccumulator_Base {
   using Nd_t = Nd_t_;
   using Index_t = typename Nd_t::Index_t;
 
+  /*! \brief Return exclusive upper bound for next index.
+   */
+  Index_t size() const { return size_; }
+
  protected:
   Nd_t& nd;             /*!< \brief The accessed NdFlattener. */
   const Index_t offset; /*!< \brief Index in the currently accessed layer. */
   const Index_t size_;  /*!< \brief Exclusive upper bound for the next index. */
 
   IndexAccumulator_Base(Nd_t& nd, Index_t offset, Index_t size) : nd(nd), offset(offset), size_(size) {}
-
-  /*! \brief Return exclusive upper bound for next index.
-   */
-  Index_t size() const { return size_; }
 };
 
-template <size_t N_, typename Nd_t_, bool Check = true>
+template <size_t N_, typename Nd_t_, bool Check = false>
 class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
  public:
   using Base = IndexAccumulator_Base<N_, Nd_t_>;
@@ -289,7 +291,7 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
     if (Check) {
       if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
     }
-    return nd.GetData()[offset + i];
+    return nd.data()[offset + i];
   }
 
   /*! \brief Return (possibly const) pointer to data.
@@ -351,7 +353,6 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
 
   /*=== Outputting ===*/
 
- public:
   /*! \brief Write in Python-list style.
    *
    * Like this: [[1, 2], [10, 20, 30]]
@@ -630,11 +631,6 @@ class NdFlattener<1, Data_t_, Index_t_> {
   Index_t nNodes = 0;
   Index_t iNode = 0;
   std::vector<Data_t> data_;
-
-  /*=== Getters ===*/
- public:
-  Data_t* GetData() { return data_.data(); }
-  const Data_t* GetData() const { return data_.data(); }
 
   /*=== Outputting ===*/
  protected:

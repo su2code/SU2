@@ -134,7 +134,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   Wall_Distance.resize(npoint) = su2double(0.0);
   ClosestWall_Rank.resize(npoint) = -1;
   ClosestWall_Zone.resize(npoint) = numeric_limits<unsigned short>::max();
-  ClosestWall_Marker.resize(npoint) = numeric_limits<unsigned short>::max();
+  ClosestWall_Marker = ClosestWall_Zone;
   ClosestWall_Elem.resize(npoint) = numeric_limits<unsigned long>::max();
 
   RoughnessHeight.resize(npoint) = su2double(0.0);

@@ -431,17 +431,15 @@ public:
    * \param[in] markerID - Marker index of closest wall element.
    * \param[in] elemID - Element index of closest wall element.
    */
-  inline void SetWall_Distance(unsigned long iPoint, su2double distance,
-                               int rankID = -1,
-                               unsigned short zoneID = numeric_limits<unsigned short>::max(),
-                               unsigned short markerID = numeric_limits<unsigned short>::max(),
-                               unsigned long elemID = numeric_limits<unsigned long>::max() ) {
+  inline void SetWall_Distance(unsigned long iPoint, su2double distance, int rankID, unsigned short zoneID,
+                               unsigned short markerID, unsigned long elemID) {
     Wall_Distance(iPoint) = distance;
     ClosestWall_Rank(iPoint) = rankID;
     ClosestWall_Zone(iPoint) = zoneID;
     ClosestWall_Marker(iPoint) = markerID;
     ClosestWall_Elem(iPoint) = elemID;
   }
+  inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
 
   /*!
    * \brief Get the value of the distance to the nearest wall.
@@ -886,10 +884,10 @@ public:
   template<typename Roughness_type>
   void SetWallRoughness(Roughness_type const& roughness){
     for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
-      int rankID = ClosestWall_Rank[iPoint];
-      unsigned short zoneID = ClosestWall_Zone[iPoint];
-      unsigned short markerID = ClosestWall_Marker[iPoint];
-      if(rankID != -1){
+      auto rankID = ClosestWall_Rank[iPoint];
+      auto zoneID = ClosestWall_Zone[iPoint];
+      auto markerID = ClosestWall_Marker[iPoint];
+      if(rankID >= 0){
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
       }
     }
