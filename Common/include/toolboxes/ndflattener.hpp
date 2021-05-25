@@ -112,6 +112,22 @@
  *
  *     nd_global[rank][zone].data()
  *
+ * # Constness
+ * The IndexAccumulator stores how to access an NdFlattener (and which one), and this information does not change along
+ * with read or write access. Therefore the members `IndexAccumulator<N,Nd_t>::operator[]` and `IndexAccumulator<1,Nd_t>::data`
+ * could be always const, and any const-qualification of `Nd_t` could just be passed by `operator[]` to the
+ * `IndexAccumulator` class of lower `N` and finally decide whether a reference/pointer to `const Data_t` or `Data_t` is returned.
+ *
+ * However, in order to comply with the intended semantic meaning of const, those `operator[]` and `data` are not marked as
+ * const functions. We provide const variants of them, which however make the `Nd_t` const or return references/pointers to
+ * `const Data_t`.
+ *
+ * This ensures that the following is not possible:
+ *
+ *     template<class T> set(T const& t) { t[0] = 1.0; }
+ *     NdFlattener<2> nd2(...);
+ *     set( nd2[0] );
+ *
  * # Unit tests
  * The interface described here is tested in UnitTests/Common/toolboxes/ndflattener_tests.cpp, which may also
  * serve as an addition example of how to use the NdFlattener.
@@ -157,7 +173,7 @@ class NdFlattener;
  * \brief Contains information for the collective communication of NdFlatteners.
  *
  * The default arguments in the constructor are chosen in a sensible way:
- * - To communicate su2double data, just call ND_MPI_Environment().
+ * - To communicate su2double data, just call Nd_MPI_Environment().
  * - To communicate unsigned long data, call Nd_MPI_Environment(MPI_UNSIGNED_LONG).
  */
 struct Nd_MPI_Environment {
@@ -193,9 +209,10 @@ namespace helpers {
  * \brief Data structure holding an offset for the NdFlattener, to provide a []...[]-interface.
  * \details Derived from IndexAccumulator_Base, specifying the operator[] method:
  *  - For N==1, the structure has already read all indices but one. So after this method has read the last
- *    index, return a reference to the data.
- *  - The case N==2 is much like the case N>3 but an additional function data() should be provided.
- *  - For N>3, more indices have to be read, return an IndexAccumulator<N-1>.
+ *    index, return a (possibly const) reference to the data. An additional function data() should be provided.
+ *  - For N>1, more indices have to be read, return an IndexAccumulator<N-1,Nd_t_lower>. Nd_t_lower is the
+ *    NdFlattener type with one index less. Nd_t_lower is const-qualified if Nd_t is const-qualified, or if the
+ *    index look-up is performed in a const IndexAccumulator.
  * \tparam N - Number of missing parameters
  * \tparam Nd_t - Type of the accessed NdFlattener, should be NdFlattener<N,...>
  * \tparam Check - if true, raise error if index to operator[] is not in range
@@ -242,15 +259,17 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
   >;
   /*! Return type of operator[]. */
   using LookupType = IndexAccumulator<N - 1, Nd_Base_t>;
+  /*! Return type of operator[] const. */
+  using LookupType_const = IndexAccumulator<N - 1, const typename Nd_t::Base>;
   using Base::nd;
   using Base::offset;
   using Base::size;
 
   /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
-   * previous indices.
+   * previous indices. Non-const version.
    * \param[in] i - Index.
    */
-  LookupType operator[](Index_t i) const {
+  LookupType operator[](Index_t i) {
     assert(i < size());
     if (Check) {
       if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
@@ -258,6 +277,18 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
     const Index_t new_offset = nd.GetIndices()[offset + i];
     const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
     return LookupType(nd, new_offset, new_size);
+  }
+  /*! \brief Read one more index, const version.
+   * \param[in] i - Index.
+   */
+  LookupType_const operator[](Index_t i) const {
+    assert(i < size());
+    if (Check) {
+      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
+    }
+    const Index_t new_offset = nd.GetIndices()[offset + i];
+    const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
+    return LookupType_const(nd, new_offset, new_size);
   }
 };
 
@@ -279,14 +310,29 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
     const typename Nd_t::Data_t,
     typename Nd_t::Data_t
   >;
+  using LookupType_const = const typename Nd_t::Data_t;
   using Base::nd;
   using Base::offset;
   using Base::size;
 
   /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
+   * Non-const version.
+   * \details The returned reference is const if and only if the type of the accessed NdFlattener is const-qualified.
+   * Even though the original NdFlattener might be non-const, marking any IndexAccumulator as const during index look-up
+   * will invoke the const version of operator[], which turns the NdFlattener type to const.
    * \param[in] i - Last index.
    */
-  LookupType& operator[](Index_t i) const {
+  LookupType& operator[](Index_t i) {
+    assert(i < size());
+    if (Check) {
+      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
+    }
+    return nd.data()[offset + i];
+  }
+  /*! \brief Return const reference to the corresponding data element, checking if the index is in its range.
+   * \param[in] i - Last index.
+   */
+  LookupType_const& operator[](Index_t i) const {
     assert(i < size());
     if (Check) {
       if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
@@ -294,13 +340,16 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
     return nd.data()[offset + i];
   }
 
-  /*! \brief Return (possibly const) pointer to data.
+  /*! \brief Return (possibly const) pointer to data, non-const version.
    * \details If all indices except the last one are fixed, the corresponding data
    * is stored contiguously. Return a pointer to the beginning of the
    * block. If this IndexAccumulator was generated from a non-const NdFlattener, the
    * pointer is non-const, otherwise it is const.
    */
-  LookupType* data() const { return &(this->operator[](0)); }
+  LookupType* data() { return &(this->operator[](0)); }
+  /*! \brief Return const pointer to data.
+   */
+  LookupType_const* data() const { return &(this->operator[](0)); }
 };
 
 }  // namespace helpers
