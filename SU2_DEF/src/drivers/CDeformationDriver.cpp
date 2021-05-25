@@ -1,7 +1,7 @@
 /*!
- * \file SU2_DEF.cpp
- * \brief Main file of Mesh Deformation Code (SU2_DEF).
- * \author F. Palacios, T. Economon
+ * \file CDeformationDriver.hpp
+ * \brief Main subroutines for driving the mesh deformation.
+ * \author T. Economon, H. Kline, R. Sanchez
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,8 +27,10 @@
 
 
 #include "../../include/drivers/CDeformationDriver.hpp"
+
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
+
 using namespace std;
 
 CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator) {
@@ -49,9 +51,10 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
   strcpy(config_file_name, confFile);
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF, false);
+  driver_config = nullptr;
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
 
-  nZone    = driver_config->GetnZone();
+  nZone = driver_config->GetnZone();
 
   /*--- Initialize containers --- */
 
@@ -430,7 +433,6 @@ void CDeformationDriver::Run() {
       }
     }
 
-
     if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
         (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID)     &&
         (config_container[ZONE_0]->GetDesign_Variable(0) != TRANSLATE_GRID) &&
@@ -442,6 +444,17 @@ void CDeformationDriver::Run() {
 
       surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
 
+    }
+
+    /*--- Synchronization point after a single solver iteration. Compute the
+      wall clock time required. ---*/
+
+    StopTime = SU2_MPI::Wtime();
+
+    UsedTimeCompute = StopTime-StartTime;
+    if (rank == MASTER_NODE) {
+      cout << "\nCompleted in " << fixed << UsedTimeCompute << " seconds on "<< size;
+      if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
     }
 }
 
@@ -502,19 +515,8 @@ void CDeformationDriver::Postprocessing() {
 
     if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
-    /*--- Synchronization point after a single solver iteration. Compute the
-     wall clock time required. ---*/
-
-    StopTime = SU2_MPI::Wtime();
-
-    UsedTimeCompute = StopTime-StartTime;
-    if (rank == MASTER_NODE) {
-      cout << "\nCompleted in " << fixed << UsedTimeCompute << " seconds on "<< size;
-      if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
-    }
-
     /*--- Exit the solver cleanly ---*/
 
     if (rank == MASTER_NODE)
       cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
-  }
+}

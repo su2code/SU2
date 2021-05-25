@@ -1,7 +1,6 @@
 /*!
  * \file CDeformationDriver.hpp
- * \brief Headers of the main subroutines for driving single or multi-zone problems.
- *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
+ * \brief Headers of the main subroutines for driving the mesh deformation.
  * \author T. Economon, H. Kline, R. Sanchez
  * \version 7.1.1 "Blackbird"
  *
@@ -37,8 +36,8 @@
 
 /*!
  * \class CDeformationDriver
- * \brief Class for driving single-zone solvers.
- * \author R. Sanchez
+ * \brief Class for driving mesh deformation solvers.
+ * \author A. Gastaldi, H. Patel
  * \version 7.1.1 "Blackbird"
  */
 class CDeformationDriver {
@@ -58,7 +57,6 @@ protected:
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement **grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
-                   /*!< \brief FFD FFDBoxes of the problem. */
 
 public:
   /*!
@@ -66,8 +64,7 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDeformationDriver(char* confFile,
-             SU2_Comm MPICommunicator);
+  CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
