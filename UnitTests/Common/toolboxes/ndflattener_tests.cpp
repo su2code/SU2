@@ -28,11 +28,6 @@
 #include "catch.hpp"
 #include "../../Common/include/toolboxes/ndflattener.hpp"
 
-template<class T>
-void setIntoConstObject(const T& obj) {
-  obj[0] = 1;
-}
-
 TEST_CASE("NdFlattener Test", "[NdFlattener]"){
 
   int rank; SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
@@ -55,8 +50,6 @@ TEST_CASE("NdFlattener Test", "[NdFlattener]"){
   /*-- Read into flattening structure --*/
   NdFlattener<2> nd2;
   nd2.initialize_or_refresh(f);
-
-  setIntoConstObject(nd2[0]);
 
   /*-- Modify A -> this should not alter nd2 at this point --*/
   A[0][0] = 0.5;
