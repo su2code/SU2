@@ -646,7 +646,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4, 0, -3.771897, -4.163473]
+    fsi2d.test_vals = [4, 0, -3.743230, -4.133462]
     fsi2d.multizone= True
     fsi2d.unsteady = True
     test_list.append(fsi2d)
@@ -665,7 +665,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.400852, -4.085149, 5.3839e-08, 121]
+    dyn_fsi.test_vals = [-4.355806, -4.060581, 5.3837e-08, 100]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
