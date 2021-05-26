@@ -112,6 +112,20 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
     tensorDSolDs[0] = legN;    tensorDSolDs[1] = derLegT0; tensorDSolDs[2] = legT1;
     tensorDSolDt[0] = legN;    tensorDSolDt[1] = legT0;    tensorDSolDt[2] = derLegT1;
   }
+
+  /*--- Set the components of the transpose tensors. ---*/
+  tensorSolTranspose.resize(3);
+  tensorSolTranspose[0] = tensorSol[0];
+
+  tensorSolTranspose[1].resize(nDOFsPad, nIntegration); tensorSolTranspose[1].setConstant(0.0);
+  tensorSolTranspose[2].resize(nDOFsPad, nIntegration); tensorSolTranspose[2].setConstant(0.0);
+
+  for(unsigned short j=0; j<nIntegration; ++j) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      tensorSolTranspose[1](i,j) = tensorSol[1](j,i);
+      tensorSolTranspose[2](i,j) = tensorSol[2](j,i);
+    }
+  }
 }
 
 void CFEMStandardQuadAdjacentHexSol::GradSolIntPoints(ColMajorMatrix<su2double>          &matSolDOF,
@@ -139,8 +153,8 @@ void CFEMStandardQuadAdjacentHexSol::SolIntPoints(ColMajorMatrix<su2double> &mat
   /*--- Call the general functionality of gemmDOFs2Int with the appropriate
         arguments to compute the solution in the integration points
         of the face. ---*/
-  gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, swapTangInTensor, matSolDOF.cols(),
-                         matSolDOF, matSolInt);
+  gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, swapTangInTensor,
+                         matSolDOF.cols(), matSolDOF, matSolInt);
 
   /*--- Set the padded data to avoid problems. ---*/
   for(unsigned short j=0; j<matSolDOF.cols(); ++j)
@@ -150,5 +164,9 @@ void CFEMStandardQuadAdjacentHexSol::SolIntPoints(ColMajorMatrix<su2double> &mat
 
 void CFEMStandardQuadAdjacentHexSol::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt,
                                                             ColMajorMatrix<su2double> &resDOFs) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- Call the general functionality of gemmInt2DOFs with the appropriate
+        arguments to compute the residual in the DOFs of the volume. ---*/
+  gemmInt2DOFs->Int2DOFs(tensorSolTranspose, faceID_Elem, swapTangInTensor,
+                         scalarDataInt.cols(), scalarDataInt, resDOFs);
 }

@@ -33,6 +33,7 @@
 #include "CGemmBase.hpp"
 #include "../CConfig.hpp"
 #include "../tensor_products/TensorProductSurfaceIntPoints3D.hpp"
+#include "../tensor_products/TensorProductSurfaceResVolumeDOFs3D.hpp"
 
 using namespace std;
 
@@ -91,6 +92,23 @@ public:
                 ColMajorMatrix<su2double>              &dataDOFs,
                 ColMajorMatrix<su2double>              &dataInt);
 
+  /*!
+   * \brief Function, which carries out the tensor product to compute the residual in
+   *        the DOFs of the volume from the data in the integration points of the face.
+   * \param[in]     tensor           - Tensor to create the required data.
+   * \param[in]     faceID_Elem      - The face ID of the element on which the face resides.
+   * \param[in]     swapTangInTensor - Whether or not to swap the tangential directions of the face data.
+   * \param[in]     N                - Number of items in the DOFs and integration points.
+   * \param[in]     dataInt          - The input data in the integration points.
+   * \param[in,out] dataRes          - The residual in the volume DOFs to be updated.
+   */
+  void Int2DOFs(vector<ColMajorMatrix<passivedouble> > &tensor,
+                const int                              faceID_Elem,
+                const bool                             swapTangInTensor,
+                const int                              N,
+                ColMajorMatrix<su2double>              &dataInt,
+                ColMajorMatrix<su2double>              &dataDOFs);
+
 private:
 
   int M;   /*!< \brief First tensor dimensions of A and C in the gemm call. */
@@ -102,4 +120,8 @@ private:
 
   TPIS3D TensorProductDataSurfIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
                                                                to compute the data in the surface integration points. */
+
+  TPDR3D TensorProductResSurfIntPoints = nullptr;  /*!< \brief Function pointer to carry out the tensor product
+                                                               to compute the residual contribution from the data in
+                                                               integration points of the line element. */
 };

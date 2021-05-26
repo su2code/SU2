@@ -146,4 +146,8 @@ private:
   vector<ColMajorMatrix<passivedouble> > tensorDSolDt;  /*!< \brief The three 1D components of the tensor to compute
                                                                     the derivative in t-direction of the solution
                                                                     on the face of the hexahedron. */
+
+  vector<ColMajorMatrix<passivedouble> > tensorSolTranspose; /*!< \brief The three 1D components of the transpose of
+                                                                         tensorSol. Needed to compute the residuals
+                                                                         of the volume DOFs from the surface fluxes. */
 };

@@ -196,7 +196,7 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
     includeFile << " *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = ("
                 << nDOFs1D[i] << "," << nInt1D[i] << ")." << std::endl;
     includeFile << " * \\param[in]  N          - Number of variables to be determined in the integration points" << std::endl;
-    includeFile << " * \\param[in]  faceID     - Face ID of the quad for which the line data must be created" << std::endl;
+    includeFile << " * \\param[in]  faceID     - Face ID of the hex for which the quad data must be created" << std::endl;
     includeFile << " * \\param[in]  ldb        - Leading dimension of B when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  ldc        - Leading dimension of C when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  swapTanDir - Whether or not to swap the tangential directions of the result." << std::endl;
