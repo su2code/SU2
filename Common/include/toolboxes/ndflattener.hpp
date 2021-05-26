@@ -221,7 +221,7 @@ namespace helpers {
  * \brief Parent class of IndexAccumulator.
  * \details IndexAccumulator provides the operator[] method.
  */
-template <size_t N_, typename Nd_t_>
+template <size_t N_, typename Nd_t_, bool Check>
 class IndexAccumulator_Base {
  public:
   static constexpr size_t N = N_;
@@ -238,12 +238,19 @@ class IndexAccumulator_Base {
   const Index_t size_;  /*!< \brief Exclusive upper bound for the next index. */
 
   IndexAccumulator_Base(Nd_t& nd, Index_t offset, Index_t size) : nd(nd), offset(offset), size_(size) {}
+
+  FORCEINLINE void CheckBound(Index_t i) const {
+    assert(i < size());
+    if (Check) {
+      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
+    }
+  }
 };
 
 template <size_t N_, typename Nd_t_, bool Check = false>
-class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
+class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_, Check> {
  public:
-  using Base = IndexAccumulator_Base<N_, Nd_t_>;
+  using Base = IndexAccumulator_Base<N_, Nd_t_, Check>;
   static constexpr size_t N = N_;
   using Nd_t = Nd_t_;
   using Index_t = typename Nd_t::Index_t;
@@ -264,16 +271,14 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
   using Base::nd;
   using Base::offset;
   using Base::size;
+  using Base::CheckBound;
 
   /*! \brief Read one more index, checking whether it is in the range dictated by the NdFlattener and
    * previous indices. Non-const version.
    * \param[in] i - Index.
    */
   LookupType operator[](Index_t i) {
-    assert(i < size());
-    if (Check) {
-      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-    }
+    CheckBound(i);
     const Index_t new_offset = nd.GetIndices()[offset + i];
     const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
     return LookupType(nd, new_offset, new_size);
@@ -282,10 +287,7 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
    * \param[in] i - Index.
    */
   LookupType_const operator[](Index_t i) const {
-    assert(i < size());
-    if (Check) {
-      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-    }
+    CheckBound(i);
     const Index_t new_offset = nd.GetIndices()[offset + i];
     const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
     return LookupType_const(nd, new_offset, new_size);
@@ -293,9 +295,9 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_> {
 };
 
 template <typename Nd_t_, bool Check>
-class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_> {
+class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_, Check> {
  public:
-  using Base = IndexAccumulator_Base<1, Nd_t_>;
+  using Base = IndexAccumulator_Base<1, Nd_t_, Check>;
   static constexpr size_t N = 1;
   using Nd_t = Nd_t_;
   using Index_t = typename Nd_t::Index_t;
@@ -314,6 +316,7 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
   using Base::nd;
   using Base::offset;
   using Base::size;
+  using Base::CheckBound;
 
   /*! \brief Return (possibly const) reference to the corresponding data element, checking if the index is in its range.
    * Non-const version.
@@ -323,20 +326,14 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_>
    * \param[in] i - Last index.
    */
   LookupType& operator[](Index_t i) {
-    assert(i < size());
-    if (Check) {
-      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-    }
+    CheckBound(i);
     return nd.data()[offset + i];
   }
   /*! \brief Return const reference to the corresponding data element, checking if the index is in its range.
    * \param[in] i - Last index.
    */
   LookupType_const& operator[](Index_t i) const {
-    assert(i < size());
-    if (Check) {
-      if (i >= size()) SU2_MPI::Error("NdFlattener: Index out of range.", CURRENT_FUNCTION);
-    }
+    CheckBound(i);
     return nd.data()[offset + i];
   }
 
