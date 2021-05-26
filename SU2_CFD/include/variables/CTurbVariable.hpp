@@ -74,28 +74,6 @@ public:
   inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
 
   /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  //inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-  //  return Gradient_Reconstruction(iPoint,iVar,iDim);
-  //}
-
-  /*!
-   * \brief Set the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  //inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-  //  Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  //}
-
-  /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
@@ -109,23 +87,5 @@ public:
   inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
-  /*!
-   * \brief Set the value of the [iDim, jDim] component of the Reynolds stress tensor at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iDim   - Index of the velocity variable.
-   * \param[in] jDim   - Index of the spatial dimension.
-   * \param[in] value  - Value of the Reynolds stress tensor 
-   */
-  inline void SetReynoldsStressTensor(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) {
-    ReynoldsStressTensor(iPoint,iDim,jDim) = value;
-  }
-  
-  /*!
-   * \brief Get the Reynolds stress tensor at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \return Reynolds stress tensor at a node.
-   */
-  inline su2double **GetReynoldsStressTensor(unsigned long iPoint) final { return ReynoldsStressTensor[iPoint]; }
-  
 };
 
