@@ -140,6 +140,18 @@ class CIteration {
 
   /*!
    * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
+   */
+  virtual void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                              unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {}
+
+  /*!
+   * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -277,7 +289,7 @@ class CIteration {
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
-  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
 
   virtual void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,

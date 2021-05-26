@@ -46,7 +46,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
 }
 
-CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;
@@ -59,17 +59,26 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
-    Solution_time_n.resize(nPoint,nVar);
-    Solution_time_n1.resize(nPoint,nVar);
-  }
-  else if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain())
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-  }
 
-  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-    AD_InputIndex.resize(nPoint,nVar) = -1;
-    AD_OutputIndex.resize(nPoint,nVar) = -1;
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
+
+  if (config->GetMultizone_Problem() && config->GetDiscrete_Adjoint()) {
+    if (adjoint) {
+      External.resize(nPoint,nVar) = su2double(0.0);
+    }
+    else {
+      AD_InputIndex.resize(nPoint,nVar) = -1;
+      AD_OutputIndex.resize(nPoint,nVar) = -1;
+
+      if (config->GetTime_Domain())
+        AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
+
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+        AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
+    }
   }
 
   if (config->GetMultizone_Problem())
@@ -108,41 +117,31 @@ void CVariable::Restore_BGSSolution_k() {
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
-void CVariable::RegisterSolution(bool input, bool push_index) {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
+namespace {
+  void RegisterContainer(bool input, bool push_index, su2activematrix& variable, su2matrix<int>& ad_index) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for(unsigned long iVar=0; iVar<variable.cols(); ++iVar) {
+
+        if (input) AD::RegisterInput(variable(iPoint,iVar), push_index);
+        else AD::RegisterOutput(variable(iPoint,iVar));
+
+        if (!push_index) AD::SetIndex(ad_index(iPoint,iVar), variable(iPoint,iVar));
       }
     }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 }
 
-void CVariable::RegisterSolution_time_n() {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
-  END_SU2_OMP_FOR
+void CVariable::RegisterSolution(bool input, bool push_index) {
+  RegisterContainer(input, push_index, Solution, input? AD_InputIndex : AD_OutputIndex);
 }
 
-void CVariable::RegisterSolution_time_n1() {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
-  END_SU2_OMP_FOR
+void CVariable::RegisterSolution_time_n(bool push_index) {
+  RegisterContainer(true, push_index, Solution_time_n, AD_Time_n_InputIndex);
+}
+
+void CVariable::RegisterSolution_time_n1(bool push_index) {
+  RegisterContainer(true, push_index, Solution_time_n1, AD_Time_n1_InputIndex);
 }

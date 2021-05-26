@@ -87,9 +87,8 @@ public:
 
   /*!
    * \brief Register the reference coordinates of the mesh.
-   * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  void Register_MeshCoord(bool input) final;
+  void Register_MeshCoord() final;
 
   /*!
    * \brief Recover the value of the adjoint of the mesh coordinates.

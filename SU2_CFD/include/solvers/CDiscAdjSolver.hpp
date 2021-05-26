@@ -119,8 +119,9 @@ public:
    *        after tape has been evaluated.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Set the surface sensitivity.

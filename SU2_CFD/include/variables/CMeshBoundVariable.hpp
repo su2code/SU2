@@ -117,9 +117,8 @@ public:
 
   /*!
    * \brief Register the boundary displacements of the mesh.
-   * \param[in] input - Defines whether we are registering the variable as input or as output.
    */
-  void Register_BoundDisp(bool input) override;
+  void Register_BoundDisp() override;
 
   /*!
    * \brief Recover the value of the adjoint of the boundary displacements.
