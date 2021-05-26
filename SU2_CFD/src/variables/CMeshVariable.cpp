@@ -38,9 +38,6 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
   Mesh_Coord.resize(nPoint,nDim) = su2double(0.0);
   WallDistance.resize(nPoint) = su2double(1e-9);
 
-  if (config->GetDiscrete_Adjoint())
-    AD_InputIndex.resize(nPoint,nDim) = -1;
-
   /*--- Initialize the variables necessary when the problem is time domain ---*/
   if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
@@ -49,5 +46,5 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
 }
 
 void CMeshVariable::Register_MeshCoord() {
-  RegisterContainer(true, Mesh_Coord, AD_InputIndex);
+  RegisterContainer(true, Mesh_Coord);
 }

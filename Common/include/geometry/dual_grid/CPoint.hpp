@@ -818,7 +818,7 @@ public:
   inline void RegisterCoordinates(unsigned long iPoint, bool input) {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
       if(input) {
-        AD::RegisterInput(Coord(iPoint,iDim),false);
+        AD::RegisterInput(Coord(iPoint,iDim));
         AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
       }
       else {
