@@ -299,7 +299,7 @@ namespace AD{
 
   FORCEINLINE void RegisterOutput(su2double& data) {AD::getGlobalTape().registerOutput(data);}
 
-  FORCEINLINE void ResetInput(su2double &data) {data.getGradientData() = su2double::GradientData();}
+  FORCEINLINE void ResetInput(su2double &data) {data = data.getValue();}
 
   FORCEINLINE void StartRecording() {AD::getGlobalTape().setActive();}
 
