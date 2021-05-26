@@ -661,6 +661,8 @@ public:
    */
   void SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
                                  passivedouble val_AdjointY, passivedouble val_AdjointZ);
+  void SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
+                                 passivedouble val_AdjointY, passivedouble val_AdjointZ);
 
   /*!
    * \brief Set the position of the heat source.

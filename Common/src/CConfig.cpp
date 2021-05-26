@@ -4426,8 +4426,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
     if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
-      SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
-                     string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
+      SU2_MPI::Error("SU2_CFD: Config option DIRECT_DIFF= YES requires AD support.\n"
+                     "Please use SU2_CFD_DIRECTDIFF (meson.py ... -Denable-directdiff=true ...).",
                      CURRENT_FUNCTION);
     }
 #endif
@@ -4465,8 +4465,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
 #else
   if (AD_Mode == YES) {
-    SU2_MPI::Error(string("AUTO_DIFF=YES requires Automatic Differentiation support.\n") +
-                   string("Please use correct executables (configuration/compilation is done using the preconfigure.py script)."),
+    SU2_MPI::Error("Config option AUTO_DIFF= YES requires AD support.\n"
+                   "Please use SU2_???_AD (meson.py ... -Denable-autodiff=true ...).",
                    CURRENT_FUNCTION);
   }
 #endif
@@ -4873,15 +4873,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
     Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
 
-    if (TimeMarching != TIME_MARCHING::STEADY) {
+    if (Time_Domain) {
 
       Restart_Flow = false;
-
-      if (GetKind_GridMovement() != RIGID_MOTION &&
-          GetKind_GridMovement() != NO_MOVEMENT) {
-        SU2_MPI::Error(string("Dynamic mesh movement currently only supported for the discrete adjoint solver for\n") +
-                       string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
-      }
 
       if (Unst_AdjointIter- long(nTimeIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
