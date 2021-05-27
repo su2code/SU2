@@ -353,7 +353,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       numerics->SetDistance(modifiedWallDistance, 0.0);
 
       /*--- Set the roughness of the closest wall. ---*/
-
+      if(geometry->nodes->GetRoughnessHeight(iPoint)!=0.0) std::cout << "SA SourceResidual, iPoint="<<iPoint<<" roughness_i="<<geometry->nodes->GetRoughnessHeight(iPoint)<<"\n";
       numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), 0.0 );
 
     } else {

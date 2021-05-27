@@ -883,13 +883,16 @@ public:
    */
   template<typename Roughness_type>
   void SetWallRoughness(Roughness_type const& roughness){
+    std::cout << "GlobalIndex.size()="<<GlobalIndex.size()<<"\n";
     for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
       auto rankID = ClosestWall_Rank[iPoint];
       auto zoneID = ClosestWall_Zone[iPoint];
       auto markerID = ClosestWall_Marker[iPoint];
       if(rankID >= 0){
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
+        if(roughness[rankID][zoneID][markerID]!=0.0) std::cout << "SetWallRoughness 1: set iPoint=" << iPoint << " roughness="<<roughness[rankID][zoneID][markerID]<<"\n";
       }
+      if(GetRoughnessHeight(iPoint)!=0.0) std::cout << "SetWallRoughness 2: rankID="<<rankID<<" iPoint=" << iPoint << " roughness=" << GetRoughnessHeight(iPoint) << "\n";
     }
   }
 };
