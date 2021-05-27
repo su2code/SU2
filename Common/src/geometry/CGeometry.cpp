@@ -3958,8 +3958,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           });
         });
       NdFlattener<2> roughness_local(roughness_f);
+      NdFlattener<2> const& roughness_local_c = roughness_local;
+      std::cout << "roughness_local[0][0]=" << roughness_local[0][0] << "\n";
+      std::cout << "const roughness_local[0][0]=" << roughness_local_c[0][0] << "\n";
       // [rank][iZone][iMarker] -> roughness
       NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+      std::cout << "roughness_global[0][0][0]=" << roughness_global[0][0][0] << "\n";
+      NdFlattener<3> const& roughness_global_c = roughness_global;
+      std::cout << "const roughness_global[0][0][0]=" << roughness_global_c[0][0][0] << "\n";
       // use it to update roughnesses
       for(int jZone=0; jZone<nZone; jZone++){
         if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
