@@ -37,8 +37,40 @@
 #include "../parallelization/mpi_structure.hpp"
 
 // --- Usage
-/*! \page ndflattener_usage Usage of NdFlattener
- * To demonstrate the usage of NdFlattener, let us collect information that depends on
+/*! \page ndflattener_usage NdFlattener usage
+ *
+ * # What is an NdFlattener?
+ *
+ * NdFlattener is a container to store a deep copy of multidimensional data in a single object that provides a
+ * generic []...[] interface. The data and their structure are stored in few contiguous arrays, allowing for an
+ * efficient MPI gathering operation.
+ *
+ * # Which problem does it solve?
+ * In SU2, there is a lot of multidimensional data: data depending on K>1 indices, like a wall property
+ * depending on the rank, zone index, and marker index.
+ *
+ * The data is often stored non-contiguously as a "tree":
+ * - an array of pointers, each one of which points to
+ * - (repeat the previous line another (K-2) times)
+ * - an array of data.
+ *
+ * The individual arrays' sizes are usually unrelated to each other. Therefore in addition to this tree of
+ * pointers-to-...-to-data, usually there is a tree of pointers-to-...-to-size for each lower level.
+ * Instead of arrays, there might be getter functions for the data and the sizes.
+ *
+ * In order to use multidimensional data behind such a non-generic interface as an argument in a function call,
+ * we usually make the callee aware of the interface and expose all the trees: Either as separate pointers to arrays
+ * (or functions), which is tedious, or by handing an object in which they naturally live, which exposes much more
+ * information.
+ *
+ * If the callee is an MPI communication operation, this is not possible. Here, a frequent pattern is to copy the data
+ * into a single contiguous array, which is then communicated alongside with the structure (lengths of the arrays).
+ *
+ * The NdFlattener container is a systematic way to store multidimensional data in a single contiguous array, and
+ * the structure in few additional contiguous arrays. It exposes them through a generic []...[] interface and allows
+ * for an efficient MPI_Allgatherv-like operation.
+ *
+ * To demonstrate the usage of NdFlattener, let us store a property of type su2double that depends on
  * the rank, zone index, and marker index.
  *
  * # Form the local NdFlattener
@@ -93,13 +125,17 @@
  * # Look-up
  * You can access the NdFlattener via a "[]...[]" interface that resembles multidimensional arrays
  * or pointer-to-pointer-... arrays. If you provide all of the K indices, this returns a reference
- * to the data element. If the NdFlattener is declared const, the reference is also const. If you
- * provide less than K indices, you obtain an IndexAccumulator object to which you can later pass more
- * indices. With respect to the above example:
+ * to the data element. If you provide less than K indices, you obtain an IndexAccumulator object
+ * to which you can later pass more indices. With respect to the above example:
  *
- *     std::cout << nd_global[rank][zone][marker];
+ *     std::cout << nd_global[rank][zone][marker]; // e.g. 4.0
  *     auto nd_g_rank = nd_global[rank];
- *     nd_g_rank[zone][marker] += 1.0;
+ *     nd_g_rank[zone][marker] *= 2.0;
+ *     std::cout << nd_g_rank[zone][marker]; // e.g. 8.0
+ *
+ * You may use the IndexAccumulator repeatedly as long as the accessed NdFlattener exists.
+ * As NdFlatteners are always deep copies, the above block would not change nd_local or the non-contiguous
+ * data from which it was copied.
  *
  * Each index is checked to lie in the correct range dictated by the NdFlattener and the
  * previous indices. You can obtain the minimal overflowing index with `size`:
@@ -113,20 +149,19 @@
  *     nd_global[rank][zone].data()
  *
  * # Constness
- * The IndexAccumulator stores how to access an NdFlattener (and which one), and this information does not change along
- * with read or write access. Therefore the members `IndexAccumulator<N,Nd_t>::operator[]` and `IndexAccumulator<1,Nd_t>::data`
- * could be always const, and any const-qualification of `Nd_t` could just be passed by `operator[]` to the
- * `IndexAccumulator` class of lower `N` and finally decide whether a reference/pointer to `const Data_t` or `Data_t` is returned.
+ * The reference returned by the last `operator[]`, and the pointer returned by `data()`, are const if
+ * - the accessed NdFlattener object was const, or
+ * - one of the intermediate IndexAccumulator objects was qualified as const.
  *
- * However, in order to comply with the intended semantic meaning of const, those `operator[]` and `data` are not marked as
- * const functions. We provide const variants of them, which however make the `Nd_t` const or return references/pointers to
- * `const Data_t`.
+ * This reflects the semantic meaning of const:
  *
- * This ensures that the following is not possible:
- *
- *     template<class T> set(T const& t) { t[0] = 1.0; }
  *     NdFlattener<2> nd2(...);
- *     set( nd2[0] );
+ *
+ *     template<class T> set(T& t) { t[0] = 1.0; }
+ *     set( nd2[0] ); // OK
+ *
+ *     template<class T> set_const(T const& t) { t[0] = 1.0; }
+ *     set_const( nd2[0] ); // does not compile
  *
  * # Unit tests
  * The interface described here is tested in UnitTests/Common/toolboxes/ndflattener_tests.cpp, which may also
@@ -163,7 +198,7 @@
  *
  * To form such a structure, we typically iterate twice through the pointer-to-pointer-...
  * array: The first time we get to know how much space to reserve in each layer, then we
- * allocate it and fill it with data during the second iteration.
+ * allocate it and during the second iteration we copy the data.
  */
 
 template <size_t K, typename Data_t_ = su2double, typename Index_t_ = unsigned long>
