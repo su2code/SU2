@@ -72,12 +72,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     if (!adjoint) {
       AD_InputIndex.resize(nPoint,nVar) = -1;
       AD_OutputIndex.resize(nPoint,nVar) = -1;
-
-      if (config->GetTime_Domain())
-        AD_Time_n_InputIndex.resize(nPoint,nVar) = -1;
-
-      if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
-        AD_Time_n1_InputIndex.resize(nPoint,nVar) = -1;
     }
   }
 
@@ -122,9 +116,9 @@ void CVariable::RegisterSolution(bool input) {
 }
 
 void CVariable::RegisterSolution_time_n() {
-  RegisterContainer(true, Solution_time_n, AD_Time_n_InputIndex);
+  RegisterContainer(true, Solution_time_n);
 }
 
 void CVariable::RegisterSolution_time_n1() {
-  RegisterContainer(true, Solution_time_n1, AD_Time_n1_InputIndex);
+  RegisterContainer(true, Solution_time_n1);
 }

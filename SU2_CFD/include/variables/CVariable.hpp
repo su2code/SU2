@@ -95,8 +95,6 @@ protected:
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-  su2matrix<int> AD_Time_n_InputIndex;  /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Time_n1_InputIndex; /*!< \brief Indices of Solution variables in the adjoint vector. */
 
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -114,19 +112,23 @@ protected:
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>* ad_index = nullptr) {
     const auto nPoint = variable.rows();
     SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
       for(unsigned long iVar=0; iVar<variable.cols(); ++iVar) {
 
-        if (input) AD::RegisterInput(variable(iPoint,iVar), false);
+        if (input) AD::RegisterInput(variable(iPoint,iVar));
         else AD::RegisterOutput(variable(iPoint,iVar));
 
-        AD::SetIndex(ad_index(iPoint,iVar), variable(iPoint,iVar));
+        if (ad_index) AD::SetIndex((*ad_index)(iPoint,iVar), variable(iPoint,iVar));
       }
     }
     END_SU2_OMP_FOR
+  }
+
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+    RegisterContainer(input, variable, &ad_index);
   }
 
 public:
@@ -2159,13 +2161,13 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < AD_Time_n_InputIndex.cols(); iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
+    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar));
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
+      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
   }
 
   /*!

@@ -849,13 +849,9 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
         /*--- Compute the grid velocities on the coarser levels. ---*/
         if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh-1], config);
-
-        geometry[iMesh]->nodes->SetVolume_n();
-        geometry[iMesh]->nodes->SetVolume_nM1();
-
-        if (config->GetGrid_Movement()) {
-          geometry[iMesh]->nodes->SetCoord_n();
-          geometry[iMesh]->nodes->SetCoord_n1();
+        else {
+          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
         }
       }
     }
@@ -991,6 +987,16 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
+    }
+
+    if (dynamic_grid) {
+      geometry[iMesh]->nodes->SetVolume_n();
+      geometry[iMesh]->nodes->SetVolume_nM1();
+    }
+
+    if (config->GetGrid_Movement()) {
+      geometry[iMesh]->nodes->SetCoord_n();
+      geometry[iMesh]->nodes->SetCoord_n1();
     }
   }
 

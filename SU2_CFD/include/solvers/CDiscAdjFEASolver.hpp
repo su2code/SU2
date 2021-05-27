@@ -48,7 +48,6 @@ private:
   struct SensData {
     unsigned short size = 0;
     su2double* val = nullptr;         /*!< \brief Value of the variable. */
-    int* AD_Idx = nullptr;            /*!< \brief Derivative index in the AD tape. */
     su2double* LocalSens = nullptr;   /*!< \brief Local sensitivity (domain). */
     su2double* GlobalSens = nullptr;  /*!< \brief Global sensitivity (mpi). */
     su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (time domain). */
@@ -60,7 +59,6 @@ private:
       clear();
       size = n;
       val = new su2double[n]();
-      AD_Idx = new int[n]();
       LocalSens = new su2double[n]();
       GlobalSens = new su2double[n]();
       TotalSens = new su2double[n]();
@@ -69,21 +67,17 @@ private:
     void clear() {
       size = 0;
       delete [] val;
-      delete [] AD_Idx;
       delete [] LocalSens;
       delete [] GlobalSens;
       delete [] TotalSens;
     }
 
     void Register() {
-      for (auto i = 0u; i < size; ++i) {
-        AD::RegisterInput(val[i], false);
-        AD::SetIndex(AD_Idx[i], val[i]);
-      }
+      for (auto i = 0u; i < size; ++i) AD::RegisterInput(val[i]);
     }
 
     void GetDerivative() {
-      for (auto i = 0u; i < size; ++i) LocalSens[i] = AD::GetDerivative(AD_Idx[i]);
+      for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
 
       SU2_MPI::Allreduce(LocalSens, GlobalSens, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
