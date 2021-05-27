@@ -92,7 +92,7 @@ using su2double = codi::RealReversePrimal;
 #elif CODI_PRIMAL_INDEX_TAPE
 using su2double = codi::RealReversePrimalIndex;
 #else
-using su2double = codi::RealReverse;
+using su2double = codi::RealReverseIndex;
 #endif
 #endif
 #elif defined(CODI_FORWARD_TYPE) // forward mode AD
