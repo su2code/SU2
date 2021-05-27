@@ -501,7 +501,7 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
   /*! \brief Allocate the indices array after \a nNodes has been determined.
    */
   void allocate() {
-    indices.reserve(nNodes + 1);
+    indices.resize(nNodes + 1, 2000000000ul);
     indices[0] = 0;
     Base::allocate();
   }
@@ -762,7 +762,7 @@ class NdFlattener<1, Data_t_, Index_t_> {
   }
 
  protected:
-  void allocate() { data_.reserve(nNodes); }
+  void allocate() { data_.resize(nNodes,1); }
 
   void reset_iNode() { iNode = 0; }
 
