@@ -802,6 +802,8 @@ public:
    * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j
    */
   void SetRoughness(su2double val_roughness_i, su2double val_roughness_j) {
+    if(val_roughness_i!=0.0) SU2_MPI::Error("val_roughness_i!=0.0",CURRENT_FUNCTION);
+    if(val_roughness_j!=0.0) SU2_MPI::Error("val_roughness_j!=0.0",CURRENT_FUNCTION);
     roughness_i = val_roughness_i;
     roughness_j = val_roughness_j;
   }
