@@ -3952,6 +3952,8 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
 
           return make_pair( nMarker, [config](unsigned long iMarker){
+            if(config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second!=0.0)
+            std::cout << "roughness!=0 in roughness_local construction: " << config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second << "\n";
             return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
           });
         });

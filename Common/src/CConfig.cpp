@@ -4710,8 +4710,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
      } else {
        /*--- Store roughness heights in a temp array. ---*/
        vector<su2double> temp_rough;
-       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++){
+         std::cout << "in CConfig::SetPostprocessing, push_back roughness height " << Roughness_Height[iMarker] << "\n";
          temp_rough.push_back(Roughness_Height[iMarker]);
+         }
 
        /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
        delete Roughness_Height;
@@ -8851,23 +8853,27 @@ pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker
       if (Marker_HeatFlux[iMarker] == val_marker) {
         flag = iMarker;
         WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        if(Roughness_Height[flag]!=0.0) std::cout << "roughness!=0 returned in GetWallRoughnessProperties 1: " << Roughness_Height[flag] << "\n";
         return WallProp;
       }
     for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
       if (Marker_Isothermal[iMarker] == val_marker) {
         flag = nMarker_HeatFlux + iMarker;
         WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        if(Roughness_Height[flag]!=0.0) std::cout << "roughness!=0 returned in GetWallRoughnessProperties 2: " << Roughness_Height[flag] << "\n";
         return WallProp;
       }
     for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
       if (Marker_CHTInterface[iMarker] == val_marker) {
         flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
         WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        if(Roughness_Height[flag]!=0.0) std::cout << "roughness!=0 returned in GetWallRoughnessProperties 3: " << Roughness_Height[flag] << "\n";
         return WallProp;
       }
   }
 
   WallProp = make_pair(WALL_TYPE::SMOOTH, 0.0);
+  if(WallProp.second!=0.0) std::cout << "roughness!=0 returned in GetWallRoughnessProperties 4: " << WallProp.second << "\n";
   return WallProp;
 }
 
