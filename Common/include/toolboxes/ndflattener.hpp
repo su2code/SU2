@@ -676,9 +676,10 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
     mpi_env.MPI_Allgatherv_fun(local_version.indices.data() + 1, Nodes_all[K - 1][mpi_env.rank], mpi_env.mpi_index,
                                indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(),
                                mpi_env.mpi_index, mpi_env.comm);
+    std::cout << "indices[0] after Allgatherv: " << indices[0] << "\n";
 
-    std::cout << "MPI_Allgatherv set_g K="<<K<<" parameters: "
-             << local_version.indices.data() << ";"
+    std::cout << "parameter to MPI_Allgatherv set_g K="<<K<<" were: "
+             << local_version.indices.data()+1 << ";"
              << Nodes_all[K - 1][mpi_env.rank] << ";"
              <<mpi_env.mpi_index << ";"
              <<indices.data()<<";"
@@ -686,7 +687,7 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
              <<Nodes_all_k_cumulated.data()<<";"
              <<mpi_env.mpi_index<<";"
              << mpi_env.comm<<"\n";
-    std::cout << "indices[0] after Allgatherv: " << indices[0] << "\n";
+    std::cout << "here, Nodes_all_K_as_int[0]="<<Nodes_all_K_as_int[0]<<", Nodes_all_k_cumulated[0]="<<Nodes_all_k_cumulated[0]<<" size="<<mpi_env.size<<"\n";
     // shift indices
     for (int r = 1; r < mpi_env.size; r++) {
       Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
