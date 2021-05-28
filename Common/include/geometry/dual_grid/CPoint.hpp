@@ -890,9 +890,9 @@ public:
       auto markerID = ClosestWall_Marker[iPoint];
       if(rankID >= 0){
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
-        if(roughness[rankID][zoneID][markerID]!=0.0) std::cout << "SetWallRoughness 1: set iPoint=" << iPoint << " roughness="<<roughness[rankID][zoneID][markerID]<<"\n";
+        //if(roughness[rankID][zoneID][markerID]!=0.0) std::cout << "SetWallRoughness 1: set iPoint=" << iPoint << " roughness="<<roughness[rankID][zoneID][markerID]<<"\n";
       }
-      if(GetRoughnessHeight(iPoint)!=0.0) std::cout << "SetWallRoughness 2: rankID="<<rankID<<" zoneID="<<zoneID<<" markerID="<<markerID<<" iPoint=" << iPoint << " roughness=" << GetRoughnessHeight(iPoint) << "\n";
+      //if(GetRoughnessHeight(iPoint)!=0.0) std::cout << "SetWallRoughness 2: rankID="<<rankID<<" zoneID="<<zoneID<<" markerID="<<markerID<<" iPoint=" << iPoint << " roughness=" << GetRoughnessHeight(iPoint) << "\n";
     }
   }
 };

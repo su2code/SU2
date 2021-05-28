@@ -316,6 +316,7 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_, Check> {
     CheckBound(i);
     const Index_t new_offset = nd.GetIndices()[offset + i];
     const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
+    std::cout << "level N="<<N<<" old offset="<<offset<<" new offset="<<new_offset<<" ; ";
     return LookupType(nd, new_offset, new_size);
   }
   /*! \brief Read one more index, const version.
@@ -325,6 +326,7 @@ class IndexAccumulator : public IndexAccumulator_Base<N_, Nd_t_, Check> {
     CheckBound(i);
     const Index_t new_offset = nd.GetIndices()[offset + i];
     const Index_t new_size = nd.GetIndices()[offset + i + 1] - new_offset;
+    std::cout << "level N="<<N<<" const, old offset="<<offset<<" new offset="<<new_offset<<" ; ";
     return LookupType_const(nd, new_offset, new_size);
   }
 };
@@ -362,6 +364,7 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_,
    */
   LookupType& operator[](Index_t i) {
     CheckBound(i);
+    std::cout << "level N=1 data="<<nd.data()[offset+i]<<"\n";
     return nd.data()[offset + i];
   }
   /*! \brief Return const reference to the corresponding data element, checking if the index is in its range.
@@ -369,6 +372,7 @@ class IndexAccumulator<1, Nd_t_, Check> : public IndexAccumulator_Base<1, Nd_t_,
    */
   LookupType_const& operator[](Index_t i) const {
     CheckBound(i);
+    std::cout << "level N=1 const data="<<nd.data()[offset+i]<<"\n";
     return nd.data()[offset + i];
   }
 
@@ -667,6 +671,7 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
     mpi_env.MPI_Allgatherv_fun(local_version.indices.data() + 1, Nodes_all[K - 1][mpi_env.rank], mpi_env.mpi_index,
                                indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(),
                                mpi_env.mpi_index, mpi_env.comm);
+
     // shift indices
     for (int r = 1; r < mpi_env.size; r++) {
       Index_t first_entry_to_be_shifted = Nodes_all_k_cumulated[r];
@@ -806,6 +811,17 @@ class NdFlattener<1, Data_t_, Index_t_> {
 
     mpi_env.MPI_Allgatherv_fun(local_version.data_.data(), Nodes_all[0][mpi_env.rank], mpi_env.mpi_data, data_.data(),
                                Nodes_all_0_as_int.data(), Nodes_all_0_cumulated.data(), mpi_env.mpi_data, mpi_env.comm);
+    std::cout << "MPI_Allgatherv parameters: "
+             << local_version.data_.data() << ";"
+             << Nodes_all[0][mpi_env.rank] << ";"
+             <<mpi_env.mpi_data << ";"
+             <<data_.data()<<";"
+             <<Nodes_all_0_as_int.data()<<";"
+             <<Nodes_all_0_cumulated.data()<<";"
+             <<mpi_env.mpi_data<<";"
+             << mpi_env.comm<<"\n";
+    std::cout << "data[0]: local_version is "<<local_version.data_[0] << ", assembled is " << data_[0] <<"\n";
+
   }
 
   /*== Access to data ==*/
