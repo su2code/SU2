@@ -99,7 +99,8 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Save iteration solution for libROM ---*/
     #ifdef HAVE_LIBROM
         if (libROM) {
-          solver_container[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[0][INST_0][MESH_0], geometry_container[0][INST_0][0], config_container[0], StopCalc);
+          solver_container[0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[0][INST_0][MESH_0],
+                   geometry_container[0][INST_0][0], config_container[0], StopCalc);
         }
     #endif
     

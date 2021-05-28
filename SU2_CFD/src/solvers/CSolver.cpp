@@ -4386,9 +4386,8 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   unsigned short iVar;
   
   string filename = config->GetlibROMbase_FileName();
-  unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
+  unsigned short pod_basis = config->GetKind_PODBasis(); //NOTE: this function currently unused
   unsigned long TimeIter = config->GetTimeIter();
-  unsigned long nTimeIter = config->GetnTime_Iter();
   int dim = int(nPointDomain * nVar);
   bool incremental = false;
   //bool StopCalc = ((TimeIter+1) == nTimeIter);
@@ -4396,11 +4395,18 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   // Get solver nodes
   CVariable* nodes = GetNodes();
   
+  /*--- Define kind of SVD basis generator (static or incremental) ---*/
+  
+  pod_basis = STATIC_POD;
+  if (unsteady) pod_basis = INCREMENTAL_POD;
+ 
   /*--- Define SVD basis generator ---*/
   
-  CAROM::Options svd_options = CAROM::Options(dim, 2).setMaxBasisDimension(int(0.1*dim));
- 
   if (!u_basis_generator) {
+    
+    int timesteps = (int)(config->GetnTime_Iter() - config->GetTimeIter());
+    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1, false, true).setMaxBasisDimension(int(dim));
+    
     if (pod_basis == STATIC_POD) {
       std::cout << "Creating static basis generator." << std::endl;
     }

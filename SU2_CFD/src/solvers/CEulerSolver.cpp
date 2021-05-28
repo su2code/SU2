@@ -367,7 +367,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*---- Initialize ROM specific variables. ----*/
   bool rom = config->GetReduced_Model();
-  if (rom && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
+  if (rom) {
     if (rank == MASTER_NODE)
       cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
     Mask_Selection(geometry, config);
