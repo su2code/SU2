@@ -672,11 +672,11 @@ class NdFlattener : public NdFlattener<K_ - 1, Data_t_, Index_t_> {
       Nodes_all_k_cumulated[r + 1] = Nodes_all_k_cumulated[r] + Nodes_all[K - 1][r];
       Nodes_all_K_as_int[r] = Nodes_all[K - 1][r];
     }
-    std::cout << "indices[0] before Allgatherv: " << indices[0] << "\n";
+    std::cout << "indices[0] before Allgatherv: " << indices[0] <<" pointer:"<< &(indices[0])<<"\n";
     mpi_env.MPI_Allgatherv_fun(local_version.indices.data() + 1, Nodes_all[K - 1][mpi_env.rank], mpi_env.mpi_index,
                                indices.data(), Nodes_all_K_as_int.data(), Nodes_all_k_cumulated.data(),
                                mpi_env.mpi_index, mpi_env.comm);
-    std::cout << "indices[0] after Allgatherv: " << indices[0] << "\n";
+    std::cout << "indices[0] after Allgatherv: " << indices[0] <<" pointer:"<< &(indices[0]) <<"\n";
 
     std::cout << "parameter to MPI_Allgatherv set_g K="<<K<<" were: "
              << local_version.indices.data()+1 << ";"

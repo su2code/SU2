@@ -123,41 +123,41 @@ void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   Abort(currentComm, 0);
 }
 
-void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype) {
+void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int shift) {
   switch (datatype) {
     case MPI_DOUBLE:
       for (int i = 0; i < size; i++) {
-        static_cast<su2double*>(recvbuf)[i] = static_cast<const su2double*>(sendbuf)[i];
+        static_cast<su2double*>(recvbuf)[i+shift] = static_cast<const su2double*>(sendbuf)[i];
       }
       break;
     case MPI_UNSIGNED_LONG:
       for (int i = 0; i < size; i++) {
-        static_cast<unsigned long*>(recvbuf)[i] = static_cast<const unsigned long*>(sendbuf)[i];
+        static_cast<unsigned long*>(recvbuf)[i+shift] = static_cast<const unsigned long*>(sendbuf)[i];
       }
       break;
     case MPI_LONG:
       for (int i = 0; i < size; i++) {
-        static_cast<long*>(recvbuf)[i] = static_cast<const long*>(sendbuf)[i];
+        static_cast<long*>(recvbuf)[i+shift] = static_cast<const long*>(sendbuf)[i];
       }
       break;
     case MPI_UNSIGNED_SHORT:
       for (int i = 0; i < size; i++) {
-        static_cast<unsigned short*>(recvbuf)[i] = static_cast<const unsigned short*>(sendbuf)[i];
+        static_cast<unsigned short*>(recvbuf)[i+shift] = static_cast<const unsigned short*>(sendbuf)[i];
       }
       break;
     case MPI_CHAR:
       for (int i = 0; i < size; i++) {
-        static_cast<char*>(recvbuf)[i] = static_cast<const char*>(sendbuf)[i];
+        static_cast<char*>(recvbuf)[i+shift] = static_cast<const char*>(sendbuf)[i];
       }
       break;
     case MPI_SHORT:
       for (int i = 0; i < size; i++) {
-        static_cast<short*>(recvbuf)[i] = static_cast<const short*>(sendbuf)[i];
+        static_cast<short*>(recvbuf)[i+shift] = static_cast<const short*>(sendbuf)[i];
       }
       break;
     case MPI_INT:
       for (int i = 0; i < size; i++) {
-        static_cast<int*>(recvbuf)[i] = static_cast<const int*>(sendbuf)[i];
+        static_cast<int*>(recvbuf)[i+shift] = static_cast<const int*>(sendbuf)[i];
       }
       break;
     default:
