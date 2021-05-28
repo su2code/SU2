@@ -4435,7 +4435,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     f.close();
   }
 
-   if (unsteady) {
+   if (unsteady && (TimeIter % 2 == 0)) {
       double* u = new double[nPointDomain*nVar];
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
          for (iVar = 0; iVar < nVar; iVar++) {
