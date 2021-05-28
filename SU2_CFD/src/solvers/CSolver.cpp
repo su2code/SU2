@@ -4441,7 +4441,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       // give solution and time steps to libROM:
       double dt = config->GetDelta_UnstTimeND();
       double t =  config->GetCurrent_UnstTime();
-      std::cout << "Taking sample" << std::endl;
+      std::cout << "Sampling current solution" << std::endl;
       u_basis_generator->takeSample(u, t, dt);
       // not implemented yet: u_basis_generator->computeNextSampleTime(u, rhs, t);
       // bool u_samples = u_basis_generator->isNextSample(t);
@@ -4464,7 +4464,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
          // dt is different for each node, so just use a placeholder dt for now
          double dt = base_nodes->GetDelta_Time(0);
          double t = dt*TimeIter;
-         std::cout << "Taking sample" << std::endl;
+         std::cout << "Sampling final solution" << std::endl;
          u_basis_generator->takeSample(u, t, dt);
 
          delete[] u;
