@@ -4498,18 +4498,19 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   CVariable* nodes = GetNodes();
   
   /*--- Get number of desired POD modes ---*/
-  unsigned long nModes  = config->GetnPOD_Modes();
+  unsigned short nModes  = config->GetnPOD_Modes();
   
   /*--- Read data from the following three files: ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
   string ref_filename  = config->GetRef_Snapshot_FileName();
   string init_filename = config->GetInit_Snapshot_FileName();
+  string init_coord_filename = config->GetInit_Coord_FileName();
   
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   ifstream in_phi(phi_filename);
-  int s = 0;
+  unsigned short s = 0;
   
   if (in_phi) {
     std::string line;
@@ -4518,7 +4519,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       stringstream sep(line);
       string field;
       TrialBasis.push_back({});
-      unsigned long modes = 0;
+      unsigned short modes = 0;
       while (getline(sep, field, ',')) {
         if (modes < nModes) {
           TrialBasis[s].push_back(stod(field));
@@ -4531,14 +4532,14 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   else std::cout << "ERROR: Did not read file for POD matrix (ROM)." << std::endl;
   
   unsigned long nsnaps = TrialBasis[0].size();
-  unsigned long iPoint, i;
+  unsigned long iPoint, i, iVar;
   double *ref_sol = new double[nPointDomain * nVar]();
   double *init_sol = new double[nPointDomain * nVar]();
   
   /*--- Reference Solution (read from file) ---*/
   
   ifstream in_ref(ref_filename);
-  s = 0;
+  s = 0; iPoint = 0; iVar = 0;
   
   if (in_ref) {
     std::string line;
@@ -4548,18 +4549,23 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       string field;
       while (getline(sep, field, ',')) {
         ref_sol[s] = stod(field);
+        nodes->Set_RefSolution(iPoint, iVar, ref_sol[s]);
         s++;
+        if (s % 4 == 0) iPoint++;
+        if (iVar == 3) iVar = 0; else iVar++;
       }
     }
   }
   else std::cout << "ERROR: Did not read file for reference solution (ROM)." << std::endl;
   
-  /*--- Initial Solution (read from file) ---*/
+  /*--- Initial Solution / Coordinates (read from file) ---*/
   
   ifstream in_init(init_filename);
-  s = 0;
+  ifstream in_init_coord(init_coord_filename);
+  s = 0; iPoint = 0; iVar = 0;
   
   if (in_init) {
+    /*--- Use initial solution to find reduced coordinates ---*/
     std::string line;
     
     while (getline(in_init, line)) {
@@ -4567,40 +4573,55 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       string field;
       while (getline(sep, field, ',')) {
         init_sol[s] = stod(field);
+        nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+        nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
         s++;
+        if (s % 4 == 0) iPoint++;
+        if (iVar == 3) iVar = 0; else iVar++;
       }
     }
-  }
-  else std::cout << "ERROR: Did not read file for initial solution (ROM)." << std::endl;
-  
-  /*--- Use initial solution from file to overwrite the solution and solution_old ---*/
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    su2double node_sol[nVar];
     
-    for (unsigned long iVar = 0; iVar < nVar; iVar++){
-      node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
-      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+    /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
+    
+    for (i = 0; i < nsnaps; i++) {
+      double sum = 0.0;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+        }
+      }
+      GenCoordsY.push_back(sum);
+    }
+  }
+  else if (in_init_coord){
+    /*--- Use initial coordinates to find inital solution ---*/
+    std::string line;
+    
+    while (getline(in_init_coord, line)) {
+      stringstream sep(line);
+      string field;
+      while (getline(sep, field, ',')) {
+        if (s < nModes) {
+          GenCoordsY.push_back(stod(field));
+          s++;
+        }
+      }
     }
     
-    /*--- Set reference solution ---*/
+    /*--- Compute and set initial solution from generalized coordinates, w0 = w_ref + Phi * y0 ---*/
     
-    nodes->Set_RefSolution(iPoint, &node_sol[0]);
-  }
-  
-  
-  /*--- Compute initial generalized coordinates solution, y0 = Phi^T * (w0 - w_ref) ---*/
-  
-  for (i = 0; i < nsnaps; i++) {
-    double sum = 0.0;
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        sum += TrialBasis[iPoint*nVar + iVar][i] * (init_sol[iVar + iPoint*nVar] - nodes->Get_RefSolution(iPoint, iVar));
+        su2double init_sol2 = 0.0;
+        for (unsigned long j = 0; j < nsnaps; j++) {
+          init_sol2 += TrialBasis[iPoint*nVar + iVar][j] * GenCoordsY[j];
+        }
+        nodes->SetSolution(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
+        nodes->SetSolution_Old(iPoint, iVar, init_sol2 + nodes->Get_RefSolution(iPoint, iVar));
       }
     }
-    GenCoordsY.push_back(sum);
   }
+  else std::cout << "ERROR: Did not read file for initial solution or coordinates (ROM)." << std::endl;
 
   delete[] ref_sol;
   delete[] init_sol;
@@ -4716,7 +4737,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
-  bool read_mask_from_file = true;
+  bool read_mask_from_file = false;
   
 
   
@@ -4729,6 +4750,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   unsigned long desired_nodes = config->GetnHyper_Nodes();
   if (desired_nodes > nPointDomain) {
     SU2_MPI::Error("Number of nodes desired for hyper-reduction must be less than total number of nodes.", CURRENT_FUNCTION); }
+  
+  if (desired_nodes == 0) read_mask_from_file = true;
   
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
@@ -4745,13 +4768,15 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       int s = 0;
       while (getline(sep, field, ',')) {
         if (firstrun == 0) Phi.push_back({});
-        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
-        s++;
+          Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+          s++;
       }
       firstrun++;
     }
   }
-  unsigned long nsnaps = Phi.size();
+  
+  //unsigned long nsnaps = Phi.size();
+  unsigned long nsnaps = 10;
   unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
   std::vector<double> PhiNodes;
@@ -4765,7 +4790,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes.push_back( sqrt(norm_phi) );
   }
   
-  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
+  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps ; // ceil (nodes to add per loop)
     
   for (i = 0; i < nodestoAdd; i++) {
     nodewithMax = std::distance(PhiNodes.begin(),
@@ -5004,7 +5029,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
     }
     
     else if (ReducedResNorm_Cur == ReducedRes) {
-      if (InnerIter > 20) RomConverged = true;
+      if (InnerIter > 5) RomConverged = true;
       else RomConverged = false;
     }
     

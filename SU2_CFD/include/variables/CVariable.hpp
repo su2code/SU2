@@ -333,6 +333,12 @@ public:
   inline void Set_RefSolution(unsigned long iPoint, const su2double *solution) {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Ref(iPoint, iVar) = solution[iVar];
   }
+  
+  /*! \brief Set reference solution using input file.
+   */
+  inline void Set_RefSolution(unsigned long iPoint, unsigned long iVar, const su2double solution) {
+    Solution_Ref(iPoint, iVar) = solution;
+  }
 
   /*! \brief Get reference solution for reduced order modeling.
    */

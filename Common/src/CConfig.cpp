@@ -1935,7 +1935,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_TESTBASIS_FILENAME\n DESCRIPTION: ROM test basis input file. \ingroup Config*/
   addStringOption("ROM_TESTBASIS_FILENAME", Rom_FileName, string("pod.txt"));
   /*!\brief INITIAL_SNAPSHOT_FILENAME\n DESCRIPTION: ROM initial snapshot input file. \ingroup Config*/
-  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("init_snapshot.csv"));
+  addStringOption("INITIAL_SNAPSHOT_FILENAME", Init_Snapshot_FileName, string("NONE"));
+  /*!\brief INITIAL_COORD_FILENAME\n DESCRIPTION: ROM initial coordinates input file. \ingroup Config*/
+  addStringOption("INITIAL_COORD_FILENAME", Init_Coord_FileName, string("NONE"));
   /*!\brief REF_SNAPSHOT_FILENAME\n DESCRIPTION: ROM reference snapshot input file. \ingroup Config*/
   addStringOption("REF_SNAPSHOT_FILENAME", Ref_Snapshot_FileName, string("ref_snapshot.csv"));
   /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM (Reduced order modelling)  \ingroup Config*/
@@ -1947,7 +1949,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
   addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
   /*!\brief BASIS_GENERSTION \n DESCRIPTION: How many modes to use from POD matrix. */
-  addUnsignedLongOption("POD_MODES", nPOD_Modes, 0);
+  addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
   
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
