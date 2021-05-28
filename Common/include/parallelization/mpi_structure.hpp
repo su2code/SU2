@@ -503,7 +503,7 @@ class CBaseMPIWrapper {
   static int Rank, Size;
   static Comm currentComm;
 
-  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype);
+  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
 
  public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
@@ -570,7 +570,7 @@ class CBaseMPIWrapper {
 
   static inline void Allgatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcnt,
                                 const int* displs, Datatype recvtype, Comm comm) {
-    CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+    CopyData(sendbuf, recvbuf, sendcnt, sendtype, displs[0]);
   }
 
   static inline void Allgather(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
@@ -596,7 +596,7 @@ class CBaseMPIWrapper {
   static inline void Alltoallv(const void* sendbuf, const int* sendcounts, const int* sdispls, Datatype sendtype,
                                void* recvbuf, const int* recvcounts, const int* recvdispls, Datatype recvtype,
                                Comm comm) {
-    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
+    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype, recvdispls[0], sdispls[0]);
   }
 
   static inline void Probe(int source, int tag, Comm comm, Status* status) {}
