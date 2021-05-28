@@ -4399,13 +4399,12 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   
   pod_basis = STATIC_POD;
   if (unsteady) pod_basis = INCREMENTAL_POD;
- 
+  int timesteps = (int)(config->GetnTime_Iter() - config->GetTimeIter());
+  CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1, false, true).setMaxBasisDimension(int(dim));
+
   /*--- Define SVD basis generator ---*/
   
   if (!u_basis_generator) {
-    
-    int timesteps = (int)(config->GetnTime_Iter() - config->GetTimeIter());
-    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1, false, true).setMaxBasisDimension(int(dim));
     
     if (pod_basis == STATIC_POD) {
       std::cout << "Creating static basis generator." << std::endl;
