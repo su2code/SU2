@@ -4634,7 +4634,7 @@ void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  unsigned long desired_nodes = config->GetnHyper_Nodes();
+  int desired_nodes = (int)config->GetnHyper_Nodes();
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   unsigned long iPoint, iVar, nsnaps;

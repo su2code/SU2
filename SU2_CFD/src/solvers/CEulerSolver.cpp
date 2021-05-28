@@ -24,6 +24,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined (__APPLE__)
+#include <Accelerate/Accelerate.h>
+#endif
 
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
@@ -40,6 +43,7 @@
 #include <sstream>
 #include <vector>
 #include <chrono>
+
 
 //extern "C" void dgels_(char*, int*, int*, int*, passivedouble*, int*, passivedouble*,
 //                       int*, passivedouble*, int*, int*);
