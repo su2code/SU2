@@ -130,7 +130,13 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   nNeighbor.resize(npoint) = 0;
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
+
   Wall_Distance.resize(npoint) = su2double(0.0);
+  ClosestWall_Rank.resize(npoint) = -1;
+  ClosestWall_Zone.resize(npoint) = numeric_limits<unsigned short>::max();
+  ClosestWall_Marker = ClosestWall_Zone;
+  ClosestWall_Elem.resize(npoint) = numeric_limits<unsigned long>::max();
+
   RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
@@ -198,3 +204,4 @@ void CPoint::SetCoord_Old() {
 }
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
+

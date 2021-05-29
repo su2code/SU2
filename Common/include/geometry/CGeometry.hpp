@@ -1682,11 +1682,14 @@ public:
   virtual std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const { return nullptr; }
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] config - Config of this geometry (not the ADT zone's geometry)
+   * \param[in] iZone - Zone whose markers made the ADT
    */
-  virtual void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {}
+  virtual void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone = numeric_limits<unsigned short>::max()) {}
 
   /*!
    * \brief Set wall distances a specific value
