@@ -123,41 +123,41 @@ void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   Abort(currentComm, 0);
 }
 
-void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype) {
+void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift, int sendshift) {
   switch (datatype) {
     case MPI_DOUBLE:
       for (int i = 0; i < size; i++) {
-        static_cast<su2double*>(recvbuf)[i] = static_cast<const su2double*>(sendbuf)[i];
+        static_cast<su2double*>(recvbuf)[i+recvshift] = static_cast<const su2double*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_UNSIGNED_LONG:
       for (int i = 0; i < size; i++) {
-        static_cast<unsigned long*>(recvbuf)[i] = static_cast<const unsigned long*>(sendbuf)[i];
+        static_cast<unsigned long*>(recvbuf)[i+recvshift] = static_cast<const unsigned long*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_LONG:
       for (int i = 0; i < size; i++) {
-        static_cast<long*>(recvbuf)[i] = static_cast<const long*>(sendbuf)[i];
+        static_cast<long*>(recvbuf)[i+recvshift] = static_cast<const long*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_UNSIGNED_SHORT:
       for (int i = 0; i < size; i++) {
-        static_cast<unsigned short*>(recvbuf)[i] = static_cast<const unsigned short*>(sendbuf)[i];
+        static_cast<unsigned short*>(recvbuf)[i+recvshift] = static_cast<const unsigned short*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_CHAR:
       for (int i = 0; i < size; i++) {
-        static_cast<char*>(recvbuf)[i] = static_cast<const char*>(sendbuf)[i];
+        static_cast<char*>(recvbuf)[i+recvshift] = static_cast<const char*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_SHORT:
       for (int i = 0; i < size; i++) {
-        static_cast<short*>(recvbuf)[i] = static_cast<const short*>(sendbuf)[i];
+        static_cast<short*>(recvbuf)[i+recvshift] = static_cast<const short*>(sendbuf)[i+sendshift];
       }
       break;
     case MPI_INT:
       for (int i = 0; i < size; i++) {
-        static_cast<int*>(recvbuf)[i] = static_cast<const int*>(sendbuf)[i];
+        static_cast<int*>(recvbuf)[i+recvshift] = static_cast<const int*>(sendbuf)[i+sendshift];
       }
       break;
     default:
