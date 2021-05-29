@@ -60,6 +60,13 @@
 template<bool condition>
 using su2enable_if = typename std::enable_if<condition,bool>::type;
 
+/*--- Compile-time type selection. ---*/
+template<bool B, class T, class F> struct su2conditional { using type = T; };
+template<class T, class F> struct su2conditional<false, T, F> { using type = F; };
+
+template<bool B, class T, class F>
+using su2conditional_t = typename su2conditional<B,T,F>::type;
+
 /*--- Detect compilation with OpenMP. ---*/
 #if defined(_OPENMP)
 #define HAVE_OMP
@@ -92,7 +99,7 @@ using su2double = codi::RealReversePrimal;
 #elif CODI_PRIMAL_INDEX_TAPE
 using su2double = codi::RealReversePrimalIndex;
 #else
-using su2double = codi::RealReverseIndex;
+using su2double = codi::RealReverse;
 #endif
 #endif
 #elif defined(CODI_FORWARD_TYPE) // forward mode AD
@@ -103,7 +110,7 @@ using su2double = codi::RealForward;
 using su2double = double;
 #endif
 
-/*--- This type can be used for (rare) compatiblity cases or for
+/*--- This type can be used for (rare) compatibility cases or for
  * computations that are intended to be (always) passive. ---*/
 using passivedouble = double;
 
