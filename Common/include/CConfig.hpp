@@ -5249,7 +5249,7 @@ public:
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, unsigned long Iter) const;
+  string GetFilename(string filename, string ext, int Iter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5458,7 +5458,8 @@ public:
    * \param[in] val_val - Value of the design variable that we want to read.
    * \return Design variable step.
    */
-  su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
+  su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) { return DV_Value[val_dv][val_val]; }
+  const su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.

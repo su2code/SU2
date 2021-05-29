@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CMeshBoundVariable.hpp"
 
 CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
@@ -48,15 +47,8 @@ void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
   if (config->GetTime_Domain()) Boundary_Velocity.resize(nBoundPt,nDim) = su2double(0.0);
 }
 
-void CMeshBoundVariable::Register_BoundDisp(bool input) {
-  if (input) {
-    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
-      for (unsigned long iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
-  }
-  else {
-    for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
-      for (unsigned long iVar = 0; iVar < nVar; iVar++)
-        AD::RegisterOutput(Boundary_Displacement(iVertex,iVar));
-  }
+void CMeshBoundVariable::Register_BoundDisp() {
+  for (unsigned long iVertex = 0; iVertex < Boundary_Displacement.rows(); iVertex++)
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput(Boundary_Displacement(iVertex,iVar));
 }

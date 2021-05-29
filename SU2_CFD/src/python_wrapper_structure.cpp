@@ -806,6 +806,20 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iV
 
 }
 
+void CDriver::SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
+                                        passivedouble val_AdjointY, passivedouble val_AdjointZ) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+  const auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+  solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 0, val_AdjointX);
+  solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 1, val_AdjointY);
+  if (geometry->GetnDim() == 3)
+    solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 2, val_AdjointZ);
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /* Functions related to mesh deformation */
 ////////////////////////////////////////////////////////////////////////////////

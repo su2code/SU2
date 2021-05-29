@@ -46,7 +46,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, CConfig *config) 
 
 }
 
-CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) {
+CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config, bool adjoint) {
 
   /*--- Initializate the number of dimension and number of variables ---*/
   nPoint = npoint;
@@ -59,17 +59,20 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
-    Solution_time_n.resize(nPoint,nVar);
-    Solution_time_n1.resize(nPoint,nVar);
-  }
-  else if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain())
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
-  }
 
-  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
-    AD_InputIndex.resize(nPoint,nVar) = -1;
-    AD_OutputIndex.resize(nPoint,nVar) = -1;
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
+    Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
+
+  if (config->GetDiscrete_Adjoint()) {
+    if (adjoint && config->GetMultizone_Problem())
+      External.resize(nPoint,nVar) = su2double(0.0);
+
+    if (!adjoint) {
+      AD_InputIndex.resize(nPoint,nVar) = -1;
+      AD_OutputIndex.resize(nPoint,nVar) = -1;
+    }
   }
 
   if (config->GetMultizone_Problem())
@@ -108,41 +111,14 @@ void CVariable::Restore_BGSSolution_k() {
 
 void CVariable::SetExternalZero() { parallelSet(External.size(), 0.0, External.data()); }
 
-void CVariable::RegisterSolution(bool input, bool push_index) {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-    for(unsigned long iVar=0; iVar<nVar; ++iVar) {
-      if(input) {
-        if(push_index) {
-          AD::RegisterInput(Solution(iPoint,iVar));
-        }
-        else {
-          AD::RegisterInput(Solution(iPoint,iVar), false);
-          AD::SetIndex(AD_InputIndex(iPoint,iVar), Solution(iPoint,iVar));
-        }
-      }
-      else {
-        AD::RegisterOutput(Solution(iPoint,iVar));
-        if(!push_index)
-          AD::SetIndex(AD_OutputIndex(iPoint,iVar), Solution(iPoint,iVar));
-      }
-    }
-  }
-  END_SU2_OMP_FOR
+void CVariable::RegisterSolution(bool input) {
+  RegisterContainer(input, Solution, input? AD_InputIndex : AD_OutputIndex);
 }
 
 void CVariable::RegisterSolution_time_n() {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n(iPoint,iVar));
-  END_SU2_OMP_FOR
+  RegisterContainer(true, Solution_time_n);
 }
 
 void CVariable::RegisterSolution_time_n1() {
-  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-    for(unsigned long iVar=0; iVar<nVar; ++iVar)
-      AD::RegisterInput(Solution_time_n1(iPoint,iVar));
-  END_SU2_OMP_FOR
+  RegisterContainer(true, Solution_time_n1);
 }
