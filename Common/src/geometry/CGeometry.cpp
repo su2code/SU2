@@ -2721,8 +2721,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
 
-  const bool fea = config->GetStructuralProblem();
-
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++) K[iPoint] = 0.0;
@@ -2986,7 +2984,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
-  if ((rank == MASTER_NODE) && (!fea))
+  if (rank == MASTER_NODE)
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();

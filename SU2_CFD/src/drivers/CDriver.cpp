@@ -773,7 +773,7 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Create the control volume structures ---*/
 
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+  if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
   SU2_OMP_PARALLEL {
     geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
     geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
@@ -798,8 +798,10 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
   /*--- Compute the surface curvature ---*/
 
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
-  geometry[MESH_0]->ComputeSurf_Curvature(config);
+  if (!fea) {
+    if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+    geometry[MESH_0]->ComputeSurf_Curvature(config);
+  }
 
   /*--- Check for periodicity and disable MG if necessary. ---*/
 
@@ -895,13 +897,17 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
 
     /*--- Compute the max length. ---*/
 
-    if ((rank == MASTER_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Finding max control volume width." << endl;
-    geometry[iMGlevel]->SetMaxLength(config);
+    if (!fea) {
+      if ((rank == MASTER_NODE) && (iMGlevel == MESH_0))
+        cout << "Finding max control volume width." << endl;
+      geometry[iMGlevel]->SetMaxLength(config);
+    }
 
     /*--- Communicate the number of neighbors. This is needed for
          some centered schemes and for multigrid in parallel. ---*/
 
-    if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Communicating number of neighbors." << endl;
+    if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (iMGlevel == MESH_0))
+      cout << "Communicating number of neighbors." << endl;
     geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, NEIGHBORS);
     geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, NEIGHBORS);
   }
