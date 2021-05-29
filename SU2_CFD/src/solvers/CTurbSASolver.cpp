@@ -414,7 +414,6 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetTurbVars_WF(geometry, solver_container, config, val_marker);
-    //SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
@@ -581,13 +580,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
-
-      //Solution_i[0] = nodes->GetSolution(iPoint,0);
-
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
-
-      //Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
 
       conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
 

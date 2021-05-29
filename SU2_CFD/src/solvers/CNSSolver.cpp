@@ -853,25 +853,14 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Compute the shear stress at the wall in the regular fashion
        by using the stress tensor on the surface ---*/
 
-      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
+      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
-      }
-
-      /*--- Compute wall shear stress as the magnitude of the wall-tangential
-       component of the shear stress tensor---*/
-
-      su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
       su2double TauTangent[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
       su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
-
 
       /*--- Calculate the quantities from boundary layer theory and
        iteratively solve for a new wall shear stress. Use the current wall

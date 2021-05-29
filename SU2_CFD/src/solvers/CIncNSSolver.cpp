@@ -732,25 +732,15 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       /*--- Compute the shear stress at the wall in the regular fashion
       by using the stress tensor on the surface ---*/
 
-      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
+      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
       // do we need the total viscosity for the stress tensor?
       //su2double total_viscosity = (Lam_Visc_Wall + Eddy_Visc_Wall);
       CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
-      }
-
-      /*--- Compute wall shear stress as the magnitude of the wall-tangential
-       component of the shear stress tensor---*/
-
-      su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
       su2double TauTangent[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
       su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
