@@ -563,7 +563,7 @@ public:
   void SetVolume_n();
 
   /*!
-   * \brief Set the volume of the control volume at time n+1.
+   * \brief Set the volume of the control volume at time n-1.
    */
   void SetVolume_nM1();
 
@@ -831,51 +831,22 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the coordinates.
+   * \brief Register coordinates of a point.
    * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
+   * \param[in] input - Register as input or output.
    */
-  inline void SetAdjointCoord(unsigned long iPoint, const su2double *adj_coor) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      SU2_TYPE::SetDerivative(Coord(iPoint,iDim), SU2_TYPE::GetValue(adj_coor[iDim]));
+  inline void RegisterCoordinates(unsigned long iPoint, bool input) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      if(input) {
+        AD::RegisterInput(Coord(iPoint,iDim));
+        AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
+      }
+      else {
+        AD::RegisterOutput(Coord(iPoint,iDim));
+        AD::SetIndex(AD_OutputIndex(iPoint,iDim), Coord(iPoint,iDim));
+      }
+    }
   }
-
-  /*!
-   * \brief Set the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
-   */
-  inline void SetAdjointCoord_LocalIndex(unsigned long iPoint, const su2double *adj_coor) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      AD::SetDerivative(AD_OutputIndex(iPoint,iDim), SU2_TYPE::GetValue(adj_coor[iDim]));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
-   */
-  inline void GetAdjointCoord(unsigned long iPoint, su2double *adj_coor) const {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord(iPoint,iDim));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
-   */
-  inline void GetAdjointCoord_LocalIndex(unsigned long iPoint, su2double *adj_coor) const {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      adj_coor[iDim] = AD::GetDerivative(AD_InputIndex(iPoint,iDim));
-  }
-
-  /*!
-   * \brief Set the adjoint vector indices of Coord vector.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] input - Save them to the input or output indices vector.
-   */
-  void SetIndex(unsigned long iPoint, bool input);
 
   /*!
    * \brief Set wall roughnesses according to stored closest wall information.
@@ -892,4 +863,5 @@ public:
       }
     }
   }
+
 };

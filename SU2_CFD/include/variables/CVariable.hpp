@@ -95,8 +95,6 @@ protected:
 
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
-  su2matrix<int> AD_Time_n_InputIndex;  /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_Time_n1_InputIndex; /*!< \brief Indices of Solution variables in the adjoint vector. */
 
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
@@ -112,6 +110,25 @@ protected:
 
   inline static void AssertOverride() {
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
+  }
+
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for(unsigned long iVar=0; iVar<variable.cols(); ++iVar) {
+
+        if (input) AD::RegisterInput(variable(iPoint,iVar));
+        else AD::RegisterOutput(variable(iPoint,iVar));
+
+        if (ad_index) AD::SetIndex((*ad_index)(iPoint,iVar), variable(iPoint,iVar));
+      }
+    }
+    END_SU2_OMP_FOR
+  }
+
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+    RegisterContainer(input, variable, &ad_index);
   }
 
 public:
@@ -1926,7 +1943,7 @@ public:
   /*!
    * \brief  A virtual member. Set the value of the velocity solution predictor.
    */
-  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_pred) { }
 
   /*!
    * \brief  A virtual member. Set the value of the old solution.
@@ -2024,7 +2041,7 @@ public:
   /*!
    * \brief A virtual member. Recover the value of the adjoint of the mesh coordinates.
    */
-  inline virtual void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) const { }
+  inline virtual void GetAdjoint_MeshCoord(unsigned long iPoint, su2double *adj_mesh) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.
@@ -2112,82 +2129,45 @@ public:
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
-   * \param[in] push_index - boolean whether we want to push the index or save it in a member variable.
    */
-  void RegisterSolution(bool input, bool push_index = true);
+  void RegisterSolution(bool input);
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  void RegisterSolution_time_n(bool push_index);
+  void RegisterSolution_time_n();
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  void RegisterSolution_time_n1(bool push_index);
+  void RegisterSolution_time_n1();
 
   /*!
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   inline void SetAdjointSolution(unsigned long iPoint, const su2double *adj_sol) {
-    for (unsigned long iVar = 0; iVar < Solution.cols(); iVar++)
-      SU2_TYPE::SetDerivative(Solution(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Set the adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_LocalIndex(unsigned long iPoint, const su2double *adj_sol) {
     for (unsigned long iVar = 0; iVar < AD_OutputIndex.cols(); iVar++)
       AD::SetDerivative(AD_OutputIndex(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
   }
 
   /*!
    * \brief Get the adjoint values of the solution.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  inline void GetAdjointSolution_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+  inline void GetAdjointSolution(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < AD_InputIndex.cols(); iVar++)
       adj_sol[iVar] = AD::GetDerivative(AD_InputIndex(iPoint,iVar));
   }
 
-  /*!
-   * \brief Get the adjoint values of the solution at time n.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
   }
 
-  inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < AD_Time_n_InputIndex.cols(); iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the solution at time n-1.
-   * \param[out] adj_sol - The adjoint values of the solution.
-   */
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
-  }
-
-  inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar));
   }
 
   /*!

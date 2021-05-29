@@ -1234,14 +1234,14 @@ public:
    * \brief Ray Intersects Triangle (Moller and Trumbore algorithm)
    */
   bool RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
-  const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
-  su2double *intersect);
+                             const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
+                             su2double *intersect);
 
   /*!
    * \brief Segment Intersects Triangle
    */
   bool SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
-  su2double vert0[3], su2double vert1[3], su2double vert2[3]);
+                                 su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
    * \brief Segment Intersects Line (for 2D FFD Intersection)
@@ -1250,16 +1250,15 @@ public:
 
   /*!
    * \brief Register the coordinates of the mesh nodes.
-   * \param[in] config
    */
-  void RegisterCoordinates(const CConfig *config) const;
+  void RegisterCoordinates() const;
 
   /*!
    * \brief Update the multi-grid structure and the wall-distance.
    * \param geometry_container - Geometrical definition.
    * \param config - Config
    */
-  void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
+  static void UpdateGeometry(CGeometry **geometry_container, CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

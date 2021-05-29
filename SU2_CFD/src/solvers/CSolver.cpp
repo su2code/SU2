@@ -3129,7 +3129,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   if (size != SINGLE_NODE && size % 2)
     SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
 
-  if (config->GetStructuralProblem() || config->GetFEMSolver())
+  if (config->GetFEMSolver())
     SU2_MPI::Error("Cannot interpolate the restart file for FEM problems.", CURRENT_FUNCTION);
 
   /* Challenges:
