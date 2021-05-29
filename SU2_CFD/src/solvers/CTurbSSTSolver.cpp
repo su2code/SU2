@@ -367,30 +367,24 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
   if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
 
-
-
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetTurbVars_WF(geometry, solver_container, config, val_marker);
     END_SU2_OMP_MASTER
-    
+
     SU2_OMP_BARRIER
     return;
   }
 
-
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-  
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
-
 
       if (rough_wall) {
 
@@ -428,7 +422,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
-      } else {
+
+      } else { // smooth wall
+
         /*--- distance to closest neighbor ---*/
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -441,7 +437,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
 
         su2double beta_1 = constants[4];
-        su2double solution[2];
+        su2double solution[MAXNVAR];
         solution[0] = 0.0;
         solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
 
@@ -462,19 +458,21 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 
-void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container, 
-                                  const CConfig *config, unsigned short val_marker) {
+void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
+                                    const CConfig *config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- von Karman constant from boundary layer theory ---*/
-
   const su2double kappa = config->GetwallModelKappa();
-  const su2double relax = 0.5;            /*--- relaxation factor for k-omega values ---*/
-  //const su2double beta_1 = constants[4];      
-  su2double k,omega;
+
+  /*--- relaxation factor for k-omega values ---*/
+  const su2double relax = 0.5;
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -484,42 +482,39 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
     if (Y_Plus < 5.0) {
-    
-    /* --- use zero flux (Neumann) conditions --- */
-
-    continue;
+      /*--- use zero flux (Neumann) conditions ---*/
+      continue;
     }
 
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
-    k = nodes->GetSolution(iPoint_Neighbor,0);
-    omega = nodes->GetSolution(iPoint_Neighbor,1);
+    su2double k = nodes->GetSolution(iPoint_Neighbor,0);
+    su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
     su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
     su2double y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
 
-    su2double omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19 
-    su2double omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20 
+    su2double omega1 = 6.0*Lam_Visc_Wall/(0.075*Density_Wall*y*y);  // eq. 19
+    su2double omega0 = U_Tau/(sqrt(0.09)*kappa*y);                  // eq. 20
     su2double omega_new = sqrt(omega0*omega0 + omega1*omega1);      // eq. 21 Nichols & Nelson
-    su2double k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson 
+    su2double k_new = omega_new * Eddy_Visc/Density_Wall;           // eq. 22 Nichols & Nelson
                                            // (is this the correct density? paper says rho and not rho_w)
 
     /*--- put some relaxation factor on the k-omega values ---*/
-    k += relax*(k_new - k);       
-    omega += relax*(omega_new - omega);       
+    k += relax*(k_new - k);
+    omega += relax*(omega_new - omega);
 
-    su2double solution[2];
-    solution[0] = k;
-    solution[1] = omega;
+    su2double solution[MAXNVAR] = {k, omega};
 
     nodes->SetSolution_Old(iPoint_Neighbor,solution);
     nodes->SetSolution(iPoint,solution);
 
     LinSysRes.SetBlock_Zero(iPoint_Neighbor);
 
-    /*--- includes 1 in the diagonal ---*/
-    Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
-    Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
-
+    if (implicit) {
+      /*--- includes 1 in the diagonal ---*/
+      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
+    }
   }
 }
 

@@ -273,6 +273,11 @@ protected:
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh);
 
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
+
 public:
   /*!
    * \brief Constructor of the class.

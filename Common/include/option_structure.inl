@@ -1803,9 +1803,9 @@ public:
             must be specified. Hence the counter must be updated
             accordingly. ---*/
       switch( typeWF ) {
-        case WALL_FUNCTIONS::EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
-        case WALL_FUNCTIONS::NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
-        case WALL_FUNCTIONS::LOGARITHMIC_WALL_MODEL: counter += 3; break;
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL:    counter += 3; break;
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: counter += 2; break;
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: counter += 3; break;
         default: break;
       }
 
@@ -1854,7 +1854,7 @@ public:
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
 
-        case WALL_FUNCTIONS::EQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
 
           /* LES equilibrium wall model. The exchange distance, stretching
              factor and number of points in the wall model must be specified. */
@@ -1879,7 +1879,7 @@ public:
           break;
         }
 
-        case WALL_FUNCTIONS::NONEQUILIBRIUM_WALL_MODEL: {
+        case WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL: {
 
           /* LES non-equilibrium model. The RANS turbulence model and
              the exchange distance need to be specified. */
@@ -1912,7 +1912,7 @@ public:
 
           break;
         }
-        case WALL_FUNCTIONS::LOGARITHMIC_WALL_MODEL: {
+        case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
 
           /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
            factor and number of points in the wall model must be specified. */

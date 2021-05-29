@@ -731,17 +731,10 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 }
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
-/*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
+  /*---
+   The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
    At this moment, the wall function is only available for adiabatic flows.
    ---*/
-  su2double RefDensity=Density_Inf,RefVel2=0.0; 
-  if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) 
-      RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-  } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-    RefDensity = config->GetInc_Density_Ref();
-    RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-  }
 
   unsigned long int notConvergedCounter=0;
   su2double grad_diff;
@@ -759,10 +752,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = config->GetwallModelKappa(); 
+  const su2double kappa = config->GetwallModelKappa();
   const su2double B = config->GetwallModelB();
-
-  //bool converged = true;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -774,13 +765,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
     /*--- Jump to another BC if it is not wall function ---*/
 
-    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_WALL_FUNCTION)
+    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION)
       continue;
 
     /*--- Get the specified wall heat flux from config ---*/
       // note that we can get the heat flux from the temperature gradient
     su2double q_w = 0.0;
-    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) 
+    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)
       q_w = config->GetWall_HeatFlux(Marker_Tag);
 
     // heat flux from temperature: q_w = h*(T_wall - T_fluid)
@@ -924,7 +915,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
             su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
         su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
- 
+
         Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                              (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
                                              - Lam_Visc_Normal/Lam_Visc_Wall);
@@ -946,14 +937,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
         U_Tau = U_Tau - relax*(diff / grad_diff);
 
         counter++;
-            
-    
+
+
         if (counter > max_iter) {
           notConvergedCounter++;
-          // cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
-          // cout << "diff = " << endl;
-          // do not break, use some safe values for convergence
-          // break;
+          // use some safe values for convergence
           Y_Plus = 30.0;
           Eddy_Visc = 1.0;
           U_Tau = 1.0;
@@ -964,7 +952,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Calculate an updated value for the wall shear stress
         using the y+ value, the definition of y+, and the definition of
         the friction velocity. ---*/
-          
+
       YPlus[iMarker][iVertex] = Y_Plus;
       EddyViscWall[iMarker][iVertex] = Eddy_Visc;
       UTau[iMarker][iVertex] = U_Tau;
@@ -973,20 +961,19 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
     }
-    //}
-  }
-    END_SU2_OMP_FOR
 
- if (notConvergedCounter>0) {
+  }
+  END_SU2_OMP_FOR
+
+  if (notConvergedCounter>0) {
     cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
   }
-
 
 }

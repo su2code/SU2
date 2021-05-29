@@ -256,6 +256,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Initialize fan face pressure, fan face mach number, and mass flow rate ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1602,6 +1604,29 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     cout << NonDimTableOut.str();
 
   }
+
+}
+
+void CEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dynamic meshes,
+   use the motion Mach number as a reference value for computing the force coefficients.
+   Otherwise, use the freestream values, which is the standard convention. ---*/
+
+  su2double RefVel2;
+
+  if (dynamic_grid && !config.GetFSI_Simulation()) {
+    su2double Gas_Constant = config.GetGas_ConstantND();
+    su2double Mach2Vel = sqrt(Gamma * Gas_Constant * Temperature_Inf);
+    su2double Mach_Motion = config.GetMach_Motion();
+    RefVel2 = pow(Mach_Motion * Mach2Vel, 2);
+  }
+  else {
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+
+  DynamicPressureRef = 0.5 * Density_Inf * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 

@@ -114,18 +114,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
-  /*!
-   * \brief computes nu-tilde.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTurbVars_WF(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    const CConfig *config,
-                                    unsigned short val_marker) ;
+
 public:
   /*!
    * \brief Constructor of the class.

@@ -147,6 +147,7 @@ class CFVMFlowSolverBase : public CSolver {
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
+  su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
@@ -227,6 +228,13 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Default constructor, this class is not directly instantiable.
    */
   CFVMFlowSolverBase() : CSolver() {}
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
+   * \note Implement this method in the derived class and call it in its constructor.
+   * Duplicating this type of information has caused bugs (I know because I fixed them).
+   */
+  virtual void SetReferenceValues(const CConfig& config) = 0;
 
   /*!
    * \brief Allocate member variables.
