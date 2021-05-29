@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CInterpolator.hpp
  * \brief Base class for multiphysics interpolation.
  * \author H. Kline
@@ -29,8 +29,6 @@
 #include "../../include/datatype_structure.hpp"
 #include "../../include/toolboxes/C2DContainer.hpp"
 #include <vector>
-#include <forward_list>
-#include <algorithm>
 
 class CConfig;
 class CGeometry;
@@ -61,15 +59,11 @@ protected:
   su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values. */
   *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
-  /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
-  unsigned long *Buffer_Receive_nLinkedNodes;
-  /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
-  unsigned long *Buffer_Receive_StartLinkedNodes;
-  /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
-   * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
-  unsigned long *Buffer_Receive_LinkedNodes;
-  /*! \brief Buffer to receive the rank that owns the vertex. */
-  unsigned long *Buffer_Receive_Proc;
+  unsigned long
+  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node. */
+  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge. */
+  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
+  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node. */
 
   unsigned long
   nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
@@ -84,30 +78,14 @@ protected:
   CGeometry* const target_geometry;  /*! \brief Target geometry. */
 
 public:
-  struct CDonorInfo {
-    vector<int> processor;
-    vector<unsigned long> globalPoint;
-    vector<su2double> coefficient;
-
-    unsigned long nDonor() const { return processor.size(); }
-
-    void resize(size_t nDonor) {
-      processor.resize(nDonor);
-      globalPoint.resize(nDonor);
-      coefficient.resize(nDonor);
-    }
-  };
-  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
-
   /*!
    * \brief Constructor of the class.
-   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone.
-   * \param[in] jZone - index of the target zone.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
    */
-  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
-                unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief No default construction allowed to force zones and geometry to always be set.
@@ -147,7 +125,7 @@ public:
 
 protected:
   /*!
-   * \brief Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads.
+   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
    * \param[in] val_zone   - index of the zone
    * \param[in] val_marker - index of the marker
    */
