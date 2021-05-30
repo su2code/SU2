@@ -468,6 +468,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
   /*--- von Karman constant from boundary layer theory ---*/
 
   const su2double kappa = config->GetwallModelKappa();
+  const su2double minYPlus = config->GetwallModelMinYPlus();
   const su2double relax = 0.5;            /*--- relaxation factor for k-omega values ---*/
   //const su2double beta_1 = constants[4];      
   su2double k,omega;
@@ -483,7 +484,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
-    if (Y_Plus < 5.0) {
+    if (Y_Plus < minYPlus) {
     
     /* --- use zero flux (Neumann) conditions --- */
 

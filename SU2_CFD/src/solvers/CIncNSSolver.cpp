@@ -627,14 +627,13 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   su2double U_Tau, Y_Plus;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  //su2double Eddy_Visc = 1.0e-6;         /*--- nonzero starting value for eddy viscosity---*/
-  constexpr unsigned short max_iter =200; /*--- maximum number of iterations for the Newton Solver---*/
-  const su2double tol = 1e-12;            /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
-  const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
-  
-  /*--- Compute the recovery factor ---*/
+  const unsigned short max_iter =config->GetwallModelMaxIter();    /*--- maximum number of iterations for the Newton Solver---*/
+  const su2double tol = 1e-12;                          /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const su2double relax = config->GetwallModelRelFac(); /*--- relaxation factor for the Newton solver ---*/
+  const su2double minYPlus = config->GetwallModelMinYPlus();
 
-  // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
+  /*--- Compute the recovery factor 
+   * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
@@ -770,12 +769,13 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       unsigned long counter = 0; su2double diff = 1.0;
       U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      Y_Plus = 4.99; // clipping value 
+      Y_Plus = 0.99*minYPlus; // clipping value
+
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
-      /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
+      /*--- Automatic switch off when y+ < 5.0 according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < 5.0) {
+      if (Y_Plus_Start < minYPlus) {
         /*--- impose a minimum y+ for stability reasons---*/
         smallYPlusCounter++;
       }

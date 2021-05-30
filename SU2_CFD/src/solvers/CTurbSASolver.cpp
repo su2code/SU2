@@ -581,14 +581,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
-
-      //Solution_i[0] = nodes->GetSolution(iPoint,0);
-
-      /*--- Load the inlet turbulence variable (uniform by default). ---*/
-
-      //Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-
       conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
 
       /*--- Set various other quantities in the conv_numerics class ---*/
@@ -1584,7 +1576,8 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
+  const su2double minYPlus = config->GetwallModelMinYPlus();
+ 
   
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
   constexpr unsigned short max_iter = 200;
@@ -1616,9 +1609,9 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
-      if (Y_Plus < 5.0) {
+      if (Y_Plus < minYPlus) {
 
-        /* --- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition --- */
+        /* --- note that we do not do anything for y+ < 5.0, meaning that we have a zero flux (Neumann) boundary condition --- */
          
         continue;
       }

@@ -945,7 +945,7 @@ enum class WALL_FUNCTIONS {
   LOGARITHMIC_WALL_MODEL        /*!< \brief Logarithmic law-of-the-wall model for LES. */
 };
 static const MapType<string, WALL_FUNCTIONS> Wall_Functions_Map = {
-  MakePair("NONE",                      WALL_FUNCTIONS::NONE)
+  MakePair("NO_WALL_FUNCTION",          WALL_FUNCTIONS::NONE)
   MakePair("STANDARD_WALL_FUNCTION",    WALL_FUNCTIONS::STANDARD_WALL_FUNCTION)
   MakePair("ADAPTIVE_WALL_FUNCTION",    WALL_FUNCTIONS::ADAPTIVE_WALL_FUNCTION)
   MakePair("SCALABLE_WALL_FUNCTION",    WALL_FUNCTIONS::SCALABLE_WALL_FUNCTION)

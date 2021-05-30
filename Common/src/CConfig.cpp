@@ -1225,6 +1225,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
   addDoubleOption("WALLMODELKAPPA", wallModelKappa, 0.41);
+  /*!\brief WALLMODELMAXITER \n DESCRIPTION: Max iterations used for the wall model \n DEFAULT 200 \ingroup Config*/
+  addUnsignedShortOption("WALLMODELMAXITER", wallModelMaxIter, 200);
+  /*!\brief WALLMODELRELFAC \n DESCRIPTION: Relaxation factor used for the wall model \n DEFAULT 0.5 \ingroup Config*/
+  addDoubleOption("WALLMODELRELFAC", wallModelRelFac, 0.5);
+  /*!\brief WALLMODELMINYPLUS \n DESCRIPTION: lower limit for Y+ used for the wall model \n DEFAULT 5.0 \ingroup Config*/
+  addDoubleOption("WALLMODELMINYPLUS", wallModelMinYplus, 5.0);
   /*!\brief WALLMODELB \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
   addDoubleOption("WALLMODELB", wallModelB, 5.5);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/

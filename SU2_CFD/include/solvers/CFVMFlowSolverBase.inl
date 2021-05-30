@@ -2420,6 +2420,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  const su2double minYPlus = config->GetwallModelMinYPlus();
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2436,6 +2437,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool axisymmetric = config->GetAxisymmetric();
   bool roughwall = (config->GetnRoughWall() > 0);
   bool nemo = config->GetNEMOProblem();
+
 
   /*--- Get the locations of the primitive variables for NEMO ---*/
   if (nemo) {
@@ -2557,8 +2559,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
         /* --- Note that in the wall model, we switch off the computation when the computed y+ < 5    --- */
-        /* --- We put YPlus to 1.0 so we have to compute skinfriction and the actual y+ in that case as well --- */
-        if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < 5.0)) 
+        /* --- We have to compute skinfriction in that case as well (we do not recompute y+) --- */
+        if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < minYPlus)) 
           CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
 
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
@@ -2578,7 +2580,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /* --- Note that we do not recompute y+ when y+<5 because y+ can become > 5 again --- */
       if (!wallfunctions)  
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
-
+      
       /*--- Compute total and maximum heat flux on the wall ---*/
 
       /// TODO: Move these ifs to specialized functions.

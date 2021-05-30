@@ -763,6 +763,7 @@ private:
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
+  wallModelMaxIter,     /*!< \brief maximum number of iterations for the Newton method for the wall model */
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
@@ -826,6 +827,8 @@ private:
   Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
   wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
+  wallModelRelFac,             /*!< \brief relaxation factor for the Newton method used in the wall model */
+  wallModelMinYplus,          /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
   Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
   Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
   Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
@@ -1671,6 +1674,24 @@ public:
    * \return von Karman constant.
    */
   su2double GetwallModelKappa(void) const { return wallModelKappa; }
+
+  /*!
+   * \brief Get the value of the max. number of Newton iterations for turbulence wall modeling.
+   * \return max number of iterations.
+   */
+  unsigned short GetwallModelMaxIter(void) const { return wallModelMaxIter; }
+
+  /*!
+   * \brief Get the value of the relaxation factor for turbulence wall modeling.
+   * \return relaxation factor.
+   */
+  su2double GetwallModelRelFac(void) const { return wallModelRelFac; }
+
+  /*!
+   * \brief Get the value of the minimum Y+ value below which the wall function is deactivated
+   * \return minimum Y+ value.
+   */
+  su2double GetwallModelMinYPlus(void) const { return wallModelMinYplus; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.

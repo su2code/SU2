@@ -81,12 +81,12 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetTurbVars_WF(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CNumerics *conv_numerics,
-                     CNumerics *visc_numerics,
-                     const CConfig *config,
-                     unsigned short val_marker) ;
+  //void SetTurbVars_WF(CGeometry *geometry,
+  //                   CSolver **solver_container,
+  //                   CNumerics *conv_numerics,
+  //                   CNumerics *visc_numerics,
+  //                   const CConfig *config,
+  //                   unsigned short val_marker) ;
 
   /*!
    * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
