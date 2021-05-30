@@ -1900,8 +1900,8 @@ class Interface:
 
           if FSI_config['RESTART_SOL'] == 'YES':
             NbTimeIter = ((totTime)/deltaT)-1
-            time = (FSI_config['RESTART_ITER']+1)*deltaT
-            TimeIter = FSI_config['RESTART_ITER']+1
+            time = (FSI_config['RESTART_ITER'])*deltaT
+            TimeIter = FSI_config['RESTART_ITER']
           else:
             NbTimeIter = (totTime/deltaT)-1		# number of time iterations
             time = 0.0					# initial time
