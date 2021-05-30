@@ -446,10 +446,6 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   auto residual = numerics->ComputeResidual(config);
 
-  /*--- Reset wall shear stress to keep boundaries from using it ---*/
-
-  numerics->SetTauWall(-1.0, -1.0);
-
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
     if (implicit)

@@ -415,10 +415,10 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                     dist_ij_2, nDim+1);
   }
 
-  /*--- Wall shear stress values (wall functions) ---*/
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
-  const int scale = max(1, (TauWall_i > 0.0)+(TauWall_j > 0.0));
-  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) / scale;
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
@@ -599,10 +599,10 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                     dist_ij_2, nVar);
   }
 
-  /*--- Wall shear stress values (wall functions) ---*/
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
-  const int scale = max(1, (TauWall_i > 0.0)+(TauWall_j > 0.0));
-  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) / scale;
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
@@ -926,10 +926,10 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                     dist_ij_2, nDim+1);
   }
 
-  /*--- Wall shear stress values (wall functions) ---*/
+  /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
-  const int scale = max(1, (TauWall_i > 0.0)+(TauWall_j > 0.0));
-  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) / scale;
+  const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
