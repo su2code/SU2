@@ -164,17 +164,16 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   const bool input = true;
   const bool dynamic = config->GetTime_Domain();
-  const bool push_index = !config->GetMultizone_Problem();
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
-  direct_solver->GetNodes()->RegisterSolution(input, push_index);
+  direct_solver->GetNodes()->RegisterSolution(input);
 
   if (dynamic) {
 
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
 
-    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
+    direct_solver->GetNodes()->RegisterSolution_time_n();
   }
 
 }
@@ -208,25 +207,12 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
     }
 
     if (!reset) {
-      const bool local_index = config->GetMultizone_Problem();
-      const bool push_index = !local_index;
-
-      E.Register(push_index);
-      Nu.Register(push_index);
-      Rho.Register(push_index);
-      Rho_DL.Register(push_index);
-      if (de_effects) EField.Register(push_index);
-      if (fea_dv) DV.Register(push_index);
-
-      /*--- Explicitly store the tape indices for when we extract the derivatives ---*/
-      if (local_index) {
-        E.SetIndex();
-        Nu.SetIndex();
-        Rho.SetIndex();
-        Rho_DL.SetIndex();
-        if (de_effects) EField.SetIndex();
-        if (fea_dv) DV.SetIndex();
-      }
+      E.Register();
+      Nu.Register();
+      Rho.Register();
+      Rho_DL.Register();
+      if (de_effects) EField.Register();
+      if (fea_dv) DV.Register();
 
       /*--- Register the flow tractions ---*/
       if (config->GetnMarker_Fluid_Load() > 0)
@@ -243,82 +229,48 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   const bool input = false;
-  const bool push_index = !config->GetMultizone_Problem();
 
   /*--- Register variables as output of the solver iteration ---*/
 
-  direct_solver->GetNodes()->RegisterSolution(input, push_index);
+  direct_solver->GetNodes()->RegisterSolution(input);
 
 }
 
-void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
-
-  const bool dynamic = config->GetTime_Domain();
-  const bool multizone = config->GetMultizone_Problem();
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  su2double Solution[MAXNVAR] = {0.0};
-
-  /*--- Set Residuals to zero ---*/
-
-  SetResToZero();
+void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
    *    contains contributions from other zones but on extraction it does not. ---*/
 
-  if(!multizone) nodes->Set_OldSolution();
+  if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  /*--- Extract and store the adjoint solution ---*/
 
-    /*--- Extract the adjoint solution ---*/
-
-    if(multizone) {
-      direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
-    }
-    else {
-      direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
-    }
-
-    /*--- Store the adjoint solution ---*/
-
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    su2double Solution[MAXNVAR] = {0.0};
+    direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     nodes->SetSolution(iPoint,Solution);
-
   }
 
-  /*--- Solution for acceleration (u'') and velocity (u') at time n ---*/
+  if (CrossTerm) return;
 
-  if (dynamic){
+  /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
-    /*--- NOW: The solution at time n ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Extract the adjoint solution at time n ---*/
-
-      if(multizone) {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
-      }
-      else {
-        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-      }
-
-      /*--- Store the adjoint solution at time n ---*/
-
-      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
+  if (config->GetTime_Domain()) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      su2double Solution[MAXNVAR] = {0.0};
+      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      nodes->Set_Solution_time_n(iPoint,Solution);
     }
-
   }
-
-  /*--- TODO: Need to set the MPI solution in the previous TS ---*/
 
   /*--- Set the residuals ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-    for (iVar = 0; iVar < nVar; iVar++){
-      residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
+  SetResToZero();
+
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++){
+      su2double residual = nodes->GetSolution(iPoint, iVar) - nodes->GetSolution_Old(iPoint, iVar);
 
       Residual_RMS[iVar] += residual*residual;
       AddRes_Max(iVar,fabs(residual),geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetCoord(iPoint));
@@ -387,10 +339,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
     }
 
-    if (multizone)
-      direct_solver->GetNodes()->SetAdjointSolution_LocalIndex(iPoint,Solution);
-    else
-      direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
+    direct_solver->GetNodes()->SetAdjointSolution(iPoint,Solution);
   }
 }
 
@@ -418,24 +367,18 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Extract the geometric sensitivities ---*/
 
+  const bool time_domain = config->GetTime_Domain();
+
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    su2double *Coord = geometry->nodes->GetCoord(iPoint);
+    auto Coord = geometry->nodes->GetCoord(iPoint);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
-      su2double Sensitivity;
+      su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+      AD::ResetInput(Coord[iDim]);
 
-      if(config->GetMultizone_Problem()) {
-        Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
-      }
-      else {
-        Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-        /*--- Set the index manually to zero. ---*/
-        AD::ResetInput(Coord[iDim]);
-      }
-
-      if (!config->GetTime_Domain()) {
+      if (!time_domain) {
         nodes->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
         nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint, iDim) + Sensitivity);
