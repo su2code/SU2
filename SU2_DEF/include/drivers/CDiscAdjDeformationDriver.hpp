@@ -1,6 +1,6 @@
 /*!
- * \file CDeformationDriver.hpp
- * \brief Headers of the main subroutines for driving the mesh deformation.
+* \file CDiscAdjDeformationDriver.cpp
+* \brief Main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez
  * \version 7.1.1 "Blackbird"
  *
@@ -27,35 +27,46 @@
 
 #pragma once
 
+#define ENABLE_MAPS
+#include "../../../Common/include/CConfig.hpp"
+#undef ENABLE_MAPS
+
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../SU2_CFD/include/output/COutput.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
+#include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
 
 /*!
- * \class CDeformationDriver
- * \brief Class for driving mesh deformation solvers.
+ * \class CDiscAdjDeformationDriver
+ * \brief Class for driving sensitivity DiscAdjDeformations.
  * \author A. Gastaldi, H. Patel
  * \version 7.1.1 "Blackbird"
  */
-class CDeformationDriver {
+class CDiscAdjDeformationDriver {
 protected:
   char config_file_name[MAX_STRING_SIZE];
   int rank,
       size;
+  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short iInst;
+  unsigned short* nInst;
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
             StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
             UsedTimePreproc,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
             UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  su2double** Gradient;
+  ofstream Gradient_file;
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
-  CGeometry **geometry_container;             /*!< \brief Geometrical definition of the problem. */
-  CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement **grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
+  CGeometry ***geometry_container;             /*!< \brief Geometrical definition of the problem. */
+  CSurfaceMovement **surface_movement;
+  CVolumetricMovement **grid_movement;
   COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
 
 public:
@@ -64,12 +75,12 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
+  CDiscAdjDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDeformationDriver(void);
+  ~CDiscAdjDeformationDriver(void);
 
   /*!
    * \brief [Overload] Launch the computation for single-zone problems.
@@ -101,5 +112,44 @@ protected:
    * \brief Preprocess the output container.
    */
   void Output_Preprocessing();
+
+  /*!
+   * \brief DiscAdjDeformation of the surface sensitivity using finite differences (FD).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement class of the problem.
+   * \param[in] Gradient_file - Output file to store the gradient data.
+   */
+
+  void SetDiscAdjDeformation_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
+
+  /*!
+   * \brief DiscAdjDeformation of the surface sensitivity using algorithmic differentiation (AD).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement class of the problem.
+   * \param[in] Gradient_file - Output file to store the gradient data.
+   */
+
+  void SetDiscAdjDeformation_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double **Gradient);
+
+  /*!
+   * \brief Prints the gradient information to a file.
+   * \param[in] Gradient - The gradient data.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Gradient_file - Output file to store the gradient data.
+   */
+
+  void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file);
+
+  /*!
+   * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
+   *  on the surface and in the volume to a file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   */
+
+  void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
 
 };

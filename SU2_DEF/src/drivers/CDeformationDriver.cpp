@@ -68,17 +68,13 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
 
   StartTime = SU2_MPI::Wtime();
 
-  for (iZone = 0; iZone < nZone; iZone++) {
+  /*--- Preprocessing of the geometry for all zones. ---*/
 
-    /*--- Preprocessing of the geometry for all zones. ---*/
+  Geometrical_Preprocessing();
 
-    Geometrical_Preprocessing(config_container[iZone], geometry_container[iZone]);
+  /*--- Preprocessing of the output for all zones. ---*/
 
-    /*--- Preprocessing of the output for all zones. ---*/
-
-    Output_Preprocessing(config_container[iZone], geometry_container[iZone], output_container[iZone]);
-
-  }
+  Output_Preprocessing();
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
 
@@ -150,7 +146,9 @@ void CDeformationDriver::Input_Preprocessing() {
     }
 }
 
-void CDeformationDriver::Geometrical_Preprocessing(CConfig *config, CGeometry *&geometry) {
+void CDeformationDriver::Geometrical_Preprocessing() {
+
+    for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
@@ -158,15 +156,15 @@ void CDeformationDriver::Geometrical_Preprocessing(CConfig *config, CGeometry *&
 
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-    geometry_aux = new CPhysicalGeometry(config, iZone, nZone);
+    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-    geometry_aux->SetColorGrid_Parallel(config);
+    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
     /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    geometry = new CPhysicalGeometry(geometry_aux, config);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
 
     /*--- Deallocate the memory of geometry_aux ---*/
 
@@ -174,11 +172,11 @@ void CDeformationDriver::Geometrical_Preprocessing(CConfig *config, CGeometry *&
 
     /*--- Add the Send/Receive boundaries ---*/
 
-    geometry->SetSendReceive(config);
+    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
 
     /*--- Add the Send/Receive boundaries ---*/
 
-    geometry->SetBoundaries(config);
+    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
 
     /*--- Computational grid preprocesing ---*/
 
@@ -187,51 +185,56 @@ void CDeformationDriver::Geometrical_Preprocessing(CConfig *config, CGeometry *&
     /*--- Compute elements surrounding points, points surrounding points ---*/
 
     if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-    geometry->SetPoint_Connectivity();
+    geometry_container[iZone]->SetPoint_Connectivity();
 
     /*--- Check the orientation before computing geometrical quantities ---*/
 
-    geometry->SetBoundVolume();
-    if (config->GetReorientElements()) {
+    geometry_container[iZone]->SetBoundVolume();
+    if (config_container[iZone]->GetReorientElements()) {
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-        geometry->Check_IntElem_Orientation(config);
-        geometry->Check_BoundElem_Orientation(config);
+        geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+        geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
     }
 
     /*--- Create the edge structure ---*/
 
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-    geometry->SetEdges();
-    geometry->SetVertex(config);
+    geometry_container[iZone]->SetEdges();
+    geometry_container[iZone]->SetVertex(config_container[iZone]);
 
-    if (config->GetDesign_Variable(0) != NO_DEFORMATION) {
+    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
 
         /*--- Create the dual control volume structures ---*/
 
         if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-        geometry->SetControlVolume(config, ALLOCATE);
-        geometry->SetBoundControlVolume(config, ALLOCATE);
+        geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
+        geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
     }
 
     /*--- Create the point-to-point MPI communication structures. ---*/
 
-    geometry->PreprocessP2PComms(geometry, config);
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
 
+    }
 }
 
-void CDeformationDriver::Output_Preprocessing(CConfig *config, CGeometry *geometry, COutput *&output) {
+void CDeformationDriver::Output_Preprocessing() {
+
+      for (iZone = 0; iZone < nZone; iZone++) {
 
         /*--- Allocate the mesh output ---*/
 
-        output = new CMeshOutput(config, geometry->GetnDim());
+        output_container[iZone] = new CMeshOutput(config_container[iZone], geometry_container[iZone]->GetnDim());
 
         /*--- Preprocess the volume output ---*/
 
-        output->PreprocessVolumeOutput(config);
+        output_container[iZone]->PreprocessVolumeOutput(config_container[iZone]);
 
         /*--- Preprocess history --- */
 
-        output->PreprocessHistoryOutput(config, false);
+        output_container[iZone]->PreprocessHistoryOutput(config_container[iZone], false);
+
+    }
 }
 
 void CDeformationDriver::Run() {
