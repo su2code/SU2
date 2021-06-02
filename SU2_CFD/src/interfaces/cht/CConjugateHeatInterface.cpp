@@ -40,17 +40,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                                                 const CConfig *donor_config, unsigned long Marker_Donor,
                                                 unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  const auto nDim = donor_geometry->GetnDim();
-
-  /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
-  const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
-
-  su2double thermal_conductivity = 0.0;
-  su2double heat_flux_density = 0.0;
-  su2double conductivity_over_dist = 0.0;
-
   /*--- Compute distance of donor point to PointNormal for T-gradient/heatflux computation ---*/
+  const auto nDim = donor_geometry->GetnDim();
   const auto Coord = donor_geometry->nodes->GetCoord(Point_Donor);
   const auto PointNormal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
   const auto Coord_Normal = donor_geometry->nodes->GetCoord(PointNormal);
@@ -72,7 +63,14 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
   //    }
 
-  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) ---*/
+  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and
+        thermal conductivity divided by distance. ---*/
+  su2double thermal_conductivity = 0.0;
+  su2double heat_flux_density = 0.0;
+  su2double conductivity_over_dist = 0.0;
+
+  const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
 
   if (compressible_flow) {
 

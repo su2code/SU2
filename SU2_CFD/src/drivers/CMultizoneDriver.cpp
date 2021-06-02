@@ -145,7 +145,7 @@ void CMultizoneDriver::StartSolver() {
 
   for (iZone = 1; iZone < nZone; iZone++) {
     if (config_container[iZone]->GetTime_Ref() < Time_Ref)
-      Time_Ref = config_container[iZone]->GetTime_Ref(); // TK:: last TimeRef is used
+      Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
