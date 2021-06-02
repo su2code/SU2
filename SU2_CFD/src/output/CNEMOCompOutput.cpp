@@ -295,11 +295,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   unsigned short nSpecies = config->GetnSpecies();
 
-  // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  // Coordinates, Mesh quality metrics
+  AddCommonFVMOutputs(config);
 
   // Solution variables
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -427,8 +424,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
   }
 
-  AddCommonFVMOutputs(config);
-
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -438,18 +433,15 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Turb = NULL;
+  auto* Node_Geo = geometry->nodes;
   unsigned short nSpecies = config->GetnSpecies();
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
 
-  auto*    Node_Geo  = geometry->nodes;
-
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  // Coordinates, Mesh quality metrics
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     SetVolumeOutputValue("DENSITY_" + std::to_string(iSpecies),   iPoint, Node_Flow->GetSolution(iPoint, iSpecies));
@@ -564,8 +556,6 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
-
-  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);

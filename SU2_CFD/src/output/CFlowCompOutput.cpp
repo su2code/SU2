@@ -290,11 +290,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
-  // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  // Coordinates, Mesh quality metrics
+  AddCommonFVMOutputs(config);
 
   // Solution variables
   AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
@@ -422,8 +419,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
-  AddCommonFVMOutputs(config);
-
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -433,17 +428,14 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Turb = nullptr;
+  CPoint* Node_Geo = geometry->nodes;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->nodes;
-
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  // Coordinates, Mesh quality metrics
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -567,8 +559,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
   }
-
-  LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
