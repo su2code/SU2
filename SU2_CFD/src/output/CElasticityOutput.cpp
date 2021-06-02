@@ -1,5 +1,5 @@
 /*!
- * \file output_elasticity.cpp
+ * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"

@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_inc.cpp
+ * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"

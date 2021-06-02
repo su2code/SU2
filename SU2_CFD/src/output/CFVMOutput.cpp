@@ -1,5 +1,5 @@
 /*!
- * \file output_flow.cpp
+ * \file CFVMOutput.cpp
  * \brief Main subroutines for Finite Volume Method output
  * \author T. Kattmann
  * \version 7.1.1 "Blackbird"
