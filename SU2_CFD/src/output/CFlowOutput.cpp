@@ -30,10 +30,9 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : CFVMOutput (config, nDim, fem_output){
 
 }
-
 
 CFlowOutput::~CFlowOutput(void){}
 
@@ -2733,41 +2732,6 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
   }
 
   return false || force_writing;
-}
-
-void CFlowOutput::AddCommonFVMOutputs(const CConfig *config) {
-
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
-
-  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-    stringstream key, name;
-    key << "MG_" << iMesh;
-    name << "Coarse_Grid_" << iMesh;
-    AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
-  }
-}
-
-void CFlowOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
-
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  SetVolumeOutputValue("RANK", iPoint, rank);
-
-  if (config->GetWrt_MultiGrid()) {
-    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-      stringstream key;
-      key << "MG_" << iMesh;
-      SetVolumeOutputValue(key.str(), iPoint, geometry->CoarseGridColor(iPoint,iMesh-1));
-    }
-  }
 }
 
 void CFlowOutput::SetTimeAveragedFields(){
