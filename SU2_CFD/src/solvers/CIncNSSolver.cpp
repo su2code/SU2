@@ -145,9 +145,9 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
 
-          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double* AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           /*--- m_dot = dot_prod(n*v) * A * rho, with n beeing unit normal. ---*/
           MassFlow_Local += nodes->GetProjVel(iPoint, AreaNormal) * nodes->GetDensity(iPoint);
@@ -232,7 +232,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
         /*--- Identify the boundary by string name and retrive heatflux from config ---*/
         const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
-        const auto Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -240,9 +240,9 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double* AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
         } // loop Vertices
@@ -393,7 +393,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     /*--- Compute dual-grid area and boundary normal ---*/
 
-    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const su2double* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -447,12 +447,12 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     }
     else { // ISOTHERMAL
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+      const su2double* Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double Edge_Vector[MAXNDIM];
       GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
       su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
@@ -557,12 +557,12 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
       /*--- Compute closest normal neighbor ---*/
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+      const su2double* Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_j, Coord_i);
 
       /*--- Compute wall temperature from both temperatures ---*/

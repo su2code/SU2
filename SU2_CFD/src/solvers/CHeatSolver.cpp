@@ -1281,7 +1281,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
 
       // Identical for flow and heat
-      const auto Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
+      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
       Jacobian.AddVal2Diag(iPoint, Delta);
 
     } else {
