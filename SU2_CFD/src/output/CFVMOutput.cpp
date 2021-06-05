@@ -31,8 +31,6 @@
 
 CFVMOutput::CFVMOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
 
-CFVMOutput::~CFVMOutput(void){ }
-
 void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
 
   // Grid coordinates

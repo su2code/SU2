@@ -145,7 +145,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
 
-          const su2double* AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
@@ -240,7 +240,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          const su2double* AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
@@ -265,7 +265,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   const auto InnerIter = config->GetInnerIter();
 
   /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
-  const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
+  const auto ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
   /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
   const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
@@ -393,7 +393,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     /*--- Compute dual-grid area and boundary normal ---*/
 
-    const su2double* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -451,8 +451,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
-      const su2double* Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double Edge_Vector[MAXNDIM];
       GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
       su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
@@ -561,8 +561,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
-      const su2double* Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_j, Coord_i);
 
       /*--- Compute wall temperature from both temperatures ---*/

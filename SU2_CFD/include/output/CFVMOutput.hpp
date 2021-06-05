@@ -30,7 +30,7 @@
 #include "COutput.hpp"
 
 class CFVMOutput : public COutput{
-public:
+protected:
   /*!
    * \brief Constructor of the class
    */
@@ -39,9 +39,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFVMOutput(void) override;
-
-protected:
+  ~CFVMOutput(void) = default;
 
   /*!
    * \brief Add common FVM outputs.
