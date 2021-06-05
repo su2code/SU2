@@ -117,10 +117,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
 void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
+  AddCoordinates();
 
   // SOLUTION
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
@@ -138,13 +135,10 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->nodes;
+  const auto Node_Geo  = geometry->nodes;
 
   // Grid coordinates
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
   // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));

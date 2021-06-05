@@ -42,6 +42,16 @@ protected:
   ~CFVMOutput(void) = default;
 
   /*!
+   * \brief Add Coordinates to output.
+   */
+  void AddCoordinates();
+
+  /*!
+   * \brief Load the coordinates.
+   */
+  void LoadCoordinates(const su2double* Coord, const unsigned long iPoint);
+
+  /*!
    * \brief Add common FVM outputs.
    */
   void AddCommonFVMOutputs(const CConfig* config);

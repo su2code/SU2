@@ -1,6 +1,6 @@
 /*!
  * \file CHeatOutput.hpp
- * \brief  Headers of the heat output.
+ * \brief Headers of the heat output.
  * \author R. Sanchez, T. Albring.
  * \version 7.1.1 "Blackbird"
  *
