@@ -116,10 +116,13 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
 
 void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
-  // Coordinates, Mesh quality metrics
-  AddCommonFVMOutputs(config);
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
 
-  // Solution
+  // SOLUTION
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
 
   // Primitives
@@ -127,21 +130,29 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   // Residuals
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+
+  AddCommonFVMOutputs(config);
 }
 
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  // Coordinates, Mesh quality metrics
-  LoadCommonFVMOutputs(config, geometry, iPoint);
+  // Grid coordinates
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
-  // Solution
+  // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Residuals
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes(iPoint, 0));
+
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

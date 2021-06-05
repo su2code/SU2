@@ -33,12 +33,6 @@ CFVMOutput::CFVMOutput(CConfig *config, unsigned short nDim, bool fem_output) : 
 
 void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
 
-  // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
-
   // Mesh quality metrics
   AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
@@ -55,14 +49,6 @@ void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
 }
 
 void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
-
-  CPoint* Node_Geo = geometry->nodes;
-
-  // Grid coordinates
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
   if (config->GetWrt_MeshQuality()) {
