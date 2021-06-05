@@ -142,11 +142,8 @@ void CMultizoneDriver::StartSolver() {
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
 
   su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
-
-  for (iZone = 1; iZone < nZone; iZone++) {
-    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
-      Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
-  }
+  for (iZone = 1; iZone < nZone; iZone++)
+    Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
