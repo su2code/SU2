@@ -40,13 +40,6 @@ void CFVMOutput::AddCoordinates() {
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 }
 
-void CFVMOutput::LoadCoordinates(const su2double* Coord, const unsigned long iPoint) {
-
-  SetVolumeOutputValue("COORD-X", iPoint, Coord[0]);
-  SetVolumeOutputValue("COORD-Y", iPoint, Coord[1]);
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Coord[2]);
-}
 
 void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
 
