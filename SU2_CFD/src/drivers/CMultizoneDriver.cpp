@@ -141,7 +141,7 @@ void CMultizoneDriver::StartSolver() {
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
 
-  su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
+  su2double Time_Ref = std::numeric_limits<su2double>::max();
   for (iZone = 1; iZone < nZone; iZone++)
     Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
 
