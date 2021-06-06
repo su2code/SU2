@@ -49,7 +49,13 @@ protected:
   /*!
    * \brief Load the coordinates.
    */
-  void LoadCoordinates(const su2double* Coord, const unsigned long iPoint);
+  template<class T>
+  inline void LoadCoordinates(const T& Coord, const unsigned long iPoint) {
+    SetVolumeOutputValue("COORD-X", iPoint, Coord[0]);
+    SetVolumeOutputValue("COORD-Y", iPoint, Coord[1]);
+    if (nDim == 3)
+      SetVolumeOutputValue("COORD-Z", iPoint, Coord[2]);
+  }
 
   /*!
    * \brief Add common FVM outputs.
