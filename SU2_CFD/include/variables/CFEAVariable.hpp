@@ -266,8 +266,8 @@ public:
   /*!
    * \brief Set the value of the solution velocity predictor.
    */
-  inline void SetSolution_Vel_Pred(unsigned long iPoint) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = Solution_Vel(iPoint,iVar);
+  inline void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_pred) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = val_solution_pred[iVar];
   }
 
   /*!

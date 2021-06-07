@@ -73,7 +73,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
     }
   }
 
-  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
+  if (config->GetDiscrete_Adjoint()) {
     AD_InputIndex.resize(npoint,nDim) = 0;
     AD_OutputIndex.resize(npoint,nDim) = 0;
   }
@@ -130,7 +130,13 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   nNeighbor.resize(npoint) = 0;
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
+
   Wall_Distance.resize(npoint) = su2double(0.0);
+  ClosestWall_Rank.resize(npoint) = -1;
+  ClosestWall_Zone.resize(npoint) = numeric_limits<unsigned short>::max();
+  ClosestWall_Marker = ClosestWall_Zone;
+  ClosestWall_Elem.resize(npoint) = numeric_limits<unsigned long>::max();
+
   RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
@@ -145,17 +151,6 @@ void CPoint::SetPoints(const vector<vector<unsigned long> >& pointsMatrix) {
 
   Point = CCompressedSparsePatternUL(pointsMatrix);
   Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize()+1, long(-1));
-}
-
-void CPoint::SetIndex(unsigned long iPoint, bool input) {
-  for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-    if(input) {
-      AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
-    }
-    else {
-      AD::SetIndex(AD_OutputIndex(iPoint,iDim), Coord(iPoint,iDim));
-    }
-  }
 }
 
 void CPoint::SetVolume_n() {
@@ -209,3 +204,4 @@ void CPoint::SetCoord_Old() {
 }
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
+

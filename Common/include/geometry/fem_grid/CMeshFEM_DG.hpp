@@ -343,10 +343,13 @@ private:
 
   /*!
    * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
    * \param[in] WallADT - The ADT to compute the wall distance
+   * \param[in] config  - Definition of the particular problem.
+   * \param[in] iZone   - Zone whose markers made the ADT.
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CADTElemClass* WallADT,
+                       const CConfig* config,
+                       unsigned short iZone) override;
 
   /*!
    * \brief Function, which computes the time coefficients for the ADER-DG predictor step.

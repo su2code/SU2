@@ -239,12 +239,12 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, the initial conditions are set, after the mesh has been moved. --------------------------------------*/
-    if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetFluidProblem()) {
+    if (!fsi && config_container[iZone]->GetFluidProblem()) {
       solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
-    else if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetHeatProblem()) {
+    else if (!fsi && config_container[iZone]->GetHeatProblem()) {
       /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
       solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                               solver_container[iZone][INST_0],

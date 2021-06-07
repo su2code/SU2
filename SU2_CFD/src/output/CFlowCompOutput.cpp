@@ -58,8 +58,15 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (gridMovement) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
+  }
+
+  if (gridMovement) {
+    auto notFound = requestedVolumeFields.end();
+    if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
+      requestedVolumeFields.emplace_back("GRID_VELOCITY");
+      nRequestedVolumeFields ++;
+    }
   }
 
   stringstream ss;

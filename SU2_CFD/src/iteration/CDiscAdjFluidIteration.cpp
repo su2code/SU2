@@ -418,7 +418,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
-  if (config[iZone]->GetFluidProblem()) {
+  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->SetVertexTractionsAdjoint(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 
@@ -456,11 +456,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
   if (kind_recording == RECORDING::MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
-    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+    geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
   }
 
-  if (config[iZone]->GetDeform_Mesh()) {
-    /*--- Register the variables of the mesh deformation ---*/
+  if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
@@ -504,7 +503,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
-    geometry[iZone][iInst][MESH_0]->UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+    CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
 
     CGeometry::ComputeWallDistance(config, geometry);
   }
@@ -563,7 +562,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->AddRadiation()) {
     solver[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
-  if (config[iZone]->GetFluidProblem()) {
+  if (config[iZone]->GetFluidProblem() && config[iZone]->GetSinglezone_Driver()) {
     solver[iZone][iInst][MESH_0][FLOW_SOL]->RegisterVertexTractions(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 

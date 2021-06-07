@@ -29,6 +29,7 @@
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -2475,18 +2476,12 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(const CConfig *config) const {
+void CGeometry::RegisterCoordinates() const {
   const bool input = true;
-  const bool push_index = config->GetMultizone_Problem()? false : true;
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
-    }
-    if(!push_index) {
-      nodes->SetIndex(iPoint, input);
-    }
+    nodes->RegisterCoordinates(iPoint, input);
   }
   END_SU2_OMP_FOR
 }
@@ -2495,10 +2490,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetDynamic_Grid()){
-    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-  }
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
@@ -2730,8 +2721,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-
-  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -2996,7 +2985,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
-  if ((rank == MASTER_NODE) && (!fea))
+  if (rank == MASTER_NODE)
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
@@ -3924,15 +3913,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
-      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      unique_ptr<CADTElemClass> WallADT = geometry_container[iZone][iInst][MESH_0]->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config_container[jZone], iZone);
         }
       }
     }
@@ -3942,6 +3930,29 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       for (int iZone = 0; iZone < nZone; iZone++){
         CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
+      }
+    }
+    /*--- Otherwise, set wall roughnesses. ---*/
+    if(!allEmpty){
+      /*--- Store all wall roughnesses in a common data structure. ---*/
+      // [iZone][iMarker] -> roughness, for this rank
+      auto roughness_f =
+        make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
+          const CConfig* config = config_container[iZone];
+          const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+          return make_pair( nMarker, [config](unsigned long iMarker){
+            return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          });
+        });
+      NdFlattener<2> roughness_local(roughness_f);
+      // [rank][iZone][iMarker] -> roughness
+      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+      // use it to update roughnesses
+      for(int jZone=0; jZone<nZone; jZone++){
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+        }
       }
     }
   }

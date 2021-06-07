@@ -7833,7 +7833,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
+string CConfig::GetFilename(string filename, string ext, int Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7853,7 +7853,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter) con
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
   if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, (int)Iter, ext);
+    filename = GetUnsteady_FileName(filename, Iter, ext);
   }
 
   return filename;

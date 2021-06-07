@@ -4329,7 +4329,9 @@ void CMeshFEM_DG::SetWallDistance(su2double val) {
   END_SU2_OMP_PARALLEL
 }
 
-void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {
+void CMeshFEM_DG::SetWallDistance(CADTElemClass* WallADT,
+                                  const CConfig *config,
+                                  unsigned short iZone) {
 
   /*--- Return immediately if the tree is empty. ---*/
   if( WallADT->IsEmpty() ) return;

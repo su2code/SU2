@@ -188,7 +188,7 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
   else if (kind_recording == RECORDING::MESH_COORDS) {
     /*--- Register node coordinates as input ---*/
 
-    geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+    geometry[iZone][iInst][MESH_0]->RegisterCoordinates();
   }
   else if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Register the variables of the mesh deformation ---*/
@@ -212,7 +212,7 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
-    geometries[MESH_0]->UpdateGeometry(geometries, config[iZone]);
+    CGeometry::UpdateGeometry(geometries, config[iZone]);
 
     CGeometry::ComputeWallDistance(config, geometry);
   }
