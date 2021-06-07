@@ -2150,8 +2150,27 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     }
   } 
 
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 5: Store for the volume elements the corresponding internal   ---*/
+  /*---         faces and boundary faces.                                  ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* The internal faces. */
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+    volElem[matchingFaces[i].elemID0].internalFaceIDs.push_back(i);
+    volElem[matchingFaces[i].elemID1].internalFaceIDs.push_back(i);
+  }
+
+  /* The boundary faces. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+    for(unsigned long i=0; i<surfElem.size(); ++i)
+      volElem[surfElem[i].volElemID].boundaryFaceIDs.push_back(CUnsignedLong2T(iMarker,i));
+  }
+
   /*---------------------------------------------------------------------------*/
-  /*--- Step 5: Create the standard elements for the faces. It is called    ---*/
+  /*--- Step 6: Create the standard elements for the faces. It is called    ---*/
   /*---         from within this function, because the data of localFaces   ---*/
   /*---         is needed to construct these standard elements.             ---*/
   /*---------------------------------------------------------------------------*/

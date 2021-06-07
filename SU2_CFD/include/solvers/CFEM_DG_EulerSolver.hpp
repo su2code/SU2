@@ -341,231 +341,181 @@ public:
   /*!
    * \brief Impose via the residual the Euler wall boundary condition. It is a
             virtual function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  virtual void BC_Euler_Wall(CConfig                  *config,
-                             const unsigned long      surfElemBeg,
-                             const unsigned long      surfElemEnd,
-                             const CSurfaceElementFEM *surfElem,
-                             su2double                *resFaces,
-                             CNumerics                *conv_numerics,
-                             su2double                *workArray);
+  virtual void BC_Euler_Wall(CConfig             *config,
+                             const unsigned long surfElemBeg,
+                             const unsigned long surfElemEnd,
+                             CSurfaceElementFEM  *surfElem,
+                             CNumerics           *conv_numerics);
   using CSolver::BC_Euler_Wall;
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  virtual void BC_Far_Field(CConfig                  *config,
-                            const unsigned long      surfElemBeg,
-                            const unsigned long      surfElemEnd,
-                            const CSurfaceElementFEM *surfElem,
-                            su2double                *resFaces,
-                            CNumerics                *conv_numerics,
-                            su2double                *workArray);
+  virtual void BC_Far_Field(CConfig             *config,
+                            const unsigned long surfElemBeg,
+                            const unsigned long surfElemEnd,
+                            CSurfaceElementFEM  *surfElem,
+                            CNumerics           *conv_numerics);
   using CSolver::BC_Far_Field;
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  virtual void BC_Sym_Plane(CConfig                  *config,
-                            const unsigned long      surfElemBeg,
-                            const unsigned long      surfElemEnd,
-                            const CSurfaceElementFEM *surfElem,
-                            su2double                *resFaces,
-                            CNumerics                *conv_numerics,
-                            su2double                *workArray);
+  virtual void BC_Sym_Plane(CConfig             *config,
+                            const unsigned long surfElemBeg,
+                            const unsigned long surfElemEnd,
+                            CSurfaceElementFEM  *surfElem,
+                            CNumerics           *conv_numerics);
   using CSolver::BC_Sym_Plane;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  virtual void BC_Supersonic_Outlet(CConfig                  *config,
-                                    const unsigned long      surfElemBeg,
-                                    const unsigned long      surfElemEnd,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *resFaces,
-                                    CNumerics                *conv_numerics,
-                                    su2double                *workArray);
+  virtual void BC_Supersonic_Outlet(CConfig             *config,
+                                    const unsigned long surfElemBeg,
+                                    const unsigned long surfElemEnd,
+                                    CSurfaceElementFEM  *surfElem,
+                                    CNumerics           *conv_numerics);
   using CSolver::BC_Supersonic_Outlet;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Inlet(CConfig                  *config,
-                        const unsigned long      surfElemBeg,
-                        const unsigned long      surfElemEnd,
-                        const CSurfaceElementFEM *surfElem,
-                        su2double                *resFaces,
-                        CNumerics                *conv_numerics,
-                        unsigned short           val_marker,
-                        su2double                *workArray);
+  virtual void BC_Inlet(CConfig             *config,
+                        const unsigned long surfElemBeg,
+                        const unsigned long surfElemEnd,
+                        CSurfaceElementFEM  *surfElem,
+                        CNumerics           *conv_numerics,
+                        unsigned short      val_marker);
   using CSolver::BC_Inlet;
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Outlet(CConfig                  *config,
-                         const unsigned long      surfElemBeg,
-                         const unsigned long      surfElemEnd,
-                         const CSurfaceElementFEM *surfElem,
-                         su2double                *resFaces,
-                         CNumerics                *conv_numerics,
-                         unsigned short           val_marker,
-                         su2double                *workArray);
+  virtual void BC_Outlet(CConfig             *config,
+                         const unsigned long surfElemBeg,
+                         const unsigned long surfElemEnd,
+                         CSurfaceElementFEM  *surfElem,
+                         CNumerics           *conv_numerics,
+                         unsigned short      val_marker);
   using CSolver::BC_Outlet;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
             function, such that it can be overwritten for Navier-Stokes.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_HeatFlux_Wall(CConfig *config,
-                                      const unsigned long      surfElemBeg,
-                                      const unsigned long      surfElemEnd,
-                                      const CSurfaceElementFEM *surfElem,
-                                      su2double                *resFaces,
-                                      CNumerics                *conv_numerics,
-                                      unsigned short           val_marker,
-                                      su2double                *workArray) {}
+  inline virtual void BC_HeatFlux_Wall(CConfig            *config,
+                                      const unsigned long surfElemBeg,
+                                      const unsigned long surfElemEnd,
+                                      CSurfaceElementFEM *surfElem,
+                                      CNumerics           *conv_numerics,
+                                      unsigned short      val_marker) {}
   using CSolver::BC_HeatFlux_Wall;
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
             function, such that it can be overwritten for Navier-Stokes.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  inline virtual void BC_Isothermal_Wall(CConfig *config,
-                                        const unsigned long      surfElemBeg,
-                                        const unsigned long      surfElemEnd,
-                                        const CSurfaceElementFEM *surfElem,
-                                        su2double                *resFaces,
-                                        CNumerics                *conv_numerics,
-                                        unsigned short           val_marker,
-                                        su2double                *workArray) {}
+  inline virtual void BC_Isothermal_Wall(CConfig            *config,
+                                        const unsigned long surfElemBeg,
+                                        const unsigned long surfElemEnd,
+                                        CSurfaceElementFEM  *surfElem,
+                                        CNumerics           *conv_numerics,
+                                        unsigned short      val_marker) {}
   using CSolver::BC_Isothermal_Wall;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
    *        a virtual function, such that it can be overwritten for Navier-Stokes.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  virtual void BC_Riemann(CConfig                  *config,
-                          const unsigned long      surfElemBeg,
-                          const unsigned long      surfElemEnd,
-                          const CSurfaceElementFEM *surfElem,
-                          su2double                *resFaces,
-                          CNumerics                *conv_numerics,
-                          unsigned short           val_marker,
-                          su2double                *workArray);
+  virtual void BC_Riemann(CConfig             *config,
+                          const unsigned long surfElemBeg,
+                          const unsigned long surfElemEnd,
+                          CSurfaceElementFEM  *surfElem,
+                          CNumerics           *conv_numerics,
+                          unsigned short      val_marker);
   using CSolver::BC_Riemann;
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  virtual void BC_Custom(CConfig                  *config,
-                         const unsigned long      surfElemBeg,
-                         const unsigned long      surfElemEnd,
-                         const CSurfaceElementFEM *surfElem,
-                         su2double                *resFaces,
-                         CNumerics                *conv_numerics,
-                         su2double                *workArray);
+  virtual void BC_Custom(CConfig             *config,
+                         const unsigned long surfElemBeg,
+                         const unsigned long surfElemEnd,
+                         CSurfaceElementFEM  *surfElem,
+                         CNumerics           *conv_numerics);
   using CSolver::BC_Custom;
 
   /*!
@@ -985,32 +935,15 @@ private:
             face in an inviscid computation when the boundary conditions have
             already been applied.
    * \param[in]     config        - Definition of the particular problem.
-   * \param[in]     nFaceSimul    - Number of faces that are treated simultaneously
-                                    to improve performance.
-   * \param[in]     NPad          - Value of the padding parameter to obtain optimal
-                                    performance in the gemm computations.
    * \param[in]     conv_numerics - Description of the numerical method.
    * \param[in]     surfElem      - Surface boundary element for which the
                                     contribution to the residual must be computed.
    * \param[in]     solInt0       - Solution in the integration points of side 0.
-                                    It is not const, because the array is used for
-                                    temporary storage for the residual.
    * \param[in]     solInt1       - Solution in the integration points of side 1.
-   * \param[out]    fluxes        - Temporary storage for the fluxes in the
-                                    integration points.
-   * \param[out]    resFaces      - Array to store the residuals of the face.
-   * \param[in,out] indResFaces   - Index in resFaces, where the current residual
-                                    should be stored. It is updated in the function
-                                    for the next boundary element.
    */
-  void ResidualInviscidBoundaryFace(CConfig                  *config,
-                                    const unsigned short     nFaceSimul,
-                                    const unsigned short     NPad,
-                                    CNumerics                *conv_numerics,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *solInt0,
-                                    su2double                *solInt1,
-                                    su2double                *fluxes,
-                                    su2double                *resFaces,
-                                    unsigned long            &indResFaces);
+  void ResidualInviscidBoundaryFace(CConfig                   *config,
+                                    CNumerics                 *conv_numerics,
+                                    CSurfaceElementFEM        *surfElem,
+                                    ColMajorMatrix<su2double> &solInt0,
+                                    ColMajorMatrix<su2double> &solInt1);
 };

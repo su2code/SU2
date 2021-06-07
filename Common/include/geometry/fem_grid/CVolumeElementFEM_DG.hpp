@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CVolumeElementFEM_Base.hpp"
+#include "../../toolboxes/classes_multiple_integers.hpp"
 
 using namespace std;
 
@@ -58,6 +59,13 @@ public:
   unsigned long offsetDOFsSolGlobal = 0; /*!< \brief Global offset of the solution DOFs of this element. */
 
   su2double deltaTime = -1.0;        /*!< \brief Time step for this element. */
+
+  vector<unsigned long> internalFaceIDs; /*!< \brief Vector, which contains the ID's of the internal
+                                                     faces of this element. */
+
+  vector<CUnsignedLong2T> boundaryFaceIDs; /*!< \brief Vector, which contains the ID's of the boundary
+                                                       faces of this element. First index is the boundary,
+                                                       second index is the face. */
 
   ColMajorMatrix<su2double> metricTerms2ndDer; /*!< \brief The metric terms needed for the computation
                                                            of the 2nd derivatives in the integration

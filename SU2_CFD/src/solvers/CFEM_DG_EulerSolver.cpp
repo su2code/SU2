@@ -146,6 +146,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
       /*--- Allocate the memory to store the residuals. ---*/
       matchingInternalFaces[i].AllocateResiduals(config, nVar);
     }
+
+    /*--- Loop over the boundaries. ---*/
+    for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); iMarker++) {
+      for(unsigned long i=0; i<boundaries[iMarker].surfElem.size(); ++i)
+        boundaries[iMarker].surfElem[i].AllocateResiduals(config, nVar);
+    }
+
     END_SU2_OMP_FOR
   }
   END_SU2_OMP_PARALLEL
@@ -3583,25 +3590,77 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               CNumerics            **numerics,
                                               const bool           haloInfoNeededForBC){
 
-  for(int i=0; i<size; ++i) {
+  /* Loop over all boundaries. */
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if(i == rank) {
+    /* Check if this boundary marker must be treated at all. */
+    if(boundaries[iMarker].haloInfoNeededForBC == haloInfoNeededForBC) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+      /* Determine the range of faces for this time level and test if any
+         surface element for this marker must be treated at all. */
+      const unsigned long surfElemBeg = boundaries[iMarker].nSurfElem[timeLevel];
+      const unsigned long surfElemEnd = boundaries[iMarker].nSurfElem[timeLevel+1];
+
+      if(surfElemEnd > surfElemBeg) {
+
+        /* Set the pointer for the boundary faces for readability. */
+        CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+        /* Apply the appropriate boundary condition. */
+        switch (config->GetMarker_All_KindBC(iMarker)) {
+          case EULER_WALL:
+            BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem,
+                          numerics[CONV_BOUND_TERM]);
+            break;
+          case FAR_FIELD:
+            BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem,
+                         numerics[CONV_BOUND_TERM]);
+            break;
+          case SYMMETRY_PLANE:
+            BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem,
+                         numerics[CONV_BOUND_TERM]);
+            break;
+          case SUPERSONIC_INLET: /* Use far field for this. When a more detailed state
+                                    needs to be specified, use a Riemann boundary. */
+            BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem,
+                         numerics[CONV_BOUND_TERM]);
+            break;
+          case SUPERSONIC_OUTLET:
+            BC_Supersonic_Outlet(config, surfElemBeg, surfElemEnd, surfElem,
+                                 numerics[CONV_BOUND_TERM]);
+            break;
+          case INLET_FLOW:
+            BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem,
+                     numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case OUTLET_FLOW:
+            BC_Outlet(config, surfElemBeg, surfElemEnd, surfElem,
+                      numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case ISOTHERMAL:
+            BC_Isothermal_Wall(config, surfElemBeg, surfElemEnd, surfElem,
+                               numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case HEAT_FLUX:
+            BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem,
+                             numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case RIEMANN_BOUNDARY:
+            BC_Riemann(config, surfElemBeg, surfElemEnd, surfElem,
+                       numerics[CONV_BOUND_TERM], iMarker);
+            break;
+          case CUSTOM_BOUNDARY:
+            BC_Custom(config, surfElemBeg, surfElemEnd, surfElem,
+                      numerics[CONV_BOUND_TERM]);
+            break;
+          case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+            break;
+          default:
+            SU2_MPI::Error("BC not implemented.", CURRENT_FUNCTION);
+        }
       }
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
@@ -3732,25 +3791,60 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
 void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
                                               const bool ownedElements) {
 
-  for(int i=0; i<size; ++i) {
 
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
+  /* Determine the element range for which the final residual must
+     be created. */
+  unsigned long elemBeg, elemEnd;
+  if( ownedElements ) {
+    elemBeg = nVolElemOwnedPerTimeLevel[0];
+    elemEnd = nVolElemOwnedPerTimeLevel[timeLevel+1];
+  }
+  else {
+    elemBeg = nVolElemHaloPerTimeLevel[0];
+    elemEnd = nVolElemHaloPerTimeLevel[timeLevel+1];
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nElem = elemEnd - elemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the given element range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
+
+    /* For a halo element the residual is initialized to zero. */
+    if( !ownedElements ) volElem[l].resDOFs.setConstant(0.0);
+
+    /* Determine the total number of entries in the residual and set
+       the pointer to the actual data. */
+    const unsigned int nResTot = volElem[l].resDOFs.cols() * volElem[l].resDOFs.rows();
+    su2double *resVol = volElem[l].resDOFs.data();
+
+    /* Loop over the internal faces of this element and add the residual. */
+    for(unsigned long j=0; j<volElem[l].internalFaceIDs.size(); ++j) {
+      const unsigned long jj = volElem[l].internalFaceIDs[j];
+      const su2double *resSurf;
+      if(matchingInternalFaces[jj].elemID0 == l) resSurf = matchingInternalFaces[jj].resDOFsSide0.data();
+      else                                       resSurf = matchingInternalFaces[jj].resDOFsSide1.data();
+
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned int i=0; i<nResTot; ++i) resVol[i] += resSurf[i];
+    }
+
+    /* Loop over the boundary faces of this element and add the residual. */
+    for(unsigned long j=0; j<volElem[l].boundaryFaceIDs.size(); ++j) {
+      const unsigned long iMarker = volElem[l].boundaryFaceIDs[j].long0;
+      const unsigned long jj      = volElem[l].boundaryFaceIDs[j].long1;
+
+      const su2double *resSurf = boundaries[iMarker].surfElem[jj].resDOFsElem.data();
+
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned int i=0; i<nResTot; ++i) resVol[i] += resSurf[i];
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
@@ -4038,13 +4132,11 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
-                                        const unsigned long      surfElemBeg,
-                                        const unsigned long      surfElemEnd,
-                                        const CSurfaceElementFEM *surfElem,
-                                        su2double                *resFaces,
-                                        CNumerics                *conv_numerics,
-                                        su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig             *config,
+                                        const unsigned long surfElemBeg,
+                                        const unsigned long surfElemEnd,
+                                        CSurfaceElementFEM  *surfElem,
+                                        CNumerics           *conv_numerics) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4067,13 +4159,52 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
-                                       const unsigned long      surfElemBeg,
-                                       const unsigned long      surfElemEnd,
-                                       const CSurfaceElementFEM *surfElem,
-                                       su2double                *resFaces,
-                                       CNumerics                *conv_numerics,
-                                       su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Far_Field(CConfig             *config,
+                                       const unsigned long surfElemBeg,
+                                       const unsigned long surfElemEnd,
+                                       CSurfaceElementFEM  *surfElem,
+                                       CNumerics           *conv_numerics) {
+
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nFaces = surfElemEnd - surfElemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nFaces, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Loop over the requested range of surface faces. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=surfElemBeg; l<surfElemEnd; ++l) {
+
+    /*--- Compute the variables of the left state in the integration point of the face. ---*/
+    ColMajorMatrix<su2double> &solIntLeft = surfElem[l].ComputeSolSide0IntPoints(volElem);
+
+    /*--- Set the right state in the integration points to the free stream value. ---*/
+    const unsigned int indRight = omp_get_num_threads() + omp_get_thread_num();
+    ColMajorMatrix<su2double> &solIntRight = surfElem[l].standardElemFlow->workSolInt[indRight];
+
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD
+      for(unsigned short i=0; i<solIntRight.cols(); ++i)
+        solIntRight(i,j) = EntropyVarFreeStream[j];
+    }
+
+    /*--- Convert the entropy variables to the primitive variables. ---*/
+    EntropyToPrimitiveVariables(solIntLeft);
+    EntropyToPrimitiveVariables(solIntRight);
+
+    /*--- The remainder of the contribution of this boundary face to the residual
+          is the same for all boundary conditions. Hence a generic function can
+          be used to carry out this task. ---*/
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntLeft, solIntRight);
+  }
+  END_SU2_OMP_FOR
+}
+
+void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig             *config,
+                                       const unsigned long surfElemBeg,
+                                       const unsigned long surfElemEnd,
+                                       CSurfaceElementFEM  *surfElem,
+                                       CNumerics           *conv_numerics) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4096,13 +4227,11 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
-                                       const unsigned long      surfElemBeg,
-                                       const unsigned long      surfElemEnd,
-                                       const CSurfaceElementFEM *surfElem,
-                                       su2double                *resFaces,
-                                       CNumerics                *conv_numerics,
-                                       su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig             *config,
+                                               const unsigned long surfElemBeg,
+                                               const unsigned long surfElemEnd,
+                                               CSurfaceElementFEM  *surfElem,
+                                               CNumerics           *conv_numerics) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4125,13 +4254,12 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
-                                               const unsigned long      surfElemBeg,
-                                               const unsigned long      surfElemEnd,
-                                               const CSurfaceElementFEM *surfElem,
-                                               su2double                *resFaces,
-                                               CNumerics                *conv_numerics,
-                                               su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Inlet(CConfig             *config,
+                                   const unsigned long surfElemBeg,
+                                   const unsigned long surfElemEnd,
+                                   CSurfaceElementFEM  *surfElem,
+                                   CNumerics           *conv_numerics,
+                                   unsigned short      val_marker) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4154,14 +4282,12 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
-                                   const unsigned long      surfElemBeg,
-                                   const unsigned long      surfElemEnd,
-                                   const CSurfaceElementFEM *surfElem,
-                                   su2double                *resFaces,
-                                   CNumerics                *conv_numerics,
-                                   unsigned short           val_marker,
-                                   su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Outlet(CConfig             *config,
+                                    const unsigned long surfElemBeg,
+                                    const unsigned long surfElemEnd,
+                                    CSurfaceElementFEM  *surfElem,
+                                    CNumerics           *conv_numerics,
+                                    unsigned short      val_marker) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4184,14 +4310,12 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
-                                    const unsigned long      surfElemBeg,
-                                    const unsigned long      surfElemEnd,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *resFaces,
-                                    CNumerics                *conv_numerics,
-                                    unsigned short           val_marker,
-                                    su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Riemann(CConfig             *config,
+                                     const unsigned long surfElemBeg,
+                                     const unsigned long surfElemEnd,
+                                     CSurfaceElementFEM  *surfElem,
+                                     CNumerics           *conv_numerics,
+                                     unsigned short      val_marker) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4214,43 +4338,11 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
-                                     const unsigned long      surfElemBeg,
-                                     const unsigned long      surfElemEnd,
-                                     const CSurfaceElementFEM *surfElem,
-                                     su2double                *resFaces,
-                                     CNumerics                *conv_numerics,
-                                     unsigned short           val_marker,
-                                     su2double                *workArray) {
-
-  for(int i=0; i<size; ++i) {
-
-    if(i == rank) {
-
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
-}
-
-void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
-                                    const unsigned long      surfElemBeg,
-                                    const unsigned long      surfElemEnd,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *resFaces,
-                                    CNumerics                *conv_numerics,
-                                    su2double                *workArray) {
+void CFEM_DG_EulerSolver::BC_Custom(CConfig             *config,
+                                    const unsigned long surfElemBeg,
+                                    const unsigned long surfElemEnd,
+                                    CSurfaceElementFEM  *surfElem,
+                                    CNumerics           *conv_numerics) {
 
   for(int i=0; i<size; ++i) {
 
@@ -4275,35 +4367,44 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       CConfig                  *config,
-                                      const unsigned short     nFaceSimul,
-                                      const unsigned short     NPad,
-                                      CNumerics                *conv_numerics,
-                                      const CSurfaceElementFEM *surfElem,
-                                      su2double                *solInt0,
-                                      su2double                *solInt1,
-                                      su2double                *fluxes,
-                                      su2double                *resFaces,
-                                      unsigned long            &indResFaces) {
+                                      CNumerics                 *conv_numerics,
+                                      CSurfaceElementFEM        *surfElem,
+                                      ColMajorMatrix<su2double> &solInt0,
+                                      ColMajorMatrix<su2double> &solInt1) {
 
-  for(int i=0; i<size; ++i) {
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Compute the fluxes in the integration points using the     ---*/
+  /*---         approximate Riemann solver.                                ---*/
+  /*--------------------------------------------------------------------------*/
 
-    if(i == rank) {
+  /*--- Abbreviate the number of padded integration points
+        and the integration weights. ---*/
+  const unsigned short nIntPad = surfElem->standardElemFlow->GetNIntegrationPad();
+  const passivedouble *weights = surfElem->standardElemFlow->GetIntegrationWeights();
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
-    }
+  /*--- Compute the invisid fluxes in the integration points of the face.
+        Notethat solInt0 is used to store the fluxes. ---*/
+  ComputeInviscidFluxesFace(config, solInt0, solInt1, surfElem->JacobiansFace,
+                            surfElem->metricNormalsFace, surfElem->gridVelocities,
+                            conv_numerics, solInt0);
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
+  /*--- Multiply the fluxes with the integration weight of the
+          corresponding integration point. ---*/
+  for(unsigned short j=0; j<nVar; ++j) {
+    SU2_OMP_SIMD_IF_NOT_AD
+    for(unsigned short i=0; i<nIntPad; ++i)
+      solInt0(i,j) *= weights[i];
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Compute the contribution to the residuals of the DOFs of   ---*/
+  /*---         the elements on the left and right side of the face.       ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Initialize the residual to zero and add the contribution
+        from the fluxes. ---*/
+  surfElem->resDOFsElem.setConstant(0.0);
+  surfElem->ResidualBasisFunctions(solInt0);
 }
 
 void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(

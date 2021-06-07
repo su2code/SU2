@@ -50,6 +50,9 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
   if(!gemmDOFs2Int || !gemmInt2DOFs)
     SU2_MPI::Error(string("Dynamic cast failure. This should not happen"), CURRENT_FUNCTION);
 
+  /*--- Determine the padded number of the 1D integration points and DOFs. ---*/
+  const unsigned short nInt1DPad = PaddedValue(nInt1D);
+  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
 
   /*--- Convert the 2D coordinates of the standard quadrilateral to the parametric 
         coordinates in normal and two tangential directions of the adjacent
@@ -68,8 +71,8 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
   /*--- Create the 1D Legendre basis functions for the parametric
         coordinates in the first tangential direction. ---*/
   ColMajorMatrix<passivedouble> legT0, derLegT0;
-  legT0.resize(nIntegrationPad, nPoly+1);    legT0.setConstant(0.0);
-  derLegT0.resize(nIntegrationPad, nPoly+1); derLegT0.setConstant(0.0);
+  legT0.resize(nInt1DPad, nPoly+1);    legT0.setConstant(0.0);
+  derLegT0.resize(nInt1DPad, nPoly+1); derLegT0.setConstant(0.0);
 
   Vandermonde1D(nPoly, rTang0, legT0);
   GradVandermonde1D(nPoly, rTang0, derLegT0);
@@ -77,8 +80,8 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
   /*--- Create the 1D Legendre basis functions for the parametric
         coordinates in the second tangential direction. ---*/
   ColMajorMatrix<passivedouble> legT1, derLegT1;
-  legT1.resize(nIntegrationPad, nPoly+1);    legT1.setConstant(0.0);
-  derLegT1.resize(nIntegrationPad, nPoly+1); derLegT1.setConstant(0.0);
+  legT1.resize(nInt1DPad, nPoly+1);    legT1.setConstant(0.0);
+  derLegT1.resize(nInt1DPad, nPoly+1); derLegT1.setConstant(0.0);
 
   Vandermonde1D(nPoly, rTang1, legT1);
   GradVandermonde1D(nPoly, rTang1, derLegT1);
@@ -117,11 +120,11 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
   tensorSolTranspose.resize(3);
   tensorSolTranspose[0] = tensorSol[0];
 
-  tensorSolTranspose[1].resize(nDOFsPad, nIntegration); tensorSolTranspose[1].setConstant(0.0);
-  tensorSolTranspose[2].resize(nDOFsPad, nIntegration); tensorSolTranspose[2].setConstant(0.0);
+  tensorSolTranspose[1].resize(nDOFs1DPad, nInt1D); tensorSolTranspose[1].setConstant(0.0);
+  tensorSolTranspose[2].resize(nDOFs1DPad, nInt1D); tensorSolTranspose[2].setConstant(0.0);
 
-  for(unsigned short j=0; j<nIntegration; ++j) {
-    for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short j=0; j<nInt1D; ++j) {
+    for(unsigned short i=0; i<nDOFs1D; ++i) {
       tensorSolTranspose[1](i,j) = tensorSol[1](j,i);
       tensorSolTranspose[2](i,j) = tensorSol[2](j,i);
     }

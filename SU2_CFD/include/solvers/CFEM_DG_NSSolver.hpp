@@ -117,213 +117,163 @@ public:
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  void BC_Euler_Wall(CConfig                  *config,
-                     const unsigned long      surfElemBeg,
-                     const unsigned long      surfElemEnd,
-                     const CSurfaceElementFEM *surfElem,
-                     su2double                *resFaces,
-                     CNumerics                *conv_numerics,
-                     su2double                *workArray) override;
+  void BC_Euler_Wall(CConfig             *config,
+                     const unsigned long surfElemBeg,
+                     const unsigned long surfElemEnd,
+                     CSurfaceElementFEM  *surfElem,
+                     CNumerics           *conv_numerics) override;
 
   /*!
    * \brief Impose the far-field boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  void BC_Far_Field(CConfig                  *config,
-                    const unsigned long      surfElemBeg,
-                    const unsigned long      surfElemEnd,
-                    const CSurfaceElementFEM *surfElem,
-                    su2double                *resFaces,
-                    CNumerics                *conv_numerics,
-                    su2double                *workArray) override;
+  void BC_Far_Field(CConfig             *config,
+                    const unsigned long surfElemBeg,
+                    const unsigned long surfElemEnd,
+                    CSurfaceElementFEM  *surfElem,
+                    CNumerics           *conv_numerics) override;
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  void BC_Sym_Plane(CConfig                  *config,
-                    const unsigned long      surfElemBeg,
-                    const unsigned long      surfElemEnd,
-                    const CSurfaceElementFEM *surfElem,
-                    su2double                *resFaces,
-                    CNumerics                *conv_numerics,
-                    su2double                *workArray) override;
+  void BC_Sym_Plane(CConfig             *config,
+                    const unsigned long surfElemBeg,
+                    const unsigned long surfElemEnd,
+                    CSurfaceElementFEM  *surfElem,
+                    CNumerics           *conv_numerics) override;
 
  /*!
    * \brief Impose the supersonic outlet boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  void BC_Supersonic_Outlet(CConfig                  *config,
-                            const unsigned long      surfElemBeg,
-                            const unsigned long      surfElemEnd,
-                            const CSurfaceElementFEM *surfElem,
-                            su2double                *resFaces,
-                            CNumerics                *conv_numerics,
-                            su2double                *workArray) override;
+  void BC_Supersonic_Outlet(CConfig             *config,
+                            const unsigned long surfElemBeg,
+                            const unsigned long surfElemEnd,
+                            CSurfaceElementFEM  *surfElem,
+                            CNumerics           *conv_numerics) override;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  void BC_Inlet(CConfig                  *config,
-                const unsigned long      surfElemBeg,
-                const unsigned long      surfElemEnd,
-                const CSurfaceElementFEM *surfElem,
-                su2double                *resFaces,
-                CNumerics                *conv_numerics,
-                unsigned short           val_marker,
-                su2double                *workArray) override;
+  void BC_Inlet(CConfig             *config,
+                const unsigned long surfElemBeg,
+                const unsigned long surfElemEnd,
+                CSurfaceElementFEM  *surfElem,
+                CNumerics           *conv_numerics,
+                unsigned short      val_marker) override;
 
   /*!
    * \brief Impose the outlet boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  void BC_Outlet(CConfig                  *config,
-                 const unsigned long      surfElemBeg,
-                 const unsigned long      surfElemEnd,
-                 const CSurfaceElementFEM *surfElem,
-                 su2double                *resFaces,
-                 CNumerics                *conv_numerics,
-                 unsigned short           val_marker,
-                 su2double                *workArray) override;
+  void BC_Outlet(CConfig             *config,
+                 const unsigned long surfElemBeg,
+                 const unsigned long surfElemEnd,
+                 CSurfaceElementFEM  *surfElem,
+                 CNumerics           *conv_numerics,
+                 unsigned short      val_marker) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CConfig                  *config,
-                        const unsigned long      surfElemBeg,
-                        const unsigned long      surfElemEnd,
-                        const CSurfaceElementFEM *surfElem,
-                        su2double                *resFaces,
-                        CNumerics                *conv_numerics,
-                        unsigned short           val_marker,
-                        su2double                *workArray) override;
+  void BC_HeatFlux_Wall(CConfig             *config,
+                        const unsigned long surfElemBeg,
+                        const unsigned long surfElemEnd,
+                        CSurfaceElementFEM  *surfElem,
+                        CNumerics           *conv_numerics,
+                        unsigned short      val_marker) override;
 
   /*!
    * \brief Impose an isothermal condition at the wall.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CConfig                  *config,
-                          const unsigned long      surfElemBeg,
-                          const unsigned long      surfElemEnd,
-                          const CSurfaceElementFEM *surfElem,
-                          su2double                *resFaces,
-                          CNumerics                *conv_numerics,
-                          unsigned short           val_marker,
-                          su2double                *workArray) override;
+  void BC_Isothermal_Wall(CConfig             *config,
+                          const unsigned long surfElemBeg,
+                          const unsigned long surfElemEnd,
+                          CSurfaceElementFEM  *surfElem,
+                          CNumerics           *conv_numerics,
+                          unsigned short      val_marker) override;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     val_marker    - Surface marker where the boundary condition is applied.
    */
-  void BC_Riemann(CConfig                  *config,
-                  const unsigned long      surfElemBeg,
-                  const unsigned long      surfElemEnd,
-                  const CSurfaceElementFEM *surfElem,
-                  su2double                *resFaces,
-                  CNumerics                *conv_numerics,
-                  unsigned short           val_marker,
-                  su2double                *workArray) override;
+  void BC_Riemann(CConfig             *config,
+                  const unsigned long surfElemBeg,
+                  const unsigned long surfElemEnd,
+                  CSurfaceElementFEM  *surfElem,
+                  CNumerics           *conv_numerics,
+                  unsigned short      val_marker) override;
 
   /*!
    * \brief Impose the user customized boundary condition.
-   * \param[in]  config        - Definition of the particular problem.
-   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
-   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
-   * \param[in]  surfElem      - Array of surface elements for which the boundary
-                                 conditions must be imposed.
-   * \param[out] resFaces      - Array where the residual contribution from the
-                                 surface elements must be stored.
-   * \param[in]  conv_numerics - Description of the numerical method.
-   * \param[out] workArray     - Work array.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]     surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in,out] surfElem      - Array of surface elements for which the boundary
+                                    conditions must be imposed.
+   * \param[in]     conv_numerics - Description of the numerical method.
    */
-  void BC_Custom(CConfig                  *config,
-                 const unsigned long      surfElemBeg,
-                 const unsigned long      surfElemEnd,
-                 const CSurfaceElementFEM *surfElem,
-                 su2double                *resFaces,
-                 CNumerics                *conv_numerics,
-                 su2double                *workArray) override;
+  void BC_Custom(CConfig             *config,
+                 const unsigned long surfElemBeg,
+                 const unsigned long surfElemEnd,
+                 CSurfaceElementFEM  *surfElem,
+                 CNumerics           *conv_numerics) override;
 
   /*!
    * \brief Compute the viscous forces and all the addimensional coefficients.

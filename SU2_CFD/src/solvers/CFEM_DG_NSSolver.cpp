@@ -1383,13 +1383,11 @@ void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceC
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
-                                     const unsigned long      surfElemBeg,
-                                     const unsigned long      surfElemEnd,
-                                     const CSurfaceElementFEM *surfElem,
-                                     su2double                *resFaces,
-                                     CNumerics                *conv_numerics,
-                                     su2double                *workArray){
+void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig             *config,
+                                     const unsigned long surfElemBeg,
+                                     const unsigned long surfElemEnd,
+                                     CSurfaceElementFEM  *surfElem,
+                                     CNumerics           *conv_numerics){
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1411,13 +1409,11 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
-                                    const unsigned long      surfElemBeg,
-                                    const unsigned long      surfElemEnd,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *resFaces,
-                                    CNumerics                *conv_numerics,
-                                    su2double                *workArray){
+void CFEM_DG_NSSolver::BC_Far_Field(CConfig             *config,
+                                    const unsigned long surfElemBeg,
+                                    const unsigned long surfElemEnd,
+                                    CSurfaceElementFEM  *surfElem,
+                                    CNumerics           *conv_numerics){
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1439,13 +1435,11 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
-                                    const unsigned long      surfElemBeg,
-                                    const unsigned long      surfElemEnd,
-                                    const CSurfaceElementFEM *surfElem,
-                                    su2double                *resFaces,
-                                    CNumerics                *conv_numerics,
-                                    su2double                *workArray){
+void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig             *config,
+                                    const unsigned long surfElemBeg,
+                                    const unsigned long surfElemEnd,
+                                    CSurfaceElementFEM  *surfElem,
+                                    CNumerics           *conv_numerics){
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1467,13 +1461,11 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
-                                            const unsigned long      surfElemBeg,
-                                            const unsigned long      surfElemEnd,
-                                            const CSurfaceElementFEM *surfElem,
-                                            su2double                *resFaces,
-                                            CNumerics                *conv_numerics,
-                                            su2double                *workArray){
+void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig             *config,
+                                            const unsigned long surfElemBeg,
+                                            const unsigned long surfElemEnd,
+                                            CSurfaceElementFEM  *surfElem,
+                                            CNumerics           *conv_numerics){
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1495,14 +1487,12 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
-                                const unsigned long      surfElemBeg,
-                                const unsigned long      surfElemEnd,
-                                const CSurfaceElementFEM *surfElem,
-                                su2double                *resFaces,
-                                CNumerics                *conv_numerics,
-                                unsigned short           val_marker,
-                                su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_Inlet(CConfig             *config,
+                                const unsigned long surfElemBeg,
+                                const unsigned long surfElemEnd,
+                                CSurfaceElementFEM  *surfElem,
+                                CNumerics           *conv_numerics,
+                                unsigned short      val_marker) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1524,14 +1514,12 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
-                                 const unsigned long      surfElemBeg,
-                                 const unsigned long      surfElemEnd,
-                                 const CSurfaceElementFEM *surfElem,
-                                 su2double                *resFaces,
-                                 CNumerics                *conv_numerics,
-                                 unsigned short           val_marker,
-                                 su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_Outlet(CConfig             *config,
+                                 const unsigned long surfElemBeg,
+                                 const unsigned long surfElemEnd,
+                                 CSurfaceElementFEM  *surfElem,
+                                 CNumerics           *conv_numerics,
+                                 unsigned short      val_marker) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1553,14 +1541,12 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
-                                        const unsigned long      surfElemBeg,
-                                        const unsigned long      surfElemEnd,
-                                        const CSurfaceElementFEM *surfElem,
-                                        su2double                *resFaces,
-                                        CNumerics                *conv_numerics,
-                                        unsigned short           val_marker,
-                                        su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig             *config,
+                                        const unsigned long surfElemBeg,
+                                        const unsigned long surfElemEnd,
+                                        CSurfaceElementFEM  *surfElem,
+                                        CNumerics           *conv_numerics,
+                                        unsigned short      val_marker) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1582,14 +1568,12 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
-                                          const unsigned long      surfElemBeg,
-                                          const unsigned long      surfElemEnd,
-                                          const CSurfaceElementFEM *surfElem,
-                                          su2double                *resFaces,
-                                          CNumerics                *conv_numerics,
-                                          unsigned short           val_marker,
-                                          su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig             *config,
+                                          const unsigned long surfElemBeg,
+                                          const unsigned long surfElemEnd,
+                                          CSurfaceElementFEM  *surfElem,
+                                          CNumerics           *conv_numerics,
+                                          unsigned short      val_marker) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1611,14 +1595,12 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
-                                  const unsigned long      surfElemBeg,
-                                  const unsigned long      surfElemEnd,
-                                  const CSurfaceElementFEM *surfElem,
-                                  su2double                *resFaces,
-                                  CNumerics                *conv_numerics,
-                                  unsigned short           val_marker,
-                                  su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_Riemann(CConfig             *config,
+                                  const unsigned long surfElemBeg,
+                                  const unsigned long surfElemEnd,
+                                  CSurfaceElementFEM  *surfElem,
+                                  CNumerics           *conv_numerics,
+                                  unsigned short      val_marker) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {
@@ -1640,13 +1622,11 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
   END_SU2_OMP_SINGLE
 }
 
-void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
-                                 const unsigned long      surfElemBeg,
-                                 const unsigned long      surfElemEnd,
-                                 const CSurfaceElementFEM *surfElem,
-                                 su2double                *resFaces,
-                                 CNumerics                *conv_numerics,
-                                 su2double                *workArray) {
+void CFEM_DG_NSSolver::BC_Custom(CConfig             *config,
+                                 const unsigned long surfElemBeg,
+                                 const unsigned long surfElemEnd,
+                                 CSurfaceElementFEM  *surfElem,
+                                 CNumerics           *conv_numerics) {
   for(int i=0; i<size; ++i) {
 
     if(i == rank) {

@@ -33,6 +33,26 @@
 /*---        Public member functions of CSurfaceElementFEM.         ---*/
 /*---------------------------------------------------------------------*/
 
+void CSurfaceElementFEM::AllocateResiduals(CConfig        *config,
+                                           unsigned short nVar) {
+
+  /*--- Determine the number of padded solution DOFs of the adjacent
+        element and allocate the memory for the residual. ---*/
+  const unsigned short nDOFsPadElem = standardElemFlow->GetNSolDOFsPad();
+  resDOFsElem.resize(nDOFsPadElem,nVar);
+}
+
+ColMajorMatrix<su2double> &CSurfaceElementFEM::ComputeSolSide0IntPoints(
+                                                CVolumeElementFEM_DG *volElem) {
+
+  /*--- Perform the gemm call to compute the solution in the
+        integration points and return the matrix. ---*/
+  const int thread = omp_get_thread_num();
+  standardElemFlow->SolIntPoints(volElem[volElemID].solDOFs,
+                                 standardElemFlow->workSolInt[thread]);
+  return standardElemFlow->workSolInt[thread];
+}
+
 void CSurfaceElementFEM::ComputeWallDistance(CADTElemClass        *WallADT,
                                              const unsigned short nDim) {
 
@@ -114,6 +134,10 @@ void CSurfaceElementFEM::MetricTermsIntegrationPoints(const unsigned short      
   standardElemGrid->MetricTermsSurfaceIntPoints(volElem[volElemID].coorGridDOFs,
                                                 JacobiansFace, metricNormalsFace,
                                                 metricCoorDerivFace);
+}
+
+void CSurfaceElementFEM::ResidualBasisFunctions(ColMajorMatrix<su2double> &scalarDataInt) {
+  standardElemFlow->ResidualBasisFunctions(scalarDataInt, resDOFsElem);
 }
 
 void CSurfaceElementFEM::SetWallDistance(su2double val) {
