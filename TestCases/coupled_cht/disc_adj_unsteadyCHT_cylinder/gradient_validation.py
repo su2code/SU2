@@ -80,7 +80,7 @@ adjoint.addExpected("solution_adj_avtp_0_00053.dat")
 adjoint.addExpected("solution_adj_avtp_1_00053.dat")
 
 # gradient projection
-dot = adjont = ExternalRun("DOT",dot_ad_command,True)
+dot = ExternalRun("DOT",dot_ad_command,True)
 dot.setMaxTries(max_tries)
 dot.addConfig("chtMaster.cfg")
 dot.addData("fluid.cfg") # zonal cfg's can be symlinked
@@ -106,6 +106,7 @@ tavgT.addGradientEvalStep(dot)
 
 # Driver --------------------------------------------------------------- #
 
+# The input variable is the constraint tolerance which is not used for our purpose of finite differences
 driver = ExteriorPenaltyDriver(0.005)
 driver.addObjective("min", tavgT)
 
@@ -120,6 +121,7 @@ driver.setHistorian(his)
 
 # Primal simulation for each deformed DV
 for iLoop in range(0, nDV, 1):
+    print("Computing deformed primal ", iLoop, "/", nDV-1)
     x = driver.getInitial()
     x[iLoop] = 1e-4 # DV_VALUE
     driver.fun(x)
@@ -127,10 +129,12 @@ for iLoop in range(0, nDV, 1):
 
 # Undeformed/initial primal last in order to have the correct solution in
 # the WorkindDirectory for the following adjoint
+print("Computing baseline primal")
 x = driver.getInitial()
 driver.fun(x) # baseline evaluation
 
 # Compute discrete adjoint gradient
+print("Computing discrete adjoint gradient")
 driver.grad(x)
 
 his.close()

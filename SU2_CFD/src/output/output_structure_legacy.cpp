@@ -1,5 +1,5 @@
 /*!
- * \file output_structure.cpp
+ * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
