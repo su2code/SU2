@@ -969,9 +969,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double dTn, dTven;
   su2double rhoCvtr, rhoCvve;
 
-  su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
+  su2double TauTangent[MAXNDIM] = {0.0};
   su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  su2double TauNormal;
 
   bool ionization = config->GetIonization();
 
@@ -1095,14 +1094,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         Res_Visc[iVar] = 0.0;
 
       CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
 
-      /*--- Compute wall shear stress (using the stress tensor) ---*/
-      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)

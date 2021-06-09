@@ -31,9 +31,6 @@
 CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
-  /*--- Booleans that determine the kind of problems ---*/
-  bool time_domain = config->GetTime_Domain();
-
   /*--- Store the dimensionality of the problem ---*/
   nDim = ndim;
 
@@ -42,25 +39,12 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
   WallDistance.resize(nPoint) = su2double(1e-9);
 
   /*--- Initialize the variables necessary when the problem is time domain ---*/
-  if (time_domain) {
+  if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
     Solution_time_n1.resize(nPoint,nDim) = su2double(0.0);
   }
 }
 
-void CMeshVariable::Register_MeshCoord(bool input) {
-  if (input) {
-    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterInput(Mesh_Coord(iPoint,iDim));
-    END_SU2_OMP_FOR
-  }
-  else {
-    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
-    END_SU2_OMP_FOR
-  }
+void CMeshVariable::Register_MeshCoord() {
+  RegisterContainer(true, Mesh_Coord);
 }

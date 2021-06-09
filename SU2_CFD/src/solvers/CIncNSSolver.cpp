@@ -605,21 +605,11 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   END_SU2_OMP_FOR
 }
 
-
-
-
 void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
-  /*---  The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
+  /*---
+   The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
    At this moment, the wall function is only available for adiabatic flows.
    ---*/
-  su2double RefDensity=Density_Inf, RefVel2=0.0; 
-  if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) 
-      RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-  } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-    RefDensity = config->GetInc_Density_Ref();
-    RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-  }
 
   unsigned long notConvergedCounter = 0;  /*--- counts the number of wall cells that are not converged ---*/
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
@@ -627,18 +617,19 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   su2double U_Tau, Y_Plus;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const unsigned short max_iter =config->GetwallModelMaxIter();    /*--- maximum number of iterations for the Newton Solver---*/
-  const su2double tol = 1e-12;                          /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
-  const su2double relax = config->GetwallModelRelFac(); /*--- relaxation factor for the Newton solver ---*/
+  const unsigned short max_iter =config->GetwallModelMaxIter();  /*--- maximum number of iterations for the Newton Solver---*/
+  const su2double tol = 1e-12;                                   /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
+  const su2double relax = config->GetwallModelRelFac();          /*--- relaxation factor for the Newton solver ---*/
   const su2double minYPlus = config->GetwallModelMinYPlus();
 
   /*--- Compute the recovery factor 
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
+
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = config->GetwallModelKappa(); 
+  const su2double kappa = config->GetwallModelKappa();
   const su2double B = config->GetwallModelB();
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -651,16 +642,15 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
     /*--- Jump to another BC if it is not wall function ---*/
 
-    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_WALL_FUNCTION) continue;
+    if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION) continue;
 
     /*--- Get the specified wall heat flux from config ---*/
     // note that we can get the heat flux from the temperature gradient
-    su2double q_w = 0.0;
+    //su2double q_w = 0.0;
 
-    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) 
-      q_w = config->GetWall_HeatFlux(Marker_Tag);
-
-    // heat flux from temperature: q_w = h*(T_wall - T_fluid)
+    /*--- get the heat flux; when BC is the temperature, we compute it later ---*/
+    //if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)
+    //  q_w = config->GetWall_HeatFlux(Marker_Tag);
 
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -697,11 +687,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
 
-      // su2double P_Normal = nodes->GetPressure(Point_Normal);
-      // su2double T_Normal = nodes->GetTemperature(Point_Normal);
-
       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
-             
+
       su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
 
       su2double VelTang[MAXNDIM] = {0.0};
@@ -714,52 +701,48 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       su2double WallDist[MAXNDIM] = {0.0};
       GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-  
+
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute mach number ---*/
+      su2double T_Wall = nodes->GetTemperature(iPoint);
+      su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
-      // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+      /*--- if a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
 
-      /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+      su2double q_w = 0.0;
 
-      //T_Normal = T_Wall * (1.0 + 0.5*Gamma_Minus_One*Recovery*u_normal*u_normal);
-      // this means that T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*u_normal*u_normal)
-      //T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*VelTangMod*VelTangMod);
-      // in incompressible flows, we can assume that there is no velocity-related temperature change
-      // Prandtl: T+ = Pr*y+
-      su2double T_Wall = nodes->GetTemperature(iPoint); 
 
-      /*--- Extrapolate the pressure from the interior & compute the
-      wall density using the equation of state ---*/
+      if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+        //su2double T_w = config->GetIsothermal_Temperature(Marker_Tag);
+        su2double T_n = nodes->GetTemperature(Point_Normal);
+        q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
+        cout << "wall heat flux = " << q_w << endl;
+      }  
+      else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+        su2double T_n = nodes->GetTemperature(Point_Normal);
+        q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
+        cout << "estimated wall heat flux = " << q_w << endl;
+        q_w = config->GetWall_HeatFlux(Marker_Tag);  
+        cout << "wall heat flux = " << q_w << endl;
+      }
+    
 
       /*--- incompressible formulation ---*/
       su2double Density_Wall = nodes->GetDensity(iPoint);
-      su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
- 
+
       /*--- Compute the shear stress at the wall in the regular fashion
       by using the stress tensor on the surface ---*/
 
-      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
+      su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
       // do we need the total viscosity for the stress tensor?
       //su2double total_viscosity = (Lam_Visc_Wall + Eddy_Visc_Wall);
       CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
-      }
-
-      /*--- Compute wall shear stress as the magnitude of the wall-tangential
-       component of the shear stress tensor---*/
-
-      su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
       su2double TauTangent[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
       su2double WallShearStress = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
@@ -783,7 +766,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         while (fabs(diff) > tol) {
 
           /*--- Friction velocity and u+ ---*/
- 
+
           su2double U_Plus = VelTangMod/U_Tau;
 
           /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
@@ -805,7 +788,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
           su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
- 
+
           Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                            (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
                                            - Lam_Visc_Normal/Lam_Visc_Wall);
@@ -823,7 +806,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
                     pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
           /* --- Newton Step --- */
- 
+
           U_Tau = U_Tau - relax*(diff / grad_diff);
 
           counter++;
@@ -844,21 +827,14 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       EddyViscWall[iMarker][iVertex] = Eddy_Visc_Wall;
       UTau[iMarker][iVertex] = U_Tau;
 
-      // wall model value
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
       // nijso: skinfriction for wall functions gives opposite sign?
 
       for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       nodes->SetTauWall(iPoint, Tau_Wall);
-      // for compressible flow:
-      //nodes->SetTemperature(iPoint,T_Wall);
-      //nodes->SetSolution(iPoint, 0, Density_Wall);
-      //nodes->SetPrimitive(iPoint, nDim + 1, P_Wall);
-      // for incompressible flow:
-      // ...? 
 
     }
     END_SU2_OMP_FOR
@@ -867,10 +843,5 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
   if (notConvergedCounter>0) {
     cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
   }
-
-  //if (smallYPlusCounter>0) {
-  //  cout << "Warning: y+ < 5.0 in " << smallYPlusCounter<< " points, wall model not active in these points."<<endl;
-  //}
-
 
 }

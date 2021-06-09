@@ -414,7 +414,6 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
     SetTurbVars_WF(geometry, solver_container, config, val_marker);
-    //SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
@@ -580,6 +579,8 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
       conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
 
@@ -1572,13 +1573,12 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container, 
+void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double minYPlus = config->GetwallModelMinYPlus();
- 
-  
+
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
   constexpr unsigned short max_iter = 200;
 
@@ -1588,7 +1588,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Typical constants from boundary layer theory ---*/
 
- 
+
   const su2double cv1_3 = 7.1*7.1*7.1;
 
   CVariable* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
@@ -1611,8 +1611,8 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       if (Y_Plus < minYPlus) {
 
-        /* --- note that we do not do anything for y+ < 5.0, meaning that we have a zero flux (Neumann) boundary condition --- */
-         
+        /* --- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition --- */
+
         continue;
       }
 
@@ -1625,14 +1625,14 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
       /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
 
       // start with positive value of nu_til_old
-      su2double nu_til = 0.0; 
+      su2double nu_til = 0.0;
       su2double nu_til_old = nodes->GetSolution(iPoint,0);
 
       unsigned short counter = 0;
       su2double diff = 1.0;
       relax = 0.5;
       while (diff > tol) {
-        // note the error in Nichols and Nelson 
+        // note the error in Nichols and Nelson
         su2double func = nu_til_old*nu_til_old*nu_til_old*nu_til_old - (Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old*nu_til_old + Kin_Visc_Normal*Kin_Visc_Normal*Kin_Visc_Normal*cv1_3);
         su2double func_prim = 4.0 * nu_til_old*nu_til_old*nu_til_old - 3.0*(Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old);
 
@@ -1658,11 +1658,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
         }
       }
 
-      su2double solution[1];
-      //for (auto iVar = 0u; iVar < nVar; iVar++)
-      solution[0] = nu_til;
-    
-      nodes->SetSolution_Old(iPoint_Neighbor,solution);
+      nodes->SetSolution_Old(iPoint_Neighbor, &nu_til);
       LinSysRes.SetBlock_Zero(iPoint_Neighbor);
 
       /*--- includes 1 in the diagonal ---*/

@@ -6240,14 +6240,14 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
           /* An LES wall model is used for this boundary marker. Determine
              which wall model and allocate the memory for the member variable. */
           switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-            case WALL_FUNCTIONS::EQUILIBRIUM_WALL_MODEL: {
+            case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
               boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
-            case WALL_FUNCTIONS::LOGARITHMIC_WALL_MODEL: {
+            case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
 
