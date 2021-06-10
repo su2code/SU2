@@ -1,5 +1,5 @@
 /*!
- * \file output_baseline.cpp
+ * \file CBaselineOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"

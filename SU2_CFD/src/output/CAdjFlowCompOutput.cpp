@@ -1,5 +1,5 @@
 /*!
- * \file output_adj_flow_comp.cpp
+ * \file CAdjFlowCompOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -26,7 +26,7 @@
  */
 
 
-#include "../../include/output/CAdjFlowOutput.hpp"
+#include "../../include/output/CAdjFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"

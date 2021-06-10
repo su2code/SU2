@@ -1,7 +1,7 @@
 /*!
- * \file CMeshOutput.hpp
- * \brief Headers of the mesh output.
- * \author R. Sanchez, T. Albring.
+ * \file CFVMOutput.hpp
+ * \brief  Headers of the Finite Volume Method output.
+ * \author T. Kattmann
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -29,39 +29,41 @@
 
 #include "COutput.hpp"
 
-/*! \class CMeshOutput
- *  \brief Output class for mesh solution.
- *  \author R. Sanchez, T. Albring.
- *  \date June 5, 2018.
- */
-class CMeshOutput final: public COutput {
-
-public:
-
+class CFVMOutput : public COutput{
+protected:
   /*!
    * \brief Constructor of the class
-   * \param[in] config - Definition of the particular problem.
    */
-  CMeshOutput(CConfig *config, unsigned short nDim);
+  CFVMOutput(CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshOutput(void) override;
+  ~CFVMOutput(void) = default;
 
   /*!
-   * \brief Set the available volume output fields
-   * \param[in] config - Definition of the particular problem.
+   * \brief Add Coordinates to output.
    */
-  void SetVolumeOutputFields(CConfig *config) override;
+  void AddCoordinates();
 
   /*!
-   * \brief Set the values of the volume output fields for a point.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The container holding all solution data.
-   * \param[in] iPoint - Index of the point.
+   * \brief Load the coordinates.
    */
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) override;
+  template<class T>
+  inline void LoadCoordinates(const T& Coord, const unsigned long iPoint) {
+    SetVolumeOutputValue("COORD-X", iPoint, Coord[0]);
+    SetVolumeOutputValue("COORD-Y", iPoint, Coord[1]);
+    if (nDim == 3)
+      SetVolumeOutputValue("COORD-Z", iPoint, Coord[2]);
+  }
 
+  /*!
+   * \brief Add common FVM outputs.
+   */
+  void AddCommonFVMOutputs(const CConfig* config);
+
+  /*!
+   * \brief Load common FVM outputs.
+   */
+  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint);
 };
