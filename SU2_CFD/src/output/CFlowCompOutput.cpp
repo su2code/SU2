@@ -34,7 +34,6 @@
 CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
-  lastInnerIter = curInnerIter;
   gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -104,10 +103,6 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     }
   }
 }
-
-CFlowCompOutput::~CFlowCompOutput(void) {}
-
-
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
@@ -703,60 +698,20 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
 }
 
-bool CFlowCompOutput::SetInit_Residuals(CConfig *config){
+bool CFlowCompOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));
 
 }
 
-void CFlowCompOutput::SetAdditionalScreenOutput(CConfig *config){
+void CFlowCompOutput::SetAdditionalScreenOutput(const CConfig *config){
 
   if (config->GetFixed_CL_Mode()){
     SetFixedCLScreenOutput(config);
   }
 }
 
-void CFlowCompOutput::SetFixedCLScreenOutput(CConfig *config){
-  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
-
-  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
-    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
-    FixedCLSummary.AddColumn("Value", 30);
-    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
-    FixedCLSummary << "Target CL" << config->GetTarget_CL();
-    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
-    if (config->GetFinite_Difference_Mode()){
-      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-      lastInnerIter = curInnerIter - 1;
-    }
-    else
-      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
-    FixedCLSummary.PrintFooter();
-    SetScreen_Header(config);
-  }
-
-  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
-    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
-    FixedCLSummary.AddColumn("Value", 30);
-    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
-    FixedCLSummary.PrintHeader();
-    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
-    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
-    if (nDim == 3){
-      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
-      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
-    }
-    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
-    FixedCLSummary.PrintFooter();
-    curInnerIter = lastInnerIter;
-    WriteMetaData(config);
-    curInnerIter = config->GetInnerIter();
-  }
-}
-
-bool CFlowCompOutput::WriteHistoryFile_Output(CConfig *config) {
+bool CFlowCompOutput::WriteHistoryFile_Output(const CConfig *config) {
   return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFile_Output(config);
 }

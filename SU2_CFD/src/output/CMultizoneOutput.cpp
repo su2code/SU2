@@ -141,7 +141,7 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(COutput **output, CConfig
   }
 }
 
-bool CMultizoneOutput::WriteScreen_Header(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Header(const CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
 
@@ -157,7 +157,7 @@ bool CMultizoneOutput::WriteScreen_Header(CConfig *config) {
   return false;
 }
 
-bool CMultizoneOutput::WriteScreen_Output(CConfig *config) {
+bool CMultizoneOutput::WriteScreen_Output(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
   unsigned long ScreenWrt_Freq_Time  = config->GetScreen_Wrt_Freq(0);
@@ -183,7 +183,7 @@ bool CMultizoneOutput::WriteScreen_Output(CConfig *config) {
   return true;
 }
 
-bool CMultizoneOutput::WriteHistoryFile_Output(CConfig *config){
+bool CMultizoneOutput::WriteHistoryFile_Output(const CConfig *config){
 
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);
   unsigned long HistoryWrt_Freq_Time  = config->GetHistory_Wrt_Freq(0);

@@ -86,17 +86,17 @@ public:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteHistoryFile_Output(CConfig *config) override;
+  bool WriteHistoryFile_Output(const CConfig *config) override;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Header(CConfig *config) override;
+  bool WriteScreen_Header(const CConfig *config) override;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Output(CConfig *config) override;
+  bool WriteScreen_Output(const CConfig *config) override;
 };

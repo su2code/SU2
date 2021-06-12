@@ -4272,10 +4272,8 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
 
-  su2double AoA = 0.0, Vel_Infty[3], Vel_Infty_Mag;
-  unsigned short iDim;
-  unsigned long InnerIter = config->GetInnerIter();
-  su2double Beta = config->GetAoS();
+  const auto InnerIter = config->GetInnerIter();
+  const su2double AoS = config->GetAoS()*PI_NUMBER/180.0;
 
   /* --- Initialize values at first iteration --- */
 
@@ -4292,7 +4290,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Retrieve the AoA (degrees) ---*/
 
-  AoA = config->GetAoA();
+  su2double AoA = config->GetAoA();
 
   /* --- Set new AoA if needed --- */
 
@@ -4311,49 +4309,46 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Compute a new value for AoA on the fine mesh only (degrees)---*/
 
-    if (iMesh == MESH_0) AoA = AoA + AoA_inc;
-    else { AoA = config->GetAoA(); }
-
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-
     if (iMesh == MESH_0) {
+      AoA = AoA + AoA_inc;
       config->SetAoA(AoA);
     }
+    else {
+      AoA = config->GetAoA();
+    }
+
+    AoA *= PI_NUMBER/180.0;
 
     /*--- Update the freestream velocity vector at the farfield ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++)
+    su2double Vel_Infty[MAXNDIM]={0.0};
+
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       Vel_Infty[iDim] = GetVelocity_Inf(iDim);
 
-    /*--- Compute the magnitude of the free stream velocity ---*/
-
-    Vel_Infty_Mag = 0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vel_Infty_Mag += Vel_Infty[iDim]*Vel_Infty[iDim];
-    Vel_Infty_Mag = sqrt(Vel_Infty_Mag);
+    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(int(MAXNDIM), Vel_Infty);
 
     /*--- Compute the new freestream velocity with the updated AoA ---*/
 
     if (nDim == 2) {
-      Vel_Infty[0] = cos(AoA*PI_NUMBER/180.0)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(AoA*PI_NUMBER/180.0)*Vel_Infty_Mag;
+      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
     }
-    if (nDim == 3) {
-      Vel_Infty[0] = cos(AoA*PI_NUMBER/180.0)*cos(Beta*PI_NUMBER/180.0)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
-      Vel_Infty[2] = sin(AoA*PI_NUMBER/180.0)*cos(Beta*PI_NUMBER/180.0)*Vel_Infty_Mag;
+    else {
+      Vel_Infty[0] = cos(AoA)*cos(AoS)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(AoS)*Vel_Infty_Mag;
+      Vel_Infty[2] = sin(AoA)*cos(AoS)*Vel_Infty_Mag;
     }
 
     /*--- Store the new freestream velocity vector for the next iteration ---*/
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++)
       Velocity_Inf[iDim] = Vel_Infty[iDim];
-    }
 
     /*--- Only the fine mesh stores the updated values for velocity in config ---*/
 
     if (iMesh == MESH_0) {
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
     }
 
@@ -4361,12 +4356,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 }
 
 bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
-  su2double Target_CL = config->GetTarget_CL();
-  unsigned long curr_iter = config->GetInnerIter();
-  unsigned long Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
+  const su2double Target_CL = config->GetTarget_CL();
+  const auto curr_iter = config->GetInnerIter();
+  const auto Iter_dCL_dAlpha = config->GetIter_dCL_dAlpha();
   bool fixed_cl_conv = false;
   AoA_inc = 0.0;
-
 
   /*--- if in Fixed CL mode, before finite differencing --- */
 
@@ -4464,17 +4458,18 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 }
 
 void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
-  su2double dCL_dAlpha_, dCD_dCL_, dCMx_dCL_, dCMy_dCL_, dCMz_dCL_;
-  su2double AoA = config->GetAoA();
 
-  if (AoA != AoA_Prev) {
-  /* --- Calculate gradients of coefficients w.r.t. CL --- */
+  const su2double AoA = config->GetAoA();
 
-  dCL_dAlpha_ = (TotalCoeff.CL-Total_CL_Prev)/(AoA - AoA_Prev);
-  dCD_dCL_    = (TotalCoeff.CD-Total_CD_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  dCMx_dCL_   = (TotalCoeff.CMx-Total_CMx_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  dCMy_dCL_   = (TotalCoeff.CMy-Total_CMy_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  dCMz_dCL_   = (TotalCoeff.CMz-Total_CMz_Prev)/(TotalCoeff.CL-Total_CL_Prev);
+  if (AoA == AoA_Prev) return;
+
+  /*--- Calculate gradients of coefficients w.r.t. CL ---*/
+
+  su2double dCL_dAlpha_ = (TotalCoeff.CL-Total_CL_Prev)/(AoA - AoA_Prev);
+  su2double dCD_dCL_    = (TotalCoeff.CD-Total_CD_Prev)/(TotalCoeff.CL-Total_CL_Prev);
+  su2double dCMx_dCL_   = (TotalCoeff.CMx-Total_CMx_Prev)/(TotalCoeff.CL-Total_CL_Prev);
+  su2double dCMy_dCL_   = (TotalCoeff.CMy-Total_CMy_Prev)/(TotalCoeff.CL-Total_CL_Prev);
+  su2double dCMz_dCL_   = (TotalCoeff.CMz-Total_CMz_Prev)/(TotalCoeff.CL-Total_CL_Prev);
 
   /*--- Set the value of the  dOF/dCL in the config file ---*/
 
@@ -4483,7 +4478,6 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
   config->SetdCMy_dCL(dCMy_dCL_);
   config->SetdCMz_dCL(dCMz_dCL_);
   config->SetdCL_dAlpha(dCL_dAlpha_);
-  }
 }
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
