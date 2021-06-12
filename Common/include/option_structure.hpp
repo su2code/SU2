@@ -323,27 +323,29 @@ static const MapType<string, RADIAL_BASIS> RadialBasisFunction_Map = {
 /*!
  * \brief type of radial spanwise interpolation function for the inlet face
  */
-enum ENUM_INLET_SPANWISEINTERPOLATION {
-  NO_INTERPOLATION = 0,
-  LINEAR_1D = 1,
-  AKIMA_1D = 2,
+enum class INLET_SPANWISE_INTERP {
+  NONE,
+  LINEAR_1D,
+  AKIMA_1D,
+  CUBIC_1D,
 };
-static const MapType<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
-  MakePair("NONE", NO_INTERPOLATION)
-  MakePair("LINEAR_1D",LINEAR_1D)
-  MakePair("AKIMA_1D",AKIMA_1D)
+static const MapType<string, INLET_SPANWISE_INTERP> Inlet_SpanwiseInterpolation_Map = {
+  MakePair("NONE", INLET_SPANWISE_INTERP::NONE)
+  MakePair("LINEAR_1D", INLET_SPANWISE_INTERP::LINEAR_1D)
+  MakePair("AKIMA_1D", INLET_SPANWISE_INTERP::AKIMA_1D)
+  MakePair("CUBIC_1D", INLET_SPANWISE_INTERP::CUBIC_1D)
 };
 
 /*!
  * \brief type of radial spanwise interpolation data type for the inlet face
  */
-enum ENUM_INLET_INTERPOLATIONTYPE {
-  VR_VTHETA = 0,
-  ALPHA_PHI = 1,
+enum class INLET_INTERP_TYPE {
+  VR_VTHETA,
+  ALPHA_PHI,
 };
-static const MapType<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
-  MakePair("VR_VTHETA",VR_VTHETA)
-  MakePair("ALPHA_PHI",ALPHA_PHI)
+static const MapType<string, INLET_INTERP_TYPE> Inlet_SpanwiseInterpolationType_Map = {
+  MakePair("VR_VTHETA", INLET_INTERP_TYPE::VR_VTHETA)
+  MakePair("ALPHA_PHI", INLET_INTERP_TYPE::ALPHA_PHI)
 };
 
 /*!
