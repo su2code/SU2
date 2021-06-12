@@ -1207,7 +1207,7 @@ public:
               condition for a natural spline, with zero second derivative on that boundary.
                         Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
    */
-  void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
+  static void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
 
   /*!
    * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order),
@@ -1216,7 +1216,7 @@ public:
               Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
    * \return The interpolated value of for x.
    */
-  su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
+  static su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
 
   /*!
    * \brief Compute the intersection between a segment and a plane.

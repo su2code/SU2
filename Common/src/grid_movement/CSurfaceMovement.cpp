@@ -3785,14 +3785,14 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
   Xcoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
+  CGeometry::SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
 
   n_Airfoil = Svalue.size();
   yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
   Ycoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  CGeometry::SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
