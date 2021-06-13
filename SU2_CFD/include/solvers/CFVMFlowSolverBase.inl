@@ -1780,6 +1780,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
   auto Origin = config->GetRefOriginMoment(0);
   bool axisymmetric = config->GetAxisymmetric();
 
+  SetReferenceValues(*config);
+
   const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Reference pressure is always the far-field value. ---*/

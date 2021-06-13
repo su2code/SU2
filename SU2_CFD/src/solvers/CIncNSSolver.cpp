@@ -615,11 +615,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
   unsigned long notConvergedCounter = 0;  /*--- counts the number of wall cells that are not converged ---*/
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
-  su2double grad_diff;
-  su2double U_Tau, Y_Plus;
+
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  //su2double Eddy_Visc = 1.0e-6;         /*--- nonzero starting value for eddy viscosity---*/
   constexpr unsigned short max_iter =200; /*--- maximum number of iterations for the Newton Solver---*/
   const su2double tol = 1e-12;            /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
   const su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
@@ -690,9 +688,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Vel[iDim] = nodes->GetVelocity(Point_Normal,iDim);
 
-      // su2double P_Normal = nodes->GetPressure(Point_Normal);
-      // su2double T_Normal = nodes->GetTemperature(Point_Normal);
-
       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
       su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
@@ -710,17 +705,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute mach number ---*/
-
-      // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
-
-      /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-
-      //T_Normal = T_Wall * (1.0 + 0.5*Gamma_Minus_One*Recovery*u_normal*u_normal);
-      // this means that T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*u_normal*u_normal)
-      //T_Wall = T_Normal/(1.0+0.5*Gamma_Minus_One*Recovery*VelTangMod*VelTangMod);
-      // in incompressible flows, we can assume that there is no velocity-related temperature change
-      // Prandtl: T+ = Pr*y+
+      /*--- Compute the wall temperature using the Crocco-Buseman equation.
+       * In incompressible flows, we can assume that there is no velocity-related
+       * temperature change Prandtl: T+ = Pr*y+ ---*/
       su2double T_Wall = nodes->GetTemperature(iPoint);
 
       /*--- Extrapolate the pressure from the interior & compute the
@@ -750,14 +737,16 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
        iteratively solve for a new wall shear stress. Use the current wall
        shear stress as a starting guess for the wall function. ---*/
 
-      unsigned long counter = 0; su2double diff = 1.0;
-      U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      Y_Plus = 4.99; // clipping value
+      unsigned long counter = 0;
+      su2double diff = 1.0;
+      su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      su2double Y_Plus = 5.0; // clipping value
+
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
       /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < 5.0) {
+      if (Y_Plus_Start < Y_Plus) {
         /*--- impose a minimum y+ for stability reasons---*/
         smallYPlusCounter++;
       }
@@ -799,7 +788,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
           /* --- Gradient of function defined above --- */
 
-          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+          su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
                     kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
                     exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
                     pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
@@ -809,10 +798,12 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           U_Tau = U_Tau - relax*(diff / grad_diff);
 
           counter++;
-
           if (counter > max_iter) {
             notConvergedCounter++;
-            cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
+            // use some safe values for convergence
+            Y_Plus = 30.0;
+            Eddy_Visc_Wall = 1.0;
+            U_Tau = 1.0;
             break;
           }
         }
@@ -846,12 +837,33 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
     END_SU2_OMP_FOR
   }
 
-  if (notConvergedCounter>0) {
-    cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
-  }
+  if (config->GetComm_Level() == COMM_FULL) {
+    static unsigned long globalCounter1, globalCounter2;
 
-  //if (smallYPlusCounter>0) {
-  //  cout << "Warning: y+ < 5.0 in " << smallYPlusCounter<< " points, wall model not active in these points."<<endl;
-  //}
+    ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
+
+    SU2_OMP_ATOMIC
+    globalCounter1 += notConvergedCounter;
+
+    SU2_OMP_ATOMIC
+    globalCounter2 += smallYPlusCounter;
+
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+      if (rank == MASTER_NODE) {
+        if (notConvergedCounter)
+          cout << "Warning: Computation of wall coefficients (y+) did not converge in "
+               << notConvergedCounter << " points." << endl;
+
+        if (smallYPlusCounter)
+          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
+               << " points, for which the wall model is not active." << endl;
+      }
+    }
+    END_SU2_OMP_MASTER
+  }
 
 }

@@ -736,11 +736,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
    At this moment, the wall function is only available for adiabatic flows.
    ---*/
 
-  unsigned long int notConvergedCounter=0;
-  su2double grad_diff;
+  unsigned long notConvergedCounter = 0, skipCounter = 0;
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  su2double Eddy_Visc,Y_Plus,U_Tau;
 
   constexpr unsigned short max_iter = 200; /*--- maximum number of iterations for the Newton Solver---*/
   const su2double tol = 1e-12;             /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
@@ -831,13 +829,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute mach number ---*/
-
-      // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
-
       /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
 
-      //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
+      //Mach2_Normal = pow(VelTangMod,2) / (Gamma * Gas_Constant * T_Normal);
+      //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*Mach2_Normal);
       su2double T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
 
       /*--- Extrapolate the pressure from the interior & compute the
@@ -866,20 +861,19 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
        iteratively solve for a new wall shear stress. Use the current wall
        shear stress as a starting guess for the wall function. ---*/
 
-      unsigned long counter = 0; su2double diff = 1.0;
-      U_Tau = sqrt(WallShearStress/Density_Wall);
-      Y_Plus = 0.0; // to avoid warning
+      unsigned long counter = 0;
+      su2double diff = 1.0, Eddy_Visc = 1.0;
+      su2double U_Tau = sqrt(WallShearStress/Density_Wall);
+      su2double Y_Plus = 5.0;
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
       /*--- Automatic switch off when y+ < 5 according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < 5.0) {
-        cout << "skipping stress due to wall model" << endl;
-        continue;
+      if (Y_Plus_Start < Y_Plus) {
+        skipCounter++;
       }
-
-      while (fabs(diff) > tol) {
+      else while (fabs(diff) > tol) {
 
         /*--- Friction velocity and u+ ---*/
 
@@ -893,7 +887,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
         su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
         su2double Phi  = asin(-1.0*Beta/Q);
 
-            /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
+        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
         su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
@@ -901,7 +895,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
          outer velocity form of White & Christoph above. ---*/
 
         su2double kUp = kappa*U_Plus;
-            su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
         su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
 
@@ -916,7 +910,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /* --- Gradient of function defined above --- */
 
-        grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+        su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
                   kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
                   exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
                   pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
@@ -927,15 +921,14 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         counter++;
 
-
         if (counter > max_iter) {
           notConvergedCounter++;
           // use some safe values for convergence
           Y_Plus = 30.0;
           Eddy_Visc = 1.0;
           U_Tau = 1.0;
+          break;
         }
-
       }
 
       /*--- Calculate an updated value for the wall shear stress
@@ -961,8 +954,33 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   }
   END_SU2_OMP_FOR
 
-  if (notConvergedCounter>0) {
-    cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    static unsigned long globalCounter1, globalCounter2;
+
+    ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
+
+    SU2_OMP_ATOMIC
+    globalCounter1 += notConvergedCounter;
+
+    SU2_OMP_ATOMIC
+    globalCounter2 += skipCounter;
+
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&globalCounter2, &skipCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+      if (rank == MASTER_NODE) {
+        if (notConvergedCounter)
+          cout << "Warning: Computation of wall coefficients (y+) did not converge in "
+               << notConvergedCounter << " points." << endl;
+
+        if (skipCounter)
+          cout << "Warning: y+ < 5.0 in " << skipCounter
+               << " points, for which the wall model is not active." << endl;
+      }
+    }
+    END_SU2_OMP_MASTER
   }
 
 }
