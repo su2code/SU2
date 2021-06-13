@@ -4316,39 +4316,21 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     AoA *= PI_NUMBER/180.0;
 
-    /*--- Update the freestream velocity vector at the farfield ---*/
+    /*--- Update the freestream velocity vector at the farfield
+     * Compute the new freestream velocity with the updated AoA,
+     * "Velocity_Inf" is shared with config... ---*/
 
-    su2double Vel_Infty[MAXNDIM]={0.0};
-
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      Vel_Infty[iDim] = GetVelocity_Inf(iDim);
-
-    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(int(MAXNDIM), Vel_Infty);
-
-    /*--- Compute the new freestream velocity with the updated AoA ---*/
+    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
 
     if (nDim == 2) {
-      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
+      Velocity_Inf[0] = cos(AoA)*Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoA)*Vel_Infty_Mag;
     }
     else {
-      Vel_Infty[0] = cos(AoA)*cos(AoS)*Vel_Infty_Mag;
-      Vel_Infty[1] = sin(AoS)*Vel_Infty_Mag;
-      Vel_Infty[2] = sin(AoA)*cos(AoS)*Vel_Infty_Mag;
+      Velocity_Inf[0] = cos(AoA)*cos(AoS)*Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoS)*Vel_Infty_Mag;
+      Velocity_Inf[2] = sin(AoA)*cos(AoS)*Vel_Infty_Mag;
     }
-
-    /*--- Store the new freestream velocity vector for the next iteration ---*/
-
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      Velocity_Inf[iDim] = Vel_Infty[iDim];
-
-    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
-
-    if (iMesh == MESH_0) {
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-    }
-
   }
 }
 
@@ -4440,7 +4422,6 @@ bool CEulerSolver::FixedCL_Convergence(CConfig* config, bool convergence) {
 
     if (convergence && (curr_iter - Iter_Update_AoA) > config->GetStartConv_Iter())
       End_AoA_FD = true;
-
 
     /* --- If Finite Difference mode is ending, reset AoA and calculate Coefficient Gradients --- */
 
