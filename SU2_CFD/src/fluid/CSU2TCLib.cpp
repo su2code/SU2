@@ -1239,7 +1239,7 @@ void CSU2TCLib::ViscosityD(){
 
 void CSU2TCLib::ThermalConductivitiesD(){
 
-  su2double Pr_lam  = 0.69;
+  su2double Pr_lam  = 0.72;
   su2double Ru      = 1000.0*UNIVERSAL_GAS_CONSTANT;
 
   su2double mass = 0.0;

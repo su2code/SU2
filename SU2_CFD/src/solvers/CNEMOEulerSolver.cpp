@@ -1681,23 +1681,23 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         node_infty->GetDiffusionCoeff(0) );
+                                         nodes->GetDiffusionCoeff(iPoint));
 
         /*--- Laminar viscosity ---*/
         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           node_infty->GetLaminarViscosity(0) );
+                                           nodes->GetLaminarViscosity(iPoint));
 
         /*--- Eddy viscosity ---*/
         visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        node_infty->GetEddyViscosity(0) );
+                                        nodes->GetEddyViscosity(iPoint));
 
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                              node_infty->GetThermalConductivity(0));
+                                              nodes->GetThermalConductivity(iPoint));
 
         /*--- Vib-el. thermal conductivity ---*/
         visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                                 node_infty->GetThermalConductivity_ve(0) );
+                                                 nodes->GetThermalConductivity_ve(iPoint) );
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
