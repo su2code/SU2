@@ -1,7 +1,7 @@
 /*!
  * \file C1DInterpolation.cpp
- * \brief Inlet_interpolation_functions
- * \author Aman Baig
+ * \brief Classes for 1D interpolation.
+ * \author Aman Baig, P. Gomes
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

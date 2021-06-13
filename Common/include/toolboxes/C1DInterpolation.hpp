@@ -1,6 +1,6 @@
 /*!
  * \file C1DInterpolation.hpp
- * \brief Inlet_interpolation_functions
+ * \brief Classes for 1D interpolation.
  * \author Aman Baig, P. Gomes
  * \version 7.1.1 "Blackbird"
  *
@@ -89,7 +89,7 @@ public:
 
   /*!
    * \brief Constructor of the CAkimaInterpolation class.
-   * \param[in] X - the x values.
+   * \param[in] X - the x values (sorted low to high).
    * \param[in] Data - the f(x) values.
    */
   CAkimaInterpolation(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
@@ -120,7 +120,7 @@ public:
 
   /*!
    * \brief Constructor of the CCubicSpline class (defaults to natural spline).
-   * \param[in] X - the x values.
+   * \param[in] X - the x values (sorted low to high).
    * \param[in] Data - the f(x) values.
    * \param[in] startCondition - 1st or 2nd derivative imposed at the start.
    * \param[in] startValue - value of the derivative imposed at the start.
@@ -149,7 +149,7 @@ public:
 
   /*!
    * \brief Constructor of the CLinearInterpolation class.
-   * \param[in] X - the x values.
+   * \param[in] X - the x values (sorted low to high).
    * \param[in] Data - the f(x) values.
    */
   CLinearInterpolation(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
