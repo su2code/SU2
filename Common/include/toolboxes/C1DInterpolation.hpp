@@ -62,7 +62,7 @@ public:
   virtual ~C1DInterpolation() = default;
 
   /*!
-   * \brief Virtual method for setting the cofficients of the respective spline spline.
+   * \brief Virtual method for setting the coefficients of the respective spline.
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
    */
@@ -93,7 +93,7 @@ public:
    * \param[in] Data - the f(x) values.
    */
   CAkimaInterpolation(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
-    SetSpline(X,Data);
+    CAkimaInterpolation::SetSpline(X,Data);
   }
 
   /*!
