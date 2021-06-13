@@ -228,7 +228,7 @@ vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsig
   return coord_passive;
 }
 
-vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
 
   su2double *Normal;
   su2double Area;
@@ -236,6 +236,15 @@ vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsig
   vector<passivedouble> ret_Normal_passive(3, 0.0);
 
   Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
+
+  if (!unitNormal) {
+
+    ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
+    ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
+    if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
+
+    return ret_Normal_passive;
+  }
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 

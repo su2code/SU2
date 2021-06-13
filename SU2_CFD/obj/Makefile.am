@@ -136,6 +136,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/output_physics.cpp \
   ../src/output/CMeshOutput.cpp \
   ../src/output/CElasticityOutput.cpp \
+  ../src/output/CFVMOutput.cpp \
   ../src/output/CFlowOutput.cpp \
   ../src/output/CFlowCompOutput.cpp \
   ../src/output/CFlowCompFEMOutput.cpp \

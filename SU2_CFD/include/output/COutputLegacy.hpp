@@ -1,7 +1,7 @@
 /*!
- * \file output.hpp
+ * \file COutputLegacy.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>output_structure_legacy.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 7.1.1 "Blackbird"
  *
