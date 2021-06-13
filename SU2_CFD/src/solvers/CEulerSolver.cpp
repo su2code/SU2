@@ -4313,9 +4313,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA = AoA + AoA_inc;
       config->SetAoA(AoA);
     }
-    else {
-      AoA = config->GetAoA();
-    }
 
     AoA *= PI_NUMBER/180.0;
 
@@ -4465,11 +4462,12 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
 
   /*--- Calculate gradients of coefficients w.r.t. CL ---*/
 
-  const su2double dCL_dAlpha_ = (TotalCoeff.CL-Total_CL_Prev)/(AoA - AoA_Prev);
-  const su2double dCD_dCL_    = (TotalCoeff.CD-Total_CD_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  const su2double dCMx_dCL_   = (TotalCoeff.CMx-Total_CMx_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  const su2double dCMy_dCL_   = (TotalCoeff.CMy-Total_CMy_Prev)/(TotalCoeff.CL-Total_CL_Prev);
-  const su2double dCMz_dCL_   = (TotalCoeff.CMz-Total_CMz_Prev)/(TotalCoeff.CL-Total_CL_Prev);
+  const su2double dCL = TotalCoeff.CL - Total_CL_Prev;
+  const su2double dCL_dAlpha_ = dCL / (AoA - AoA_Prev);
+  const su2double dCD_dCL_ = (TotalCoeff.CD-Total_CD_Prev) / dCL;
+  const su2double dCMx_dCL_ = (TotalCoeff.CMx-Total_CMx_Prev) / dCL;
+  const su2double dCMy_dCL_ = (TotalCoeff.CMy-Total_CMy_Prev) / dCL;
+  const su2double dCMz_dCL_ = (TotalCoeff.CMz-Total_CMz_Prev) / dCL;
 
   /*--- Set the value of the  dOF/dCL in the config file ---*/
 
