@@ -42,7 +42,17 @@ protected:
    * \return The start index of the interval, or the size if the coordinate is out of bounds.
    */
   inline size_t lower_bound(su2double xi) const {
-    return std::lower_bound(x.begin(), x.end(), xi) - x.begin();
+
+    if (xi <= x.front() || xi >= x.back()) return x.size();
+
+    size_t lb = 0, ub = x.size()-1;
+
+    while (ub-lb > 1) {
+      size_t mid = (lb+ub)/2;
+      auto& change = (xi < x[mid])? ub : lb;
+      change = mid;
+    }
+    return lb;
   }
 
 public:

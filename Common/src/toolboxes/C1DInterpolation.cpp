@@ -38,7 +38,7 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp) const {
 
   const auto i = lower_bound(Point_Interp);
 
-  if (i >= x.size()-1) return (Point_Interp < x[0])? y.front() : y.back();
+  if (i >= x.size()-1) return (Point_Interp <= x[0])? y.front() : y.back();
 
   su2double h = Point_Interp-x[i];
 
@@ -49,7 +49,7 @@ su2double CLinearInterpolation::EvaluateSpline(su2double Point_Interp) const {
 
   const auto i = lower_bound(Point_Interp);
 
-  if (i >= x.size()-1) return (Point_Interp < x[0])? y.front() : y.back();
+  if (i >= x.size()-1) return (Point_Interp <= x[0])? y.front() : y.back();
 
   return y[i] + (Point_Interp-x[i]) * (y[i+1]-y[i]) / (x[i+1]-x[i]);
 }
@@ -66,7 +66,6 @@ void CCubicSpline::SetSpline(const vector<su2double> &X, const vector<su2double>
   auto& main = c; c.resize(N);
   auto& upper = d; d.resize(N);
   vector<su2double> rhs(N);
-  vector<su2double> d2y(N);
 
   /*--- Main part of the tridiagonal system. ---*/
 
@@ -98,14 +97,15 @@ void CCubicSpline::SetSpline(const vector<su2double> &X, const vector<su2double>
     rhs[N-1] = endVal;
   }
   else { // FIRST
-    main[0] = 2*upper[N-2];
-    lower[0] = upper[N-2];
-    rhs[0] = 6*(endVal - (y[N-1]-y[N-2])/upper[N-2]);
+    main[N-1] = 2*upper[N-2];
+    lower[N-1] = upper[N-2];
+    rhs[N-1] = 6*(endVal - (y[N-1]-y[N-2])/upper[N-2]);
   }
 
   /*--- Solve system for 2nd derivative at the knots. ---*/
 
-  CBlasStructure::tdma(lower, main, upper, rhs, d2y);
+  CBlasStructure::tdma(lower, main, upper, rhs);
+  const auto& d2y = rhs;
 
   /*--- Compute the polynomial coefficients. ---*/
 

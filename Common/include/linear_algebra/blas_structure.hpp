@@ -486,27 +486,25 @@ public:
    * \brief Tridiagonal matrix algorithm.
    * \param[in] lower diagonal
    * \param[in] main diagonal
-   * \param[in,out] upper diagonal
-   * \param[in,out] rhs - right hand side
-   * \param[out] x - solution
+   * \param[in,out] upper diagonal (modified on exit)
+   * \param[in,out] rhs - right hand side on entry, solution on exit
    * \note Same size for all vectors.
    */
   template<class Vec, class Scalar = su2double>
-  static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs, Vec& x) {
+  static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs) {
     const int N = main.size();
 
     upper[0] /= main[0];
     rhs[0] /= main[0];
 
-    for (int i=1; i<N-1; i++) {
+    for (int i=1; i<N; i++) {
       Scalar denom = 1.0 / (main[i]-lower[i]*upper[i-1]);
       upper[i] *= denom;
       rhs[i] = (rhs[i]-lower[i]*rhs[i-1])*denom;
     }
 
-    x[N-1] = rhs[N-1];
     for (int i=N-2; i>=0; i--)
-      x[i] = rhs[i] - upper[i]*x[i+1];
+      rhs[i] -= upper[i]*rhs[i+1];
   }
 
 private:
