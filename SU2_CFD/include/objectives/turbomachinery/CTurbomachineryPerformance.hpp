@@ -213,25 +213,23 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
 
 };
 
-class CTurbomachineryStagePerformance :  CTurbomachineryBladePerformance {
+class CTurbomachineryStagePerformance {
    protected: 
       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
    public:
       CTurbomachineryStagePerformance();
       ~CTurbomachineryStagePerformance();
-      virtual void ComputePerformance(CFluidModel& fluidModel, su2double tangVel);
-      su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
-      su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
+      virtual void ComputePerformanceStage() {};
+      // su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
+      // su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
 };
 
-// class CTurbineStagePerformance : CTurbomachineryStagePerformance {
+class CTurbineStagePerformance : public CTurbomachineryStagePerformance {
 
-//    public:
-//       CTurbineStagePerformance();
-//       ~CTurbineStagePerformance();
-//       void ComputePerformance(CFluidModel* fluidModel, su2double tangVel) override;
+   public:
+    void ComputePerformanceStage() override;
 
-// };
+};
 
 // class CCompressorStagePerformance : CTurbomachineryStagePerformance {
 
@@ -252,7 +250,7 @@ class CTurbomachineryPerformance {
 
   static void ComputePerSpan(shared_ptr <CTurbomachineryBladePerformance> const spanPerformances,
                              const CTurbomachineryCombinedPrimitiveStates &spanPrimitives);
-  vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
+  // vector<shared_ptr<CTurbomachineryStagePerformance>> StagePerformances;
   // shared_ptr<CTurbomachineryStagePerformance> MachinePerformances;
   public:
   CTurbomachineryPerformance(const CConfig& config, const CGeometry& geometry, CFluidModel& fluidModel);

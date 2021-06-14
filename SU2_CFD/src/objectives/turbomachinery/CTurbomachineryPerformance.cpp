@@ -241,8 +241,22 @@ void CTurbomachineryPerformance::ComputePerSpan(shared_ptr <CTurbomachineryBlade
   spanPerformances->ComputePerformance(spanPrimitives);
 }
 
-// CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(){
+CTurbomachineryStagePerformance::CTurbomachineryStagePerformance() {
+  su2double TotalStaticEfficiency=0.0, 
+            TotalTotalEfficiency=0.0, 
+            KineticEnergyLoss=0.0, 
+            TotalPressureLoss=0.0, 
+            EntropyGen=0.0, 
+            PressureRatio=0.0, 
+            EulerianWork=0.0;
+}
+
+CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}
+
+void CTurbineStagePerformance::ComputePerformanceStage() {}
+
+// CTurbineStagePerformance::CTurbineStagePerformance(){
 
 // }
 
-// CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}
+// CTurbineStagePerformance::~CTurbineStagePerformance() {}

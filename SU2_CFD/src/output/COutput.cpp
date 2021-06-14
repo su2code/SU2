@@ -42,7 +42,7 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-
+#include "../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
@@ -2202,43 +2202,96 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
 
-    if (val_iZone == config->GetnZone()-1 && OuterIter%10==0 && OuterIter!=1){
+    if (true){
       TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
       TurboInOut.AddColumn("Properties", 25);
       TurboInOut.AddColumn("Inlet", 25);
       TurboInOut.AddColumn("Outlet", 25);
       TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       TurboInOut.PrintHeader();
-    
+  
       for (unsigned short iZone = 0; iZone < val_iZone; iZone++)
       {
-        TurboInOut<<" BLADE ROW INDEX "<<iZone+1 <<"";
+        TurboInOut<<" BLADE ROW INDEX "<<val_iZone <<"";
         TurboInOut.PrintFooter();
         // TODO: Blade Wise Printing
-        TurboInOut << "Entropy "     << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetEntropy();
-        TurboInOut << "TotEnthalpy " << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalEnthalpy();
-        TurboInOut << "TotPressure " << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalPressure();
-        TurboInOut << "Mass Flow "   << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow();
-        TurboInOut << "Mach "    << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue();
-        TurboInOut << "Flow Angle "  << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+        TurboInOut << "Entropy "     << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetEntropy();
+        TurboInOut << "TotEnthalpy " << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetTotalEnthalpy();
+        TurboInOut << "TotPressure " << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetTotalPressure();
+        TurboInOut << "Mass Flow "   << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetMassFlow();
+        TurboInOut << "Mach "    << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetMachValue();
+        TurboInOut << "Flow Angle "  << BladePerformance.at(ZONE_0).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(ZONE_0).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
         TurboInOut.PrintFooter();
       }
       cout<<TurboInOutTable.str();
     
-    //   /*-- Table for Turbomachinery Inlet and Outlet Values --*/
-    //   PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
-    //   TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
-    //   TurboPerformance.AddColumn("Property", 38);
-    //   TurboPerformance.AddColumn("Values", 38);
-    //   TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    //   TurboPerformance.PrintHeader();
-    //   TurboPerformance << "STAGE INDEX "<< 1;
-    //   TurboPerformance.PrintFooter();
-    //   TurboPerformance << "EntropyGen " << BladePerformance.at(val_iZone).at(nSpan)->GetEntropyGen();
-    //   TurboPerformance << "KineEnergyLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetKineticEnergyLoss();
-    //   TurboPerformance << "TotPressLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetTotalPressureLoss();
-    //   TurboPerformance.PrintFooter();
-    //   cout<<TurboPerfTable.str();
+    if (!config->GetMultizone_Problem()){
+      /*-- Table for Turbomachinery Inlet and Outlet Values --*/
+      PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
+      TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
+      TurboPerformance.AddColumn("Property", 38);
+      TurboPerformance.AddColumn("Values", 38);
+      TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      TurboPerformance.PrintHeader();
+      TurboPerformance << "STAGE INDEX "<< 1;
+      TurboPerformance.PrintFooter();
+      TurboPerformance << "EntropyGen " << BladePerformance.at(val_iZone).at(nSpan)->GetEntropyGen();
+      TurboPerformance << "KineEnergyLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetKineticEnergyLoss();
+      TurboPerformance << "TotPressLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetTotalPressureLoss();
+      TurboPerformance.PrintFooter();
+      cout<<TurboPerfTable.str();
+    }
     }
   }
+}
+
+void COutput::SetTurboMultiZonePerformance_Output(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short OuterIter){
+  auto nZone = config_container[ZONE_0]->GetnZone();
+  auto nStage = nZone/2;
+  unsigned short iStage, iZone;
+  stringstream TurboMZPerf;
+  std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+  // auto StagePerf = CTurbomachineryStagePerformance();
+    PrintingToolbox::CTablePrinter TurboInOut(&TurboMZPerf);
+
+      TurboMZPerf<<"-- Turbomachinery Stage Performance --"<<endl;
+      TurboInOut.AddColumn("Index", 10);
+      TurboInOut.AddColumn("EGLC", 10);
+      TurboInOut.AddColumn("KELC", 10);
+      TurboInOut.AddColumn("TPLC", 10);
+      TurboInOut.AddColumn("Effi(ts)", 10);
+      TurboInOut.AddColumn("Effi(tt)", 10);
+      TurboInOut.AddColumn("PR", 10);
+      TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      TurboInOut.PrintHeader();
+  /*-- Stage Performance --*/
+  for (iStage=0; iStage<nStage; iStage++) {
+    auto StageInSol = solver_container[iStage*2][INST_0][MESH_0][FLOW_SOL]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState();
+    // auto StageInVel = solver_container[iStage*2][INST_0][MESH_0][FLOW_SOL]->GetTurboVelocityIn(0,0);
+    // auto StageInGeo = geometry_container[iStage*2][INST_0][MESH_0]->GetTangGridVelIn(0,0);
+
+    auto StageOutSol = solver_container[iStage*2 + 1][INST_0][MESH_0][FLOW_SOL]->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState();
+    // auto StageOutVel = solver_container[iStage*2 + 1][INST_0][MESH_0][FLOW_SOL]->GetTurboVelocityOut(0,0);
+    // auto StageOutGeo = geometry_container[iStage*2 + 1][INST_0][MESH_0]->GetTangGridVelOut(0,0);
+    // auto StagePerf = CTurbomachineryPrimitiveState();
+    
+       if (rank == MASTER_NODE){
+          // StagePerf.ComputePerformanceStage();
+  //     /* Blade Primitive initialized per blade */
+      unsigned short nSpan = 1, iSpan=0; //config->GetnSpan_iZones(iBlade);
+      // for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+        // StagePerf.ComputePerformanceStage(StageInSol, StageOutSol);
+        // auto spanOutletPrimitive = CTurbomachineryPrimitiveState(StageOutSol->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetDensity(), StageOutSol->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetPressure(), StageOutSol->GetTurboVelocityIn(0,0), nDim, StageOutGeo->GetTangGridVelIn(0,0));
+        // auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
+        // bladePrimitives.push_back(spanCombinedPrimitive);
+  //  }
+    //      bladesPrimitives.push_back(bladePrimitives);
+    // //  TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
+    TurboInOut<<"STAGE :1"<<0.0<<0.0<<0.0<<0.0<<0.0<<0.0;
+  }
+  }
+  /*-- Machine Performance --*/
+  TurboInOut<<"MACHINE"<<0.0<<0.0<<0.0<<0.0<<0.0<<0.0;
+  TurboInOut.PrintFooter();
+  cout<<TurboMZPerf.str();
 }
