@@ -235,7 +235,8 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[ZONE_0]->GetBoolTurbomachinery() && config[val_iZone]->GetSinglezone_Driver()){
 
     /*--- Turbomachinery Performance Computation ---*/
-    ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetInnerIter());
+    if (val_iZone == config[ZONE_0]->GetnZone()-1)
+      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetInnerIter());
 
     /*--- Turbomachinery Performance Screen summary output---*/
     output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
@@ -375,16 +376,16 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
   std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
 
-  if (rank == MASTER_NODE){
-    if(true) {
+  if (rank == MASTER_NODE) {
+      for (iBlade = 0; iBlade < nBladesRow; iBlade++){
       /* Blade Primitive initialized per blade */
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = config_container[iBlade]->GetnSpan_iZones(iBlade);
-      for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
-        TurboPrimitiveIn= solver[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
-        TurboPrimitiveOut= solver[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
-        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[ZONE_0][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
-        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[ZONE_0][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
+      auto nSpan = 0; //config_container[iBlade]->GetnSpan_iZones(iBlade);
+      for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+        TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
+        TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
+        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
+        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
         auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
         bladePrimitives.push_back(spanCombinedPrimitive);
       }

@@ -2197,7 +2197,7 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
   // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
     auto BladePerformance = TurboPerf->GetBladesPerformances();
-    auto nSpan = config->GetnSpan_iZones(config->GetnZone()-1);
+    auto nSpan = 0; //config->GetnSpan_iZones(config->GetnZone()-1);
 
     /*-- Table for Turbomachinery Performance Values --*/
     PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
@@ -2210,7 +2210,7 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
       TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       TurboInOut.PrintHeader();
     
-      for (unsigned short iZone = 0; iZone <= val_iZone; iZone++)
+      for (unsigned short iZone = 0; iZone < val_iZone; iZone++)
       {
         TurboInOut<<" BLADE ROW INDEX "<<iZone+1 <<"";
         TurboInOut.PrintFooter();
