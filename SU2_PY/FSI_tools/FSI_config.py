@@ -122,3 +122,6 @@ class FSIConfig:
         if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
             self._ConfigContent["AITKEN_RELAX"] = "STATIC"
             self._ConfigContent["AITKEN_PARAM"] = 1.0
+
+        if self._ConfigContent["RESTART_SOL"] == "YES":
+            self._ConfigContent["TIME_TRESHOLD"] = -1

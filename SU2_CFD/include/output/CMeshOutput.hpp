@@ -1,6 +1,6 @@
 /*!
  * \file CMeshOutput.hpp
- * \brief  Headers of the mesh output.
+ * \brief Headers of the mesh output.
  * \author R. Sanchez, T. Albring.
  * \version 7.1.1 "Blackbird"
  *

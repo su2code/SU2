@@ -38,8 +38,7 @@
  */
 class CDiscAdjFEASolver final : public CSolver {
 private:
-  static constexpr size_t MAXNVAR = 3;  /*!< \brief Max number of variables, for static arrays. */
-
+  static constexpr size_t MAXNVAR = 9;  /*!< \brief Max number of variables, for static arrays. */
   unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
 
@@ -49,8 +48,6 @@ private:
   struct SensData {
     unsigned short size = 0;
     su2double* val = nullptr;         /*!< \brief Value of the variable. */
-    int* AD_Idx = nullptr;            /*!< \brief Derivative index in the AD tape. */
-    bool localIdx = false;
     su2double* LocalSens = nullptr;   /*!< \brief Local sensitivity (domain). */
     su2double* GlobalSens = nullptr;  /*!< \brief Global sensitivity (mpi). */
     su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (time domain). */
@@ -62,7 +59,6 @@ private:
       clear();
       size = n;
       val = new su2double[n]();
-      AD_Idx = new int[n]();
       LocalSens = new su2double[n]();
       GlobalSens = new su2double[n]();
       TotalSens = new su2double[n]();
@@ -70,28 +66,18 @@ private:
 
     void clear() {
       size = 0;
-      localIdx = false;
       delete [] val;
-      delete [] AD_Idx;
       delete [] LocalSens;
       delete [] GlobalSens;
       delete [] TotalSens;
     }
 
-    void Register(bool push_index) {
-      for (auto i = 0u; i < size; ++i) AD::RegisterInput(val[i], push_index);
-    }
-
-    void SetIndex() {
-      for (auto i = 0u; i < size; ++i) AD::SetIndex(AD_Idx[i], val[i]);
-      localIdx = true;
+    void Register() {
+      for (auto i = 0u; i < size; ++i) AD::RegisterInput(val[i]);
     }
 
     void GetDerivative() {
-      if (localIdx)
-        for (auto i = 0u; i < size; ++i) LocalSens[i] = AD::GetDerivative(AD_Idx[i]);
-      else
-        for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
+      for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
 
       SU2_MPI::Allreduce(LocalSens, GlobalSens, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
@@ -181,7 +167,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.

@@ -1,5 +1,5 @@
-﻿/*!
- * \file CFlowIncCompOutput.hpp
+/*!
+ * \file CFlowIncOutput.hpp
  * \brief  Headers of the incompressible flow output.
  * \author T. Albring, R. Sanchez
  * \version 7.1.1 "Blackbird"
