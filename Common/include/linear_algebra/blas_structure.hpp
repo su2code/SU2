@@ -498,7 +498,7 @@ public:
     rhs[0] /= main[0];
 
     for (int i=1; i<N; i++) {
-      Scalar denom = 1.0 / (main[i]-lower[i]*upper[i-1]);
+      const Scalar denom = 1.0 / (main[i]-lower[i]*upper[i-1]);
       upper[i] *= denom;
       rhs[i] = (rhs[i]-lower[i]*rhs[i-1])*denom;
     }
