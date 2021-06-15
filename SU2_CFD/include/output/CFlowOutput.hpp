@@ -31,19 +31,15 @@
 #include "../variables/CVariable.hpp"
 
 class CFlowOutput : public CFVMOutput{
-public:
+protected:
+  unsigned long lastInnerIter;
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
   CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFlowOutput(void) override;
-
-protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
@@ -104,7 +100,7 @@ protected:
    * \brief Write information to meta data file
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void WriteMetaData(CConfig *config);
+  void WriteMetaData(const CConfig *config);
 
   /*!
    * \brief Write any additional files defined for the current solver.
@@ -141,5 +137,11 @@ protected:
    * \param node_flow
    */
   void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
+
+  /*!
+   * \brief Write additional output for fixed CL mode.
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void SetFixedCLScreenOutput(const CConfig *config);
 
 };
