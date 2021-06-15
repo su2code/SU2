@@ -483,12 +483,12 @@ public:
   }
 
   /*!
-   * \brief Tridiagonal matrix algorithm.
-   * \param[in] lower diagonal
-   * \param[in] main diagonal
-   * \param[in,out] upper diagonal (modified on exit)
+   * \brief Algorithm to solve a linear system with a tridiagonal matrix.
+   * \param[in] lower - lower diagonal
+   * \param[in] main - main diagonal
+   * \param[in,out] upper - upper diagonal (modified on exit)
    * \param[in,out] rhs - right hand side on entry, solution on exit
-   * \note Same size for all vectors.
+   * \note Same size for all vectors. Use column index for lower and upper vector.
    */
   template<class Vec, class Scalar = su2double>
   static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs) {

@@ -40,7 +40,7 @@ su2double CAkimaInterpolation::EvaluateSpline(su2double Point_Interp) const {
 
   if (i >= x.size()-1) return (Point_Interp <= x[0])? y.front() : y.back();
 
-  su2double h = Point_Interp-x[i];
+  const su2double h = Point_Interp-x[i];
 
   return y[i]+h*(b[i]+h*(c[i]+h*d[i]));
 }
