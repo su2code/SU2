@@ -732,8 +732,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
 
 void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
   /*---
-   The wall function implemented herein is based on Nichols and Nelson AIAAJ v32 n6 2004.
-   At this moment, the wall function is only available for adiabatic flows.
+   The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
 
   unsigned long int notConvergedCounter=0;
@@ -767,9 +766,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
     if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION)
       continue;
-
-    /*--- Get the specified wall heat flux from config ---*/
-      // note that we can get the heat flux from the temperature gradient
 
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -881,84 +877,83 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Automatic switch off when y+ < 5.0 according to Nichols & Nelson (2004) ---*/
 
       if (Y_Plus_Start < config->GetwallModelMinYPlus()) {
-        cout << "skipping stress due to wall model (Y+="<< Y_Plus_Start<<")"<< endl;
+        cout << "resolving the wall (Y+="<< Y_Plus_Start<<")"<< endl;
         continue;
       }
       else {
-      while (fabs(diff) > tol) {
+        while (fabs(diff) > tol) {
 
-        /*--- Friction velocity and u+ ---*/
+          /*--- Friction velocity and u+ ---*/
 
-        U_Plus = VelTangMod/U_Tau;
+          U_Plus = VelTangMod/U_Tau;
 
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
+          /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
 
-        su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-        /*--- nijso: heated wall needs validation testcase! ---*/
-        su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); 
-        su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-        su2double Phi  = asin(-1.0*Beta/Q);
+          su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+          su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); 
+          su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+          su2double Phi  = asin(-1.0*Beta/Q);
 
-        /*--- Crocco- Busemann equation for wall temperature (eq. 11 of Nichols and Nelson) ---*/
+          /*--- Crocco-Busemann equation for wall temperature (eq. 11 of Nichols and Nelson) ---*/
 
-        su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-
-        /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal ---*/
-
-        if ((config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-          if (abs(denum)>1.0e-12) 
-            T_Wall = T_Normal / denum; 
+
+          /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal ---*/
+
+          if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
+            su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
+            if (abs(denum)>EPS) 
+              T_Wall = T_Normal / denum; 
+          }
+
+          /*--- update of wall density ---*/
+
+          Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+
+          /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
+
+          su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+
+          /*--- Spalding's universal form for the BL velocity with the
+           *    outer velocity form of White & Christoph above. ---*/
+ 
+          su2double kUp = kappa*U_Plus;
+          Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+
+          su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+
+          Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                               (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                               - Lam_Visc_Normal/Lam_Visc_Wall);
+          Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
+
+          /* --- Define function for Newton method to zero --- */
+
+          diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
+
+          /* --- Gradient of function defined above --- */
+
+          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                    kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                    exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+
+          /* --- Newton Step --- */
+
+          U_Tau = U_Tau - relax*(diff / grad_diff);
+
+          counter++;
+
+ 
+          if (counter > max_iter) {
+            notConvergedCounter++;
+            // use some safe values for convergence
+            Y_Plus = 30.0;
+            Eddy_Visc_Wall = 1.0;
+            U_Tau = 1.0;
+          }
+
         }
-
-        /*--- update of wall density ---*/
-
-        Density_Wall = P_Wall/(Gas_Constant*T_Wall);
-
-        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
-
-        su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
-
-        /*--- Spalding's universal form for the BL velocity with the
-         *    outer velocity form of White & Christoph above. ---*/
-
-        su2double kUp = kappa*U_Plus;
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
-
-        su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
-
-        Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                             (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                             - Lam_Visc_Normal/Lam_Visc_Wall);
-        Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
-
-        /* --- Define function for Newton method to zero --- */
-
-        diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
-
-        /* --- Gradient of function defined above --- */
-
-        grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
-
-        /* --- Newton Step --- */
-
-        U_Tau = U_Tau - relax*(diff / grad_diff);
-
-        counter++;
-
-
-        if (counter > max_iter) {
-          notConvergedCounter++;
-          // use some safe values for convergence
-          Y_Plus = 30.0;
-          Eddy_Visc_Wall = 1.0;
-          U_Tau = 1.0;
-        }
-
-      }
       }
       /*--- Calculate an updated value for the wall shear stress
         using the y+ value, the definition of y+, and the definition of
@@ -970,8 +965,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       // wall model value
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
+      // done in CFVMFlowSolverBase.inl
+      //for (auto iDim = 0u; iDim < nDim; iDim++)
+      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 
