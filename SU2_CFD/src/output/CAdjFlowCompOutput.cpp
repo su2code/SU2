@@ -460,7 +460,7 @@ void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 }
 
 
-bool CAdjFlowCompOutput::SetInit_Residuals(CConfig *config){
+bool CAdjFlowCompOutput::SetInit_Residuals(const CConfig *config){
 
   return ((config->GetTime_Marching() != TIME_MARCHING::STEADY) && (curInnerIter == 0)) ||
          ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && (curInnerIter < 2));

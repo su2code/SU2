@@ -32,9 +32,8 @@
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : CFVMOutput (config, nDim, fem_output){
 
+  lastInnerIter = curInnerIter;
 }
-
-CFlowOutput::~CFlowOutput(void){}
 
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
@@ -862,7 +861,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-void CFlowOutput::WriteMetaData(CConfig *config){
+void CFlowOutput::WriteMetaData(const CConfig *config){
 
   ofstream meta_file;
 
@@ -2710,7 +2709,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
@@ -2799,5 +2797,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+}
+
+void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
+
+  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Target CL" << config->GetTarget_CL();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    if (config->GetFinite_Difference_Mode()){
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
+    else
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+    FixedCLSummary.PrintFooter();
+    SetScreen_Header(config);
+  }
+
+  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
+    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
+    if (nDim == 3){
+      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
+      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
+    }
+    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
+    FixedCLSummary.PrintFooter();
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
   }
 }
