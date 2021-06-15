@@ -4318,7 +4318,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Update the freestream velocity vector at the farfield
      * Compute the new freestream velocity with the updated AoA,
-     * "Velocity_Inf" is shared with config... ---*/
+     * "Velocity_Inf" is shared with config. ---*/
 
     const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
 
