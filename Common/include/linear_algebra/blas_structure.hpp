@@ -488,7 +488,7 @@ public:
    * \param[in] main - main diagonal
    * \param[in,out] upper - upper diagonal (modified on exit)
    * \param[in,out] rhs - right hand side on entry, solution on exit
-   * \note Same size for all vectors. Use column index for lower and upper vector.
+   * \note Same size for all vectors. Use row index for lower and upper vector (e.g. lower[0] does not matter).
    */
   template<class Vec, class Scalar = su2double>
   static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs) {
