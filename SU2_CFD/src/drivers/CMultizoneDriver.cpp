@@ -433,7 +433,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
-  driver_output->SetTurboMultiZonePerformance_Output(solver_container,geometry_container,config_container,driver_config->GetOuterIter());
+  // driver_output->SetTurboMultiZonePerformance_Output(solver_container,geometry_container,config_container,driver_config->GetOuterIter());
 
   driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
                                             driver_config->GetTimeIter(), driver_config->GetOuterIter());
@@ -641,9 +641,6 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           }
         }
       }
-
-      /*--- Compute Turbo performance for the machine ---*/
-      
     return UpdateMesh;
     break;
     }
@@ -658,7 +655,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
       break;
   }
 
-  if(donorSolver >= 0 && targetSolver >= 0) {  
+  if(donorSolver >= 0 && targetSolver >= 0) {
     interface_container[donorZone][targetZone]->BroadcastData(
       *interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][donorSolver],

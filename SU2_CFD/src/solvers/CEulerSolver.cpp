@@ -10191,7 +10191,7 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
     if(true){
       /* Blade Primitive initialized per blade */
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = 1; //config->GetnSpan_iZones(iBlade);
+      auto nSpan = config->GetnSpan_iZones(iBlade);
       for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
         // auto spanInletPrimitive = CTurbomachineryPrimitiveState(DensityIn[iBlade][iSpan], PressureIn[iBlade][iSpan], TurboVelocityIn[iBlade][iSpan], nDim, geometry->GetTangGridVelIn(iBlade, iSpan));
         // auto spanOutletPrimitive = CTurbomachineryPrimitiveState(DensityOut[iBlade][iSpan], PressureOut[iBlade][iSpan], TurboVelocityOut[iBlade][iSpan], nDim, geometry->GetTangGridVelOut(iBlade, iSpan));
@@ -10200,6 +10200,6 @@ void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry)
       }
       // bladesPrimitives.push_back(bladePrimitives);
     }
-    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
+    // TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
   }
 }

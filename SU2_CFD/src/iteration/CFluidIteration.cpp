@@ -239,6 +239,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetInnerIter());
 
     /*--- Turbomachinery Performance Screen summary output---*/
+    if (val_iZone == config[ZONE_0]->GetnZone()-1)
     output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter(), val_iZone);
@@ -380,7 +381,7 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
       for (iBlade = 0; iBlade < nBladesRow; iBlade++){
       /* Blade Primitive initialized per blade */
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = 0; //config_container[iBlade]->GetnSpan_iZones(iBlade);
+      auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
       for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
         TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
         TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
