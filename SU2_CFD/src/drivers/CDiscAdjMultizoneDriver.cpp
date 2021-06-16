@@ -175,6 +175,10 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   /*--- General setup. ---*/
 
+  InputIndices.resize(nZone);
+  OutputIndices.resize(nZone);
+  nNewtonBasisSamples.resize(nZone);
+
   for (iZone = 0; iZone < nZone; iZone++) {
     wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
