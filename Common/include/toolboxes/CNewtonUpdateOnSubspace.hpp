@@ -75,6 +75,26 @@ protected:
   Index iBasis = 0;
   Index BasisSize_n = 0;
 
+  void GlobalReduce(Scalar* valuesIn, Scalar* valuesOut, const int size) {
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(valuesIn, valuesOut, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+#else
+    for (int i = 0; i < size; ++i)
+      valuesOut[i] = valuesIn[i];
+#endif
+  }
+
+  Scalar DotEigen (const Eigen::VectorXd& left, const Eigen::VectorXd& right) {
+
+    Scalar sum = left.dot(right);
+    Scalar sumTotal = 0.0;
+
+    GlobalReduce(&sum, &sumTotal, 1);
+
+    return sumTotal;
+  }
+
   void shiftHistoryLeft(std::vector<su2matrix<Scalar>> &history) {
     for (Index i = 1; i < history.size(); ++i) {
       /*--- Swap instead of moving to re-use the memory of the first sample.
@@ -91,7 +111,10 @@ protected:
     Eigen::Map<Eigen::VectorXd> Eigen_p(p.data(),p.size());
 
     /* --- Compute projection onto subspace of unstable/slow modes ---*/
-    p_R = EigenR.transpose()*Eigen_work;                // p_R: \xi in original paper
+
+    for (Index i = 0; i < EigenR.cols(); ++i)
+      p_R(i) = DotEigen(EigenR.col(i), Eigen_work);     // p_R: \xi in original paper
+
     Eigen_p = EigenR*p_R;                               // p addresses: (uncorrected) projected solution in standard basis
   }
 
@@ -249,8 +272,7 @@ public:
       for (Index it = 0; it < R[j].size(); ++it)
         DR.col(j)(it) = AD::GetDerivative(InputIndices.data()[it]);     // extract DR = (dG/du)^T*R[j]
       for (Index i = 0; i < iBasis; ++i)
-        ProjectedJacobian(i,j) = EigenR.col(i).transpose()*DR.col(j);   // R^T*DR
-
+        ProjectedJacobian(i,j) = DotEigen(EigenR.col(i),DR.col(j));     // R^T*DR
       cout << j+1 << ", ";
     }
     cout << "...";
