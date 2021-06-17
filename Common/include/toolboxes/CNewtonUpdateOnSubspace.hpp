@@ -105,8 +105,6 @@ protected:
 
     double oneOverNorm = 1.0/norm;
     matrix.col(i) = oneOverNorm*matrix.col(i);
-
-//    return norm;
   }
 
   void shiftHistoryLeft(std::vector<su2matrix<Scalar>> &history) {
@@ -115,44 +113,6 @@ protected:
        *    This is why X and R are not stored as contiguous blocks of mem. ---*/
       std::swap(history[i-1], history[i]);
     }
-  }
-
-  bool HouseholderQR(const Eigen::MatrixXd& Samples, std::vector<su2matrix<Scalar>>& Basis, su2double KrylovCriterionValue) {
-
-    /* --- Compute QR decomposition and QR criterion ---*/
-    Eigen::HouseholderQR<Eigen::MatrixXd> QR(EigenX.rows(),EigenX.cols());
-    QR.compute(EigenX);
-    auto Rdiag = QR.matrixQR().diagonal();
-
-    std::vector<su2double> Krylov_Criterion_Quotients;
-    Krylov_Criterion_Quotients.resize(X.size()-1);
-
-    for (Index i = 0; i < X.size()-1; i++)
-      if (Rdiag(i+1) != 0.0)
-        Krylov_Criterion_Quotients[i] = Rdiag(i)/Rdiag(i+1);
-
-    if ((abs(Krylov_Criterion_Quotients[0]) > KrylovCriterionValue) &&
-        !(abs(Krylov_Criterion_Quotients[0])!=abs(Krylov_Criterion_Quotients[0]))
-        ) {
-
-      cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
-      iBasis++;
-
-      /*--- Get reference to new basis vector, extract first column from Q ---*/
-      Eigen::Map<Eigen::VectorXd> Eigen_NewR(R[iBasis-1].data(),R[0].size());
-      Eigen_NewR = QR.householderQ()*Eigen_NewR.setIdentity();
-
-      for (Index i = 0; i < iBasis-1; ++i) {
-        Eigen::Map<Eigen::VectorXd> PrecedingR(R[i].data(),R[0].size());
-        Eigen_NewR = Eigen_NewR - Eigen_NewR.dot(PrecedingR)*PrecedingR;      // CHECK: this might be obsolete
-      }
-      Eigen_NewR.normalize();
-
-      cout << "done." << endl;
-
-      return true;
-    }
-    else return false;
   }
 
   bool GramSchmidtQR(const Eigen::MatrixXd& Samples, std::vector<su2matrix<Scalar>>& Basis, su2double KrylovCriterionValue) {
