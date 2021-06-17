@@ -77,8 +77,8 @@ public:
   void projectSolution() {}
 
   /*!
-   * \brief Compute and return a new approximation.
+   * \brief Compute a new approximation.
    * \note To be used after storing the FP result.
    */
-  const su2matrix<Scalar>& compute() { return CQuasiNewtonInvLeastSquares<Scalar_t>::FPresult(); }
+  void compute() {}
 };

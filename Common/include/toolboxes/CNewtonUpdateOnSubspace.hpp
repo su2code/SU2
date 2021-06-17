@@ -157,8 +157,6 @@ protected:
 
   bool GramSchmidtQR(const Eigen::MatrixXd& Samples, std::vector<su2matrix<Scalar>>& Basis, su2double KrylovCriterionValue) {
 
-    cout << "Entered Gram Schmidt QR method, ";
-
     Eigen::MatrixXd Q;
     Eigen::VectorXd R;
     Q.resize(Samples.rows(),Samples.cols());
@@ -189,10 +187,11 @@ protected:
         Krylov_Criterion_Quotients[i] = R(i)/R(i+1);
 
     /*--- Eventually append first column of Q to the basis. ---*/
-    cout << " current   criterion value: " << Krylov_Criterion_Quotients[0] << endl;
-    if ((abs(Krylov_Criterion_Quotients[0]) > KrylovCriterionValue) &&
-        !(abs(Krylov_Criterion_Quotients[0])!=abs(Krylov_Criterion_Quotients[0]))
-        ) {
+
+    su2double FirstQuotient = abs(Krylov_Criterion_Quotients[0]);
+
+//    cout << " current criterion value: " << FirstQuotient << endl;
+    if (FirstQuotient > KrylovCriterionValue) {
 
       cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
       iBasis++;
@@ -399,10 +398,10 @@ public:
   }
 
   /*!
-   * \brief Compute and return a new approximation.
+   * \brief Compute a new approximation.
    * \note To be used after storing the FP result.
    */
-  const su2matrix<Scalar>& compute() {
+  void compute() {
 
     /*--- save p_R to pn_R to prepare next Newton step ---*/
     pn_R = p_R;                                           // pn_R: z in original paper
@@ -419,7 +418,5 @@ public:
     for (Index i = 0; i < work.size(); ++i) {
       work.data()[i] = q.data()[i] + p.data()[i];         // work addresses: corrected solution (add corrected projected solution)
     }
-
-    return CQuasiNewtonInvLeastSquares<Scalar_t>::FPresult();
   }
 };
