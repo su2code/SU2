@@ -95,6 +95,20 @@ protected:
     return sumTotal;
   }
 
+  void NormalizeEigen(Eigen::MatrixXd& matrix, int i) {
+
+    double norm = matrix.col(i).dot(matrix.col(i));
+    double normTotal = 0.0;
+
+    GlobalReduce(&norm, &normTotal, 1);
+    norm = sqrt(normTotal);
+
+    double oneOverNorm = 1.0/norm;
+    matrix.col(i) = oneOverNorm*matrix.col(i);
+
+//    return norm;
+  }
+
   void shiftHistoryLeft(std::vector<su2matrix<Scalar>> &history) {
     for (Index i = 1; i < history.size(); ++i) {
       /*--- Swap instead of moving to re-use the memory of the first sample.
@@ -103,7 +117,105 @@ protected:
     }
   }
 
-  void projectOntoSubspace() {
+  bool HouseholderQR(const Eigen::MatrixXd& Samples, std::vector<su2matrix<Scalar>>& Basis, su2double KrylovCriterionValue) {
+
+    /* --- Compute QR decomposition and QR criterion ---*/
+    Eigen::HouseholderQR<Eigen::MatrixXd> QR(EigenX.rows(),EigenX.cols());
+    QR.compute(EigenX);
+    auto Rdiag = QR.matrixQR().diagonal();
+
+    std::vector<su2double> Krylov_Criterion_Quotients;
+    Krylov_Criterion_Quotients.resize(X.size()-1);
+
+    for (Index i = 0; i < X.size()-1; i++)
+      if (Rdiag(i+1) != 0.0)
+        Krylov_Criterion_Quotients[i] = Rdiag(i)/Rdiag(i+1);
+
+    if ((abs(Krylov_Criterion_Quotients[0]) > KrylovCriterionValue) &&
+        !(abs(Krylov_Criterion_Quotients[0])!=abs(Krylov_Criterion_Quotients[0]))
+        ) {
+
+      cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
+      iBasis++;
+
+      /*--- Get reference to new basis vector, extract first column from Q ---*/
+      Eigen::Map<Eigen::VectorXd> Eigen_NewR(R[iBasis-1].data(),R[0].size());
+      Eigen_NewR = QR.householderQ()*Eigen_NewR.setIdentity();
+
+      for (Index i = 0; i < iBasis-1; ++i) {
+        Eigen::Map<Eigen::VectorXd> PrecedingR(R[i].data(),R[0].size());
+        Eigen_NewR = Eigen_NewR - Eigen_NewR.dot(PrecedingR)*PrecedingR;      // CHECK: this might be obsolete
+      }
+      Eigen_NewR.normalize();
+
+      cout << "done." << endl;
+
+      return true;
+    }
+    else return false;
+  }
+
+  bool GramSchmidtQR(const Eigen::MatrixXd& Samples, std::vector<su2matrix<Scalar>>& Basis, su2double KrylovCriterionValue) {
+
+    cout << "Entered Gram Schmidt QR method, ";
+
+    Eigen::MatrixXd Q;
+    Eigen::VectorXd R;
+    Q.resize(Samples.rows(),Samples.cols());
+    R.resize(Samples.cols());
+
+    /*--- QR decomposition of Samples ---*/
+
+    for (Index i = 0; i < Samples.cols(); ++i) {
+
+      Q.col(i) = Samples.col(i);
+
+      for (Index k = 0; k < i; ++k) {
+          double proj = - DotEigen(Q.col(i),Q.col(k));
+          Q.col(i) = Q.col(i) + proj*Q.col(k);
+      }
+
+      NormalizeEigen(Q,i);
+      R(i) = DotEigen(Q.col(i), Samples.col(i));
+    }
+
+    /* --- Compute quotients in diagonal of R. ---*/
+
+    std::vector<su2double> Krylov_Criterion_Quotients;
+    Krylov_Criterion_Quotients.resize(Samples.cols()-1);
+
+    for (Index i = 0; i < Samples.cols()-1; i++)
+      if (R(i+1) != 0.0)
+        Krylov_Criterion_Quotients[i] = R(i)/R(i+1);
+
+    /*--- Eventually append first column of Q to the basis. ---*/
+    cout << " current   criterion value: " << Krylov_Criterion_Quotients[0] << endl;
+    if ((abs(Krylov_Criterion_Quotients[0]) > KrylovCriterionValue) &&
+        !(abs(Krylov_Criterion_Quotients[0])!=abs(Krylov_Criterion_Quotients[0]))
+        ) {
+
+      cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
+      iBasis++;
+
+      /*--- Get reference to new basis vector, extract first column from Q ---*/
+      Eigen::Map<Eigen::VectorXd> Eigen_NewR(Basis[iBasis-1].data(),Basis[0].size());
+      Eigen_NewR = Q.col(0);
+
+      /*--- Maintain an orthogonal Basis ---*/
+//      for (Index i = 0; i < iBasis-1; ++i) {
+//        Eigen::Map<Eigen::VectorXd> PrecedingR(R[i].data(),R[0].size());
+//        Eigen_NewR = Eigen_NewR - Eigen_NewR.dot(PrecedingR)*PrecedingR;      // CHECK: this might be obsolete
+//      }
+//      Eigen_NewR.normalize();
+
+      cout << "done." << endl;
+
+      return true;
+    }
+    else return false;
+  }
+
+  void projectWork() {
 
     /*--- Get source reference ---*/
     Eigen::Map<Eigen::VectorXd> Eigen_work(work.data(),work.size());
@@ -115,10 +227,44 @@ protected:
     for (Index i = 0; i < EigenR.cols(); ++i)
       p_R(i) = DotEigen(EigenR.col(i), Eigen_work);     // p_R: \xi in original paper
 
-    Eigen_p = EigenR*p_R;                               // p addresses: (uncorrected) projected solution in standard basis
+    Eigen_p = EigenR*p_R;                               // p addresses: (uncorrected) projected solution in standard basis (needed for computation of q)
   }
 
-  void updateProjectedSolution() {
+  // Also updates current q (so don't touch outside)
+  void computeProjections(bool outer) {
+
+    if (iBasis > 0) {
+
+    /*--- Project solution-to-be-corrected update (loaded at address in work), store at p, coefficients at p_R. ---*/
+      projectWork();
+//      SU2_OMP_SIMD
+      for (Index i = 0; i < work.size(); ++i) {
+        work.data()[i] = work.data()[i] - p.data()[i];      // work addresses: q (subtract uncorrected projected solution)
+      }
+    } else {
+      for (Index i = 0; i < p.size(); ++i)
+        p.data()[i] = 0.0;
+    }
+
+    /*--- Update X to check for new basis elements. ---*/
+
+    /*--- Check for need to shift left. ---*/
+    if (iSample+1 == X.size()) {
+      shiftHistoryLeft(X);
+      iSample--;                                      // X[0].data not needed anymore
+    }
+
+    if(outer) std::swap(q,q_outer);                   // q addresses: outer q
+//    SU2_OMP_SIMD
+    for (Index i = 0; i < work.size(); ++i) {
+      q.data()[i] = work.data()[i] - q.data()[i];     // q addresses: delta q
+    }
+    std::swap(X[++iSample], q);                       // X[iSample] addresses: delta q, address under q is unused
+    std::swap(q, work);                               // q addresses: q ;-)
+    if(outer) std::swap(q,q_outer);                   // q_outer addresses: outer q
+  }
+
+  void correctUnstableProjection() {
 
     if (EigenR.cols() > BasisSize_n) {
       pn_R = p_R;
@@ -161,7 +307,7 @@ public:
     nPtDomain = nptdomain? nptdomain : npt;
     work.resize(npt,nvar);
     q.resize(npt,nvar);
-    q_outer(npt,nvar);
+    q_outer.resize(npt,nvar);
     p.resize(npt,nvar);
     X.clear();                              // role here: store history of delta solutions in stable space
     R.clear();                              // role here: store basis of unstable subspace
@@ -205,43 +351,14 @@ public:
         EigenX.col(i) = Eigen::VectorXd::Map(X[i].data(),X[0].size());
       }
 
-      /* --- Compute QR decomposition and QR criterion ---*/
-      Eigen::HouseholderQR<Eigen::MatrixXd> QR(EigenX.rows(),EigenX.cols());
-      QR.compute(EigenX);
-      auto Rdiag = QR.matrixQR().diagonal();
+      if(GramSchmidtQR(EigenX, R, KrylovCriterionValue)) {
 
-      std::vector<su2double> Krylov_Criterion_Quotients;
-      Krylov_Criterion_Quotients.resize(X.size()-1);
-
-      for (Index i = 0; i < X.size()-1; i++)
-        if (Rdiag(i+1) != 0.0)
-          Krylov_Criterion_Quotients[i] = Rdiag(i)/Rdiag(i+1);
-
-      if ((abs(Krylov_Criterion_Quotients[0]) > KrylovCriterionValue) &&
-          !(abs(Krylov_Criterion_Quotients[0])!=abs(Krylov_Criterion_Quotients[0]))
-          ) {
-
-        cout << "Krylov criterion fulfilled (" << Krylov_Criterion_Quotients[0] << "), appending new basis vector ... ";
-        iBasis++;
-
-        /*--- Get reference to new basis vector, extract first column from Q ---*/
-        Eigen::Map<Eigen::VectorXd> Eigen_NewR(R[iBasis-1].data(),R[0].size());
-        Eigen_NewR = QR.householderQ()*Eigen_NewR.setIdentity();
-
-        for (Index i = 0; i < iBasis-1; ++i) {
-          Eigen::Map<Eigen::VectorXd> PrecedingR(R[i].data(),R[0].size());
-          Eigen_NewR = Eigen_NewR - Eigen_NewR.dot(PrecedingR)*PrecedingR;      // CHECK: this might be obsolete
-        }
-        Eigen_NewR.normalize();
-
-        /*--- Update Eigen basis object ---*/
+        /*--- Update Eigen basis object as iBasis was increased ---*/
         EigenR.resize(EigenR.rows(),iBasis);
         for (Index i = 0; i < iBasis; ++i) {
           EigenR.col(i) = Eigen::VectorXd::Map(R[i].data(),R[0].size());
         }
-
-        cout << "done." << endl;
-        return true;
+        p_R.resize(iBasis);
       }
     }
     else {
@@ -281,41 +398,6 @@ public:
     cout << " done." << endl;
   }
 
-
-  // Also updates current q (so don't touch outside)
-  void projectSolution(bool outer) {
-
-    if (iBasis > 0) {
-
-    /*--- Project solution-to-be-corrected update (loaded at address in work), store at p, coefficients at p_R. ---*/
-      projectOntoSubspace();
-//      SU2_OMP_SIMD
-      for (Index i = 0; i < work.size(); ++i) {
-        work.data()[i] = work.data()[i] - p.data()[i];      // work addresses: q (subtract uncorrected projected solution)
-      }
-    } else {
-      for (Index i = 0; i < p.size(); ++i)
-        p.data()[i] = 0.0;
-    }
-
-    /*--- Update X to check for new basis elements. ---*/
-
-    /*--- Check for need to shift left. ---*/
-    if (iSample+1 == X.size()) {
-      shiftHistoryLeft(X);
-      iSample--;                                      // X[0].data not needed anymore
-    }
-
-    if(outer) std::swap(q,q_outer);                   // q addresses: outer q
-//    SU2_OMP_SIMD
-    for (Index i = 0; i < work.size(); ++i) {
-      q.data()[i] = work.data()[i] - q.data()[i];     // q addresses: delta q
-    }
-    std::swap(X[++iSample], q);                       // X[iSample] addresses: delta q, address under q is unused
-    std::swap(q, work);                               // q addresses: q ;-)
-    if(outer) std::swap(q,q_outer);                   // q_outer addresses: outer q
-  }
-
   /*!
    * \brief Compute and return a new approximation.
    * \note To be used after storing the FP result.
@@ -326,11 +408,11 @@ public:
     pn_R = p_R;                                           // pn_R: z in original paper
 
     /*--- Compute new projection solution p, its coefficients p_R, and new delta solution q ---*/
-    projectSolution(false);
+    computeProjections(false);
 
     /*--- Newton correction for the slow/unstable part of the solution update. ---*/
     if (iBasis > 0)
-      updateProjectedSolution();
+      correctUnstableProjection();
 
     /*--- Set the corrected new solution at address work, use work2 ---*/
 //    SU2_OMP_SIMD
