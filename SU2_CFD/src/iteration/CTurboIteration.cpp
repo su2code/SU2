@@ -27,6 +27,7 @@
 
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../include/output/COutput.hpp"
+#include "../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 
 void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -60,4 +61,5 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
 
 void CTurboIteration::InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid){
   TurbomachineryPerformance = std::make_shared<CTurbomachineryPerformance>(*config, *geometry, *fluid);
+  TurbomachineryStagePerformance = new CTurbomachineryStagePerformance();
 }

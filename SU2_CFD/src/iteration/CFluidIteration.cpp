@@ -239,11 +239,14 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetInnerIter());
 
     /*--- Turbomachinery Performance Screen summary output---*/
-    if (val_iZone == config[ZONE_0]->GetnZone()-1)
-    output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
+    if (val_iZone == config[ZONE_0]->GetnZone()-1 && config[ZONE_0]->GetOuterIter()%100 == 0){
+      output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter(), val_iZone);
-
+    if (config[ZONE_0]->GetMultizone_Problem())
+      output->SetTurboMultiZonePerformance_Output(TurbomachineryStagePerformance, TurbomachineryPerformance, config[val_iZone]);
+    }
+    
     /*--- Turbomachinery Rotation and Pressure Ramps ---*/
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter());
   }

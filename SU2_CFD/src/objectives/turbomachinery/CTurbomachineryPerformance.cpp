@@ -182,7 +182,7 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector <shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    auto nSpan = 0;//config.GetnSpan_iZones(iBladeRow);
+    auto nSpan = config.GetnSpanWiseSections();
     for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
 
       auto areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
@@ -251,12 +251,40 @@ CTurbomachineryStagePerformance::CTurbomachineryStagePerformance() {
             EulerianWork=0.0;
 }
 
-CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}
+void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config) {
 
-void CTurbineStagePerformance::ComputePerformanceStage() {}
+switch (config->GetKind_TurboPerf(ZONE_0))
+{
+case TURBINE:
+  /* code */
+  ComputeTurbineStagePerformance(InState, OutState);
+  break;
+
+default:
+  break;
+}
+
+// return(dummy);
+}
+
+void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState) {
+
+  EntropyGen = OutState.GetEntropy() - InState.GetEntropy();
+  EulerianWork = OutState.GetEnthalpy() - InState.GetEnthalpy();
+  TotalStaticEfficiency = EulerianWork/OutState.GetEnthalpy() * 100;
+  TotalTotalEfficiency =  EulerianWork/OutState.GetTotalEnthalpy() * 100;
+
+}
+
+// void CTurbineStagePerformance::ComputePerformance(CTurbomachineryState Instate, CTurbomachineryState Outstate) {
+
+// }
+
 
 // CTurbineStagePerformance::CTurbineStagePerformance(){
 
 // }
 
 // CTurbineStagePerformance::~CTurbineStagePerformance() {}
+
+CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}
