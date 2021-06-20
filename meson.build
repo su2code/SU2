@@ -104,6 +104,17 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+
+  # add opdi dependency
+  if get_option('enable-autodiff')
+    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+
+    if get_option('opdi-backend') == 'macro'
+      su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
+    elif get_option('opdi-backend') == 'ompt'
+      su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+    endif
+  endif
 endif
 
 if get_option('enable-tecio')
@@ -173,6 +184,14 @@ if get_option('enable-mpp')
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+endif
+
+if omp and get_option('enable-autodiff')
+  py = find_program('python3','python')
+  p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
 endif
 
 # compile common library

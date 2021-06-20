@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,6 @@
  * \brief Main class for defining the variables of the NEMO Euler's solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.8
  */
 class CNEMOEulerVariable : public CVariable {
 public:
@@ -157,7 +156,8 @@ public:
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline MatrixType& GetLimiter_Primitive() final {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive() const final {return Limiter_Primitive; }
 
   /*!
    * \brief Set the gradient of the primitive variables.
@@ -172,15 +172,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) final {
-    Limiter_Primitive(iPoint,iVar) = value;
-  }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -226,7 +217,7 @@ public:
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  inline const MatrixType& GetPrimitive() const final { return Primitive; }
 
    /*!
    * \brief Get the primitive variables for all points.
@@ -256,18 +247,8 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
@@ -275,32 +256,6 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_PrimitiveZero();
-
-  /*!
-   * \brief Add <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the gradient of the primitive variables.
-   */
-  inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) += value;
-  }
 
   /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
@@ -323,16 +278,6 @@ public:
   }
 
   /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
@@ -342,7 +287,8 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive() final { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive() const final { return Gradient_Primitive; }
 
   /*!
    * \brief Set all the primitive variables for compressible flows.

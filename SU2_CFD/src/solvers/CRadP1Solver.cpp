@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
   unsigned short direct_diff = config->GetDirectDiff();
   bool multizone = config->GetMultizone_Problem();
 
@@ -48,20 +48,17 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   nVarGrad = nVar;
 
-  Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-  Solution = new su2double[nVar]; Residual_Max = new su2double[nVar];
+  Residual = new su2double[nVar];
+  Solution = new su2double[nVar];
 
   Res_Visc = new su2double[nVar];
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
@@ -106,26 +103,19 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   SetTemperature_Inf(Temperature_Inf);
 
-  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  /*--- Initialize the BGS residuals. ---*/
   if (multizone){
-    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 1.0;
-    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
-    Point_Max_Coord_BGS = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
-    }
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   su2double init_val;
   switch(config->GetKind_P1_Init()){
-    case P1_INIT_ZERO: init_val = 0.0; break;
-    case P1_INIT_TEMP: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
+    case P1_INIT::ZERO: init_val = 0.0; break;
+    case P1_INIT::TEMPERATURE: init_val = 4.0*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
     default: init_val = 0.0; break;
   }
 
@@ -501,10 +491,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
+
   /*--- Build implicit system ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -533,7 +521,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index]);
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }

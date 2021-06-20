@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 
 /*--- Explicit instantiation of the parent class of CIncEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE>;
+template class CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>;
 
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
@@ -43,7 +43,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {
     case D_VISCOSITY:
@@ -98,13 +98,13 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
-  if (config->GetKind_Streamwise_Periodic() != NONE)
+  if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
     Compute_Streamwise_Periodic_Recovered_Values(config, geometry, iMesh);
 }
 
-void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geometry,
-                                                        CConfig        *config,
-                                                        const unsigned short iMesh) {
+void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
+                                                     CConfig *config,
+                                                     const unsigned short iMesh) {
 
   /*---------------------------------------------------------------------------------------------*/
   // 1. Evaluate massflow, area avg density & Temperature and Area at streamwise periodic outlet.
@@ -130,22 +130,24 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
             Temperature_Local     = 0.0;
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    /*--- Only "outlet"/donor periodic marker ---*/
+
+    /*--- Only "outlet"/donor periodic marker. GetnMarker_Periodic counts from 1: First all the inlet marker from
+          the periodic marker pairs and then the all the outlets. I.e. in order to get the outlet of the first pair
+          we need to divide the number of periodic markers by 2 and add 1 (because count starts at 1). ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-        config->GetMarker_All_PerBound(iMarker) == 2) {
-      
+        config->GetMarker_All_PerBound(iMarker) == (config->GetnMarker_Periodic()/2 + 1)) {
+
       for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
+
         auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
+
         if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
 
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           /*--- m_dot = dot_prod(n*v) * A * rho, with n beeing unit normal. ---*/
           MassFlow_Local += nodes->GetProjVel(iPoint, AreaNormal) * nodes->GetDensity(iPoint);
@@ -154,7 +156,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
 
           Average_Density_Local += FaceArea * nodes->GetDensity(iPoint);
 
-          /*--- Due to periodicty, temperatures are equal one the inlet(1) and outlet(2) ---*/
+          /*--- Due to periodicity, temperatures are equal one the inlet(1) and outlet(2) ---*/
           Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
 
         } // if domain
@@ -182,9 +184,9 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
     SPvals.Streamwise_Periodic_PressureDrop = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
   }
 
-  if (config->GetKind_Streamwise_Periodic() == STREAMWISE_MASSFLOW) {
+  if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     /*------------------------------------------------------------------------------------------------*/
-    /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/ 
+    /*--- 2. Update the Pressure Drop [Pa] for the Momentum source term if Massflow is prescribed. ---*/
     /*---    The Pressure drop is iteratively adapted to result in the prescribed Target-Massflow. ---*/
     /*------------------------------------------------------------------------------------------------*/
 
@@ -198,13 +200,13 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
 
     /*--- Store updated pressure difference ---*/
     Pressure_Drop_new = SPvals.Streamwise_Periodic_PressureDrop + damping_factor*ddP;
-    /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times 
-          (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts 
-          it gets called 2x before the restart files are read such that the current massflow is 
-          Area*inital-velocity which can be way off! 
+    /*--- During restarts, this routine GetStreamwise_Periodic_Properties can get called multiple times
+          (e.g. 4x for INC_RANS restart). Each time, the pressure drop gets updated. For INC_RANS restarts
+          it gets called 2x before the restart files are read such that the current massflow is
+          Area*inital-velocity which can be way off!
           With this there is still a slight inconsitency wrt to a non-restarted simulation: The restarted "zero-th"
-          iteration does not get a pressure-update but the continuing simulation would have an update here. This can be 
-          fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at 
+          iteration does not get a pressure-update but the continuing simulation would have an update here. This can be
+          fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at
           best ---*/
     if((nZone==1 && InnerIter>0) ||
        (nZone>1  && OuterIter>0)) {
@@ -230,7 +232,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
 
         /*--- Identify the boundary by string name and retrive heatflux from config ---*/
         const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
-        const auto Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -240,7 +242,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry      *geome
 
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
         } // loop Vertices
@@ -263,7 +265,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   const auto InnerIter = config->GetInnerIter();
 
   /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
-  const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
+  const auto ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
   /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
   const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
@@ -278,22 +280,24 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
       dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodic_Translation(0)[iDim]);
 
     /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
-    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - SPvals.Streamwise_Periodic_PressureDrop / 
+    const su2double Pressure_Recovered = nodes->GetPressure(iPoint) - SPvals.Streamwise_Periodic_PressureDrop /
                                          norm2_translation * dot_product;
     nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
 
     /*--- InnerIter > 0 as otherwise MassFlow in the denominator would be zero ---*/
     if (energy && InnerIter > 0) {
       su2double Temperature_Recovered = nodes->GetTemperature(iPoint);
-      Temperature_Recovered += SPvals.Streamwise_Periodic_IntegratedHeatFlow / 
+      Temperature_Recovered += SPvals.Streamwise_Periodic_IntegratedHeatFlow /
                               (SPvals.Streamwise_Periodic_MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
       nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
     }
   } // for iPoint
+  END_SU2_OMP_FOR
 
   /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
   SU2_OMP_MASTER
   GetStreamwise_Periodic_Properties(geometry, config, iMesh);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
@@ -338,6 +342,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
 
   }
+  END_SU2_OMP_FOR
 
   return nonPhysicalPoints;
 
@@ -350,7 +355,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   const bool energy = config->GetEnergy_Equation();
 
   /*--- Variables for streamwise periodicity ---*/
-  const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != NONE);
+  const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
   su2double Cp, thermal_conductivity, dot_product, scalar_factor;
 
@@ -374,7 +379,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   const auto Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
   if (Wall_Function != NO_WALL_FUNCTION)
-    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -442,12 +447,12 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     }
     else { // ISOTHERMAL
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double Edge_Vector[MAXNDIM];
       GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
       su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
@@ -476,6 +481,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
@@ -546,17 +552,17 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     su2double Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0) / Temperature_Ref;
     su2double Twall = 0.0;
 
-    if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
-        (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+        (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       /*--- Compute closest normal neighbor ---*/
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_j, Coord_i);
 
       /*--- Compute wall temperature from both temperatures ---*/
@@ -568,8 +574,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
       Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
     }
-    else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
-             (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+    else if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+             (config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
 
       /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
 
@@ -585,4 +591,5 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     nodes->SetSolution_Old(iPoint, nDim+1, Twall);
     nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 }

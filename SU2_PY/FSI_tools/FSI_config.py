@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -122,3 +122,6 @@ class FSIConfig:
         if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
             self._ConfigContent["AITKEN_RELAX"] = "STATIC"
             self._ConfigContent["AITKEN_PARAM"] = 1.0
+
+        if self._ConfigContent["RESTART_SOL"] == "YES":
+            self._ConfigContent["TIME_TRESHOLD"] = -1

@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -722,7 +722,7 @@ class Solver:
     Y_disp = self.Uy.dot(self.q)
     Z_disp = self.Uz.dot(self.q)
 
-    for iPoint in range(len(self.node)):
+    for iPoint in range(self.nPoint):
       coord0 = self.node[iPoint].GetCoord0()
       self.node[iPoint].SetCoord((X_disp[iPoint]+coord0[0],Y_disp[iPoint]+coord0[1],Z_disp[iPoint]+coord0[2]))
       self.node[iPoint].SetVel((X_vel[iPoint],Y_vel[iPoint],Z_vel[iPoint]))
@@ -870,7 +870,7 @@ class Solver:
             print("The restart iteration was not found in the structural history")
             break
           line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-1):
+          if int(line[1])==(self.Config["RESTART_ITER"]-2):
             break
       index = 0
       for index_mode in range(self.nDof):
@@ -896,7 +896,7 @@ class Solver:
             print("The restart iteration was not found in the structural history")
             break
           line = line.strip('\r\n').split()
-          if int(line[1])==self.Config["RESTART_ITER"]:
+          if int(line[1])==(self.Config["RESTART_ITER"]-1):
             break
       index = 0
       for index_mode in range(self.nDof):
@@ -935,11 +935,7 @@ class Solver:
     self.__reset(self.qddot)
     self.__reset(self.a)
 
-    makerID = list(self.markers.keys())
-    makerID = makerID[0]
-    nodeList = self.markers[makerID]
-
-    for iPoint in nodeList:
+    for iPoint in range(self.nPoint):
       self.node[iPoint].updateCoordVel()
 
 

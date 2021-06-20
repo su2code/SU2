@@ -1,7 +1,7 @@
 /*!
- * \file output.hpp
+ * \file COutputLegacy.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
- *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>output_structure_legacy.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
  * \version 7.1.1 "Blackbird"
  *
@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
                          : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Radiation() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();

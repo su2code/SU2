@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,6 +94,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
     SU2_OMP_MASTER
     config[iZone]->SubtractFinestMesh();
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -120,7 +121,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, &monitor);
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 
 }
 
@@ -334,6 +336,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     for (iVar = 0; iVar < nVar; iVar++)
       sol_coarse->GetNodes()->SetSolution_Old(Point_Coarse,Solution);
   }
+  END_SU2_OMP_FOR
 
   delete [] Solution;
 
@@ -354,6 +357,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
         sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
 
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -369,6 +373,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
       sol_fine->LinSysRes.SetBlock(Point_Fine, sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse));
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -389,6 +394,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     Residual_Old = solver->LinSysRes.GetBlock(iPoint);
     solver->GetNodes()->SetResidual_Old(iPoint,Residual_Old);
   }
+  END_SU2_OMP_FOR
 
   /*--- Jacobi iterations. ---*/
 
@@ -408,6 +414,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
 
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over all mesh points (update residuals with the neighbor averages). ---*/
 
@@ -422,6 +429,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       for (iVar = 0; iVar < nVar; iVar++)
         solver->LinSysRes(iPoint,iVar) = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
     }
+    END_SU2_OMP_FOR
 
     /*--- Restore original residuals (without average) at boundary points. ---*/
 
@@ -435,6 +443,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
           Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
           solver->LinSysRes.SetBlock(iPoint, Residual_Old);
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -462,6 +471,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
       Solution_Fine[iVar] += factor*Residual_Fine[iVar];
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- MPI the new interpolated solution ---*/
 
@@ -482,6 +492,7 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
       sol_fine->GetNodes()->SetSolution(Point_Fine, sol_coarse->GetNodes()->GetSolution(Point_Coarse));
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
@@ -511,6 +522,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
     }
     sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, Residual);
   }
+  END_SU2_OMP_FOR
 
   delete [] Residual;
 
@@ -521,6 +533,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->GetNodes()->SetVel_ResTruncError_Zero(Point_Coarse);
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -528,6 +541,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->GetNodes()->SubtractRes_TruncError(Point_Coarse, sol_coarse->LinSysRes.GetBlock(Point_Coarse));
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -536,6 +550,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     solver->LinSysRes.AddBlock(iPoint, solver->GetNodes()->GetResTruncError(iPoint));
+  END_SU2_OMP_FOR
 
 }
 
@@ -575,6 +590,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
     sol_coarse->GetNodes()->SetSolution(Point_Coarse, Solution);
 
   }
+  END_SU2_OMP_FOR
 
   delete [] Solution;
 
@@ -609,6 +625,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
         }
 
       }
+      END_SU2_OMP_FOR
     }
   }
 
@@ -652,6 +669,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
     }
     sol_coarse->GetNodes()->SetGradient(Point_Coarse,Gradient);
   }
+  END_SU2_OMP_FOR
 
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Gradient[iVar];
@@ -693,6 +711,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                    numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       break;
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
 }
@@ -719,6 +738,7 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Restrict solution and gradients to the coarse levels ---*/

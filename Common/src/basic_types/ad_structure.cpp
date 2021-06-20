@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,15 +31,8 @@ namespace AD {
 #ifdef CODI_REVERSE_TYPE
   /*--- Initialization of the global variables ---*/
 
-  int adjointVectorPosition = 0;
-
-  std::vector<su2double::GradientData> inputValues;
-  std::vector<su2double::GradientData> localInputValues;
-  std::vector<su2double*> localOutputValues;
-
-  su2double::TapeType& globalTape = su2double::getGlobalTape();
-  su2double::TapeType::Position StartPosition, EndPosition;
-  std::vector<su2double::TapeType::Position> TapePositions;
+  TapePosition StartPosition, EndPosition;
+  std::vector<TapePosition> TapePositions;
 
   bool PreaccActive = false;
   bool PreaccEnabled = true;

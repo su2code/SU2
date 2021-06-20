@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,9 +38,17 @@
  */
 class CDiscAdjSolver final : public CSolver {
 private:
+  static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = 32; /*!< \brief Max number of variables, for static arrays. */
+
+  static constexpr size_t OMP_MAX_SIZE = 1024; /*!< \brief Max chunk size for light point loops. */
+
+  unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
-  su2double **CSensitivity;      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  vector<vector<su2double> > CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  vector<su2double> Sens_Geo;    /*!< \brief Total shape sensitivity for each monitored boundary. */
   su2double Total_Sens_Mach;     /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;      /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;      /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
@@ -51,8 +59,6 @@ private:
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
-
-  su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
 
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -66,14 +72,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CDiscAdjSolver(void);
-
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CDiscAdjSolver(CGeometry *geometry, CConfig *config);
+  CDiscAdjSolver() = default;
 
   /*!
    * \overload
@@ -88,7 +87,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void) override;
+  ~CDiscAdjSolver() override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -109,35 +108,20 @@ public:
 
   /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
-   *         before evaluation of the tape.
+   *        before evaluation of the tape.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
   void SetAdjoint_Output(CGeometry *geometry, CConfig *config) override;
 
   /*!
-   * \brief Sets the adjoint values of the output of the mesh deformation iteration
-   *        before evaluation of the tape.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) override;
-
-  /*!
    * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
    *        after tape has been evaluated.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Set the surface sensitivity.
@@ -226,14 +210,6 @@ public:
   void SetRecording(CGeometry *geometry, CConfig *config) override;
 
   /*!
-   * \brief Prepare the solver for a new recording.
-   * \param[in] kind_recording - Kind of AD recording.
-   */
-  void SetMesh_Recording(CGeometry **geometry,
-                         CVolumetricMovement *grid_movement,
-                         CConfig *config) override;
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -281,5 +257,13 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
+
+  /*!
+   * \brief Depends on the direct solver.
+   */
+  inline bool GetHasHybridParallel() const override {
+    if (direct_solver) return direct_solver->GetHasHybridParallel();
+    return false;
+  }
 
 };

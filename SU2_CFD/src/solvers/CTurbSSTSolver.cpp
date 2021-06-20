@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() { }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config) {
-  unsigned short iVar, nLineLets;
+  unsigned short nLineLets;
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
@@ -68,16 +68,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
-    Residual_RMS = new su2double[nVar]();
-    Residual_Max = new su2double[nVar]();
-
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max = new unsigned long[nVar]();
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim]();
-    }
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
@@ -98,16 +92,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
-      Residual_BGS = new su2double[nVar]();
-      Residual_Max_BGS = new su2double[nVar]();
-
-      /*--- Define some structures for locating max residuals ---*/
-
-      Point_Max_BGS = new unsigned long[nVar]();
-      Point_Max_Coord_BGS = new su2double*[nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Point_Max_Coord_BGS[iVar] = new su2double[nDim]();
-      }
+      Residual_BGS.resize(nVar,0.0);
+      Residual_Max_BGS.resize(nVar,0.0);
+      Point_Max_BGS.resize(nVar,0);
+      Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
     }
 
   }
@@ -142,8 +130,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, VelInf);
 
-  kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+  su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
+  su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+
+  Solution_Inf[0] = kine_Inf;
+  Solution_Inf[1] = omega_Inf;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
@@ -282,6 +273,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     nodes->SetmuT(iPoint,muT);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -356,6 +348,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -370,9 +363,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  unsigned short WallType; su2double Roughness_Height;
+  WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == ROUGH ) rough_wall = true;
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -450,6 +443,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       }
     }
   }
+  END_SU2_OMP_FOR
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -485,9 +479,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      su2double solution_j[] = {kine_Inf, omega_Inf};
-
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -512,6 +504,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -605,6 +598,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
     }
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -695,6 +689,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -786,6 +781,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -896,6 +892,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
     }
+    END_SU2_OMP_FOR
   }
 
 }
@@ -971,8 +968,8 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-    Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-    Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+    Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
+    Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
   }
 
 }

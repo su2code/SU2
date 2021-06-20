@@ -1,5 +1,5 @@
 /*!
- * \file output_flow.cpp
+ * \file CFlowOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,10 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : CFVMOutput (config, nDim, fem_output){
 
+  lastInnerIter = curInnerIter;
 }
-
-
-CFlowOutput::~CFlowOutput(void){}
 
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
@@ -125,10 +123,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   const unsigned short nDim         = geometry->GetnDim();
   const unsigned short Kind_Average = config->GetKind_Average();
 
-  const bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  const bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
+  const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
-  const bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
+  const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
 
   const bool axisymmetric               = config->GetAxisymmetric();
   const unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
@@ -220,7 +218,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == VARIABLE) {
+            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
               Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
               sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {
@@ -742,10 +740,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           /*--- The Pressure file uses the global numbering ---*/
@@ -799,10 +794,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       Boundary   = config->GetMarker_All_KindBC(iMarker);
 
-      if ((Boundary == EULER_WALL             ) ||
-          (Boundary == HEAT_FLUX              ) ||
-          (Boundary == ISOTHERMAL             ) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
+      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -875,7 +867,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-void CFlowOutput::WriteMetaData(CConfig *config){
+void CFlowOutput::WriteMetaData(const CConfig *config){
 
   ofstream meta_file;
 
@@ -889,7 +881,7 @@ void CFlowOutput::WriteMetaData(CConfig *config){
     meta_file.open(filename.c_str(), ios::out);
     meta_file.precision(15);
 
-    if (config->GetTime_Marching() == DT_STEPPING_1ST || config->GetTime_Marching() == DT_STEPPING_2ND)
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST || config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
       meta_file <<"ITER= " << curTimeIter + 1 << endl;
     else
       meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
@@ -921,8 +913,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
   unsigned short iMarker_Monitoring;
 
-  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
-  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool compressible    = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   const bool unsteady        = config->GetTime_Domain();
   const bool viscous         = config->GetViscous();
   const bool dynamic_grid    = config->GetDynamic_Grid();
@@ -1276,7 +1268,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     Breakdown_file << "| The SU2 Project is maintained by the SU2 Foundation                   |" << "\n";
     Breakdown_file << "| (http://su2foundation.org)                                            |" << "\n";
     Breakdown_file << "-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2020, SU2 Contributors                                 |" << "\n";
+    Breakdown_file << "| Copyright 2012-2021, SU2 Contributors                                 |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -1434,7 +1426,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
         switch (config->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config->GetMu_Constant();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1442,7 +1434,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1458,30 +1450,36 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
             break;
 
+          default:
+            break;
+
         }
         switch (config->GetKind_ConductivityModel()) {
 
-          case CONSTANT_PRANDTL:
-            Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+            Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL "<< "\n";
             Breakdown_file << "Prandtl: " << config->GetPrandtl_Lam()<< "\n";
             break;
 
-          case CONSTANT_CONDUCTIVITY:
-            Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT:
+            Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
 
         if ((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)) {
           switch (config->GetKind_ConductivityModel_Turb()) {
-            case CONSTANT_PRANDTL_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL "<< "\n";
               Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
               break;
-            case NO_CONDUCTIVITY_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::NONE:
+              Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
               Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
               break;
           }
@@ -1665,7 +1663,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     /*--- Incompressible version of the console output ---*/
 
       bool energy     = config->GetEnergy_Equation();
-      bool boussinesq = (config->GetKind_DensityModel() == BOUSSINESQ);
+      bool boussinesq = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
       if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
@@ -1710,16 +1708,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
       switch (config->GetKind_DensityModel()) {
 
-        case CONSTANT:
+        case INC_DENSITYMODEL::CONSTANT:
           if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
           else Breakdown_file << "No energy equation." << "\n";
           break;
 
-        case BOUSSINESQ:
+        case INC_DENSITYMODEL::BOUSSINESQ:
           if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
           break;
 
-        case VARIABLE:
+        case INC_DENSITYMODEL::VARIABLE:
           if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
           break;
 
@@ -1778,7 +1776,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (viscous) {
         switch (config->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1786,7 +1784,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
             if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -1802,7 +1800,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
             break;
 
-          case POLYNOMIAL_VISCOSITY:
+          case VISCOSITYMODEL::POLYNOMIAL:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
@@ -1823,19 +1821,19 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         if (energy) {
           switch (config->GetKind_ConductivityModel()) {
 
-            case CONSTANT_PRANDTL:
+            case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
               Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< "\n";
               break;
 
-            case CONSTANT_CONDUCTIVITY:
-              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+            case CONDUCTIVITYMODEL::CONSTANT:
+              Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
               break;
 
-            case POLYNOMIAL_CONDUCTIVITY:
-              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            case CONDUCTIVITYMODEL::POLYNOMIAL:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL "<< endl;
               Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
               for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
                 Breakdown_file << config->GetKt_PolyCoeff(iVar);
@@ -1854,12 +1852,12 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
           if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
             switch (config->GetKind_ConductivityModel_Turb()) {
-              case CONSTANT_PRANDTL_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
                 Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
                 break;
-              case NO_CONDUCTIVITY_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::NONE:
+                Breakdown_file << "Turbulent Conductivity Model: CONDUCTIVITYMODEL_TURB::NONE "<< "\n";
                 Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
                 break;
             }
@@ -2717,16 +2715,15 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
-    if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
+    if ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) &&
         ((Iter == 0) ||
          (Iter % config->GetVolume_Wrt_Freq() == 0) ||
          ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
@@ -2806,5 +2803,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+}
+
+void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
+
+  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Target CL" << config->GetTarget_CL();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    if (config->GetFinite_Difference_Mode()){
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
+    else
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+    FixedCLSummary.PrintFooter();
+    SetScreen_Header(config);
+  }
+
+  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
+    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
+    if (nDim == 3){
+      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
+      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
+    }
+    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
+    FixedCLSummary.PrintFooter();
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
   }
 }

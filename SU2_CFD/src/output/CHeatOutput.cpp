@@ -1,5 +1,5 @@
 /*!
- * \file output_heat.cpp
+ * \file CHeatOutput.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(config, nDim, false) {
 
   multiZone = config->GetMultizone_Problem();
 
@@ -104,7 +104,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
 
   AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
   AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss-Seidel residual of the temperature", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
@@ -117,10 +117,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
 void CHeatOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES","z-component of the coordinate vector");
+  AddCoordinates();
 
   // SOLUTION
   AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
@@ -131,26 +128,17 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   // Residuals
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
-  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  // MPI-Rank
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
+  AddCommonFVMOutputs(config);
 }
 
 
 void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->nodes;
+  const auto Node_Geo  = geometry->nodes;
 
   // Grid coordinates
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
   // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
@@ -158,15 +146,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   // Residuals
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes(iPoint, 0));
 
-  // Mesh quality metrics
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  // MPI-Rank
-  SetVolumeOutputValue("RANK", iPoint, rank);
+  LoadCommonFVMOutputs(config, geometry, iPoint);
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

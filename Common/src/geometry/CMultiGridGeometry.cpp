@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1142,7 +1142,9 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
     }
   }
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
@@ -1184,7 +1186,9 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
@@ -1202,6 +1206,7 @@ void CMultiGridGeometry::SetCoord(CGeometry *geometry) {
     }
     nodes->SetCoord(Point_Coarse, Coordinates);
   }
+  END_SU2_OMP_FOR
 }
 
 void CMultiGridGeometry::SetMultiGridWallHeatFlux(CGeometry *geometry, unsigned short val_marker){
@@ -1296,7 +1301,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(CGeometry *geometry, unsign
 
 }
 
-void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) {
+void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, const CConfig *config) {
 
   /*--- Loop over all coarse mesh points. ---*/
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_max_threads()))
@@ -1320,6 +1325,7 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfi
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       nodes->SetGridVel(Point_Coarse, iDim, Grid_Vel[iDim]);
   }
+  END_SU2_OMP_FOR
 }
 
 
