@@ -189,13 +189,13 @@ def main():
       FSIInterface.MapModes(FSI_config, FluidSolver, SolidSolver)
     except NameError as exception:
       if myid == rootProcess:
-        print('An NameError occured in FSIInterface.SteadyFSI : ',exception)
+        print('An NameError occured in FSIInterface.MapModes : ',exception)
     except TypeError as exception:
       if myid == rootProcess:
-        print('A TypeError occured in FSIInterface.SteadyFSI : ',exception)
+        print('A TypeError occured in FSIInterface.MapModes : ',exception)
     except KeyboardInterrupt as exception :
       if myid == rootProcess:
-        print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
+        print('A KeyboardInterrupt occured in FSIInterface.MapModes : ',exception)
 
   if have_MPI:
     comm.barrier()
