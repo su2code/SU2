@@ -451,7 +451,7 @@ public:
    * \brief Get the name of the output file for the surface.
    * \return File name for the surface output.
    */
-  passivedouble GetSurfaceFileName() const;
+  string GetSurfaceFileName() const;
 
   /*!
    * \brief Get the global index of a vertex on a specified marker.
