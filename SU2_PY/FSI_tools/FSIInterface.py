@@ -2170,7 +2170,7 @@ class Interface:
           if myid == self.rootProcess:  # The root process contains the solid solver for sure
               modesNumber = np.array(int(SolidSolver.getNumberOfModes()))
           else:
-              modesNumber = np.empty(1, dtype='i')
+              modesNumber = np.empty(1, dtype=np.int)
 
           self.comm.Bcast(modesNumber, root=self.rootProcess)
 
