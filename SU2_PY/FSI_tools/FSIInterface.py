@@ -29,9 +29,9 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os
+import csv
 import numpy as np
-import scipy as sp
 import scipy.spatial.distance as spdist
 from math import *
 from rtree import index
@@ -90,14 +90,14 @@ class Interface:
         self.nLocalFluidInterfaceNodes = 0		#number of nodes (halo nodes included) on the fluid interface, on each partition
         self.nLocalFluidInterfaceHaloNode = 0		#number of halo nodes on the fluid intrface, on each partition
         self.nLocalFluidInterfacePhysicalNodes = 0	#number of physical (= non halo) nodes on the fluid interface, on each partition
-        self.nFluidInterfaceNodes = 0			#number of nodes on the fluid interface, sum over all the partitions
-        self.nFluidInterfacePhysicalNodes = 0		#number of physical nodes on the fluid interface, sum over all partitions
+        self.nFluidInterfaceNodes = np.array(int(0)) #number of nodes on the fluid interface, sum over all the partitions
+        self.nFluidInterfacePhysicalNodes = np.array(int(0)) #number of physical nodes on the fluid interface, sum over all partitions
 
         self.nLocalSolidInterfaceNodes = 0     		#number of physical nodes on the solid interface, on each partition
         self.nLocalSolidInterfaceHaloNode = 0		#number of halo nodes on the solid intrface, on each partition
         self.nLocalSolidInterfacePhysicalNodes = 0	#number of physical (= non halo) nodes on the solid interface, on each partition
-        self.nSolidInterfaceNodes = 0			#number of nodes on the solid interface, sum over all partitions
-        self.nSolidInterfacePhysicalNodes = 0		#number of physical nodes on the solid interface, sum over all partitions
+        self.nSolidInterfaceNodes = np.array(int(0)) #number of nodes on the solid interface, sum over all partitions
+        self.nSolidInterfacePhysicalNodes = np.array(int(0)) #number of physical nodes on the solid interface, sum over all partitions
 
         if FSI_config['MATCHING_MESH'] == 'NO' and (FSI_config['MESH_INTERP_METHOD'] == 'RBF' or FSI_config['MESH_INTERP_METHOD'] == 'TPS'):
           self.MappingMatrixA = None
@@ -313,7 +313,11 @@ class Interface:
 
         # Same thing for the solid part
         self.nLocalSolidInterfaceHaloNode = 0
-        # TODO when the solid solver will run in parallel, add here the calculation of halo nodes
+        for iVertex in range(self.nLocalSolidInterfaceNodes):
+            if SolidSolver.IsAHaloNode(self.solidInterfaceIdentifier, iVertex):
+              GlobalIndex = SolidSolver.getVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
+              self.SolidHaloNodeList[GlobalIndex] = iVertex
+              self.nLocalSolidInterfaceHaloNode += 1
         self.nLocalSolidInterfacePhysicalNodes = self.nLocalSolidInterfaceNodes - self.nLocalSolidInterfaceHaloNode
         if self.have_MPI:
           self.SolidHaloNodeList = self.comm.allgather(self.SolidHaloNodeList)
@@ -328,10 +332,8 @@ class Interface:
         rcvBuffPhysical = np.zeros(1, dtype=int)
         if self.have_MPI:
           self.comm.barrier()
-          self.comm.Allreduce(sendBuffTotal,rcvBuffTotal,op=self.MPI.SUM)
-          self.comm.Allreduce(sendBuffPhysical,rcvBuffPhysical,op=self.MPI.SUM)
-          self.nFluidInterfaceNodes = rcvBuffTotal[0]
-          self.nFluidInterfacePhysicalNodes = rcvBuffPhysical[0]
+          self.comm.Allreduce(sendBuffTotal, self.nFluidInterfaceNodes, op=self.MPI.SUM)
+          self.comm.Allreduce(sendBuffPhysical, self.nFluidInterfacePhysicalNodes, op=self.MPI.SUM)
         else:
           self.nFluidInterfaceNodes = np.copy(sendBuffTotal)
           self.nFluidInterfacePhysicalNodes = np.copy(sendBuffPhysical)
@@ -344,10 +346,8 @@ class Interface:
         rcvBuffPhysical = np.zeros(1, dtype=int)
         if self.have_MPI:
           self.comm.barrier()
-          self.comm.Allreduce(sendBuffTotal,rcvBuffTotal,op=self.MPI.SUM)
-          self.comm.Allreduce(sendBuffPhysical,rcvBuffPhysical,op=self.MPI.SUM)
-          self.nSolidInterfaceNodes = rcvBuffTotal[0]
-          self.nSolidInterfacePhysicalNodes = rcvBuffPhysical[0]
+          self.comm.Allreduce(sendBuffTotal, self.nSolidInterfaceNodes, op=self.MPI.SUM)
+          self.comm.Allreduce(sendBuffPhysical, self.nSolidInterfacePhysicalNodes, op=self.MPI.SUM)
         else:
           self.nSolidInterfaceNodes = np.copy(sendBuffTotal)
           self.nSolidInterfacePhysicalNodes = np.copy(sendBuffPhysical)
@@ -1247,8 +1247,8 @@ class Interface:
           if myid == self.rootProcess:
             for iProc in self.fluidInterfaceProcessors:
               sendBuff = {}
-              for key in self.FluidHaloNodeList[iProc].keys():
-                globalIndex = self.fluidIndexing[key]
+              for key in self.FluidHaloNodeList[iProc].keys():                  # The key is the SU2 global
+                globalIndex = self.fluidIndexing[key]                           # This is the interface global, not the SU2 global
                 DispX = self.fluidInterface_array_DispX_recon[globalIndex]
                 DispY = self.fluidInterface_array_DispY_recon[globalIndex]
                 DispZ = self.fluidInterface_array_DispZ_recon[globalIndex]
@@ -1537,9 +1537,9 @@ class Interface:
           FZ += self.localSolidLoads_array_Z[iVertex]
 
         if self.have_MPI:
-          FX = self.comm.allreduce(FX)
-          FY = self.comm.allreduce(FY)
-          FZ = self.comm.allreduce(FZ)
+          FX = self.comm.Allreduce(np.array(FX, dtype=np.float64), op=self.MPI.SUM)
+          FY = self.comm.Allreduce(np.array(FY, dtype=np.float64), op=self.MPI.SUM)
+          FZ = self.comm.Allreduce(np.array(FZ, dtype=np.float64), op=self.MPI.SUM)
 
         self.MPIPrint("Checking f/s interface total force...")
         self.MPIPrint('Solid side (Fx, Fy, Fz) = ({}, {}, {})'.format(FX, FY, FZ))
