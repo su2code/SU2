@@ -29,11 +29,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os
-import shutil
-import copy
 import numpy as np
-import scipy as sp
 import scipy.linalg as linalg
 from math import *
 
@@ -284,7 +280,6 @@ class Solver:
     self.deltaT = self.Config['DELTA_T']
     self.rhoAlphaGen = self.Config['RHO']
 
-    self.nElem = int()
     self.nPoint = int()
     self.nMarker = int()
     self.nRefSys = int()
@@ -389,7 +384,7 @@ class Solver:
             s = s[1:]
         return float(s)
 
-      self.nMarker = 1
+      self.nMarker = 0
       self.nPoint = 0
       self.nRefSys = 0
 
@@ -428,7 +423,7 @@ class Solver:
             self.node[self.nPoint].SetCD(CD)
             self.node[self.nPoint].SetCoord0((x,y,z))
             self.node[self.nPoint].SetCoord_n((x,y,z))
-            self.nPoint = self.nPoint+1
+            self.nPoint += 1
             continue
 
           pos = line.find('CORD2R')
@@ -462,17 +457,17 @@ class Solver:
             x_direction = x_direction/linalg.norm(x_direction)
             self.refsystems[self.nRefSys].SetRotMatrix(x_direction,y_direction,z_direction)
             self.refsystems[self.nRefSys].SetOrigin((AX,AY,AZ))
-            self.nRefSys = self.nRefSys+1
+            self.nRefSys += 1
             continue
 
           pos = line.find("SET1")
-          markerTag = self.FSI_marker
           if pos == 30:
-              self.markers[markerTag] = []
               line = line.strip('\r\n')
-              line = line[46:]
+              line = line[37:]
               line = line.split()
               existValue = True
+              markerTag = line.pop(0)
+              self.markers[markerTag] = []
               while existValue:
                   if line[0] == "+":
                       line = meshfile.readline()
@@ -483,19 +478,23 @@ class Solver:
                   for iPoint in range(self.nPoint):
                       if self.node[iPoint].GetID() == ID:
                           break
+                  if (iPoint == (self.nPoint-1)) and (self.node[iPoint].GetID() != ID):
+                      raise Exception("Point {} in the set {} was not found in the mesh".format(ID,markerTag))
                   self.markers[markerTag].append(iPoint)
                   existValue = len(line)>=1
+              self.nMarker += 1
               continue
 
+      if any(self.FSI_marker in key for key in self.markers.keys()):
+          raise Exception("The FSI marker was not found in the available sets")
+
       self.markers[self.FSI_marker].sort()
-      print("Number of elements: {}".format(self.nElem))
-      print("Number of point: {}".format(self.nPoint))
+
+      print("Number of points: {}".format(self.nPoint))
       print("Number of markers: {}".format(self.nMarker))
       print("Number of reference systems: {}".format(self.nRefSys))
-      if len(self.markers) > 0:
-        print("Moving marker(s):")
-        for mark in self.markers.keys():
-          print(mark)
+      print("Moving marker: {}".format(self.FSI_marker))
+      print("Number of points in the moving marker".format(len(self.markers[self.FSI_marker])))
 
   def __setStructuralMatrices(self):
     """
@@ -731,6 +730,55 @@ class Solver:
         self.node[iPoint].SetCoord_n((X_disp[iPoint]+coord0[0],Y_disp[iPoint]+coord0[1],Z_disp[iPoint]+coord0[2]))
         self.node[iPoint].SetVel_n((X_vel[iPoint],Y_vel[iPoint],Z_vel[iPoint]))
 
+  def __setRestart(self, timeIter):
+    if timeIter == 'nM1':
+      #read the Structhistory to obtain the mode amplitudes
+      with open('StructHistoryModal.dat','r') as file:
+        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
+        line = file.readline()
+        while 1:
+          line = file.readline()
+          if not line:
+            print("The restart iteration was not found in the structural history")
+            break
+          line = line.strip('\r\n').split()
+          if int(line[1])==(self.Config["RESTART_ITER"]-2):
+            break
+      index = 0
+      for index_mode in range(self.nDof):
+        self.q[index_mode] = float(line[index+3])
+        self.qdot[index_mode] = float(line[index+4])
+        self.qddot[index_mode] = float(line[index+5])
+        index += 3
+      del index
+      #push back the mode amplitudes velocities and accelerations
+      self.__computeInterfacePosVel(True)
+      self.q_n = np.copy(self.q)
+      self.qdot_n = np.copy(self.qdot)
+      self.qddot_n = np.copy(self.qddot)
+      self.a_n = np.copy(self.a)
+    if timeIter == 'n':
+      #read the Structhistory to obtain the modes
+      with open('StructHistoryModal.dat','r') as file:
+        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
+        line = file.readline()
+        while 1:
+          line = file.readline()
+          if not line:
+            print("The restart iteration was not found in the structural history")
+            break
+          line = line.strip('\r\n').split()
+          if int(line[1])==(self.Config["RESTART_ITER"]-1):
+            break
+      index = 0
+      for index_mode in range(self.nDof):
+        self.q[index_mode] = float(line[index+3])
+        self.qdot[index_mode] = float(line[index+4])
+        self.qddot[index_mode] = float(line[index+5])
+        index += 3
+      del index
+      self.__computeInterfacePosVel(False)
+
   def __temporalIteration(self,time):
     """
     This method integrates in time the solution.
@@ -794,9 +842,7 @@ class Solver:
     """
     This method uses the nodal forces and the mode shapes to obtain the modal forces.
     """
-    makerID = list(self.markers.keys())
-    makerID = makerID[0]
-    nodeList = self.markers[makerID]
+    nodeList = self.markers[self.FSI_marker]
     FX = np.zeros((self.nPoint, 1))
     FY = np.zeros((self.nPoint, 1))
     FZ = np.zeros((self.nPoint, 1))
@@ -858,55 +904,6 @@ class Solver:
 
     self.__computeInterfacePosVel(True)
 
-  def __setRestart(self, timeIter):
-    if timeIter == 'nM1':
-      #read the Structhistory to obtain the mode amplitudes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
-        line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-2):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      #push back the mode amplitudes velocities and accelerations
-      self.__computeInterfacePosVel(True)
-      self.q_n = np.copy(self.q)
-      self.qdot_n = np.copy(self.qdot)
-      self.qddot_n = np.copy(self.qddot)
-      self.a_n = np.copy(self.a)
-    if timeIter == 'n':
-      #read the Structhistory to obtain the modes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
-        line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-1):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      self.__computeInterfacePosVel(False)
-
   def writeSolution(self, time, timeIter, FSIIter):
     """
     This method is the main function for output. It writes the file StructHistoryModal.dat
@@ -943,24 +940,26 @@ class Solver:
     """
     This method can be accessed from outside to set the nodal forces.
     """
-
-    makerID = list(self.markers.keys())
-    makerID = makerID[0]
-    iPoint = self.getInterfaceNodeGlobalIndex(makerID, iVertex)
+    iPoint = self.getVertexGlobalIndex(self.FSI_marker, iVertex)
     self.node[iPoint].SetForce((fx,fy,fz))
+
+  def getNumberOfModes(self):
+      """ This method provides the number of degrees of freedom used in
+          the structural solver.
+      """
+      return self.nDof
 
   def getFSIMarkerID(self):
     """
     This method provides the ID of the interface marker
     """
-    L = list(self.markers)
-    return L[0]
+    return self.FSI_marker
 
   def getNumberOfSolidInterfaceNodes(self, markerID):
 
     return len(self.markers[markerID])
 
-  def getInterfaceNodeGlobalIndex(self, markerID, iVertex):
+  def getVertexGlobalIndex(self, markerID, iVertex):   # TODO This solver is serial, thus global=local
 
     return self.markers[markerID][iVertex]
 
@@ -988,3 +987,9 @@ class Solver:
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel_n()
     return Vel
+
+  def IsAHaloNode(self, markerID, iVertex):
+
+    iPoint = self.markers[markerID][iVertex]
+    halo = False  # TODO when in parallel we will need to define this
+    return halo

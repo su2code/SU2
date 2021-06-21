@@ -564,7 +564,7 @@ class Interface:
         for iVertex in range(self.nLocalFluidInterfaceNodes):
             # Note that the fluid solver is separated in more processors outside the python script
             # thus when, from a core, we request for the vertices on the interface, we only obtain
-            # those in that node
+            # those in that core
             GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
             posx, posy, posz = FluidSolver.GetInitialMeshCoord(self.fluidInterfaceIdentifier, iVertex)
             if GlobalIndex not in self.FluidHaloNodeList[myid].keys():
@@ -590,7 +590,7 @@ class Interface:
         self.localSolidInterface_array_Y_init = np.zeros(self.nLocalSolidInterfaceNodes)
         self.localSolidInterface_array_Z_init = np.zeros(self.nLocalSolidInterfaceNodes)
         for iVertex in range(self.nLocalSolidInterfaceNodes):
-          GlobalIndex = SolidSolver.getInterfaceNodeGlobalIndex(self.solidInterfaceIdentifier, iVertex)
+          GlobalIndex = SolidSolver.getVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
           posx, posy, posz = SolidSolver.getInterfaceNodePosInit(self.solidInterfaceIdentifier, iVertex)
           if GlobalIndex not in self.SolidHaloNodeList[myid].keys():
             solidIndexing_temp[GlobalIndex] = self.__getGlobalIndex('solid', myid, localIndex)
@@ -1437,7 +1437,7 @@ class Interface:
         GlobalIndex = int()
         localIndex = 0
         for iVertex in range(self.nLocalSolidInterfaceNodes):
-          GlobalIndex = SolidSolver.getInterfaceNodeGlobalIndex(self.solidInterfaceIdentifier, iVertex)
+          GlobalIndex = SolidSolver.getVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
           if GlobalIndex not in self.SolidHaloNodeList[myid].keys():
             newDispx, newDispy, newDispz = SolidSolver.getInterfaceNodeDisp(self.solidInterfaceIdentifier, iVertex)
             iGlobalVertex = self.__getGlobalIndex('solid', myid, localIndex)
@@ -1549,7 +1549,7 @@ class Interface:
         GlobalIndex = int()
         localIndex = 0
         for iVertex in range(self.nLocalSolidInterfaceNodes):
-          GlobalIndex = SolidSolver.getInterfaceNodeGlobalIndex(self.solidInterfaceIdentifier, iVertex)
+          GlobalIndex = SolidSolver.getVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
           if GlobalIndex in self.SolidHaloNodeList[myid].keys():
             pass  #TODO here, when the solid solver will run in parallel, we will need to pass the halo loads
           else:
@@ -1785,7 +1785,7 @@ class Interface:
         GlobalIndex = int()
         localIndex = 0
         for iVertex in range(self.nLocalSolidInterfaceNodes):
-            GlobalIndex = SolidSolver.getInterfaceNodeGlobalIndex(self.solidInterfaceIdentifier, iVertex)
+            GlobalIndex = SolidSolver.getVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
             if GlobalIndex not in self.SolidHaloNodeList[myid].keys():
               iGlobalVertex = self.__getGlobalIndex('solid', myid, localIndex)
               velx, vely, velz = SolidSolver.getInterfaceNodeVel(self.solidInterfaceIdentifier, iVertex)
