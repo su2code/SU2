@@ -908,6 +908,7 @@ class Solver:
       """
       self.__reset(self.q)
       self.q[iMode] = 1.0
+      self.__computeInterfacePosVel(True)
 
   def setInitialDisplacements(self):
     """
