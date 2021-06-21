@@ -2157,7 +2157,7 @@ class Interface:
               with open('Normals.csv', 'w') as f:
                   writer = csv.writer(f)
                   for key, value in normalsToPrint.items():
-                      writer.writerow([k, v])
+                      writer.writerow([key, value])
 
 
           SurfaceFileName = FluidSolver.GetSurfaceFileName()
