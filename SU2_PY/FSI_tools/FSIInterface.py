@@ -1519,9 +1519,12 @@ class Interface:
         else:
           myid = 0
 
-        FY = 0.0 # solid-side resultant forces
-        FX = 0.0
-        FZ = 0.0
+        FX = np.array(0.0, dtype=np.float64)
+        FY = np.array(0.0, dtype=np.float64) # solid-side resultant forces
+        FZ = np.array(0.0, dtype=np.float64)
+        FXSendBuff = np.array(0.0, dtype=np.float64)
+        FYSendBuff = np.array(0.0, dtype=np.float64)
+        FZSendBuff = np.array(0.0, dtype=np.float64)
         FFX = 0.0 # fluid-side resultant forces
         FFY = 0.0
         FFZ = 0.0
@@ -1532,14 +1535,22 @@ class Interface:
         FFZ = self.fluidLoads_array_Z.sum()
 
         for iVertex in range(self.nLocalSolidInterfacePhysicalNodes):
-          FX += self.localSolidLoads_array_X[iVertex]
-          FY += self.localSolidLoads_array_Y[iVertex]
-          FZ += self.localSolidLoads_array_Z[iVertex]
+          FXSendBuff += self.localSolidLoads_array_X[iVertex]
+          FYSendBuff += self.localSolidLoads_array_Y[iVertex]
+          FZSendBuff += self.localSolidLoads_array_Z[iVertex]
 
         if self.have_MPI:
-          FX = self.comm.Allreduce(np.array(FX, dtype=np.float64), op=self.MPI.SUM)
-          FY = self.comm.Allreduce(np.array(FY, dtype=np.float64), op=self.MPI.SUM)
-          FZ = self.comm.Allreduce(np.array(FZ, dtype=np.float64), op=self.MPI.SUM)
+          self.comm.Allreduce(FXSendBuff, FX, op=self.MPI.SUM)
+          self.comm.Allreduce(FYSendBuff, FY, op=self.MPI.SUM)
+          self.comm.Allreduce(FZSendBuff, FZ, op=self.MPI.SUM)
+        else:
+          FX = np.copy(FXSendBuff)
+          FY = np.copy(FYSendBuff)
+          FZ = np.copy(FZSendBuff)
+
+        del FXSendBuff
+        del FYSendBuff
+        del FZSendBuff
 
         self.MPIPrint("Checking f/s interface total force...")
         self.MPIPrint('Solid side (Fx, Fy, Fz) = ({}, {}, {})'.format(FX, FY, FZ))
