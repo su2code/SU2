@@ -896,6 +896,13 @@ class Solver:
     print(line)
     self.__computeInterfacePosVel(False)
 
+  def activateMode(self, iMode):
+      """ This method is used to artificially set only one mode activated, thus
+          with non zero amplitude.
+      """
+      self.__reset(self.q)
+      self.q[iMode] = 1.0
+
   def setInitialDisplacements(self):
     """
     This method provides public access to the method __computeInterfacePosVel and

@@ -122,6 +122,9 @@ def main():
     elif CSD_Solver == 'IMPOSED':
       from SU2_Nastran import pysu2_nastran
       SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
+    elif CSD_Solver == 'MAPPING':
+      from SU2_Nastran import pysu2_nastran
+      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
       print("\n Invalid solid solver option")
   else:
