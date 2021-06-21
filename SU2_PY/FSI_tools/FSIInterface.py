@@ -679,26 +679,22 @@ class Interface:
               if myid == iProc:
                 for jProc in self.solidInterfaceProcessors:
                   if jProc != iProc:
-                    self.comm.ssend(self.localSolidInterface_array_X_init, dest=jProc, tag=1)
-                    self.comm.ssend(self.localSolidInterface_array_Y_init, dest=jProc, tag=2)
-                    self.comm.ssend(self.localSolidInterface_array_Z_init, dest=jProc, tag=3)
+                    self.comm.Send(self.localSolidInterface_array_X_init, dest=jProc, tag=1)
+                    self.comm.Send(self.localSolidInterface_array_Y_init, dest=jProc, tag=2)
+                    self.comm.Send(self.localSolidInterface_array_Z_init, dest=jProc, tag=3)
                   else:
-                    sizeOfBuff = self.solidPhysicalInterfaceNodesDistribution[iProc]
-                    solidInterfaceBuffRcv_X = np.zeros(sizeOfBuff)
-                    solidInterfaceBuffRcv_Y = np.zeros(sizeOfBuff)
-                    solidInterfaceBuffRcv_Z = np.zeros(sizeOfBuff)
-                    solidInterfaceBuffRcv_X = self.localSolidInterface_array_X_init
-                    solidInterfaceBuffRcv_Y = self.localSolidInterface_array_Y_init
-                    solidInterfaceBuffRcv_Z = self.localSolidInterface_array_Z_init
+                    solidInterfaceBuffRcv_X = np.copy(self.localSolidInterface_array_X_init)
+                    solidInterfaceBuffRcv_Y = np.copy(self.localSolidInterface_array_Y_init)
+                    solidInterfaceBuffRcv_Z = np.copy(self.localSolidInterface_array_Z_init)
               if myid in self.solidInterfaceProcessors:
                 if myid != iProc:
                   sizeOfBuff = self.solidPhysicalInterfaceNodesDistribution[iProc]
-                  solidInterfaceBuffRcv_X = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_Y = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_Z = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_X = self.comm.recv(source=iProc, tag=1)
-                  solidInterfaceBuffRcv_Y = self.comm.recv(source=iProc, tag=2)
-                  solidInterfaceBuffRcv_Z = self.comm.recv(source=iProc, tag=3)
+                  solidInterfaceBuffRcv_X = np.empty(sizeOfBuff, dtype=np.float64)
+                  solidInterfaceBuffRcv_Y = np.empty(sizeOfBuff, dtype=np.float64)
+                  solidInterfaceBuffRcv_Z = np.empty(sizeOfBuff, dtype=np.float64)
+                  self.comm.Recv(solidInterfaceBuffRcv_X, source=iProc, tag=1)
+                  self.comm.Recv(solidInterfaceBuffRcv_Y, source=iProc, tag=2)
+                  self.comm.Recv(solidInterfaceBuffRcv_Z, source=iProc, tag=3)
                 if FSI_config['MESH_INTERP_METHOD'] == 'RBF':
                   self.RBFMeshMapping_A(solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, self.RBF_rad)
                 else:
@@ -721,26 +717,22 @@ class Interface:
             if myid == iProc:
               for jProc in self.fluidInterfaceProcessors:
                 if jProc != iProc:
-                  self.comm.ssend(self.localSolidInterface_array_X_init, dest=jProc, tag=1)
-                  self.comm.ssend(self.localSolidInterface_array_Y_init, dest=jProc, tag=2)
-                  self.comm.ssend(self.localSolidInterface_array_Z_init, dest=jProc, tag=3)
+                  self.comm.Send(self.localSolidInterface_array_X_init, dest=jProc, tag=1)
+                  self.comm.Send(self.localSolidInterface_array_Y_init, dest=jProc, tag=2)
+                  self.comm.Send(self.localSolidInterface_array_Z_init, dest=jProc, tag=3)
                 else:
-                  sizeOfBuff = self.solidPhysicalInterfaceNodesDistribution[iProc]
-                  solidInterfaceBuffRcv_X = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_Y = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_Z = np.zeros(sizeOfBuff)
-                  solidInterfaceBuffRcv_X = self.localSolidInterface_array_X_init
-                  solidInterfaceBuffRcv_Y = self.localSolidInterface_array_Y_init
-                  solidInterfaceBuffRcv_Z = self.localSolidInterface_array_Z_init
+                  solidInterfaceBuffRcv_X = np.copy(self.localSolidInterface_array_X_init)
+                  solidInterfaceBuffRcv_Y = np.copy(self.localSolidInterface_array_Y_init)
+                  solidInterfaceBuffRcv_Z = np.copy(self.localSolidInterface_array_Z_init)
             if myid in self.fluidInterfaceProcessors:
               if myid != iProc:
                 sizeOfBuff = self.solidPhysicalInterfaceNodesDistribution[iProc]
-                solidInterfaceBuffRcv_X = np.zeros(sizeOfBuff)
-                solidInterfaceBuffRcv_Y = np.zeros(sizeOfBuff)
-                solidInterfaceBuffRcv_Z = np.zeros(sizeOfBuff)
-                solidInterfaceBuffRcv_X = self.comm.recv(source=iProc, tag=1)
-                solidInterfaceBuffRcv_Y = self.comm.recv(source=iProc, tag=2)
-                solidInterfaceBuffRcv_Z = self.comm.recv(source=iProc, tag=3)
+                solidInterfaceBuffRcv_X = np.empty(sizeOfBuff, dtype=np.float64)
+                solidInterfaceBuffRcv_Y = np.empty(sizeOfBuff, dtype=np.float64)
+                solidInterfaceBuffRcv_Z = np.empty(sizeOfBuff, dtype=np.float64)
+                self.comm.Recv(solidInterfaceBuffRcv_X, source=iProc, tag=1)
+                self.comm.Recv(solidInterfaceBuffRcv_Y, source=iProc, tag=2)
+                self.comm.Recv(solidInterfaceBuffRcv_Z, source=iProc, tag=3)
               if FSI_config['MATCHING_MESH'] == 'NO':
                 if FSI_config['MESH_INTERP_METHOD'] == 'RBF':
                   self.RBFMeshMapping_B(solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, self.RBF_rad)
@@ -1206,10 +1198,10 @@ class Interface:
           # Send the partitioned interface to the right fluid partitions
           if myid == self.rootProcess:
             for iProc in self.fluidInterfaceProcessors:
-              sendBuff_X = np.zeros(self.fluidPhysicalInterfaceNodesDistribution[iProc])
-              sendBuff_Y = np.zeros(self.fluidPhysicalInterfaceNodesDistribution[iProc])
-              sendBuff_Z = np.zeros(self.fluidPhysicalInterfaceNodesDistribution[iProc])
-              globalIndex = self.fluidGlobalIndexRange[iProc][iProc][0]
+              sendBuff_X = np.empty(self.fluidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
+              sendBuff_Y = np.empty(self.fluidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
+              sendBuff_Z = np.empty(self.fluidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
+              globalIndex = self.__getGlobalIndex('fluid', iProc, 0)
               for iVertex in range(self.fluidPhysicalInterfaceNodesDistribution[iProc]):
                 sendBuff_X[iVertex] = self.fluidInterface_array_DispX_recon[globalIndex]
                 sendBuff_Y[iVertex] = self.fluidInterface_array_DispY_recon[globalIndex]
@@ -1220,17 +1212,17 @@ class Interface:
                 self.localFluidInterface_array_DispY = np.copy(sendBuff_Y)
                 self.localFluidInterface_array_DispZ = np.copy(sendBuff_Z)
               else:
-                self.comm.ssend(sendBuff_X, dest=iProc, tag = 1)
-                self.comm.ssend(sendBuff_Y, dest=iProc, tag = 2)
-                self.comm.ssend(sendBuff_Z, dest=iProc, tag = 3)
+                self.comm.Send(sendBuff_X, dest=iProc, tag = 1)
+                self.comm.Send(sendBuff_Y, dest=iProc, tag = 2)
+                self.comm.Send(sendBuff_Z, dest=iProc, tag = 3)
           if myid in self.fluidInterfaceProcessors:
               if myid != self.rootProcess:
-                self.localFluidInterface_array_DispX = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
-                self.localFluidInterface_array_DispY = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
-                self.localFluidInterface_array_DispZ = np.zeros(self.nLocalFluidInterfacePhysicalNodes)
-                self.localFluidInterface_array_DispX = self.comm.recv(source=self.rootProcess, tag = 1)
-                self.localFluidInterface_array_DispY = self.comm.recv(source=self.rootProcess, tag = 2)
-                self.localFluidInterface_array_DispZ = self.comm.recv(source=self.rootProcess, tag = 3)
+                self.localFluidInterface_array_DispX = np.empty(self.nLocalFluidInterfacePhysicalNodes, dtype=np.float64)
+                self.localFluidInterface_array_DispY = np.empty(self.nLocalFluidInterfacePhysicalNodes, dtype=np.float64)
+                self.localFluidInterface_array_DispZ = np.empty(self.nLocalFluidInterfacePhysicalNodes, dtype=np.float64)
+                self.comm.Recv(self.localFluidInterface_array_DispX, source=self.rootProcess, tag = 1)
+                self.comm.Recv(self.localFluidInterface_array_DispY, source=self.rootProcess, tag = 2)
+                self.comm.Recv(self.localFluidInterface_array_DispZ, source=self.rootProcess, tag = 3)
           del sendBuff_X
           del sendBuff_Y
           del sendBuff_Z
@@ -1256,7 +1248,7 @@ class Interface:
               if iProc == self.rootProcess:
                 self.haloNodesDisplacements = sendBuff
               else:
-                self.comm.ssend(sendBuff, dest = iProc, tag=4)
+                self.comm.send(sendBuff, dest = iProc, tag=4)
           if myid in self.fluidInterfaceProcessors:
             if myid != self.rootProcess:
               self.haloNodesDisplacements = self.comm.recv(source = self.rootProcess, tag = 4)
@@ -1361,34 +1353,31 @@ class Interface:
           # Send the partitioned loads to the right solid partitions
           if myid == self.rootProcess:
             for iProc in self.solidInterfaceProcessors:
-              sendBuff_X = np.zeros(self.solidPhysicalInterfaceNodesDistribution[iProc])
-              sendBuff_Y = np.zeros(self.solidPhysicalInterfaceNodesDistribution[iProc])
-              sendBuff_Z = np.zeros(self.solidPhysicalInterfaceNodesDistribution[iProc])
-              globalIndex = self.solidGlobalIndexRange[iProc][iProc][0]
+              sendBuff_X = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
+              sendBuff_Y = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
+              sendBuff_Z = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=mp.float64)
+              globalIndex = self.__getGlobalIndex('solid', iProc, 0)
               for iVertex in range(self.solidPhysicalInterfaceNodesDistribution[iProc]):
                 sendBuff_X[iVertex] = self.solidLoads_array_X_recon[globalIndex]
                 sendBuff_Y[iVertex] = self.solidLoads_array_Y_recon[globalIndex]
                 sendBuff_Z[iVertex] = self.solidLoads_array_Z_recon[globalIndex]
                 globalIndex += 1
               if iProc != myid:
-                self.comm.ssend(sendBuff_X, dest=iProc, tag = 1)
-                self.comm.ssend(sendBuff_Y, dest=iProc, tag = 2)
-                self.comm.ssend(sendBuff_Z, dest=iProc, tag = 3)
+                self.comm.Send(sendBuff_X, dest=iProc, tag = 1)
+                self.comm.Send(sendBuff_Y, dest=iProc, tag = 2)
+                self.comm.Send(sendBuff_Z, dest=iProc, tag = 3)
               else:
-                self.localSolidLoads_array_X = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-                self.localSolidLoads_array_Y = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-                self.localSolidLoads_array_Z = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-                self.localSolidLoads_array_X = sendBuff_X
-                self.localSolidLoads_array_Y = sendBuff_Y
-                self.localSolidLoads_array_Z = sendBuff_Z
+                self.localSolidLoads_array_X = np.copy(sendBuff_X)
+                self.localSolidLoads_array_Y = np.copy(sendBuff_Y)
+                self.localSolidLoads_array_Z = np.copy(sendBuff_Z)
           if myid in self.solidInterfaceProcessors:
             if myid != self.rootProcess:
-              self.localSolidLoads_array_X = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-              self.localSolidLoads_array_Y = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-              self.localSolidLoads_array_Z = np.zeros(self.nLocalSolidInterfacePhysicalNodes)
-              self.localSolidLoads_array_X = self.comm.recv(source=self.rootProcess, tag = 1)
-              self.localSolidLoads_array_Y = self.comm.recv(source=self.rootProcess, tag = 2)
-              self.localSolidLoads_array_Z = self.comm.recv(source=self.rootProcess, tag = 3)
+              self.localSolidLoads_array_X = np.empty(self.nLocalSolidInterfacePhysicalNodes, dtype=np.float64)
+              self.localSolidLoads_array_Y = np.empty(self.nLocalSolidInterfacePhysicalNodes, dtype=np.float64)
+              self.localSolidLoads_array_Z = np.empty(self.nLocalSolidInterfacePhysicalNodes, dtype=np.float64)
+              self.comm.Recv(self.localSolidLoads_array_X, source=self.rootProcess, tag = 1)
+              self.comm.Recv(self.localSolidLoads_array_Y, source=self.rootProcess, tag = 2)
+              self.comm.Recv(self.localSolidLoads_array_Z, source=self.rootProcess, tag = 3)
           del sendBuff_X
           del sendBuff_Y
           del sendBuff_Z
@@ -1414,7 +1403,7 @@ class Interface:
               if iProc == self.rootProcess:
                 self.haloNodesLoads = sendBuff
               else:
-                self.comm.ssend(sendBuff, dest = iProc, tag=4)
+                self.comm.send(sendBuff, dest = iProc, tag=4)
           if myid in self.solidInterfaceProcessors:
             if myid != self.rootProcess:
               self.haloNodesLoads = self.comm.recv(source = self.rootProcess, tag = 4)
