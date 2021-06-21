@@ -401,7 +401,10 @@ class Solver:
             self.node.append(Point())
             line = line[30:]
             ID = int(line[8:16])
-            CP = int(line[16:24])
+            if line[16:24] == '        ':
+              CP = int(0)
+            else:
+              CP = int(line[16:24])
             x = nastran_float(line[24:32])
             y = nastran_float(line[32:40])
             z = nastran_float(line[40:48])
@@ -416,7 +419,10 @@ class Solver:
               x = RotatedPos[0]+DeltaPos[0]
               y = RotatedPos[1]+DeltaPos[1]
               z = RotatedPos[2]+DeltaPos[2]
-            CD = int(line[48:56])
+            if line[48:56] == '        ':
+              CD = int(0)
+            else:
+              CD = int(line[48:56])
             self.node[self.nPoint].SetCoord((x,y,z))
             self.node[self.nPoint].SetID(ID)
             self.node[self.nPoint].SetCP(CP)
