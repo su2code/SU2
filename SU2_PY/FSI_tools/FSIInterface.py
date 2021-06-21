@@ -1355,7 +1355,7 @@ class Interface:
             for iProc in self.solidInterfaceProcessors:
               sendBuff_X = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
               sendBuff_Y = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
-              sendBuff_Z = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=mp.float64)
+              sendBuff_Z = np.empty(self.solidPhysicalInterfaceNodesDistribution[iProc], dtype=np.float64)
               globalIndex = self.__getGlobalIndex('solid', iProc, 0)
               for iVertex in range(self.solidPhysicalInterfaceNodesDistribution[iProc]):
                 sendBuff_X[iVertex] = self.solidLoads_array_X_recon[globalIndex]
