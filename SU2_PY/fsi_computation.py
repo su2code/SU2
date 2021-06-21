@@ -158,7 +158,7 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  if CSD_SOLVER != "MAPPING":
+  if CSD_Solver != "MAPPING":
     # --- Launch a steady or unsteady FSI computation --- #
     if FSI_config['TIME_MARCHING'] == "YES":
       try:
