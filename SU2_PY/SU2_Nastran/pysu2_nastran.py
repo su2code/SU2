@@ -485,7 +485,7 @@ class Solver:
               self.nMarker += 1
               continue
 
-      if any(self.FSI_marker in key for key in self.markers.keys()):
+      if not any(self.FSI_marker in key for key in self.markers.keys()):
           raise Exception("The FSI marker was not found in the available sets")
 
       self.markers[self.FSI_marker].sort()
