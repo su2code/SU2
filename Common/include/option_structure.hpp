@@ -935,23 +935,23 @@ static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
 /*!
  * \brief Types of wall functions.
  */
-enum ENUM_WALL_FUNCTIONS {
-  NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
-  STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
-  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
-  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
-  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
-  NONEQUILIBRIUM_WALL_MODEL = 5,   /*!< \brief Non-equilibrium wall model for LES. */
-  LOGARITHMIC_WALL_MODEL    = 6    /*!< \brief Logarithmic law-of-the-wall model for LES. */
+enum class WALL_FUNCTIONS {
+  NONE                      ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  STANDARD_FUNCTION    ,   /*!< \brief Standard wall function. */
+  ADAPTIVE_FUNCTION    ,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
+  SCALABLE_FUNCTION    ,   /*!< \brief Scalable wall function. */
+  EQUILIBRIUM_MODEL    ,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_MODEL ,   /*!< \brief Non-equilibrium wall model for LES. */
+  LOGARITHMIC_MODEL        /*!< \brief Logarithmic law-of-the-wall model for LES. */
 };
-static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
-  MakePair("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
-  MakePair("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
-  MakePair("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
-  MakePair("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
-  MakePair("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
-  MakePair("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL)
-  MakePair("LOGARITHMIC_WALL_MODEL", LOGARITHMIC_WALL_MODEL)
+static const MapType<string, WALL_FUNCTIONS> Wall_Functions_Map = {
+  MakePair("NO_WALL_FUNCTION",          WALL_FUNCTIONS::NONE)
+  MakePair("STANDARD_WALL_FUNCTION",    WALL_FUNCTIONS::STANDARD_FUNCTION)
+  MakePair("ADAPTIVE_WALL_FUNCTION",    WALL_FUNCTIONS::ADAPTIVE_FUNCTION)
+  MakePair("SCALABLE_WALL_FUNCTION",    WALL_FUNCTIONS::SCALABLE_FUNCTION)
+  MakePair("EQUILIBRIUM_WALL_MODEL",    WALL_FUNCTIONS::EQUILIBRIUM_MODEL)
+  MakePair("NONEQUILIBRIUM_WALL_MODEL", WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL)
+  MakePair("LOGARITHMIC_WALL_MODEL",    WALL_FUNCTIONS::LOGARITHMIC_MODEL)
 };
 
 /*!
