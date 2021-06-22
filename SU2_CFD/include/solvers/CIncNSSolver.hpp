@@ -65,6 +65,16 @@ class CIncNSSolver final : public CIncEulerSolver {
   void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                         CNumerics *numerics, CConfig *config) override;
 
+/*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry,
+                     CSolver** solver_container,
+                     const CConfig* config);
+
   /*!
    * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
    *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.

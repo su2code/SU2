@@ -1,5 +1,5 @@
 /*!
- * \file output_flow.cpp
+ * \file CFlowOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -30,12 +30,10 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : CFVMOutput (config, nDim, fem_output){
 
+  lastInnerIter = curInnerIter;
 }
-
-
-CFlowOutput::~CFlowOutput(void){}
 
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
@@ -863,7 +861,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-void CFlowOutput::WriteMetaData(CConfig *config){
+void CFlowOutput::WriteMetaData(const CConfig *config){
 
   ofstream meta_file;
 
@@ -2711,7 +2709,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
@@ -2733,41 +2730,6 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
   }
 
   return false || force_writing;
-}
-
-void CFlowOutput::AddCommonFVMOutputs(const CConfig *config) {
-
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
-
-  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-    stringstream key, name;
-    key << "MG_" << iMesh;
-    name << "Coarse_Grid_" << iMesh;
-    AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
-  }
-}
-
-void CFlowOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
-
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  SetVolumeOutputValue("RANK", iPoint, rank);
-
-  if (config->GetWrt_MultiGrid()) {
-    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-      stringstream key;
-      key << "MG_" << iMesh;
-      SetVolumeOutputValue(key.str(), iPoint, geometry->CoarseGridColor(iPoint,iMesh-1));
-    }
-  }
 }
 
 void CFlowOutput::SetTimeAveragedFields(){
@@ -2835,5 +2797,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+}
+
+void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
+
+  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Target CL" << config->GetTarget_CL();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    if (config->GetFinite_Difference_Mode()){
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
+    else
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+    FixedCLSummary.PrintFooter();
+    SetScreen_Header(config);
+  }
+
+  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
+    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
+    if (nDim == 3){
+      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
+      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
+    }
+    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
+    FixedCLSummary.PrintFooter();
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
   }
 }

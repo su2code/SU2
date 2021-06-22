@@ -110,6 +110,24 @@ FORCEINLINE Double squaredNorm(const VectorDbl<nDim>& vector) {
 }
 
 /*!
+ * \brief Tangential projection.
+ */
+template<size_t nDim>
+FORCEINLINE VectorDbl<nDim> tangentProjection(const MatrixDbl<nDim>& tensor,
+                                              const VectorDbl<nDim>& unitVector) {
+  VectorDbl<nDim> proj;
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    proj(iDim) = dot(tensor[iDim], unitVector);
+
+  Double normalProj = dot(proj, unitVector);
+
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    proj(iDim) -= normalProj * unitVector(iDim);
+
+  return proj;
+}
+
+/*!
  * \brief Vector norm.
  */
 template<size_t nDim>

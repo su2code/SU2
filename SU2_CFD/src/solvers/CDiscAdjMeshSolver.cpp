@@ -94,32 +94,30 @@ void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
   }
   END_SU2_OMP_FOR
 
-  /*--- Set indices to zero ---*/
-
-  RegisterVariables(geometry, config, true);
-
 }
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   /*--- Register reference mesh coordinates ---*/
-  bool input = true;
-  direct_solver->GetNodes()->Register_MeshCoord(input);
+  direct_solver->GetNodes()->Register_MeshCoord();
 
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
+  /*--- Register boundary displacements as input.
+   * Except for FSI, where they are determined by the FEA solver. ---*/
+
+  if (config->GetFSI_Simulation()) return;
+
   SU2_OMP_MASTER {
-    /*--- Register boundary displacements as input ---*/
-    bool input = true;
-    direct_solver->GetNodes()->Register_BoundDisp(input);
+    direct_solver->GetNodes()->Register_BoundDisp();
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
-void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
@@ -142,17 +140,15 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  /*--- Extract the sensitivities of the boundary displacements ---*/
+  /*--- Extract the sensitivities of the boundary displacements, except for FSI. ---*/
+
+  if (config->GetFSI_Simulation()) return;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
-    /*--- Extract the adjoint solution of the boundary displacements ---*/
-
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjoint_BoundDisp(iPoint,Solution);
-
-    /*--- Store the sensitivities of the boundary displacements ---*/
 
     nodes->SetBoundDisp_Sens(iPoint,Solution);
 
@@ -169,7 +165,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CS
   const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/
-  ExtractAdjoint_Solution(geometry, config);
+  ExtractAdjoint_Solution(geometry, config, false);
 
   /*--- Extract the adjoint variables: sensitivities of the boundary displacements ---*/
   ExtractAdjoint_Variables(geometry, config);

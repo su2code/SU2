@@ -363,8 +363,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     nVarFlow = solver_container[FLOW_SOL]->GetnVar();
 
     /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
-    su2double Primitive_Flow_i[MAXNVAR] = {0};
-    su2double Primitive_Flow_j[MAXNVAR] = {0};
+    vector<su2double> Primitive_Flow_i(nVarFlow, 0.0);
+    vector<su2double> Primitive_Flow_j(nVarFlow, 0.0);
 
     for (auto iEdge = 0ul; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -421,7 +421,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
         Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
 
-        numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
+        numerics->SetPrimitive(Primitive_Flow_i.data(), Primitive_Flow_j.data());
         numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
       }
 
@@ -571,9 +571,9 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, Twall, dTdn;
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  const auto laminar_viscosity = config->GetMu_ConstantND();
-  const auto Prandtl_Lam = config->GetPrandtl_Lam();
-  const auto thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity_Solid();
+  const su2double laminar_viscosity = config->GetMu_ConstantND();
+  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity_Solid();
 
   //su2double Prandtl_Turb = config->GetPrandtl_Turb();
   //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
@@ -832,8 +832,8 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  const auto Temperature_Ref = config->GetTemperature_Ref();
-  const auto rho_cp_solid = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
+  const su2double Temperature_Ref = config->GetTemperature_Ref();
+  const su2double rho_cp_solid = config->GetDensity_Solid()*config->GetSpecific_Heat_Cp();
 
   if (flow) {
 
@@ -1264,9 +1264,6 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long total_index;
-  su2double Delta, Vol, *local_Res_TruncError;
-
   /*--- Set maximum residual to zero ---*/
 
   SetResToZero();
@@ -1277,29 +1274,20 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Read the residual ---*/
 
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-
-    Vol = geometry->nodes->GetVolume(iPoint);
+    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
 
-      if(flow) {
-        Delta = Vol / nodes->GetDelta_Time(iPoint);
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
-      else if (heat_equation) {
-        Delta = Vol / nodes->GetDelta_Time(iPoint);
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
+      // Identical for flow and heat
+      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Delta);
 
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
+        const auto total_index = iPoint*nVar + iVar;
         LinSysRes[total_index] = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
@@ -1308,7 +1296,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
+      const auto total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
@@ -1320,7 +1308,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
+      const auto total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = 0.0;
       LinSysSol[total_index] = 0.0;
     }

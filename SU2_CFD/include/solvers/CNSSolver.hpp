@@ -232,5 +232,4 @@ public:
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) const override {
     return Buffet_Sensor[val_marker][val_vertex];
   }
-
 };

@@ -630,7 +630,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -3074,6 +3074,22 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the u tau.
+   */
+  inline virtual su2double GetUTau(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the eddy viscosity.
+   */
+  inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
   inline virtual su2double GetStrainMag_Max(void) const { return 0; }
@@ -3617,8 +3633,9 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
-  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
+  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
    * \brief  A virtual member.
