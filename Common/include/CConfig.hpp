@@ -1121,6 +1121,14 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  /*--- libROM configure options ---*/
+  bool libROM;                              /*!< \brief Toggle saving to libROM. */
+  string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
+  unsigned short POD_Basis_Gen,             /*!< \brief Type of POD basis generation (static or incremental). */
+  maxBasisDim;                              /*!< \brief Maximum number of POD basis dimensions. */
+  //nPOD_Modes;                             /*!< \brief Number of POD mdoes desired. */
+  //unsigned long nHyper_Nodes;             /*!< \brief Number of hyper-reduction nodes desired. */
+  
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
@@ -9278,4 +9286,39 @@ public:
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
 
+  /*!
+   * \brief Get whether or not to save solution data to libROM.
+   * \return True if specified in config file.
+   */
+  bool GetSave_libROM(void) const {return libROM; }
+  
+  /*!
+   * \brief Get the name of the file for libROM to save.
+   * \return Filename prefix for libROM to save to (default: "su2").
+   */
+  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
+  
+  /*!
+   * \brief Static or incremental toggle for POD basis generation type.
+   * \return Type of POD generation type
+   */
+  unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  
+  /*!
+   * \brief Get maximum number of POD basis dimensions (default: 100).
+   * \return Maximum number of POD basis vectors.
+   */
+  unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
+  
+  /*!
+   * \brief Get number of POD modes desired.
+   * \return Number of POD modes desired.
+   */
+  //unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
+  
+  /*!
+   * \brief Get the number of hyper-reduction nodes desired.
+   * \return Number of rdesired hyper-reduction nodes.
+   */
+  //unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
 };

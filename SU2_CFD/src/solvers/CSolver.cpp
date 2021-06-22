@@ -119,6 +119,9 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   nPrimVarGrad = 0;
   nPrimVar     = 0;
 
+#ifdef HAVE_LIBROM
+  u_basis_generator  = nullptr;
+#endif
 }
 
 CSolver::~CSolver(void) {
@@ -188,6 +191,9 @@ CSolver::~CSolver(void) {
 
   delete VerificationSolution;
 
+#ifdef HAVE_LIBROM
+  if (u_basis_generator != nullptr) u_basis_generator = nullptr;
+#endif
 }
 
 void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
@@ -4209,3 +4215,106 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 }
+
+#ifdef HAVE_LIBROM
+void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
+  
+  unsigned long iPoint, total_index;
+  unsigned short iVar;
+  
+  bool unsteady            = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
+  string filename          = config->GetlibROMbase_FileName();
+  unsigned short pod_basis = config->GetKind_PODBasis();
+  unsigned long TimeIter   = config->GetTimeIter();
+  unsigned long nTimeIter  = config->GetnTime_Iter();
+  int maxBasisDim          = config->GetMax_BasisDim();
+  int dim = int(nPointDomain * nVar);
+  bool incremental = false;
+
+  if (!u_basis_generator) {
+    
+    /*--- Define SVD basis generator ---*/
+    int timesteps = (int)(nTimeIter - TimeIter);
+    CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
+                                                false, true).setMaxBasisDimension(int(maxBasisDim));
+    
+    if (pod_basis == STATIC_POD) {
+      std::cout << "Creating static basis generator." << std::endl;
+      if (unsteady) {
+        std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+      }
+    }
+    else {
+      std::cout << "Creating incremental basis generator." << std::endl;
+      svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
+                                    1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
+      incremental = true;
+    }
+    
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
+    
+    // Print nodes for each rank for now
+    std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
+    
+    // Save mesh ordering
+    std::ofstream f;
+    f.open(filename + "_mesh_" + to_string(rank) + ".csv");
+        for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+          unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+          auto Coord = geometry->nodes->GetCoord(iPoint);
+          f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
+        }
+    
+    f.close();
+  }
+
+   if (unsteady) {
+      double* u = new double[nPointDomain*nVar];
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+         for (iVar = 0; iVar < nVar; iVar++) {
+            total_index = iPoint*nVar + iVar;
+            u[total_index] = nodes->GetSolution(iPoint,iVar);
+         }
+      }
+      
+      // give solution and time steps to libROM:
+      double dt = config->GetDelta_UnstTime();
+      double t =  config->GetCurrent_UnstTime();
+      u_basis_generator->takeSample(u, t, dt);
+      delete[] u;
+   }
+   
+  /*--- End collection of data and save POD ---*/
+  
+   if (converged) {
+
+      if (!unsteady) {
+         double* u = new double[nPointDomain*nVar];
+         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+               total_index = iPoint*nVar + iVar;
+               u[total_index] = nodes->GetSolution(iPoint, iVar);
+            }
+         }
+         
+         // dt is different for each node, so just use a placeholder dt
+         double dt = base_nodes->GetDelta_Time(0);
+         double t = dt*TimeIter;
+         u_basis_generator->takeSample(u, t, dt);
+
+         delete[] u;
+      }
+      
+      if (pod_basis == STATIC_POD) {
+         u_basis_generator->writeSnapshot();
+      }
+      std::cout << "Computing SVD" << std::endl;
+      int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+      std::cout << "Basis dimension: " << rom_dim << std::endl;
+      u_basis_generator->endSamples();
+      std::cout << "ROM Sampling ended" << std::endl;
+   }
+}
+#endif

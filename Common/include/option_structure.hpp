@@ -2225,6 +2225,18 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
 };
 
+/*!
+ * \brief Type of POD basis generation (for use with libROM)
+ */
+enum ENUM_POD_KIND {
+  STATIC_POD = 1,            /*!< \brief Use static SVD for POD basis generation. */
+  INCREMENTAL_POD = 2        /*!< \brief Use incremental SVD for POD basis generation. */
+};
+static const MapType<string, ENUM_POD_KIND> POD_Map = {
+  MakePair("STATIC_POD", STATIC_POD)
+  MakePair("INCREMENTAL_POD", INCREMENTAL_POD)
+};
+
 #undef MakePair
 /* END_CONFIG_ENUMS */
 
