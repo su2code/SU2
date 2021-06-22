@@ -216,9 +216,10 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
 class CTurbomachineryStagePerformance {
    protected: 
       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
+      CFluidModel &fluidModel;
    public:
       su2double dummy=0.0;
-      CTurbomachineryStagePerformance();
+      CTurbomachineryStagePerformance(CFluidModel& fluid);
       ~CTurbomachineryStagePerformance();
       virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config);
       virtual void ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);

@@ -243,7 +243,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
       output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter(), val_iZone);
-    if (config[ZONE_0]->GetMultizone_Problem())
+    // if (config[ZONE_0]->GetMultizone_Problem())
       output->SetTurboMultiZonePerformance_Output(TurbomachineryStagePerformance, TurbomachineryPerformance, config[val_iZone]);
     }
     

@@ -61,5 +61,5 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
 
 void CTurboIteration::InitTurboPerformance(CGeometry *geometry, CConfig *config, CFluidModel *fluid){
   TurbomachineryPerformance = std::make_shared<CTurbomachineryPerformance>(*config, *geometry, *fluid);
-  TurbomachineryStagePerformance = new CTurbomachineryStagePerformance();
+  TurbomachineryStagePerformance = new CTurbomachineryStagePerformance(*fluid);
 }

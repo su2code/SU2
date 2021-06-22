@@ -2284,5 +2284,6 @@ void COutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformanc
                         <<TurboStagePerf->GetTotalTotalEfficiency()
                         <<TurboStagePerf->GetPressureRatio();
   TurboInOut.PrintFooter();
-  cout<<TurboMZPerf.str();
+  if (MASTER_NODE)
+    cout<<TurboMZPerf.str();
 }
