@@ -401,10 +401,7 @@ class Solver:
             self.node.append(Point())
             line = line[30:]
             ID = int(line[8:16])
-            if line[16:24] == '        ':
-              CP = int(0)
-            else:
-              CP = int(line[16:24])
+            CP = self.__checkBlankField(line[16:24])
             x = nastran_float(line[24:32])
             y = nastran_float(line[32:40])
             z = nastran_float(line[40:48])
@@ -419,10 +416,7 @@ class Solver:
               x = RotatedPos[0]+DeltaPos[0]
               y = RotatedPos[1]+DeltaPos[1]
               z = RotatedPos[2]+DeltaPos[2]
-            if line[48:56] == '        ':
-              CD = int(0)
-            else:
-              CD = int(line[48:56])
+            CD = self.__checkBlankField(line[48:56])
             self.node[self.nPoint].SetCoord((x,y,z))
             self.node[self.nPoint].SetID(ID)
             self.node[self.nPoint].SetCP(CP)
@@ -501,6 +495,17 @@ class Solver:
       print("Number of reference systems: {}".format(self.nRefSys))
       print("Moving marker: {}".format(self.FSI_marker))
       print("Number of points in the moving marker".format(len(self.markers[self.FSI_marker])))
+
+  def __checkBlankField(self, string):
+    """
+    This method considers that Nastran apply 0 when the reference system is not specified
+    """
+
+    if string == '        ':
+      return int(0)
+    else:
+      return int(string)
+
 
   def __setStructuralMatrices(self):
     """

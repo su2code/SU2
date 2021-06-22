@@ -2174,7 +2174,7 @@ class Interface:
 
           self.comm.Bcast(modesNumber, root=self.rootProcess)
 
-          for mode in range(modesNumber):
+          for mode in range(np.asscalar(modesNumber)):
               self.MPIPrint("Setting mode {} active".format(mode))
               if myid in self.solidSolverProcessors:
                   SolidSolver.activateMode(mode)
