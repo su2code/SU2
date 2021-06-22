@@ -34,12 +34,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid/CNEMOGas.hpp"
-#include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
-
-using namespace std;
 
 class CElement;
 class CFluidModel;
