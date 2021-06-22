@@ -586,15 +586,16 @@ void CMeshSolver::DeformMesh(CGeometry *geometry, CNumerics **numerics, CConfig 
      of the linear system (usol contains the x, y, z displacements). ---*/
   UpdateGridCoord(geometry, config);
 
-  /*--- Update the dual grid. ---*/
-  UpdateDualGrid(geometry, config);
+  /*--- Update the dual grid (without multigrid). ---*/
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
+
+  geometry->SetControlVolume(config, UPDATE);
+  geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
 
   /*--- Check for failed deformation (negative volumes). ---*/
   SetMinMaxVolume(geometry, config, true);
-
-  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
-  if (time_domain && !config->GetFSI_Simulation())
-    ComputeGridVelocity(geometry, config);
 
   }
   END_SU2_OMP_PARALLEL
