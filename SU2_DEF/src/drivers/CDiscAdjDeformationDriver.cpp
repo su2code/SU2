@@ -358,9 +358,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
         for (iZone = 0; iZone < nZone; iZone++) {
             if (geometry_container[iZone] != nullptr) {
                 for (iInst = 0; iInst < nInst[iZone]; iInst++){
-                    if (geometry_container[iZone][iInst] != nullptr) {
-                        delete geometry_container[iZone][iInst];
-                    }
+                    delete geometry_container[iZone][iInst];
                 }
                 delete geometry_container[iZone];
             }
@@ -371,9 +369,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
 
     if (surface_movement != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
-            if (surface_movement[iZone] != nullptr) {
-                delete surface_movement[iZone];
-            }
+            delete surface_movement[iZone];
         }
         delete [] surface_movement;
     }
@@ -381,9 +377,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
 
     if (grid_movement != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
-            if (grid_movement[iZone] != nullptr) {
-                delete grid_movement[iZone];
-            }
+            delete grid_movement[iZone];
         }
         delete [] grid_movement;
     }
@@ -391,9 +385,7 @@ void CDiscAdjDeformationDriver::Postprocessing() {
 
     if (config_container != nullptr) {
         for (iZone = 0; iZone < nZone; iZone++) {
-            if (config_container[iZone] != nullptr) {
-                delete config_container[iZone];
-            }
+            delete config_container[iZone];
         }
         delete [] config_container;
     }
@@ -683,21 +675,13 @@ void CDiscAdjDeformationDriver::SetDiscAdjDeformation_AD(CGeometry *geometry, CC
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
-
-
   for (iDV = 0; iDV < nDV; iDV++){
 
-    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      config->SetDV_Value(iDV, iDV_Value, 0.0);
 
-      /*--- Initilization with su2double resets the index ---*/
-
-      DV_Value = 0.0;
-
-      AD::RegisterInput(DV_Value);
-
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      AD::RegisterInput(config->GetDV_Value(iDV, iDV_Value));
     }
   }
 

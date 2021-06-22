@@ -173,70 +173,70 @@ void CDeformationDriver::Geometrical_Preprocessing() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+      /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
-    CGeometry *geometry_aux = nullptr;
+      CGeometry *geometry_aux = nullptr;
 
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
-    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
-    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
-    /*--- Build the grid data structures using the ParMETIS coloring. ---*/
+      /*--- Build the grid data structures using the ParMETIS coloring. ---*/
 
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
 
-    /*--- Deallocate the memory of geometry_aux ---*/
+      /*--- Deallocate the memory of geometry_aux ---*/
 
-    delete geometry_aux;
+      delete geometry_aux;
 
-    /*--- Add the Send/Receive boundaries ---*/
+      /*--- Add the Send/Receive boundaries ---*/
 
-    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+      geometry_container[iZone]->SetSendReceive(config_container[iZone]);
 
-    /*--- Add the Send/Receive boundaries ---*/
+      /*--- Add the Send/Receive boundaries ---*/
 
-    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+      geometry_container[iZone]->SetBoundaries(config_container[iZone]);
 
-    /*--- Computational grid preprocesing ---*/
+      /*--- Computational grid preprocesing ---*/
 
-    if (rank == MASTER_NODE) cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
+      if (rank == MASTER_NODE) cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
 
-    /*--- Compute elements surrounding points, points surrounding points ---*/
+      /*--- Compute elements surrounding points, points surrounding points ---*/
 
-    if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-    geometry_container[iZone]->SetPoint_Connectivity();
+      if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+      geometry_container[iZone]->SetPoint_Connectivity();
 
-    /*--- Check the orientation before computing geometrical quantities ---*/
+      /*--- Check the orientation before computing geometrical quantities ---*/
 
-    geometry_container[iZone]->SetBoundVolume();
-    if (config_container[iZone]->GetReorientElements()) {
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-        geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
-        geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
-    }
+      geometry_container[iZone]->SetBoundVolume();
+      if (config_container[iZone]->GetReorientElements()) {
+      if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+          geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+          geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+      }
 
-    /*--- Create the edge structure ---*/
+      /*--- Create the edge structure ---*/
 
-    if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-    geometry_container[iZone]->SetEdges();
-    geometry_container[iZone]->SetVertex(config_container[iZone]);
+      if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+      geometry_container[iZone]->SetEdges();
+      geometry_container[iZone]->SetVertex(config_container[iZone]);
 
-    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+      if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
 
-        /*--- Create the dual control volume structures ---*/
+          /*--- Create the dual control volume structures ---*/
 
-        if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-        geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
-        geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
-    }
+          if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+          geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
+          geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+      }
 
-    /*--- Create the point-to-point MPI communication structures. ---*/
+      /*--- Create the point-to-point MPI communication structures. ---*/
 
-    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
+      geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
 
     }
 }
@@ -569,9 +569,7 @@ void CDeformationDriver::Postprocessing() {
 
     if (geometry_container != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        if (geometry_container[iZone] != nullptr) {
-          delete geometry_container[iZone];
-        }
+        delete geometry_container[iZone];
       }
       delete [] geometry_container;
     }
@@ -579,9 +577,7 @@ void CDeformationDriver::Postprocessing() {
 
     if (surface_movement != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        if (surface_movement[iZone] != nullptr) {
-          delete surface_movement[iZone];
-        }
+        delete surface_movement[iZone];
       }
       delete [] surface_movement;
     }
@@ -589,9 +585,7 @@ void CDeformationDriver::Postprocessing() {
 
     if (grid_movement != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        if (grid_movement[iZone] != nullptr) {
-          delete grid_movement[iZone];
-        }
+        delete grid_movement[iZone];
       }
       delete [] grid_movement;
     }
@@ -599,9 +593,7 @@ void CDeformationDriver::Postprocessing() {
 
     if (config_container != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        if (config_container[iZone] != nullptr) {
-          delete config_container[iZone];
-        }
+        delete config_container[iZone];
       }
       delete [] config_container;
     }
@@ -609,9 +601,7 @@ void CDeformationDriver::Postprocessing() {
 
     if (output_container != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
-        if (output_container[iZone] != nullptr) {
-          delete output_container[iZone];
-        }
+        delete output_container[iZone];
       }
       delete [] output_container;
     }
