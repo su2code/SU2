@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
   else { strcpy(config_file_name, "default.cfg"); }
 
   /*--- Initialize the mesh deformation driver ---*/
+
   driver = new CDeformationDriver(config_file_name, comm);
 
   /*--- Launch the main external loop of the solver. ---*/

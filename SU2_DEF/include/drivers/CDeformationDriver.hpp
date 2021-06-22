@@ -89,6 +89,89 @@ public:
    */
   void Postprocessing();
 
+  /*!
+   * \brief Get all the deformable boundary marker tags.
+   * \return List of deformable boundary markers tags.
+   */
+  vector<string> GetAllDeformMeshMarkersTag() const;
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated indices.
+   * \return List of boundary markers tags with their indices.
+   */
+  map<string, int> GetAllBoundaryMarkers() const;
+
+  /*!
+   * \brief Get all the boundary markers tags with their associated types.
+   * \return List of boundary markers tags with their types.
+   */
+  map<string, string> GetAllBoundaryMarkersType() const;
+
+  /*!
+   * \brief Get the number of vertices (halo nodes included) from a specified marker.
+   * \param[in] iMarker -  Marker identifier.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberVertices(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get the number of halo vertices from a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Number of vertices.
+   */
+  unsigned long GetNumberHaloVertices(unsigned short iMarker) const;
+
+  /*!
+   * \brief Check if a vertex is physical or not (halo node) on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return True if the specified vertex is a halo node.
+   */
+  bool IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get the global index of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vertex global index.
+   */
+  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get undeformed coordinates from the mesh solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x,y,z coordinates of the vertex.
+   */
+  vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get the unit normal (vector) at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Unit normal (vector) at the vertex.
+   */
+  vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
+
+  inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+    return GetVertexNormal(iMarker, iVertex, true);
+  }
+  
+  /*!
+   * \brief Set the mesh displacement for the elasticity mesh solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] DispX - Value of the mesh displacement in the direction X.
+   * \param[in] DispY - Value of the mesh displacement in the direction Y.
+   * \param[in] DispZ - Value of the mesh displacement in the direction Z.
+   */
+  void SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ);
+
+  /*!
+   * \brief Communicate the boundary mesh displacements in a python call
+   */
+  void CommunicateMeshDisplacement(void);
+
 protected:
   /*!
    * \brief Init_Containers

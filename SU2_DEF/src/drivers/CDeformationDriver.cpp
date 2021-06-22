@@ -29,6 +29,7 @@
 #include "../../include/drivers/CDeformationDriver.hpp"
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../SU2_CFD/include/solvers/CMeshSolver.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../../SU2_CFD/include/numerics/elasticity/CFEALinearElasticity.hpp"
@@ -516,7 +517,7 @@ void CDeformationDriver::Output() {
       /*--- Set the file names for the visualization files ---*/
 
       output_container[iZone]->SetVolume_Filename("volume_deformed");
-      output_container[iZone]->SetSurface_Filename("surfac  e_deformed");
+      output_container[iZone]->SetSurface_Filename("surface_deformed");
 
       for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
         auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
@@ -620,4 +621,194 @@ void CDeformationDriver::Postprocessing() {
 
     if (rank == MASTER_NODE)
       cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
+}
+
+vector<string> CDeformationDriver::GetAllDeformMeshMarkersTag() const {
+
+  vector<string> interfaceBoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Deform_Mesh();
+  interfaceBoundariesTagList.resize(nBoundariesMarker);
+
+  for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_Deform_Mesh_TagBound(iMarker);
+    interfaceBoundariesTagList[iMarker] = Marker_Tag;
+  }
+
+  return interfaceBoundariesTagList;
+}
+
+map<string, int> CDeformationDriver::GetAllBoundaryMarkers() const {
+
+  map<string, int>  allBoundariesMap;
+  unsigned short iMarker, nBoundaryMarkers;
+  string Marker_Tag;
+
+  nBoundaryMarkers = config_container[ZONE_0]->GetnMarker_All();
+
+  for(iMarker=0; iMarker < nBoundaryMarkers; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+    allBoundariesMap[Marker_Tag] = iMarker;
+  }
+
+  return allBoundariesMap;
+}
+
+map<string, string> CDeformationDriver::GetAllBoundaryMarkersType() const {
+
+  map<string, string> allBoundariesTypeMap;
+  unsigned short iMarker, KindBC;
+  string Marker_Tag, Marker_Type;
+
+  for(iMarker=0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+    KindBC = config_container[ZONE_0]->GetMarker_All_KindBC(iMarker);
+    switch(KindBC){
+      case EULER_WALL:
+        Marker_Type = "EULER_WALL";
+        break;
+      case FAR_FIELD:
+        Marker_Type = "FARFIELD";
+        break;
+      case ISOTHERMAL:
+        Marker_Type = "ISOTHERMAL";
+        break;
+      case HEAT_FLUX:
+        Marker_Type = "HEATFLUX";
+        break;
+      case INLET_FLOW:
+        Marker_Type = "INLET_FLOW";
+        break;
+      case OUTLET_FLOW:
+        Marker_Type = "OUTLET_FLOW";
+        break;
+      case SYMMETRY_PLANE:
+        Marker_Type = "SYMMETRY";
+        break;
+      case SEND_RECEIVE:
+        Marker_Type = "SEND_RECEIVE";
+        break;
+      default:
+        Marker_Type = "UNKNOWN_TYPE";
+    }
+    allBoundariesTypeMap[Marker_Tag] = Marker_Type;
+  }
+
+  return allBoundariesTypeMap;
+}
+
+unsigned long CDeformationDriver::GetNumberVertices(unsigned short iMarker) const {
+
+  return geometry_container[ZONE_0]->nVertex[iMarker];
+
+}
+
+unsigned long CDeformationDriver::GetNumberHaloVertices(unsigned short iMarker) const {
+
+  unsigned long nHaloVertices, iVertex, iPoint;
+
+  nHaloVertices = 0;
+  for(iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++){
+    iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+    if(!(geometry_container[ZONE_0]->nodes->GetDomain(iPoint))) nHaloVertices += 1;
+  }
+
+  return nHaloVertices;
+
+}
+
+unsigned long CDeformationDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned long iVertex) const {
+
+  unsigned long iPoint, GlobalIndex;
+
+  iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+  GlobalIndex = geometry_container[ZONE_0]->nodes->GetGlobalIndex(iPoint);
+
+  return GlobalIndex;
+
+}
+
+bool CDeformationDriver::IsAHaloNode(unsigned short iMarker, unsigned long iVertex) const {
+
+  unsigned long iPoint;
+
+  iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+  if(geometry_container[ZONE_0]->nodes->GetDomain(iPoint)) return false;
+  else return true;
+
+}
+
+vector<passivedouble> CDeformationDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) const {
+
+  vector<su2double> coord(3,0.0);
+  vector<passivedouble> coord_passive(3, 0.0);
+
+  auto iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+
+  for (auto iDim = 0 ; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++){
+   coord[iDim] = solver_container[ZONE_0]->GetNodes()->GetMesh_Coord(iPoint,iDim);
+  }
+
+  coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
+  coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
+  coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
+
+  return coord_passive;
+}
+
+vector<passivedouble> CDeformationDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
+
+  int nDim = geometry_container[ZONE_0]->GetnDim();
+
+  su2double *Normal;
+  su2double Area;
+  vector<su2double> ret_Normal(3, 0.0);
+  vector<passivedouble> ret_Normal_passive(3, 0.0);
+
+  Normal = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNormal();
+
+  if (!unitNormal) {
+
+    ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
+    ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
+    if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
+
+    return ret_Normal_passive;
+  }
+
+  Area = GeometryToolbox::Norm(nDim, Normal);
+
+  ret_Normal[0] = Normal[0]/Area;
+  ret_Normal[1] = Normal[1]/Area;
+  if(nDim>2) ret_Normal[2] = Normal[2]/Area;
+
+  ret_Normal_passive[0] = SU2_TYPE::GetValue(ret_Normal[0]);
+  ret_Normal_passive[1] = SU2_TYPE::GetValue(ret_Normal[1]);
+  ret_Normal_passive[2] = SU2_TYPE::GetValue(ret_Normal[2]);
+
+  return ret_Normal_passive;
+}
+
+void CDeformationDriver::SetMeshDisplacement(unsigned short iMarker, unsigned long iVertex, passivedouble DispX, passivedouble DispY, passivedouble DispZ) {
+
+  unsigned long iPoint;
+  su2double MeshDispl[3] =  {0.0,0.0,0.0};
+
+  MeshDispl[0] = DispX;
+  MeshDispl[1] = DispY;
+  MeshDispl[2] = DispZ;
+
+  iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
+
+  solver_container[ZONE_0]->GetNodes()->SetBound_Disp(iPoint, MeshDispl);
+
+}
+
+void CDeformationDriver::CommunicateMeshDisplacement(void) {
+
+  solver_container[ZONE_0]->InitiateComms(geometry_container[ZONE_0], config_container[ZONE_0], MESH_DISPLACEMENTS);
+  solver_container[ZONE_0]->CompleteComms(geometry_container[ZONE_0], config_container[ZONE_0], MESH_DISPLACEMENTS);
+
 }
