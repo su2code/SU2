@@ -1,4 +1,4 @@
-/*!
+ /*!
  * \file CDeformationDriver.hpp
  * \brief Headers of the main subroutines for driving the mesh deformation.
  * \author T. Economon, H. Kline, R. Sanchez
@@ -32,6 +32,7 @@
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../SU2_CFD/include/output/COutput.hpp"
+#include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
 /*!
@@ -56,6 +57,8 @@ protected:
   CGeometry **geometry_container;             /*!< \brief Geometrical definition of the problem. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement **grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
+  CSolver **solver_container;
+  CNumerics ***numerics_container;
   COutput **output_container;                   /*!< \brief Pointer to the COutput class. */
 
 public:
@@ -75,6 +78,11 @@ public:
    * \brief [Overload] Launch the computation for single-zone problems.
    */
   void Run();
+
+  /*!
+   * \brief Output the mesh.
+   */
+  void Output();
 
   /*!
    * \brief Deallocation routine
@@ -101,5 +109,25 @@ protected:
    * \brief Preprocess the output container.
    */
   void Output_Preprocessing();
+
+  /*!
+   * \brief Preprocess the mesh solver container.
+   */
+  void Solver_Preprocessing();
+
+  /*!
+   * \brief Preprocess the numerics container.
+   */
+  void Numerics_Preprocessing();
+
+  /*!
+   * \brief Mesh deformation based on linear elasticity solver (CMeshSolver).
+   */
+  void Update();
+
+  /*!
+   * \brief Mesh deformation based on legacy implementation.
+   */
+  void Update_Legacy();
 
 };

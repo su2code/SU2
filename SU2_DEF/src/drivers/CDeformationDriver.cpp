@@ -29,7 +29,9 @@
 #include "../../include/drivers/CDeformationDriver.hpp"
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
+#include "../../../SU2_CFD/include/solvers/CMeshSolver.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
+#include "../../../SU2_CFD/include/numerics/elasticity/CFEALinearElasticity.hpp"
 
 using namespace std;
 
@@ -76,6 +78,18 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
 
   Output_Preprocessing();
 
+  if (driver_config->GetDeform_Mesh()){
+
+    /*--- Preprocessing of the mesh solver for all zones. ---*/
+
+    Solver_Preprocessing();
+
+    /*--- Preprocessing of the mesh solver for all zones. ---*/
+
+    Numerics_Preprocessing();
+
+  }
+
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
 
   StopTime = SU2_MPI::Wtime();
@@ -98,17 +112,22 @@ void CDeformationDriver::SetContainers_Null() {
         the SU2_DEF code. In general, the pointers are instantiated down a
         hierarchy over all zones as described in the comments below. ---*/
     config_container   = new CConfig*[nZone];
+    output_container   = new COutput*[nZone];
     geometry_container = new CGeometry*[nZone];
     surface_movement   = new CSurfaceMovement*[nZone];
     grid_movement      = new CVolumetricMovement*[nZone];
-    output_container   = new COutput*[nZone];
+
+    solver_container   = new CSolver*[nZone];
+    numerics_container = new CNumerics**[nZone];
 
     for (iZone = 0; iZone < nZone; iZone++) {
         config_container[iZone]       = nullptr;
+        output_container[iZone]       = nullptr;
         geometry_container[iZone]     = nullptr;
         surface_movement[iZone]       = nullptr;
         grid_movement[iZone]          = nullptr;
-        output_container[iZone]       = nullptr;
+        solver_container[iZone]       = nullptr;
+        numerics_container[iZone]     = nullptr;
     }
 }
 
@@ -137,10 +156,13 @@ void CDeformationDriver::Input_Preprocessing() {
         config_container[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
     }
 
-      /*--- Set the multizone part of the problem. ---*/
+    /*--- Set the multizone part of the problem. ---*/
+
     if (driver_config->GetMultizone_Problem()){
         for (iZone = 0; iZone < nZone; iZone++) {
+
             /*--- Set the interface markers for multizone ---*/
+
             config_container[iZone]->SetMultizone(driver_config, config_container);
         }
     }
@@ -237,6 +259,30 @@ void CDeformationDriver::Output_Preprocessing() {
     }
 }
 
+void CDeformationDriver::Solver_Preprocessing() {
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    solver_container[iZone] = new CMeshSolver(geometry_container[iZone], config_container[iZone]);
+  }
+
+}
+
+void CDeformationDriver::Numerics_Preprocessing() {
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    numerics_container[iZone] = new CNumerics* [omp_get_num_threads() * MAX_TERMS]();
+
+    for (int thread = 0; thread < omp_get_max_threads(); ++thread) {
+        const int iTerm = FEA_TERM + thread * MAX_TERMS;
+        const int nDim = geometry_container[iZone]->GetnDim();
+
+        numerics_container[iZone][iTerm] = new CFEAMeshElasticity(nDim, nDim, geometry_container[iZone]->GetnElem(), config_container[iZone]);
+    }
+
+  }
+
+}
+
 void CDeformationDriver::Run() {
 
     /* --- Start measuring computation time ---*/
@@ -244,6 +290,47 @@ void CDeformationDriver::Run() {
     StartTime = SU2_MPI::Wtime();
 
     /*--- Surface grid deformation using design variables ---*/
+
+    if (driver_config->GetDeform_Mesh()) {
+        Update();
+    }
+    else {
+        Update_Legacy();
+    }
+
+    /*--- Synchronization point after a single solver iteration. Compute the
+      wall clock time required. ---*/
+
+    StopTime = SU2_MPI::Wtime();
+
+    UsedTimeCompute = StopTime-StartTime;
+    if (rank == MASTER_NODE) {
+      cout << "\nCompleted in " << fixed << UsedTimeCompute << " seconds on "<< size;
+
+      if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+    }
+
+    /*--- Output the deformed mesh ---*/
+    Output();
+
+}
+
+void CDeformationDriver::Update() {
+
+    for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Set the stiffness of each element mesh into the mesh numerics ---*/
+
+    solver_container[iZone]->SetMesh_Stiffness(numerics_container[iZone], config_container[iZone]);
+
+    /*--- Deform the volume grid around the new boundary locations ---*/
+
+    solver_container[iZone]->DeformMesh(geometry_container[iZone], numerics_container[iZone], config_container[iZone]);
+
+    }
+}
+
+void CDeformationDriver::Update_Legacy() {
 
     for (iZone = 0; iZone < nZone; iZone++){
 
@@ -392,12 +479,14 @@ void CDeformationDriver::Run() {
 
     }
 
-    /*--- Computational grid preprocesing ---*/
+}
 
-    if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
+void CDeformationDriver::Output() {
 
     /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
-     requires to move all the data to the master node---*/
+          requires to move all the data to the master node---*/
+
+    if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
 
     for (iZone = 0; iZone < nZone; iZone++){
 
@@ -427,7 +516,7 @@ void CDeformationDriver::Run() {
       /*--- Set the file names for the visualization files ---*/
 
       output_container[iZone]->SetVolume_Filename("volume_deformed");
-      output_container[iZone]->SetSurface_Filename("surface_deformed");
+      output_container[iZone]->SetSurface_Filename("surfac  e_deformed");
 
       for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
         auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
@@ -436,37 +525,46 @@ void CDeformationDriver::Run() {
       }
     }
 
-    if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
-        (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID)     &&
-        (config_container[ZONE_0]->GetDesign_Variable(0) != TRANSLATE_GRID) &&
-        (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
+    if (!driver_config->GetDeform_Mesh()) {
+      if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
+          (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID)     &&
+          (config_container[ZONE_0]->GetDesign_Variable(0) != TRANSLATE_GRID) &&
+          (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
 
-      /*--- Write the the free-form deformation boxes after deformation. ---*/
+          /*--- Write the the free-form deformation boxes after deformation. ---*/
 
-      if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
+          if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
 
-      surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+          surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
 
     }
-
-    /*--- Synchronization point after a single solver iteration. Compute the
-      wall clock time required. ---*/
-
-    StopTime = SU2_MPI::Wtime();
-
-    UsedTimeCompute = StopTime-StartTime;
-    if (rank == MASTER_NODE) {
-      cout << "\nCompleted in " << fixed << UsedTimeCompute << " seconds on "<< size;
-      if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
-    }
+  }
 }
 
 void CDeformationDriver::Postprocessing() {
+
     if (rank == MASTER_NODE)
       cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
 
     delete driver_config;
     driver_config = nullptr;
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (numerics_container[iZone] != nullptr) {
+        for (unsigned int iTerm = 0; iTerm < MAX_TERMS*omp_get_max_threads(); iTerm++) {
+          delete numerics_container[iZone][iTerm];
+        }
+        delete [] numerics_container[iZone];
+      }
+    }
+    delete [] numerics_container;
+    if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      delete solver_container[iZone];
+    }
+    delete [] solver_container;
+    if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
 
     if (geometry_container != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
@@ -506,6 +604,8 @@ void CDeformationDriver::Postprocessing() {
       }
       delete [] config_container;
     }
+    if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+
     if (output_container != nullptr) {
       for (iZone = 0; iZone < nZone; iZone++) {
         if (output_container[iZone] != nullptr) {
@@ -514,8 +614,6 @@ void CDeformationDriver::Postprocessing() {
       }
       delete [] output_container;
     }
-    if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
-
     if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
     /*--- Exit the solver cleanly ---*/

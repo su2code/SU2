@@ -420,7 +420,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
   END_SU2_OMP_PARALLEL
 }
 
-void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+void CMeshSolver::SetMesh_Stiffness(CNumerics **numerics, CConfig *config){
 
   if (stiffness_set) return;
 
@@ -538,6 +538,62 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Update the multigrid structure. ---*/
   SU2_OMP_PARALLEL
   UpdateMultiGrid(geometry, config);
+  END_SU2_OMP_PARALLEL
+
+}
+
+void CMeshSolver::DeformMesh(CGeometry *geometry, CNumerics **numerics, CConfig *config){
+
+  if (multizone) nodes->Set_BGSSolution_k();
+
+  /*--- Capture a few MPI dependencies for AD. ---*/
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  InitiateComms(geometry, config, MESH_DISPLACEMENTS);
+  CompleteComms(geometry, config, MESH_DISPLACEMENTS);
+
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool wasActive = AD::BeginPassive();
+
+  Compute_StiffMatrix(geometry, numerics, config);
+
+  AD::EndPassive(wasActive);
+
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
+  SU2_OMP_PARALLEL {
+    LinSysRes.SetValZero();
+    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
+  }
+  END_SU2_OMP_PARALLEL
+
+  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
+  SetBoundaryDisplacements(geometry, config, false);
+
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry, config);
+
+  SU2_OMP_PARALLEL {
+
+  /*--- Update the grid coordinates and cell volumes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+  UpdateGridCoord(geometry, config);
+
+  /*--- Update the dual grid. ---*/
+  UpdateDualGrid(geometry, config);
+
+  /*--- Check for failed deformation (negative volumes). ---*/
+  SetMinMaxVolume(geometry, config, true);
+
+  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
+  if (time_domain && !config->GetFSI_Simulation())
+    ComputeGridVelocity(geometry, config);
+
+  }
   END_SU2_OMP_PARALLEL
 
 }
