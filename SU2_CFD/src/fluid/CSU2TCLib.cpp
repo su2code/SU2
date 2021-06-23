@@ -809,7 +809,11 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3; //TODO: make this a config option?
 
-  /*--- Loop over all reactions ---*/
+  /*--- Zero out ws vector ---*/
+  for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
+    ws[iSpecies] = 0.0;
+
+  /*--- Loop over all reactions ---*/ 
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
 
     /*--- Determine the rate-controlling temperature ---*/
