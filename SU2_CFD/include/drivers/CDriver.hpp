@@ -525,7 +525,11 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return Unit normal (vector) at the vertex.
    */
-  vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const;
+  vector<passivedouble> GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal = false) const;
+
+  inline vector<passivedouble> GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+    return GetVertexNormal(iMarker, iVertex, true);
+  }
 
   /*!
    * \brief Get all the boundary markers tags.

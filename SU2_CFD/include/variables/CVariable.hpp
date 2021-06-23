@@ -76,7 +76,7 @@ protected:
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
   MatrixType AuxVar;             /*!< \brief Auxiliary variable for gradient computation. */
-  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxiliary variables  of the problem. */
+  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxiliary variables of the problem. */
 
   VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */

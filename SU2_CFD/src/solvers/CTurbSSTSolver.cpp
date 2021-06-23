@@ -373,7 +373,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     SU2_OMP_MASTER
     SetTurbVars_WF(geometry, solver_container, config, val_marker);
     END_SU2_OMP_MASTER
-
     SU2_OMP_BARRIER
     return;
   }
@@ -465,9 +464,9 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
   /*--- von Karman constant from boundary layer theory ---*/
   const su2double kappa = config->GetwallModelKappa();
-  const su2double minYPlus = config->GetwallModelMinYPlus();
+  //const su2double minYPlus = config->GetwallModelMinYPlus();
   /*--- relaxation factor for k-omega values ---*/
-  const su2double relax = 0.5;
+  const su2double relax = config->GetwallModelRelFac();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -479,12 +478,9 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
     su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
+    /*--- Do not use wall model at the ipoint when y+ < 5.0, use zero flux (Neumann) conditions. ---*/
 
-    if (Y_Plus < minYPlus) {
-      /* --- use zero flux (Neumann) conditions --- */
-      continue;
-    }
+    if (Y_Plus < config->GetwallModelMinYPlus()) continue;
 
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
     su2double k = nodes->GetSolution(iPoint_Neighbor,0);

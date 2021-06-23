@@ -736,7 +736,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
-    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity gradient is added. ---*/
+    /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
 
       /*--- Compute a scalar factor ---*/

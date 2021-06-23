@@ -143,9 +143,11 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
   for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- Only "outlet"/donor periodic marker ---*/
+    /*--- Only "outlet"/donor periodic marker. GetnMarker_Periodic counts from 1: First all the inlet marker from
+          the periodic marker pairs and then the all the outlets. I.e. in order to get the outlet of the first pair
+          we need to divide the number of periodic markers by 2 and add 1 (because count starts at 1). ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-        config->GetMarker_All_PerBound(iMarker) == 2) {
+        config->GetMarker_All_PerBound(iMarker) == (config->GetnMarker_Periodic()/2 + 1)) {
 
       for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -157,7 +159,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           /*--- m_dot = dot_prod(n*v) * A * rho, with n beeing unit normal. ---*/
           MassFlow_Local += nodes->GetProjVel(iPoint, AreaNormal) * nodes->GetDensity(iPoint);
@@ -166,7 +168,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           Average_Density_Local += FaceArea * nodes->GetDensity(iPoint);
 
-          /*--- Due to periodicty, temperatures are equal one the inlet(1) and outlet(2) ---*/
+          /*--- Due to periodicity, temperatures are equal one the inlet(1) and outlet(2) ---*/
           Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
 
         } // if domain
@@ -242,7 +244,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
         /*--- Identify the boundary by string name and retrive heatflux from config ---*/
         const auto Marker_StringTag = config->GetMarker_All_TagBound(iMarker);
-        const auto Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
+        const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_StringTag);
 
         for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
@@ -252,7 +254,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
           const auto AreaNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          auto FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
+          const su2double FaceArea = GeometryToolbox::Norm(nDim, AreaNormal);
 
           HeatFlow_Local += FaceArea * (-1.0) * Wall_HeatFlux/config->GetHeat_Flux_Ref();;
         } // loop Vertices
@@ -275,7 +277,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   const auto InnerIter = config->GetInnerIter();
 
   /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
-  const su2double* ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
+  const auto ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
   /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
   const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
@@ -459,12 +461,12 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     }
     else { // ISOTHERMAL
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double Edge_Vector[MAXNDIM];
       GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
       su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
@@ -568,12 +570,12 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
       /*--- Compute closest normal neighbor ---*/
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
       su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_j, Coord_i);
 
       /*--- Compute wall temperature from both temperatures ---*/
@@ -613,8 +615,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
   unsigned long notConvergedCounter = 0;  /*--- counts the number of wall cells that are not converged ---*/
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
-  su2double grad_diff;
-  su2double U_Tau, Y_Plus;
+
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const unsigned short max_iter =config->GetwallModelMaxIter();  /*--- maximum number of iterations for the Newton Solver---*/
@@ -704,6 +705,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
+      /*--- Compute the wall temperature using the Crocco-Buseman equation.
+       * In incompressible flows, we can assume that there is no velocity-related
+       * temperature change Prandtl: T+ = Pr*y+ ---*/
       su2double T_Wall = nodes->GetTemperature(iPoint);
       su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
 
@@ -750,73 +754,74 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
        iteratively solve for a new wall shear stress. Use the current wall
        shear stress as a starting guess for the wall function. ---*/
 
-      unsigned long counter = 0; su2double diff = 1.0;
-      U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      Y_Plus = 0.99*minYPlus; // clipping value
+      unsigned long counter = 0;
+      su2double diff = 1.0;
+      su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      su2double Y_Plus = 5.0; // clipping value
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
       /*--- Automatic switch off when y+ < 5.0 according to Nichols & Nelson (2004) ---*/
 
-      if (Y_Plus_Start < minYPlus) {
-        /*--- impose a minimum y+ for stability reasons---*/
+      if (Y_Plus_Start < config->GetwallModelMinYPlus()) {
         smallYPlusCounter++;
       }
-      else {
-        while (fabs(diff) > tol) {
+      else while (fabs(diff) > tol) {
 
-          /*--- Friction velocity and u+ ---*/
+        /*--- Friction velocity and u+ ---*/
 
-          su2double U_Plus = VelTangMod/U_Tau;
+        su2double U_Plus = VelTangMod/U_Tau;
 
-          /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
+        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
 
-          su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-          /*--- nijso: heated wall needs validation testcase! ---*/
-          su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
-          su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-          su2double Phi  = asin(-1.0*Beta/Q);
+        su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+        /*--- nijso: heated wall needs validation testcase! ---*/
+        su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
+        su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
+        su2double Phi  = asin(-1.0*Beta/Q);
 
-          /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
+        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
-          su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+        su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
 
-          /*--- Spalding's universal form for the BL velocity with the
-           outer velocity form of White & Christoph above. ---*/
+        /*--- Spalding's universal form for the BL velocity with the
+         outer velocity form of White & Christoph above. ---*/
 
-          su2double kUp = kappa*U_Plus;
-          Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        su2double kUp = kappa*U_Plus;
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
-          su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
+        su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
 
-          Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                           (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                           - Lam_Visc_Normal/Lam_Visc_Wall);
-          Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
+        Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
+                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
+                                         - Lam_Visc_Normal/Lam_Visc_Wall);
+        Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
 
-          /* --- Define function for Newton method to zero --- */
+        /* --- Define function for Newton method to zero --- */
 
-          diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
+        diff = (Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall) - Y_Plus;
 
-          /* --- Gradient of function defined above --- */
+        /* --- Gradient of function defined above --- */
 
-          grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
-                    kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
-                    exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
-                    pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
+        su2double grad_diff = Density_Wall * WallDistMod / Lam_Visc_Wall + VelTangMod / (U_Tau * U_Tau) +
+                  kappa /(U_Tau * sqrt(Gam)) * asin(U_Plus * sqrt(Gam)) * Y_Plus_White -
+                  exp(-1.0 * B * kappa) * (0.5 * pow(VelTangMod * kappa / U_Tau, 3) +
+                  pow(VelTangMod * kappa / U_Tau, 2) + VelTangMod * kappa / U_Tau) / U_Tau;
 
-          /* --- Newton Step --- */
+        /* --- Newton Step --- */
 
-          U_Tau = U_Tau - relax*(diff / grad_diff);
+        U_Tau = U_Tau - relax*(diff / grad_diff);
 
-          counter++;
-
-          if (counter > max_iter) {
-            notConvergedCounter++;
-            cout << "Warning: Y+ did not converge within the max number of iterations!" << endl;
-            break;
-          }
+        counter++;
+        if (counter > max_iter) {
+          notConvergedCounter++;
+          // use some safe values for convergence
+          Y_Plus = 30.0;
+          Eddy_Visc_Wall = 1.0;
+          U_Tau = 1.0;
+          break;
         }
+        
       }
 
       /*--- Calculate an updated value for the wall shear stress
@@ -841,8 +846,33 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
     END_SU2_OMP_FOR
   }
 
-  if (notConvergedCounter>0) {
-    cout << "Warning: computation of wall coefficients (y+) did not converge in " << notConvergedCounter<< " points"<<endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    static unsigned long globalCounter1, globalCounter2;
+
+    ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
+
+    SU2_OMP_ATOMIC
+    globalCounter1 += notConvergedCounter;
+
+    SU2_OMP_ATOMIC
+    globalCounter2 += smallYPlusCounter;
+
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+      if (rank == MASTER_NODE) {
+        if (notConvergedCounter)
+          cout << "Warning: Computation of wall coefficients (y+) did not converge in "
+               << notConvergedCounter << " points." << endl;
+
+        if (smallYPlusCounter)
+          cout << "Warning: y+ < 5.0 in " << smallYPlusCounter
+               << " points, for which the wall model is not active." << endl;
+      }
+    }
+    END_SU2_OMP_MASTER
   }
 
 }

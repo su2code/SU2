@@ -1,7 +1,7 @@
 /*!
- * \file CMeshOutput.cpp
- * \brief Main subroutines for the heat solver output
- * \author R. Sanchez
+ * \file CFVMOutput.cpp
+ * \brief Main subroutines for Finite Volume Method output
+ * \author T. Kattmann
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,58 +25,55 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "../../include/output/CMeshOutput.hpp"
+#include "../../include/output/CFVMOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
-CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
-  /*--- Set the default history fields if nothing is set in the config file ---*/
+CFVMOutput::CFVMOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
 
-  requestedVolumeFields.emplace_back("COORDINATES");
-  nRequestedVolumeFields = requestedVolumeFields.size();
-
-  /*--- Set the volume filename --- */
-
-  volumeFilename = config->GetMesh_Out_FileName();
-
-  /*--- Set the surface filename ---*/
-
-  surfaceFilename = "surface_mesh";
-
-}
-
-CMeshOutput::~CMeshOutput(void) {}
-
-void CMeshOutput::SetVolumeOutputFields(CConfig *config){
+void CFVMOutput::AddCoordinates() {
 
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+}
 
-  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
+
+void CFVMOutput::AddCommonFVMOutputs(const CConfig *config) {
+
+  // Mesh quality metrics
   AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
   AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
+  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
+
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
+    stringstream key, name;
+    key << "MG_" << iMesh;
+    name << "Coarse_Grid_" << iMesh;
+    AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
+  }
 }
 
-void CMeshOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CFVMOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
 
-  CPoint*    Node_Geo  = geometry->nodes;
-
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
-
-  // Mesh quality metrics
+  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
   if (config->GetWrt_MeshQuality()) {
     SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
     SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
     SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
+  SetVolumeOutputValue("RANK", iPoint, rank);
+
+  if (config->GetWrt_MultiGrid()) {
+    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
+      stringstream key;
+      key << "MG_" << iMesh;
+      SetVolumeOutputValue(key.str(), iPoint, geometry->CoarseGridColor(iPoint,iMesh-1));
+    }
+  }
 }

@@ -1580,14 +1580,13 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   const su2double minYPlus = config->GetwallModelMinYPlus();
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
-  constexpr unsigned short max_iter = 200;
+  const unsigned short max_iter = config->GetwallModelMaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+  //su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
 
   /*--- Typical constants from boundary layer theory ---*/
-
 
   const su2double cv1_3 = 7.1*7.1*7.1;
 
@@ -1598,23 +1597,17 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    if (geometry->nodes->GetDomain(iPoint_Neighbor)) {
 
       su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
       /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
-      if (Y_Plus < minYPlus) {
-
-        /* --- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition --- */
-
-        continue;
-      }
+      if (Y_Plus < minYPlus) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
@@ -1630,11 +1623,11 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       unsigned short counter = 0;
       su2double diff = 1.0;
-      relax = 0.5;
+      su2double relax = config->GetwallModelRelFac();
       while (diff > tol) {
         // note the error in Nichols and Nelson
-        su2double func = nu_til_old*nu_til_old*nu_til_old*nu_til_old - (Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old*nu_til_old + Kin_Visc_Normal*Kin_Visc_Normal*Kin_Visc_Normal*cv1_3);
-        su2double func_prim = 4.0 * nu_til_old*nu_til_old*nu_til_old - 3.0*(Eddy_Visc/Density_Normal)*(nu_til_old*nu_til_old);
+        su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);
+        su2double func_prim = 4.0 * pow(nu_til_old,3) - 3.0*(Eddy_Visc/Density_Normal)*pow(nu_til_old,2);
 
         // damped Newton method
         nu_til = nu_til_old - relax*(func/func_prim);
@@ -1644,18 +1637,12 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
         // sometimes we get negative values when the solution has not converged yet, we just reset the nu_tilde in that case.
         if (nu_til_old<tol) {
-          //cout << "warning: resetting nu_tilde for point " << iPoint << " during computation. If this warning persists, there might be something wrong" << endl;
-          //cout << Y_Plus <<" "<<nodes->GetSolution(iPoint,0)<<" , nutilde="<<nu_til<<", eddy visc = " << Eddy_Visc << " , dens = "<<Density_Normal<<" "<<Lam_Visc_Normal<<" "<<func <<" " <<func_prim<<" "<<diff<<endl;
-          relax = relax/2.0;
+          relax /= 2.0;
           nu_til_old = nodes->GetSolution(iPoint,0)/relax;
         }
 
         counter++;
-        if (counter > max_iter) {
-          cout << "WARNING: Nu_tilde evaluation did not converge in " <<max_iter << " iterations. " << endl;
-          //cout << nu_til << " " << diff << endl;
-          break;
-        }
+        if (counter > max_iter) break;
       }
 
       nodes->SetSolution_Old(iPoint_Neighbor, &nu_til);
@@ -1664,7 +1651,6 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
       /*--- includes 1 in the diagonal ---*/
 
       if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
-
     }
   }
 }

@@ -1264,9 +1264,6 @@ void CHeatSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned long total_index;
-  su2double Delta, Vol, *local_Res_TruncError;
-
   /*--- Set maximum residual to zero ---*/
 
   SetResToZero();
@@ -1277,29 +1274,20 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Read the residual ---*/
 
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-
-    Vol = geometry->nodes->GetVolume(iPoint);
+    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
     if (nodes->GetDelta_Time(iPoint) != 0.0) {
 
-      if(flow) {
-        Delta = Vol / nodes->GetDelta_Time(iPoint);
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
-      else if (heat_equation) {
-        Delta = Vol / nodes->GetDelta_Time(iPoint);
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
+      // Identical for flow and heat
+      const su2double Delta = geometry->nodes->GetVolume(iPoint) / nodes->GetDelta_Time(iPoint);
+      Jacobian.AddVal2Diag(iPoint, Delta);
 
     } else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
+        const auto total_index = iPoint*nVar + iVar;
         LinSysRes[total_index] = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
@@ -1308,7 +1296,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
+      const auto total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
@@ -1320,7 +1308,7 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
+      const auto total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = 0.0;
       LinSysSol[total_index] = 0.0;
     }

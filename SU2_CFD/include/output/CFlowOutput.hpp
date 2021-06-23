@@ -27,23 +27,19 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
-class CFlowOutput : public COutput{
-public:
+class CFlowOutput : public CFVMOutput{
+protected:
+  unsigned long lastInnerIter;
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
   CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFlowOutput(void) override;
-
-protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
@@ -104,7 +100,7 @@ protected:
    * \brief Write information to meta data file
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void WriteMetaData(CConfig *config);
+  void WriteMetaData(const CConfig *config);
 
   /*!
    * \brief Write any additional files defined for the current solver.
@@ -143,13 +139,9 @@ protected:
   void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
 
   /*!
-   * \brief Add common FVM outputs.
+   * \brief Write additional output for fixed CL mode.
+   * \param[in] config - Definition of the particular problem per zone.
    */
-  void AddCommonFVMOutputs(const CConfig* config);
-
-  /*!
-   * \brief Load common FVM outputs.
-   */
-  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint);
+  void SetFixedCLScreenOutput(const CConfig *config);
 
 };
