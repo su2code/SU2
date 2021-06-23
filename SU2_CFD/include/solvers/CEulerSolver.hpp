@@ -2,14 +2,14 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,9 +35,9 @@
  * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
-class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
+class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE> {
 protected:
-  using BaseClass = CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
+  using BaseClass = CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
@@ -106,9 +106,6 @@ protected:
   unsigned long Iter_Update_AoA = 0; /*!< \brief Iteration at which AoA was updated last */
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
-  unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
-  unsigned short nSpanMax;           /*!< \brief Max number of maximum span-wise sections for all zones. */
-  unsigned short nMarkerTurboPerf;   /*!< \brief Number of turbo performance. */
 
   std::shared_ptr<CTurbomachineryPerformance> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
 
@@ -116,42 +113,40 @@ protected:
 
   /*--- Turbomachinery Solver Variables ---*/
 
-  su2double ***AverageFlux = nullptr,
-            ***SpanTotalFlux = nullptr,
-            ***AverageVelocity = nullptr,
-            ***AverageTurboVelocity = nullptr,
-            ***OldAverageTurboVelocity = nullptr,
-            ***ExtAverageTurboVelocity = nullptr,
-             **AveragePressure = nullptr,
-             **OldAveragePressure = nullptr,
-             **RadialEquilibriumPressure = nullptr,
-             **ExtAveragePressure = nullptr,
-             **AverageDensity = nullptr,
-             **OldAverageDensity = nullptr,
-             **ExtAverageDensity = nullptr,
-             **AverageNu = nullptr,
-             **AverageKine = nullptr,
-             **AverageOmega = nullptr,
-             **ExtAverageNu = nullptr,
-             **ExtAverageKine = nullptr,
-             **ExtAverageOmega = nullptr;
+  vector<su2activematrix> AverageFlux;
+  vector<su2activematrix> SpanTotalFlux;
+  vector<su2activematrix> AverageVelocity;
+  vector<su2activematrix> AverageTurboVelocity;
+  vector<su2activematrix> OldAverageTurboVelocity;
+  vector<su2activematrix> ExtAverageTurboVelocity;
+  su2activematrix AveragePressure;
+  su2activematrix OldAveragePressure;
+  su2activematrix RadialEquilibriumPressure;
+  su2activematrix ExtAveragePressure;
+  su2activematrix AverageDensity;
+  su2activematrix OldAverageDensity;
+  su2activematrix ExtAverageDensity;
+  su2activematrix AverageNu;
+  su2activematrix AverageKine;
+  su2activematrix AverageOmega;
+  su2activematrix ExtAverageNu;
+  su2activematrix ExtAverageKine;
+  su2activematrix ExtAverageOmega;
 
-  su2double  **DensityIn = nullptr,
-             **PressureIn = nullptr,
-             ***TurboVelocityIn = nullptr,
-             **DensityOut = nullptr,
-             **PressureOut = nullptr,
-             ***TurboVelocityOut = nullptr,
-             **KineIn = nullptr,
-             **OmegaIn = nullptr,
-             **NuIn = nullptr,
-             **KineOut = nullptr,
-             **OmegaOut = nullptr,
-             **NuOut = nullptr;
+  su2activematrix DensityIn;
+  su2activematrix PressureIn;
+  vector<su2activematrix> TurboVelocityIn;
+  su2activematrix DensityOut;
+  su2activematrix PressureOut;
+  vector<su2activematrix> TurboVelocityOut;
+  su2activematrix KineIn;
+  su2activematrix OmegaIn;
+  su2activematrix NuIn;
+  su2activematrix KineOut;
+  su2activematrix OmegaOut;
+  su2activematrix NuOut;
 
-  complex<su2double> ***CkInflow = nullptr,
-                     ***CkOutflow1 = nullptr,
-                     ***CkOutflow2 = nullptr;
+  vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
@@ -280,11 +275,16 @@ protected:
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh);
 
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
+
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>() {}
+  CEulerSolver() : CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {}
 
   /*!
    * \overload Main constructor of this class.
@@ -1257,7 +1257,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
+  inline const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const final {
     return AverageTurboVelocity[valMarker][valSpan];
   }
 
@@ -1416,7 +1416,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityIn[inMarkerTP][valSpan];
   }
 
@@ -1443,7 +1443,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
+  inline const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const final {
     return TurboVelocityOut[inMarkerTP][valSpan];
   }
 
@@ -1528,12 +1528,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityIn(su2double *value,
+  inline void SetTurboVelocityIn(const su2double *value,
                                  unsigned short inMarkerTP,
                                  unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 
@@ -1564,12 +1562,10 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline void SetTurboVelocityOut(su2double *value,
+  inline void SetTurboVelocityOut(const su2double *value,
                                   unsigned short inMarkerTP,
                                   unsigned short valSpan) final {
-    unsigned short iDim;
-
-    for(iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
   }
 

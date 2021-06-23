@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,9 +37,21 @@ class CFluidIteration;
  * \brief Class for driving an iteration of the discrete adjoint fluid system.
  * \author T. Economon
  */
-class CDiscAdjFluidIteration : public CIteration {
+class CDiscAdjFluidIteration final : public CIteration {
  private:
   const bool turbulent;                      /*!< \brief Stores the turbulent flag. */
+
+  /*!
+   * \brief load unsteady solution for unsteady problems
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instance.
+   * \param[in] val_DirectIter - Direct iteration to load.
+   */
+  void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
+                             unsigned short val_iInst, int val_DirectIter);
 
  public:
   /*!
@@ -71,22 +83,15 @@ class CDiscAdjFluidIteration : public CIteration {
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance
+   * \param[in] val_iInst - Index of the instance.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
    */
-  void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-               CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-               CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-               unsigned short val_iInst) override;
+  void IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
+                      unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) override;
 
   /*!
    * \brief Updates the containers for the discrete adjoint fluid system.
@@ -127,25 +132,6 @@ class CDiscAdjFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Postprocess the discrete adjoint fluid iteration.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   */
-  void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                   CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                   CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                   unsigned short val_iInst) override;
-
-  /*!
    * \brief Registers all input variables of the fluid iteration.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -166,7 +152,7 @@ class CDiscAdjFluidIteration : public CIteration {
    * \param[in] kind_recording - Kind of recording, either FLOW_SOLUTION_VARIABLES or MESH_COORDS
    */
   void RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short iZone,
-                     unsigned short iInst, unsigned short kind_recording) override;
+                     unsigned short iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Initializes the adjoints of the output variables of the fluid iteration.
@@ -176,7 +162,7 @@ class CDiscAdjFluidIteration : public CIteration {
    * \param[in] iZone - Index of the zone.
    * \param[in] iInst - Index of the instance.
    */
-  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config, COutput* output,
+  void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                       unsigned short iZone, unsigned short iInst) override;
 
   /*!
@@ -188,9 +174,8 @@ class CDiscAdjFluidIteration : public CIteration {
    * \param[in] val_iInst - Index of the instance.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-
   void SetRecording(CSolver***** solver, CGeometry**** geometry, CConfig** config, unsigned short val_iZone,
-                    unsigned short val_iInst, unsigned short kind_recording) override;
+                    unsigned short val_iInst, RECORDING kind_recording) override;
 
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
@@ -203,17 +188,6 @@ class CDiscAdjFluidIteration : public CIteration {
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
   void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
-                       unsigned short iZone, unsigned short iInst, unsigned short kind_recording) override;
+                       unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
-  /*!
-   * \brief load unsteady solution for unsteady problems
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iZone - Index of the zone.
-   * \param[in] val_iInst - Index of the instance.
-   * \param[in] val_DirectIter - Direct iteration to load.
-   */
-  void LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned short val_iZone,
-                             unsigned short val_iInst, int val_DirectIter) override;
 };

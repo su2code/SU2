@@ -2,14 +2,14 @@
  * \file CFluidModel.cpp
  * \brief Source of the fluid model base class containing thermo-physical subroutines.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,43 +40,40 @@
 
 void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
-    case CONSTANT_VISCOSITY:
+    case VISCOSITYMODEL::CONSTANT:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
       break;
-    case SUTHERLAND:
+    case VISCOSITYMODEL::SUTHERLAND:
       LaminarViscosity = unique_ptr<CSutherland>(
           new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND()));
       break;
-    case POLYNOMIAL_VISCOSITY:
+    case VISCOSITYMODEL::POLYNOMIAL:
       LaminarViscosity = unique_ptr<CPolynomialViscosity<N_POLY_COEFFS>>(
           new CPolynomialViscosity<N_POLY_COEFFS>(config->GetMu_PolyCoeffND()));
-      break;
-    default:
-      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
 }
 
 void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
   switch (config->GetKind_ConductivityModel()) {
-    case CONSTANT_CONDUCTIVITY:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::CONSTANT:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantConductivityRANS>(
             new CConstantConductivityRANS(config->GetKt_ConstantND(), config->GetPrandtl_Turb()));
       } else {
         ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetKt_ConstantND()));
       }
       break;
-    case CONSTANT_PRANDTL:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantPrandtlRANS>(
             new CConstantPrandtlRANS(config->GetPrandtl_Lam(), config->GetPrandtl_Turb()));
       } else {
         ThermalConductivity = unique_ptr<CConstantPrandtl>(new CConstantPrandtl(config->GetPrandtl_Lam()));
       }
       break;
-    case POLYNOMIAL_CONDUCTIVITY:
-      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+    case CONDUCTIVITYMODEL::POLYNOMIAL:
+      if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CPolynomialConductivityRANS<N_POLY_COEFFS>>(
             new CPolynomialConductivityRANS<N_POLY_COEFFS>(config->GetKt_PolyCoeffND(), config->GetPrandtl_Turb()));
       } else {

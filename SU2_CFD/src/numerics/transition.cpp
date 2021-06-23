@@ -2,14 +2,14 @@
  * \file transition.cpp
  * \brief Implementation of numerics classes for transition problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 CUpwLin_TransLM::CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -121,7 +121,7 @@ CAvgGrad_TransLM::CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_n
   unsigned short iVar;
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -234,7 +234,7 @@ CAvgGradCorrected_TransLM::CAvgGradCorrected_TransLM(unsigned short val_nDim, un
   unsigned short iVar;
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -399,7 +399,9 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(su2double *val_residual, 
   /* -- These lines must be manually reinserted into the differentiated routine! --*/
 //  rey  = config->GetReynolds();
 //  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+
+  /*--- turbulence intensity in the transition model is a percentage, so multiply by 100 ---*/
+  tu   = 100.0 * config->GetTurbulenceIntensity_FreeStream();
   //SU2_CPP2C COMMENT END
 
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
@@ -586,7 +588,8 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
 //  tu = 0.0;
 //  rey  = config->GetReynolds();
 //  mach = config->GetMach();
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+  /* --- turbulence intensity for transition models is in percentages, so multiply by 100 ---*/ 
+  tu   = 100.0 * config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);
   /*-- Strain = sqrt(2*Sij*Sij) --*/

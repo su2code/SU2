@@ -3,14 +3,14 @@
  * \brief Collection of small classes that decorate C2DContainer to
  * augment its functionality, e.g. give it extra dimensions.
  * \author P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -205,3 +205,60 @@ struct C3DDummyMiddleView
     return data(i,k);
   }
 };
+
+/*--- Helper functions to allocate containers of containers. ---*/
+
+/*!
+ * \brief Allocate a vector of varying-size vectors and initialize with some value.
+ * \param[in] M - the first index is >=0 and < M
+ * \param[in] N - the second index is >=0 and < N[first index]
+ * \param[in,out] X - the vector of vectors
+ * \param[in] val - the value for initialization, default is 0
+ * \tparam IndexVector - type of N
+ * \tparam VectorOfVector - type of X
+ */
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(size_t M, const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
+  X.resize(M);
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i]);
+    for (auto& x : X[i]) x = val;
+  }
+}
+
+/*!
+ * \overload Deduce outer size from index vector.
+ */
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
+  auto M = N.size();
+  AllocVectorOfVectors(M, N, X, val);
+}
+
+/*!
+ * \brief Allocate a vector of matrices with varying row count, and initialize with some value.
+ * \param[in] M - the first index is >=0 and < M
+ * \param[in] N - the second index is >=0 and < N[first index]
+ * \param[in] P - the third index is >=0 and < P
+ * \param[in,out] X - the vector of matrices
+ * \param[in] val - the value for initialization, default is 0
+ * \tparam IndexVector - type of N
+ * \tparam VectorOfMatrix - type of X
+ */
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(size_t M, const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
+  X.resize(M);
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i],P);
+    for (auto& x : X[i]) x = val;
+  }
+}
+
+/*!
+ * \overload Deduce outer size from index vector.
+ */
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
+  auto M = N.size();
+  AllocVectorOfMatrices(M, N, P, X, val);
+}

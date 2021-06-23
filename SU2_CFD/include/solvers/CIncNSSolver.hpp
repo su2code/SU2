@@ -2,14 +2,14 @@
  * \file CIncNSSolver.hpp
  * \brief Headers of the CIncNSSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,6 +64,36 @@ class CIncNSSolver final : public CIncEulerSolver {
    */
   void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                         CNumerics *numerics, CConfig *config) override;
+
+/*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry,
+                     CSolver** solver_container,
+                     const CConfig* config);
+
+  /*!
+   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
+   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void GetStreamwise_Periodic_Properties(const CGeometry *geometry,
+                                         CConfig *config,
+                                         const unsigned short iMesh);
+
+  /*!
+   * \brief Compute recovered pressure/temperature for streamwise periodic flow and store in CVariable.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
+                                                    const unsigned short iMesh);
 
 public:
   /*!

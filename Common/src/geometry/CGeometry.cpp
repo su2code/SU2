@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,24 +28,8 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
-
-/*--- Cross product ---*/
-
-#define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];  \
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];  \
-(dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
-
-/*--- Cross product ---*/
-
-#define DOT(v1,v2) ((v1)[0]*(v2)[0] + (v1)[1]*(v2)[1] + (v1)[2]*(v2)[2]);
-
-/*--- a = b - c ---*/
-
-#define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];  \
-(dest)[1] = (v1)[1] - (v2)[1];  \
-(dest)[2] = (v1)[2] - (v2)[2];
+#include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -400,7 +384,9 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
   delete [] bufS_P2PRecv;
   bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 
@@ -504,6 +490,7 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 }
 
@@ -601,6 +588,7 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 }
 
@@ -618,7 +606,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case COORDINATES_OLD:
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
+      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT  = nDim*2;
       else
         COUNT_PER_POINT  = nDim;
@@ -717,7 +705,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset+iDim] = vector[iDim];
           }
-          if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
             vector = nodes->GetCoord_n1(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
               bufDSend[buf_offset+nDim+iDim] = vector[iDim];
@@ -736,6 +724,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           break;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Launch the point-to-point MPI send for this message. ---*/
 
@@ -782,6 +771,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 
     SU2_OMP_MASTER
     SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
@@ -824,7 +814,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
         case COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
-          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
           break;
         case MAX_LENGTH:
@@ -839,6 +829,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           break;
       }
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Verify that all non-blocking point-to-point sends have finished.
@@ -848,6 +839,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
 #ifdef HAVE_MPI
   SU2_OMP_MASTER
   SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
+  END_SU2_OMP_MASTER
 #endif
   SU2_OMP_BARRIER
 
@@ -1226,7 +1218,9 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
   delete [] bufS_PeriodicRecv;
   bufS_PeriodicRecv = new unsigned short[nRecv] ();
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
@@ -1283,6 +1277,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
     }
 
   }
+  END_SU2_OMP_MASTER
 
 #endif
 
@@ -1337,7 +1332,8 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
-  } // end master
+  }
+  END_SU2_OMP_MASTER
 #else
 
   /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
@@ -1614,16 +1610,16 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Find vectors for two edges sharing vert0 ---*/
 
-  SUB(edge1, vert1, vert0);
-  SUB(edge2, vert2, vert0);
+  GeometryToolbox::Distance(3, vert1, vert0, edge1);
+  GeometryToolbox::Distance(3, vert2, vert0, edge2);
 
   /*--- Begin calculating determinant - also used to calculate U parameter ---*/
 
-  CROSS(pvec, dir, edge2);
+  GeometryToolbox::CrossProduct(dir, edge2, pvec);
 
   /*--- If determinant is near zero, ray lies in plane of triangle ---*/
 
-  det = DOT(edge1, pvec);
+  det = GeometryToolbox::DotProduct(3, edge1, pvec);
 
 
   if (fabs(det) < epsilon) return(false);
@@ -1632,27 +1628,27 @@ bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double d
 
   /*--- Calculate distance from vert0 to ray origin ---*/
 
-  SUB(tvec, orig, vert0);
+  GeometryToolbox::Distance(3, orig, vert0, tvec);
 
   /*--- Calculate U parameter and test bounds ---*/
 
-  u = inv_det * DOT(tvec, pvec);
+  u = inv_det * GeometryToolbox::DotProduct(3, tvec, pvec);
 
   if (u < 0.0 || u > 1.0) return(false);
 
   /*--- prepare to test V parameter ---*/
 
-  CROSS(qvec, tvec, edge1);
+  GeometryToolbox::CrossProduct(tvec, edge1, qvec);
 
   /*--- Calculate V parameter and test bounds ---*/
 
-  v = inv_det * DOT(dir, qvec);
+  v = inv_det * GeometryToolbox::DotProduct(3, dir, qvec);
 
   if (v < 0.0 || u + v > 1.0) return(false);
 
   /*--- Calculate t, ray intersects triangle ---*/
 
-  t = inv_det * DOT(edge2, qvec);
+  t = inv_det * GeometryToolbox::DotProduct(3, edge2, qvec);
 
   /*--- Compute the intersection point in cartesian coordinates ---*/
 
@@ -1712,21 +1708,21 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double p
 
   su2double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
 
-  SUB(dir, point1, point0);
+  GeometryToolbox::Distance(3, point1, point0, dir);
 
   if (RayIntersectsTriangle(point0, dir, vert0, vert1, vert2, intersect)) {
 
     /*--- Check that the intersection is in the segment ---*/
 
-    SUB(u, point0, intersect);
-    SUB(v, point1, intersect);
+    GeometryToolbox::Distance(3, point0, intersect, u);
+    GeometryToolbox::Distance(3, point1, intersect, v);
 
-    SUB(edge1, vert1, vert0);
-    SUB(edge2, vert2, vert0);
-    CROSS(Plane_Normal, edge1, edge2);
+    GeometryToolbox::Distance(3, vert1, vert0, edge1);
+    GeometryToolbox::Distance(3, vert2, vert0, edge2);
+    GeometryToolbox::CrossProduct(edge1, edge2, Plane_Normal);
 
-    Denominator = DOT(Plane_Normal, u);
-    Numerator = DOT(Plane_Normal, v);
+    Denominator = GeometryToolbox::DotProduct(3, Plane_Normal, u);
+    Numerator = GeometryToolbox::DotProduct(3, Plane_Normal, v);
 
     Aux = Numerator * Denominator;
 
@@ -2480,56 +2476,26 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(CConfig *config) const {
-  unsigned short iDim;
-  unsigned long iPoint;
-  bool input = true;
-  bool push_index = config->GetMultizone_Problem()? false : true;
+void CGeometry::RegisterCoordinates() const {
+  const bool input = true;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
-    }
-    if(!push_index) {
-      nodes->SetIndex(iPoint, input);
-    }
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    nodes->RegisterCoordinates(iPoint, input);
   }
-}
-
-void CGeometry::RegisterOutput_Coordinates(CConfig *config) const{
-  unsigned short iDim;
-  unsigned long iPoint;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if(config->GetMultizone_Problem()) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-    else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
-      }
-    }
-  }
+  END_SU2_OMP_FOR
 }
 
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
 
-  unsigned short iMesh;
-
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetDynamic_Grid()){
-    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-  }
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
 
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
@@ -2755,8 +2721,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-
-  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -3021,7 +2985,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
-  if ((rank == MASTER_NODE) && (!fea))
+  if (rank == MASTER_NODE)
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
@@ -3108,7 +3072,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 }
 
 void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
-                                        const vector<pair<unsigned short,su2double> > &kernels,
+                                        const vector<pair<ENUM_FILTER_KERNEL,su2double> > &kernels,
                                         const unsigned short search_limit,
                                         su2double *values) const
 {
@@ -3159,6 +3123,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem+iDim] = 0.0;
     vol_elem[iElem] = 0.0;
   }
+  END_SU2_OMP_FOR
 
   /*--- Populate ---*/
   SU2_OMP_FOR_STAT(256)
@@ -3168,6 +3133,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem_global+iDim] = elem[iElem]->GetCG(iDim);
     vol_elem[iElem_global] = elem[iElem]->GetVolume();
   }
+  END_SU2_OMP_FOR
 
 #ifdef HAVE_MPI
   /*--- Account for the duplication introduced by the halo elements and the
@@ -3175,10 +3141,12 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
   SU2_OMP_FOR_STAT(256)
   for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
     halo_detect[iElem] = 0;
+  END_SU2_OMP_FOR
 
   SU2_OMP_FOR_STAT(256)
   for(auto iElem=0ul; iElem<nElem; ++iElem)
     halo_detect[elem[iElem]->GetGlobalIndex()] = 1;
+  END_SU2_OMP_FOR
 
   /*--- Share with all processors ---*/
   SU2_OMP_MASTER
@@ -3195,6 +3163,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     MPI_Allreduce(halo_detect.data(),char_buffer.data(),Global_nElemDomain,MPI_CHAR,MPI_SUM,SU2_MPI::GetComm());
     halo_detect.swap(char_buffer);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(256)
@@ -3204,6 +3173,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       cg_elem[nDim*iElem+iDim] /= numRepeat;
     vol_elem[iElem] /= numRepeat;
   }
+  END_SU2_OMP_FOR
 #endif
 
   /*--- SECOND: Each processor performs the average for its elements. For each
@@ -3214,7 +3184,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
   for (unsigned long iKernel=0; iKernel<kernels.size(); ++iKernel)
   {
-    unsigned short kernel_type = kernels[iKernel].first;
+    auto kernel_type = kernels[iKernel].first;
     su2double kernel_param = kernels[iKernel].second;
     su2double kernel_radius = filter_radius[iKernel];
 
@@ -3223,11 +3193,13 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
       work_values[iElem] = 0.0;
+    END_SU2_OMP_FOR
 
     /*--- Populate ---*/
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<nElem; ++iElem)
       work_values[elem[iElem]->GetGlobalIndex()] = values[iElem];
+    END_SU2_OMP_FOR
 
 #ifdef HAVE_MPI
     /*--- Share with all processors ---*/
@@ -3237,6 +3209,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       SU2_MPI::Allreduce(work_values,buffer,Global_nElemDomain,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
       swap(buffer, work_values); delete [] buffer;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Account for duplication ---*/
@@ -3245,6 +3218,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
       su2double numRepeat = halo_detect[iElem];
       work_values[iElem] /= numRepeat;
     }
+    END_SU2_OMP_FOR
 #endif
 
     /*--- Filter ---*/
@@ -3266,7 +3240,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 
       switch ( kernel_type ) {
         /*--- distance-based kernels (weighted averages) ---*/
-        case CONSTANT_WEIGHT_FILTER: case CONICAL_WEIGHT_FILTER: case GAUSSIAN_WEIGHT_FILTER:
+        case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT:
+        case ENUM_FILTER_KERNEL::CONICAL_WEIGHT:
+        case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT:
 
           for (auto idx : neighbours)
           {
@@ -3276,9 +3252,9 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
             distance = sqrt(distance);
 
             switch ( kernel_type ) {
-              case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
-              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
-              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
+              case ENUM_FILTER_KERNEL::CONSTANT_WEIGHT: weight = 1.0; break;
+              case ENUM_FILTER_KERNEL::CONICAL_WEIGHT: weight = kernel_radius-distance; break;
+              case ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT: weight = exp(-0.5*pow(distance/kernel_param,2)); break;
               default: break;
             }
             weight *= vol_elem[idx];
@@ -3289,28 +3265,31 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
           break;
 
         /*--- morphology kernels (image processing) ---*/
-        case DILATE_MORPH_FILTER: case ERODE_MORPH_FILTER:
+        case ENUM_FILTER_KERNEL::DILATE_MORPH:
+        case ENUM_FILTER_KERNEL::ERODE_MORPH:
 
           for (auto idx : neighbours)
           {
             switch ( kernel_type ) {
-              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[idx]); break;
-              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[idx])); break;
+              case ENUM_FILTER_KERNEL::DILATE_MORPH: numerator += exp(kernel_param*work_values[idx]); break;
+              case ENUM_FILTER_KERNEL::ERODE_MORPH: numerator += exp(kernel_param*(1.0-work_values[idx])); break;
               default: break;
             }
             denominator += 1.0;
           }
           values[iElem] = log(numerator/denominator)/kernel_param;
-          if ( kernel_type==ERODE_MORPH_FILTER ) values[iElem] = 1.0-values[iElem];
+          if ( kernel_type==ENUM_FILTER_KERNEL::ERODE_MORPH ) values[iElem] = 1.0-values[iElem];
           break;
 
         default:
           SU2_MPI::Error("Unknown type of filter kernel",CURRENT_FUNCTION);
       }
     }
+    END_SU2_OMP_FOR
   }
 
-  } // end OpenMP parallel section
+  }
+  END_SU2_OMP_PARALLEL
 
   limited_searches /= kernels.size();
 
@@ -3342,13 +3321,16 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<Global_nElemDomain; ++iElem)
       nFaces_elem[iElem] = 0;
+    END_SU2_OMP_FOR
 
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<nElem; ++iElem) {
       auto iElem_global = elem[iElem]->GetGlobalIndex();
       nFaces_elem[iElem_global] = elem[iElem]->GetnFaces();
     }
+    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_PARALLEL
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
@@ -3378,6 +3360,7 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
     /*--- Initialize ---*/
     SU2_OMP_FOR_STAT(256)
     for(auto iElem=0ul; iElem<matrix_size; ++iElem) neighbour_idx[iElem] = -1;
+    END_SU2_OMP_FOR
 
     /*--- Populate ---*/
     SU2_OMP_FOR_STAT(128)
@@ -3395,7 +3378,9 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
         }
       }
     }
+    END_SU2_OMP_FOR
   }
+  END_SU2_OMP_PARALLEL
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
@@ -3523,6 +3508,7 @@ void CGeometry::SetElemVolume()
     if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
     else        elem[iElem]->SetVolume(element->ComputeVolume());
   }
+  END_SU2_OMP_FOR
 
   delete elements[0];
   delete elements[1];
@@ -3531,110 +3517,11 @@ void CGeometry::SetElemVolume()
     delete elements[3];
   }
 
-  } // end SU2_OMP_PARALLEL
-}
-
-void CGeometry::SetGeometryPlanes(CConfig *config) {
-
-  bool loop_on;
-  unsigned short iMarker = 0;
-  su2double *Face_Normal = nullptr, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr, *FaceArea = nullptr;
-  unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
-
-  /*--- Compute the total number of points on the near-field ---*/
-  nVertex_Wall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
-      nVertex_Wall += nVertex[iMarker];
-
-
-  /*--- Create an array with all the coordinates, points, pressures, face area,
-   equivalent area, and nearfield weight ---*/
-  Xcoord = new su2double[nVertex_Wall];
-  Ycoord = new su2double[nVertex_Wall];
-  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
-  FaceArea = new su2double[nVertex_Wall];
-
-  /*--- Copy the boundary information to an array ---*/
-  iVertex_Wall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        Xcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 0);
-        Ycoord[iVertex_Wall] = nodes->GetCoord(iPoint, 1);
-        if (nDim==3) Zcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 2);
-        Face_Normal = vertex[iMarker][iVertex]->GetNormal();
-        FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
-        iVertex_Wall ++;
-      }
-
-
-  //vector<su2double> XCoordList;
-  vector<su2double>::iterator IterXCoordList;
-
-  for (iVertex = 0; iVertex < nVertex_Wall; iVertex++)
-    XCoordList.push_back(Xcoord[iVertex]);
-
-  sort( XCoordList.begin(), XCoordList.end());
-  IterXCoordList = unique( XCoordList.begin(), XCoordList.end());
-  XCoordList.resize( IterXCoordList - XCoordList.begin() );
-
-  /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
-  Xcoord_plane.resize(XCoordList.size());
-  Ycoord_plane.resize(XCoordList.size());
-  if (nDim==3) Zcoord_plane.resize(XCoordList.size());
-  FaceArea_plane.resize(XCoordList.size());
-  Plane_points.resize(XCoordList.size());
-
-
-  su2double dist_ratio;
-  unsigned long iCoord;
-
-  /*--- Distribute the values among the different PhiAngles ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (nodes->GetDomain(iPoint)) {
-      loop_on = true;
-      for (ixCoord = 0; ixCoord < XCoordList.size()-1 && loop_on; ixCoord++) {
-        dist_ratio = (nodes->GetCoord(iPoint, 0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
-        if (dist_ratio >= 0 && dist_ratio <= 1.0) {
-          if (dist_ratio <= 0.5) iCoord = ixCoord;
-          else iCoord = ixCoord+1;
-          Xcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 0) );
-          Ycoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 1) );
-          if (nDim==3) Zcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 2) );
-          FaceArea_plane[iCoord].push_back(nodes->GetVolume(iPoint));   ///// CHECK AREA CALCULATION
-          Plane_points[iCoord].push_back(iPoint );
-          loop_on = false;
-        }
-      }
-    }
   }
-
-  /*--- Order the arrays in ascending values of y ---*/
-  /// TODO: Depending on the size of the arrays, this may not be a good way of sorting them.
-  for (ixCoord = 0; ixCoord < XCoordList.size(); ixCoord++)
-    for (iVertex = 0; iVertex < Xcoord_plane[ixCoord].size(); iVertex++)
-      for (jVertex = 0; jVertex < Xcoord_plane[ixCoord].size() - 1 - iVertex; jVertex++)
-        if (Ycoord_plane[ixCoord][jVertex] > Ycoord_plane[ixCoord][jVertex+1]) {
-          swap(Xcoord_plane[ixCoord][jVertex], Xcoord_plane[ixCoord][jVertex+1]);
-          swap(Ycoord_plane[ixCoord][jVertex], Ycoord_plane[ixCoord][jVertex+1]);
-          if (nDim==3) swap(Zcoord_plane[ixCoord][jVertex], Zcoord_plane[ixCoord][jVertex+1]);
-          swap(Plane_points[ixCoord][jVertex], Plane_points[ixCoord][jVertex+1]);
-          swap(FaceArea_plane[ixCoord][jVertex], FaceArea_plane[ixCoord][jVertex+1]);
-        }
-
-  /*--- Delete structures ---*/
-  delete[] Xcoord; delete[] Ycoord;
-  delete[] Zcoord;
-  delete[] FaceArea;
+  END_SU2_OMP_PARALLEL
 }
 
-void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetRotationalVelocity(const CConfig *config, bool print) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -3687,7 +3574,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
 }
 
-void CGeometry::SetShroudVelocity(CConfig *config) {
+void CGeometry::SetShroudVelocity(const CConfig *config) {
 
   unsigned long iPoint, iVertex;
   unsigned short iMarker, iMarkerShroud;
@@ -3706,7 +3593,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) {
   }
 }
 
-void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
+void CGeometry::SetTranslationalVelocity(const CConfig *config, bool print) {
 
   su2double xDot[3] = {0.0,0.0,0.0};
 
@@ -3726,15 +3613,73 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetGridVel(iPoint, xDot);
-
 }
 
-void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
+void CGeometry::SetWallVelocity(const CConfig *config, bool print) {
+
+  const su2double L_Ref = config->GetLength_Ref();
+  const su2double Omega_Ref = config->GetOmega_Ref();
+  const su2double Vel_Ref = config->GetVelocity_Ref();
+
+  /*--- Store grid velocity for each node on the moving surface(s).
+   Sum and store the x, y, & z velocities due to translation and rotation. ---*/
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) != YES) continue;
+
+    /*--- Identify iMarker from the list of those under MARKER_MOVING
+     Get prescribed wall speed from config for this marker. ---*/
+
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const auto jMarker = config->GetMarker_Moving(Marker_Tag);
+
+    su2double xDot[MAXNDIM], Center[MAXNDIM], Omega[MAXNDIM];
+
+    for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+      Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
+      Omega[iDim] = config->GetMarkerRotationRate(jMarker, iDim) / Omega_Ref;
+      xDot[iDim] = config->GetMarkerTranslationRate(jMarker, iDim) / Vel_Ref;
+    }
+
+    if (rank == MASTER_NODE && print) {
+      cout << " Storing grid velocity for marker: ";
+      cout << Marker_Tag << ".\n";
+      cout << " Translational velocity: (" << xDot[0]*config->GetVelocity_Ref() << ", " << xDot[1]*config->GetVelocity_Ref();
+      cout << ", " << xDot[2]*config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << ") m/s.\n";
+      else cout << ") ft/s.\n";
+      cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+      cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+      cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+    }
+
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Calculate non-dim. position from rotation center ---*/
+      su2double r[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        r[iDim] = (nodes->GetCoord(iPoint,iDim) - Center[iDim]) / L_Ref;
+
+      /*--- Cross Product of angular velocity and distance from center to
+       get the rotational velocity. Note that we are adding on the velocity
+       due to pure translation as well. ---*/
+
+      su2double GridVel[MAXNDIM];
+      GeometryToolbox::CrossProduct(Omega, r, GridVel);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        nodes->SetGridVel(iPoint, iDim, xDot[iDim]+GridVel[iDim]);
+    }
+  }
+}
+
+void CGeometry::SetGridVelocity(const CConfig *config) {
 
   /*--- Get timestep and whether to use 1st or 2nd order backward finite differences ---*/
 
-  bool FirstOrder = (config->GetTime_Marching() == DT_STEPPING_1ST);
-  bool SecondOrder = (config->GetTime_Marching() == DT_STEPPING_2ND);
+  bool FirstOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
+  bool SecondOrder = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   su2double TimeStep = config->GetDelta_UnstTimeND();
 
@@ -3908,6 +3853,33 @@ void CGeometry::SetNaturalElementColoring()
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
 
+void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry) {
+
+  using tColor = uint8_t;
+  constexpr auto nColor = numeric_limits<tColor>::max();
+
+  if (nMGLevels) CoarseGridColor_.resize(nPoint,nMGLevels) = 0;
+
+  for (auto iMesh = nMGLevels; iMesh >= 1; --iMesh) {
+    /*--- Color the coarse points. ---*/
+    vector<tColor> color;
+    const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
+    if (colorSparsePattern<CCompressedSparsePatternUL, tColor, nColor>(adjacency, 1, false, &color).empty())
+      continue;
+
+    /*--- Propagate colors to fine mesh. ---*/
+    for (auto step = 0u; step < iMesh; ++step) {
+      auto coarseMesh = geometry[iMesh-1-step];
+      if (step)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step-1);
+      else
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+          CoarseGridColor_(iPoint,step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+    }
+  }
+}
+
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
 
   int nZone = config_container[ZONE_0]->GetnZone();
@@ -3939,15 +3911,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
-      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      unique_ptr<CADTElemClass> WallADT = geometry_container[iZone][iInst][MESH_0]->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config_container[jZone], iZone);
         }
       }
     }
@@ -3957,6 +3928,29 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       for (int iZone = 0; iZone < nZone; iZone++){
         CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
+      }
+    }
+    /*--- Otherwise, set wall roughnesses. ---*/
+    if(!allEmpty){
+      /*--- Store all wall roughnesses in a common data structure. ---*/
+      // [iZone][iMarker] -> roughness, for this rank
+      auto roughness_f =
+        make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
+          const CConfig* config = config_container[iZone];
+          const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+          return make_pair( nMarker, [config](unsigned long iMarker){
+            return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          });
+        });
+      NdFlattener<2> roughness_local(roughness_f);
+      // [rank][iZone][iMarker] -> roughness
+      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+      // use it to update roughnesses
+      for(int jZone=0; jZone<nZone; jZone++){
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+        }
       }
     }
   }

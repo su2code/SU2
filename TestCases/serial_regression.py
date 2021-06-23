@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -345,7 +345,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.798258, -5.863895, 1.049989, 0.019163]
+    turb_naca0012_sst.test_vals = [-11.451011, -12.798258, -5.863895, 1.049989, 0.019163, -1.925028]
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.new_output  = True
     turb_naca0012_sst.timeout   = 3200
@@ -357,11 +357,22 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.640857, -5.747260, 1.005233, 0.019017]
+    turb_naca0012_sst_sust.test_vals = [-11.367386, -12.640857, -5.747260, 1.005233, 0.019017, -1.985871]
     turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
     test_list.append(turb_naca0012_sst_sust)
+
+    # NACA0012 (SST, fixed values for turbulence quantities)
+    turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
+    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
+    turb_naca0012_sst_fixedvalues.test_iter = 10
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.206744, -9.562435, -1.566603, 1.022029, 0.040549, -3.483576]
+    turb_naca0012_sst_fixedvalues.su2_exec  = "SU2_CFD"
+    turb_naca0012_sst_fixedvalues.timeout   = 3200
+    turb_naca0012_sst_fixedvalues.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_fixedvalues)
 
     # PROPELLER
     propeller           = TestCase('propeller')
@@ -658,7 +669,7 @@ def main():
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
     schubauer_klebanoff_transition.new_output   = True
-    schubauer_klebanoff_transition.test_vals    = [-8.029786, -14.268417, 0.000053, 0.007986] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.029786, -13.240213, 0.000053, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -1308,7 +1319,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4, 0, -3.764077, -4.081143] #last 4 columns
+    fsi2d.test_vals = [4, 0, -3.743214, -4.133482] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
     fsi2d.timeout   = 1600
     fsi2d.multizone = True
@@ -1345,7 +1356,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.379829, -4.005994, 0.000000, 0.000000] #last 5 columns
+    dyn_fsi.test_vals = [-4.355809, -4.060588, 5.3837e-08, 86] #last 4 columns
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     dyn_fsi.su2_exec  = "SU2_CFD"
@@ -1404,19 +1415,6 @@ def main():
     cht_incompressible.multizone = True
     cht_incompressible.tol       = 0.00001
     test_list.append(cht_incompressible)
-
-    # CHT incompressible unsteady
-    cht_incompressible_unsteady           = TestCase('cht_incompressible_unsteady')
-    cht_incompressible_unsteady.cfg_dir   = "coupled_cht/incomp_2d_unsteady"
-    cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
-    cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-1.303588, -0.080377, -0.080380, -0.080377] #last 4 columns
-    cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
-    cht_incompressible_unsteady.timeout   = 1600
-    cht_incompressible_unsteady.multizone = True
-    cht_incompressible_unsteady.unsteady  = True
-    cht_incompressible_unsteady.tol       = 0.00001
-    test_list.append(cht_incompressible_unsteady)
 
      # CHT compressible
     cht_incompressible           = TestCase('cht_compressible')
@@ -1823,7 +1821,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-12.798258, -5.863895, 1.049989, 0.019163]
+    pywrapper_turb_naca0012_sst.test_vals = [-11.451011, -12.798258, -5.863895, 1.049989, 0.019163, -1.925028]
     pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200
@@ -1863,7 +1861,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4, 0, -3.764077, -4.081143] #last 4 columns
+    pywrapper_fsi2d.test_vals = [4, 0, -3.743214, -4.133482] #last 4 columns
     pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.new_output  = True
     pywrapper_fsi2d.unsteady  = True
@@ -1892,7 +1890,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.551335, 2.295594, 0.350050, 0.093081]
+    pywrapper_rigidMotion.test_vals     = [-1.614170, 2.242953, 0.350050, 0.093137]
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600

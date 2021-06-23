@@ -2,14 +2,14 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,9 @@ protected:
   MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
   VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
+  VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
+             Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -74,24 +77,15 @@ public:
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline CVectorOfMatrix& GetGradient_Primitive() final { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive() const final { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
-
-  /*!
-   * \brief Add <i>value</i> to the gradient of the primitive variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value to add to the gradient of the primitive variables.
-   */
-  inline void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) += value;
-  }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -108,7 +102,8 @@ public:
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline MatrixType& GetLimiter_Primitive() final {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive() const final {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -118,27 +113,6 @@ public:
    */
   inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {
     return Limiter_Primitive(iPoint,iVar);
-  }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Primitive(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] value - Value of the gradient.
-   */
-  inline void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) final {
-    Limiter_Primitive(iPoint,iVar) = value;
   }
 
   /*!
@@ -154,28 +128,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
@@ -194,7 +146,7 @@ public:
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+  inline const MatrixType& GetPrimitive() const final { return Primitive; }
 
   /*!
    * \brief Get the primitive variables.
@@ -373,6 +325,42 @@ public:
    */
   inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
   inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Set the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_pressure - pressure value.
+   */
+  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) final {
+    Streamwise_Periodic_RecoveredPressure(iPoint) = val_pressure;
+  }
+
+  /*!
+   * \brief Get the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
+   */
+  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const final {
+    return Streamwise_Periodic_RecoveredPressure(iPoint);
+  }
+
+  /*!
+   * \brief Set the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_temperature - temperature value.
+   */
+  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) final {
+    Streamwise_Periodic_RecoveredTemperature(iPoint) = val_temperature;
+  }
+
+  /*!
+   * \brief Get the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical temperature for streamwise periodic flow.
+   */
+  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const final {
+    return Streamwise_Periodic_RecoveredTemperature(iPoint);
+  }
 
   /*!
    * \brief Specify a vector to set the velocity components of the solution.

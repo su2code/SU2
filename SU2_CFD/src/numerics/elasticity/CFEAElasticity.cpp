@@ -2,14 +2,14 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,7 +75,7 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   FAux_Dead_Load = nullptr;
   if (body_forces) FAux_Dead_Load = new su2double [nDim];
 
-  plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
+  plane_stress = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
 
   KAux_ab = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++) {
@@ -333,6 +333,7 @@ void CFEAElasticity::ReadDV(const CConfig *config) {
   bool master_node = false;
   SU2_OMP_MASTER
   master_node = (rank == MASTER_NODE);
+  END_SU2_OMP_MASTER
 
   unsigned long index;
 

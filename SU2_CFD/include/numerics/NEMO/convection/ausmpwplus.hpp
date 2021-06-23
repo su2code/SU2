@@ -2,14 +2,14 @@
  * \file ausmpwplus.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSMPWPLUS.
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,6 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.8 "Falcon"
  */
 class CUpwAUSMPWplus_NEMO : public CNEMONumerics {
 private:
@@ -44,7 +43,7 @@ private:
   su2double ProjVel_i, ProjVel_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
 
- 
+
 public:
 
   /*!

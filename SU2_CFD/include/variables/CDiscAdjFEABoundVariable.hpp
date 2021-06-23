@@ -2,14 +2,14 @@
  * \file CDiscAdjFEABoundVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
  * \author Ruben Sanchez
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "CDiscAdjFEAVariable.hpp"
+#include "CDiscAdjVariable.hpp"
 #include "../../../Common/include/containers/CVertexMap.hpp"
 
 /*!
@@ -35,31 +35,29 @@
  * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
-class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
+class CDiscAdjFEABoundVariable final : public CDiscAdjVariable {
 private:
 
   MatrixType FlowTraction_Sens;        /*!< \brief Adjoint of the flow tractions. */
   MatrixType SourceTerm_DispAdjoint;   /*!< \brief Source term applied into the displacement
                                                    adjoint coming from external solvers. */
+  MatrixType SourceTerm_VelAdjoint;
 
   CVertexMap<unsigned> VertexMap;      /*!< \brief Object that controls accesses to the variables of this class. */
 
 public:
   /*!
    * \overload
-   * \param[in] disp - Pointer to the adjoint value (initialization value).
-   * \param[in] vel - Pointer to the adjoint value (initialization value).
-   * \param[in] accel - Pointer to the adjoint value (initialization value).
+   * \param[in] sol - Pointer to the adjoint value (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
-   * \param[in] unsteady - Allocate velocity and acceleration.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEABoundVariable(const su2double *disp, const su2double *vel, const su2double *accel,
-                           unsigned long npoint, unsigned long ndim, unsigned long nvar, bool unsteady, CConfig *config);
+  CDiscAdjFEABoundVariable(const su2double *sol, unsigned long npoint, unsigned long ndim,
+                           unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -101,6 +99,10 @@ public:
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     SourceTerm_DispAdjoint(iPoint,iDim) = val;
   }
+  inline void SetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    SourceTerm_VelAdjoint(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Get the source term applied into the displacement adjoint coming from external solvers
@@ -110,6 +112,10 @@ public:
   inline su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const override {
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SourceTerm_DispAdjoint(iPoint,iDim);
+  }
+  inline su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return SourceTerm_VelAdjoint(iPoint,iDim);
   }
 
   /*!

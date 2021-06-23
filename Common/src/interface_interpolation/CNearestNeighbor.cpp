@@ -2,14 +2,14 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -158,13 +158,16 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         target_vertex.coefficient[iDonor] = donorInfo[iDonor].dist/denom;
       }
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalTargetPoints += numTarget;
       AvgDistance += avgDist;
       MaxDistance = max(MaxDistance, maxDist);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_GlobalPoint;

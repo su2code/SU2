@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,16 +34,30 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  */
 class CHeatSolver final : public CSolver {
 protected:
-  unsigned short nVarFlow, nMarker, CurrentMesh;
-  su2double **HeatFlux, *HeatFlux_per_Marker, *Surface_HF, Total_HeatFlux, AllBound_HeatFlux,
-            *AverageT_per_Marker, Total_AverageT, AllBound_AverageT,
-            *Primitive, *Primitive_Flow_i, *Primitive_Flow_j,
-            *Surface_Areas, Total_HeatFlux_Areas, Total_HeatFlux_Areas_Monitor;
-  su2double ***ConjugateVar, ***InterfaceVar;
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
+
+  const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
+  const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
+
+  unsigned short nVarFlow, nMarker;
+  vector<vector<su2double> > HeatFlux;
+  vector<su2double> HeatFlux_per_Marker;
+  su2double Total_HeatFlux;
+  su2double AllBound_HeatFlux;
+  vector<su2double> AverageT_per_Marker;
+  su2double Total_AverageT;
+  su2double AllBound_AverageT;
+  vector<su2double>  Primitive_Flow_i;
+  vector<su2double> Primitive_Flow_j;
+  vector<su2double> Surface_Areas;
+  su2double Total_HeatFlux_Areas;
+  su2double Total_HeatFlux_Areas_Monitor;
+  vector<su2activematrix> ConjugateVar;
 
   CHeatVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -53,11 +67,6 @@ protected:
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHeatSolver(void);
 
   /*!
    * \brief Constructor of the class.

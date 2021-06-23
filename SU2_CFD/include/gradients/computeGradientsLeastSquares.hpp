@@ -3,14 +3,14 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -76,34 +76,34 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
   /*--- Entries of upper triangular matrix R. ---*/
 
+  if (periodic) {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Rmatrix(iPoint,0,0));
+    AD::SetPreaccIn(Rmatrix(iPoint,0,1));
+    AD::SetPreaccIn(Rmatrix(iPoint,1,1));
+  }
+
   su2double r11 = Rmatrix(iPoint,0,0);
   su2double r12 = Rmatrix(iPoint,0,1);
   su2double r22 = Rmatrix(iPoint,1,1);
   su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
-
-  if (periodic) {
-    AD::StartPreacc();
-    AD::SetPreaccIn(r11);
-    AD::SetPreaccIn(r12);
-    AD::SetPreaccIn(r22);
-  }
 
   r11 = sqrt(max(r11, eps));
   r12 /= r11;
   r22 = sqrt(max(r22 - r12*r12, eps));
 
   if (nDim == 3) {
+    if (periodic) {
+      AD::SetPreaccIn(Rmatrix(iPoint,0,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,1,2));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,1));
+      AD::SetPreaccIn(Rmatrix(iPoint,2,2));
+    }
+
     r13 = Rmatrix(iPoint,0,2);
     r33 = Rmatrix(iPoint,2,2);
     const auto r23_a = Rmatrix(iPoint,1,2);
     const auto r23_b = Rmatrix(iPoint,2,1);
-
-    if (periodic) {
-      AD::SetPreaccIn(r13);
-      AD::SetPreaccIn(r23_a);
-      AD::SetPreaccIn(r23_b);
-      AD::SetPreaccIn(r33);
-    }
 
     r13 /= r11;
     r23 = r23_a/r22 - r23_b*r12/(r11*r22);
@@ -284,6 +284,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
@@ -300,6 +301,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     SU2_OMP_FOR_DYN(chunkSize)
     for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
       solveLeastSquares<nDim, true>(iPoint, varBegin, varEnd, Rmatrix, gradient);
+    END_SU2_OMP_FOR
   }
 
   /*--- If no solver was provided we do not communicate ---*/

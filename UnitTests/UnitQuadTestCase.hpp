@@ -2,14 +2,14 @@
  * \file UnitQuadTestCase.hpp
  * \brief Simple unit quad test to be used in unit tests.
  * \author T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,7 +67,7 @@ struct UnitQuadTestCase {
   void InitConfig() {
     cout.rdbuf(nullptr);
     stringstream ss(config_options);
-    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_CFD, false));
+    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_COMPONENT::SU2_CFD, false));
     cout.rdbuf(orig_buf);
   }
 

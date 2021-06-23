@@ -2,14 +2,14 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -106,7 +106,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
        differencing based on node coordinates at previous times. ---*/
 
       if (rank == MASTER_NODE) cout << " Computing grid velocities by finite differencing." << endl;
-      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+      geometry[MESH_0]->SetGridVelocity(config);
 
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
@@ -138,7 +138,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
     if (!adjoint) {
       if (rank == MASTER_NODE) cout << " Computing grid velocities by finite differencing." << endl;
-      geometry[MESH_0]->SetGridVelocity(config, TimeIter);
+      geometry[MESH_0]->SetGridVelocity(config);
     }
 
     /*--- Update the multigrid structure after moving the finest grid,
@@ -149,13 +149,13 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 }
 
 void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNumerics*** numerics, CConfig* config,
-                                     unsigned short kind_recording) {
+                                     RECORDING kind_recording) {
   if (!config->GetDeform_Mesh()) return;
 
   /*--- Perform the elasticity mesh movement ---*/
 
   bool wasActive = false;
-  if ((kind_recording != MESH_DEFORM) && !config->GetMultizone_Problem()) {
+  if ((kind_recording != RECORDING::MESH_DEFORM) && !config->GetMultizone_Problem()) {
     /*--- In a primal run, AD::TapeActive returns a false ---*/
     /*--- In any other recordings, the tape is passive during the deformation. ---*/
     wasActive = AD::BeginPassive();

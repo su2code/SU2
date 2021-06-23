@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.0 "Blackbird"
+#  \version 7.1.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,44 @@ def main():
     ######################################
     ### RUN TUTORIAL CASES             ###
     ######################################
+
+
+    # CHT incompressible unsteady
+    cht_incompressible_unsteady           = TestCase('cht_incompressible_unsteady')
+    cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
+    cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
+    cht_incompressible_unsteady.test_iter = 2
+    cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450,  0.0000e+00, 0.0000e+00, 2.3824e+02] #last 9 columns
+    cht_incompressible_unsteady.su2_exec  = "mpirun -n 2 SU2_CFD"
+    cht_incompressible_unsteady.timeout   = 1600
+    cht_incompressible_unsteady.multizone = True
+    cht_incompressible_unsteady.unsteady  = True
+    cht_incompressible_unsteady.tol       = 0.00001
+    test_list.append(cht_incompressible_unsteady)
+
+    ### Incompressible Flow
+
+    # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
+    sp_pinArray_2d_mf_hf           = TestCase('sp_pinArray_2d_mf_hf')
+    sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
+    sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
+    sp_pinArray_2d_mf_hf.test_iter = 25
+    sp_pinArray_2d_mf_hf.test_vals = [-4.600340, 1.470386, -0.778623, 266.569743] #last 4 lines
+    sp_pinArray_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_mf_hf.timeout   = 1600
+    sp_pinArray_2d_mf_hf.tol       = 0.00001
+    test_list.append(sp_pinArray_2d_mf_hf)
+
+    # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
+    sp_pinArray_2d_dp_hf_tp           = TestCase('sp_pinArray_2d_dp_hf_tp')
+    sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
+    sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
+    sp_pinArray_2d_dp_hf_tp.test_iter = 25
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.667133, 1.395801, -0.709306, 208.023676] #last 4 lines
+    sp_pinArray_2d_dp_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    sp_pinArray_2d_dp_hf_tp.timeout   = 1600
+    sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
+    test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     ### Compressible Flow
 
@@ -150,7 +188,6 @@ def main():
     tutorial_nicfd_nozzle.tol       = 0.00001
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
-
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')

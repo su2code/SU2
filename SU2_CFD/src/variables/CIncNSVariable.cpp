@@ -2,14 +2,14 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,13 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   Max_Lambda_Visc.resize(nPoint);
 
   if (config->GetAxisymmetric()) {
+    nAuxVar = 1;
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
+  }
+
+  /*--- Allocate memory for the AuxVar+gradient of eddy viscosity mu_t ---*/
+  if (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE)) {
     nAuxVar = 1;
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);

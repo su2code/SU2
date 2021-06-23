@@ -2,14 +2,14 @@
  * \file CFEMDataSorter.cpp
  * \brief Datasorter class for FEM solvers.
  * \author T. Albring
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,24 +66,13 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create a linear partition --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
   PrepareSendBuffers(globalID);
 
 }
-
-CFEMDataSorter::~CFEMDataSorter(){
-
-        delete [] Index;
-       delete [] idSend;
-  delete linearPartitioner;
-
-}
-
-
-
 
 void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 

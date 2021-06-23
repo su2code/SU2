@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -145,7 +145,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   if( compressible ) nVar = nDim + 2;
   else               nVar = nDim + 1;
@@ -275,15 +275,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
-  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
-  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
-  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
-
-  Point_Max_Coord = new su2double*[nVar];
-  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,1.e-35);
+  Residual_Max.resize(nVar,1.e-35);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Non-dimensional coefficients ---*/
   CD_Inv   = new su2double[nMarker];
@@ -795,12 +790,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   su2double Beta             = config->GetAoS()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
   su2double Reynolds         = config->GetReynolds();
-  bool unsteady           = (config->GetTime_Marching() != NO);
+  bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
   bool tkeNeeded          = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
-  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
+  bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -1145,7 +1140,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     if (viscous) {
 
       switch(config->GetKind_ViscosityModel()){
-      case CONSTANT_VISCOSITY:
+      case VISCOSITYMODEL::CONSTANT:
         ModelTable << "CONSTANT_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -1154,7 +1149,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
-      case SUTHERLAND:
+      case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -1171,9 +1166,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
+      default:
+        break;
+
       }
       switch(config->GetKind_ConductivityModel()){
-      case CONSTANT_PRANDTL:
+      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
         ModelTable << "CONSTANT_PRANDTL";
         NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();
         Unit.str("");
@@ -1182,12 +1180,15 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
         NonDimTable.PrintFooter();
         break;
 
-      case CONSTANT_CONDUCTIVITY:
-        ModelTable << "CONSTANT_CONDUCTIVITY";
+      case CONDUCTIVITYMODEL::CONSTANT:
+        ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+
+      default:
         break;
 
       }
@@ -3143,7 +3144,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
   /*-----------------------------------------------------------------------------*/
 
-  if(config->GetKind_Regime() == COMPRESSIBLE) {
+  if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
     /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
     switch( nDim ) {
@@ -3215,7 +3216,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
   /*                       Check for grid motion.                                */
   /*-----------------------------------------------------------------------------*/
 
-  const bool harmonic_balance = config->GetTime_Marching() == HARMONIC_BALANCE;
+  const bool harmonic_balance = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   if(config->GetGrid_Movement() && !harmonic_balance) {
 
     /*--- Determine the type of grid motion. ---*/
@@ -3593,7 +3594,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
                                     unsigned short iMesh, unsigned long Iteration) {
 
   /* Check whether or not a time stepping scheme is used. */
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
 
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
@@ -3617,7 +3618,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(config->GetKind_Regime() == COMPRESSIBLE) {
+    if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -5769,7 +5770,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
   /*--- Get the physical time for MMS if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -7124,10 +7125,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
   const unsigned short nRKStages     = config->GetnRKStep();
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /* Set the pointer to the array where the new state vector must be stored.
      If this is the last RK step, the solution should be stored in
@@ -7176,10 +7174,7 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
   su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
 
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Update the solution by looping over the owned volume elements. ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -7228,10 +7223,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
   /* Initialize the residuals to zero. */
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Loop over the owned elements. It is not possible to loop directly over the owned
         DOFs, because the coordinates of the DOFs are only known in the volume class. ---*/
@@ -7249,7 +7241,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
 
-        AddRes_RMS(iVar, res[i]*res[i]);
+        Residual_RMS[iVar] += res[i]*res[i];
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
       }
     }
@@ -7262,22 +7254,22 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
     vector<su2double> rbufRes(nVar);
-    SU2_MPI::Allreduce(Residual_RMS, rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Residual_RMS.data(), rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for(unsigned short iVar=0; iVar<nVar; ++iVar) {
       if (rbufRes[iVar] != rbufRes[iVar])
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal)));
+      Residual_RMS[iVar] = max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal));
     }
 
     /*--- The global maximum norms must be obtained. ---*/
     rbufRes.resize(nVar*size);
-    SU2_MPI::Allgather(Residual_Max, nVar, MPI_DOUBLE, rbufRes.data(),
+    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbufRes.data(),
                        nVar, MPI_DOUBLE, SU2_MPI::GetComm());
 
     vector<unsigned long> rbufPoint(nVar*size);
-    SU2_MPI::Allgather(Point_Max, nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
                        nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     vector<su2double> sbufCoor(nDim*nVar);
@@ -7305,7 +7297,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
     if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
       SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
 
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
+    Residual_RMS[iVar] = max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal));
   }
 
 #endif
@@ -7335,7 +7327,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
       /*--- Get the physical time if necessary. ---*/
       su2double time = 0.0;
-      if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
       /*--- Reset the global error measures to zero. ---*/
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -8671,7 +8663,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
@@ -9396,7 +9388,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short iVar;
   unsigned long index;
 
-  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FileName();
 

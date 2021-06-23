@@ -3,7 +3,7 @@
  * \brief Header file for the class CMarkerProfileReaderFVM.
  *        The implementations are in the <i>CMarkerProfileReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -74,6 +74,9 @@ protected:
 
   string filename;  /*!< \brief File name of the marker profile file. */
 
+  vector<string> columnNames; /*!< \brief string containing all the names of the columns, one for each marker */
+  vector<string> columnValues; /*!< \brief initial values for the profile, in string format */
+
   vector<string> profileTags;  /*!< \brief Auxiliary structure for holding the string names of the markers in a profile file. */
 
   vector<unsigned long> numberOfRowsInProfile;  /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in a profile file. */
@@ -113,7 +116,9 @@ public:
                           CConfig        *val_config,
                           string         val_filename,
                           unsigned short val_kind_marker,
-                          unsigned short val_number_vars);
+                          unsigned short val_number_vars,
+                          vector<string> val_columnNames,
+                          vector<string> val_columnValues);
 
   /*!
    * \brief Destructor of the CMeshReaderFVM class.

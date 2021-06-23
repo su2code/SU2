@@ -3,14 +3,14 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,12 +34,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid/CNEMOGas.hpp"
-#include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
-
-using namespace std;
 
 class CElement;
 class CFluidModel;
@@ -81,6 +76,9 @@ protected:
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
+  su2double
+  SpecificHeat_i, /*!< \brief Specific heat c_p at point j. */
+  SpecificHeat_j; /*!< \brief Specific heat c_p at point j. */
   su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
@@ -749,6 +747,17 @@ public:
                                     su2double val_thermal_diffusivity_j) {
     Thermal_Diffusivity_i = val_thermal_diffusivity_i;
     Thermal_Diffusivity_j = val_thermal_diffusivity_j;
+  }
+
+  /*!
+   * \brief Set the specifc heat c_p.
+   * \param[in] val_specific_heat_i - Value of the specific heat at point i.
+   * \param[in] val_specific_heat_j - Value of the specific heat at point j.
+   */
+  inline void SetSpecificHeat(su2double val_specific_heat_i,
+                              su2double val_specific_heat_j) {
+    SpecificHeat_i = val_specific_heat_i;
+    SpecificHeat_j = val_specific_heat_j;
   }
 
   /*!
@@ -1590,6 +1599,11 @@ public:
    */
   virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
+  /*!
+   * \brief Set massflow, heatflow & inlet temperature for streamwise periodic flow.
+   * \param[in] SolverSPvals - Struct holding the values.
+   */
+  virtual void SetStreamwisePeriodicValues(const StreamwisePeriodicValues SolverSPvals) { }
 };
 
 /*!

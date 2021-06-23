@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,6 @@
 #include <cstdlib>
 #include <vector>
 #include <cassert>
-
-using namespace std;
 
 /*--- In forward mode the matrix is not of a built-in type. ---*/
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
@@ -108,7 +106,7 @@ struct CSysMatrixComms {
 template<class ScalarType>
 class CSysMatrix {
 private:
-  friend class CSysMatrixComms;
+  friend struct CSysMatrixComms;
 
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
@@ -164,8 +162,6 @@ private:
   gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
   void * MatrixVectorProductJitterAlphaMinusOne; /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
   gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
-  void * MatrixVectorProductTranspJitterBetaOne; /*!< \brief Jitter handle for MKL JIT based GEMV (transposed) with BETA=1.0. */
-  gemm_t MatrixVectorProductTranspKernelBetaOne; /*!< \brief MKL JIT based GEMV (transposed) kernel with BETA=1.0. */
 #endif
 
 #ifdef HAVE_PASTIX
@@ -177,6 +173,9 @@ private:
    */
   struct {
     const unsigned long *ptr = nullptr;
+    unsigned long nEdge = 0;
+
+    operator bool() { return nEdge != 0; }
 
     inline unsigned long operator() (unsigned long edge, unsigned long node) const {
       return ptr[2*edge+node];
@@ -226,14 +225,6 @@ private:
   void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
 
   /*!
-   * \brief Calculates the matrix-vector product: product += matrix^T * vector
-   * \param[in] matrix
-   * \param[in] vector
-   * \param[in,out] product
-   */
-  void MatrixVectorProductTransp(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
-
-  /*!
    * \brief Calculates the matrix-matrix product
    */
   void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const;
@@ -258,17 +249,10 @@ private:
   /*!
    * \brief Copy matrix src into dst, transpose if required.
    */
-  FORCEINLINE void MatrixCopy(const ScalarType *src, ScalarType *dst, bool transposed = false) const {
-    if (!transposed) {
-      SU2_OMP_SIMD
-      for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
-        dst[iVar] = src[iVar];
-    }
-    else {
-      for (auto iVar = 0ul; iVar < nVar; ++iVar)
-        for (auto jVar = 0ul; jVar < nVar; ++jVar)
-          dst[iVar*nVar+jVar] = src[jVar*nVar+iVar];
-    }
+  FORCEINLINE void MatrixCopy(const ScalarType *src, ScalarType *dst) const {
+    SU2_OMP_SIMD
+    for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
+      dst[iVar] = src[iVar];
   }
 
   /*!
@@ -289,17 +273,16 @@ private:
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
    * \param[in] block_i - Index of the (i,i) diagonal block.
    * \param[in] rhs - Right-hand-side of the linear system.
-   * \param[in] transposed - If true the transposed of the block is used (default = false).
    * \return Solution of the linear system (overwritten on rhs).
    */
-  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed = false) const;
+  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const;
 
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transposed = false) const;
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock) const;
 
   /*!
    * \brief Inverse diagonal block.
@@ -322,14 +305,6 @@ private:
    * \param[in] **val_block - Block to set to A(i, j).
    */
   inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
-
-  /*!
-   * \brief Set the transposed value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  inline void SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
 
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
@@ -806,6 +781,11 @@ public:
   void SetDiagonalAsColumnSum();
 
   /*!
+   * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
+   */
+  void TransposeInPlace();
+
+  /*!
    * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
    * \note Matrices must have the same sparse pattern.
    * \param[in] alpha - The scaling constant.
@@ -824,19 +804,9 @@ public:
                            CGeometry *geometry, const CConfig *config) const;
 
   /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void MatrixVectorProductTransposed(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                     CGeometry *geometry, const CConfig *config) const;
-
-  /*!
    * \brief Build the Jacobi preconditioner.
    */
-  void BuildJacobiPreconditioner(bool transpose = false);
+  void BuildJacobiPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -850,9 +820,8 @@ public:
 
   /*!
    * \brief Build the ILU preconditioner.
-   * \param[in] transposed - Flag to use the transposed matrix to construct the preconditioner.
    */
-  void BuildILUPreconditioner(bool transposed = false);
+  void BuildILUPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
@@ -902,9 +871,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] kind_fact - Type of factorization.
-   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact, bool transposed = false);
+  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact);
 
   /*!
    * \brief Apply the PaStiX factorization to CSysVec.

@@ -2,14 +2,14 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,30 +64,30 @@ void CRadialBasisFunction::PrintStatistics() const {
   cout.unsetf(ios::floatfield);
 }
 
-su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, const su2double radius, const su2double dist)
+su2double CRadialBasisFunction::Get_RadialBasisValue(RADIAL_BASIS type, const su2double radius, const su2double dist)
 {
   su2double rbf = dist/radius;
 
   switch (type) {
 
-    case WENDLAND_C2:
+    case RADIAL_BASIS::WENDLAND_C2:
       if(rbf < 1) rbf = pow(pow((1-rbf),2),2)*(4*rbf+1); // double use of pow(x,2) for optimization
       else        rbf = 0.0;
       break;
 
-    case GAUSSIAN:
+    case RADIAL_BASIS::GAUSSIAN:
       rbf = exp(-rbf*rbf);
       break;
 
-    case THIN_PLATE_SPLINE:
+    case RADIAL_BASIS::THIN_PLATE_SPLINE:
       if(rbf < numeric_limits<float>::min()) rbf = 0.0;
       else rbf *= rbf*log(rbf);
       break;
 
-    case MULTI_QUADRIC:
-    case INV_MULTI_QUADRIC:
+    case RADIAL_BASIS::MULTI_QUADRIC:
+    case RADIAL_BASIS::INV_MULTI_QUADRIC:
       rbf = sqrt(1.0+rbf*rbf);
-      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
+      if(type == RADIAL_BASIS::INV_MULTI_QUADRIC) rbf = 1.0/rbf;
       break;
   }
 
@@ -97,7 +97,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(ENUM_RADIALBASIS type, cons
 void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   /*--- RBF options. ---*/
-  const auto kindRBF = static_cast<ENUM_RADIALBASIS>(config[donorZone]->GetKindRadialBasisFunction());
+  const auto kindRBF = config[donorZone]->GetKindRadialBasisFunction();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
   const su2double paramRBF = config[donorZone]->GetRadialBasisFunctionParameter();
   const su2double pruneTol = config[donorZone]->GetRadialBasisFunctionPruneTol();
@@ -218,6 +218,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
                              keepPolynomialRowVec[iMarkerInt], CinvTrucVec[iMarkerInt]);
     }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Final loop over interface markers to compute the interpolation coefficients. ---*/
 
@@ -381,7 +382,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }
     } // end target vertex loop
-
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalDonorPoints += totalDonors;
@@ -390,7 +391,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       AvgCorrection += sumCorr;
       MaxCorrection = max(MaxCorrection, maxCorr);
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
     /*--- Free global data that will no longer be used. ---*/
     donorCoord.resize(0,0);
@@ -431,7 +434,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 }
 
-void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool usePolynomial,
+void CRadialBasisFunction::ComputeGeneratorMatrix(RADIAL_BASIS type, bool usePolynomial,
                            su2double radius, const su2activematrix& coords, int& nPolynomial,
                            vector<int>& keepPolynomialRow, su2passivematrix& C_inv_trunc) {
 
@@ -449,7 +452,8 @@ void CRadialBasisFunction::ComputeGeneratorMatrix(ENUM_RADIALBASIS type, bool us
                                    GeometryToolbox::Distance(nDim, coords[iVertex], coords[jVertex])));
 
   /*--- Invert M matrix (operation is in-place). ---*/
-  const bool kernelIsSPD = (type==WENDLAND_C2) || (type==GAUSSIAN) || (type==INV_MULTI_QUADRIC);
+  const bool kernelIsSPD = (type==RADIAL_BASIS::WENDLAND_C2) || (type==RADIAL_BASIS::GAUSSIAN) ||
+                           (type==RADIAL_BASIS::INV_MULTI_QUADRIC);
   global_M.Invert(kernelIsSPD);
 
   /*--- Compute C_inv_trunc. ---*/

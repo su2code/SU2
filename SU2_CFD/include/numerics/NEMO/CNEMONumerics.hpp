@@ -2,14 +2,14 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../CNumerics.hpp"
+#include "../../fluid/CNEMOGas.hpp"
+#include "../../fluid/CMutationTCLib.hpp"
+#include "../../fluid/CSU2TCLib.hpp"
 
 /*!
  * \class CNEMONumerics
@@ -46,7 +49,7 @@ public:
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
-  
+
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
@@ -54,7 +57,7 @@ public:
 
   vector<su2double> hs;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
- 
+
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX;
@@ -189,38 +192,38 @@ public:
                       const su2double *val_normal, const su2double *l, const su2double *m,
                       su2double **val_invp_tensor) const;
 
-  
+
   /*!
    * \brief Set the pressure derivatives.
-   * \param[in] val_dPdU_i - pressure derivatives at i. 
+   * \param[in] val_dPdU_i - pressure derivatives at i.
    * \param[in] val_dPdU_j - pressure derivatives at j.
    */
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       final { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
-   
+
   /*!
    * \brief Set the temperature derivatives.
-   * \param[in] val_dTdU_i - temperature derivatives at i. 
+   * \param[in] val_dTdU_i - temperature derivatives at i.
    * \param[in] val_dTdU_j - temperature derivatives at j.
-   */      
+   */
   inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       final { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
-  
+
   /*!
    * \brief Set the vib-el temperature derivatives.
-   * \param[in] val_dTvedU_i - t_ve derivatives at i. 
+   * \param[in] val_dTvedU_i - t_ve derivatives at i.
    * \param[in] val_dTvedU_j - t_ve derivatives at j.
    */
   inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) final { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
-  
+
   /*!
    * \brief Set the vib-el energy.
-   * \param[in] val_Eve_i - vib-el energy at i. 
+   * \param[in] val_Eve_i - vib-el energy at i.
    * \param[in] val_Eve_j - vib-el energy at j.
    */
   inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          final {eve_i = val_Eve_i; eve_j = val_Eve_j; }
-  
+
   /*!
    * \brief Set the Cvve.
-   * \param[in] val_Cvve_i - cvve at i. 
+   * \param[in] val_Cvve_i - cvve at i.
    * \param[in] val_Cvve_j - cvve at j.
    */
   inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       final {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }

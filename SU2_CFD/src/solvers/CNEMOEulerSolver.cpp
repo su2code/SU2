@@ -2,14 +2,14 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
-  CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>() {
+  CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>() {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNEMONSSolver. ---*/
@@ -53,9 +53,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+  bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
 
@@ -71,7 +71,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Modify file name for a dual-time unsteady restart ---*/
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == DT_STEPPING_1ST)
+      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
     }
@@ -110,7 +110,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   nVarGrad     = nPrimVarGrad;
 
   /*--- Store the number of vertices on each marker for deallocation ---*/
-  nVertex = new unsigned long[nMarker];
+  nVertex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
@@ -174,6 +174,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   default:
     break;
   }
+
+  SetReferenceValues(*config);
 
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new su2double[nDim];
@@ -525,6 +527,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
   ErrorCounter = 0;
+  END_SU2_OMP_MASTER
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM];
@@ -697,6 +700,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 }
@@ -985,6 +989,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         }else
           eAxi_local++;
       }
+      END_SU2_OMP_FOR
     }
 
   /*--- Checking for NaN ---*/
@@ -1063,7 +1068,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   su2double Mach          = config->GetMach();
   su2double Reynolds      = config->GetReynolds();
 
-  bool unsteady           = (config->GetTime_Marching() != NO);
+  bool unsteady           = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config->GetViscous();
   bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
@@ -1448,6 +1453,13 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   }
 }
 
+void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
+
+}
+
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
@@ -1709,7 +1721,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
+  INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
   su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
@@ -1756,7 +1768,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       switch (Kind_Inlet) {
 
       /*--- Total properties have been specified at the inlet. ---*/
-      case TOTAL_CONDITIONS:
+      case INLET_TYPE::TOTAL_CONDITIONS:
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
         P_Total  = config->GetInlet_Ptotal(Marker_Tag);
@@ -1862,7 +1874,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         break;
 
         /*--- Mass flow has been specified at the inlet. ---*/
-      case MASS_FLOW:
+      case INLET_TYPE::MASS_FLOW:
 
         /*--- Retrieve the specified mass flow for the inlet. ---*/
         Density  = config->GetInlet_Ttotal(Marker_Tag);
@@ -1912,6 +1924,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         V_inlet[nDim+1] = Pressure;
         V_inlet[nDim+2] = Density;
 
+        break;
+
+      default:
+        SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
         break;
       }
 

@@ -2,14 +2,14 @@
  * \file C1DInterpolation.hpp
  * \brief Inlet_interpolation_functions
  * \author Aman Baig
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,8 +38,6 @@ using namespace std;
 class C1DInterpolation{
 protected:
   bool Point_Match = false; /*!< \brief to make sure all points from the inlet data match the vertex coordinates */
-  vector<su2double> X;      /*!< \brief x for inlet data */
-  vector<su2double> Data;   /*!< \brief f(x) for inlet data */
 
 public:
   /*!
@@ -52,7 +50,7 @@ public:
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
    */
-  virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data){}
+  virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) = 0;
 
   /*!
    * \brief virtual method for evaluating the value of the respective Spline.
@@ -80,7 +78,7 @@ public:
    * \param[in] Data - the f(x) values.
    */
   CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
-      SetSpline(X,Data);
+    SetSpline(X,Data);
   }
 
   /*!
@@ -110,7 +108,7 @@ public:
    * \param[in] Data - the f(x) values.
    */
   CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
-      SetSpline(X,Data);
+    SetSpline(X,Data);
   }
 
   /*!

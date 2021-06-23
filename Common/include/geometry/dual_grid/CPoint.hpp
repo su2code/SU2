@@ -3,14 +3,14 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@
 #include "../../containers/container_decorators.hpp"
 #include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
+#include "../../toolboxes/ndflattener.hpp"
 
 using namespace std;
 
@@ -60,6 +61,9 @@ private:
   su2activevector Volume;                 /*!< \brief Volume or Area of the control volume in 3D and 2D. */
   su2activevector Volume_n;               /*!< \brief Volume at time n. */
   su2activevector Volume_nM1;             /*!< \brief Volume at time n-1. */
+  su2activevector Volume_Old;             /*!< \brief Old containers for Volume. */
+  su2activevector Volume_n_Old;           /*!< \brief Old containers for Volume at time n. */
+  su2activevector Volume_nM1_Old;         /*!< \brief Old containers for Volume at time n-1. */
   su2activevector Periodic_Volume;        /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
 
   su2vector<bool> Domain;                 /*!< \brief Indicates if a point must be computed or belong to another boundary */
@@ -85,7 +89,14 @@ private:
   su2vector<bool> Agglomerate;                 /*!< \brief This flag indicates if the element has been agglomerated. */
 
   su2vector<unsigned short> nNeighbor;    /*!< \brief Number of neighbors, needed by some numerical methods. */
+
+  /*--- Closest element on a viscous wall, and distance to it. ---*/
   su2activevector Wall_Distance;          /*!< \brief Distance to the nearest wall. */
+  su2vector<int> ClosestWall_Rank; /*!< \brief Rank of process holding the closest wall element. */
+  su2vector<unsigned short> ClosestWall_Zone; /*!< \brief Zone index of closest wall element. */
+  su2vector<unsigned short> ClosestWall_Marker; /*!< \brief Marker index of closest wall element, for given rank and zone index. */
+  su2vector<unsigned long> ClosestWall_Elem; /*!< \brief Element index of closest wall element, for givenrank, zone and marker index. */
+
   su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
@@ -415,7 +426,19 @@ public:
    * \brief Set the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \param[in] distance - Value of the distance.
+   * \param[in] rankID - Rank of process holding the closest wall element.
+   * \param[in] zoneID - Zone index of closest wall element.
+   * \param[in] markerID - Marker index of closest wall element.
+   * \param[in] elemID - Element index of closest wall element.
    */
+  inline void SetWall_Distance(unsigned long iPoint, su2double distance, int rankID, unsigned short zoneID,
+                               unsigned short markerID, unsigned long elemID) {
+    Wall_Distance(iPoint) = distance;
+    ClosestWall_Rank(iPoint) = rankID;
+    ClosestWall_Zone(iPoint) = zoneID;
+    ClosestWall_Marker(iPoint) = markerID;
+    ClosestWall_Elem(iPoint) = elemID;
+  }
   inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
 
   /*!
@@ -423,7 +446,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
+  inline su2double& GetWall_Distance(unsigned long iPoint) { return Wall_Distance(iPoint); }
+  inline const su2double& GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
 
   /*!
    * \brief Set the value of the distance to the nearest wall.
@@ -451,7 +475,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.
    */
-  inline su2double GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
+  inline su2double& GetSharpEdge_Distance(unsigned long iPoint) { return SharpEdge_Distance(iPoint); }
+  inline const su2double& GetSharpEdge_Distance(unsigned long iPoint) const { return SharpEdge_Distance(iPoint); }
 
   /*!
    * \brief Set the value of the curvature at a surface node.
@@ -486,7 +511,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Area or volume of the control volume.
    */
-  inline su2double GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
+  inline su2double& GetVolume(unsigned long iPoint) { return Volume(iPoint); }
+  inline const su2double& GetVolume(unsigned long iPoint) const { return Volume(iPoint); }
 
   /*!
    * \brief Set the volume of the control volume.
@@ -507,7 +533,8 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Periodic component of area or volume for a control volume on a periodic marker.
    */
-  inline su2double GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
+  inline su2double& GetPeriodicVolume(unsigned long iPoint) { return Periodic_Volume(iPoint); }
+  inline const su2double& GetPeriodicVolume(unsigned long iPoint) const { return Periodic_Volume(iPoint); }
 
   /*!
    * \brief Set the missing component of area or volume for a control volume on a periodic marker.
@@ -536,9 +563,34 @@ public:
   void SetVolume_n();
 
   /*!
-   * \brief Set the volume of the control volume at time n+1.
+   * \brief Set the volume of the control volume at time n-1.
    */
   void SetVolume_nM1();
+
+  /*!
+   * \brief Set the volume of the control volume at time n using n-1.
+   */
+  void SetVolume_n_from_OldnM1();
+
+  /*!
+   * \brief Set the volume of the control volume at current time using time n.
+   */
+  void SetVolume_from_Oldn();
+
+  /*!
+   * \brief Set the Volume to Volume_Old.
+   */
+  void SetVolume_Old();
+
+  /*!
+   * \brief Set the Volume_n to Volume_n_Old.
+   */
+  void SetVolume_n_Old();
+
+    /*!
+   * \brief Set the Volume_nM1 to Volume_nM1_Old.
+   */
+  void SetVolume_nM1_Old();
 
   /*!
    * \brief Set the parent control volume of an agglomerated control volume.
@@ -779,50 +831,37 @@ public:
   }
 
   /*!
-   * \brief Set the adjoint values of the coordinates.
+   * \brief Register coordinates of a point.
    * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
+   * \param[in] input - Register as input or output.
    */
-  inline void SetAdjointCoord(unsigned long iPoint, const su2double *adj_coor) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      SU2_TYPE::SetDerivative(Coord(iPoint,iDim), SU2_TYPE::GetValue(adj_coor[iDim]));
+  inline void RegisterCoordinates(unsigned long iPoint, bool input) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      if(input) {
+        AD::RegisterInput(Coord(iPoint,iDim));
+        AD::SetIndex(AD_InputIndex(iPoint,iDim), Coord(iPoint,iDim));
+      }
+      else {
+        AD::RegisterOutput(Coord(iPoint,iDim));
+        AD::SetIndex(AD_OutputIndex(iPoint,iDim), Coord(iPoint,iDim));
+      }
+    }
   }
 
   /*!
-   * \brief Set the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
+   * \brief Set wall roughnesses according to stored closest wall information.
+   * \param[in] roughness - Mapping [rank][zone][marker] -> roughness
    */
-  inline void SetAdjointCoord_LocalIndex(unsigned long iPoint, const su2double *adj_coor) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      AD::SetDerivative(AD_OutputIndex(iPoint,iDim), SU2_TYPE::GetValue(adj_coor[iDim]));
+  template<typename Roughness_type>
+  void SetWallRoughness(Roughness_type const& roughness){
+    for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
+      auto rankID = ClosestWall_Rank[iPoint];
+      auto zoneID = ClosestWall_Zone[iPoint];
+      auto markerID = ClosestWall_Marker[iPoint];
+      if(rankID >= 0){
+        SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
+      }
+    }
   }
-
-  /*!
-   * \brief Get the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
-   */
-  inline void GetAdjointCoord(unsigned long iPoint, su2double *adj_coor) const {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      adj_coor[iDim] = SU2_TYPE::GetDerivative(Coord(iPoint,iDim));
-  }
-
-  /*!
-   * \brief Get the adjoint values of the coordinates.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] adj_sol - The adjoint values of the coordinates.
-   */
-  inline void GetAdjointCoord_LocalIndex(unsigned long iPoint, su2double *adj_coor) const {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      adj_coor[iDim] = AD::GetDerivative(AD_InputIndex(iPoint,iDim));
-  }
-
-  /*!
-   * \brief Set the adjoint vector indices of Coord vector.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] input - Save them to the input or output indices vector.
-   */
-  void SetIndex(unsigned long iPoint, bool input);
 
 };

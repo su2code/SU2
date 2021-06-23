@@ -2,14 +2,14 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.0 "Blackbird"
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -389,7 +389,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   string::size_type position;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
-  bool time_spectral = config->GetTime_Marching() == HARMONIC_BALANCE;
+  bool time_spectral = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 
@@ -3355,7 +3355,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -3500,7 +3500,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the floating point information for this boundary marker.
              The exchange location is the first element of this array. */
@@ -3952,7 +3952,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
             for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l)
               bound[iMarker][l]->RemoveMultipleDonorsWallFunctions();
@@ -4825,7 +4825,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* Retrieve the integer information for this boundary marker.
              The number of points in normal direction for the wall function

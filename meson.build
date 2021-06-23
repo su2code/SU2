@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.1.0 "Blackbird"',
+        version: '7.1.1 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -104,6 +104,17 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+
+  # add opdi dependency
+  if get_option('enable-autodiff')
+    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+
+    if get_option('opdi-backend') == 'macro'
+      su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
+    elif get_option('opdi-backend') == 'ompt'
+      su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+    endif
+  endif
 endif
 
 if get_option('enable-tecio')
@@ -175,6 +186,14 @@ if get_option('enable-mpp')
   su2_cpp_args += '-DHAVE_MPP'
 endif
 
+if omp and get_option('enable-autodiff')
+  py = find_program('python3','python')
+  p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
+endif
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
@@ -198,7 +217,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.1.0 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.1.1 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
