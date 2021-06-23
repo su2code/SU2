@@ -4230,6 +4230,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   int maxBasisDim          = config->GetMax_BasisDim();
   int dim = int(nPointDomain * nVar);
   bool incremental = false;
+  
+  // Get solver nodes
+  CVariable* nodes = GetNodes();
 
   if (!u_basis_generator) {
     
