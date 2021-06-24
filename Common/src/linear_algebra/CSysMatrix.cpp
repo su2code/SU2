@@ -192,7 +192,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const auto nnz_per_part = roundUpDiv(nnz_prec, omp_num_parts);
 
-  for (auto iPoint = 1ul, part = 0ul; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0ul, part = 0ul; iPoint < nPointDomain; ++iPoint) {
     if (row_ptr_prec[iPoint] >= part*nnz_per_part)
       omp_partitions[part++] = iPoint;
   }
