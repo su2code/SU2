@@ -345,18 +345,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
-//    if (config->GetnMarker_Analyze() != 0)
-//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
-
-//    if ((config->GetnMarker_Analyze() != 0) && compressible)
-//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetnMarker_NearFieldBound() != 0)
-//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetPlot_Section_Forces())
-//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
-
     /*--- Surface based obj. function ---*/
 
     solver[FLOW_SOL]->Evaluate_ObjFunc(config);

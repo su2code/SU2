@@ -119,6 +119,11 @@ protected:
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
+
 public:
   /*!
    * \brief Constructor of the class.

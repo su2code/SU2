@@ -1,5 +1,5 @@
 /*!
- * \file output_elasticity.cpp
+ * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -265,7 +265,7 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   }
 }
 
-bool CElasticityOutput::SetInit_Residuals(CConfig *config){
+bool CElasticityOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 

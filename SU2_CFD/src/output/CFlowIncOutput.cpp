@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_inc.cpp
+ * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -207,7 +207,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximal heatflux
   AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Temperature
-  AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  if (heat || weakly_coupled_heat)
+    AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// DESCRIPTION: Angle of attack
@@ -373,10 +374,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
-  AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  AddCoordinates();
 
   // SOLUTION variables
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
@@ -465,7 +463,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3)
       AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
-    AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
+    if (heat || weakly_coupled_heat)
+      AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
 
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
@@ -521,6 +520,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Heat = nullptr;
   CVariable* Node_Turb = nullptr;
   CVariable* Node_Rad = nullptr;
+  const auto Node_Geo = geometry->nodes;
 
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
@@ -529,12 +529,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
 
-  CPoint*    Node_Geo  = geometry->nodes;
-
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
+  LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -616,12 +611,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
     SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
     SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
-    if (nDim == 3){
+    if (nDim == 3)
       SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-      SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 4));
-    } else {
-      SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-    }
+    if (heat || weakly_coupled_heat)
+      SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
+
   }
 
   if (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) {
@@ -676,19 +670,17 @@ void CFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
     if (nDim == 3)
       SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
-
     if (weakly_coupled_heat)
       SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));
     else {
       SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
-
     }
     SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
   }
 
 }
 
-bool CFlowIncOutput::SetInit_Residuals(CConfig *config){
+bool CFlowIncOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curInnerIter < 2));

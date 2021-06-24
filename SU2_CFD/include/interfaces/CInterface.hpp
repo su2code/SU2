@@ -70,6 +70,7 @@ protected:
   unsigned short nSpanMaxAllZones = 0;
 
   unsigned short nVar = 0;
+  static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
 
 public:
   /*!

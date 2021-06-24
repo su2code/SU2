@@ -28,6 +28,9 @@
 #pragma once
 
 #include "../CNumerics.hpp"
+#include "../../fluid/CNEMOGas.hpp"
+#include "../../fluid/CMutationTCLib.hpp"
+#include "../../fluid/CSU2TCLib.hpp"
 
 /*!
  * \class CNEMONumerics
