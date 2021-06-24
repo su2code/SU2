@@ -676,7 +676,7 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
+  WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
   unsigned short  *Marker_All_Monitoring,     /*!< \brief Global index for monitoring using the grid information. */
@@ -816,21 +816,23 @@ private:
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
-  SecondaryFlow_ActDisk,      /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Initial_BCThrust,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Pressure_FreeStream,        /*!< \brief Total pressure of the fluid. */
-  Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
-  Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  su2double Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
-  Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-  Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
-  Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
-  Temperature_ve_Ref,  /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
-  Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
-  Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
+  SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
+  Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
+  Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
+  Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  su2double Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
+  Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
+  wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
+  Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
+  Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
+  Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
+  Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
+  Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
@@ -1263,7 +1265,7 @@ private:
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
-                             string* &string_field,            unsigned short* &val_Kind_WF,
+                             string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
                              unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF);
 
   void addPythonOption(const string name);
@@ -1671,6 +1673,18 @@ public:
    * \return Turbulent Prandtl number.
    */
   su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
+
+  /*!
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
+   */
+  su2double GetwallModelKappa(void) const { return wallModelKappa; }
+
+  /*!
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
+   */
+  su2double GetwallModelB(void) const { return wallModelB; }
 
   /*!
    * \brief Get the value of the thermal conductivity for solids.
@@ -6626,7 +6640,7 @@ public:
    * \param[in] val_marker - String of the viscous wall marker.
    * \return The type of wall function treatment.
    */
-  unsigned short GetWallFunction_Treatment(string val_marker) const;
+  WALL_FUNCTIONS GetWallFunction_Treatment(string val_marker) const;
 
   /*!
    * \brief Get the additional integer info for the wall function treatment

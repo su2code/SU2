@@ -41,8 +41,6 @@
 class CFluidModel;
 class CNEMOGas;
 
-using namespace std;
-
 /*!
  * \class CVariable
  * \brief Main class for defining the variables.
