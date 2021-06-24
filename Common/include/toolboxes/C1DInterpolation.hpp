@@ -1,7 +1,7 @@
 /*!
  * \file C1DInterpolation.hpp
- * \brief Inlet_interpolation_functions
- * \author Aman Baig
+ * \brief Classes for 1D interpolation.
+ * \author Aman Baig, P. Gomes
  * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,17 +27,33 @@
 
 #pragma once
 
-#include <iostream>
-#include <cmath>
+#include <cassert>
 #include <vector>
-#include<fstream>
+#include <algorithm>
 #include "../option_structure.hpp"
 
-using namespace std;
-
-class C1DInterpolation{
+class C1DInterpolation {
 protected:
-  bool Point_Match = false; /*!< \brief to make sure all points from the inlet data match the vertex coordinates */
+  std::vector<su2double> x, y;  /*!< \brief Data points. */
+
+  /*!
+   * \brief Find containing interval.
+   * \param[in] xi - Point for which interpolation is required.
+   * \return The start index of the interval, or the size if the coordinate is out of bounds.
+   */
+  inline size_t lower_bound(su2double xi) const {
+
+    if (xi <= x.front() || xi >= x.back()) return x.size();
+
+    size_t lb = 0, ub = x.size()-1;
+
+    while (ub-lb > 1) {
+      size_t mid = (lb+ub)/2;
+      auto& change = (xi < x[mid])? ub : lb;
+      change = mid;
+    }
+    return lb;
+  }
 
 public:
   /*!
@@ -46,84 +62,104 @@ public:
   virtual ~C1DInterpolation() = default;
 
   /*!
-   * \brief virtual method for setting the cofficients for the respective spline spline.
+   * \brief Virtual method for setting the coefficients of the respective spline.
    * \param[in] X - the x values.
    * \param[in] Data - the f(x) values.
    */
-  virtual void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) = 0;
+  virtual void SetSpline(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
+    assert(X.size() == Data.size());
+    x = X;
+    y = Data;
+  }
 
   /*!
-   * \brief virtual method for evaluating the value of the respective Spline.
-   * \param[in] Point_Interp - the point where interpolation value is required.
-   * \returns the interpolated value.
+   * \brief Evaluate the value of the spline at a point.
    */
-  virtual su2double EvaluateSpline(su2double Point_Interp){return 0;}
+  virtual su2double EvaluateSpline(su2double Point_Interp) const = 0;
+  inline su2double operator() (su2double Point_Interp) const { return EvaluateSpline(Point_Interp); }
 
-  /*!
-   * \brief bool variable to make sure all vertex points fell in range of the inlet data.
-   * \returns the bool variable.
-   */
-  bool GetPointMatch() const {return Point_Match;}
 };
 
-class CAkimaInterpolation final: public C1DInterpolation{
-private:
-  vector<su2double> x,y,b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
-  int n; /*!< \brief local variable for holding the size of the vector */
+class CAkimaInterpolation: public C1DInterpolation{
+protected:
+  std::vector<su2double> b,c,d;  /*!< \brief local variables for Akima spline cooefficients */
 
 public:
+  CAkimaInterpolation() = default;
+
   /*!
    * \brief Constructor of the CAkimaInterpolation class.
-   * \param[in] X - the x values.
+   * \param[in] X - the x values (sorted low to high).
    * \param[in] Data - the f(x) values.
    */
-  CAkimaInterpolation(vector<su2double> &X, vector<su2double> &Data){
-    SetSpline(X,Data);
+  CAkimaInterpolation(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
+    CAkimaInterpolation::SetSpline(X,Data);
   }
 
   /*!
-   * \brief for setting the cofficients for the Akima spline.
-   * \param[in] X - the x values.
-   * \param[in] Data - the f(x) values.
+   * \brief Build the spline.
    */
-  void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
+  void SetSpline(const std::vector<su2double> &X, const std::vector<su2double> &Data) override;
 
   /*!
-   * \brief For evaluating the value of Akima Spline.
-   * \param[in] Point_Interp - the point where interpolation value is required.
-   * \returns the interpolated value.
+   * \brief Evaluate the value of the spline at a point.
    */
-  su2double EvaluateSpline(su2double Point_Interp) override;
+  su2double EvaluateSpline(su2double Point_Interp) const final;
 };
 
-class CLinearInterpolation final: public C1DInterpolation{
+class CCubicSpline final: public CAkimaInterpolation {
+public:
+  enum END_TYPE {SECOND, FIRST};
+
 private:
-  vector<su2double> x,y,dydx; /*!< \brief local variables for linear 'spline' cooefficients */
-  int n;                      /*!< \brief local variable for holding the size of the vector */
+  const su2double startVal, endVal; /*!< \brief "boundary" values. */
+  const END_TYPE startDer, endDer;  /*!< \brief 1st or 2nd derivative "boundary" conditions. */
 
 public:
+  CCubicSpline() = default;
+
   /*!
-   * \brief Constructor of the CLinearInterpolation class.
-   * \param[in] X - the x values.
+   * \brief Constructor of the CCubicSpline class (defaults to natural spline).
+   * \param[in] X - the x values (sorted low to high).
    * \param[in] Data - the f(x) values.
+   * \param[in] startCondition - 1st or 2nd derivative imposed at the start.
+   * \param[in] startValue - value of the derivative imposed at the start.
+   * \param[in] endCondition - 1st or 2nd derivative imposed at the end.
+   * \param[in] endValue - value of the derivative imposed at the end.
    */
-  CLinearInterpolation(vector<su2double> &X, vector<su2double> &Data){
+  CCubicSpline(const std::vector<su2double> &X, const std::vector<su2double> &Data,
+               END_TYPE startCondition = SECOND, su2double startValue = 0.0,
+               END_TYPE endCondition = SECOND, su2double endValue = 0.0) :
+    startVal(startValue),
+    endVal(endValue),
+    startDer(startCondition),
+    endDer(endCondition) {
     SetSpline(X,Data);
   }
 
   /*!
-   * \brief for setting the cofficients for Linear 'spline'.
-   * \param[in] X - the x values.
-   * \param[in] Data - the f(x) values.
+   * \brief Build the spline.
    */
-  void SetSpline(const vector<su2double> &X, const vector<su2double> &Data) override;
+  void SetSpline(const std::vector<su2double> &X, const std::vector<su2double> &Data) override;
+};
+
+class CLinearInterpolation final: public C1DInterpolation {
+public:
+  CLinearInterpolation() = default;
 
   /*!
-   * \brief For evaluating the value for Linear 'spline'.
-   * \param[in] Point_Interp - the point where interpolation value is required.
-   * \returns the interpolated value.
+   * \brief Constructor of the CLinearInterpolation class.
+   * \param[in] X - the x values (sorted low to high).
+   * \param[in] Data - the f(x) values.
    */
-  su2double EvaluateSpline(su2double Point_Interp) override;
+  CLinearInterpolation(const std::vector<su2double> &X, const std::vector<su2double> &Data) {
+    SetSpline(X,Data);
+  }
+
+  /*!
+   * \brief Evaluate the value of the spline at a point.
+   */
+  su2double EvaluateSpline(su2double Point_Interp) const override;
 };
 
 /*!
@@ -136,20 +172,20 @@ public:
  * \param[in] ENUM_INLET_INTERPOLATIONTYPE - enum of the interpolation type to be done
  * \returns the corrected Inlet Interpolated Data.
  */
-vector<su2double> CorrectedInletValues(const vector<su2double> &Inlet_Interpolated,
+std::vector<su2double> CorrectedInletValues(const std::vector<su2double> &Inlet_Interpolated,
                                        su2double Theta ,
                                        unsigned short nDim,
                                        const su2double *Coord,
                                        unsigned short nVar_Turb,
-                                       ENUM_INLET_INTERPOLATIONTYPE Interpolation_Type);
+                                       INLET_INTERP_TYPE Interpolation_Type);
 
 /*!
  * \brief to print the Inlet Interpolated Data
- * \param[in] Inlet_Interpolated_Interpolated - the final vector for the interpolated data
+ * \param[in] Inlet_Interpolated_Interpolated - the final std::vector for the interpolated data
  * \param[in] Marker - name of the inlet marker
  * \param[in] nVertex - total number of vertexes.
  * \param[in] nDim - the dimensions of the problem.
  * \param[in] nColumns - the number of columns in the final interpolated data
  */
-void PrintInletInterpolatedData(const vector<su2double>& Inlet_Data_Interpolated, string Marker,
+void PrintInletInterpolatedData(const std::vector<su2double>& Inlet_Data_Interpolated, std::string Marker,
                                 unsigned long nVertex, unsigned short nDim, unsigned short nColumns);

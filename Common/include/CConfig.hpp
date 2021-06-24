@@ -1119,8 +1119,8 @@ private:
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
 
-  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
-  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /* other NEMO configure options*/
@@ -8735,12 +8735,12 @@ public:
   /*!
    * \brief Get the kind of inlet face interpolation function to use.
    */
-  inline unsigned short GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
+  inline INLET_SPANWISE_INTERP GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
 
   /*!
    * \brief Get the kind of inlet face interpolation data type.
    */
-  inline unsigned short GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
+  inline INLET_INTERP_TYPE GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
 
   /*!
    * \brief Get whether to print inlet interpolated data or not.
