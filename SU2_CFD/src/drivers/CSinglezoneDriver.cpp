@@ -50,8 +50,6 @@ void CSinglezoneDriver::StartSolver() {
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
-  
-  bool libROM = config_container[MESH_0]->GetSave_libROM();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -98,7 +96,7 @@ void CSinglezoneDriver::StartSolver() {
     
     /*--- Save iteration solution for libROM ---*/
     #ifdef HAVE_LIBROM
-        if (libROM) {
+        if (config_container[MESH_0]->GetSave_libROM()) {
           solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[ZONE_0][INST_0][MESH_0], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], StopCalc);
         }
     #endif
