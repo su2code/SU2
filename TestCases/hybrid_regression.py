@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-## \file parallel_regression.py
+## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 7.1.1 "Blackbird"
