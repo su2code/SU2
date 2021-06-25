@@ -905,7 +905,7 @@ su2double CNEMOTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            const CConfig *config) const {
   /*--- Local variables ---*/
 
-  unsigned short iMarker, iDim;
+  unsigned short iMarker;
   unsigned long iPoint, iVertex;
   su2double Area = 0.0;
   su2double Normal[3] = {0.0,0.0,0.0};
