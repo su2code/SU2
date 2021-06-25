@@ -206,18 +206,6 @@ def main():
     discadj_fea.test_vals = [2.183540, 2.071459, -0.000363, -8.655000]
     test_list.append(discadj_fea) 
 
-    ###################################
-    ### Disc. adj. heat             ###
-    ###################################
-
-    # Discrete adjoint for heated cylinder
-    discadj_heat           = TestCase('discadj_heat')
-    discadj_heat.cfg_dir   = "disc_adj_heat"
-    discadj_heat.cfg_file  = "disc_adj_heat.cfg"
-    discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.264225, 0.711581, -0.722340, -6.653200]
-    test_list.append(discadj_heat)
-
     ######################################
     ### RUN TESTS                      ###
     ######################################
