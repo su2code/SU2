@@ -50,10 +50,10 @@ public:
   template<class U>
   CMatrixView(const CMatrixView<U>& other) : m_ptr(other.m_ptr), m_cols(other.m_cols) {}
 
-  explicit CMatrixView(const su2matrix<Scalar>& mat) : m_ptr(mat.data()), m_cols(mat.cols()) {}
-
-  template<class U = T, su2enable_if<!std::is_const<U>::value> = 0>
   explicit CMatrixView(su2matrix<Scalar>& mat) : m_ptr(mat.data()), m_cols(mat.cols()) {}
+
+  template<class U = T, su2enable_if<std::is_const<U>::value> = 0>
+  explicit CMatrixView(const su2matrix<Scalar>& mat) : m_ptr(mat.data()), m_cols(mat.cols()) {}
 
   const Scalar* operator[] (Index i) const noexcept { return &m_ptr[i*m_cols]; }
   const Scalar& operator() (Index i, Index j) const noexcept { return m_ptr[i*m_cols + j]; }
