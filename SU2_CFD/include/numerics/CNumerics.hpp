@@ -158,28 +158,22 @@ protected:
   su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
-  su2double
-  **ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
-  **ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
-  **ConsVar_Grad;    /*!< \brief Gradient of conservative variables which is a scalar. */
-  su2double
-  **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
-  **PrimVar_Grad_j;  /*!< \brief Gradient of primitive variables at point j. */
-  su2double
-  **PsiVar_Grad_i,  /*!< \brief Gradient of adjoint variables at point i. */
-  **PsiVar_Grad_j;  /*!< \brief Gradient of adjoint variables at point j. */
-  su2double
-  **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TurbVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
-  su2double
-  **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TransVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
-  su2double
-  **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
-  **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
-  su2double
-  **AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  **AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  CMatrixView<const su2double>
+  ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
+  ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
+  ConsVar_Grad,    /*!< \brief Gradient of conservative variables which is a scalar. */
+  PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
+  PrimVar_Grad_j,  /*!< \brief Gradient of primitive variables at point j. */
+  PsiVar_Grad_i,   /*!< \brief Gradient of adjoint variables at point i. */
+  PsiVar_Grad_j,   /*!< \brief Gradient of adjoint variables at point j. */
+  TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
+  TurbVar_Grad_j,  /*!< \brief Gradient of turbulent variables at point j. */
+  TransVar_Grad_i, /*!< \brief Gradient of turbulent variables at point i. */
+  TransVar_Grad_j, /*!< \brief Gradient of turbulent variables at point j. */
+  TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
+  TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
+  AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
+  AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -334,8 +328,8 @@ public:
    * \param[in] val_consvar_grad_i - Gradient of the conservative variable at point i.
    * \param[in] val_consvar_grad_j - Gradient of the conservative variable at point j.
    */
-  inline void SetConsVarGradient(su2double **val_consvar_grad_i,
-                                 su2double **val_consvar_grad_j) {
+  inline void SetConsVarGradient(CMatrixView<const su2double> val_consvar_grad_i,
+                                 CMatrixView<const su2double> val_consvar_grad_j) {
     ConsVar_Grad_i = val_consvar_grad_i;
     ConsVar_Grad_j = val_consvar_grad_j;
   }
@@ -344,15 +338,15 @@ public:
    * \brief Set the gradient of the conservative variables.
    * \param[in] val_consvar_grad - Gradient of the conservative variable which is a scalar.
    */
-  inline void SetConsVarGradient(su2double **val_consvar_grad) { ConsVar_Grad = val_consvar_grad; }
+  inline void SetConsVarGradient(CMatrixView<const su2double> val_consvar_grad) { ConsVar_Grad = val_consvar_grad; }
 
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_primvar_grad_i - Gradient of the primitive variable at point i.
    * \param[in] val_primvar_grad_j - Gradient of the primitive variable at point j.
    */
-  void SetPrimVarGradient(su2double **val_primvar_grad_i,
-                          su2double **val_primvar_grad_j) {
+  void SetPrimVarGradient(CMatrixView<const su2double> val_primvar_grad_i,
+                          CMatrixView<const su2double> val_primvar_grad_j) {
     PrimVar_Grad_i = val_primvar_grad_i;
     PrimVar_Grad_j = val_primvar_grad_j;
   }
@@ -372,8 +366,8 @@ public:
    * \param[in] val_psivar_grad_i - Gradient of the adjoint variable at point i.
    * \param[in] val_psivar_grad_j - Gradient of the adjoint variable at point j.
    */
-  inline void SetAdjointVarGradient(su2double **val_psivar_grad_i,
-                                    su2double **val_psivar_grad_j) {
+  inline void SetAdjointVarGradient(CMatrixView<const su2double> val_psivar_grad_i,
+                                    CMatrixView<const su2double> val_psivar_grad_j) {
     PsiVar_Grad_i = val_psivar_grad_i;
     PsiVar_Grad_j = val_psivar_grad_j;
   }
@@ -403,8 +397,8 @@ public:
    * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetTurbVarGradient(su2double **val_turbvar_grad_i,
-                                 su2double **val_turbvar_grad_j) {
+  inline void SetTurbVarGradient(CMatrixView<const su2double> val_turbvar_grad_i,
+                                 CMatrixView<const su2double> val_turbvar_grad_j) {
     TurbVar_Grad_i = val_turbvar_grad_i;
     TurbVar_Grad_j = val_turbvar_grad_j;
   }
@@ -414,8 +408,8 @@ public:
    * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetTransVarGradient(su2double **val_transvar_grad_i,
-                                  su2double **val_transvar_grad_j) {
+  inline void SetTransVarGradient(CMatrixView<const su2double> val_transvar_grad_i,
+                                  CMatrixView<const su2double> val_transvar_grad_j) {
     TransVar_Grad_i = val_transvar_grad_i;
     TransVar_Grad_j = val_transvar_grad_j;
   }
@@ -435,8 +429,8 @@ public:
    * \param[in] val_turbpsivar_grad_i - Gradient of the adjoint turbulent variable at point i.
    * \param[in] val_turbpsivar_grad_j - Gradient of the adjoint turbulent variable at point j.
    */
-  inline void SetTurbAdjointGradient(su2double **val_turbpsivar_grad_i,
-                                     su2double **val_turbpsivar_grad_j) {
+  inline void SetTurbAdjointGradient(CMatrixView<const su2double> val_turbpsivar_grad_i,
+                                     CMatrixView<const su2double> val_turbpsivar_grad_j) {
     TurbPsi_Grad_i = val_turbpsivar_grad_i;
     TurbPsi_Grad_j = val_turbpsivar_grad_j;
   }
@@ -685,8 +679,8 @@ public:
    * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
    */
-  inline void SetAuxVarGrad(su2double **val_auxvar_grad_i,
-                            su2double **val_auxvar_grad_j) {
+  inline void SetAuxVarGrad(CMatrixView<const su2double> val_auxvar_grad_i,
+                            CMatrixView<const su2double> val_auxvar_grad_j) {
     AuxVar_Grad_i = val_auxvar_grad_i;
     AuxVar_Grad_j = val_auxvar_grad_j;
   }
@@ -1549,7 +1543,8 @@ public:
    * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline virtual void SetRadVarGradient(const su2double* const* val_radvar_grad_i, const su2double* const* val_radvar_grad_j) { }
+  inline virtual void SetRadVarGradient(CMatrixView<const su2double> val_radvar_grad_i,
+                                        CMatrixView<const su2double> val_radvar_grad_j) { }
 
   /*!
    * \brief Set the gradient of the radiation variables.

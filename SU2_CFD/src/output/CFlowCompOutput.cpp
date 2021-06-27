@@ -553,7 +553,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(Node_Flow->GetGradient_Primitive(iPoint,1)));
   }
 
   LoadCommonFVMOutputs(config, geometry, iPoint);

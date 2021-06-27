@@ -1699,7 +1699,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = nullptr,
+  su2double Project_Grad_i, Project_Grad_j, *Limiter_i = nullptr,
   *Limiter_j = nullptr, *Psi_i = nullptr, *Psi_j = nullptr, *V_i, *V_j;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -1746,8 +1746,8 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Adjoint variables using gradient reconstruction and limiters ---*/
 
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      const auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      const auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter(iPoint);
@@ -2135,7 +2135,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
   su2double *d = nullptr, *Normal = nullptr, *Psi = nullptr, *U = nullptr, Enthalpy, conspsi = 0.0, Mach_Inf,
-  Area, **PrimVar_Grad = nullptr, *ConsPsi_Grad = nullptr,
+  Area, *ConsPsi_Grad = nullptr,
   ConsPsi, d_press, grad_v, v_gradconspsi, UnitNormal[3], *GridVel = nullptr,
   eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
@@ -2245,7 +2245,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = GeometryToolbox::Norm(nDim, Normal);
 
-          PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+          const auto PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
           ConsPsi_Grad = nodes->GetAuxVarGradient(iPoint)[0];
           ConsPsi = nodes->GetAuxVar(iPoint);
 

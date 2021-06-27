@@ -35,8 +35,8 @@ protected:
   bool implicit, incompressible;
   const su2double *RadVar_i;              /*!< \brief Vector of radiation variables at point i. */
   const su2double *RadVar_j;              /*!< \brief Vector of radiation variables at point j. */
-  const su2double* const* RadVar_Grad_i;  /*!< \brief Gradient of turbulent variables at point i. */
-  const su2double* const* RadVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
+  CMatrixView<const su2double> RadVar_Grad_i;  /*!< \brief Gradient of turbulent variables at point i. */
+  CMatrixView<const su2double> RadVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
   su2double Absorption_Coeff;             /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff;             /*!< \brief Scattering coefficient. */
 
@@ -61,14 +61,13 @@ public:
     RadVar_j = val_radvar_j;
   }
 
-
   /*!
    * \brief Set the gradient of the radiation variables.
    * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetRadVarGradient(const su2double* const* val_radvar_grad_i,
-                                const su2double* const* val_radvar_grad_j) final {
+  inline void SetRadVarGradient(CMatrixView<const su2double> val_radvar_grad_i,
+                                CMatrixView<const su2double> val_radvar_grad_j) final {
     RadVar_Grad_i = val_radvar_grad_i;
     RadVar_Grad_j = val_radvar_grad_j;
   }

@@ -816,39 +816,6 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
 }
 
-su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
-
-  /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/
-
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-      Grad_Vel[iDim][jDim] = VelocityGradient[iDim][jDim];
-
-  /*--- Q Criterion Eq 1.2 of HALLER, G. (2005). An objective definition of a vortex.
-   Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
-
-  /*--- Components of the strain rate tensor (symmetric) ---*/
-  su2double s11 = Grad_Vel[0][0];
-  su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
-  su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
-  su2double s22 = Grad_Vel[1][1];
-  su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
-  su2double s33 = Grad_Vel[2][2];
-
-  /*--- Components of the spin tensor (skew-symmetric) ---*/
-  su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
-  su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
-  su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
-
-  /*--- Q = ||Omega|| - ||Strain|| ---*/
-  su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) -
-    (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
-
-  return Q;
-}
-
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
   if (config->GetFixed_CL_Mode() || config->GetFixed_CM_Mode()){

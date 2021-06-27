@@ -641,7 +641,6 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iVar, iDim, iChildren;
   su2double Area_Parent, Area_Children;
-  const su2double* const* Gradient_fine = nullptr;
 
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -661,7 +660,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
     for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
-      Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
+      auto Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
 
       for (iVar = 0; iVar < nVar; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
