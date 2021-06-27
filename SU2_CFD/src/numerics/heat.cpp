@@ -28,32 +28,17 @@
 #include "../../include/numerics/heat.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
                CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-
-  MeanVelocity = new su2double [nDim];
-
-  Laminar_Viscosity_i = config->GetViscosity_FreeStreamND();
-  Laminar_Viscosity_j = config->GetViscosity_FreeStreamND();
-
   Param_Kappa_4 = config->GetKappa_4th_Heat();
-  Diff_Lapl = new su2double [nVar];
-}
-
-CCentSca_Heat::~CCentSca_Heat(void) {
-
-  delete [] MeanVelocity;
-  delete [] Diff_Lapl;
 
 }
 
 void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j, CConfig *config) {
-
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3);
   AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
@@ -71,16 +56,27 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Projected velocities at the current edge ---*/
 
-  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVelocity_i += V_i[iDim+1]*Normal[iDim];
-    ProjVelocity_j += V_j[iDim+1]*Normal[iDim];
+  su2double ProjVelocity_i = 0.0;
+  su2double ProjVelocity_j = 0.0;
+
+  if (dynamic_grid) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
+      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
+      ProjVelocity_i += Velocity_i*Normal[iDim];
+      ProjVelocity_j += Velocity_j*Normal[iDim];
+    }
   }
-  Area = GeometryToolbox::Norm(nDim, Normal);
+  else {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      ProjVelocity_i += V_i[iDim+1]*Normal[iDim];
+      ProjVelocity_j += V_j[iDim+1]*Normal[iDim];
+    }
+  }
 
   /*--- Computing the second order centered scheme part ---*/
 
-  ProjVelocity = 0.5*(ProjVelocity_i+ProjVelocity_j);
+  su2double ProjVelocity = 0.5*(ProjVelocity_i+ProjVelocity_j);
 
   val_residual[0] = 0.5*(Temp_i + Temp_j)*ProjVelocity;
 
@@ -91,20 +87,21 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Adding artificial dissipation to stabilize the centered scheme ---*/
 
-  Diff_Lapl[0] = Und_Lapl_i[0]-Und_Lapl_j[0];
+  su2double Diff_Lapl = Und_Lapl_i[0]-Und_Lapl_j[0];
+  su2double Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
 
-  SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area);
-  SoundSpeed_j = sqrt(ProjVelocity_j*ProjVelocity_j + (BetaInc2_j/DensityInc_j)*Area*Area);
+  su2double SoundSpeed_i = sqrt(pow(ProjVelocity_i,2) + (BetaInc2_i/DensityInc_i)*Area2);
+  su2double SoundSpeed_j = sqrt(pow(ProjVelocity_j,2) + (BetaInc2_j/DensityInc_j)*Area2);
 
-  Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
-  Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
-  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
+  su2double Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
+  su2double Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
+  su2double MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
 
-  val_residual[0] += -Param_Kappa_4*Diff_Lapl[0]*MeanLambda;
+  val_residual[0] += -Param_Kappa_4*Diff_Lapl*MeanLambda;
 
   if (implicit) {
-    cte_0 = Param_Kappa_4*su2double(Neighbor_i+1)*MeanLambda;
-    cte_1 = Param_Kappa_4*su2double(Neighbor_j+1)*MeanLambda;
+    su2double cte_0 = Param_Kappa_4*su2double(Neighbor_i+1)*MeanLambda;
+    su2double cte_1 = Param_Kappa_4*su2double(Neighbor_j+1)*MeanLambda;
 
     val_Jacobian_i[0][0] += cte_0;
     val_Jacobian_j[0][0] -= cte_1;
@@ -115,31 +112,16 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 }
 
-CUpwSca_Heat::CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
+CUpwSca_Heat::CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
               CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-
-  Laminar_Viscosity_i = config->GetViscosity_FreeStreamND();
-  Laminar_Viscosity_j = config->GetViscosity_FreeStreamND();
-}
-
-CUpwSca_Heat::~CUpwSca_Heat(void) {
-
-  delete [] Velocity_i;
-  delete [] Velocity_j;
 
 }
 
 void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                    su2double **val_Jacobian_j, CConfig *config) {
-
-  q_ij = 0.0;
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
@@ -149,14 +131,24 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = V_i[iDim+1];
-    Velocity_j[iDim] = V_j[iDim+1];
-    q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+  su2double q_ij = 0.0;
+
+  if (dynamic_grid) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
+      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
+      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
+    }
+  }
+  else {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+    }
   }
 
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
+  su2double a0 = 0.5*(q_ij+fabs(q_ij));
+  su2double a1 = 0.5*(q_ij-fabs(q_ij));
+
   val_residual[0] = a0*Temp_i+a1*Temp_j;
 
   if (implicit) {

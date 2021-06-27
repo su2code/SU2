@@ -37,18 +37,10 @@
  * \version 7.1.1 "Blackbird"
  */
 class CCentSca_Heat : public CNumerics {
-
 private:
-  unsigned short iDim;             /*!< \brief Iteration on dimension and variables. */
-  su2double *Diff_Lapl,            /*!< \brief Diference of conservative variables and undivided laplacians. */
-  *MeanVelocity, ProjVelocity,
-  ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-  Param_Kappa_4,                   /*!< \brief Artificial dissipation parameters. */
-  Local_Lambda_i, Local_Lambda_j,
-  MeanLambda,                      /*!< \brief Local eingenvalues. */
-  cte_0, cte_1;                    /*!< \brief Artificial dissipation values. */
-  bool implicit,                   /*!< \brief Implicit calculation. */
-  dynamic_grid;                    /*!< \brief Modification for grid movement. */
+  su2double Param_Kappa_4;         /*!< \brief Artificial dissipation parameters. */
+  bool implicit;                   /*!< \brief Implicit calculation. */
+  bool dynamic_grid;               /*!< \brief Modification for grid movement. */
 
 public:
   /*!
@@ -57,12 +49,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CCentSca_Heat(void) override;
+  CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -85,10 +72,7 @@ public:
  */
 class CUpwSca_Heat : public CNumerics {
 private:
-  su2double *Velocity_i, *Velocity_j;
   bool implicit, dynamic_grid;
-  su2double q_ij, a0, a1;
-  unsigned short iDim;
 
 public:
   /*!
@@ -97,12 +81,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwSca_Heat(void) override;
+  CUpwSca_Heat(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
