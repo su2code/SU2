@@ -628,7 +628,7 @@ public:
   }
 
   /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters.
+   * \brief Project average gradient onto normal (with or w/o correction) for viscous fluxes of scalar quantities.
    * \param[in] nDim - Dimension of the flow problem, 2 or 3.
    * \param[in] nVar - Number of variables.
    * \param[in] normal - Area vector.
