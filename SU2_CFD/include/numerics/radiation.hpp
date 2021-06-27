@@ -100,14 +100,7 @@ public:
 
 class CAvgGradCorrected_P1 final : public CNumericsRadiation {
  private:
-  su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
-  su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradP1Var_Edge,      /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradP1Var_Kappa,
-            *Proj_Mean_GradP1Var_Corrected; /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
-  su2double dist_ij,                        /*!< \brief Length of the edge and face. */
-            proj_vector_ij;                 /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  su2double GammaP1;                        /*!< \brief P1 parameter */
+  su2double GammaP1;  /*!< \brief P1 parameter */
 
  public:
   /*!
@@ -117,11 +110,6 @@ class CAvgGradCorrected_P1 final : public CNumericsRadiation {
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_P1(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_P1(void) override;
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.

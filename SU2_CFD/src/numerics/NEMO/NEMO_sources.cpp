@@ -297,10 +297,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   unsigned short iDim, iSpecies, iVar;
   su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
-  su2double *Ds, ktr, kve;
+  su2double ktr, kve;
 
   /*--- Rename for convenience ---*/
-  Ds = Diffusion_Coeff_i;
+  auto Ds = Diffusion_Coeff_i;
   ktr = Thermal_Conductivity_i;
   kve = Thermal_Conductivity_ve_i;
   rho = V_i[RHO_INDEX];
@@ -346,6 +346,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   if (viscous) {
     if (!rans){ turb_ke_i = 0.0; }
 
+    su2double Vector = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      Vector += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1];
+
     su2double sumJhs_y  = 0.0;
     su2double sumJeve_y = 0.0;
     su2double Mass      = 0.0;
@@ -362,8 +366,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
     /*--- Enthalpy and vib-el energy transport due to y-direction diffusion---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      sumJhs_y  += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * hs[iSpecies];
-      sumJeve_y += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * eve_i[iSpecies];
+      sumJhs_y  += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * hs[iSpecies];
+      sumJeve_y += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * eve_i[iSpecies];
     }
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
