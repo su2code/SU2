@@ -741,6 +741,27 @@ vector<passivedouble> CDriver::GetAIP(unsigned short iMarker){
   return AIP;
 }
 
+vector<passivedouble> CDriver::GetSurfaceCoordinates(unsigned short iMarker) {
+
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned long iPoint;
+  su2double *Coord;
+  vector<passivedouble> coords(nVertex*3,0.0);
+
+  for (unsigned short iVertex=0; iVertex < nVertex; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Coord = geometry->node[iPoint]->GetCoord();
+
+      coords[3*iVertex]     = SU2_TYPE::GetValue(Coord[0]);
+      coords[3*iVertex + 1] = SU2_TYPE::GetValue(Coord[1]);
+      coords[3*iVertex + 2] = SU2_TYPE::GetValue(Coord[2]);
+    }
+
+  return coords;
+}
+
 void CDriver::SetAoA(passivedouble alpha) {
 
     CConfig *config = config_container[ZONE_0];

@@ -693,6 +693,13 @@ public:
   vector<passivedouble> GetAIP(unsigned short iMarker);
 
   /*!
+   * \brief Get surface coordinates of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return XYZ coordinates (vector) of the marker.
+   */
+  vector<passivedouble> GetSurfaceCoordinates(unsigned short iMarker);
+
+  /*!
    * \brief Set new angle of attack based on user-input.
    * \param[in] alpha - user-defined angle of attack in [deg].
    */
