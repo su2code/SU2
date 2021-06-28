@@ -35,9 +35,16 @@ namespace AD {
   std::vector<TapePosition> TapePositions;
 
   bool PreaccActive = false;
+#ifdef HAVE_OPDI
+  #pragma omp threadprivate(PreaccActive)
+#endif
+
   bool PreaccEnabled = true;
 
   codi::PreaccumulationHelper<su2double> PreaccHelper;
+#ifdef HAVE_OPDI
+  #pragma omp threadprivate(PreaccHelper)
+#endif
 
   ExtFuncHelper* FuncHelper;
 

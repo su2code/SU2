@@ -274,6 +274,9 @@ namespace AD{
   extern bool Status;
 
   extern bool PreaccActive;
+#ifdef HAVE_OPDI
+  #pragma omp threadprivate(PreaccActive)
+#endif
 
   extern bool PreaccEnabled;
 
@@ -290,6 +293,9 @@ namespace AD{
   extern std::vector<TapePosition> TapePositions;
 
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;
+#ifdef HAVE_OPDI
+  #pragma omp threadprivate(PreaccHelper)
+#endif
 
   /*--- Reference to the tape. ---*/
 
