@@ -701,6 +701,28 @@ vector<passivedouble> CDriver::GetStates(unsigned short iMarker){
   return states;
 }
 
+vector<passivedouble> CDriver::GetConservativeStates(unsigned short iMarker) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned short iPoint;
+  vector<passivedouble> states(nVertex*5,0.0);
+
+  for (unsigned short iVertex=0; iVertex < nVertex; iVertex++){
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      states[5*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,0));
+      states[5*iVertex + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,1));
+      states[5*iVertex + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,2));
+      states[5*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,3));
+      states[5*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,4));
+  }
+
+  return states;
+}
+
 vector<passivedouble> CDriver::GetAIP(unsigned short iMarker){
 
   vector<passivedouble> AIP(10,0.0);

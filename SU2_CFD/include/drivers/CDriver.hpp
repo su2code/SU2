@@ -679,6 +679,13 @@ public:
   vector<passivedouble> GetStates(unsigned short iMarker);
 
   /*!
+   * \brief Get the conservative state vector of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Conservative states (vector) at the marker.
+   */
+  vector<passivedouble> GetConservativeStates(unsigned short iMarker);
+
+  /*!
    * \brief Get the AIP parameters at the specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return AIP (vector) at the marker.
