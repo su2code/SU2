@@ -271,8 +271,6 @@ namespace AD{
 
   extern ExtFuncHelper* FuncHelper;
 
-  extern bool Status;
-
   extern bool PreaccActive;
 #ifdef HAVE_OPDI
   #pragma omp threadprivate(PreaccActive)
