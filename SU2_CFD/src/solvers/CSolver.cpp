@@ -4225,9 +4225,6 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   int maxBasisDim          = config->GetMax_BasisDim();
   int dim = int(nPointDomain * nVar);
   bool incremental = false;
-  
-  // Get solver nodes
-  CVariable* nodes = GetNodes();
 
   if (!u_basis_generator) {
     
@@ -4259,7 +4256,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     // Save mesh ordering
     std::ofstream f;
     f.open(filename + "_mesh_" + to_string(rank) + ".csv");
-        for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
           unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
           auto Coord = geometry->nodes->GetCoord(iPoint);
           f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
@@ -4273,7 +4270,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
          for (iVar = 0; iVar < nVar; iVar++) {
             total_index = iPoint*nVar + iVar;
-            u[total_index] = nodes->GetSolution(iPoint,iVar);
+            u[total_index] = base_nodes->GetSolution(iPoint,iVar);
          }
       }
       
@@ -4293,7 +4290,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
          for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
             for (iVar = 0; iVar < nVar; iVar++) {
                total_index = iPoint*nVar + iVar;
-               u[total_index] = nodes->GetSolution(iPoint, iVar);
+               u[total_index] = base_nodes->GetSolution(iPoint, iVar);
             }
          }
          
