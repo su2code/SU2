@@ -686,6 +686,18 @@ public:
   vector<passivedouble> GetAIP(unsigned short iMarker);
 
   /*!
+   * \brief Set new angle of attack based on user-input.
+   * \param[in] alpha - user-defined angle of attack in [deg].
+   */
+  void SetAoA(passivedouble alpha);
+
+  /*!
+   * \brief Set new side-slip angle based on user-input.
+   * \param[in] beta - user-defined side-slip angle in [deg].
+   */
+  void SetAoS(passivedouble beta);
+
+  /*!
    * \brief Get all the boundary markers tags.
    * \return List of boundary markers tags.
    */

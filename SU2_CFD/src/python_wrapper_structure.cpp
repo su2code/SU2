@@ -26,7 +26,8 @@
  */
 
 
- #include "../include/drivers/CDriver.hpp"
+#include "../include/drivers/CDriver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
 
@@ -716,6 +717,46 @@ vector<passivedouble> CDriver::GetAIP(unsigned short iMarker){
 
 
   return AIP;
+}
+
+void CDriver::SetAoA(passivedouble alpha) {
+
+    CConfig *config = config_container[ZONE_0];
+
+    su2double velocity_inf[3];
+    unsigned short iDim;
+
+    config->SetAoA(alpha);
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+        velocity_inf[iDim] = config->GetVelocity_FreeStream()[iDim];
+    }
+
+    su2double velocity_inf_mag = GeometryToolbox::Norm(nDim, velocity_inf);
+
+    su2double alpha_rad = alpha * PI_NUMBER/180.0;
+    su2double beta_rad = config->GetAoS() * PI_NUMBER/180.0;
+
+    if (nDim == 3) {
+        velocity_inf[0] = cos(alpha_rad)*cos(beta_rad)*velocity_inf_mag;
+        velocity_inf[1] = sin(beta_rad)*velocity_inf_mag;
+        velocity_inf[2] = sin(alpha_rad)*cos(beta_rad)*velocity_inf_mag;
+    } else if (nDim == 2) {
+        velocity_inf[0] = cos(alpha_rad)*velocity_inf_mag;
+        velocity_inf[1] = sin(alpha_rad)*velocity_inf_mag;
+    }
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+        config->SetVelocity_FreeStreamND(velocity_inf[iDim], iDim);
+    }
+}
+
+void CDriver::SetAoS(passivedouble beta) {
+
+    CConfig *config = config_container[ZONE_0];
+
+    config->SetAoS(beta);
+
 }
 
 vector<string> CDriver::GetAllBoundaryMarkersTag(){
