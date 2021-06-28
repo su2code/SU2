@@ -162,7 +162,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
     dist_ij = sqrt(dist_ij);
 
     GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,Mean_Eddy_Viscosity,
                        Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
                        Jacobian_i, Jacobian_j, config);
@@ -328,7 +328,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
     dist_ij = sqrt(dist_ij);
 
     GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
-                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+                       Mean_Diffusion_Coeff, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                        Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
                        Jacobian_i, Jacobian_j, config);
