@@ -700,6 +700,12 @@ public:
   vector<passivedouble> GetSurfaceCoordinates(unsigned short iMarker);
 
   /*!
+   * \brief Get volume coordinates of the fluid mesh.
+   * \return XYZ coordinates (vector) of the fluid mesh.
+   */
+  vector<passivedouble> GetVolumeCoordinates();
+
+  /*!
    * \brief Set new angle of attack based on user-input.
    * \param[in] alpha - user-defined angle of attack in [deg].
    */

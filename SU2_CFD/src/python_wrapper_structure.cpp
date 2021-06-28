@@ -762,6 +762,26 @@ vector<passivedouble> CDriver::GetSurfaceCoordinates(unsigned short iMarker) {
   return coords;
 }
 
+vector<passivedouble> CDriver::GetVolumeCoordinates() {
+
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nPoints = geometry->GetnPointDomain();
+  unsigned long iPoint;
+  su2double *Coord;
+  vector<passivedouble> coords(nPoints*3,0.0);
+
+  for (iPoint = 0; iPoint < nPoints; iPoint++){
+      Coord = geometry->node[iPoint]->GetCoord();
+
+      coords[3*iPoint]     = SU2_TYPE::GetValue(Coord[0]);
+      coords[3*iPoint + 1] = SU2_TYPE::GetValue(Coord[1]);
+      coords[3*iPoint + 2] = SU2_TYPE::GetValue(Coord[2]);
+    }
+
+  return coords;
+}
+
 void CDriver::SetAoA(passivedouble alpha) {
 
     CConfig *config = config_container[ZONE_0];
