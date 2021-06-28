@@ -4218,11 +4218,11 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   unsigned long iPoint, total_index;
   unsigned short iVar;
   
-  bool unsteady            = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
-  string filename          = config->GetlibROMbase_FileName();
-  unsigned long TimeIter   = config->GetTimeIter();
-  unsigned long nTimeIter  = config->GetnTime_Iter();
-  int maxBasisDim          = config->GetMax_BasisDim();
+  const bool unsteady            = config->GetTime_Domain();
+  const string filename          = config->GetlibROMbase_FileName();
+  const unsigned long TimeIter   = config->GetTimeIter();
+  const unsigned long nTimeIter  = config->GetnTime_Iter();
+  const int maxBasisDim          = config->GetMax_BasisDim();
   int dim = int(nPointDomain * nVar);
   bool incremental = false;
 
