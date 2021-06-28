@@ -54,7 +54,6 @@ CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
   strcpy(config_file_name, confFile);
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = nullptr;
   driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_DEF);
 
   nZone = driver_config->GetnZone();
