@@ -706,6 +706,12 @@ public:
   vector<passivedouble> GetVolumeCoordinates();
 
   /*!
+   * \brief Get vector of flow residuals.
+   * \return Flow residuals (vector) at each cell in fluid mesh.
+   */
+  vector<passivedouble> GetResiduals();
+
+  /*!
    * \brief Set new angle of attack based on user-input.
    * \param[in] alpha - user-defined angle of attack in [deg].
    */

@@ -782,6 +782,26 @@ vector<passivedouble> CDriver::GetVolumeCoordinates() {
   return coords;
 }
 
+vector<passivedouble> CDriver::GetResiduals() {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nPoints = geometry->GetnPointDomain();
+  unsigned long iPoint;
+  vector<passivedouble> resids(nPoints*5,0.0);
+
+  for (iPoint = 0; iPoint < nPoints; iPoint++) {
+      resids[5*iPoint]     = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,0));
+      resids[5*iPoint + 1] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,1));
+      resids[5*iPoint + 2] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,2));
+      resids[5*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
+      resids[5*iPoint + 4] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,4));
+    }
+
+  return resids;
+}
+
 void CDriver::SetAoA(passivedouble alpha) {
 
     CConfig *config = config_container[ZONE_0];
