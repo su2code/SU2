@@ -2228,9 +2228,9 @@ struct StreamwisePeriodicValues {
 /*!
  * \brief Type of POD basis generation (for use with libROM)
  */
-enum ENUM_POD_KIND {
-  STATIC_POD = 1,            /*!< \brief Use static SVD for POD basis generation. */
-  INCREMENTAL_POD = 2        /*!< \brief Use incremental SVD for POD basis generation. */
+enum class POD_KIND {
+  STATIC,            /*!< \brief Use static SVD for POD basis generation. */
+  INCREMENTAL        /*!< \brief Use incremental SVD for POD basis generation. */
 };
 static const MapType<string, ENUM_POD_KIND> POD_Map = {
   MakePair("STATIC_POD", STATIC_POD)
