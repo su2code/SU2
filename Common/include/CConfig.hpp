@@ -1126,8 +1126,8 @@ private:
   /*--- libROM configure options ---*/
   bool libROM;                              /*!< \brief Toggle saving to libROM. */
   string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
-  unsigned short POD_Basis_Gen,             /*!< \brief Type of POD basis generation (static or incremental). */
-  maxBasisDim;                              /*!< \brief Maximum number of POD basis dimensions. */
+  POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
+  unsigned short maxBasisDim;               /*!< \brief Maximum number of POD basis dimensions. */
   
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -9314,7 +9314,7 @@ public:
    * \brief Static or incremental toggle for POD basis generation type.
    * \return Type of POD generation type
    */
-  unsigned short GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
   
   /*!
    * \brief Get maximum number of POD basis dimensions (default: 100).

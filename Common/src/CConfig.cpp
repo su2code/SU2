@@ -2789,7 +2789,7 @@ void CConfig::SetConfig_Options() {
   addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
   
   /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
-  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, STATIC_POD);
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
   
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);

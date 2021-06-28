@@ -4220,7 +4220,6 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   
   bool unsteady            = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   string filename          = config->GetlibROMbase_FileName();
-  unsigned short pod_basis = config->GetKind_PODBasis();
   unsigned long TimeIter   = config->GetTimeIter();
   unsigned long nTimeIter  = config->GetnTime_Iter();
   int maxBasisDim          = config->GetMax_BasisDim();
@@ -4237,7 +4236,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
     
-    if (pod_basis == STATIC_POD) {
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
       std::cout << "Creating static basis generator." << std::endl;
       if (unsteady) {
         std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
@@ -4306,7 +4305,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
          delete[] u;
       }
       
-      if (pod_basis == STATIC_POD) {
+      if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
          u_basis_generator->writeSnapshot();
       }
       std::cout << "Computing SVD" << std::endl;

@@ -2230,11 +2230,11 @@ struct StreamwisePeriodicValues {
  */
 enum class POD_KIND {
   STATIC,            /*!< \brief Use static SVD for POD basis generation. */
-  INCREMENTAL        /*!< \brief Use incremental SVD for POD basis generation. */
+  INCREMENTAL,       /*!< \brief Use incremental SVD for POD basis generation. */
 };
-static const MapType<string, ENUM_POD_KIND> POD_Map = {
-  MakePair("STATIC_POD", STATIC_POD)
-  MakePair("INCREMENTAL_POD", INCREMENTAL_POD)
+static const MapType<string, POD_KIND> POD_Map = {
+  MakePair("STATIC_POD",      POD_KIND::STATIC)
+  MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
 };
 
 #undef MakePair
