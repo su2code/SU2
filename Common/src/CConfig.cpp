@@ -2794,11 +2794,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
   
-  /*!\brief BASIS_GENERATION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
-  //addUnsignedShortOption("POD_MODES", nPOD_Modes, 0);
-  /*!\brief BASIS_GENERATION \n DESCRIPTION: How many nodes to use for hyper-reduction. */
-  //addUnsignedLongOption("HYPER_NODES", nHyper_Nodes, 1000);
-  
   /* END_CONFIG_OPTIONS */
 
 }

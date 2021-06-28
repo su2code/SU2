@@ -1128,8 +1128,6 @@ private:
   string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
   unsigned short POD_Basis_Gen,             /*!< \brief Type of POD basis generation (static or incremental). */
   maxBasisDim;                              /*!< \brief Maximum number of POD basis dimensions. */
-  //nPOD_Modes;                             /*!< \brief Number of POD mdoes desired. */
-  //unsigned long nHyper_Nodes;             /*!< \brief Number of hyper-reduction nodes desired. */
   
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -9324,15 +9322,4 @@ public:
    */
   unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
   
-  /*!
-   * \brief Get number of POD modes desired.
-   * \return Number of POD modes desired.
-   */
-  //unsigned short GetnPOD_Modes(void) const { return nPOD_Modes; }
-  
-  /*!
-   * \brief Get the number of hyper-reduction nodes desired.
-   * \return Number of rdesired hyper-reduction nodes.
-   */
-  //unsigned long GetnHyper_Nodes(void) const { return nHyper_Nodes; }
 };

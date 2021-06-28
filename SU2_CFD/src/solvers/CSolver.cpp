@@ -190,10 +190,6 @@ CSolver::~CSolver(void) {
   delete [] Restart_Data;
 
   delete VerificationSolution;
-
-#ifdef HAVE_LIBROM
-  if (u_basis_generator != nullptr) u_basis_generator = nullptr;
-#endif
 }
 
 void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
