@@ -134,7 +134,8 @@ private:
   su2double dr, dg, dfw;
   unsigned short iDim;
   bool transition;
-
+  bool axisymmetric;
+  
 public:
   /*!
    * \brief Constructor of the class.

@@ -170,6 +170,7 @@ public:
    * \return Value of the wall shear stress computed by a wall function.
    */
   inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTauWall() const  { return Tau_Wall; }
 
   /*!
    * \brief Get the DES length scale

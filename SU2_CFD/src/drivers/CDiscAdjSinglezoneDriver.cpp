@@ -178,9 +178,8 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
 
-    iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
-                         solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    iteration->IterateDiscAdj(geometry_container, solver_container,
+                              config_container, ZONE_0, INST_0, false);
 
     /*--- Monitor the pseudo-time ---*/
 
@@ -275,7 +274,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Extract the objective function and store it --- */
 
@@ -345,18 +344,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
-
-//    if (config->GetnMarker_Analyze() != 0)
-//      output->SpecialOutput_AnalyzeSurface(solver[FLOW_SOL], geometry, config, false);
-
-//    if ((config->GetnMarker_Analyze() != 0) && compressible)
-//      output->SpecialOutput_Distortion(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetnMarker_NearFieldBound() != 0)
-//      output->SpecialOutput_SonicBoom(solver[FLOW_SOL], geometry, config, false);
-
-//    if (config->GetPlot_Section_Forces())
-//      output->SpecialOutput_SpanLoad(solver[FLOW_SOL], geometry, config, false);
 
     /*--- Surface based obj. function ---*/
 

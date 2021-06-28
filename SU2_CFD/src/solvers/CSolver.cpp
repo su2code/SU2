@@ -3129,7 +3129,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   if (size != SINGLE_NODE && size % 2)
     SU2_MPI::Error("Number of ranks must be multiple of 2.", CURRENT_FUNCTION);
 
-  if (config->GetStructuralProblem() || config->GetFEMSolver())
+  if (config->GetFEMSolver())
     SU2_MPI::Error("Cannot interpolate the restart file for FEM problems.", CURRENT_FUNCTION);
 
   /* Challenges:
@@ -3690,11 +3690,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
       switch(config->GetKindInletInterpolationFunction()){
 
-        case (NONE):
+        case (INLET_SPANWISE_INTERP::NONE):
           Interpolate = false;
           break;
 
-        case (AKIMA_1D):
+        case (INLET_SPANWISE_INTERP::AKIMA_1D):
           for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
@@ -3702,7 +3702,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           interpolation_function = "AKIMA";
           break;
 
-        case (LINEAR_1D):
+        case (INLET_SPANWISE_INTERP::LINEAR_1D):
           for (auto iCol=0ul; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
@@ -3710,17 +3710,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           interpolation_function = "LINEAR";
           break;
 
+        case (INLET_SPANWISE_INTERP::CUBIC_1D):
+          for (auto iCol=0ul; iCol < nColumns; iCol++){
+            Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
+            interpolator[iCol] = new CCubicSpline(InletRadii,Interpolation_Column);
+          }
+          interpolation_function = "CUBIC";
+          break;
+
         default:
-          SU2_MPI::Error("Error in the Kind_InletInterpolation Marker\n",CURRENT_FUNCTION);
+          SU2_MPI::Error("Unknown type of interpolation function for inlets.\n",CURRENT_FUNCTION);
           break;
       }
 
       if (Interpolate){
         switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
+          case(INLET_INTERP_TYPE::VR_VTHETA):
             interpolation_type="VR_VTHETA";
             break;
-          case(ALPHA_PHI):
+          case(INLET_INTERP_TYPE::ALPHA_PHI):
             interpolation_type="ALPHA_PHI";
             break;
         }
@@ -3807,7 +3815,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             for that interpolator[iVar], cycling through all columns to get all the
             data for that vertex ---*/
             Inlet_Interpolated[iVar]=interpolator[iVar]->EvaluateSpline(Interp_Radius);
-            if (interpolator[iVar]->GetPointMatch() == false){
+            if (Interp_Radius < InletRadii.front() || Interp_Radius > InletRadii.back()) {
               cout << "WARNING: Did not find a match between the radius in the inlet file " ;
               cout << std::scientific;
               cout << "at location: [" << Coord[0] << ", " << Coord[1];
@@ -3821,15 +3829,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             }
           }
 
-          /* --- Correcting for Interpolation Type ---*/
-          switch(config->GetKindInletInterpolationType()){
-          case(VR_VTHETA):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, VR_VTHETA);
-          break;
-          case(ALPHA_PHI):
-            Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord, nVar_Turb, ALPHA_PHI);
-          break;
-          }
+          /*--- Correcting for Interpolation Type ---*/
+
+          Inlet_Values = CorrectedInletValues(Inlet_Interpolated, Theta, nDim, Coord,
+                                              nVar_Turb, config->GetKindInletInterpolationType());
 
           solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
 

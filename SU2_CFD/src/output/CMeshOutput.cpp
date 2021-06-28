@@ -1,5 +1,5 @@
 /*!
- * \file output_mesh.cpp
+ * \file CMeshOutput.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"

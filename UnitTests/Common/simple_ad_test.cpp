@@ -56,5 +56,5 @@ TEST_CASE("Simple AD Test", "[AD tests]") {
   AD::ComputeAdjoint();
 
   CHECK(SU2_TYPE::GetValue(y) == Approx(64));
-  CHECK(SU2_TYPE::GetDerivative(y) == Approx(48));
+  CHECK(SU2_TYPE::GetDerivative(x) == Approx(48));
 }

@@ -2628,7 +2628,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *
       } break;
     }
 
-    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
+    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint, nodes->GetSolution_Vel(iPoint));
 
   }
   END_SU2_OMP_PARALLEL
@@ -2744,15 +2744,22 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
     nodes->SetSolution_Old(iPoint, dispCalc);
 
-    /*--- Set predicted velocity to update in multizone iterations ---*/
-    if (dynamic) nodes->SetSolution_Vel_Pred(iPoint);
-
     /*--- Apply the Aitken relaxation ---*/
     su2double newDispPred[MAXNVAR] = {0.0};
     for (unsigned short iDim=0; iDim < nDim; iDim++)
       newDispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
 
     nodes->SetSolution_Pred(iPoint, newDispPred);
+
+    /*--- Set predicted velocity to update in multizone iterations ---*/
+    if (dynamic) {
+      su2double newVelPred[MAXNVAR] = {0.0};
+      const su2double* velPred = nodes->GetSolution_Vel_Pred(iPoint);
+      const su2double* velCalc = nodes->GetSolution_Vel(iPoint);
+      for (unsigned short iDim=0; iDim < nDim; iDim++)
+        newVelPred[iDim] = (1.0 - WAitken)*velPred[iDim] + WAitken*velCalc[iDim];
+      nodes->SetSolution_Vel_Pred(iPoint, newVelPred);
+    }
   }
   END_SU2_OMP_PARALLEL
 
@@ -3189,11 +3196,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
-  if (dynamic) {
-    nodes->Set_Solution_time_n();
-    nodes->SetSolution_Vel_time_n();
-    nodes->SetSolution_Accel_time_n();
-  }
+  if (dynamic) nodes->Set_Solution_time_n();
 
   if (fluid_structure) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
@@ -3203,7 +3206,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
     if (dynamic) {
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        nodes->SetSolution_Vel_Pred(iPoint);
+        nodes->SetSolution_Vel_Pred(iPoint, nodes->GetSolution_Vel(iPoint));
     }
 
     if (discrete_adjoint) {

@@ -139,14 +139,11 @@ CMultizoneDriver::~CMultizoneDriver(void) {
 void CMultizoneDriver::StartSolver() {
 
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
-   * (To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one.) ---*/
+        To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
 
-  su2double Time_Ref = config_container[ZONE_0]->GetTime_Ref();
-
-  for (iZone = 1; iZone < nZone; iZone++) {
-    if (config_container[iZone]->GetTime_Ref() < Time_Ref)
-      Time_Ref = config_container[iZone]->GetTime_Ref();
-  }
+  su2double Time_Ref = std::numeric_limits<su2double>::max();
+  for (iZone = 0; iZone < nZone; iZone++)
+    Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -171,7 +168,7 @@ void CMultizoneDriver::StartSolver() {
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
     if (driver_config->GetTime_Domain())
-      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() << "." << endl;
+      cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() - driver_config->GetRestart_Iter() << "." << endl;
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -239,10 +236,16 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, the initial conditions are set, after the mesh has been moved. --------------------------------------*/
-    if (!fsi && !config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetFluidProblem()) {
+    if (!fsi && config_container[iZone]->GetFluidProblem()) {
       solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
+    }
+    else if (!fsi && config_container[iZone]->GetHeatProblem()) {
+      /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+      solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[iZone][INST_0],
+                                                                              solver_container[iZone][INST_0],
+                                                                              config_container[iZone], TimeIter);
     }
   }
 

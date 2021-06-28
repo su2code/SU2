@@ -175,6 +175,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new su2double[nDim];
   Alpha    = config->GetAoA()*PI_NUMBER/180.0;
@@ -1448,6 +1450,13 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     cout << NonDimTableOut.str();
 
   }
+}
+
+void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
+
 }
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
