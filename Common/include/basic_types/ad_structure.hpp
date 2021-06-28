@@ -450,6 +450,7 @@ namespace AD{
   FORCEINLINE void EndPreacc(){
     if (PreaccActive) {
       PreaccHelper.finish(false);
+      PreaccActive = false;
     }
   }
 
