@@ -1360,7 +1360,7 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
         su2double D_ij = kb*T/(Pressure*d1_ij);
-        su2double denom += gam_j/D_ij;
+        denom += gam_j/D_ij;
       }
     }
     if (ionization) {
@@ -1441,7 +1441,7 @@ void CSU2TCLib::ViscosityGY(){
       su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
 
       /*--- Add to denominator of viscosity ---*/
-      su2double denom += gam_j*d2_ij;
+      denom += gam_j*d2_ij;
     }
     if (ionization) {
       jSpecies = nSpecies-1;
@@ -1454,10 +1454,10 @@ void CSU2TCLib::ViscosityGY(){
           + Omega11(iSpecies,jSpecies,1)*log(Tve)
           + Omega11(iSpecies,jSpecies,2));
       su2double d2_ij = 16.0/5.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-      su2double denom += gam_j*d2_ij;
+      denom += gam_j*d2_ij;
     }
     /*--- Calculate species laminar viscosity ---*/
-    su2double Mu += (Mi/Na * gam_i) / denom;
+    Mu += (Mi/Na * gam_i) / denom;
   }
   // if (ionization) {
   //   iSpecies = nSpecies-1;
@@ -1507,7 +1507,7 @@ void CSU2TCLib::ThermalConductivitiesGY(){
     R += Ru * rhos[iSpecies]/Density;
   }
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  ThermalCond_tr    = 0.0;
+  ThermalCond_tr = 0.0;
   ThermalCond_ve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     /*--- Calculate molar concentration ---*/
