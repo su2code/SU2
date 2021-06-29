@@ -4256,61 +4256,62 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     // Save mesh ordering
     std::ofstream f;
     f.open(filename + "_mesh_" + to_string(rank) + ".csv");
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
-          auto Coord = geometry->nodes->GetCoord(iPoint);
-          f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
-        }
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+        auto Coord = geometry->nodes->GetCoord(iPoint);
+        f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
+      }
     
     f.close();
   }
 
-   if (unsteady) {
-      double* u = new double[nPointDomain*nVar];
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-         for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar + iVar;
-            u[total_index] = base_nodes->GetSolution(iPoint,iVar);
-         }
+  if (unsteady) {
+    double* u = new double[nPointDomain*nVar];
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        u[total_index] = base_nodes->GetSolution(iPoint,iVar);
       }
-      
-      // give solution and time steps to libROM:
-      double dt = config->GetDelta_UnstTime();
-      double t =  config->GetCurrent_UnstTime();
-      u_basis_generator->takeSample(u, t, dt);
-      delete[] u;
-   }
+    }
+    
+    // give solution and time steps to libROM:
+    double dt = config->GetDelta_UnstTime();
+    double t =  config->GetCurrent_UnstTime();
+    u_basis_generator->takeSample(u, t, dt);
+    delete[] u;
+  }
    
   /*--- End collection of data and save POD ---*/
   
-   if (converged) {
-
-      if (!unsteady) {
-         double* u = new double[nPointDomain*nVar];
-         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-               total_index = iPoint*nVar + iVar;
-               u[total_index] = base_nodes->GetSolution(iPoint, iVar);
-            }
+  if (converged) {
+  
+    if (!unsteady) {
+       double* u = new double[nPointDomain*nVar];
+       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+         for (iVar = 0; iVar < nVar; iVar++) {
+             total_index = iPoint*nVar + iVar;
+             u[total_index] = base_nodes->GetSolution(iPoint, iVar);
          }
-         
-         // dt is different for each node, so just use a placeholder dt
-         double dt = base_nodes->GetDelta_Time(0);
-         double t = dt*TimeIter;
-         u_basis_generator->takeSample(u, t, dt);
-
-         delete[] u;
-      }
-      
-      if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
-         u_basis_generator->writeSnapshot();
-      }
-      std::cout << "Computing SVD" << std::endl;
-      int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-      std::cout << "Basis dimension: " << rom_dim << std::endl;
-      u_basis_generator->endSamples();
-      std::cout << "ROM Sampling ended" << std::endl;
-   }
+       }
+ 
+       // dt is different for each node, so just use a placeholder dt
+       double dt = base_nodes->GetDelta_Time(0);
+       double t = dt*TimeIter;
+       u_basis_generator->takeSample(u, t, dt);
+ 
+       delete[] u;
+    }
+    
+    if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
+      u_basis_generator->writeSnapshot();
+    }
+    
+    std::cout << "Computing SVD" << std::endl;
+    int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
+    std::cout << "Basis dimension: " << rom_dim << std::endl;
+    u_basis_generator->endSamples();
+    std::cout << "ROM Sampling ended" << std::endl;
+  }
 }
 #else
 void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {}
