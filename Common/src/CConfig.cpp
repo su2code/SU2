@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -2003,7 +2003,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
-   *  Options: AREA, MASSFLUX
+   *  Options: AREA, MASSFLUX, HYBRID
    *  \n Use with MARKER_ANALYZE. \ingroup Config*/
   addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
   /*!\brief COMM_LEVEL
@@ -3426,6 +3426,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         case SURFACE_MOM_DISTORTION:
         case SURFACE_SECOND_OVER_UNIFORM:
         case SURFACE_PRESSURE_DROP:
+        case AVG_NORMAL_VEL:
         case CUSTOM_OBJFUNC:
           if (Kind_ObjFunc[iObj] != Obj_0) {
             SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
@@ -6065,6 +6066,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case SURFACE_TOTAL_PRESSURE:     cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:    cout << "Average static pressure objective function." << endl; break;
         case SURFACE_STATIC_TEMPERATURE: cout << "Average static temperature objective function." << endl; break;
+        case AVG_NORMAL_VEL:             cout << "Mass-averaged normal velocity."<<endl; break;
         case SURFACE_MASSFLOW:           cout << "Mass flow rate objective function." << endl; break;
         case SURFACE_MACH:               cout << "Mach number objective function." << endl; break;
         case CUSTOM_OBJFUNC:             cout << "Custom objective function." << endl; break;
@@ -7983,6 +7985,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case SURFACE_PRESSURE_DROP:       AdjExt = "_dp";       break;
         case SURFACE_MACH:                AdjExt = "_mach";     break;
         case CUSTOM_OBJFUNC:              AdjExt = "_custom";   break;
+        case AVG_NORMAL_VEL:              AdjExt = "_vn";       break;
         case KINETIC_ENERGY_LOSS:         AdjExt = "_ke";       break;
         case TOTAL_PRESSURE_LOSS:         AdjExt = "_pl";       break;
         case FLOW_ANGLE_OUT:              AdjExt = "_fao";      break;

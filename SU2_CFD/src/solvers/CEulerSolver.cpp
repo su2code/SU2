@@ -4551,6 +4551,27 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
+    case SURFACE_UNIFORMITY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+      break;
+    case AVG_NORMAL_VEL:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NormalVelocity(0);
+      break;
+    case TOTAL_AVG_TEMPERATURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+      break;
     default:
       break;
   }

@@ -386,9 +386,10 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
     if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
     if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
+    if ObjFun_name == "AVG_NORMAL_VEL"          : return -1.0
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0
-    if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
+    if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" : return -1.0
     
     # otherwise
     return 1.0
@@ -451,6 +452,7 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_SECOND_OVER_UNIFORM" : "sou"       ,
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,
+                 "AVG_NORMAL_VEL"              : "vn"        ,
                  "KINETIC_ENERGY_LOSS"         : "ke"        ,
                  "TOTAL_PRESSURE_LOSS"         : "pl"        ,
                  "ENTROPY_GENERATION"          : "entg"      ,

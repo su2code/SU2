@@ -259,8 +259,180 @@ vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned 
   return ret_Normal_passive;
 }
 
+vector<passivedouble> CDriver::GetSurfaceCoordinates(unsigned short iMarker) {
+
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned long iPoint;
+  su2double *Coord;
+  vector<passivedouble> coords(nVertex*3,0.0);
+
+  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Coord = geometry->node[iPoint]->GetCoord();
+
+      coords[3*iVertex]     = SU2_TYPE::GetValue(Coord[0]);
+      coords[3*iVertex + 1] = SU2_TYPE::GetValue(Coord[1]);
+      coords[3*iVertex + 2] = SU2_TYPE::GetValue(Coord[2]);
+    }
+
+  return coords;
+}
+
+vector<passivedouble> CDriver::GetVolumeCoordinates() {
+
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nPoints = geometry->GetnPointDomain();
+  unsigned long iPoint;
+  su2double *Coord;
+  vector<passivedouble> coords(nPoints*3,0.0);
+
+  for (iPoint = 0; iPoint < nPoints; iPoint++){
+      Coord = geometry->node[iPoint]->GetCoord();
+
+      coords[3*iPoint]     = SU2_TYPE::GetValue(Coord[0]);
+      coords[3*iPoint + 1] = SU2_TYPE::GetValue(Coord[1]);
+      coords[3*iPoint + 2] = SU2_TYPE::GetValue(Coord[2]);
+    }
+
+  return coords;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/* Functions related to flow states                                          */
+///////////////////////////////////////////////////////////////////////////////
+
+vector<passivedouble> CDriver::GetStates(unsigned short iMarker) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned short iPoint;
+  vector<passivedouble> states(nVertex*7,0.0);
+
+  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++){
+    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+    states[7*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
+    states[7*iVertex + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint,0));
+    states[7*iVertex + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint,1));
+    states[7*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetVelocity(iPoint,2));
+    states[7*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
+    states[7*iVertex + 5] = SU2_TYPE::GetValue(solver->GetNodes()->GetSoundSpeed(iPoint));
+    states[7*iVertex + 6] = SU2_TYPE::GetValue(solver->GetNodes()->GetTemperature(iPoint));
+
+  }
+  return states;
+}
+
+vector<passivedouble> CDriver::GetConservativeStates(unsigned short iMarker) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned short iPoint;
+  vector<passivedouble> states(nVertex*5,0.0);
+
+  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      states[5*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,0));
+      states[5*iVertex + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,1));
+      states[5*iVertex + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,2));
+      states[5*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,3));
+      states[5*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,4));
+  }
+
+  return states;
+}
+
+vector<passivedouble> CDriver::GetResiduals() {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nPoints = geometry->GetnPointDomain();
+  unsigned long iPoint;
+  vector<passivedouble> resids(nPoints*5,0.0);
+
+  for (iPoint = 0; iPoint < nPoints; iPoint++) {
+      resids[5*iPoint]     = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,0));
+      resids[5*iPoint + 1] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,1));
+      resids[5*iPoint + 2] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,2));
+      resids[5*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
+      resids[5*iPoint + 4] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,4));
+    }
+
+  return resids;
+}
+
+vector<passivedouble> CDriver::GetAIP(unsigned short iMarker) {
+
+  vector<passivedouble> AIP(10,0.0);
+  AIP[0] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALPRESS"));
+  AIP[1] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALTEMP"));
+  AIP[2] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_ENTHALPY"));
+  AIP[3] = 0.0; //Get Total Entropy
+  AIP[4] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_PRESS"));
+  AIP[5] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MASSFLOW"));
+  AIP[6] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MACH"));
+  AIP[7] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_NORMALVEL"));
+  AIP[8] = SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
+  AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
+
+  return AIP;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/* Functions related to aircraft trim                                          */
+/////////////////////////////////////////////////////////////////////////////////
+
+void CDriver::SetAoA(passivedouble alpha) {
+
+    CConfig *config = config_container[ZONE_0];
+
+    su2double velocity_inf[3];
+    unsigned short iDim;
+
+    config->SetAoA(alpha);
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+        velocity_inf[iDim] = config->GetVelocity_FreeStream()[iDim];
+    }
+
+    su2double velocity_inf_mag = GeometryToolbox::Norm(nDim, velocity_inf);
+
+    su2double alpha_rad = alpha * PI_NUMBER/180.0;
+    su2double beta_rad = config->GetAoS() * PI_NUMBER/180.0;
+
+    if (nDim == 3) {
+        velocity_inf[0] = cos(alpha_rad)*cos(beta_rad)*velocity_inf_mag;
+        velocity_inf[1] = sin(beta_rad)*velocity_inf_mag;
+        velocity_inf[2] = sin(alpha_rad)*cos(beta_rad)*velocity_inf_mag;
+    } else if (nDim == 2) {
+        velocity_inf[0] = cos(alpha_rad)*velocity_inf_mag;
+        velocity_inf[1] = sin(alpha_rad)*velocity_inf_mag;
+    }
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+        config->SetVelocity_FreeStreamND(velocity_inf[iDim], iDim);
+    }
+}
+
+void CDriver::SetAoS(passivedouble beta) {
+
+    CConfig *config = config_container[ZONE_0];
+
+    config->SetAoS(beta);
+
+}
+
 //////////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain global parameters from SU2 (time steps, delta t, ecc...) */
+/* Functions to obtain global parameters from SU2 (time steps, delta t, etc...) */
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetnTimeIter() const {

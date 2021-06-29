@@ -532,6 +532,58 @@ public:
   }
 
   /*!
+   * \brief Get surface coordinates of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return XYZ coordinates (vector) of the marker.
+   */
+  vector<passivedouble> GetSurfaceCoordinates(unsigned short iMarker);
+
+  /*!
+   * \brief Get volume coordinates of the fluid mesh.
+   * \return XYZ coordinates (vector) of the fluid mesh.
+   */
+  vector<passivedouble> GetVolumeCoordinates();
+
+  /*!
+   * \brief Get the solution state vector of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return States (vector) at the marker.
+   */
+  vector<passivedouble> GetStates(unsigned short iMarker);
+
+  /*!
+   * \brief Get the conservative state vector of a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Conservative states (vector) at the marker.
+   */
+  vector<passivedouble> GetConservativeStates(unsigned short iMarker);
+
+  /*!
+   * \brief Get vector of flow residuals.
+   * \return Flow residuals (vector) at each cell in fluid mesh.
+   */
+  vector<passivedouble> GetResiduals();
+
+  /*!
+   * \brief Get the AIP parameters at the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return AIP (vector) at the marker.
+   */
+  vector<passivedouble> GetAIP(unsigned short iMarker);
+
+  /*!
+   * \brief Set new angle of attack based on user-input.
+   * \param[in] alpha - user-defined angle of attack in [deg].
+   */
+  void SetAoA(passivedouble alpha);
+
+  /*!
+   * \brief Set new side-slip angle based on user-input.
+   * \param[in] beta - user-defined side-slip angle in [deg].
+   */
+  void SetAoS(passivedouble beta);
+
+  /*!
    * \brief Get all the boundary markers tags.
    * \return List of boundary markers tags.
    */

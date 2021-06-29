@@ -808,6 +808,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       {
+
         auto val = solvers[FLOW_SOL]->GetTotal_ComboObj();
 
         if (config->GetWeakly_Coupled_Heat()) {
