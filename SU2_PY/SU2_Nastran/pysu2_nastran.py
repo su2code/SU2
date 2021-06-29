@@ -757,6 +757,8 @@ class Solver:
     #read the Structhistory to obtain the mode amplitudes
     nM1Set = False
     nSet = False
+    firstLineRead = False
+
     with open('StructHistoryModal.dat','r') as file:
       print('Opened history file StructHistoryModal.dat.')
       line = file.readline()
@@ -766,6 +768,9 @@ class Solver:
           print("The restart iteration was not found in the structural history")
           break
         line = line.strip('\r\n').split()
+        if not firstLineRead:
+	      self.timeStartCoupling = float(line[0])
+	      firstLineRead = True
         if int(line[1])==(self.Config["RESTART_ITER"]-2):
           index = 0
           for index_mode in range(self.nDof):
@@ -839,12 +844,14 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       if self.ImposedMotionToSet:
+        if self.Config["RESTART_SOL"] == "NO":                                   # If yes we already set it in the __setRestart function
+          self.timeStartCoupling = time
         iImposedFunc = 0
         for imode in self.Config["IMPOSED_MODES"].keys():
           for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
             typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
             parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
-            self.ImposedMotionFunction.append(ImposedMotionClass(time, typeOfMotion, parameters, imode))
+            self.ImposedMotionFunction.append(ImposedMotionClass(self.timeStartCoupling, typeOfMotion, parameters, imode))
             iImposedFunc += 1
         self.ImposedMotionToSet = False
       for iImposedFunc in range(len(self.ImposedMotionFunction)):
