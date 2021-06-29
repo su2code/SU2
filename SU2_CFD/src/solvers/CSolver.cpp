@@ -4234,13 +4234,15 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
     
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
-      std::cout << "Creating static basis generator." << std::endl;
+      if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
+      
       if (unsteady) {
-        std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
+        if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
       }
     }
     else {
-      std::cout << "Creating incremental basis generator." << std::endl;
+      if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
+      
       svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
                                     1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
       incremental = true;
@@ -4251,7 +4253,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       filename));
     
     // Print nodes for each rank for now
-    std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
+    std::cout << "nPointDomain: " << nPointDomain << " for rank: " << rank << std::endl;
     
     // Save mesh ordering
     std::ofstream f;
@@ -4306,11 +4308,13 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       u_basis_generator->writeSnapshot();
     }
     
-    std::cout << "Computing SVD" << std::endl;
+    if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
     int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-    std::cout << "Basis dimension: " << rom_dim << std::endl;
+    
+    if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
     u_basis_generator->endSamples();
-    std::cout << "ROM Sampling ended" << std::endl;
+    
+    if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
   }
 }
 #else
