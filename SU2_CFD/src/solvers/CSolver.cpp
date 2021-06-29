@@ -4212,9 +4212,9 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   }
 }
 
-#ifdef HAVE_LIBROM
 void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
   
+#ifdef HAVE_LIBROM
   const bool unsteady            = config->GetTime_Domain();
   const string filename          = config->GetlibROMbase_FileName();
   const unsigned long TimeIter   = config->GetTimeIter();
@@ -4313,7 +4313,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     
     if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
   }
-}
+  
 #else
-void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {}
+  SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
 #endif
+
+}
