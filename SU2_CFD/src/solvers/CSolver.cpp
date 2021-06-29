@@ -4262,19 +4262,10 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   }
 
   if (unsteady) {
-    double* u = new double[nPointDomain*nVar];
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint*nVar + iVar;
-        u[total_index] = base_nodes->GetSolution(iPoint,iVar);
-      }
-    }
-    
     // give solution and time steps to libROM:
     double dt = config->GetDelta_UnstTime();
     double t =  config->GetCurrent_UnstTime();
-    u_basis_generator->takeSample(u, t, dt);
-    delete[] u;
+    u_basis_generator->takeSample(const_cast<double*>(base_nodes->GetSolution().data()), t, dt);
   }
    
   /*--- End collection of data and save POD ---*/
@@ -4285,9 +4276,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
        // dt is different for each node, so just use a placeholder dt
        double dt = base_nodes->GetDelta_Time(0);
        double t = dt*TimeIter;
-       u_basis_generator->takeSample(base_nodes->GetSolution().data(), t, dt);
- 
-       delete[] u;
+       u_basis_generator->takeSample(const_cast<double*>(base_nodes->GetSolution().data()), t, dt);
     }
     
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
