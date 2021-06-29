@@ -4217,6 +4217,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   const unsigned long TimeIter   = config->GetTimeIter();
   const unsigned long nTimeIter  = config->GetnTime_Iter();
   const int maxBasisDim          = config->GetMax_BasisDim();
+  const int save_freq            = config->GetRom_SaveFreq();
   int dim = int(nPointDomain * nVar);
   bool incremental = false;
 
@@ -4261,7 +4262,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     f.close();
   }
 
-  if (unsteady) {
+  if (unsteady && (TimeIter % save_freq == 0)) {
     // give solution and time steps to libROM:
     double dt = config->GetDelta_UnstTime();
     double t =  config->GetCurrent_UnstTime();

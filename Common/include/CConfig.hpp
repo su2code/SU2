@@ -1127,7 +1127,8 @@ private:
   bool libROM;                              /*!< \brief Toggle saving to libROM. */
   string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
-  unsigned short maxBasisDim;               /*!< \brief Maximum number of POD basis dimensions. */
+  unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
+  rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
   
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
@@ -9322,4 +9323,9 @@ public:
    */
   unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
   
+  /*!
+   * \brief Get frequency of unsteady time steps to save (default: 1).
+   * \return Save frequency for unsteady time steps.
+   */
+  unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
 };
