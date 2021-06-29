@@ -4285,7 +4285,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
        // dt is different for each node, so just use a placeholder dt
        double dt = base_nodes->GetDelta_Time(0);
        double t = dt*TimeIter;
-       u_basis_generator->takeSample(u, t, dt);
+       u_basis_generator->takeSample(base_nodes->GetSolution().data(), t, dt);
  
        delete[] u;
     }
