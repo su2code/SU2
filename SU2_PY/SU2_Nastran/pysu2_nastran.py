@@ -769,8 +769,8 @@ class Solver:
           break
         line = line.strip('\r\n').split()
         if not firstLineRead:
-	      self.timeStartCoupling = float(line[0])
-	      firstLineRead = True
+          self.timeStartCoupling = float(line[0])
+          firstLineRead = True
         if int(line[1])==(self.Config["RESTART_ITER"]-2):
           index = 0
           for index_mode in range(self.nDof):
