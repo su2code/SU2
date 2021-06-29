@@ -119,9 +119,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   nPrimVarGrad = 0;
   nPrimVar     = 0;
 
-#ifdef HAVE_LIBROM
-  u_basis_generator  = nullptr;
-#endif
 }
 
 CSolver::~CSolver(void) {
