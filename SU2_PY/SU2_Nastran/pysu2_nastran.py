@@ -741,54 +741,51 @@ class Solver:
         self.node[iPoint].SetCoord_n((X_disp[iPoint]+coord0[0],Y_disp[iPoint]+coord0[1],Z_disp[iPoint]+coord0[2]))
         self.node[iPoint].SetVel_n((X_vel[iPoint],Y_vel[iPoint],Z_vel[iPoint]))
 
-  def __setRestart(self, timeIter):
-    if timeIter == 'nM1':
-      #read the Structhistory to obtain the mode amplitudes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
+  def __setRestart(self):
+    """
+    This method sets all the variables needed for the correct restart.
+    """
+
+    #read the Structhistory to obtain the mode amplitudes
+    nM1Set = False
+    nSet = False
+    with open('StructHistoryModal.dat','r') as file:
+      line = file.readline()
+      while 1:
         line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-2):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      #push back the mode amplitudes velocities and accelerations
-      self.__computeInterfacePosVel(True)
-      self.q_n = np.copy(self.q)
-      self.qdot_n = np.copy(self.qdot)
-      self.qddot_n = np.copy(self.qddot)
-      self.a_n = np.copy(self.a)
-    if timeIter == 'n':
-      #read the Structhistory to obtain the modes
-      with open('StructHistoryModal.dat','r') as file:
-        print('Opened history file ' + 'StructHistoryModal.dat' + '.')
-        line = file.readline()
-        while 1:
-          line = file.readline()
-          if not line:
-            print("The restart iteration was not found in the structural history")
-            break
-          line = line.strip('\r\n').split()
-          if int(line[1])==(self.Config["RESTART_ITER"]-1):
-            break
-      index = 0
-      for index_mode in range(self.nDof):
-        self.q[index_mode] = float(line[index+3])
-        self.qdot[index_mode] = float(line[index+4])
-        self.qddot[index_mode] = float(line[index+5])
-        index += 3
-      del index
-      self.__computeInterfacePosVel(False)
+        if not line:
+          print("The restart iteration was not found in the structural history")
+          break
+        line = line.strip('\r\n').split()
+        if int(line[1])==(self.Config["RESTART_ITER"]-2):
+          index = 0
+          for index_mode in range(self.nDof):
+            self.q[index_mode] = float(line[index+3])
+            self.qdot[index_mode] = float(line[index+4])
+            self.qddot[index_mode] = float(line[index+5])
+            index += 3
+          del index
+          #push back the mode amplitudes velocities and accelerations
+          self.__computeInterfacePosVel(True)
+          self.q_n = np.copy(self.q)
+          self.qdot_n = np.copy(self.qdot)
+          self.qddot_n = np.copy(self.qddot)
+          self.a_n = np.copy(self.a)
+          nM1Set = True
+        if int(line[1])==(self.Config["RESTART_ITER"]-1):
+          index = 0
+          for index_mode in range(self.nDof):
+            self.q[index_mode] = float(line[index+3])
+            self.qdot[index_mode] = float(line[index+4])
+            self.qddot[index_mode] = float(line[index+5])
+            index += 3
+          del index
+          self.__computeInterfacePosVel(False)
+          nSet = True
+          break
+    if (not nM1Set) or (not nSet):
+      print('Opened history file StructHistoryModal.dat.')
+
 
   def __temporalIteration(self,time):
     """
