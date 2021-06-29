@@ -284,7 +284,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /*--- Add Cp diff fields ---*/
 
-  Add_CpInverseDesignOutput(config);
+  Add_CpInverseDesignOutput();
 
 }
 
