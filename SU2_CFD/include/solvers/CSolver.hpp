@@ -4338,7 +4338,6 @@ public:
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
   
-#ifdef HAVE_LIBROM
   /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] solver - Container vector with all the solutions.
@@ -4347,8 +4346,6 @@ public:
    * \param[in] converged - Whether or not solution has converged.
   */
   void SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged);
-#endif
-
 
 protected:
   /*!

@@ -4312,4 +4312,6 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       std::cout << "ROM Sampling ended" << std::endl;
    }
 }
+#else
+void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {}
 #endif

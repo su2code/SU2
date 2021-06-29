@@ -95,11 +95,11 @@ void CSinglezoneDriver::StartSolver() {
     Output(TimeIter);
     
     /*--- Save iteration solution for libROM ---*/
-    #ifdef HAVE_LIBROM
-        if (config_container[MESH_0]->GetSave_libROM()) {
-          solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[ZONE_0][INST_0][MESH_0], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], StopCalc);
-        }
-    #endif
+    if (config_container[MESH_0]->GetSave_libROM()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(solver_container[ZONE_0][INST_0][MESH_0],
+                                                                     geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
