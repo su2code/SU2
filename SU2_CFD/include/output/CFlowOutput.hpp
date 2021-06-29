@@ -77,17 +77,16 @@ protected:
 
   /*!
    * \brief Add CP inverse design output as history fields
-   * \param[in] config - Definition of the particular problem.
    */
-  void Add_CpInverseDesignOutput(CConfig *config);
+  void Add_CpInverseDesignOutput();
 
   /*!
-   * \brief Set CP inverse design output field values
-   * \param[in] solver - The container holding all solution data.
+   * \brief Set CP inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
