@@ -45,18 +45,21 @@ class ImposedMotionClass:
     self.typeOfMotion = typeOfMotion
     self.mode = mode
 
+    self.amplitude = parameters["AMPLITUDE"]
+    self.timeStart = parameters["TIME_START"]
+    if "TIME_STOP" in parameters.keys():
+      self.timeStop  = parameters["TIME_STOP"]
+    else:
+      self.timeStop = inf
+
     if self.typeOfMotion == "SINUSOIDAL":
       self.bias = parameters["BIAS"]
-      self.amplitude = parameters["AMPLITUDE"]
       self.frequency = parameters["FREQUENCY"]
-      self.timeStart = parameters["TIME_0"]
 
     elif self.typeOfMotion == "BLENDED_STEP":
       self.kmax = parameters["K_MAX"]
       self.vinf = parameters["V_INF"]
       self.lref = parameters["L_REF"]
-      self.amplitude = parameters["AMPLITUDE"]
-      self.timeStart = parameters["TIME_0"]
       self.tmax = 2*pi/self.kmax*self.lref/self.vinf
       self.omega0 = 1/2*self.kmax
 
@@ -67,10 +70,12 @@ class ImposedMotionClass:
   def GetDispl(self,time):
     time = time - self.time0 - self.timeStart
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
       elif time < self.tmax:
         return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
@@ -81,10 +86,12 @@ class ImposedMotionClass:
     time = time - self.time0 - self.timeStart
 
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
       elif time < self.tmax:
         return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
@@ -94,10 +101,12 @@ class ImposedMotionClass:
     time = time - self.time0 - self.timeStart
 
     if self.typeOfMotion == "SINUSOIDAL":
+      if (time < 0.0) or (time > self.timeStop):
+        return 0.0
       return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
 
     if self.typeOfMotion == "BLENDED_STEP":
-      if time < 0:
+      if (time < 0.0) or (time > self.timeStop):
         return 0.0
       elif time < self.tmax:
         return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
@@ -312,8 +321,7 @@ class Solver:
       histFile.write(header)
       histFile.close()
     else:
-      self.__setRestart('nM1')
-      self.__setRestart('n')
+      self.__setRestart()
 
   def __readConfig(self):
     """
