@@ -132,7 +132,9 @@ void computeLimiters_impl(CSolver* solver,
     auto nodes = geometry.nodes;
     const auto coord_i = nodes->GetCoord(iPoint);
 
+#ifndef HAVE_OPDI
     AD::StartPreacc();
+#endif
     AD::SetPreaccIn(coord_i, nDim);
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)

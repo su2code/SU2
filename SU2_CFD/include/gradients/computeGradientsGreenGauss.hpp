@@ -76,7 +76,9 @@ void computeGradientsGreenGauss(CSolver* solver,
   {
     auto nodes = geometry.nodes;
 
+#ifndef HAVE_OPDI
     AD::StartPreacc();
+#endif
     AD::SetPreaccIn(nodes->GetVolume(iPoint));
     AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 

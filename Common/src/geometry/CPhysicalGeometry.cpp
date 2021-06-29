@@ -7701,7 +7701,9 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
 
       const auto nNodes = bound[iMarker][iElem]->GetnNodes();
 
+#ifndef HAVE_OPDI
       AD::StartPreacc();
+#endif
 
       /*--- Get pointers to the coordinates of all the element nodes ---*/
       array<const su2double*, N_POINTS_MAXIMUM> Coord;
