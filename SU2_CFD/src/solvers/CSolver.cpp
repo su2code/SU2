@@ -4215,9 +4215,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 #ifdef HAVE_LIBROM
 void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
   
-  unsigned long iPoint, total_index;
-  unsigned short iVar;
-  
   const bool unsteady            = config->GetTime_Domain();
   const string filename          = config->GetlibROMbase_FileName();
   const unsigned long TimeIter   = config->GetTimeIter();
@@ -4258,7 +4255,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     // Save mesh ordering
     std::ofstream f;
     f.open(filename + "_mesh_" + to_string(rank) + ".csv");
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
         f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
@@ -4269,9 +4266,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
 
   if (unsteady) {
     double* u = new double[nPointDomain*nVar];
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
         u[total_index] = base_nodes->GetSolution(iPoint,iVar);
       }
     }
@@ -4289,9 +4286,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   
     if (!unsteady) {
        double* u = new double[nPointDomain*nVar];
-       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-         for (iVar = 0; iVar < nVar; iVar++) {
-             total_index = iPoint*nVar + iVar;
+       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+             unsigned long total_index = iPoint*nVar + iVar;
              u[total_index] = base_nodes->GetSolution(iPoint, iVar);
          }
        }
