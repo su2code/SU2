@@ -863,16 +863,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
           if (residual[iVar] != residual[iVar]) err = true;
-        if (implicit)
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        //if (implicit)
+        //  for (iVar = 0; iVar < nVar; iVar++)
+        //    for (jVar = 0; jVar < nVar; jVar++)
+        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
         /*--- Apply the chemical sources to the linear system ---*/
         if (!err) {
           LinSysRes.SubtractBlock(iPoint, residual);
-          if (implicit)
-            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          //if (implicit)
+          //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         } else
           eChm_local++;
       }
@@ -888,16 +888,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       err = false;
       for (iVar = 0; iVar < nVar; iVar++)
         if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+      //if (implicit)
+      //  for (iVar = 0; iVar < nVar; iVar++)
+      //    for (jVar = 0; jVar < nVar; jVar++)
+      //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
       /*--- Apply the vibrational relaxation terms to the linear system ---*/
       if (!err) {
         LinSysRes.SubtractBlock(iPoint, residual);
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //if (implicit)
+        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       } else
         eVib_local++;
     }
@@ -973,16 +973,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
           if (residual[iVar] != residual[iVar]) err = true;
-        if (implicit)
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        //if (implicit)
+        //  for (iVar = 0; iVar < nVar; iVar++)
+        //    for (jVar = 0; jVar < nVar; jVar++)
+        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
         /*--- Apply the update to the linear system ---*/
         if (!err) {
           LinSysRes.AddBlock(iPoint, residual);
-          if (implicit)
-            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          //if (implicit)
+          //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
         }else
           eAxi_local++;
       }
