@@ -4211,7 +4211,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 
 void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
   
-#ifdef HAVE_LIBROM
+#if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   const bool unsteady            = config->GetTime_Domain();
   const string filename          = config->GetlibROMbase_FileName();
   const unsigned long TimeIter   = config->GetTimeIter();
