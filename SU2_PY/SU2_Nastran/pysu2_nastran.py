@@ -758,6 +758,7 @@ class Solver:
     nM1Set = False
     nSet = False
     with open('StructHistoryModal.dat','r') as file:
+      print('Opened history file StructHistoryModal.dat.')
       line = file.readline()
       while 1:
         line = file.readline()
@@ -792,7 +793,7 @@ class Solver:
           nSet = True
           break
     if (not nM1Set) or (not nSet):
-      print('Opened history file StructHistoryModal.dat.')
+      print("The restart iteration was not found in the structural history")
 
 
   def __temporalIteration(self,time):
