@@ -115,6 +115,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   Enthalpy, Velocity[3] = {0.0}, TangVel[3], Vector[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
 
+  su2double WeightVel = 1.0; //USED ONLY FOR AeroProp inforation
+
   const su2double Gas_Constant      = config->GetGas_ConstantND();
   const su2double Gamma             = config->GetGamma();
   const unsigned short nMarker      = config->GetnMarker_All();

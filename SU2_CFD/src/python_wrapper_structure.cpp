@@ -270,7 +270,7 @@ vector<passivedouble> CDriver::GetSurfaceCoordinates(unsigned short iMarker) {
 
   for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Coord = geometry->node[iPoint]->GetCoord();
+      Coord = geometry->nodes->GetCoord(iPoint);
 
       coords[3*iVertex]     = SU2_TYPE::GetValue(Coord[0]);
       coords[3*iVertex + 1] = SU2_TYPE::GetValue(Coord[1]);
@@ -290,7 +290,7 @@ vector<passivedouble> CDriver::GetVolumeCoordinates() {
   vector<passivedouble> coords(nPoints*3,0.0);
 
   for (iPoint = 0; iPoint < nPoints; iPoint++){
-      Coord = geometry->node[iPoint]->GetCoord();
+      Coord = geometry->nodes->GetCoord(iPoint);
 
       coords[3*iPoint]     = SU2_TYPE::GetValue(Coord[0]);
       coords[3*iPoint + 1] = SU2_TYPE::GetValue(Coord[1]);
@@ -313,7 +313,7 @@ vector<passivedouble> CDriver::GetStates(unsigned short iMarker) {
   unsigned short iPoint;
   vector<passivedouble> states(nVertex*7,0.0);
 
-  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++){
+  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++) {
     iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
     states[7*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetDensity(iPoint));
@@ -373,16 +373,16 @@ vector<passivedouble> CDriver::GetResiduals() {
 vector<passivedouble> CDriver::GetAIP(unsigned short iMarker) {
 
   vector<passivedouble> AIP(10,0.0);
-  AIP[0] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALPRESS"));
-  AIP[1] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALTEMP"));
-  AIP[2] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_ENTHALPY"));
-  AIP[3] = 0.0; //Get Total Entropy
-  AIP[4] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_PRESS"));
-  AIP[5] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MASSFLOW"));
-  AIP[6] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MACH"));
-  AIP[7] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_NORMALVEL"));
-  AIP[8] = SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
-  AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
+  // AIP[0] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALPRESS"));
+  // AIP[1] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_TOTALTEMP"));
+  // AIP[2] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_ENTHALPY"));
+  // AIP[3] = 0.0; //Get Total Entropy
+  // AIP[4] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_PRESS"));
+  // AIP[5] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MASSFLOW"));
+  // AIP[6] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_MACH"));
+  // AIP[7] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("AVG_NORMALVEL"));
+  // AIP[8] = SU2_TYPE::GetValue(config_container[ZONE_0]->GetRefArea());
+  // AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
 
   return AIP;
 }
