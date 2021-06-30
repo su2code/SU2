@@ -758,6 +758,7 @@ class Solver:
     nM1Set = False
     nSet = False
     firstLineRead = False
+    secondLineRead = False
 
     with open('StructHistoryModal.dat','r') as file:
       print('Opened history file StructHistoryModal.dat.')
@@ -769,8 +770,13 @@ class Solver:
           break
         line = line.strip('\r\n').split()
         if not firstLineRead:
-          self.timeStartCoupling = float(line[0])
           firstLineRead = True
+        else:
+          if secondLineRead:
+            pass
+          else:
+            self.timeStartCoupling = float(line[0])
+            secondLineRead = True
         if int(line[1])==(self.Config["RESTART_ITER"]-2):
           index = 0
           for index_mode in range(self.nDof):

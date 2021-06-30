@@ -1919,7 +1919,6 @@ class Interface:
           # --- Initialize the coupled solution --- #
           #If restart
           if FSI_config['RESTART_SOL'] == 'YES':
-            TimeIterTreshold = -1
             self.getSolidInterfaceDisplacement(SolidSolver)
             self.displacementPredictor(FSI_config, SolidSolver, deltaT)
             if myid in self.solidSolverProcessors:
