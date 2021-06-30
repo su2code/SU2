@@ -766,7 +766,6 @@ class Solver:
       while 1:
         line = file.readline()
         if not line:
-          print("The restart iteration was not found in the structural history")
           break
         line = line.strip('\r\n').split()
 
@@ -809,8 +808,9 @@ class Solver:
           self.__computeInterfacePosVel(False)
           nSet = True
           break
+          
     if (not nM1Set) or (not nSet):
-      print("The restart iteration was not found in the structural history")
+      raise Exception('The restart iteration was not found in the structural history')
 
 
   def __temporalIteration(self,time):
