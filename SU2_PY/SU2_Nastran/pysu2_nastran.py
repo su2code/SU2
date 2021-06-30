@@ -758,7 +758,7 @@ class Solver:
     nM1Set = False
     nSet = False
     firstLineRead = False
-    secondLineRead = False
+    couplingLineRead = False
 
     with open('StructHistoryModal.dat','r') as file:
       print('Opened history file StructHistoryModal.dat.')
@@ -769,14 +769,20 @@ class Solver:
           print("The restart iteration was not found in the structural history")
           break
         line = line.strip('\r\n').split()
+
+        # The old time_0 for imposed motion can either be the first line of the StructHistoryModal, if TimeIterTreshold was -1 (immediate coupling), or the second line. In the former case, time_0 is 0.0, so it is easy to recognize it
         if not firstLineRead:
           firstLineRead = True
+          if float(line[0])==0.0:
+            couplingLineRead = True
+            self.timeStartCoupling = 0.0
         else:
-          if secondLineRead:
+          if couplingLineRead:
             pass
           else:
             self.timeStartCoupling = float(line[0])
-            secondLineRead = True
+            couplingLineRead = True
+
         if int(line[1])==(self.Config["RESTART_ITER"]-2):
           index = 0
           for index_mode in range(self.nDof):
