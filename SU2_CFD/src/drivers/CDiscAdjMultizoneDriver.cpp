@@ -880,6 +880,10 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
+#if defined(CODI_INDEX_TAPE) || defined(HAVE_OPDI)
+  assert(nZone <= 1 && "index AD types do not support multiple zones");
+#endif
+
   AD::ClearAdjoints();
 
   /*--- Initialize the adjoints in iZone ---*/
@@ -898,12 +902,8 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
    *    on the last inner iteration. Structural problems have some minor issue and we
    *    need to evaluate this section on every iteration. ---*/
 
-#if defined(CODI_INDEX_TAPE)
-  AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
-#else
   if (eval_transfer || config_container[iZone]->GetStructuralProblem())
     AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
-#endif
 
   /*--- Adjoints of dependencies, needed if derivatives of variables
    *    are extracted (e.g. AoA, Mach, etc.) ---*/
