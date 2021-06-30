@@ -76,6 +76,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   CNumerics* conv_bound_numerics = numerics[CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
   CNumerics* visc_bound_numerics = numerics[VISC_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
 
+#ifdef HAVE_OPDI
+  /* disable preaccumulation for parallel boundary numerics */
+  bool preaccEnabled = AD::PreaccEnabled;
+  AD::PreaccEnabled = false;
+#endif
+
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
@@ -177,6 +183,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
+
+#ifdef HAVE_OPDI
+  AD::PreaccEnabled = preaccEnabled;
+#endif
 
 }
 
