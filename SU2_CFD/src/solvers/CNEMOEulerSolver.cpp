@@ -943,25 +943,25 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         if (viscous) {
 
           /*--- Set gradient of primitive variables ---*/
-          numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+          numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 
           /*--- Set gradient of auxillary variables ---*/
           numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
           /*--- Set diffusion coefficient ---*/
-          numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint), nodes->GetDiffusionCoeff(iPoint));
+          numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint), nullptr);
 
           /*--- Laminar viscosity ---*/
-          numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), nodes->GetLaminarViscosity(iPoint));
+          numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint), 0.0);
 
           /*--- Eddy viscosity ---*/
-          numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint), nodes->GetEddyViscosity(iPoint));
+          numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint), 0.0);
 
           /*--- Thermal conductivity ---*/
-          numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint), nodes->GetThermalConductivity(iPoint));
+          numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint), 0.0);
 
           /*--- Vib-el. thermal conductivity ---*/
-          numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
+          numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), 0.0);
 
           /*--- Set turbulence kinetic energy ---*/
           if (rans){
@@ -1670,23 +1670,23 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         node_infty->GetDiffusionCoeff(0) );
+                                         nodes->GetDiffusionCoeff(iPoint));
 
         /*--- Laminar viscosity ---*/
         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           node_infty->GetLaminarViscosity(0) );
+                                           nodes->GetLaminarViscosity(iPoint));
 
         /*--- Eddy viscosity ---*/
         visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        node_infty->GetEddyViscosity(0) );
+                                        nodes->GetEddyViscosity(iPoint));
 
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                              node_infty->GetThermalConductivity(0));
+                                              nodes->GetThermalConductivity(iPoint));
 
         /*--- Vib-el. thermal conductivity ---*/
         visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                                 node_infty->GetThermalConductivity_ve(0) );
+                                                 nodes->GetThermalConductivity_ve(iPoint));
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
@@ -1703,7 +1703,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   delete [] Normal;
 }
 
-void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
+void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
 
@@ -1982,7 +1982,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   delete [] Spec_Density;
 }
 
-void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
+void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iVar, iDim, iSpecies;
@@ -2232,7 +2232,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
 }
 
-void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solution_container,
+void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
 SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
@@ -2443,7 +2443,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 
 }
 
-void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solution_container,
+void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;

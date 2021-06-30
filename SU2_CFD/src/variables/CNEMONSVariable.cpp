@@ -104,21 +104,23 @@ bool CNEMONSVariable::SetVorticity(void) {
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys;
   unsigned short iVar, iSpecies;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+      /*--- Recompute Primitive from previous solution ---*/
+      Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
+  /*--- Set additional point quantities ---*/
   Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);

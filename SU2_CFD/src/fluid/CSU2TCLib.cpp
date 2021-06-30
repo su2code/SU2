@@ -742,7 +742,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
 }
 
-vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   su2double Ev, Eel, Ef, num, denom;
   unsigned short iElectron = nSpecies-1;
@@ -767,15 +767,15 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
         Ev = 0.0;
       /*--- Calculate electronic energy ---*/
       num = 0.0;
-      denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/val_T);
+      denom = ElDegeneracy[iSpecies][0] * exp(CharElTemp[iSpecies][0]/val_T);
       for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
         num   += ElDegeneracy[iSpecies][iEl] * CharElTemp[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
         denom += ElDegeneracy[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
       }
       Eel = Ru/MolarMass[iSpecies] * (num/denom);
     }
-
-    eves[iSpecies] = Ev + Eel;
+    if(vibe_only == true) {eves[iSpecies] = Ev;}
+    else {eves[iSpecies] = Ev + Eel;}
   }
 
   return eves;
@@ -918,20 +918,21 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
+  su2double A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus;
   vector<su2double> MolarFrac, eve_eq, eve;
+  su2activematrix mu;
 
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
 
-  omegaVT = 0.0;
-  omegaCV = 0.0;
+  su2double omegaVT = 0.0;
+  su2double omegaCV = 0.0;
 
 
   /*--- Calculate mole fractions ---*/
-  N    = 0.0;
-  conc = 0.0;
+  su2double N    = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     conc += rhos[iSpecies] / MolarMass[iSpecies];
     N    += rhos[iSpecies] / MolarMass[iSpecies] * AVOGAD_CONSTANT;
@@ -939,8 +940,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 
-  eve_eq = ComputeSpeciesEve(T);
-  eve    = ComputeSpeciesEve(Tve);
+  eve_eq = ComputeSpeciesEve(T, true);
+  eve    = ComputeSpeciesEve(Tve, true);
 
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -949,9 +950,9 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     num   = 0.0;
     denom = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      mu     = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
-      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(CharVibTemp[iSpecies], 4.0/3.0);
-      B_sr   = 0.015 * pow(mu, 0.25);
+      mu(iSpecies,jSpecies) = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
+      A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
+      B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
       tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;
@@ -960,8 +961,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauMW = num / denom;
 
     /*--- Park limiting cross section ---*/
-    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
-    sig_s = 1E-20*(5E4*5E4)/(T*T);
+    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*mu(iSpecies,jSpecies)));
+    sig_s = 3E-21*(2.5E9)/(T*T);
 
     tauP = 1/(sig_s*Cs*N);
 
@@ -1371,17 +1372,13 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
-  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tmin, Tmax;
-  bool Bconvg;
-  unsigned short iIter, maxBIter;
-
   rhos = val_rhos;
 
   /*----------Translational temperature----------*/
 
-  rhoE_f   = 0.0;
-  rhoE_ref = 0.0;
-  rhoCvtr  = 0.0;
+  su2double rhoE_f   = 0.0;
+  su2double rhoE_ref = 0.0;
+  su2double rhoCvtr  = 0.0;
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
@@ -1391,24 +1388,25 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  Tmin  = 50.0; Tmax = 8E4;
-  Tve_o = 50.0; Tve2 = 8E4;
+  su2double Tmin  = 50.0; su2double Tmax = 8E4;
+  su2double Tve_o = 50.0; su2double Tve2 = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
   if      (T < Tmin) T = Tmin;
   else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
-  Btol     = 1.0E-6;    // Tolerance for the Bisection method
-  maxBIter = 50;        // Maximum Bisection method iterations
+  su2double Btol          = 1.0E-6;    // Tolerance for the Bisection method
+  unsigned short maxBIter = 50;        // Maximum Bisection method iterations
 
   //Initialize solution
   Tve   = T;
 
   // Execute the root-finding method
-  Bconvg = false;
+  bool Bconvg = false;
+  su2double rhoEve_t;
 
-  for (iIter = 0; iIter < maxBIter; iIter++) {
+  for (unsigned short iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;
     val_eves = ComputeSpeciesEve(Tve);
     rhoEve_t = 0.0;
@@ -1422,7 +1420,10 @@ vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, s
     }
   }
   // If absolutely no convergence, then assign to the TR temperature
-  if (!Bconvg) Tve = T;
+  if (!Bconvg) {
+    Tve = T;
+    cout <<"Warning: temperatures did not converge, error= "<< fabs(rhoEve_t-rhoEve)<<endl;
+  }
 
   temperatures[0] = T;
   temperatures[1] = Tve;
