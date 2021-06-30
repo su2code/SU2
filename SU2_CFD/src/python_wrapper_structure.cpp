@@ -275,7 +275,7 @@ vector<passivedouble> CDriver::GetSurfaceCoordinates(unsigned short iMarker) {
       coords[3*iVertex]     = SU2_TYPE::GetValue(Coord[0]);
       coords[3*iVertex + 1] = SU2_TYPE::GetValue(Coord[1]);
       coords[3*iVertex + 2] = SU2_TYPE::GetValue(Coord[2]);
-    }
+  }
 
   return coords;
 }
@@ -295,7 +295,7 @@ vector<passivedouble> CDriver::GetVolumeCoordinates() {
       coords[3*iPoint]     = SU2_TYPE::GetValue(Coord[0]);
       coords[3*iPoint + 1] = SU2_TYPE::GetValue(Coord[1]);
       coords[3*iPoint + 2] = SU2_TYPE::GetValue(Coord[2]);
-    }
+  }
 
   return coords;
 }
@@ -323,8 +323,8 @@ vector<passivedouble> CDriver::GetStates(unsigned short iMarker) {
     states[7*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetPressure(iPoint));
     states[7*iVertex + 5] = SU2_TYPE::GetValue(solver->GetNodes()->GetSoundSpeed(iPoint));
     states[7*iVertex + 6] = SU2_TYPE::GetValue(solver->GetNodes()->GetTemperature(iPoint));
-
   }
+
   return states;
 }
 
@@ -365,7 +365,7 @@ vector<passivedouble> CDriver::GetResiduals() {
       resids[5*iPoint + 2] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,2));
       resids[5*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
       resids[5*iPoint + 4] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,4));
-    }
+  }
 
   return resids;
 }
@@ -385,6 +385,26 @@ vector<passivedouble> CDriver::GetAIP(unsigned short iMarker) {
   // AIP[9] = SU2_TYPE::GetValue(output_container[ZONE_0]->GetHistoryFieldValue("MOMENTUM_DISTORTION"));
 
   return AIP;
+}
+
+vector<passivedouble> CDriver::GetForces(unsigned short iMarker) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned long iVertex;
+  vector<passivedouble> forces(nVertex*3,0.0);
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+      forces[3*iVertex]   = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,0));
+      forces[3*iVertex + 1] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,1));
+      if (nDim == 3) {
+        forces[3*iVertex + 2] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,2));
+      }
+  }
+
+  return forces;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
