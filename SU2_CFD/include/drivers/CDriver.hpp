@@ -712,6 +712,13 @@ public:
   vector<passivedouble> GetResiduals();
 
   /*!
+   * \brief Get aerodynamic forces at the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Forces (vector) at the marker.
+   */
+  vector<passivedouble> GetForces(unsigned short iMarker);
+
+  /*!
    * \brief Set new angle of attack based on user-input.
    * \param[in] alpha - user-defined angle of attack in [deg].
    */

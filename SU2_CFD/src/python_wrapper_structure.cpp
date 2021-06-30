@@ -802,6 +802,26 @@ vector<passivedouble> CDriver::GetResiduals() {
   return resids;
 }
 
+vector<passivedouble> CDriver::GetForces(unsigned short iMarker) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long nVertex = geometry->GetnVertex(iMarker);
+  unsigned long iVertex;
+  vector<passivedouble> forces(nVertex*3,0.0);
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+      forces[3*iVertex]   = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,0));
+      forces[3*iVertex + 1] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,1));
+      if (nDim == 3) {
+        forces[3*iVertex + 2] = SU2_TYPE::GetValue(solver->GetVertexTractions(iMarker,iVertex,2));
+      }
+  }
+
+  return forces;
+}
+
 void CDriver::SetAoA(passivedouble alpha) {
 
     CConfig *config = config_container[ZONE_0];
