@@ -4224,7 +4224,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   if (!u_basis_generator) {
     
     /*--- Define SVD basis generator ---*/
-    int timesteps = (int)(nTimeIter - TimeIter);
+    auto timesteps = static_cast<int>(nTimeIter - TimeIter);
     CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
     
@@ -4264,9 +4264,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
 
   if (unsteady && (TimeIter % save_freq == 0)) {
     // give solution and time steps to libROM:
-    double dt = config->GetDelta_UnstTime();
-    double t =  config->GetCurrent_UnstTime();
-    u_basis_generator->takeSample(const_cast<double*>(base_nodes->GetSolution().data()), t, dt);
+    su2double dt = config->GetDelta_UnstTime();
+    su2double t =  config->GetCurrent_UnstTime();
+    u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
   }
    
   /*--- End collection of data and save POD ---*/
@@ -4275,9 +4275,9 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   
     if (!unsteady) {
        // dt is different for each node, so just use a placeholder dt
-       double dt = base_nodes->GetDelta_Time(0);
-       double t = dt*TimeIter;
-       u_basis_generator->takeSample(const_cast<double*>(base_nodes->GetSolution().data()), t, dt);
+       su2double dt = base_nodes->GetDelta_Time(0);
+       su2double t = dt*TimeIter;
+       u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
     }
     
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
