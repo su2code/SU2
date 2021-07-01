@@ -226,6 +226,8 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   UsedTime = StopTime - StartTime;
 
+  unsigned long Iter= config[val_iZone]->GetInnerIter();
+
   if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()) {
     output->SetHistory_Output(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
@@ -239,8 +241,11 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     if (val_iZone == config[ZONE_0]->GetnZone()-1)
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetInnerIter());
 
+    if (config[ZONE_0]->GetMultizone_Problem())
+      Iter = config[ZONE_0]->GetOuterIter();
+
     /*--- Turbomachinery Performance Screen summary output---*/
-    if (val_iZone == config[ZONE_0]->GetnZone()-1 && config[ZONE_0]->GetOuterIter()%100 == 0){
+    if (val_iZone == config[ZONE_0]->GetnZone()-1 && Iter%100 == 0){
       output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter(), val_iZone);
@@ -278,30 +283,6 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
   if (config_container[ZONE_0]->GetMultizone_Problem())
     ExtIter = config_container[ZONE_0]->GetOuterIter();
 
-  // /*--- Synchronization point after a single solver iteration. Compute the
-  //  wall clock time required. ---*/
-
-  // StopTime = SU2_MPI::Wtime();
-
-  // IterCount++;
-  // UsedTime = (StopTime - StartTime);
-
-
-  // /*--- Check if there is any change in the runtime parameters ---*/
-  // CConfig *runtime = nullptr;
-  // strcpy(runtime_file_name, "runtime.dat");
-  // runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-  // runtime->SetInnerIter(ExtIter);
-  // delete runtime;
-
-  /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-  // for (iZone = 0; iZone < nZone; iZone++) {
-  //   for (iInst = 0; iInst < nInst[iZone]; iInst++)
-  //     output_legacy->SetConvHistory_Body(&ConvHist_file[iZone][iInst], geometry_container, solver_container,
-  //         config_container, integration_container, false, UsedTime, iZone, iInst);
-  // }
-
   for(iZone = 0; iZone < nZone; iZone++) {
   /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
     if (config_container[iZone]->GetGrid_Movement() && config_container[iZone]->GetRampRotatingFrame()) {
@@ -328,11 +309,6 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
           geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
 
         }
-
-        // for (iZone = 1; iZone < nZone; iZone++) {
-        //   interface_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][INST_0][MESH_0],geometry_container[ZONE_0][INST_0][MESH_0], iZone);
-        // }
-
       }
     }
   }

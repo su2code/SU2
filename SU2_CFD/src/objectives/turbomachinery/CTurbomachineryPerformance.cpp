@@ -199,7 +199,7 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
         const int thread = omp_get_thread_num();
 
       /* Switch between the Turbomachinery Performance Kind */
-      // TODO: THis needs to be fixed
+      // TODO: This needs to be fixed
       switch (config.GetKind_TurboPerf(iBladeRow)) {
         
         case TURBINE:
@@ -257,18 +257,15 @@ CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(CFluidModel& fl
 
 void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config) {
 
-switch (config->GetKind_TurboPerf(ZONE_0))
-{
-case TURBINE:
-  /* code */
-  ComputeTurbineStagePerformance(InState, OutState);
-  break;
+  switch (config->GetKind_TurboPerf(ZONE_0)) {
+  case TURBINE:
+    /* code */
+    ComputeTurbineStagePerformance(InState, OutState);
+    break;
 
-default:
-  break;
-}
-
-// return(dummy);
+  default:
+    break;
+  }
 }
 
 void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState) {
@@ -281,20 +278,41 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachi
   su2double IseTotalEnthalpyOut = enthalpyOutIs + 0.5*OutState.GetVelocityValue()*OutState.GetVelocityValue();
 
   /*--- Compute performance ---*/
-  EntropyGen = (OutState.GetEntropy() - InState.GetEntropy()); // / abs(InletState.GetEntropy() + 1);
+  EntropyGen = (OutState.GetEntropy() - InState.GetEntropy())/InState.GetEntropy() * 100;
   EulerianWork = InState.GetTotalEnthalpy() - OutState.GetTotalEnthalpy();
   TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
                       (InState.GetTotalRelPressure() - OutState.GetPressure());
   KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
-  // su2double IseEnthalpyOut = fluidModel.GetStaticEnergy() + OutState.GetPressure()/fluidModel.GetDensity();
 
-  // EntropyGen = (OutState.GetEntropy() - InState.GetEntropy())/(InState.GetEntropy())*100;
-  // EulerianWork = InState.GetTotalEnthalpy() - OutState.GetTotalEnthalpy();
   TotalStaticEfficiency = EulerianWork/(InState.GetEnthalpy()-enthalpyOutIs) * 100;
   TotalTotalEfficiency =  EulerianWork/(InState.GetEnthalpy()-IseTotalEnthalpyOut) * 100;
   PressureRatio = InState.GetTotalPressure()/OutState.GetTotalPressure();
-  // KineticEnergyLoss = 2*(OutState.GetEnthalpy() - IseEnthalpyOut)/relVelOutIs; 
 }
 
+void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState) {
+
+  /*--- Compute isentropic Outflow quantities ---*/
+  fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
+  auto enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
+  auto tangVel = 0.0; //primitives.GetOutletPrimitiveState().GetTangVelocity();
+  auto relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+  su2double IseTotalEnthalpyOut = enthalpyOutIs + 0.5*OutState.GetVelocityValue()*OutState.GetVelocityValue();
+
+  /*--- Compute performance ---*/
+  EntropyGen = (OutState.GetEntropy() - InState.GetEntropy()) / InState.GetEntropy() * 100;
+  EulerianWork = OutState.GetTotalEnthalpy() - InState.GetTotalEnthalpy();
+  TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
+                      (InState.GetTotalRelPressure() - OutState.GetPressure());
+                      
+  KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
+
+  /*--- Efficiency Computation ---*/
+  TotalStaticEfficiency = EulerianWork/(InState.GetEnthalpy()-enthalpyOutIs) * 100;
+  TotalTotalEfficiency =  EulerianWork/(InState.GetEnthalpy()-IseTotalEnthalpyOut) * 100;
+
+  /*--- Pressure Ratio ---*/
+  PressureRatio = OutState.GetTotalPressure()/InState.GetTotalPressure();
+
+}
 
 CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}

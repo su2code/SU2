@@ -218,36 +218,18 @@ class CTurbomachineryStagePerformance {
       su2double TotalStaticEfficiency, TotalTotalEfficiency, KineticEnergyLoss, TotalPressureLoss, EntropyGen, PressureRatio, EulerianWork;
       CFluidModel &fluidModel;
    public:
-      su2double dummy=0.0;
       CTurbomachineryStagePerformance(CFluidModel& fluid);
       ~CTurbomachineryStagePerformance();
       virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config);
       virtual void ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
+      virtual void ComputeCompressorStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
       su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
       su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
       su2double GetEulerianWork() const { return EulerianWork; }
       su2double GetEntropyGen() const { return EntropyGen; }
       su2double GetPressureRatio() const { return PressureRatio; }
       su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
-
-
 };
-
-// class CTurbineStagePerformance : public CTurbomachineryStagePerformance {
-
-//    public:
-//     void ComputePerformanceStage(CTurbomachineryState& Instate, CTurbomachineryState& Outstate);
-
-// };
-
-// class CCompressorStagePerformance : CTurbomachineryStagePerformance {
-
-//    public:
-//       CCompressorStagePerformance();
-//       ~CCompressorStagePerformance();
-//       void ComputePerformance(CFluidModel* fluidModel, su2double tangVel) override;
-
-// };
 
 class CTurbomachineryPerformance {
   private:

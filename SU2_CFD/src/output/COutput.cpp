@@ -2176,8 +2176,6 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
   curInnerIter = InnerIter;
   stringstream TurboInOutTable, TurboPerfTable;
   
-
-  // TODO: Summary Print is hard coded, CONFIG file option to be added
   if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
     auto BladePerformance = TurboPerf->GetBladesPerformances();
     auto nSpan = config->GetnSpanWiseSections();
@@ -2193,8 +2191,7 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
       TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       TurboInOut.PrintHeader();
   
-      for (unsigned short iZone = 0; iZone <= val_iZone; iZone++)
-      {
+      for (unsigned short iZone = 0; iZone <= val_iZone; iZone++) {
         TurboInOut<<" BLADE ROW INDEX "<<iZone <<"";
         TurboInOut.PrintFooter();
         // TODO: Blade Wise Printing
@@ -2207,23 +2204,6 @@ void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerforma
         TurboInOut.PrintFooter();
       }
       cout<<TurboInOutTable.str();
-    
-    // if (config->GetMultizone_Problem()){
-    //   /*-- Table for Turbomachinery Inlet and Outlet Values --*/
-    //   PrintingToolbox::CTablePrinter TurboPerformance(&TurboPerfTable);
-    //   TurboPerfTable<<"-- Turbomachinery Performace Summary:"<<endl;
-    //   TurboPerformance.AddColumn("Property", 38);
-    //   TurboPerformance.AddColumn("Values", 38);
-    //   TurboPerformance.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
-    //   TurboPerformance.PrintHeader();
-    //   TurboPerformance << "STAGE INDEX "<< 1;
-    //   TurboPerformance.PrintFooter();
-    //   TurboPerformance << "EntropyGen " << BladePerformance.at(val_iZone).at(nSpan)->GetEntropyGen();
-    //   TurboPerformance << "KineEnergyLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetKineticEnergyLoss();
-    //   TurboPerformance << "TotPressLoss " << BladePerformance.at(val_iZone).at(nSpan)->GetTotalPressureLoss();
-    //   TurboPerformance.PrintFooter();
-    //   cout<<TurboPerfTable.str();
-    // }
     }
   }
 }
@@ -2242,11 +2222,11 @@ void COutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformanc
 
   TurboMZPerf<<"-- Turbomachinery Stage Performance --"<<endl;
   TurboInOut.AddColumn("Index", 10);
-  TurboInOut.AddColumn("EGLC", 10);
-  TurboInOut.AddColumn("KELC", 10);
-  TurboInOut.AddColumn("TPLC", 10);
-  TurboInOut.AddColumn("Effi(ts)", 10);
-  TurboInOut.AddColumn("Effi(tt)", 10);
+  TurboInOut.AddColumn("EGLC (%)", 10);
+  TurboInOut.AddColumn("KELC (%)", 10);
+  TurboInOut.AddColumn("E. Work (dh)", 10);
+  TurboInOut.AddColumn("Effi%(ts)", 10);
+  TurboInOut.AddColumn("Effi%(tt)", 10);
   TurboInOut.AddColumn("PR", 10);
   TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
   TurboInOut.PrintHeader();
