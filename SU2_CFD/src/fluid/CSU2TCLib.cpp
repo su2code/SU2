@@ -58,13 +58,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
   if (gas_model =="ARGON"){
     if (nSpecies != 1) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf <<endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -111,13 +111,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -257,13 +257,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
-      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      cout << "CONFIG ERROR: Initial gas mass fractions do not sum to 1!" << endl;
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -1240,8 +1240,8 @@ void CSU2TCLib::ViscosityGY(){
 
   su2double Mi, Mj, gam_i, gam_j, denom, Omega_ij, d2_ij;
 
-  su2double pi   = PI_NUMBER;
-  su2double Na   = AVOGAD_CONSTANT;
+  su2double pi = PI_NUMBER;
+  su2double Na = AVOGAD_CONSTANT;
   Mu = 0.0;
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
