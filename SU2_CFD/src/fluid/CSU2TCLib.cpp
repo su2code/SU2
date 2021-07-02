@@ -692,11 +692,11 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(){
 
 vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
-  su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
+  su2double Ev, Ee, Ef, num;
 
-  rhoEmix = 0.0;
-  rhoEve  = 0.0;
-  denom   = 0.0;
+  su2double rhoEmix = 0.0;
+  su2double rhoEve  = 0.0;
+  su2double denom   = 0.0;
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
 
@@ -785,14 +785,14 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
-  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
+  su2double Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
   //       temperature.  This relaxes some of the stiffness in the chemistry
   //       source term.
-  T_min   = 800.0;
-  epsilon = 80;
+  su2double T_min   = 800.0;
+  su2double epsilon = 80;
   /*--- Define preferential dissociation coefficient ---*/
   //alpha = 0.3;
 
@@ -863,14 +863,13 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
 
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
-  unsigned short ii, iIndex, tbl_offset, pwr;
-  su2double N, tmp1, tmp2;
+  unsigned short ii;
 
   /*--- Acquire database constants from CConfig ---*/
   GetChemistryEquilConstants(val_Reaction);
 
   /*--- Calculate mixture number density ---*/
-  N = 0.0;
+  su2double N = 0.0;
   for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++) {
     N += rhos[iSpecies]/MolarMass[iSpecies]*AVOGAD_CONSTANT;
   }
@@ -879,11 +878,11 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
   N = N*(1E-6);
 
   /*--- Determine table index based on mixture N ---*/
-  tbl_offset = 14;
-  pwr        = floor(log10(N));
+  unsigned short tbl_offset = 14;
+  unsigned short pwr        = floor(log10(N));
 
   /*--- Bound the interpolation to table limit values ---*/
-  iIndex = int(pwr) - tbl_offset;
+  unsigned short iIndex = int(pwr) - tbl_offset;
   if (iIndex <= 0) {
     for (ii = 0; ii < 5; ii++)
       A[ii] = RxnConstantTable(0,ii);
@@ -895,8 +894,8 @@ void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
   }
 
   /*--- Calculate interpolation denominator terms avoiding pow() ---*/
-  tmp1 = 1.0;
-  tmp2 = 1.0;
+  su2double tmp1 = 1.0;
+  su2double tmp2 = 1.0;
   for (ii = 0; ii < pwr; ii++) {
     tmp1 *= 10.0;
     tmp2 *= 10.0;
@@ -1036,13 +1035,13 @@ vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
 void CSU2TCLib::DiffusionCoeffWBE(){
 
-  su2double conc, Mi, Mj, M, Omega_ij, denom;
+  su2double Mi, Mj, Omega_ij, denom;
   su2activematrix Dij;
 
   Dij.resize(nSpecies, nSpecies) = su2double(0.0);
 
   /*--- Calculate species mole fraction ---*/
-  conc = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
     conc               += MolarFracWBE[iSpecies];
@@ -1051,7 +1050,7 @@ void CSU2TCLib::DiffusionCoeffWBE(){
     MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
   /*--- Calculate mixture molar mass (kg/mol) ---*/
   // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
-  M = 0.0;
+  su2double M = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
   M = M*1E-3;
@@ -1091,10 +1090,10 @@ void CSU2TCLib::DiffusionCoeffWBE(){
 
 void CSU2TCLib::ViscosityWBE(){
 
-  su2double tmp1, tmp2, conc;
+  su2double tmp1, tmp2;
 
   /*--- Calculate species mole fraction ---*/
-  conc = 0.0;
+  su2double conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
     conc               += MolarFracWBE[iSpecies];
@@ -1152,13 +1151,13 @@ void CSU2TCLib::ThermalConductivitiesWBE(){
 
 void CSU2TCLib::DiffusionCoeffGY(){
 
-  su2double Mi, Mj, pi, kb, gam_i, gam_j, gam_t, denom, d1_ij, D_ij, Omega_ij;
+  su2double Mi, Mj, gam_i, gam_j, denom, d1_ij, D_ij, Omega_ij;
 
-  pi   = PI_NUMBER;
-  kb   = BOLTZMANN_CONSTANT;
+  su2double pi   = PI_NUMBER;
+  su2double kb   = BOLTZMANN_CONSTANT;
 
   /*--- Calculate mixture gas constant ---*/
-  gam_t = 0.0;
+  su2double gam_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
@@ -1239,10 +1238,10 @@ void CSU2TCLib::DiffusionCoeffGY(){
 
 void CSU2TCLib::ViscosityGY(){
 
-  su2double Mi, Mj, pi, Na, gam_i, gam_j, denom, Omega_ij, d2_ij;
+  su2double Mi, Mj, gam_i, gam_j, denom, Omega_ij, d2_ij;
 
-  pi   = PI_NUMBER;
-  Na   = AVOGAD_CONSTANT;
+  su2double pi   = PI_NUMBER;
+  su2double Na   = AVOGAD_CONSTANT;
   Mu = 0.0;
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -1301,11 +1300,11 @@ void CSU2TCLib::ViscosityGY(){
 
 void CSU2TCLib::ThermalConductivitiesGY(){
 
-  su2double Cvve, Mi, Mj, mi, mj, pi, R, Na, kb, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij, rhoCvve;
+  su2double Mi, Mj, mi, mj, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij;
 
-  pi   = PI_NUMBER;
-  Na   = AVOGAD_CONSTANT;
-  kb   = BOLTZMANN_CONSTANT;
+  su2double pi   = PI_NUMBER;
+  su2double Na   = AVOGAD_CONSTANT;
+  su2double kb   = BOLTZMANN_CONSTANT;
 
   if (ionization) {
     SU2_MPI::Error("NEEDS REVISION w/ IONIZATION",CURRENT_FUNCTION);
@@ -1313,18 +1312,18 @@ void CSU2TCLib::ThermalConductivitiesGY(){
 
   /*--- Mixture vibrational-electronic specific heat ---*/
   Cvves = ComputeSpeciesCvVibEle();
-  rhoCvve = 0.0;
+  su2double rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
-  Cvve = rhoCvve/Density;
+  su2double Cvve = rhoCvve/Density;
 
   /*--- Calculate mixture gas constant ---*/
-  R = 0.0;
+  su2double R = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     R += Ru * rhos[iSpecies]/Density;
   }
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  ThermalCond_tr    = 0.0;
+  ThermalCond_tr = 0.0;
   ThermalCond_ve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     /*--- Calculate molar concentration ---*/
