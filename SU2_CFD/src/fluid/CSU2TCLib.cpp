@@ -58,13 +58,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
   if (gas_model =="ARGON"){
     if (nSpecies != 1) {
-      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -111,13 +111,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
   } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
-      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition", CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -257,13 +257,13 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
-      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition");
+      SU2_MPI::Error("CONFIG ERROR: nSpecies mismatch between gas model & gas composition",CURRENT_FUNCTION);
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
-      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf);
+      SU2_MPI::Error("CONFIG ERROR: Intial gas mass fractions do not sum to 1!", CURRENT_FUNCTION);
     }
 
     /*--- Define parameters of the gas model ---*/
@@ -924,6 +924,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
   MolarFrac.resize(nSpecies,0.0);
   eve_eq.resize(nSpecies,0.0);
   eve.resize(nSpecies,0.0);
+  mu.resize(nSpecies,nSpecies)=su2double(0.0);
 
   su2double omegaVT = 0.0;
   su2double omegaCV = 0.0;
@@ -960,7 +961,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauMW = num / denom;
 
     /*--- Park limiting cross section ---*/
-    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*mu(iSpecies,jSpecies)));
+    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*mu(iSpecies,0)));
     sig_s = 3E-21*(2.5E9)/(T*T);
 
     tauP = 1/(sig_s*Cs*N);

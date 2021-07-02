@@ -836,7 +836,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
   /*--- Preprocess viscous axisymm variables (if necessary) ---*/
-  if (axisymmetric && viscous) {
+  if (axisymm && viscous) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -930,8 +930,9 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       } else
         eVib_local++;
     }
+
     /*--- Compute axisymmetric source terms (if needed) ---*/
-    if (axisymmetric) {
+    if (axisymm) {
 
       /*--- If necessary, set variables needed for viscous computation ---*/
       if (viscous) {
@@ -984,6 +985,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         eAxi_local++;
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Checking for NaN ---*/
   unsigned long eAxi_global = eAxi_local;
