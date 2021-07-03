@@ -2379,6 +2379,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
+  const su2double minYPlus = config->GetwallModelMinYPlus();
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2511,18 +2512,38 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       TauNormal = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
+      //TauNormal = GeometryToolbox::DotProduct(int(MAXNDIM), TauElem, UnitNormal);
+
       WallShearStress[iMarker][iVertex] = 0.0;
+      //su2double TauTangent[MAXNDIM] = {0.0};
+      //GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
+      //WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
+      /*--- for wall functions, the wall stresses need to be scald by the wallfunction stress Tau_Wall---*/
+      //if (wallfunctions && YPlus[iMarker][iVertex] > minYPlus){
+      //  su2double Tau_Wall = nodes->GetTauWall(iPoint); 
+      //  for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauTangent[iDim];
+      //  for (iDim = 0; iDim < nDim; iDim++) TauElem[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauElem[iDim];
+      //  WallShearStress[iMarker][iVertex] = Tau_Wall;
+      //}
+
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
         /* --- Note that in the wall model, we switch off the computation when the computed y+ < 5    --- */
-        /* --- We put YPlus to 1.0 so we have to compute skinfriction and the actual y+ in that case as well --- */
-        if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < 5.0))
+        /* --- We have to compute skinfriction in that case as well (we do not recompute y+)          --- */
+        if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < minYPlus)) 
           CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
+          //CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
         WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
+      //nijso: TODO FIXME: why comment wallshearstress here?
       WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
+
+      // nijso: FIXME check if this gives the same solution
+      //su2double WallDist[MAXNDIM] = {0.0};
+      //GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
+      //WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
       for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
       WallDistMod = 0.0;
@@ -2535,7 +2556,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
       /* --- Note that we do not recompute y+ when y+<5 because y+ can become > 5 again --- */
+      //nijso TODO FIXME
       if (!wallfunctions)
+      // nijso: note that we have updated wallshearstress so the computation of y+ is correct in case of wall functions
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
