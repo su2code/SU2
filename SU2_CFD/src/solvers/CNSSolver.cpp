@@ -895,12 +895,13 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
         if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
           if (abs(denum)>EPS) 
-            T_Wall = T_Normal / denum; 
+        // nijso TODO FIXME 
+        //    T_Wall = T_Normal / denum; 
         }
 
         /*--- update of wall density ---*/
-
-        Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+        // nijso TODO FIXME
+        //Density_Wall = P_Wall/(Gas_Constant*T_Wall);
 
         /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
@@ -936,7 +937,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         counter++;
 
- 
         if (counter > max_iter) {
           notConvergedCounter++;
           // use some safe values for convergence
@@ -950,6 +950,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       /*--- Calculate an updated value for the wall shear stress
         using the y+ value, the definition of y+, and the definition of
         the friction velocity. ---*/
+
       YPlus[iMarker][iVertex] = Y_Plus;
       EddyViscWall[iMarker][iVertex] = Eddy_Visc_Wall;
       UTau[iMarker][iVertex] = U_Tau;
@@ -958,8 +959,9 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
       // done in CFVMFlowSolverBase.inl
-      //for (auto iDim = 0u; iDim < nDim; iDim++)
-      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
+      // nijso TODO FIXME
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 

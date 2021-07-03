@@ -1577,14 +1577,13 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
                                   const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double minYPlus = config->GetwallModelMinYPlus();
 
   /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
   const unsigned short max_iter = config->GetwallModelMaxIter();
 
   /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
   const su2double tol = 1e-12;
-  //su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
+
 
   /*--- Typical constants from boundary layer theory ---*/
 
@@ -1607,7 +1606,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
 
-      if (Y_Plus < minYPlus) continue;
+      if (Y_Plus < config->GetwallModelMinYPlus()) continue;
 
       su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
       su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);

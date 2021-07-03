@@ -464,7 +464,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
   /*--- von Karman constant from boundary layer theory ---*/
   const su2double kappa = config->GetwallModelKappa();
-  //const su2double minYPlus = config->GetwallModelMinYPlus();
+
   /*--- relaxation factor for k-omega values ---*/
   const su2double relax = config->GetwallModelRelFac();
 

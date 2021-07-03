@@ -821,7 +821,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
           U_Tau = 1.0;
           break;
         }
-        
       }
 
       /*--- Calculate an updated value for the wall shear stress
@@ -837,8 +836,8 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       // nijso: skinfriction for wall functions gives opposite sign?
 
       // done in CFVMFlowSolverBase.inl
-      //for (auto iDim = 0u; iDim < nDim; iDim++)
-      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
