@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,8 @@ protected:
   Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
   vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
+
+  su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 
   /*--- Sliding meshes variables. ---*/
 
@@ -248,6 +250,25 @@ public:
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
                           CConfig *config) final;
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void SetFreeStream_Solution(const CConfig *config) final {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+      nodes->SetSolution(iPoint, Solution_Inf);
+    }
+    END_SU2_OMP_FOR
+  }
+
+  /*!
+   * \brief Impose fixed values to turbulence quantities.
+   * \details Turbulence quantities are set to far-field values in an upstream half-plane
+   * in order to keep them from decaying.
+   */
+  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Prepare an implicit iteration.

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 
 /*--- Explicit instantiation of the parent class of CNEMOEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>;
+template class CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
 CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
                CNEMOEulerSolver(geometry, config, iMesh, true) {
@@ -133,6 +133,8 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   /*--- Get indices of species & mixture density ---*/
   RHOS_INDEX = nodes->GetRhosIndex();
@@ -151,29 +153,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   const auto& primitives = nodes->GetPrimitive_Aux();
 
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
-                             *config, primitives, 0, nPrimVarGrad, gradient);
-}
-
-void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
-
-  /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-
-  PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-
-  const auto& primitives = nodes->GetPrimitive();
-
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
-                               weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
 unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {
@@ -989,9 +969,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double dTn, dTven;
   su2double rhoCvtr, rhoCvve;
 
-  su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
+  su2double TauTangent[MAXNDIM] = {0.0};
   su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  su2double TauNormal;
 
   bool ionization = config->GetIonization();
 
@@ -1115,14 +1094,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         Res_Visc[iVar] = 0.0;
 
       CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
 
-      /*--- Compute wall shear stress (using the stress tensor) ---*/
-      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)

@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,18 +45,41 @@ protected:
 
   VectorType VonMises_Stress;       /*!< \brief Von Mises stress. */
 
-  MatrixType Solution_Vel;          /*!< \brief Velocity of the nodes. */
-  MatrixType Solution_Vel_time_n;   /*!< \brief Velocity of the nodes at time n. */
-
-  MatrixType Solution_Accel;        /*!< \brief Acceleration of the nodes. */
-  MatrixType Solution_Accel_time_n; /*!< \brief Acceleration of the nodes at time n. */
-
   MatrixType Solution_Pred;         /*!< \brief Predictor of the solution for FSI purposes */
   MatrixType Solution_Pred_Old;     /*!< \brief Predictor of the solution at time n for FSI purposes */
+  MatrixType Solution_Vel_Pred;     /*!< \brief Predictor of the velocity solution for FSI purposes */
 
   MatrixType Reference_Geometry;    /*!< \brief Reference solution for optimization problems */
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
+
+  /*!
+   * \brief Wrappers to solution to access velocity and acceleration by name.
+   */
+  FORCEINLINE su2double& Solution_Vel(unsigned long iPoint, unsigned long iVar) {
+    return Solution(iPoint,iVar+nVar);
+  }
+  FORCEINLINE const su2double& Solution_Vel(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint,iVar+nVar);
+  }
+  FORCEINLINE su2double& Solution_Accel(unsigned long iPoint, unsigned long iVar) {
+    return Solution(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE const su2double& Solution_Accel(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE su2double& Solution_Vel_time_n(unsigned long iPoint, unsigned long iVar) {
+    return Solution_time_n(iPoint,iVar+nVar);
+  }
+  FORCEINLINE const su2double& Solution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const {
+    return Solution_time_n(iPoint,iVar+nVar);
+  }
+  FORCEINLINE su2double& Solution_Accel_time_n(unsigned long iPoint, unsigned long iVar) {
+    return Solution_time_n(iPoint,iVar+2*nVar);
+  }
+  FORCEINLINE const su2double& Solution_Accel_time_n(unsigned long iPoint, unsigned long iVar) const {
+    return Solution_time_n(iPoint,iVar+2*nVar);
+  }
 
   /*!
    * \brief Constructor of the class.
@@ -134,12 +157,6 @@ public:
 
   /*!
    * \brief Set the value of the velocity (Structural Analysis) at time n.
-   * \param[in] val_solution - Solution of the problem (acceleration).
-   */
-  void SetSolution_Vel_time_n() final;
-
-  /*!
-   * \brief Set the value of the velocity (Structural Analysis) at time n.
    * \param[in] val_solution_vel_time_n - Pointer to the residual vector.
    */
   inline void SetSolution_Vel_time_n(unsigned long iPoint, const su2double *val_solution_vel_time_n) final {
@@ -166,7 +183,7 @@ public:
    * \brief Get the solution of the problem.
    * \return Pointer to the solution vector.
    */
-  inline su2double *GetSolution_Vel(unsigned long iPoint) final { return Solution_Vel[iPoint]; }
+  inline su2double *GetSolution_Vel(unsigned long iPoint) final { return &Solution_Vel(iPoint,0); }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -181,7 +198,7 @@ public:
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Vel_time_n(unsigned long iPoint) final { return Solution_Vel_time_n[iPoint]; }
+  inline su2double *GetSolution_Vel_time_n(unsigned long iPoint) final { return &Solution_Vel_time_n(iPoint,0); }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -210,11 +227,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the acceleration (Structural Analysis) at time n.
-   */
-  void SetSolution_Accel_time_n() final;
-
-  /*!
    * \overload
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution_accel_time_n - Value of the old solution for the index <i>iVar</i>.
@@ -234,7 +246,7 @@ public:
    * \brief Get the solution of the problem.
    * \return Pointer to the solution vector.
    */
-  inline su2double *GetSolution_Accel(unsigned long iPoint) final { return Solution_Accel[iPoint]; }
+  inline su2double *GetSolution_Accel(unsigned long iPoint) final { return &Solution_Accel(iPoint,0); }
 
   /*!
    * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
@@ -249,7 +261,14 @@ public:
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return Solution_Accel_time_n[iPoint]; }
+  inline su2double *GetSolution_Accel_time_n(unsigned long iPoint) final { return &Solution_Accel_time_n(iPoint,0); }
+
+  /*!
+   * \brief Set the value of the solution velocity predictor.
+   */
+  inline void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_pred) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = val_solution_pred[iVar];
+  }
 
   /*!
    * \brief Set the value of the old solution.
@@ -258,6 +277,12 @@ public:
   inline void SetSolution_Pred(unsigned long iPoint, const su2double *val_solution_pred) final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Pred(iPoint,iVar) = val_solution_pred[iVar];
   }
+
+  /*!
+   * \brief Get the velocity solution.
+   * \return Pointer to velocity solution vector.
+   */
+  inline const su2double *GetSolution_Vel_Pred(unsigned long iPoint) const final { return Solution_Vel_Pred[iPoint]; }
 
   /*!
    * \brief Get the solution at time n.
@@ -320,105 +345,5 @@ public:
    * \brief Get the pointer to the reference geometry
    */
   inline const su2double* GetReference_Geometry(unsigned long iPoint) const final { return Reference_Geometry[iPoint]; }
-
-  /*!
-   * \brief Register the variables in the solution time_n array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void Register_femSolution_time_n() final;
-
-  /*!
-   * \brief Register the variables in the velocity array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void RegisterSolution_Vel(bool input) final;
-
-  /*!
-   * \brief Register the variables in the velocity time_n array as input/output variable.
-   */
-  void RegisterSolution_Vel_time_n() final;
-
-  /*!
-   * \brief Register the variables in the acceleration array as input/output variable.
-   * \param[in] input - input or output variables.
-   */
-  void RegisterSolution_Accel(bool input) final;
-
-  /*!
-   * \brief Register the variables in the acceleration time_n array as input/output variable.
-   */
-  void RegisterSolution_Accel_time_n() final;
-
-  /*!
-   * \brief Set the velocity adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_Vel(unsigned long iPoint, const su2double *adj_sol) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_Vel(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Get the velocity adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution_Vel(unsigned long iPoint, su2double *adj_sol) const final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the velocity adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  void SetAdjointSolution_Vel_time_n(unsigned long iPoint, const su2double *adj_sol) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_Vel_time_n(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Get the velocity adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution_Vel_time_n(unsigned long iPoint, su2double *adj_sol) const final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel_time_n(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the acceleration adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void SetAdjointSolution_Accel(unsigned long iPoint, const su2double *adj_sol) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_Accel(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Get the acceleration adjoint values of the solution.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution_Accel(unsigned long iPoint, su2double *adj_sol) const final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel(iPoint,iVar));
-  }
-
-  /*!
-   * \brief Set the acceleration adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  void SetAdjointSolution_Accel_time_n(unsigned long iPoint, const su2double *adj_sol) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      SU2_TYPE::SetDerivative(Solution_Accel_time_n(iPoint,iVar), SU2_TYPE::GetValue(adj_sol[iVar]));
-  }
-
-  /*!
-   * \brief Get the acceleration adjoint values of the solution at time n.
-   * \param[in] adj_sol - The adjoint values of the solution.
-   */
-  inline void GetAdjointSolution_Accel_time_n(unsigned long iPoint, su2double *adj_sol) const final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n(iPoint,iVar));
-  }
 
 };

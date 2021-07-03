@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -88,7 +88,7 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
   v_y     =      4.0;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
@@ -107,11 +107,11 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim,
     SU2_MPI::Error("Standard air or ideal gas must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Constant viscosity must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Unit Quad case",
                    CURRENT_FUNCTION);
 }

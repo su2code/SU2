@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  
+
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
   rans = (config->GetKind_Turb_Model() != NONE);
@@ -80,7 +80,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
     residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
-    
+
     /*--- Inviscid component of the source term. ---*/
 
     if (implicit) {
@@ -109,7 +109,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
           jacobian[iVar][jVar] *= yinv*Volume;
 
     }
-    
+
     /*--- Add the viscous terms if necessary. ---*/
 
     if (viscous) ResidualDiffusion();
@@ -134,22 +134,22 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 }
 
 void CSourceAxisymmetric_Flow::ResidualDiffusion(){
-  
+
   if (!rans){ turb_ke_i = 0.0; }
-  
+
   su2double laminar_viscosity_i    = V_i[nDim+5];
   su2double eddy_viscosity_i       = V_i[nDim+6];
   su2double thermal_conductivity_i = V_i[nDim+7];
   su2double heat_capacity_cp_i     = V_i[nDim+8];
-  
+
   su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
   su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
-  
+
   su2double u = U_i[1]/U_i[0];
   su2double v = U_i[2]/U_i[0];
-  
+
   residual[0] -= 0.0;
-  residual[1] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]) 
+  residual[1] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0])
                          -TWO3*AuxVar_Grad_i[0][0]);
   residual[2] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
                          -TWO3*AuxVar_Grad_i[0][1]);
@@ -159,7 +159,7 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
                                -total_conductivity_i*PrimVar_Grad_i[0][1])
                          -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
 }
-  
+
 
 CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
   unsigned short iVar, jVar;
@@ -167,15 +167,15 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
   if (Coord_i[1] > EPS) {
 
     yinv = 1.0/Coord_i[1];
-    
+
     su2double Density_i = U_i[0];
     su2double Velocity1_i = U_i[1]/U_i[0];
     su2double Velocity2_i = U_i[2]/U_i[0];
     su2double Energy_i = U_i[3]/U_i[0];
-    
+
     su2double Pressure_i = V_j[3];
     su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
-    
+
     /*--- Inviscid component of the source term. ---*/
 
     residual[0] = yinv*Volume*U_i[2];
@@ -184,10 +184,10 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
     residual[3] = yinv*Volume*U_i[2]*Enthalpy_i;
 
     if (implicit) {
-      
+
       su2double dPdrho_e_i = S_i[0];
       su2double dPde_rho_i = S_i[1];
-    
+
       jacobian[0][0] = 0.0;
       jacobian[0][1] = 0.0;
       jacobian[0][2] = 1.0;
@@ -219,7 +219,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
     /*--- Add the viscous terms if necessary. ---*/
 
     if (viscous) ResidualDiffusion();
-    
+
   }
 
   else {
@@ -405,7 +405,7 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
   su2double Force_Ref    = config->GetForce_Ref();
-  bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
+  bool variable_density  = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
 
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
@@ -627,39 +627,62 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
 
   u_gust = WindGust_i[0];
   v_gust = WindGust_i[1];
+// w_gust = WindGust_i[2];
 
   if (GustDir == X_DIR) {
     du_gust_dx = WindGustDer_i[0];
     du_gust_dy = WindGustDer_i[1];
+    //du_gust_dz = WindGustDer_i[2];
     du_gust_dt = WindGustDer_i[2];
+
     dv_gust_dx = 0.0;
     dv_gust_dy = 0.0;
+    //dv_gust_dz = 0.0;
     dv_gust_dt = 0.0;
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
   } else {
     du_gust_dx = 0.0;
     du_gust_dy = 0.0;
+    //du_gust_dz = 0.0;
     du_gust_dt = 0.0;
     dv_gust_dx = WindGustDer_i[0];
     dv_gust_dy = WindGustDer_i[1];
+    //dv_gust_dz = WindGustDer_i[2]
     dv_gust_dt = WindGustDer_i[2];
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
+    //
 
   }
 
   /*--- Primitive variables at point i ---*/
   u = V_i[1];
   v = V_i[2];
+  // w = V_i[3]
+
   p = V_i[nDim+1];
   rho = V_i[nDim+2];
 
   /*--- Source terms ---*/
   smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
   smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
+  //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
+  
   se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
+  //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
 
   if (nDim == 2) {
     residual[0] = 0.0;
     residual[1] = smx*Volume;
     residual[2] = smy*Volume;
+    //residual[3] = smz*Volume;
     residual[3] = se*Volume;
   } else {
     SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
@@ -713,7 +736,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
-    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity gradient is added. ---*/
+    /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
 
       /*--- Compute a scalar factor ---*/

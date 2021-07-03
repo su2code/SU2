@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,7 @@ private:
   vector<unsigned short> nElStates; /*!< \brief Number of electron states. */
 
   C3DIntMatrix Reactions;           /*!</brief reaction map for chemically reacting flows */
-  
+
   vector<su2double>
   ArrheniusCoefficient,             /*!< \brief Arrhenius reaction coefficient */
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
@@ -68,7 +68,7 @@ private:
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
   Blottner,                      /*!< \brief Blottner viscosity coefficients */
   Dij;                           /*!< \brief Binary diffusion coefficients. */
-  
+
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
@@ -204,7 +204,7 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }
 
   };
 

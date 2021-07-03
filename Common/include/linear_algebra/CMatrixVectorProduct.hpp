@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -97,45 +97,5 @@ public:
    */
   inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
     matrix.MatrixVectorProduct(u, v, geometry, config);
-  }
-};
-
-
-/*!
- * \class CSysMatrixVectorProductTransposed
- * \brief Specialization of matrix-vector product that uses CSysMatrix class for transposed products
- */
-template<class ScalarType>
-class CSysMatrixVectorProductTransposed final : public CMatrixVectorProduct<ScalarType> {
-private:
-  const CSysMatrix<ScalarType>& matrix;  /*!< \brief pointer to matrix that defines the product. */
-  CGeometry* geometry;                   /*!< \brief geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief config of the problem. */
-
-public:
-  /*!
-   * \brief constructor of the class
-   * \param[in] matrix_ref - matrix reference that will be used to define the products
-   * \param[in] geometry_ref - geometry associated with the problem
-   * \param[in] config_ref - config of the problem
-   */
-  inline CSysMatrixVectorProductTransposed(const CSysMatrix<ScalarType> & matrix_ref,
-                                           CGeometry *geometry_ref, const CConfig *config_ref) :
-    matrix(matrix_ref),
-    geometry(geometry_ref),
-    config(config_ref) {}
-
-  /*!
-   * \note This class cannot be default constructed as that would leave us with invalid pointers.
-   */
-  CSysMatrixVectorProductTransposed() = delete;
-
-  /*!
-   * \brief operator that defines the CSysMatrix-CSysVector product
-   * \param[in] u - CSysVector that is being multiplied by the sparse matrix
-   * \param[out] v - CSysVector that is the result of the product
-   */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
-    matrix.MatrixVectorProductTransposed(u, v, geometry, config);
   }
 };
