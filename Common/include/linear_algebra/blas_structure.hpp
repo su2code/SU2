@@ -83,17 +83,25 @@ public:
 
   /*!
    * \brief Function, to carry out the axpy operation, i.e y += a*x.
-   * \param[in]    n   - Number of elements in the vectors x and y.
-   * \param[in]    a   - Specifies the scalar a.
-   * \param[in]    x   - Array, which must be added, size of x must be
-                         at least 1 + (n-1)*abs(incx).
-   * param[in]    incx - Specifies the increment of x.
-   * param[inout] y    - Vector to be updated, size of y must be
-                         at least 1 + (n-1)*abs(incy).
-   * param[in]    incy - Specifies the increment of y.
+   * \param[in]    n    - Number of elements in the vectors x and y.
+   * \param[in]    a    - Specifies the scalar a.
+   * \param[in]    x    - Array, which must be added, size of x must be
+   *                      at least 1 + (n-1)*abs(incx).
+   * \param[inout] y    - Vector to be updated, size of y must be
+   *                      at least 1 + (n-1)*abs(incy).
    */
-  void axpy(const int n,    const su2double a,  const su2double *x,
-            const int incx, su2double *y,       const int incy) const;
+  void axpy(const int n,        const su2double a,
+            const su2double *x, su2double *y) const;
+
+  /*!
+   * \brief Function, to carry out the a dot product between two vectors.
+   * \param[in] n - Number of elements in the vectors x and y.
+   * \param[in] x - First vector for the dot product.
+   * \param[in] y - Second vector for the dot product.
+   * 
+   * \return The dot product between the vector elements.
+   */
+  su2double dot(int n, su2double *x, su2double *y) const;
 
   /*!
    * \brief Invert a square matrix.

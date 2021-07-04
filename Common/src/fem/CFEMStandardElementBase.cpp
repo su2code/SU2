@@ -47,12 +47,13 @@ void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_
         of threads can be obtained. ---*/
   SU2_OMP_PARALLEL
   {
-    /*--- Allocate the first index of workSolInt and workGradSolInt.
-          This must be done by only one thread. ---*/
+    /*--- Allocate the first index of workSolInt, workGradSolInt and, if needed,
+          workDOFs. This must be done by only one thread. ---*/
     SU2_OMP_SINGLE
     {
       workSolInt.resize(nVarInt*omp_get_num_threads());
       workGradSolInt.resize(omp_get_num_threads());
+      if( !val_surfElem ) workDOFs.resize(omp_get_num_threads());
     }
     END_SU2_OMP_SINGLE
 
@@ -66,6 +67,12 @@ void CFEMStandardElementBase::AllocateWorkingVariables(const unsigned short val_
     workGradSolInt[thread].resize(val_nDim);
     for(unsigned short i=0; i<val_nDim; ++i)
       workGradSolInt[thread][i].resize(nIntegrationPad, val_nVar);
+
+    if( !val_surfElem ) {
+      workDOFs[thread].resize(4);
+      for(unsigned short i=0; i<4; ++i)
+        workDOFs[thread][i].resize(nDOFsPad, val_nVar);
+    }
   }
   END_SU2_OMP_PARALLEL
 }

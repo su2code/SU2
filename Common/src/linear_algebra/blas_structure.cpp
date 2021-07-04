@@ -43,6 +43,11 @@ extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
 extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
                        const passivedouble*, const int*, const passivedouble*,
                        const int*, const passivedouble*, passivedouble*, const int*);
+
+extern "C" double ddot_(int *n, double *x, int *incx, double *y, int *incy);
+
+extern "C" void daxpy_(int *n, const double *a, const double *x,
+                       const int *incx, double *y, const int *incy);
 #endif
 
 /* Constructor. Initialize the const member variables, if needed. */
@@ -89,6 +94,45 @@ void CBlasStructure::gemm(const int M,         const int N,            const int
 #endif
 }
 
+/* Dot product. */
+su2double CBlasStructure::dot(int n, su2double *x, su2double *y) const {
+
+#if defined(PRIMAL_SOLVER) && (defined (HAVE_BLAS) || defined(HAVE_MKL)) 
+
+  /* The standard blas routine ddot is used. */
+  int inc = 1;
+  return ddot_(&n, x, &inc, y, &inc);
+#else
+
+  /* Native implementation of the dot product. */
+  su2double result = 0.0;
+  for(int i=0; i<n; ++i)
+    result += x[i]*y[i];
+
+  return result;
+
+#endif
+}
+
+/* Function, to carry out the axpy operation, i.e y += a*x. */
+void CBlasStructure::axpy(const int n,        const su2double a,
+                          const su2double *x, su2double *y) const {
+
+#if defined(PRIMAL_SOLVER) && (defined (HAVE_BLAS) || defined(HAVE_MKL)) 
+
+  /* The standard blas routine daxpy is used. */
+  int inc = 1;
+  daxpy_(&n, &a, x, &inc, y, &inc);
+    
+#else
+
+  /* Native implementation. */
+  for(int i=0; i<n; ++i)
+    y[i] += a*x[i];
+
+#endif
+}
+
 /* Dense matrix vector multiplication, gemv functionality. */
 void CBlasStructure::gemv(const int M,        const int N,   const passivedouble *A,
                           const su2double *x, su2double *y) const {
@@ -96,12 +140,12 @@ void CBlasStructure::gemv(const int M,        const int N,   const passivedouble
 #if defined(PRIMAL_SOLVER) && (defined (HAVE_BLAS) || defined(HAVE_MKL))
 
   /* The standard blas routine dgemv is used for the multiplication. */
-     passivedouble alpha = 1.0;
-     passivedouble beta  = 0.0;
-     int  inc   = 1;
-     char trans = 'N';
+  passivedouble alpha = 1.0;
+  passivedouble beta  = 0.0;
+  int  inc   = 1;
+  char trans = 'N';
 
-     dgemv_(&trans, &M, &N, &alpha, A, &M, x, &inc, &beta, y, &inc);
+  dgemv_(&trans, &M, &N, &alpha, A, &M, x, &inc, &beta, y, &inc);
 
 #else
 

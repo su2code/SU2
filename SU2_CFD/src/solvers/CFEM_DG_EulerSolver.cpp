@@ -28,6 +28,7 @@
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
@@ -3853,25 +3854,512 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               const unsigned long elemBeg,
                                               const unsigned long elemEnd) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Determine the chunk size for the OpenMP parallelization. ---*/
+#ifdef HAVE_OMP
+    const unsigned long nElem = elemEnd - elemBeg;
+    const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
+#endif
 
-    if(i == rank) {
+  /*--- Definition of the object for the blas functionalities. ---*/
+  CBlasStructure blas;
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+  /*--- Loop over the given element range. ---*/
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for(unsigned long l=elemBeg; l<elemEnd; ++l) {
+
+    /*--- Easier storage of the number of DOFs and integration points
+          and the integration weights. ---*/
+    const unsigned short nDOFs    = volElem[l].standardElemFlow->GetNDOFs();
+    const unsigned short nDOFsPad = volElem[l].standardElemFlow->GetNDOFsPad();
+    const unsigned short nIntPad  = volElem[l].standardElemFlow->GetNIntegrationPad();
+    const passivedouble *weights  = volElem[l].standardElemFlow->GetIntegrationWeights();
+
+    /*--- Set the reference to the correct residual. This depends
+          whether or not the ADER scheme is used. ---*/
+    ColMajorMatrix<su2double> &rVec = useADER ? volElem[l].resTotDOFsADER :
+                                                volElem[l].resDOFs;
+
+    /*--- The multiplication by the inverse of mass matrix is carried out by solving
+          the linear system of equations M x = res, where M is the generalized mass
+          matrix  and res the residual. The generalized mass matrix for the entropy
+          variables is a positive definite matrix, but, as it depends on the solution,
+          it changes during the simulation. Therefore a matrix free preconditioned
+          flexible conjugate gradient method is used to solve this system efficiently.
+          Abbreviate the required vectors for the CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CG algorithm to improve readability. ---*/
+    const int thread = omp_get_thread_num();
+
+    ColMajorMatrix<su2double> &zVec   = volElem[l].standardElemFlow->workDOFs[thread][0];
+    ColMajorMatrix<su2double> &pVec   = volElem[l].standardElemFlow->workDOFs[thread][1];
+    ColMajorMatrix<su2double> &ApVec  = volElem[l].standardElemFlow->workDOFs[thread][2];
+    ColMajorMatrix<su2double> &solVec = volElem[l].standardElemFlow->workDOFs[thread][3];
+
+    ColMajorMatrix<su2double> &pInt = volElem[l].standardElemFlow->workSolInt[thread];
+
+    /*--- Easier storage of the transformation matrix dUdV in the
+          integration points of the element. ---*/
+    const ColMajorMatrix<su2double> &dUdV = volElem[l].dUdVInt;
+
+    /*--- Determine the maximum value of rVec. This serves as a scaling value
+          to determine the convergence. ---*/
+    su2double rVecInitMax = 0.0;
+    for(unsigned short j=0; j<nVar; ++j)
+      for(unsigned short i=0; i<nDOFs; ++i)
+        rVecInitMax = max(rVecInitMax, fabs(rVec(i,j)));
+
+    /*--- Initialize the solution vector to zero. ---*/
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD
+      for(unsigned short i=0; i<nDOFsPad; ++i)
+        solVec(i,j) = 0.0;
+    }
+
+    /*--- Determine the inverse of the average Jacobian. ---*/
+    const su2double JacInv = 1.0/volElem[l].avgJacobian;
+
+    /*--- If the value of rVecInitMax is very small, it does not make sense to
+          solve the linear system, because the solution is zero.
+          Test if this is not the case. ---*/
+    if(rVecInitMax*JacInv > ((su2double) 1.e-15)) {
+
+      /*--- Abbreviations involving gamma. ---*/
+      const su2double gm1    =  Gamma_Minus_One;
+      const su2double ov1mg  = -1.0/Gamma_Minus_One;
+      const su2double govgm1 =  Gamma/gm1;
+
+      /*--- Determine the value of basis function zero, which can be used
+            to compute the averaged state of the element. ---*/
+      const passivedouble b0 = volElem[l].standardElemFlow->ValBasis0();
+
+      /*--- Make a distinction between two and three space dimensions
+            in order to have the most efficient code. ---*/
+      switch( nDim ) {
+
+        case 2: {
+
+          /*------------------------------------------------------------------*/
+          /*--- Compute the elements of the transformation matrix dVdU     ---*/
+          /*--- based on the average solution in the element.              ---*/
+          /*------------------------------------------------------------------*/
+
+          /*--- Compute the entropy variables in the center of the element. ---*/
+          const su2double V0 = b0*volElem[l].solDOFs(0,0);
+          const su2double V1 = b0*volElem[l].solDOFs(0,1);
+          const su2double V2 = b0*volElem[l].solDOFs(0,2);
+          const su2double V3 = b0*volElem[l].solDOFs(0,3);
+
+          /*--- Compute the primitive variables from the entropy ones. ---*/
+          const su2double V3Inv =  1.0/V3;
+          const su2double u     = -V3Inv*V1;
+          const su2double v     = -V3Inv*V2;
+          const su2double eKin  =  0.5*(u*u + v*v);
+          const su2double s     =  Gamma - gm1*(V0 - V3*eKin);
+          const su2double tmp   = -V3*exp(s);
+          const su2double rho   =  pow(tmp, ov1mg);
+          const su2double p     = -rho*V3Inv;
+          const su2double pInv  =  1.0/p;
+
+          /*--- Two abbreviations that appear in the elements of dVdU. ---*/
+          const su2double abv1 = gm1*rho*pInv*pInv;
+          const su2double abv2 = eKin*abv1;
+
+          /*--- Store the elements of the transformation matrix dVdU of the
+                averaged state. Note that this matrix is symmetric and hence
+                only the upper-diagonal part (or lower diagonal part) is stored.
+                Multiply the transformation matrix by the inverse of the Jacobian
+                to account for the transformation to the standard element. ---*/
+          su2double dVdU[10];
+
+          dVdU[0] =  JacInv*(govgm1/rho + abv2*eKin);       // dVdU(0,0)
+          dVdU[1] = -JacInv*u*abv2;                         // dVdU(0,1) = dVdU(1,0)
+          dVdU[2] = -JacInv*v*abv2;                         // dVdU(0,2) = dVdU(2,0)
+          dVdU[3] =  JacInv*(abv2 - pInv);                  // dVdU(0,3) = dVdU(3,0)
+          dVdU[4] =  JacInv*(abv1*u*u + pInv);              // dVdU(1,1)
+          dVdU[5] =  JacInv*abv1*u*v;                       // dVdU(1,2) = dVdU(2,1)
+          dVdU[6] = -JacInv*abv1*u;                         // dVdU(1,3) = dVdU(3,1)
+          dVdU[7] =  JacInv*(abv1*v*v + pInv);              // dVdU(2,2)
+          dVdU[8] = -JacInv*abv1*v;                         // dVdU(2,3) = dVdU(3,2)
+          dVdU[9] =  JacInv*abv1;                           // dVdU(3,3)
+
+          /*------------------------------------------------------------------*/
+          /*--- Initialization phase of the preconditioned conjugate       ---*/
+          /*--- gradient method.                                           ---*/
+          /*------------------------------------------------------------------*/
+
+          /*--- Preconditioning step. Multiply rVec with the dVdU and store the
+                result in zVec. Loop over the padded value of nDOFs for
+                performance reasons. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,0) = dVdU[0]*rVec(i,0) + dVdU[1]*rVec(i,1)
+                      + dVdU[2]*rVec(i,2) + dVdU[3]*rVec(i,3);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,1) = dVdU[1]*rVec(i,0) + dVdU[4]*rVec(i,1)
+                      + dVdU[5]*rVec(i,2) + dVdU[6]*rVec(i,3);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,2) = dVdU[2]*rVec(i,0) + dVdU[5]*rVec(i,1)
+                      + dVdU[7]*rVec(i,2) + dVdU[8]*rVec(i,3);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,3) = dVdU[3]*rVec(i,0) + dVdU[6]*rVec(i,1)
+                      + dVdU[8]*rVec(i,2) + dVdU[9]*rVec(i,3);
+
+          /*--- Copy zVec into pVec. ---*/
+          for(unsigned short j=0; j<nVar; ++j) {
+          SU2_OMP_SIMD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              pVec(i,j) = zVec(i,j);
+          }
+
+          /*--- Loop over the number of iterations. ---*/
+          for(int iter=0;;++iter)
+          {
+            /*--- Safeguard to avoid an infinite loop. ---*/
+            if(iter == 50)
+              SU2_MPI::Error(string("Convergence not reached for CG algorithm"),
+                             CURRENT_FUNCTION);
+
+            /*--- Compute the dot product of rVec and zVec. ---*/
+            su2double dotrz = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotrz += blas.dot(nDOFsPad, &rVec(0,j), &zVec(0,j));
+
+            /*--- The matrix vector product of the modified mass matrix and the
+                  vector pVec must be determined. This is done in three steps.
+                  Step 1 is to interpolate the data of pVec to the integration
+                  points. The result will be stored in pInt. ---*/
+            volElem[l].standardElemFlow->SolIntPoints(pVec, pInt);
+
+            /*--- Step 2 of the matrix vector product. Multiply pInt with dUdV,
+                  the integration weight and the Jacobian. The loop is carried
+                  out over the padded number of integration points for
+                  performance reasons. ---*/
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nIntPad; ++i) {
+              const su2double intWeight = weights[i]*volElem[l].JacobiansInt(i);
+
+              const su2double p0 = intWeight*pInt(i,0);
+              const su2double p1 = intWeight*pInt(i,1);
+              const su2double p2 = intWeight*pInt(i,2);
+              const su2double p3 = intWeight*pInt(i,3);
+
+              pInt(i,0) = dUdV(i,0)*p0 + dUdV(i,1)*p1 + dUdV(i,2)*p2 + dUdV(i,3)*p3;
+              pInt(i,1) = dUdV(i,1)*p0 + dUdV(i,4)*p1 + dUdV(i,5)*p2 + dUdV(i,6)*p3;
+              pInt(i,2) = dUdV(i,2)*p0 + dUdV(i,5)*p1 + dUdV(i,7)*p2 + dUdV(i,8)*p3;
+              pInt(i,3) = dUdV(i,3)*p0 + dUdV(i,6)*p1 + dUdV(i,8)*p2 + dUdV(i,9)*p3;
+            }
+
+            /*--- Step 3 of the matrix vector product. Scatter the results of pInt
+                  back to the DOFs. This is the final result, which is stored in
+                  ApVec. This array must be initialized to zero, because the
+                  function ResidualBasisFunctions accumulates the data.  ---*/
+            ApVec.setConstant(0.0);
+            volElem[l].standardElemFlow->ResidualBasisFunctions(pInt, ApVec);
+
+            /*--- Determine the dot product between pVec and ApVec. ---*/
+            su2double dotpAp = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotpAp += blas.dot(nDOFsPad, &pVec(0,j), &ApVec(0,j));
+
+            /*--- Determine the coefficient alpha, which is the contribution of
+                  pVec to the solution and -ApVec to the right hand side. ---*/
+            const su2double alpha = dotrz/dotpAp;
+
+            /*--- Compute the new solution and right hand side. ---*/
+            for(unsigned short j=0; j<nVar; ++j) {
+              blas.axpy(nDOFsPad,  alpha,  &pVec(0,j), &solVec(0,j));
+              blas.axpy(nDOFsPad, -alpha, &ApVec(0,j),   &rVec(0,j));
+            }
+
+            /*--- Determine the Linf norm of rVec. Needed to check the convergence
+                  of the iterative algorithm. ---*/
+            su2double rVecMax = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              for(unsigned short i=0; i<nDOFs; ++i)
+                rVecMax = max(rVecMax, fabs(rVec(i,j)));
+
+            /*--- Convergence criterion. At the moment the convergence criterion is
+                  hard coded, but could be replaced by a user defined parameter. ---*/
+            if(rVecMax < ((su2double) 1.e-10*rVecInitMax)) break;
+
+            /*--- Preconditioning step. Multiply rVec with the dVdU and store the
+                  result in zVec. Loop over the padded value of nDOFs for
+                  performance reasons. ---*/
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,0) = dVdU[0]*rVec(i,0) + dVdU[1]*rVec(i,1)
+                        + dVdU[2]*rVec(i,2) + dVdU[3]*rVec(i,3);
+  
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,1) = dVdU[1]*rVec(i,0) + dVdU[4]*rVec(i,1)
+                        + dVdU[5]*rVec(i,2) + dVdU[6]*rVec(i,3);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,2) = dVdU[2]*rVec(i,0) + dVdU[5]*rVec(i,1)
+                        + dVdU[7]*rVec(i,2) + dVdU[8]*rVec(i,3);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,3) = dVdU[3]*rVec(i,0) + dVdU[6]*rVec(i,1)
+                        + dVdU[8]*rVec(i,2) + dVdU[9]*rVec(i,3);
+
+            /*--- Compute the value of the coefficient beta. This is a flexible CG,
+                  hence the Polak-Ribiere formula must be used. ---*/
+            su2double dotzAp = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotzAp += blas.dot(nDOFsPad, &zVec(0,j), &ApVec(0,j));
+
+            const su2double beta = -alpha*dotzAp/dotrz;
+
+            /*--- Compute the new p-vector. ---*/
+            for(unsigned short j=0; j<nVar; ++j) {
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nDOFsPad; ++i)
+                pVec(i,j) = beta*pVec(i,j) + zVec(i,j);
+            }
+          }
+
+          break;
+        }
+
+        /*--------------------------------------------------------------------*/
+
+        case 3: {
+
+          /*------------------------------------------------------------------*/
+          /*--- Compute the elements of the transformation matrix dVdU     ---*/
+          /*--- based on the average solution in the element.              ---*/
+          /*------------------------------------------------------------------*/
+
+          /*--- Compute the entropy variables in the center of the element. ---*/
+          const su2double V0 = b0*volElem[l].solDOFs(0,0);
+          const su2double V1 = b0*volElem[l].solDOFs(0,1);
+          const su2double V2 = b0*volElem[l].solDOFs(0,2);
+          const su2double V3 = b0*volElem[l].solDOFs(0,3);
+          const su2double V4 = b0*volElem[l].solDOFs(0,4);
+
+          /*--- Compute the primitive variables from the entropy ones. ---*/
+          const su2double V4Inv =  1.0/V4;
+          const su2double u     = -V4Inv*V1;
+          const su2double v     = -V4Inv*V2;
+          const su2double w     = -V4Inv*V3;
+          const su2double eKin  =  0.5*(u*u + v*v + w*w);
+          const su2double s     =  Gamma - gm1*(V0 - V4*eKin);
+          const su2double tmp   = -V4*exp(s);
+          const su2double rho   =  pow(tmp, ov1mg);
+          const su2double p     = -rho*V4Inv;
+          const su2double pInv  =  1.0/p;
+
+          /*--- Two abbreviations that appear in the elements of dVdU. ---*/
+          const su2double abv1 = gm1*rho*pInv*pInv;
+          const su2double abv2 = eKin*abv1;
+
+          /*--- Store the elements of the transformation matrix dVdU of the
+                averaged state. Note that this matrix is symmetric and hence
+                only the upper-diagonal part (or lower diagonal part) is stored.
+                Multiply the transformation matrix by the inverse of the Jacobian
+                to account for the transformation to the standard element. ---*/
+          su2double dVdU[15];
+
+          dVdU[0]  =  JacInv*(govgm1/rho + abv2*eKin);      // dVdU(0,0)
+          dVdU[1]  = -JacInv*u*abv2;                        // dVdU(0,1) = dVdU(1,0)
+          dVdU[2]  = -JacInv*v*abv2;                        // dVdU(0,2) = dVdU(2,0)
+          dVdU[3]  = -JacInv*w*abv2;                        // dVdU(0,3) = dVdU(3,0)
+          dVdU[4]  =  JacInv*(abv2 - pInv);                 // dVdU(0,4) = dVdU(4,0)
+          dVdU[5]  =  JacInv*(abv1*u*u + pInv);             // dVdU(1,1)
+          dVdU[6]  =  JacInv*abv1*u*v;                      // dVdU(1,2) = dVdU(2,1)
+          dVdU[7]  =  JacInv*abv1*u*w;                      // dVdU(1,3) = dVdU(3,1)
+          dVdU[8]  = -JacInv*abv1*u;                        // dVdU(1,4) = dVdU(4,1)
+          dVdU[9]  =  JacInv*(abv1*v*v + pInv);             // dVdU(2,2)
+          dVdU[10] =  JacInv*abv1*v*w;                      // dVdU(2,3) = dVdU(3,2)
+          dVdU[11] = -JacInv*abv1*v;                        // dVdU(2,4) = dVdU(4,2)
+          dVdU[12] =  JacInv*(abv1*w*w + pInv);             // dVdU(3,3)
+          dVdU[13] = -JacInv*abv1*w;                        // dVdU(3,4) = dVdU(4,3)
+          dVdU[14] =  JacInv*abv1;                          // dVdU(4,4)
+
+          /*------------------------------------------------------------------*/
+          /*--- Initialization phase of the preconditioned conjugate       ---*/
+          /*--- gradient method.                                           ---*/
+          /*------------------------------------------------------------------*/
+
+          /*--- Preconditioning step. Multiply rVec with the dVdU and store the
+                result in zVec. Loop over the padded value of nDOFs for
+                performance reasons. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,0) = dVdU[0] *rVec(i,0) + dVdU[1] *rVec(i,1) + dVdU[2] *rVec(i,2)
+                      + dVdU[3] *rVec(i,3) + dVdU[4] *rVec(i,4);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,1) = dVdU[1] *rVec(i,0) + dVdU[5] *rVec(i,1) + dVdU[6] *rVec(i,2)
+                      + dVdU[7] *rVec(i,3) + dVdU[8] *rVec(i,4);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,2) = dVdU[2] *rVec(i,0) + dVdU[6] *rVec(i,1) + dVdU[9] *rVec(i,2)
+                      + dVdU[10]*rVec(i,3) + dVdU[11]*rVec(i,4);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,3) = dVdU[3] *rVec(i,0) + dVdU[7] *rVec(i,1) + dVdU[10]*rVec(i,2)
+                      + dVdU[12]*rVec(i,3) + dVdU[13]*rVec(i,4);
+
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned short i=0; i<nDOFsPad; ++i)
+            zVec(i,4) = dVdU[4] *rVec(i,0) + dVdU[8] *rVec(i,1) + dVdU[11]*rVec(i,2)
+                      + dVdU[13]*rVec(i,3) + dVdU[14]*rVec(i,4);
+
+          /*--- Copy zVec into pVec. ---*/
+          for(unsigned short j=0; j<nVar; ++j) {
+          SU2_OMP_SIMD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              pVec(i,j) = zVec(i,j);
+          }
+
+          /*------------------------------------------------------------------*/
+          /*--- Iterative phase of the preconditioned conjugate gradient   ---*/
+          /*--- method.                                                    ---*/
+          /*------------------------------------------------------------------*/
+
+          /*--- Loop over the number of iterations. ---*/
+          for(int iter=0;;++iter)
+          {
+            /*--- Safeguard to avoid an infinite loop. ---*/
+            if(iter == 50)
+              SU2_MPI::Error(string("Convergence not reached for CG algorithm"),
+                             CURRENT_FUNCTION);
+
+            /*--- Compute the dot product of rVec and zVec. ---*/
+            su2double dotrz = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotrz += blas.dot(nDOFsPad, &rVec(0,j), &zVec(0,j));
+
+            /*--- The matrix vector product of the modified mass matrix and the
+                  vector pVec must be determined. This is done in three steps.
+                  Step 1 is to interpolate the data of pVec to the integration
+                  points. The result will be stored in pInt. ---*/
+            volElem[l].standardElemFlow->SolIntPoints(pVec, pInt);
+
+            /*--- Step 2 of the matrix vector product. Multiply pInt with dUdV,
+                  the integration weight and the Jacobian. The loop is carried
+                  out over the padded number of integration points for
+                  performance reasons. ---*/
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nIntPad; ++i) {
+              const su2double intWeight = weights[i]*volElem[l].JacobiansInt(i);
+
+              const su2double p0 = intWeight*pInt(i,0);
+              const su2double p1 = intWeight*pInt(i,1);
+              const su2double p2 = intWeight*pInt(i,2);
+              const su2double p3 = intWeight*pInt(i,3);
+              const su2double p4 = intWeight*pInt(i,4);
+
+              pInt(i,0) = dUdV(i,0)*p0 + dUdV(i,1)*p1 + dUdV(i, 2)*p2 + dUdV(i, 3)*p3 + dUdV(i, 4)*p4;
+              pInt(i,1) = dUdV(i,1)*p0 + dUdV(i,5)*p1 + dUdV(i, 6)*p2 + dUdV(i, 7)*p3 + dUdV(i, 8)*p4;
+              pInt(i,2) = dUdV(i,2)*p0 + dUdV(i,6)*p1 + dUdV(i, 9)*p2 + dUdV(i,10)*p3 + dUdV(i,11)*p4;
+              pInt(i,3) = dUdV(i,3)*p0 + dUdV(i,7)*p1 + dUdV(i,10)*p2 + dUdV(i,12)*p3 + dUdV(i,13)*p4;
+              pInt(i,4) = dUdV(i,4)*p0 + dUdV(i,8)*p1 + dUdV(i,11)*p2 + dUdV(i,13)*p3 + dUdV(i,14)*p4;
+            }
+
+            /*--- Step 3 of the matrix vector product. Scatter the results of pInt
+                  back to the DOFs. This is the final result, which is stored in
+                  ApVec. This array must be initialized to zero, because the
+                  function ResidualBasisFunctions accumulates the data.  ---*/
+            ApVec.setConstant(0.0);
+            volElem[l].standardElemFlow->ResidualBasisFunctions(pInt, ApVec);
+
+            /*--- Determine the dot product between pVec and ApVec. ---*/
+            su2double dotpAp = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotpAp += blas.dot(nDOFsPad, &pVec(0,j), &ApVec(0,j));
+
+            /*--- Determine the coefficient alpha, which is the contribution of
+                  pVec to the solution and -ApVec to the right hand side. ---*/
+            const su2double alpha = dotrz/dotpAp;
+            /*--- Compute the new solution and right hand side. ---*/
+            for(unsigned short j=0; j<nVar; ++j) {
+              blas.axpy(nDOFsPad,  alpha,  &pVec(0,j), &solVec(0,j));
+              blas.axpy(nDOFsPad, -alpha, &ApVec(0,j),   &rVec(0,j));
+            }
+
+            /*--- Determine the Linf norm of rVec. Needed to check the convergence
+                  of the iterative algorithm. ---*/
+            su2double rVecMax = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              for(unsigned short i=0; i<nDOFs; ++i)
+                rVecMax = max(rVecMax, fabs(rVec(i,j)));
+
+            /*--- Convergence criterion. At the moment the convergence criterion is
+                  hard coded, but could be replaced by a user defined parameter. ---*/
+            if(rVecMax < ((su2double) 1.e-10*rVecInitMax)) break;
+
+            /*--- Preconditioning step. Multiply rVec with the dVdU and store the
+                  result in zVec. Loop over the padded value of nDOFs for
+                  performance reasons. ---*/
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,0) = dVdU[0] *rVec(i,0) + dVdU[1] *rVec(i,1) + dVdU[2] *rVec(i,2)
+                        + dVdU[3] *rVec(i,3) + dVdU[4] *rVec(i,4);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,1) = dVdU[1] *rVec(i,0) + dVdU[5] *rVec(i,1) + dVdU[6] *rVec(i,2)
+                        + dVdU[7] *rVec(i,3) + dVdU[8] *rVec(i,4);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,2) = dVdU[2] *rVec(i,0) + dVdU[6] *rVec(i,1) + dVdU[9] *rVec(i,2)
+                        + dVdU[10]*rVec(i,3) + dVdU[11]*rVec(i,4);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,3) = dVdU[3] *rVec(i,0) + dVdU[7] *rVec(i,1) + dVdU[10]*rVec(i,2)
+                        + dVdU[12]*rVec(i,3) + dVdU[13]*rVec(i,4);
+
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned short i=0; i<nDOFsPad; ++i)
+              zVec(i,4) = dVdU[4] *rVec(i,0) + dVdU[8] *rVec(i,1) + dVdU[11]*rVec(i,2)
+                        + dVdU[13]*rVec(i,3) + dVdU[14]*rVec(i,4);
+
+            /*--- Compute the value of the coefficient beta. This is a flexible CG,
+                  hence the Polak-Ribiere formula must be used. ---*/
+            su2double dotzAp = 0.0;
+            for(unsigned short j=0; j<nVar; ++j)
+              dotzAp += blas.dot(nDOFsPad, &zVec(0,j), &ApVec(0,j));
+
+            const su2double beta = -alpha*dotzAp/dotrz;
+
+            /*--- Compute the new p-vector. ---*/
+            for(unsigned short j=0; j<nVar; ++j) {
+              SU2_OMP_SIMD_IF_NOT_AD
+              for(unsigned short i=0; i<nDOFsPad; ++i)
+                pVec(i,j) = beta*pVec(i,j) + zVec(i,j);
+            }
+          }
+
+          break;
+        }
       }
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
+    /*------------------------------------------------------------------------*/
+    /*--- Copy the data from solVec back into resVec.                      ---*/
+    /*------------------------------------------------------------------------*/
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+    for(unsigned short j=0; j<nVar; ++j) {
+      SU2_OMP_SIMD
+      for(unsigned short i=0; i<nDOFsPad; ++i)
+        rVec(i,j) = solVec(i,j);
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
@@ -4183,8 +4671,9 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig             *config,
     ColMajorMatrix<su2double> &solIntRight = surfElem[l].standardElemFlow->workSolInt[indRight];
 
     for(unsigned short j=0; j<nVar; ++j) {
+      const unsigned short nRows = solIntRight.rows();
       SU2_OMP_SIMD
-      for(unsigned short i=0; i<solIntRight.cols(); ++i)
+      for(unsigned short i=0; i<nRows; ++i)
         solIntRight(i,j) = EntropyVarFreeStream[j];
     }
 
@@ -4474,7 +4963,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
                   half the Jacobian (which is half the area of the face). ---*/
             const su2double nx = normalsFace(i,0);
             const su2double ny = normalsFace(i,1);
-            const su2double halfArea = JacobiansFace(i);
+            const su2double halfArea = 0.5*JacobiansFace(i);
 
             /*--- Compute the normal grid velocity. ---*/
             const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny;
@@ -4572,7 +5061,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
             const su2double nx = normalsFace(i,0);
             const su2double ny = normalsFace(i,1);
             const su2double nz = normalsFace(i,2);
-            const su2double halfArea = JacobiansFace(i);
+            const su2double halfArea = 0.5*JacobiansFace(i);
 
             /*--- Compute the normal grid velocity. ---*/
             const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny

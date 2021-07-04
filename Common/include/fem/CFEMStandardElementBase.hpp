@@ -91,6 +91,8 @@ public:
   vector<vector<ColMajorMatrix<su2double> > > workGradSolInt; /*!< \brief Work array to compute the gradients of
                                                                           the solution in the integration points. */
 
+  vector<vector<ColMajorMatrix<su2double> > > workDOFs;       /*!< \brief Work array to compute the data
+                                                                          in the DOFs. */
 public:
   /*-----------------------------------------------------------------------------------*/
   /*---                     Constructors and destructors.                           ---*/

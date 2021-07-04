@@ -76,7 +76,7 @@ public:
   ColMajorMatrix<su2double> solDOFs;                        /*!< \brief The solution in the DOFs. */
   ColMajorMatrix<su2double> solDOFsWork;                    /*!< \brief The working variables in the DOFs. */
   ColMajorMatrix<su2double> solDOFsAux;                     /*!< \brief Auxiliary solution in the DOFs. For the
-                                                                        classical RK4 scheme is this the new solution
+                                                                        classical RK4 scheme this is the new solution
                                                                         while for ADER it may contain the solution
                                                                         of a previous time level. */
   vector<ColMajorMatrix<su2double> > solDOFsADERPredictor;  /*!< \brief The vector containing the predictor solution

@@ -152,12 +152,17 @@ bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           L
   const unsigned short nInt = standardElemGrid->GetNIntegration();
   const passivedouble *wInt = standardElemGrid->GetIntegrationWeights();
   bool elemIsGood = true;
+  passivedouble sumWeights = 0.0;
   volume = 0.0;
 
   for(unsigned short i=0; i<nInt; ++i) {
     volume += wInt[i]*JacobiansInt(i);
+    sumWeights += wInt[i];
     if(JacobiansInt(i) <= 0.0) elemIsGood = false;
   }
+
+  /*--- Compute the averaged value of the Jacobian. ---*/
+  avgJacobian = volume/sumWeights;
 
   /*--- Make sure that the Jacobian for the padded data is
         not zero, to avoid problems later on. Something similar

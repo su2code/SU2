@@ -70,6 +70,7 @@ public:
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
   su2double volume;                  /*!< \brief Volume of the element. */
+  su2double avgJacobian;             /*!< \brief Average value of the Jacobian of the element. */
 
   ColMajorMatrix<su2double> coorGridDOFs;         /*!< \brief Coordinates of the grid DOFs of this element. */
 
