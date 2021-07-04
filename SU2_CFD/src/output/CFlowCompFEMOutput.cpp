@@ -1,5 +1,5 @@
 /*!
- * \file output_flow_comp_fem.cpp
+ * \file CFlowCompFEMOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -206,7 +206,7 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
 }
 
-bool CFlowCompFEMOutput::SetInit_Residuals(CConfig *config){
+bool CFlowCompFEMOutput::SetInit_Residuals(const CConfig *config){
 
   return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
          (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));

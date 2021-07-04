@@ -316,7 +316,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           nWallFaces += nElem_Bound[iMarker];
         break;
       }
@@ -465,7 +465,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
             /*--- Retrieve the floating point information for this boundary marker.
                   The exchange location is the first element of this array. ---*/
@@ -833,7 +833,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
             for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l)
               bound[iMarker][l]->RemoveMultipleDonorsWallFunctions();
@@ -1415,7 +1415,7 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                        
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /*--- Retrieve the integer information for this boundary marker.
                 The number of points in normal direction for the wall function

@@ -89,7 +89,7 @@ class CSolverFactory {
 
 private:
 
-  static map<const CSolver*, SolverMetaData> allocatedSolvers;
+  static std::map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
    * \brief Create a turbulent solver

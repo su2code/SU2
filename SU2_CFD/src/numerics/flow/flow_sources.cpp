@@ -627,39 +627,62 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
 
   u_gust = WindGust_i[0];
   v_gust = WindGust_i[1];
+// w_gust = WindGust_i[2];
 
   if (GustDir == X_DIR) {
     du_gust_dx = WindGustDer_i[0];
     du_gust_dy = WindGustDer_i[1];
+    //du_gust_dz = WindGustDer_i[2];
     du_gust_dt = WindGustDer_i[2];
+
     dv_gust_dx = 0.0;
     dv_gust_dy = 0.0;
+    //dv_gust_dz = 0.0;
     dv_gust_dt = 0.0;
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
   } else {
     du_gust_dx = 0.0;
     du_gust_dy = 0.0;
+    //du_gust_dz = 0.0;
     du_gust_dt = 0.0;
     dv_gust_dx = WindGustDer_i[0];
     dv_gust_dy = WindGustDer_i[1];
+    //dv_gust_dz = WindGustDer_i[2]
     dv_gust_dt = WindGustDer_i[2];
+
+    //dw_gust_dx = 0.0;
+    //dw_gust_dy = 0.0;
+    //dw_gust_dz = 0.0;
+    //dw_gust_dt = 0.0;
+    //
 
   }
 
   /*--- Primitive variables at point i ---*/
   u = V_i[1];
   v = V_i[2];
+  // w = V_i[3]
+
   p = V_i[nDim+1];
   rho = V_i[nDim+2];
 
   /*--- Source terms ---*/
   smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
   smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
+  //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
+  
   se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
+  //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
 
   if (nDim == 2) {
     residual[0] = 0.0;
     residual[1] = smx*Volume;
     residual[2] = smy*Volume;
+    //residual[3] = smz*Volume;
     residual[3] = se*Volume;
   } else {
     SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
@@ -713,7 +736,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
     residual[nDim+1] = Volume * scalar_factor * dot_product;
 
-    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity gradient is added. ---*/
+    /*--- If a RANS turbulence model is used, an additional source term, based on the eddy viscosity gradient is added. ---*/
     if(turbulent) {
 
       /*--- Compute a scalar factor ---*/

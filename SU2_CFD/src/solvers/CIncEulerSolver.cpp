@@ -192,6 +192,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
@@ -812,6 +814,29 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << ModelTableOut.str();
     cout << NonDimTableOut.str();
   }
+
+}
+
+void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
+   based on initial values, use the far-field state (inf). For a custom non-dim based
+   on user-provided reference values, use the ref values to compute the forces. ---*/
+
+  su2double RefDensity, RefVel2;
+
+  if ((config.GetRef_Inc_NonDim() == DIMENSIONAL) ||
+      (config.GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+    RefDensity = Density_Inf;
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+  else {
+    RefDensity = config.GetInc_Density_Ref();
+    RefVel2 = pow(config.GetInc_Velocity_Ref(), 2);
+  }
+
+  DynamicPressureRef = 0.5 * RefDensity * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 

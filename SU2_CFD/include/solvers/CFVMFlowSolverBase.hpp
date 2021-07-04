@@ -98,6 +98,7 @@ class CFVMFlowSolverBase : public CSolver {
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
 
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
+  su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
@@ -129,6 +130,8 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > CPressure;         /*!< \brief Pressure coefficient for each boundary and vertex. */
   vector<vector<su2double> > CPressureTarget;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
   vector<vector<su2double> > YPlus;             /*!< \brief Yplus for each boundary and vertex. */
+  vector<vector<su2double> > UTau;                 /*!< \brief UTau for each boundary and vertex. */
+  vector<vector<su2double> > EddyViscWall;         /*!< \brief Eddy viscosuty at the wall for each boundary and vertex. */
 
   bool space_centered;       /*!< \brief True if space centered scheme used. */
   bool euler_implicit;       /*!< \brief True if euler implicit scheme used. */
@@ -176,6 +179,13 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Default constructor, this class is not directly instantiable.
    */
   CFVMFlowSolverBase() : CSolver() {}
+
+  /*!
+   * \brief Set reference values for pressure, forces, etc., e.g. "AeroCoeffForceRef".
+   * \note Implement this method in the derived class and call it in its constructor.
+   * Duplicating this type of information has caused bugs (I know because I fixed them).
+   */
+  virtual void SetReferenceValues(const CConfig& config) = 0;
 
   /*!
    * \brief Allocate member variables.
@@ -2394,7 +2404,7 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Get the skin friction coefficient.
+   * \brief Get the heat flux.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
@@ -2431,5 +2441,25 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex) const final {
     return YPlus[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the u_tau .
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the u_tau.
+   */
+  inline su2double GetUTau(unsigned short val_marker, unsigned long val_vertex) const final {
+    return UTau[val_marker][val_vertex];
+  }
+
+   /*!
+   * \brief Get the eddy viscosity at the wall (wall functions).
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the eddy viscosity.
+   */
+  inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
+    return EddyViscWall[val_marker][val_vertex];
   }
 };

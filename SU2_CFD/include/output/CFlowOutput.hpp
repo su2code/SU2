@@ -27,23 +27,19 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CFVMOutput.hpp"
 #include "../variables/CVariable.hpp"
 
-class CFlowOutput : public COutput{
-public:
+class CFlowOutput : public CFVMOutput{
+protected:
+  unsigned long lastInnerIter;
+
   /*!
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
   CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFlowOutput(void) override;
-
-protected:
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
@@ -81,17 +77,16 @@ protected:
 
   /*!
    * \brief Add CP inverse design output as history fields
-   * \param[in] config - Definition of the particular problem.
    */
-  void Add_CpInverseDesignOutput(CConfig *config);
+  void Add_CpInverseDesignOutput();
 
   /*!
-   * \brief Set CP inverse design output field values
-   * \param[in] solver - The container holding all solution data.
+   * \brief Set CP inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config);
+  void Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
@@ -104,7 +99,7 @@ protected:
    * \brief Write information to meta data file
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void WriteMetaData(CConfig *config);
+  void WriteMetaData(const CConfig *config);
 
   /*!
    * \brief Write any additional files defined for the current solver.
@@ -143,13 +138,9 @@ protected:
   void LoadTimeAveragedData(unsigned long iPoint, CVariable *node_flow);
 
   /*!
-   * \brief Add common FVM outputs.
+   * \brief Write additional output for fixed CL mode.
+   * \param[in] config - Definition of the particular problem per zone.
    */
-  void AddCommonFVMOutputs(const CConfig* config);
-
-  /*!
-   * \brief Load common FVM outputs.
-   */
-  void LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint);
+  void SetFixedCLScreenOutput(const CConfig *config);
 
 };

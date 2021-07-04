@@ -491,6 +491,31 @@ public:
     }
   }
 
+  /*!
+   * \brief Algorithm to solve a linear system with a tridiagonal matrix.
+   * \param[in] lower - lower diagonal
+   * \param[in] main - main diagonal
+   * \param[in,out] upper - upper diagonal (modified on exit)
+   * \param[in,out] rhs - right hand side on entry, solution on exit
+   * \note Same size for all vectors. Use row index for lower and upper vector (e.g. lower[0] does not matter).
+   */
+  template<class Vec, class Scalar = su2double>
+  static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs) {
+    const int N = main.size();
+
+    upper[0] /= main[0];
+    rhs[0] /= main[0];
+
+    for (int i=1; i<N; i++) {
+      const Scalar denom = 1.0 / (main[i]-lower[i]*upper[i-1]);
+      upper[i] *= denom;
+      rhs[i] = (rhs[i]-lower[i]*rhs[i-1])*denom;
+    }
+
+    for (int i=N-2; i>=0; i--)
+      rhs[i] -= upper[i]*rhs[i+1];
+  }
+
 private:
 
 #if !defined(PRIMAL_SOLVER) || !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL))

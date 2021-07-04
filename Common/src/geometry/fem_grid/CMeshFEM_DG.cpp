@@ -227,7 +227,7 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
     }
 
     /*--- Sort nodeIDs in increasing order and remove the double entities. ---*/
-    sort(nodeIDs.begin(), nodeIDs.end());
+    std::sort(nodeIDs.begin(), nodeIDs.end());
     vector<long>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
     nodeIDs.erase(lastNodeID, nodeIDs.end());
 
@@ -2955,7 +2955,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -3066,21 +3066,21 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
         case ISOTHERMAL:
         case HEAT_FLUX: {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE){
 
             /*--- An LES wall model is used for this boundary marker. Determine
                   which wall model and allocate the memory for the member variable. ---*/
             SU2_OMP_SINGLE
             {
               switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-                case EQUILIBRIUM_WALL_MODEL: {
+                case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
                   if(rank == MASTER_NODE)
                     cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
                   boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
                   break;
                 }
-                case LOGARITHMIC_WALL_MODEL: {
+                case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
                   if(rank == MASTER_NODE)
                     cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
 
@@ -3161,7 +3161,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
               /*--- Sort donorElements in increasing order, such that the
                     integration points with the same donor are grouped together. ---*/
-              sort(donorElements.begin(), donorElements.end());
+              std::sort(donorElements.begin(), donorElements.end());
 
               /*--- Store the donor information in the member variables of surfElem. ---*/
               surfElem[l].donorsWallFunction.push_back(donorElements[0].long0);

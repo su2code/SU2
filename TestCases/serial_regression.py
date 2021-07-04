@@ -1416,19 +1416,6 @@ def main():
     cht_incompressible.tol       = 0.00001
     test_list.append(cht_incompressible)
 
-    # CHT incompressible unsteady
-    cht_incompressible_unsteady           = TestCase('cht_incompressible_unsteady')
-    cht_incompressible_unsteady.cfg_dir   = "coupled_cht/incomp_2d_unsteady"
-    cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
-    cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-1.303588, -0.080377, -0.080380, -0.080377] #last 4 columns
-    cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
-    cht_incompressible_unsteady.timeout   = 1600
-    cht_incompressible_unsteady.multizone = True
-    cht_incompressible_unsteady.unsteady  = True
-    cht_incompressible_unsteady.tol       = 0.00001
-    test_list.append(cht_incompressible_unsteady)
-
      # CHT compressible
     cht_incompressible           = TestCase('cht_compressible')
     cht_incompressible.cfg_dir   = "coupled_cht/comp_2d"
