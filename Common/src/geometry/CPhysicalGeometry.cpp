@@ -5072,28 +5072,22 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   }
   else{
     if(SpanWise_Kind == AUTOMATIC){
-      /*--- loop to find inflow of outflow marker---*/
+      /*--- loop to find inflow or outflow marker---*/
       for (iMarker = 0; iMarker < nMarker; iMarker++){
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue; 
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
 
-          /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-           * in order to caount the number of Span ---*/
-          for (jMarker = 0; jMarker < nMarker; jMarker++){
+            /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+              * in order to count the number of Span ---*/
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
             if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
               PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
               jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-                nSpan++;
+              if ((jVertex != -1) && (PeriodicBoundary == ((val_iZone) + 1)) && nodes->GetDomain(iPoint)) {
+                  nSpan++;
               }
             }
           }
@@ -5102,9 +5096,13 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
       /*--- storing the local number of span---*/
       nSpan_loc = nSpan;
+      
+      /*--- if parallel computing the global number of span---*/
+#ifdef HAVE_MPI
+      nSpan_max = nSpan;
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&nSpan_loc, &nSpan_max, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
-
+#endif
       /*--- initialize the vector that will contain the disordered values span-wise ---*/
       nSpanWiseSections[marker_flag -1] = nSpan;
       valueSpan = new su2double[nSpan];
@@ -5119,20 +5117,14 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
         for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
-
-          for (jMarker = 0; jMarker < nMarker; jMarker++){
-            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
-              PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-              jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
+              if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+                PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
+                jVertex = nodes->GetVertex(iPoint, jMarker);
+              if ((jVertex != -1) && (PeriodicBoundary == (( val_iZone) + 1) && nodes->GetDomain(iPoint))){
                 coord = nodes->GetCoord(iPoint);
                 radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                 switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -5215,25 +5207,17 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
           if (config->GetMarker_All_Turbomachinery(iMarker) != iMarkerTP) continue;
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
-
-          for (jMarker = 0; jMarker < nMarker; jMarker++){
-            if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
-
-            for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-
-              iPoint = vertex[iMarker][iVertex]->GetNode();
-              if (!nodes->GetDomain(iPoint)) continue;
-
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            for (jMarker = 0; jMarker < nMarker; jMarker++){
+              if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
               PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
               jVertex = nodes->GetVertex(iPoint, jMarker);
-
-              if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
-
+              if ((jVertex != -1) && (PeriodicBoundary == ((val_iZone) + 1)) && nodes->GetDomain(iPoint)){
                 coord = nodes->GetCoord(iPoint);
                 radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
                 switch (config->GetKind_TurboMachinery(val_iZone)){
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
+                case CENTRIFUGAL: case CENTRIPETAL:
                   if (coord[2] < min) min = coord[2];
                   if (coord[2] > max) max = coord[2];
                   break;
@@ -5251,6 +5235,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                     if (coord[2] > max) max = coord[2];
                   }
                   break;
+
                 case AXIAL_CENTRIFUGAL:
                   if (marker_flag == INFLOW){
                     if (radius < min) min = radius;
@@ -5262,7 +5247,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
                   }
                   break;
                 }
-              }
+              }   
             }
           }
         }

@@ -281,6 +281,13 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   Add_CpInverseDesignOutput();
 
+  if (config->GetBoolTurbomachinery()){
+    AddHistoryOutput("TURBO_MASS", "res[Mass]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass Flow Convergence", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("TURBO_EGLC", "T.Perf[EG]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy Generation Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_KELC", "T.Perf[KE]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic Energy Loss Coefficient", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TURBO_TPLC", "T.Perf[TP]", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total Pressure Loss Coefficient", HistoryFieldType::COEFFICIENT);
+  }
+
 }
 
 void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
@@ -696,6 +703,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   Set_CpInverseDesign(flow_solver, geometry, config);
 
+  // if (config->GetBoolTurbomachinery()){
+  //   auto m_in = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow();
+  //   auto m_out = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
+  //   SetHistoryOutputValue("TURBO_MASS", (m_in - m_out)/m_in);
+  //   SetHistoryOutputValue("TURBO_EGLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetEntropyGen());
+  //   SetHistoryOutputValue("TURBO_KELC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetKineticEnergyLoss());
+  //   SetHistoryOutputValue("TURBO_TPLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetTotalPressureLoss());
+  // }
 }
 
 bool CFlowCompOutput::SetInit_Residuals(const CConfig *config){

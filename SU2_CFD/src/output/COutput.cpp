@@ -42,7 +42,7 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-
+#include "../../include/objectives/turbomachinery/CTurbomachineryPerformance.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
@@ -2161,4 +2161,90 @@ void COutput::PrintVolumeFields(){
 
     VolumeFieldTable.PrintFooter();
   }
+}
+
+void COutput::SetTurboPerformance_Output(std::shared_ptr<CTurbomachineryPerformance> TurboPerf,
+                                  CConfig *config,
+                                  unsigned long TimeIter,
+                                  unsigned long OuterIter,
+                                  unsigned long InnerIter,
+                                  unsigned short val_iZone) {
+
+  curTimeIter  = TimeIter;
+  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
+  curOuterIter = OuterIter;
+  curInnerIter = InnerIter;
+  stringstream TurboInOutTable, TurboPerfTable;
+  
+  if(curInnerIter%10 == 0 && rank == MASTER_NODE) {
+    auto BladePerformance = TurboPerf->GetBladesPerformances();
+    auto nSpan = config->GetnSpanWiseSections();
+
+    /*-- Table for Turbomachinery Performance Values --*/
+    PrintingToolbox::CTablePrinter TurboInOut(&TurboInOutTable);
+
+    if (true){
+      TurboInOutTable<<"-- Turbomachinery inlet and outlet property Summary:"<<endl;
+      TurboInOut.AddColumn("Properties", 25);
+      TurboInOut.AddColumn("Inlet", 25);
+      TurboInOut.AddColumn("Outlet", 25);
+      TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+      TurboInOut.PrintHeader();
+  
+      for (unsigned short iZone = 0; iZone <= val_iZone; iZone++) {
+        TurboInOut<<" BLADE ROW INDEX "<<iZone <<"";
+        TurboInOut.PrintFooter();
+        // TODO: Blade Wise Printing
+        TurboInOut << "Entropy "     << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetEntropy()                     << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetEntropy();
+        TurboInOut << "TotEnthalpy " << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalEnthalpy()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalEnthalpy();
+        TurboInOut << "TotPressure " << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetTotalPressure()               << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetTotalPressure();
+        TurboInOut << "Mass Flow "   << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMassFlow()                    << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMassFlow();
+        TurboInOut << "Mach "    << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetMachValue()                   << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetMachValue();
+        TurboInOut << "Flow Angle "  << BladePerformance.at(iZone).at(nSpan)->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER  << BladePerformance.at(iZone).at(nSpan)->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+        TurboInOut.PrintFooter();
+      }
+      cout<<TurboInOutTable.str();
+    }
+  }
+}
+
+void COutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf,
+                                  std::shared_ptr<CTurbomachineryPerformance> TurboPerf,
+                                  CConfig *config) {
+  auto nZone = config->GetnZone();
+  auto nStage = nZone/2;
+  unsigned short iStage, iZone;
+  auto nSpan = config->GetnSpanWiseSections();
+
+  stringstream TurboMZPerf;
+
+  PrintingToolbox::CTablePrinter TurboInOut(&TurboMZPerf);
+
+  TurboMZPerf<<"-- Turbomachinery Stage Performance --"<<endl;
+  TurboInOut.AddColumn("Index", 10);
+  TurboInOut.AddColumn("EGLC (%)", 10);
+  TurboInOut.AddColumn("KELC (%)", 10);
+  TurboInOut.AddColumn("E. Work (dh)", 10);
+  TurboInOut.AddColumn("Effi%(ts)", 10);
+  TurboInOut.AddColumn("Effi%(tt)", 10);
+  TurboInOut.AddColumn("PR", 10);
+  TurboInOut.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+  TurboInOut.PrintHeader();
+
+  /*-- Stage Performance --*/
+  auto InState = TurboPerf->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
+  auto OutState =  TurboPerf->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
+
+  cout<<TurboStagePerf->GetTotalStaticEfficiency();
+  TurboStagePerf->ComputePerformanceStage(InState, OutState, config);
+  
+  /*-- Machine Performance --*/
+  TurboInOut<<"MACHINE"<<TurboStagePerf->GetEntropyGen()
+                        <<TurboStagePerf->GetKineticEnergyLoss()
+                        <<TurboStagePerf->GetEulerianWork()
+                        <<TurboStagePerf->GetTotalStaticEfficiency()
+                        <<TurboStagePerf->GetTotalTotalEfficiency()
+                        <<TurboStagePerf->GetPressureRatio();
+  TurboInOut.PrintFooter();
+  cout<<TurboMZPerf.str();
 }

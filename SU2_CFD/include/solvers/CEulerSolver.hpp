@@ -107,6 +107,8 @@ protected:
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
 
+  std::shared_ptr<CTurbomachineryPerformance> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*--- Turbomachinery Solver Variables ---*/
@@ -1085,6 +1087,35 @@ public:
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
 
   /*!
+   * \brief Initilize turbomachinery performance shared_ptr.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitTurboPerformance(CGeometry *geometry, CConfig *config) final;
+
+    /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) {
+    TurboPrimitive.clear();
+    if (INLET) {
+      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]); TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
+      if (nDim==3)
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
+    }
+    else {
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
+    }
+    return TurboPrimitive;
+  }
+
+  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1135,6 +1166,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) final;
+
+  /*!
+   * \brief It computes the turbomachinery performance
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) final;
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -1348,6 +1386,12 @@ public:
                                  su2double valOmega) final {
     ExtAverageOmega[valMarker][valSpan] = valOmega;
   }
+
+  /*!
+   * \brief Getter for TurbomachineryPerformance
+   * \return TurbomachineryPerformance container
+   */
+  inline shared_ptr<CTurbomachineryPerformance> GetTurbomachineryPerformance() const {return TurbomachineryPerformance;}
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.

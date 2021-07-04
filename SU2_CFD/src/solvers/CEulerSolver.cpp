@@ -364,6 +364,11 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   SU2_OMP_BARRIER
 }
 
+// TODO: This is being moved to FluidIteration
+void CEulerSolver::InitTurboPerformance(CGeometry *geometry, CConfig *config){
+  TurbomachineryPerformance = std::make_shared<CTurbomachineryPerformance>(*config, *geometry, *GetFluidModel());
+}
+
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
 
   /*--- Initialize quantities for the average process for internal flow ---*/
@@ -6240,7 +6245,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       }
 
 
-      /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
+      /* --- Compute average jump of charachteristic variable at the mixing-plane interface --- */
       GetFluidModel()->SetTDState_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
       AverageSoundSpeed = GetFluidModel()->GetSoundSpeed();
       conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[val_marker][iSpan], deltaprim, c_avg);
@@ -6701,7 +6706,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
-
     }
     END_SU2_OMP_FOR
   }
@@ -9844,5 +9848,29 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
     }
+  }
+}
+
+// should live in the drive and and should get the primitive for each zone
+void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry) {
+  unsigned short nDim = geometry->GetnDim();
+  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
+  unsigned short iBlade = config->GetiZone(), iSpan;
+  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
+
+  if (rank == MASTER_NODE){
+    if(true){
+      /* Blade Primitive initialized per blade */
+      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+      auto nSpan = config->GetnSpan_iZones(iBlade);
+      for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
+        // auto spanInletPrimitive = CTurbomachineryPrimitiveState(DensityIn[iBlade][iSpan], PressureIn[iBlade][iSpan], TurboVelocityIn[iBlade][iSpan], nDim, geometry->GetTangGridVelIn(iBlade, iSpan));
+        // auto spanOutletPrimitive = CTurbomachineryPrimitiveState(DensityOut[iBlade][iSpan], PressureOut[iBlade][iSpan], TurboVelocityOut[iBlade][iSpan], nDim, geometry->GetTangGridVelOut(iBlade, iSpan));
+        // auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
+        // bladePrimitives.push_back(spanCombinedPrimitive);
+      }
+      // bladesPrimitives.push_back(bladePrimitives);
+    }
+    // TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
   }
 }
