@@ -226,7 +226,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
   /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
+  /// AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
@@ -280,6 +280,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /*--- Add Cp diff fields ---*/
 
   Add_CpInverseDesignOutput();
+
+  /*--- Add Cp diff fields ---*/
+
+  Add_NearfieldInverseDesignOutput();
 
 }
 
@@ -695,6 +699,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(flow_solver, geometry, config);
+
+  /*--- Set neafield diff fields ---*/
+  
+  Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
 }
 
