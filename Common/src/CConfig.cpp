@@ -1607,6 +1607,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
   addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
+  /* DESCRIPTION: Number of samples used to form the subspace for Newton methods. */
+  addUnsignedShortOption("NEWTON_NUM_BASIS_SAMPLES", nNewtonBasisSamples, 0);
+  /* DESCRIPTION: Number of iterations before the Krylov criterion is applied. */
+  addUnsignedShortOption("NEWTON_KRYLOV_CRITERION_PAUSE", KrylovCriterionPause, 100);
+  /* DESCRIPTION:  Krylov criterion value for construction of slow/unstable basis. */
+  addDoubleOption("NEWTON_KRYLOV_CRITERION_VALUE", KrylovCriterionValue, 1000.0);
+
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
 
@@ -3214,6 +3221,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         VolumeOutputFiles[iVolumeFile] == SURFACE_TECPLOT_BINARY) {
       SU2_MPI::Error(string("Tecplot binary file requested in option OUTPUT_FILES but SU2 was built without TecIO support.\n"), CURRENT_FUNCTION);
     }
+  }
+#endif
+
+#ifdef HAVE_EIGEN
+#else
+  if (nNewtonBasisSamples > 0) {
+    SU2_MPI::Error(string(" SU2 built without Eigen support. \n") +
+                   string(" To use Newton correction, build SU2 accordingly."),
+                   CURRENT_FUNCTION);
   }
 #endif
 

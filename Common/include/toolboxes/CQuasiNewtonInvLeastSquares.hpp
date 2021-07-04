@@ -52,7 +52,7 @@ public:
   using Index = typename su2matrix<Scalar>::Index;
   static_assert(std::is_floating_point<Scalar>::value,"");
 
-private:
+protected:                                                        // TODO: revert this back to private
   using MPI_Wrapper = typename SelectMPIWrapper<Scalar>::W;
 
   enum: size_t {BLOCK_SIZE = 1024};     /*!< \brief Loop tiling parameter. */
@@ -65,7 +65,7 @@ private:
   void shiftHistoryLeft() {
     for (Index i = 1; i < X.size(); ++i) {
       /*--- Swap instead of moving to re-use the memory of the first sample.
-       * This is why X and R are not stored as contiguous blocks of mem. ---*/
+       *    This is why X and R are not stored as contiguous blocks of mem. ---*/
       std::swap(X[i-1], X[i]);
       std::swap(R[i-1], R[i]);
     }
@@ -209,6 +209,7 @@ public:
     /*--- Compute FP residual, clear correction. ---*/
     SU2_OMP_SIMD
     for (Index i = 0; i < work.size(); ++i) {
+      /*--- Compute difference between the uncorrected and the last corrected solution. ---*/
       R[iSample].data()[i] = work.data()[i] - X[iSample].data()[i];
       work.data()[i] = Scalar(0);
     }

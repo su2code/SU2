@@ -46,8 +46,8 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
   Has_Deformation.resize(nZone) = false;
 
-
   FixPtCorrector.resize(nZone);
+  fixPtSubspaceCorrector.resize(nZone);
   LinSolver.resize(nZone);
   AdjRHS.resize(nZone);
   AdjSol.resize(nZone);
@@ -175,6 +175,10 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   /*--- General setup. ---*/
 
+  InputIndices.resize(nZone);
+  OutputIndices.resize(nZone);
+  nNewtonBasisSamples.resize(nZone);
+
   for (iZone = 0; iZone < nZone; iZone++) {
     wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
@@ -183,7 +187,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     Set_BGSSolution_k_To_Solution(iZone);
 
-    /*--- Prepare Krylov or quasi-Newton methods. ---*/
+    /*--- Prepare Krylov, quasi-Newton (subspace) Newton method. ---*/
 
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     const auto nPointDomain = geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain();
@@ -197,6 +201,17 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     }
     else if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
       FixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(), nPoint, nVar, nPointDomain);
+    }
+    else if (config_container[iZone]->GetnNewtonBasisSamples()) {
+      nNewtonBasisSamples[iZone] = config_container[iZone]->GetnNewtonBasisSamples();
+      // TODO: check size because of halos
+      InputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
+      OutputIndices[iZone].resize(geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),GetTotalNumberOfVariables(iZone, true)) = -1;
+      fixPtSubspaceCorrector[iZone].resize(2,
+                                           nNewtonBasisSamples[iZone],
+                                           geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
+                                           GetTotalNumberOfVariables(iZone, true),
+                                           geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
     }
   }
 
@@ -239,6 +254,21 @@ bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInner
     GetAllSolutions(iZone, true, FixPtCorrector[iZone].FPresult());
     FixPtCorrector[iZone].compute();
     if(iInnerIter) SetAllSolutions(iZone, true, FixPtCorrector[iZone]);
+  }
+
+  /*--- Newton correction for the slow/unstable part (in each iteration). ---*/
+
+  if (nNewtonBasisSamples[iZone]) {
+
+    /*--- Construction and use of (unstable, slow) subspace:
+     *    (1) checkBasis: check for large eigenvalues to eventually append new basis vector
+     *    (2) computeSubspaceJacobian: eventually (re-)build the projected subspace Jacobian using the existing tape
+     *    (3) compute: Newton correction for the slow/unstable part (in each iteration)
+     * ---*/
+
+    GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+    fixPtSubspaceCorrector[iZone].compute();
+    SetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
   }
 
   /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
@@ -323,6 +353,10 @@ void CDiscAdjMultizoneDriver::Run() {
     return;
   }
 
+  // TODO: we might want to keep basis vectors across outer loops (especially when solution updates become small)?
+  // fixPtSubspaceCorrector[iZone].reset();
+  NewtonUpdateWaitIterations = 0;
+
   /*--- Loop over the number of outer iterations. ---*/
 
   for (unsigned long iOuterIter = 0, StopCalc = false; !StopCalc; iOuterIter++) {
@@ -355,6 +389,11 @@ void CDiscAdjMultizoneDriver::Run() {
       SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
 
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if(nNewtonBasisSamples[iZone])
+        GetAllIndices(0, true, InputIndices[iZone], OutputIndices[iZone]);
+    }
+
     /*-- Start loop over zones. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -380,7 +419,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       if (!config_container[iZone]->GetNewtonKrylov() || !no_restart || nInnerIter[iZone] < KrylovMinIters) {
 
-        /*--- Regular fixed-point, possibly with quasi-Newton method. ---*/
+        /*--- Regular fixed-point, possibly with quasi-Newton or (subspace) Newton method. ---*/
 
         for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
@@ -424,6 +463,16 @@ void CDiscAdjMultizoneDriver::Run() {
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
           Update_Cross_Term(iZone, jZone);
+        }
+      }
+
+      if (nNewtonBasisSamples[iZone]) {
+        if (NewtonUpdateWaitIterations++ > config_container[iZone]->GetKrylovCriterionWait()) {
+          GetAllSolutions(iZone, true, fixPtSubspaceCorrector[iZone].FPresult());
+          if (fixPtSubspaceCorrector[iZone].checkBasis(config_container[iZone]->GetKrylovCriterionValue())) {
+            fixPtSubspaceCorrector[iZone].computeProjectedJacobian(iZone, InputIndices[iZone], OutputIndices[iZone]);
+            NewtonUpdateWaitIterations = 0;
+          }
         }
       }
 

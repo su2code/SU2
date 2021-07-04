@@ -169,6 +169,13 @@ elif get_option('enable-openblas')
 
 endif
 
+# add Eigen library
+if get_option('enable-eigen')
+  eigen_dep = [declare_dependency(include_directories: '/usr/include/eigen3')]
+  su2_deps += eigen_dep
+  su2_cpp_args += '-DHAVE_EIGEN'
+endif
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''
@@ -232,8 +239,9 @@ message('''---------------------------------------------------------------------
          Python Wrapper: @6@
          Intel-MKL:      @7@
          OpenBlas:       @8@
-         PaStiX:         @9@
-         Mixed Float:    @10@
+         Eigen:          @9@
+         PaStiX:         @10@
+         Mixed Float:    @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -248,7 +256,7 @@ message('''---------------------------------------------------------------------
          Use './ninja -C @11@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-eigen'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
