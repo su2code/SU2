@@ -57,7 +57,7 @@ map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver, CConfig *config, CGeometry *geometry, int iMGLevel){
 
   CSolver** solver;
-
+cout << "In CSolverFactory::CreateSolverContainer" << endl;
   solver = new CSolver*[MAX_SOLS]();
 
   switch (kindMainSolver) {
@@ -187,7 +187,7 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
 
   solver[MESH_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::MESH, solver, geometry, config, iMGLevel);
   solver[ADJMESH_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
-
+cout << "In CSolverFactory::CreateSolverContainer, end" << endl;
   return solver;
 
 }

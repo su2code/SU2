@@ -797,7 +797,7 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
-
+  cout << "In CFlowOutput::Set_NearfieldInverseDesign" << endl;
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
