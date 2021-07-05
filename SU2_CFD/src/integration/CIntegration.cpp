@@ -77,9 +77,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   CNumerics* visc_bound_numerics = numerics[VISC_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
 
 #ifdef HAVE_OPDI
-  /* disable preaccumulation for parallel boundary numerics */
-  bool preaccEnabled = AD::PreaccEnabled;
-  AD::PreaccEnabled = false;
+  const auto preaccEnabled = AD::PausePreaccumulation();
 #endif
 
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
@@ -185,7 +183,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
 #ifdef HAVE_OPDI
-  AD::PreaccEnabled = preaccEnabled;
+  AD::ResumePreaccumulation(preaccEnabled);
 #endif
 
 }

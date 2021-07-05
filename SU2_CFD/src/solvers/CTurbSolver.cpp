@@ -106,6 +106,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
+#ifdef HAVE_OPDI
+  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+#endif
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -231,6 +235,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   }
   END_SU2_OMP_FOR
   } // end color loop
+
+#ifdef HAVE_OPDI
+  AD::ResumePreaccumulation(preaccEnabled);
+#endif
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);

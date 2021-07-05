@@ -252,7 +252,7 @@ namespace AD{
 
   /*!
    * \brief Start a passive region, i.e. stop recording.
-   * \return True is tape was active.
+   * \return True if tape was active.
    */
   inline bool BeginPassive() { return false; }
 
@@ -261,6 +261,18 @@ namespace AD{
    * \param[in] wasActive - Whether we were recording before entering the passive region.
    */
   inline void EndPassive(bool wasActive) {}
+
+  /*!
+   * \brief Pause the use of preaccumulation.
+   * \return True if preaccumulation was active.
+   */
+  inline bool PausePreaccumulation() { return false; }
+
+  /*!
+   * \brief Resume the use of preaccumulation.
+   * \param[in] wasActive - Whether preaccumulation was active before pausing.
+   */
+  inline void ResumePreaccumulation(bool wasActive) {}
 
 #else
   using CheckpointHandler = codi::DataStore;
@@ -273,7 +285,7 @@ namespace AD{
 
   extern bool PreaccActive;
 #ifdef HAVE_OPDI
-  #pragma omp threadprivate(PreaccActive)
+  SU2_OMP(threadprivate(PreaccActive))
 #endif
 
   extern bool PreaccEnabled;
@@ -292,7 +304,7 @@ namespace AD{
 
   extern codi::PreaccumulationHelper<su2double> PreaccHelper;
 #ifdef HAVE_OPDI
-  #pragma omp threadprivate(PreaccHelper)
+  SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
   /*--- Reference to the tape. ---*/
@@ -526,6 +538,26 @@ namespace AD{
   }
 
   FORCEINLINE void EndPassive(bool wasActive) { if(wasActive) StartRecording(); }
+
+  FORCEINLINE bool PausePreaccumulation() {
+    const auto current = PreaccEnabled;
+    if (!current) return false;
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    PreaccEnabled = false;
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+    return true;
+  }
+
+  FORCEINLINE void ResumePreaccumulation(bool wasActive) {
+    if (!wasActive) return;
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    PreaccEnabled = true;
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
 
 #endif // CODI_REVERSE_TYPE
 

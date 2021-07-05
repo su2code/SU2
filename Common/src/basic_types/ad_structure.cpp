@@ -36,14 +36,14 @@ namespace AD {
 
   bool PreaccActive = false;
 #ifdef HAVE_OPDI
-  #pragma omp threadprivate(PreaccActive)
+  SU2_OMP(threadprivate(PreaccActive))
 #endif
 
   bool PreaccEnabled = true;
 
   codi::PreaccumulationHelper<su2double> PreaccHelper;
 #ifdef HAVE_OPDI
-  #pragma omp threadprivate(PreaccHelper)
+  SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
   ExtFuncHelper* FuncHelper;

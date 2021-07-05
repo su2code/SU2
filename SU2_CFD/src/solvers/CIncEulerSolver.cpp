@@ -1018,6 +1018,10 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
+#ifdef HAVE_OPDI
+  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+#endif
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -1082,6 +1086,10 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   END_SU2_OMP_FOR
   } // end color loop
 
+#ifdef HAVE_OPDI
+  AD::ResumePreaccumulation(preaccEnabled);
+#endif
+
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
@@ -1109,6 +1117,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+
+#ifdef HAVE_OPDI
+  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+#endif
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1249,6 +1261,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   }
   END_SU2_OMP_FOR
   } // end color loop
+
+#ifdef HAVE_OPDI
+  AD::ResumePreaccumulation(preaccEnabled);
+#endif
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);

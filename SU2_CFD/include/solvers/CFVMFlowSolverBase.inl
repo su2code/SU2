@@ -319,7 +319,11 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
       cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
            << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)."
+#ifdef HAVE_OPDI
+           << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback.";
+#endif
+           << endl;
     }
 
     if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
@@ -1535,6 +1539,10 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
   }
 
+#ifdef HAVE_OPDI
+  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+#endif
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
@@ -1556,6 +1564,10 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     }
     END_SU2_OMP_FOR
   }
+
+#ifdef HAVE_OPDI
+  AD::ResumePreaccumulation(preaccEnabled);
+#endif
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
