@@ -321,7 +321,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
            << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)."
 #ifdef HAVE_OPDI
-           << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback.";
+           << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
 #endif
            << endl;
     }
