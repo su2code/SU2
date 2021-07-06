@@ -1994,6 +1994,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
 #ifdef HAVE_OPDI
   const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+  if (!ReducerStrategy)
+    AD::StartNoSharedReading();
 #endif
 
   /*--- Loop over edge colors. ---*/
@@ -2182,6 +2184,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
 #ifdef HAVE_OPDI
   AD::ResumePreaccumulation(preaccEnabled);
+  if (!ReducerStrategy)
+    AD::EndNoSharedReading();
 #endif
 
   if (ReducerStrategy) {

@@ -1020,6 +1020,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 #ifdef HAVE_OPDI
   const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+  if (!ReducerStrategy)
+    AD::StartNoSharedReading();
 #endif
 
   /*--- Loop over edge colors. ---*/
@@ -1088,6 +1090,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 #ifdef HAVE_OPDI
   AD::ResumePreaccumulation(preaccEnabled);
+  if (!ReducerStrategy)
+    AD::EndNoSharedReading();
 #endif
 
   if (ReducerStrategy) {
@@ -1120,6 +1124,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 #ifdef HAVE_OPDI
   const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+  if (!ReducerStrategy)
+    AD::StartNoSharedReading();
 #endif
 
   /*--- Loop over edge colors. ---*/
@@ -1264,6 +1270,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 #ifdef HAVE_OPDI
   AD::ResumePreaccumulation(preaccEnabled);
+  if (!ReducerStrategy)
+    AD::EndNoSharedReading();
 #endif
 
   if (ReducerStrategy) {

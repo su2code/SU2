@@ -1541,6 +1541,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
 
 #ifdef HAVE_OPDI
   const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
+  if (!ReducerStrategy)
+    AD::StartNoSharedReading();
 #endif
 
   /*--- Loop over edge colors. ---*/
@@ -1567,6 +1569,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
 
 #ifdef HAVE_OPDI
   AD::ResumePreaccumulation(preaccEnabled);
+  if (!ReducerStrategy)
+    AD::EndNoSharedReading();
 #endif
 
   if (ReducerStrategy) {
