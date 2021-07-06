@@ -63,7 +63,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.107806, 1.574254, 47250.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.087876, -3.481506, 0.068878, 0.000000]
     test_list.append(discadj_arina2k)
     
     ####################################
