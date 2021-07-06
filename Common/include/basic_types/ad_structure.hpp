@@ -559,6 +559,19 @@ namespace AD{
     SU2_OMP_BARRIER
   }
 
+  FORCEINLINE void StartNoSharedReading() {
+#ifdef HAVE_OPDI
+    opdi::logic->setAdjointAccessMode(opdi::LogicInterface::AdjointAccessMode::Classical);
+    opdi::logic->addReverseBarrier();
+#endif
+  }
+
+  FORCEINLINE void EndNoSharedReading() {
+#ifdef HAVE_OPDI
+    opdi::logic->setAdjointAccessMode(opdi::LogicInterface::AdjointAccessMode::Atomic);
+    opdi::logic->addReverseBarrier();
+#endif
+  }
 #endif // CODI_REVERSE_TYPE
 
 } // namespace AD
