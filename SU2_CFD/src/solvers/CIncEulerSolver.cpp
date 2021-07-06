@@ -1018,11 +1018,11 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
-#ifdef HAVE_OPDI
-  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
-  if (!ReducerStrategy)
-    AD::StartNoSharedReading();
-#endif
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1088,11 +1088,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   END_SU2_OMP_FOR
   } // end color loop
 
-#ifdef HAVE_OPDI
-  AD::ResumePreaccumulation(preaccEnabled);
-  if (!ReducerStrategy)
-    AD::EndNoSharedReading();
-#endif
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
@@ -1122,11 +1120,11 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
-#ifdef HAVE_OPDI
-  const auto preaccEnabled = ReducerStrategy && AD::PausePreaccumulation();
-  if (!ReducerStrategy)
-    AD::StartNoSharedReading();
-#endif
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1268,11 +1266,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   END_SU2_OMP_FOR
   } // end color loop
 
-#ifdef HAVE_OPDI
-  AD::ResumePreaccumulation(preaccEnabled);
-  if (!ReducerStrategy)
-    AD::EndNoSharedReading();
-#endif
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);

@@ -274,6 +274,16 @@ namespace AD{
    */
   inline void ResumePreaccumulation(bool wasActive) {}
 
+  /*!
+   * \brief Begin a hybrid parallel adjoint evaluation mode that assumes an inherently safe reverse path.
+   */
+  inline void StartNoSharedReading() {}
+
+  /*!
+   * \brief End the "no shared reading" adjoint evaluation mode.
+   */
+  inline void EndNoSharedReading() {}
+
 #else
   using CheckpointHandler = codi::DataStore;
 
