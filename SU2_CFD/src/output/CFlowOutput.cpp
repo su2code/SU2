@@ -793,6 +793,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
   AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
+  AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
   
 }
 
@@ -833,7 +834,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 //cout << "In CFlowOutput::Set_NearfieldInverseDesign 3" << endl;
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
-  if (rank == MASTER_NODE) cout << endl << "Writing Equivalent Area files.";
+  if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 //cout << "In CFlowOutput::Set_NearfieldInverseDesign 4" << endl;
 #ifndef HAVE_MPI
 
@@ -1324,8 +1325,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
         if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
 
-        InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
-
+        //InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
+        SU2_TYPE::SetValue(InverseDesign,InverseDesign+EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference);
       }
 
     /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
@@ -1436,6 +1437,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 
   SetHistoryOutputValue("EQUIV_AREA", InverseDesign);
+  SetHistoryOutputValue("EQUIVALENT_AREA", InverseDesign);
 
 //cout << "In CFlowOutput::Set_NearfieldInverseDesign end" << endl;
 }

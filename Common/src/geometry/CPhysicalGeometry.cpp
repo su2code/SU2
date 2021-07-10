@@ -6806,9 +6806,9 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     }
 
     SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
-    //cout << "In CPhysicalGeometry::MatchNearField 1" << endl;
+
     if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
-    //cout << "In CPhysicalGeometry::MatchNearField 2" << endl;
+
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_Point;
 

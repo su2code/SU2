@@ -4982,7 +4982,7 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 }
 
 void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const {
-
+//This is not used anymore.
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
   short *AzimuthalAngle = nullptr;
@@ -5017,7 +5017,7 @@ void COutputLegacy::SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry
 
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
-  if (rank == MASTER_NODE) cout << endl << "Writing Equivalent Area files.";
+  if (rank == MASTER_NODE) cout << "Writing Equivalent Area files."<< endl;
 
 #ifndef HAVE_MPI
 

@@ -701,7 +701,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   Set_CpInverseDesign(flow_solver, geometry, config);
 
   /*--- Set neafield diff fields ---*/
-  cout << "CFlowCompOutput::LoadHistoryData" << endl;
   Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
 }
