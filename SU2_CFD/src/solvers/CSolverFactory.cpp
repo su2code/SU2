@@ -57,7 +57,7 @@ map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver, CConfig *config, CGeometry *geometry, int iMGLevel){
 
   CSolver** solver;
-//cout << "In CSolverFactory::CreateSolverContainer, kindMainSolver=" << kindMainSolver << endl;
+
   solver = new CSolver*[MAX_SOLS]();
 
   switch (kindMainSolver) {
@@ -113,9 +113,7 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::CONT_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_EULER:
-    //cout << "In CSolverFactory::CreateSolverContainer, before EULER" << endl;
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
-    //cout << "In CSolverFactory::CreateSolverContainer, before DISC_ADJ_FLOW" << endl;
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_NAVIER_STOKES:
@@ -189,7 +187,7 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
 
   solver[MESH_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::MESH, solver, geometry, config, iMGLevel);
   solver[ADJMESH_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
-//cout << "In CSolverFactory::CreateSolverContainer, end" << endl;
+
   return solver;
 
 }
@@ -247,9 +245,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::NAVIER_STOKES:
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
     case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
-      //cout << "In CSolverFactory::CreateSubSolver, before CreateFlowSolver" << endl;
       genericSolver = CreateFlowSolver(kindSolver, solver, geometry, config, iMGLevel);
-      //cout << "In CSolverFactory::CreateSubSolver, after CreateFlowSolver" << endl;
       if (!config->GetNewtonKrylov() || config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint())
         metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       else
@@ -418,11 +414,8 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
 
   switch (kindFlowSolver) {
     case SUB_SOLVER_TYPE::EULER:
-    //cout << "In CSolverFactory::CreateFlowSolver 1" << endl;
       flowSolver = new CEulerSolver(geometry, config, iMGLevel);
-    //cout << "In CSolverFactory::CreateFlowSolver 2" << endl;
       flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    //cout << "In CSolverFactory::CreateFlowSolver 3" << endl;
       break;
     case SUB_SOLVER_TYPE::NAVIER_STOKES:
       flowSolver = new CNSSolver(geometry, config, iMGLevel);

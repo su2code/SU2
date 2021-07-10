@@ -796,7 +796,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- This loop gets the array sizes of points for each
    rank to send to each other rank. ---*/
-//cout << "In CEulerSolver::Set_MPI_Nearfield 1" << endl;
+
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
 
     /*--- Loop over the markers to perform the dimensionalizaton
@@ -807,7 +807,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
     /*--- Loop over all of the markers and count the number of each
      type of point and element that needs to be sent. ---*/
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 2" << endl;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -820,19 +819,16 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       }
     }
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 3" << endl;
     /*--- Store the counts on a partition by partition basis. ---*/
 
     nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 4" << endl;
     /*--- Total counts for allocating send buffers below ---*/
 
     Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar+3);
 
   }
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 5" << endl;
   /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
 
   Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
@@ -846,7 +842,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     if (rank != iDomain) {
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 6 in if" << endl;
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
 
       SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
@@ -855,7 +850,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     } else {
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 6 in else" << endl;
       /*--- If iDomain = rank, we simply copy values into place in memory ---*/
 
       nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
@@ -874,30 +868,23 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
         if (rank != jDomain) {
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 7, jDomain=" << jDomain << ", rank=" << rank << endl;
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
-//cout << "&nPointTotal_r[jDomain]=" << &nPointTotal_r[jDomain] << endl;
-//cout << "MPI_UNSIGNED_LONG=" << MPI_UNSIGNED_LONG << endl;
-//cout << "SU2_MPI::GetComm()=" << SU2_MPI::GetComm() << endl;
-//cout << "&status" << &status << endl;
+
           SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
-          //SU2_MPI::Wait(&req,&status);
-//cout << "In CEulerSolver::Set_MPI_Nearfield 8, jDomain=" << jDomain << ", rank=" << rank << endl;
+
         }
       }
 
     }
   }
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 9" << endl;
   /*--- Wait for the non-blocking sends to complete. ---*/
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 10" << endl;
   PointTotal_Counter  = 0;
 
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -938,7 +925,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     /*--- Send the buffers with the geometrical information ---*/
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 11" << endl;
     if (iDomain != rank) {
 
       /*--- Communicate the coordinates, global index, colors, and element
@@ -995,7 +981,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   }
 
-//cout << "In CEulerSolver::Set_MPI_Nearfield 12" << endl;
   /*--- Wait for the non-blocking sends to complete. ---*/
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -1019,7 +1004,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
       SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
                     iDomain, rank, SU2_MPI::GetComm(), &status);
-      //SU2_MPI::Wait(&req,&status);
+
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index vertex and markers ---*/
 
@@ -1067,7 +1052,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   delete [] nPointTotal_s;
   delete [] nPointTotal_r;
   delete [] iPrimVar;
-//cout << "In CEulerSolver::Set_MPI_Nearfield, end" << endl;
+
 }
 
 void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -1794,12 +1779,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Set the primitive variables ---*/
 
   ompMasterAssignBarrier(ErrorCounter, 0);
-//cout << "In EulerSolver::CommonPreprocessing 1" << endl;
+
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
   SU2_OMP_BARRIER
 
-//cout << "In EulerSolver::CommonPreprocessing 2" << endl;
   SU2_OMP_MASTER { /*--- Ops that are not OpenMP parallel go in this block. ---*/
 
     if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
@@ -1807,7 +1791,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
-//cout << "In EulerSolver::CommonPreprocessing 3" << endl;
 
     /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
@@ -1815,14 +1798,12 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
       SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
     }
 
-//cout << "In EulerSolver::CommonPreprocessing 4" << endl;
     /*--- Compute the engine properties ---*/
 
     if (engine) GetPower_Properties(geometry, config, iMesh, Output);
 
     /*--- Compute the actuator disk properties and distortion levels ---*/
 
-//cout << "In EulerSolver::CommonPreprocessing 5" << endl;
     if (actuator_disk) {
       Set_MPI_ActDisk(solver_container, geometry, config);
       GetPower_Properties(geometry, config, iMesh, Output);
@@ -1830,11 +1811,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     }
 
     /*--- Compute NearField MPI ---*/
-//cout << "In EulerSolver::CommonPreprocessing 6" << endl;
 
     if (nearfield) Set_MPI_Nearfield(geometry, config);
 
-//cout << "In EulerSolver::CommonPreprocessing 7" << endl;
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
@@ -1879,12 +1858,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /*--- Common preprocessing steps. ---*/
-cout << "CEulerSolver::Preprocessing 1" << endl;
+
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Upwind second order reconstruction ---*/
 
-cout << "CEulerSolver::Preprocessing 2" << endl;
   if (!Output && muscl && !center) {
 
     /*--- Gradient computation for MUSCL reconstruction. ---*/
@@ -1897,13 +1875,11 @@ cout << "CEulerSolver::Preprocessing 2" << endl;
         SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
-cout << "CEulerSolver::Preprocessing 3" << endl;
 
     /*--- Limiter computation ---*/
 
     if (limiter && !van_albada) SetPrimitive_Limiter(geometry, config);
   }
-cout << "CEulerSolver::Preprocessing 4" << endl;
 }
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
