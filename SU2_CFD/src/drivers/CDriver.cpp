@@ -165,14 +165,14 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
     }
   }
-  cout << "In CDriver::CDriver after Geometrycal_Preprocessing" << endl;
+  //cout << "In CDriver::CDriver after Geometrycal_Preprocessing" << endl;
   /*--- Before we proceed with the zone loop we have to compute the wall distances.
      * This computation depends on all zones at once. ---*/
   if (rank == MASTER_NODE)
     cout << "Computing wall distances." << endl;
-  cout << "In CDriver::CDriver before ComputeWallDistance" << endl;
+  //cout << "In CDriver::CDriver before ComputeWallDistance" << endl;
   CGeometry::ComputeWallDistance(config_container, geometry_container);
-  cout << "In CDriver::CDriver after ComputeWallDistance" << endl;
+  //cout << "In CDriver::CDriver after ComputeWallDistance" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -185,7 +185,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
        imposing various boundary condition type for the PDE. ---*/
 
       Solver_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst]);
-      cout << "In CDriver::CDriver after Solver Preprocessing" << endl;
+      //cout << "In CDriver::CDriver after Solver Preprocessing" << endl;
       /*--- Definition of the numerical method class:
        numerics_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
        The numerics class contains the implementation of the numerical methods for
@@ -195,7 +195,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
 
       Numerics_Preprocessing(config_container[iZone], geometry_container[iZone][iInst],
                              solver_container[iZone][iInst], numerics_container[iZone][iInst]);
-cout << "In CDriver::CDriver after Numeric Preprocessing" << endl;
+//cout << "In CDriver::CDriver after Numeric Preprocessing" << endl;
       /*--- Definition of the integration class: integration_container[#ZONES][#INSTANCES][#EQ_SYSTEMS].
        The integration class orchestrates the execution of the spatial integration
        subroutines contained in the solver class (including multigrid) for computing
@@ -204,27 +204,27 @@ cout << "In CDriver::CDriver after Numeric Preprocessing" << endl;
 
       Integration_Preprocessing(config_container[iZone], solver_container[iZone][iInst][MESH_0],
                                 integration_container[iZone][iInst]);
-cout << "In CDriver::CDriver after Integration Preprocessing" << endl;
+//cout << "In CDriver::CDriver after Integration Preprocessing" << endl;
       /*--- Instantiate the type of physics iteration to be executed within each zone. For
        example, one can execute the same physics across multiple zones (mixing plane),
        different physics in different zones (fluid-structure interaction), or couple multiple
        systems tightly within a single zone by creating a new iteration class (e.g., RANS). ---*/
 
       Iteration_Preprocessing(config_container[iZone], iteration_container[iZone][iInst]);
-cout << "In CDriver::CDriver after Iteration Preprocessing" << endl;
+//cout << "In CDriver::CDriver after Iteration Preprocessing" << endl;
       /*--- Dynamic mesh processing.  ---*/
 
       DynamicMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst], solver_container[iZone][iInst],
                                 iteration_container[iZone][iInst], grid_movement[iZone][iInst], surface_movement[iZone]);
       /*--- Static mesh processing.  ---*/
-cout << "In CDriver::CDriver after DynamicMesh Preprocessing" << endl;
+//cout << "In CDriver::CDriver after DynamicMesh Preprocessing" << endl;
       StaticMesh_Preprocessing(config_container[iZone], geometry_container[iZone][iInst]);
 
     }
 
   }
 
-  cout << "In CDriver::CDriver after preprocessing" << endl;
+  //cout << "In CDriver::CDriver after preprocessing" << endl;
   /*! --- Compute the wall distance again to correctly compute the derivatives if we are running direct diff mode --- */
   if (driver_config->GetDirectDiff() == D_DESIGN){
     CGeometry::ComputeWallDistance(config_container, geometry_container);
@@ -259,7 +259,7 @@ cout << "In CDriver::CDriver after DynamicMesh Preprocessing" << endl;
 
   PythonInterface_Preprocessing(config_container, geometry_container, solver_container);
 
-  cout << "In CDriver::CDriver after PythonInterface preprocessing" << endl;
+  //cout << "In CDriver::CDriver after PythonInterface preprocessing" << endl;
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
 
@@ -296,7 +296,7 @@ cout << "In CDriver::CDriver after DynamicMesh Preprocessing" << endl;
   /*--- Reset timer for compute performance benchmarking. ---*/
 
   StartTime = SU2_MPI::Wtime();
-  cout << "In CDriver::CDriver, end" << endl;
+  //cout << "In CDriver::CDriver, end" << endl;
 }
 
 void CDriver::SetContainers_Null(){
@@ -648,7 +648,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
     geometry[iMesh]->MatchNearField(config);
     geometry[iMesh]->MatchActuator_Disk(config);
   }
-  cout << "In CDriver::Geometrical_Preprocessing 1" << endl;
+  //cout << "In CDriver::Geometrical_Preprocessing 1" << endl;
   /*--- If we have any periodic markers in this calculation, we must
        match the periodic points found on both sides of the periodic BC.
        Note that the current implementation requires a 1-to-1 matching of
@@ -698,7 +698,7 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   }
 
-  cout << "In CDriver::Geometrical_Preprocessing 2" << endl;
+  //cout << "In CDriver::Geometrical_Preprocessing 2" << endl;
 
 }
 
@@ -1019,19 +1019,19 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   solver = new CSolver**[config->GetnMGLevels()+1] ();
 
-  cout << "In CDriver::Solver_Preprocessing 1" << endl;
+  //cout << "In CDriver::Solver_Preprocessing 1" << endl;
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
   }
 
   /*--- Count the number of DOFs per solution point. ---*/
-  cout << "In CDriver::Solver_Preprocessing 2" << endl;
+  //cout << "In CDriver::Solver_Preprocessing 2" << endl;
   DOFsPerPoint = 0;
 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++)
     if (solver[MESH_0][iSol]) DOFsPerPoint += solver[MESH_0][iSol]->GetnVar();
 
-  cout << "In CDriver::Solver_Preprocessing 3" << endl;
+  //cout << "In CDriver::Solver_Preprocessing 3" << endl;
   /*--- Restart solvers, for FSI the geometry cannot be updated because the interpolation classes
    * should always use the undeformed mesh (otherwise the results would not be repeatable). ---*/
 
@@ -1039,10 +1039,10 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  cout << "In CDriver::Solver_Preprocessing 4" << endl;
+  //CDriver::Solver_Preprocessing 4" << endl;
   Inlet_Preprocessing(solver, geometry, config);
 
-  cout << "In CDriver::Solver_Preprocessing 5" << endl;
+  //cout << "In CDriver::Solver_Preprocessing 5" << endl;
 }
 
 void CDriver::Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,

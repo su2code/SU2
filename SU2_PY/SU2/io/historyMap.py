@@ -451,7 +451,7 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                 'GROUP': 'AERO_COEFF',
                 'HEADER': 'CEff',
                 'TYPE': 'COEFFICIENT'},
- 'EQUIV_AREA': {'DESCRIPTION': 'Equivalent area',
+ 'EQUIVALENT_AREA': {'DESCRIPTION': 'Equivalent area',
                 'GROUP': 'EQUIVALENT_AREA',
                 'HEADER': 'CEquiv_Area',
                 'TYPE': 'COEFFICIENT'},

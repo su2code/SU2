@@ -797,7 +797,7 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
-  cout << "In CFlowOutput::Set_NearfieldInverseDesign" << endl;
+  //cout << "In CFlowOutput::Set_NearfieldInverseDesign 1" << endl;
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
@@ -818,7 +818,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   unsigned short nDim = geometry->GetnDim();
   su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
-
+  //cout << "In CFlowOutput::Set_NearfieldInverseDesign 2" << endl;
   Mach  = config->GetMach();
   Gamma = config->GetGamma();
   Beta = sqrt(Mach*Mach-1.0);
@@ -830,11 +830,11 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   ModVelocity_Inf = 0;
   for (iDim = 0; iDim < 3; iDim++)
     ModVelocity_Inf += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 3" << endl;
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
   if (rank == MASTER_NODE) cout << endl << "Writing Equivalent Area files.";
-
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 4" << endl;
 #ifndef HAVE_MPI
 
   /*--- Compute the total number of points on the near-field ---*/
@@ -853,6 +853,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
         if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) nVertex_NearField ++;
       }
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 5" << endl;
   /*--- Create an array with all the coordinates, points, pressures, face area,
    equivalent area, and nearfield weight ---*/
 
@@ -871,6 +872,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Copy the boundary information to an array ---*/
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 6" << endl;
   nVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -924,6 +926,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 #else
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 7" << endl;
   int nProcessor;
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &nProcessor);
 
@@ -937,6 +940,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 8" << endl;
   nLocalVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -955,6 +959,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Send Near-Field vertex information --*/
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 9" << endl;
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
@@ -974,6 +979,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   su2double *Buffer_Receive_Pressure = NULL;
   su2double *Buffer_Receive_FaceArea = NULL;
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 10" << endl;
   if (rank == MASTER_NODE) {
     Buffer_Receive_Xcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
     Buffer_Receive_Ycoord = new su2double[nProcessor*MaxLocalVertex_NearField];
@@ -996,6 +1002,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     Buffer_Send_Ycoord[iVertex] = 0.0; Buffer_Send_Zcoord[iVertex] = 0.0;
   }
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 11" << endl;
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
 
   nLocalVertex_NearField = 0;
@@ -1020,6 +1027,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Send all the information --*/
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 12" << endl;
   SU2_MPI::Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
@@ -1105,6 +1113,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   }
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 13, nVertex_NearField=" << nVertex_NearField << endl;
 #endif
 
   if (rank == MASTER_NODE) {
@@ -1153,6 +1162,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Order the arrays (x Coordinate, Pressure, Point, and Domain) ---*/
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 14, nVertex_NearField=" << nVertex_NearField << endl;
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
         for (jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
@@ -1176,6 +1186,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
       nVertex = min(nVertex, nVertex_aux);
     }
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign 15" << endl;
     /*--- Compute equivalent area distribution at each azimuth angle ---*/
 
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
@@ -1426,6 +1437,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   SetHistoryOutputValue("EQUIV_AREA", InverseDesign);
 
+//cout << "In CFlowOutput::Set_NearfieldInverseDesign end" << endl;
 }
 
 su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
