@@ -792,7 +792,8 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
+  //AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
+  // Line below is temporary
   AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
   
 }
@@ -1325,8 +1326,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
         if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
 
-        //InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
-        SU2_TYPE::SetValue(InverseDesign,InverseDesign+EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference);
+        InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
+        //SU2_TYPE::SetValue(InverseDesign,SU2_TYPE::GetValue(InverseDesign+EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference));
       }
 
     /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
@@ -1435,11 +1436,12 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
 #endif
 
+  //su2double tmp = InverseDesign;
+  //SU2_MPI::Allreduce(&tmp, &InverseDesign, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  solver->SetTotal_CEquivArea(InverseDesign);
+  //SetHistoryOutputValue("EQUIV_AREA", InverseDesign);
+  SetHistoryOutputValue("EQUIVALENT_AREA", InverseDesign); //Temporary
 
-  SetHistoryOutputValue("EQUIV_AREA", InverseDesign);
-  SetHistoryOutputValue("EQUIVALENT_AREA", InverseDesign);
-
-//cout << "In CFlowOutput::Set_NearfieldInverseDesign end" << endl;
 }
 
 su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {

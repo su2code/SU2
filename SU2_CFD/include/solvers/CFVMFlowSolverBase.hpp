@@ -154,6 +154,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_CEquivArea =0.0;
   su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
@@ -2090,6 +2091,8 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
 
+  inline void SetTotal_CEquivArea(su2double val_equiv) final { Total_CEquivArea = val_equiv; }
+
   /*!
    * \brief Set the value of the Near-Field pressure oefficient.
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
@@ -2121,6 +2124,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
+
+  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!
    * \brief Set the value of the custom objective function.

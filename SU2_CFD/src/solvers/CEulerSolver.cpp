@@ -4544,9 +4544,11 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
   Kind_ObjFunc   = config->GetKind_ObjFunc(0);
 
   switch(Kind_ObjFunc) {
+    /*
     case EQUIVALENT_AREA:
       Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
       break;
+    */
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
       break;
