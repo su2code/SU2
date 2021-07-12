@@ -1184,9 +1184,9 @@ public:
                                    const su2double *turboNormal,
                                    su2double *turboVelocity,
                                    unsigned short marker_flag,
-                                   unsigned short kind_turb){
+                                   TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
       turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
       turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
       turboVelocity[0] = cartesianVelocity[2];
@@ -1213,9 +1213,9 @@ public:
                                   const su2double *turboNormal,
                                   su2double *cartesianVelocity,
                                   unsigned short marker_flag,
-                                  unsigned short kind_turb){
+                                  TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
       cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
       cartesianVelocity[2] = turboVelocity[0];

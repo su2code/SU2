@@ -245,7 +245,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
       Iter = config[ZONE_0]->GetOuterIter();
 
     /*--- Turbomachinery Performance Screen summary output---*/
-    if (val_iZone == config[ZONE_0]->GetnZone()-1 && Iter%100 == 0){
+    if (val_iZone == config[ZONE_0]->GetnZone()-1 && Iter%100 == 0) {
       output->SetTurboPerformance_Output(TurbomachineryPerformance, config[val_iZone],
                               config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                               config[val_iZone]->GetInnerIter(), val_iZone);

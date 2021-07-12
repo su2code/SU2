@@ -1501,7 +1501,7 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
   /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery Performance Calculations.
       \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
-  addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf=0, TurboPerfKind_Map);
+  addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);

@@ -707,6 +707,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   //   auto m_in = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetInletState().GetMassFlow();
   //   auto m_out = flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetOutletState().GetMassFlow();
   //   SetHistoryOutputValue("TURBO_MASS", (m_in - m_out)/m_in);
+  
   //   SetHistoryOutputValue("TURBO_EGLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetEntropyGen());
   //   SetHistoryOutputValue("TURBO_KELC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetKineticEnergyLoss());
   //   SetHistoryOutputValue("TURBO_TPLC", flow_solver->GetTurbomachineryPerformance()->GetBladesPerformances().at(0).at(0)->GetTotalPressureLoss());

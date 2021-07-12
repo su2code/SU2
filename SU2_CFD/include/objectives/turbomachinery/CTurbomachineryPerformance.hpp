@@ -35,12 +35,9 @@
 #include <numeric>
 #include <boost/bind.hpp>
 #include <boost/range/algorithm_ext/for_each.hpp>
-//#include "../../../../Common/include/mpi_structure.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../fluid/CFluidModel.hpp"
-
-using namespace std;
 
 class CTurbomachineryPrimitiveState {
   private:
@@ -53,13 +50,13 @@ class CTurbomachineryPrimitiveState {
                                 unsigned short nDim,
                                 su2double tangVel);
 
-  su2double GetDensity() const { return Density; }
+  su2double GetDensity() const & { return Density; }
 
-  su2double GetPressure() const { return Pressure; }
+  su2double GetPressure() const & { return Pressure; }
 
-  su2double GetTangVelocity() const { return TangVelocity; }
+  su2double GetTangVelocity() const & { return TangVelocity; }
 
-  vector <su2double> GetVelocity() const { return Velocity; }
+  vector <su2double> GetVelocity() const & { return Velocity; }
 
 };
 
@@ -72,9 +69,9 @@ class CTurbomachineryCombinedPrimitiveStates {
   CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState &inletPrimitiveState,
                                          const CTurbomachineryPrimitiveState &outletPrimitiveState);
 
-  CTurbomachineryPrimitiveState GetInletPrimitiveState() const { return InletPrimitiveState; }
+  CTurbomachineryPrimitiveState GetInletPrimitiveState() const & { return InletPrimitiveState; }
 
-  CTurbomachineryPrimitiveState GetOutletPrimitiveState() const { return OutletPrimitiveState; }
+  CTurbomachineryPrimitiveState GetOutletPrimitiveState() const & { return OutletPrimitiveState; }
 };
 
 class CTurbomachineryState {
@@ -123,17 +120,19 @@ class CTurbomachineryState {
   vector <su2double> GetMach() const { return Mach; }
 
   su2double GetVelocityValue() const {
-    return sqrt(inner_product(Velocity.begin(), Velocity.end(), Velocity.begin(), 0.0));
+    return sqrt(std::inner_product(Velocity.begin(), Velocity.end(), Velocity.begin(), 0.0));
   }
 
-  su2double GetMachValue() const { return sqrt(inner_product(Mach.begin(), Mach.end(), Mach.begin(), 0.0)); }
+  su2double GetMachValue() const { 
+    return sqrt(std::inner_product(Mach.begin(), Mach.end(), Mach.begin(), 0.0)); 
+  }
 
   su2double GetRelVelocityValue() const {
-    return sqrt(inner_product(RelVelocity.begin(), RelVelocity.end(), RelVelocity.begin(), 0.0));
+    return sqrt(std::inner_product(RelVelocity.begin(), RelVelocity.end(), RelVelocity.begin(), 0.0));
   }
 
   su2double GetRelMachValue() const {
-    return sqrt(inner_product(RelMach.begin(), RelMach.end(), RelMach.begin(), 0.0));
+    return sqrt(std::inner_product(RelMach.begin(), RelMach.end(), RelMach.begin(), 0.0));
   }
 };
 
@@ -219,8 +218,8 @@ class CTurbomachineryStagePerformance {
       CFluidModel &fluidModel;
    public:
       CTurbomachineryStagePerformance(CFluidModel& fluid);
-      ~CTurbomachineryStagePerformance();
-      virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config);
+      virtual ~CTurbomachineryStagePerformance() = default;
+      virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, const CConfig* config);
       virtual void ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
       virtual void ComputeCompressorStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
       su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }

@@ -60,7 +60,7 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
   unsigned short nDim = nVar - 2;
   bool turbulent = (donor_config->GetKind_Turb_Model() != NONE);
 
-  iSpan = 0;
+  // iSpan = 0;
 
   Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
   Donor_Variable[1] = donor_solution->GetAveragePressure(Marker_Donor, iSpan);

@@ -2556,7 +2556,7 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
 
   /*--- Set maximum number of Span among all zones ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (config[iZone]->GetBoolTurbomachinery()){
+    if (config[iZone]->GetBoolTurbomachinery()) {
       config[iZone]->SetnSpanMaxAllZones(nSpanMax);
     }
   }

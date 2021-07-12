@@ -1,8 +1,8 @@
 /*!
  * \file CTurbomachineryPerformance.cpp
  * \brief Source of the Turbomachinery Performance class.
- * \author S. Vitale
- * \version 7.0.1 "Blackbird"
+ * \author S. Vitale, N. Anand
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -202,17 +202,17 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
       // TODO: This needs to be fixed
       switch (config.GetKind_TurboPerf(iBladeRow)) {
         
-        case TURBINE:
+        case TURBO_PERF_KIND::TURBINE:
           bladeSpanPerformances.push_back(make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
                                                                       radiusOut));
           break;
 
-        case COMPRESSOR:
+        case TURBO_PERF_KIND::COMPRESSOR:
           bladeSpanPerformances.push_back(make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
                                                                       radiusOut));
           break;
 
-        case PROPELLOR:
+        case TURBO_PERF_KIND::PROPELLOR:
           bladeSpanPerformances.push_back(make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut,
                                                                       radiusOut));
           break;
@@ -252,18 +252,18 @@ CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(CFluidModel& fl
             EntropyGen=0.0, 
             PressureRatio=0.0, 
             EulerianWork=0.0;
-  // CFluidModel fluidModel(fluid);
 }
 
-void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, CConfig* config) {
+void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, const  CConfig* config) {
 
   switch (config->GetKind_TurboPerf(ZONE_0)) {
-  case TURBINE:
+  case TURBO_PERF_KIND::TURBINE:
     /* code */
     ComputeTurbineStagePerformance(InState, OutState);
     break;
-
+    
   default:
+    ComputeTurbineStagePerformance(InState, OutState);
     break;
   }
 }
@@ -314,5 +314,3 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(CTurboma
   PressureRatio = OutState.GetTotalPressure()/InState.GetTotalPressure();
 
 }
-
-CTurbomachineryStagePerformance::~CTurbomachineryStagePerformance() {}

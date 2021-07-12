@@ -1308,33 +1308,33 @@ static const MapType<string, SPANWISE_TYPE> SpanWise_Map = {
 /*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBOMACHINERY_TYPE {
-  AXIAL = 1,              /*!< \brief axial turbomachinery. */
-  CENTRIFUGAL = 2,        /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
-  CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
-  AXIAL_CENTRIFUGAL = 5,  /*!< \brief mixed flow turbine. */
+enum class TURBOMACHINERY_TYPE {
+  AXIAL,              /*!< \brief axial turbomachinery. */
+  CENTRIFUGAL,        /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL,        /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL,  /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL,  /*!< \brief mixed flow turbine. */
 };
 static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
-  MakePair("AXIAL", AXIAL)
-  MakePair("CENTRIFUGAL", CENTRIFUGAL)
-  MakePair("CENTRIPETAL",  CENTRIPETAL)
-  MakePair("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
-  MakePair("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL)
+  MakePair("AXIAL", TURBOMACHINERY_TYPE::AXIAL)
+  MakePair("CENTRIFUGAL", TURBOMACHINERY_TYPE::CENTRIFUGAL)
+  MakePair("CENTRIPETAL",  TURBOMACHINERY_TYPE::CENTRIPETAL)
+  MakePair("CENTRIPETAL_AXIAL",  TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL)
+  MakePair("AXIAL_CENTRIFUGAL",  TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL)
 };
 
 /*!
  * \brief Types of Turbomachinery performance Type.
  */
-enum TURBO_PERF_KIND{
-  TURBINE = 0,            /*!< \brief Turbine Performance. */
-  COMPRESSOR = 1,         /*!< \brief Compressor Performance. */
-  PROPELLOR = 2           /*!< \brief Propellor Performance. */
+enum class TURBO_PERF_KIND{
+  TURBINE,            /*!< \brief Turbine Performance. */
+  COMPRESSOR,         /*!< \brief Compressor Performance. */
+  PROPELLOR           /*!< \brief Propellor Performance. */
 };
-static const MapType<string, TURBO_PERF_KIND> TurboPerfKind_Map = {
-  MakePair("TURBINE",  TURBINE)
-  MakePair("COMPRESSOR",  COMPRESSOR)
-  MakePair("PROPELLOR",  PROPELLOR)
+static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
+  MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
+  MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
+  MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
 };
 
 /*!
