@@ -164,8 +164,8 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
   }
 
   /*--- Determine the electron density (if ionized) ---*/
-  if (ionization) { su2double rho_el = rhos[0]; }
-  else            { su2double rho_el = 0.0; }
+  su2double rho_el = 0.0;
+  if (ionization) { rho_el = rhos[0]; }
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long RHOS_INDEX    = 0;
