@@ -2232,7 +2232,7 @@ enum class POD_KIND {
   STATIC,            /*!< \brief Use static SVD for POD basis generation. */
   INCREMENTAL,       /*!< \brief Use incremental SVD for POD basis generation. */
 };
-static const MapType<string, POD_KIND> POD_Map = {
+static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
 };
