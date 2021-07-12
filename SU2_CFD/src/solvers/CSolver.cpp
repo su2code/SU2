@@ -4256,9 +4256,12 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
-        f << Coord[0] << ", " << Coord[1] << ", " << globalPoint << "\n";
+        
+        for (unsigned long iDim; iDim < nDim; iDim++) {
+          f << Coord[iDim] << ", ";
+        }
+        f << globalPoint << "\n";
       }
-    
     f.close();
   }
 
