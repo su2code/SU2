@@ -199,8 +199,9 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
   }
 
   /*--- Species density derivatives ---*/
+  su2double ef = 0.0;
   for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
-    su2double ef       = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
