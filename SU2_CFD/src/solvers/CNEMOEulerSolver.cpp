@@ -1311,8 +1311,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     ModelTableOut <<"-- Models:"<< endl;
 
     ModelTable.AddColumn("Mixture", 25);
-    ModelTable.AddColumn("Transport Model", 25);
     ModelTable.AddColumn("Fluid Model", 25);
+    ModelTable.AddColumn("Transport Model", 25);
     ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     ModelTable.PrintHeader();
 

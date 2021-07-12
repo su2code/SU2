@@ -205,8 +205,8 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
-      /*--- Recompute Primitive from previous solution ---*/
-      Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
                    dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
