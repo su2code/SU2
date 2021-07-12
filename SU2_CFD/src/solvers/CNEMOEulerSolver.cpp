@@ -838,7 +838,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Preprocess viscous axisymm variables (if necessary) ---*/
   if (axisymm && viscous) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
       su2double yVelocity       = nodes->GetVelocity(iPoint,1);
       su2double xVelocity       = nodes->GetVelocity(iPoint,0);
@@ -851,6 +852,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
       }
    }
+   END_SU2_OMP_FOR
 
    /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
