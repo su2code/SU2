@@ -839,7 +839,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   if (axisymm && viscous) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
       su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
       su2double yVelocity       = nodes->GetVelocity(iPoint,1);
       su2double xVelocity       = nodes->GetVelocity(iPoint,0);
@@ -851,17 +850,17 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
         nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
       }
+   }
 
-      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-        SetAuxVar_Gradient_GG(geometry, config);
-      }
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-        SetAuxVar_Gradient_LS(geometry, config);
-      }
-    } 
+   /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+     SetAuxVar_Gradient_GG(geometry, config);
+   }
+   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+     SetAuxVar_Gradient_LS(geometry, config);
+   }
   }
-   
+
   /*--- loop over interior points ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
