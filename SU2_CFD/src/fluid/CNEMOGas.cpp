@@ -65,15 +65,15 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   T        = val_temperature;
   Tve      = val_temperature_ve;
 
-  su2double denom   = 0.0;
+  su2double denom = 0.0;
 
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     denom += MassFrac[iSpecies] * (Ru/MolarMass[iSpecies]) * Tve;
-  for (iSpecies = nEl; iSpecies < nEl; iSpecies++)
-    denom += MassFrac[nSpecies] * (Ru/MolarMass[nSpecies-1]) * T;
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++)
+    denom += MassFrac[iSpecies] * (Ru/MolarMass[iSpecies]) * T;
   Density = Pressure / denom;
-
+  
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     rhos[iSpecies]     = MassFrac[iSpecies]*Density;
     MassFrac[iSpecies] = rhos[iSpecies]/Density;
@@ -107,7 +107,7 @@ su2double CNEMOGas::ComputePressure(){
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * Tve;
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++)
-    P += rhos[nSpecies] * Ru/MolarMass[nSpecies] * T;
+    P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
 
   Pressure = P;
 
@@ -234,7 +234,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
   /*--- Vib.-el energy derivative ---*/
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
-                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+                               rho_el*Ru/MolarMass[0]*1.0/rhoCvve;
 
 }
 
@@ -261,7 +261,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
   su2double v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
 
   /*--- Species density derivatives ---*/
-  for (iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
+  for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {
     su2double ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
