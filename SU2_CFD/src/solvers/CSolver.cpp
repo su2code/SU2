@@ -4209,7 +4209,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   }
 }
 
-void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged) {
+void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
   
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   const bool unsteady            = config->GetTime_Domain();
@@ -4246,9 +4246,6 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     u_basis_generator.reset(new CAROM::BasisGenerator(
       svd_options, incremental,
       filename));
-    
-    // Print nodes for each rank for now
-    std::cout << "nPointDomain: " << nPointDomain << " for rank: " << rank << std::endl;
     
     // Save mesh ordering
     std::ofstream f;

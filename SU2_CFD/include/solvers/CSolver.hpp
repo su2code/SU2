@@ -4340,12 +4340,11 @@ public:
   
   /*!
    * \brief Save snapshot or POD data using libROM
-   * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] converged - Whether or not solution has converged.
   */
-  void SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config, bool converged);
+  void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:
   /*!
