@@ -125,7 +125,7 @@ if omp
       su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
     endif
 
-    if get_option('opdi-shared-read-opt')
+    if get_option('opdi-shared-read-opt') == false
       su2_cpp_args += '-DOPDI_VARIABLE_ADJOINT_ACCESS_MODE=0'
     endif
   endif
