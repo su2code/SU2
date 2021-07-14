@@ -69,9 +69,9 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.107800, 1.574246, 47250.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
 

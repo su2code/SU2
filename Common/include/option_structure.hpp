@@ -37,8 +37,6 @@
 #include <cstdlib>
 #include <algorithm>
 
-using namespace std;
-
 /*!
  * \class CEmptyMap
  * \brief We use this dummy class instead of std::map when
@@ -47,12 +45,12 @@ using namespace std;
  */
 template <typename T, typename U>
 struct CEmptyMap {
-  CEmptyMap(initializer_list<pair<const T, U> >) {}
+  CEmptyMap(std::initializer_list<std::pair<const T, U> >) {}
 };
 
 #ifdef ENABLE_MAPS
 template<class T, class U>
-using MapType = map<T,U>;
+using MapType = std::map<T,U>;
 #define MakePair(a,b) {a,b},
 #else
 template<class T, class U>
@@ -159,7 +157,7 @@ enum AVERAGE_TYPE {
   AVERAGE_AREA = 1,     /*!< \brief Area-weighted average. */
   AVERAGE_MASSFLUX = 2  /*!< \brief Mass-flux weighted average. */
 };
-static const MapType<string, AVERAGE_TYPE> Average_Map = {
+static const MapType<std::string, AVERAGE_TYPE> Average_Map = {
   MakePair("AREA", AVERAGE_AREA)
   MakePair("MASSFLUX", AVERAGE_MASSFLUX)
 };
@@ -200,7 +198,7 @@ enum ENUM_MAIN_SOLVER {
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
   NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
 };
-static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
+static const MapType<std::string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
   MakePair("EULER", EULER)
   MakePair("NAVIER_STOKES", NAVIER_STOKES)
@@ -241,7 +239,7 @@ enum class ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL, /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
   MZ_BLOCK_JACOBI,       /*!< \brief Definition of a Block-Jacobi solver. */
 };
-static const MapType<string, ENUM_MULTIZONE> Multizone_Map = {
+static const MapType<std::string, ENUM_MULTIZONE> Multizone_Map = {
   MakePair("BLOCK_GAUSS_SEIDEL", ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL)
   MakePair("BLOCK_JACOBI", ENUM_MULTIZONE::MZ_BLOCK_JACOBI)
 };
@@ -253,7 +251,7 @@ enum class STRUCT_DEFORMATION {
   SMALL,       /*!< \brief Definition of linear elastic material. */
   LARGE,       /*!< \brief Definition of Neo-Hookean material. */
 };
-static const MapType<string, STRUCT_DEFORMATION> Struct_Map = {
+static const MapType<std::string, STRUCT_DEFORMATION> Struct_Map = {
   MakePair("SMALL_DEFORMATIONS", STRUCT_DEFORMATION::SMALL)
   MakePair("LARGE_DEFORMATIONS", STRUCT_DEFORMATION::LARGE)
 };
@@ -267,7 +265,7 @@ enum class STRUCT_MODEL {
   KNOWLES,          /*!< \brief Definition of Knowles stored-energy potential */
   IDEAL_DE,         /*!< \brief Definition of ideal Dielectric Elastomer */
 };
-static const MapType<string, STRUCT_MODEL> Material_Map = {
+static const MapType<std::string, STRUCT_MODEL> Material_Map = {
   MakePair("LINEAR_ELASTIC", STRUCT_MODEL::LINEAR_ELASTIC)
   MakePair("NEO_HOOKEAN", STRUCT_MODEL::NEO_HOOKEAN)
   MakePair("KNOWLES", STRUCT_MODEL::KNOWLES)
@@ -281,7 +279,7 @@ enum class STRUCT_COMPRESS {
   COMPRESSIBLE,     /*!< \brief Definition of compressible material. */
   NEARLY_INCOMP,    /*!< \brief Definition of nearly incompressible material. */
 };
-static const MapType<string, STRUCT_COMPRESS> MatComp_Map = {
+static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
   MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
   MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
 };
@@ -295,7 +293,7 @@ enum class INTERFACE_INTERPOLATOR {
   WEIGHTED_AVERAGE,      /*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
   RADIAL_BASIS_FUNCTION, /*!< \brief Radial basis function interpolation. */
 };
-static const MapType<string, INTERFACE_INTERPOLATOR> Interpolator_Map = {
+static const MapType<std::string, INTERFACE_INTERPOLATOR> Interpolator_Map = {
   MakePair("NEAREST_NEIGHBOR", INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR)
   MakePair("ISOPARAMETRIC",    INTERFACE_INTERPOLATOR::ISOPARAMETRIC)
   MakePair("WEIGHTED_AVERAGE", INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE)
@@ -312,7 +310,7 @@ enum class RADIAL_BASIS {
   THIN_PLATE_SPLINE,  /*!< \brief Thin plate spline. */
   MULTI_QUADRIC,      /*!< \brief Multi quartic biharmonic spline. */
 };
-static const MapType<string, RADIAL_BASIS> RadialBasisFunction_Map = {
+static const MapType<std::string, RADIAL_BASIS> RadialBasisFunction_Map = {
   MakePair("WENDLAND_C2", RADIAL_BASIS::WENDLAND_C2)
   MakePair("INV_MULTI_QUADRIC", RADIAL_BASIS::INV_MULTI_QUADRIC)
   MakePair("GAUSSIAN", RADIAL_BASIS::GAUSSIAN)
@@ -323,27 +321,29 @@ static const MapType<string, RADIAL_BASIS> RadialBasisFunction_Map = {
 /*!
  * \brief type of radial spanwise interpolation function for the inlet face
  */
-enum ENUM_INLET_SPANWISEINTERPOLATION {
-  NO_INTERPOLATION = 0,
-  LINEAR_1D = 1,
-  AKIMA_1D = 2,
+enum class INLET_SPANWISE_INTERP {
+  NONE,
+  LINEAR_1D,
+  AKIMA_1D,
+  CUBIC_1D,
 };
-static const MapType<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
-  MakePair("NONE", NO_INTERPOLATION)
-  MakePair("LINEAR_1D",LINEAR_1D)
-  MakePair("AKIMA_1D",AKIMA_1D)
+static const MapType<std::string, INLET_SPANWISE_INTERP> Inlet_SpanwiseInterpolation_Map = {
+  MakePair("NONE", INLET_SPANWISE_INTERP::NONE)
+  MakePair("LINEAR_1D", INLET_SPANWISE_INTERP::LINEAR_1D)
+  MakePair("AKIMA_1D", INLET_SPANWISE_INTERP::AKIMA_1D)
+  MakePair("CUBIC_1D", INLET_SPANWISE_INTERP::CUBIC_1D)
 };
 
 /*!
  * \brief type of radial spanwise interpolation data type for the inlet face
  */
-enum ENUM_INLET_INTERPOLATIONTYPE {
-  VR_VTHETA = 0,
-  ALPHA_PHI = 1,
+enum class INLET_INTERP_TYPE {
+  VR_VTHETA,
+  ALPHA_PHI,
 };
-static const MapType<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
-  MakePair("VR_VTHETA",VR_VTHETA)
-  MakePair("ALPHA_PHI",ALPHA_PHI)
+static const MapType<std::string, INLET_INTERP_TYPE> Inlet_SpanwiseInterpolationType_Map = {
+  MakePair("VR_VTHETA", INLET_INTERP_TYPE::VR_VTHETA)
+  MakePair("ALPHA_PHI", INLET_INTERP_TYPE::ALPHA_PHI)
 };
 
 /*!
@@ -384,7 +384,7 @@ enum ENUM_KIND_NONDIM {
   INITIAL_VALUES   = 4,         /*!< \brief Non-dimensional incompressible simulation based on intial values for external flow. */
   REFERENCE_VALUES = 5          /*!< \brief Non-dimensional incompressible simulation based on custom reference values. */
 };
-static const MapType<string, ENUM_KIND_NONDIM> NonDim_Map = {
+static const MapType<std::string, ENUM_KIND_NONDIM> NonDim_Map = {
   MakePair("DIMENSIONAL", DIMENSIONAL)
   MakePair("FREESTREAM_PRESS_EQ_ONE", FREESTREAM_PRESS_EQ_ONE)
   MakePair("FREESTREAM_VEL_EQ_MACH",  FREESTREAM_VEL_EQ_MACH)
@@ -400,7 +400,7 @@ enum ENUM_MEASUREMENTS {
   SI = 0,     /*!< \brief Definition of compressible solver. */
   US = 1      /*!< \brief Definition of incompressible solver. */
 };
-static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
+static const MapType<std::string, ENUM_MEASUREMENTS> Measurements_Map = {
   MakePair("SI", SI)
   MakePair("US", US)
 };
@@ -478,7 +478,7 @@ enum ENUM_SPACE {
   SPACE_UPWIND = 2,    /*!< \brief Upwind convective numerical method. */
   FINITE_ELEMENT = 3   /*!< \brief Finite element convective numerical method. */
 };
-static const MapType<string, ENUM_SPACE> Space_Map = {
+static const MapType<std::string, ENUM_SPACE> Space_Map = {
   MakePair("NONE", NO_CONVECTIVE)
   MakePair("SPACE_CENTERED", SPACE_CENTERED)
   MakePair("SPACE_UPWIND", SPACE_UPWIND)
@@ -499,7 +499,7 @@ enum ENUM_FLUIDMODEL {
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
 };
-static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
+static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
   MakePair("IDEAL_GAS", IDEAL_GAS)
   MakePair("VW_GAS", VW_GAS)
@@ -525,7 +525,7 @@ enum ENUM_GASMODEL {
    ARGON_SID  = 7,
    ONESPECIES = 8
 };
-static const MapType<string, ENUM_GASMODEL> GasModel_Map = {
+static const MapType<std::string, ENUM_GASMODEL> GasModel_Map = {
 MakePair("NONE", NO_MODEL)
 MakePair("ARGON", ARGON)
 MakePair("AIR-7", AIR7)
@@ -544,7 +544,7 @@ enum ENUM_TRANSCOEFFMODEL {
   WILKE      = 0,
   GUPTAYOS   = 1
 };
-static const MapType<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
+static const MapType<std::string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
 MakePair("WILKE", WILKE)
 MakePair("GUPTA-YOS", GUPTAYOS)
 };
@@ -557,7 +557,7 @@ enum class INC_DENSITYMODEL {
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
 };
-static const MapType<string, INC_DENSITYMODEL> DensityModel_Map = {
+static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
@@ -570,7 +570,7 @@ enum ENUM_INIT_OPTION {
   REYNOLDS = 0,      /*!< \brief Reynold's number initalization. */
   TD_CONDITIONS = 1  /*!< \brief Total conditions initalization. */
 };
-static const MapType<string, ENUM_INIT_OPTION> InitOption_Map = {
+static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
   MakePair("REYNOLDS", REYNOLDS)
   MakePair("TD_CONDITIONS", TD_CONDITIONS)
 };
@@ -582,7 +582,7 @@ enum class FREESTREAM_OPTION {
   TEMPERATURE_FS, /*!< \brief Temperature initialization. */
   DENSITY_FS, /*!< \brief Density initalization. */
 };
-static const MapType<string, FREESTREAM_OPTION> FreeStreamOption_Map = {
+static const MapType<std::string, FREESTREAM_OPTION> FreeStreamOption_Map = {
   MakePair("TEMPERATURE_FS", FREESTREAM_OPTION::TEMPERATURE_FS)
   MakePair("DENSITY_FS", FREESTREAM_OPTION::DENSITY_FS)
 };
@@ -595,7 +595,7 @@ enum class VISCOSITYMODEL {
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
 };
-static const MapType<string, VISCOSITYMODEL> ViscosityModel_Map = {
+static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
@@ -609,7 +609,7 @@ enum class CONDUCTIVITYMODEL {
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
 };
-static const MapType<string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
+static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
@@ -622,7 +622,7 @@ enum class CONDUCTIVITYMODEL_TURB {
   NONE, /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
   CONSTANT_PRANDTL, /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
 };
-static const MapType<string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
+static const MapType<std::string, CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = {
   MakePair("NONE", CONDUCTIVITYMODEL_TURB::NONE)
   MakePair("CONSTANT_PRANDTL_TURB", CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL)
 };
@@ -639,7 +639,7 @@ enum ENUM_GRIDMOVEMENT {
   GUST = 12,                /*!< \brief Simulation on a static mesh with a gust. */
   MOVING_HTP = 13,          /*!< \brief Simulation with moving HTP (rotation). */
 };
-static const MapType<string, ENUM_GRIDMOVEMENT> GridMovement_Map = {
+static const MapType<std::string, ENUM_GRIDMOVEMENT> GridMovement_Map = {
   MakePair("NONE", NO_MOVEMENT)
   MakePair("RIGID_MOTION", RIGID_MOTION)
   MakePair("ROTATING_FRAME", ROTATING_FRAME)
@@ -657,7 +657,7 @@ enum ENUM_SURFACEMOVEMENT {
   EXTERNAL = 6,                  /*!< \brief Simulation with external motion. */
   EXTERNAL_ROTATION = 7,         /*!< \brief Simulation with external rotation motion. */
 };
-static const MapType<string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
+static const MapType<std::string, ENUM_SURFACEMOVEMENT> SurfaceMovement_Map = {
   MakePair("DEFORMING", DEFORMING)
   MakePair("MOVING_WALL", MOVING_WALL)
   MakePair("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
@@ -677,7 +677,7 @@ enum ENUM_GUST_TYPE {
   VORTEX = 4,       /*!< \brief A gust made from vortices */
   EOG = 5           /*!< \brief An extreme operating gust */
 };
-static const MapType<string, ENUM_GUST_TYPE> Gust_Type_Map = {
+static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
   MakePair("NONE", NO_GUST)
   MakePair("TOP_HAT", TOP_HAT)
   MakePair("SINE", SINE)
@@ -693,7 +693,7 @@ enum ENUM_GUST_DIR {
   X_DIR = 0,  /*!< \brief Gust direction-X. */
   Y_DIR = 1   /*!< \brief Gust direction-Y. */
 };
-static const MapType<string, ENUM_GUST_DIR> Gust_Dir_Map = {
+static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
   MakePair("X_DIR", X_DIR)
   MakePair("Y_DIR", Y_DIR)
 };
@@ -709,7 +709,7 @@ enum ENUM_CENTERED {
   JST_MAT = 3,        /*!< \brief JST with matrix dissipation. */
   JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
-static const MapType<string, ENUM_CENTERED> Centered_Map = {
+static const MapType<std::string, ENUM_CENTERED> Centered_Map = {
   MakePair("NONE", NO_CENTERED)
   MakePair("JST", JST)
   MakePair("JST_KE", JST_KE)
@@ -743,7 +743,7 @@ enum ENUM_UPWIND {
   AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPWPLUS = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
 };
-static const MapType<string, ENUM_UPWIND> Upwind_Map = {
+static const MapType<std::string, ENUM_UPWIND> Upwind_Map = {
   MakePair("NONE", NO_UPWIND)
   MakePair("ROE", ROE)
   MakePair("TURKEL_PREC", TURKEL)
@@ -772,7 +772,7 @@ enum ENUM_FEM {
   NO_FEM = 0,  /*!< \brief No finite element scheme is used. */
   DG = 1       /*!< \brief Discontinuous Galerkin numerical method. */
 };
-static const MapType<string, ENUM_FEM> FEM_Map = {
+static const MapType<std::string, ENUM_FEM> FEM_Map = {
   MakePair("NONE", NO_FEM)
   MakePair("DG", DG)
 };
@@ -784,7 +784,7 @@ enum ENUM_SHOCK_CAPTURING_DG {
   NO_SHOCK_CAPTURING = 0,     /*!< \brief Shock capturing is not used. */
   PERSSON = 1                 /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
 };
-static const MapType<string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
+static const MapType<std::string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = {
   MakePair("NONE", NO_SHOCK_CAPTURING)
   MakePair("PERSSON", PERSSON)
 };
@@ -796,7 +796,7 @@ enum ENUM_MATRIX_COLORING {
   GREEDY_COLORING = 0,            /*!< \brief Greedy type of algorithm for the coloring. */
   NATURAL_COLORING = 1            /*!< \brief One color for every DOF, very slow. Only to be used for debugging. */
 };
-static const MapType<string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
+static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
   MakePair("GREEDY_COLORING", GREEDY_COLORING)
   MakePair("NATURAL_COLORING", NATURAL_COLORING)
 };
@@ -813,7 +813,7 @@ enum ENUM_LIMITER {
   SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
   WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
 };
-static const MapType<string, ENUM_LIMITER> Limiter_Map = {
+static const MapType<std::string, ENUM_LIMITER> Limiter_Map = {
   MakePair("NONE", NO_LIMITER)
   MakePair("VENKATAKRISHNAN", VENKATAKRISHNAN)
   MakePair("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
@@ -836,7 +836,7 @@ enum ENUM_TURB_MODEL {
   SST       = 6,     /*!< \brief Kind of Turbulence model (Menter SST). */
   SST_SUST  = 7      /*!< \brief Kind of Turbulence model (Menter SST with sustaining terms for free-stream preservation). */
 };
-static const MapType<string, ENUM_TURB_MODEL> Turb_Model_Map = {
+static const MapType<std::string, ENUM_TURB_MODEL> Turb_Model_Map = {
   MakePair("NONE", NO_TURB_MODEL)
   MakePair("SA", SA)
   MakePair("SA_NEG", SA_NEG)
@@ -855,7 +855,7 @@ enum ENUM_TRANS_MODEL {
   LM = 1,              /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
   BC = 2               /*!< \brief Kind of transition model (BAS-CAKMAKCIOGLU (BC) for Spalart-Allmaras). */
 };
-static const MapType<string, ENUM_TRANS_MODEL> Trans_Model_Map = {
+static const MapType<std::string, ENUM_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", NO_TRANS_MODEL)
   MakePair("LM", LM)
   MakePair("BC", BC)
@@ -871,7 +871,7 @@ enum ENUM_SGS_MODEL {
   WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
   VREMAN       = 4  /*!< \brief Vreman SGS model. */
 };
-static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
+static const MapType<std::string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("NONE",         NO_SGS_MODEL)
   MakePair("IMPLICIT_LES", IMPLICIT_LES)
   MakePair("SMAGORINSKY",  SMAGORINSKY)
@@ -889,7 +889,7 @@ enum class WINDOW_FUNCTION {
   HANN_SQUARE,   /*!< \brief Hann-squared type weight function (order 5)*/
   BUMP,          /*!< \brief bump type weight function (exponential order of convergence) */
 };
-static const MapType<string, WINDOW_FUNCTION> Window_Map = {
+static const MapType<std::string, WINDOW_FUNCTION> Window_Map = {
   MakePair("SQUARE", WINDOW_FUNCTION::SQUARE)
   MakePair("HANN", WINDOW_FUNCTION::HANN)
   MakePair("HANN_SQUARE", WINDOW_FUNCTION::HANN_SQUARE)
@@ -906,7 +906,7 @@ enum ENUM_HYBRIDRANSLES {
   SA_ZDES  = 3,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
   SA_EDDES = 4           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
 };
-static const MapType<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
+static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)
   MakePair("SA_DES", SA_DES)
   MakePair("SA_DDES", SA_DDES)
@@ -924,7 +924,7 @@ enum ENUM_ROELOWDISS {
   NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
   FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
 };
-static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
+static const MapType<std::string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
   MakePair("NONE", NO_ROELOWDISS)
   MakePair("FD", FD)
   MakePair("NTS", NTS)
@@ -944,7 +944,7 @@ enum class WALL_FUNCTIONS {
   NONEQUILIBRIUM_MODEL ,   /*!< \brief Non-equilibrium wall model for LES. */
   LOGARITHMIC_MODEL        /*!< \brief Logarithmic law-of-the-wall model for LES. */
 };
-static const MapType<string, WALL_FUNCTIONS> Wall_Functions_Map = {
+static const MapType<std::string, WALL_FUNCTIONS> Wall_Functions_Map = {
   MakePair("NO_WALL_FUNCTION",          WALL_FUNCTIONS::NONE)
   MakePair("STANDARD_WALL_FUNCTION",    WALL_FUNCTIONS::STANDARD_FUNCTION)
   MakePair("ADAPTIVE_WALL_FUNCTION",    WALL_FUNCTIONS::ADAPTIVE_FUNCTION)
@@ -964,7 +964,7 @@ enum ENUM_TIME_INT {
   CLASSICAL_RK4_EXPLICIT = 4, /*!< \brief Classical RK4 time integration definition. */
   ADER_DG = 5                 /*!< \brief ADER-DG time integration definition. */
 };
-static const MapType<string, ENUM_TIME_INT> Time_Int_Map = {
+static const MapType<std::string, ENUM_TIME_INT> Time_Int_Map = {
   MakePair("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
   MakePair("EULER_EXPLICIT", EULER_EXPLICIT)
   MakePair("EULER_IMPLICIT", EULER_IMPLICIT)
@@ -979,7 +979,7 @@ enum ENUM_ADER_PREDICTOR {
   ADER_ALIASED_PREDICTOR     = 1, /*!< \brief Aliased predictor, easiest to do. */
   ADER_NON_ALIASED_PREDICTOR = 2  /*!< \brief Non-aliased predictor. Consistent, but more difficult. */
 };
-static const MapType<string, ENUM_ADER_PREDICTOR> Ader_Predictor_Map = {
+static const MapType<std::string, ENUM_ADER_PREDICTOR> Ader_Predictor_Map = {
   MakePair("ADER_ALIASED_PREDICTOR", ADER_ALIASED_PREDICTOR)
   MakePair("ADER_NON_ALIASED_PREDICTOR", ADER_NON_ALIASED_PREDICTOR)
 };
@@ -993,7 +993,7 @@ enum ENUM_HEAT_TIMESTEP {
   VISCOUS = 3,     /*!< \brief Local time stepping based on viscous spectral radius.*/
   BYFLOW = 4,      /*!< \brief Unsing the mean solvers time step. */
 };
-static const MapType<string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
+static const MapType<std::string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
   MakePair("LOCAL", MINIMUM)
   MakePair("CONVECTIVE", CONVECTIVE)
   MakePair("VISCOUS", VISCOUS)
@@ -1008,7 +1008,7 @@ enum class STRUCT_TIME_INT {
   NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
   GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
-static const MapType<string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
+static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
   MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
   MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
@@ -1021,7 +1021,7 @@ enum class STRUCT_SPACE_ITE {
   NEWTON,       /*!< \brief Full Newton-Rapshon method. */
   MOD_NEWTON,   /*!< \brief Modified Newton-Raphson method. */
 };
-static const MapType<string, STRUCT_SPACE_ITE> Space_Ite_Map_FEA = {
+static const MapType<std::string, STRUCT_SPACE_ITE> Space_Ite_Map_FEA = {
   MakePair("NEWTON_RAPHSON", STRUCT_SPACE_ITE::NEWTON)
   MakePair("MODIFIED_NEWTON_RAPHSON", STRUCT_SPACE_ITE::MOD_NEWTON)
 };
@@ -1035,7 +1035,7 @@ enum ENUM_FLOW_GRADIENT {
   LEAST_SQUARES          = 2,   /*!< \brief Gradient computation using unweighted least squares. */
   WEIGHTED_LEAST_SQUARES = 3    /*!< \brief Gradients computation using inverse-distance weighted least squares. */
 };
-static const MapType<string, ENUM_FLOW_GRADIENT> Gradient_Map = {
+static const MapType<std::string, ENUM_FLOW_GRADIENT> Gradient_Map = {
   MakePair("NONE", NO_GRADIENT)
   MakePair("GREEN_GAUSS", GREEN_GAUSS)
   MakePair("LEAST_SQUARES", LEAST_SQUARES)
@@ -1057,7 +1057,7 @@ enum GEOMETRY_MODE {
   FUNCTION = 0,     /*!< \brief Geometrical analysis. */
   GRADIENT = 1      /*!< \brief Geometrical analysis and gradient using finite differences. */
 };
-static const MapType<string, GEOMETRY_MODE> GeometryMode_Map = {
+static const MapType<std::string, GEOMETRY_MODE> GeometryMode_Map = {
   MakePair("FUNCTION", FUNCTION)
   MakePair("GRADIENT", GRADIENT)
 };
@@ -1109,7 +1109,7 @@ enum class STRUCT_2DFORM {
   PLANE_STRESS,     /*!< \brief Definition of plane stress solver. */
   PLANE_STRAIN      /*!< \brief Definition of plane strain solver. */
 };
-static const MapType<string, STRUCT_2DFORM> ElasForm_2D = {
+static const MapType<std::string, STRUCT_2DFORM> ElasForm_2D = {
   MakePair("PLANE_STRESS", STRUCT_2DFORM::PLANE_STRESS)
   MakePair("PLANE_STRAIN", STRUCT_2DFORM::PLANE_STRAIN)
 };
@@ -1122,7 +1122,7 @@ enum class BGS_RELAXATION {
   FIXED,      /*!< \brief Relaxation with a fixed parameter. */
   AITKEN,     /*!< \brief Relaxation using Aitken's dynamic parameter. */
 };
-static const MapType<string, BGS_RELAXATION> AitkenForm_Map = {
+static const MapType<std::string, BGS_RELAXATION> AitkenForm_Map = {
   MakePair("NONE", BGS_RELAXATION::NONE)
   MakePair("FIXED_PARAMETER", BGS_RELAXATION::FIXED)
   MakePair("AITKEN_DYNAMIC", BGS_RELAXATION::AITKEN)
@@ -1139,7 +1139,7 @@ enum ENUM_DYN_TRANSFER_METHOD {
   SIGMOID_10 = 5,      /*!< \brief The load is transferred using a sigmoid with parameter 10 */
   SIGMOID_20 = 6       /*!< \brief The load is transferred using a sigmoid with parameter 20 */
 };
-static const MapType<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = {
+static const MapType<std::string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = {
   MakePair("INSTANTANEOUS", INSTANTANEOUS)
   MakePair("RAMP", POL_ORDER_1)
   MakePair("CUBIC", POL_ORDER_3)
@@ -1159,7 +1159,7 @@ enum ENUM_DVFEA {
   DEAD_WEIGHT = 4,      /*!< \brief Dead Weight (Rho_DL) as design variable. */
   ELECTRIC_FIELD = 5    /*!< \brief Electric field (E) as design variable. */
 };
-static const MapType<string, ENUM_DVFEA> DVFEA_Map = {
+static const MapType<std::string, ENUM_DVFEA> DVFEA_Map = {
   MakePair("NONE", NODV_FEA)
   MakePair("YOUNG_MODULUS", YOUNG_MODULUS)
   MakePair("POISSON_RATIO", POISSON_RATIO)
@@ -1175,7 +1175,7 @@ enum class RADIATION_MODEL {
   NONE,   /*!< \brief No radiation model */
   P1,     /*!< \brief P1 Radiation model. */
 };
-static const MapType<string, RADIATION_MODEL> Radiation_Map = {
+static const MapType<std::string, RADIATION_MODEL> Radiation_Map = {
   MakePair("NONE", RADIATION_MODEL::NONE)
   MakePair("P1", RADIATION_MODEL::P1)
 };
@@ -1187,7 +1187,7 @@ enum class P1_INIT {
   ZERO,         /*!< \brief Initialize the P1 model from zero values */
   TEMPERATURE,  /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
 };
-static const MapType<string, P1_INIT> P1_Init_Map = {
+static const MapType<std::string, P1_INIT> P1_Init_Map = {
   MakePair("ZERO", P1_INIT::ZERO)
   MakePair("TEMPERATURE_INIT", P1_INIT::TEMPERATURE)
 };
@@ -1203,7 +1203,7 @@ enum CHT_COUPLING {
   DIRECT_TEMPERATURE_ROBIN_HEATFLUX,
   AVERAGED_TEMPERATURE_ROBIN_HEATFLUX,
 };
-static const MapType<string, CHT_COUPLING> CHT_Coupling_Map = {
+static const MapType<std::string, CHT_COUPLING> CHT_Coupling_Map = {
   MakePair("DIRECT_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_NEUMANN_HEATFLUX)
   MakePair("AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX", CHT_COUPLING::AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX)
   MakePair("DIRECT_TEMPERATURE_ROBIN_HEATFLUX", CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX)
@@ -1229,7 +1229,7 @@ enum RIEMANN_TYPE {
   MIXING_IN_1D = 13,
   MIXING_OUT_1D =14
 };
-static const MapType<string, RIEMANN_TYPE> Riemann_Map = {
+static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
   MakePair("DENSITY_VELOCITY", DENSITY_VELOCITY)
   MakePair("STATIC_PRESSURE", STATIC_PRESSURE)
@@ -1246,7 +1246,7 @@ static const MapType<string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
 };
 
-static const MapType<string, RIEMANN_TYPE> Giles_Map = {
+static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
   MakePair("DENSITY_VELOCITY", DENSITY_VELOCITY)
   MakePair("STATIC_PRESSURE", STATIC_PRESSURE)
@@ -1272,7 +1272,7 @@ enum AVERAGEPROCESS_TYPE {
   MIXEDOUT = 3,   /*!< \brief an mixed-out average is computed at the boundary of interest. */
   MASSFLUX = 4    /*!< \brief a mass flow average is computed at the boundary of interest. */
 };
-static const MapType<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = {
+static const MapType<std::string, AVERAGEPROCESS_TYPE> AverageProcess_Map = {
   MakePair("ALGEBRAIC", ALGEBRAIC)
   MakePair("AREA", AREA)
   MakePair("MIXEDOUT", MIXEDOUT)
@@ -1287,7 +1287,7 @@ enum MIXINGPLANE_INTERFACE_TYPE {
   NEAREST_SPAN = 2,         /*!< \brief an area average is computed at the boundary of interest. */
   LINEAR_INTERPOLATION = 3  /*!< \brief an mixed-out average is computed at the boundary of interest. */
 };
-static const MapType<string, MIXINGPLANE_INTERFACE_TYPE> MixingPlaneInterface_Map = {
+static const MapType<std::string, MIXINGPLANE_INTERFACE_TYPE> MixingPlaneInterface_Map = {
   MakePair("MATCHING", MATCHING)
   MakePair("NEAREST_SPAN",  NEAREST_SPAN)
   MakePair("LINEAR_INTERPOLATION", LINEAR_INTERPOLATION)
@@ -1300,7 +1300,7 @@ enum SPANWISE_TYPE {
   AUTOMATIC = 1,      /*!< \brief number of span-wise section are computed automatically */
   EQUISPACED = 2      /*!< \brief number of span-wise section are specified from the user */
 };
-static const MapType<string, SPANWISE_TYPE> SpanWise_Map = {
+static const MapType<std::string, SPANWISE_TYPE> SpanWise_Map = {
   MakePair("AUTOMATIC", AUTOMATIC)
   MakePair("EQUISPACED", EQUISPACED)
 };
@@ -1315,7 +1315,7 @@ enum TURBOMACHINERY_TYPE {
   CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
   AXIAL_CENTRIFUGAL = 5   /*!< \brief mixed flow turbine. */
 };
-static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
+static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
   MakePair("AXIAL", AXIAL)
   MakePair("CENTRIFUGAL", CENTRIFUGAL)
   MakePair("CENTRIPETAL",  CENTRIPETAL)
@@ -1341,7 +1341,7 @@ enum INLET_TYPE {
   VELOCITY_INLET,   /*!< \brief Velocity inlet for an incompressible flow. */
   PRESSURE_INLET,   /*!< \brief Total pressure inlet for an incompressible flow. */
 };
-static const MapType<string, INLET_TYPE> Inlet_Map = {
+static const MapType<std::string, INLET_TYPE> Inlet_Map = {
   MakePair("TOTAL_CONDITIONS", INLET_TYPE::TOTAL_CONDITIONS)
   MakePair("MASS_FLOW", INLET_TYPE::MASS_FLOW)
   MakePair("INPUT_FILE", INLET_TYPE::INPUT_FILE)
@@ -1356,7 +1356,7 @@ enum class INC_OUTLET_TYPE {
   PRESSURE_OUTLET,    /*!< \brief Gauge pressure outlet for incompressible flow */
   MASS_FLOW_OUTLET,   /*!< \brief Mass flow outlet for incompressible flow. */
 };
-static const MapType<string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
+static const MapType<std::string, INC_OUTLET_TYPE> Inc_Outlet_Map = {
   MakePair("PRESSURE_OUTLET",  INC_OUTLET_TYPE::PRESSURE_OUTLET)
   MakePair("MASS_FLOW_OUTLET", INC_OUTLET_TYPE::MASS_FLOW_OUTLET)
 };
@@ -1369,7 +1369,7 @@ enum ENGINE_INFLOW_TYPE {
   FAN_FACE_MDOT = 2,          /*!< \brief User specifies Static pressure. */
   FAN_FACE_PRESSURE = 3       /*!< \brief User specifies Static pressure. */
 };
-static const MapType<string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = {
+static const MapType<std::string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = {
   MakePair("FAN_FACE_MACH", FAN_FACE_MACH)
   MakePair("FAN_FACE_MDOT", FAN_FACE_MDOT)
   MakePair("FAN_FACE_PRESSURE", FAN_FACE_PRESSURE)
@@ -1387,7 +1387,7 @@ enum ACTDISK_TYPE {
   POWER = 6,              /*!< \brief User specifies the power. */
   VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
 };
-static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
+static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
   MakePair("BC_THRUST", BC_THRUST)
   MakePair("NET_THRUST", NET_THRUST)
@@ -1404,7 +1404,7 @@ enum class WALL_TYPE {
   SMOOTH,  /*!< \brief Smooth wall */
   ROUGH,   /*!< \brief Rough wall */
 };
-static const MapType<string, WALL_TYPE> WallType_Map = {
+static const MapType<std::string, WALL_TYPE> WallType_Map = {
   MakePair("SMOOTH", WALL_TYPE::SMOOTH)
   MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
@@ -1478,7 +1478,7 @@ enum ENUM_OBJECTIVE {
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
 };
-static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
+static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
   MakePair("LIFT", LIFT_COEFFICIENT)
   MakePair("SIDEFORCE", SIDEFORCE_COEFFICIENT)
@@ -1538,7 +1538,7 @@ enum ENUM_RESIDUAL {
   RHO_RESIDUAL = 1,        /*!< \brief Rho equation residual criteria equation. */
   RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
 };
-static const MapType<string, ENUM_RESIDUAL> Residual_Map = {
+static const MapType<std::string, ENUM_RESIDUAL> Residual_Map = {
   MakePair("RHO", RHO_RESIDUAL)
   MakePair("RHO_ENERGY", RHO_ENERGY_RESIDUAL)
 };
@@ -1550,7 +1550,7 @@ enum ENUM_RESFEM {
   RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
   RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
 };
-static const MapType<string, ENUM_RESFEM> ResFem_Map = {
+static const MapType<std::string, ENUM_RESFEM> ResFem_Map = {
   MakePair("RELATIVE", RESFEM_RELATIVE)
   MakePair("ABSOLUTE", RESFEM_ABSOLUTE)
 };
@@ -1564,7 +1564,7 @@ enum ENUM_SENS {
   SENS_AOA = 3,         /*!< \brief Angle of attack sensitivity. */
   SENS_AOS = 4          /*!< \brief Angle of Sideslip sensitivity. */
 };
-static const MapType<string, ENUM_SENS> Sens_Map = {
+static const MapType<std::string, ENUM_SENS> Sens_Map = {
   MakePair("SENS_GEOMETRY", SENS_GEOMETRY)
   MakePair("SENS_MACH", SENS_MACH)
   MakePair("SENS_AOA", SENS_AOA)
@@ -1580,7 +1580,7 @@ enum ENUM_INPUT {
   RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
   BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
-static const MapType<string, ENUM_INPUT> Input_Map = {
+static const MapType<std::string, ENUM_INPUT> Input_Map = {
   MakePair("SU2", SU2)
   MakePair("CGNS", CGNS_GRID)
   MakePair("RECTANGLE", RECTANGLE)
@@ -1611,7 +1611,7 @@ enum ENUM_OUTPUT {
   SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
   PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
 };
-static const MapType<string, ENUM_OUTPUT> Output_Map = {
+static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
   MakePair("TECPLOT_ASCII", TECPLOT)
   MakePair("TECPLOT", TECPLOT_BINARY)
   MakePair("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
@@ -1672,7 +1672,7 @@ enum ENUM_TAB_OUTPUT {
   TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
   TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
 };
-static const MapType<string, ENUM_TAB_OUTPUT> TabOutput_Map = {
+static const MapType<std::string, ENUM_TAB_OUTPUT> TabOutput_Map = {
   MakePair("CSV", TAB_CSV)
   MakePair("TECPLOT", TAB_TECPLOT)
 };
@@ -1684,7 +1684,7 @@ enum ENUM_SENSITIVITY {
   SU2_NATIVE = 1,       /*!< \brief SU2 native binary format for the volume sensitivity input. */
   UNORDERED_ASCII = 2   /*!< \brief Unordered ASCII list (x,y,z,dJ/dx,dJ/dy/dJ/dz) format for the volume sensitivity input. */
 };
-static const MapType<string, ENUM_SENSITIVITY> Sensitivity_Map = {
+static const MapType<std::string, ENUM_SENSITIVITY> Sensitivity_Map = {
   MakePair("SU2_NATIVE", SU2_NATIVE)
   MakePair("UNORDERED_ASCII", UNORDERED_ASCII)
 };
@@ -1696,7 +1696,7 @@ enum JUMP_DEFINITION {
   DIFFERENCE = 1,     /*!< \brief Jump given by a difference in values. */
   RATIO = 2           /*!< \brief Jump given by a ratio. */
 };
-static const MapType<string, JUMP_DEFINITION> Jump_Map = {
+static const MapType<std::string, JUMP_DEFINITION> Jump_Map = {
   MakePair("DIFFERENCE", DIFFERENCE)
   MakePair("RATIO", RATIO)
 };
@@ -1709,7 +1709,7 @@ enum MG_CYCLE {
   W_CYCLE = 1,        /*!< \brief W cycle. */
   FULLMG_CYCLE = 2    /*!< \brief FullMG cycle. */
 };
-static const MapType<string, MG_CYCLE> MG_Cycle_Map = {
+static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
   MakePair("V_CYCLE", V_CYCLE)
   MakePair("W_CYCLE", W_CYCLE)
   MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
@@ -1729,7 +1729,7 @@ enum ENUM_OUTPUT_VARS {
   LAM_VISC = 8,     /*!< \brief Laminar viscosity. */
   EDDY_VISC = 9     /*!< \brief Eddy viscosity. */
 };
-static const MapType<string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
+static const MapType<std::string, ENUM_OUTPUT_VARS> Output_Vars_Map = {
   MakePair("DENSITY", DENSITY)
   MakePair("VEL_X", VEL_X)
   MakePair("VEL_Y", VEL_Y)
@@ -1780,7 +1780,7 @@ enum ENUM_PARAM {
   SCALE_GRID = 52,            /*!< \brief Scale the volume grid. */
   ANGLE_OF_ATTACK = 101       /*!< \brief Angle of attack for airfoils. */
 };
-static const MapType<string, ENUM_PARAM> Param_Map = {
+static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
   MakePair("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
   MakePair("FFD_TWIST_2D", FFD_TWIST_2D)
@@ -1824,7 +1824,7 @@ enum ENUM_FFD_BLENDING{
   BSPLINE_UNIFORM = 0,  /*!< \brief BSpline blending */
   BEZIER = 1,           /*!< \brief Bezier blending */
 };
-static const MapType<string, ENUM_FFD_BLENDING> Blending_Map = {
+static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
   MakePair("BSPLINE_UNIFORM", BSPLINE_UNIFORM)
   MakePair("BEZIER", BEZIER)
 };
@@ -1841,7 +1841,7 @@ enum ENUM_LINEAR_SOLVER {
   PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
   PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
 };
-static const MapType<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
+static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
@@ -1860,7 +1860,7 @@ enum ENUM_FFD_CONTINUITY {
   DERIVATIVE_2ND = 2,     /*!< \brief Second derivative continuity. */
   USER_INPUT = 3          /*!< \brief User input. */
 };
-static const MapType<string, ENUM_FFD_CONTINUITY> Continuity_Map = {
+static const MapType<std::string, ENUM_FFD_CONTINUITY> Continuity_Map = {
   MakePair("NO_DERIVATIVE", DERIVATIVE_NONE)
   MakePair("1ST_DERIVATIVE", DERIVATIVE_1ST)
   MakePair("2ND_DERIVATIVE", DERIVATIVE_2ND)
@@ -1876,7 +1876,7 @@ enum ENUM_FFD_COORD_SYSTEM {
   SPHERICAL = 2,    /*!< \brief Spherical coordinate system. */
   POLAR = 3         /*!< \brief Polar coordinate system. */
 };
-static const MapType<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = {
+static const MapType<std::string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = {
   MakePair("CARTESIAN", CARTESIAN)
   MakePair("CYLINDRICAL", CYLINDRICAL)
   MakePair("SPHERICAL", SPHERICAL)
@@ -1891,7 +1891,7 @@ enum ENUM_SENS_SMOOTHING {
   SOBOLEV = 1,    /*!< \brief Sobolev gradient smoothing. */
   BIGRID = 2      /*!< \brief Bi-grid technique smoothing. */
 };
-static const MapType<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
+static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
   MakePair("NONE", NO_SMOOTH)
   MakePair("SOBOLEV", SOBOLEV)
   MakePair("BIGRID", BIGRID)
@@ -1909,7 +1909,7 @@ enum ENUM_LINEAR_SOLVER_PREC {
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
-static const MapType<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
+static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
@@ -1929,7 +1929,7 @@ enum ENUM_GEO_ANALYTIC {
   CYLINDER = 3,          /*!< \brief Use the analytical definition of a cylinder for doing the grid adaptation. */
   BIPARABOLIC = 4        /*!< \brief Use the analytical definition of a biparabolic airfoil for doing the grid adaptation. */
 };
-static const MapType<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = {
+static const MapType<std::string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = {
   MakePair("NONE", NO_GEO_ANALYTIC)
   MakePair("NACA0012_AIRFOIL", NACA0012_AIRFOIL)
   MakePair("NACA4412_AIRFOIL", NACA4412_AIRFOIL)
@@ -1946,7 +1946,7 @@ enum ENUM_GEO_DESCRIPTION {
   FUSELAGE = 2,     /*!< \brief Fuselage analysis. */
   NACELLE = 3       /*!< \brief Nacelle analysis. */
 };
-static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
+static const MapType<std::string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
   MakePair("AIRFOIL", TWOD_AIRFOIL)
   MakePair("WING", WING)
   MakePair("FUSELAGE", FUSELAGE)
@@ -1964,7 +1964,7 @@ enum class TIME_MARCHING {
   ROTATIONAL_FRAME, /*!< \brief Use a rotational source term. */
   HARMONIC_BALANCE, /*!< \brief Use a harmonic balance source term. */
 };
-static const MapType<string, TIME_MARCHING> TimeMarching_Map = {
+static const MapType<std::string, TIME_MARCHING> TimeMarching_Map = {
   MakePair("NO", TIME_MARCHING::STEADY)
   MakePair("TIME_STEPPING", TIME_MARCHING::TIME_STEPPING)
   MakePair("DUAL_TIME_STEPPING-1ST_ORDER", TIME_MARCHING::DT_STEPPING_1ST)
@@ -1981,7 +1981,7 @@ enum ENUM_DEFORM_STIFFNESS {
   INVERSE_VOLUME = 1,         /*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
   SOLID_WALL_DISTANCE = 2     /*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
-static const MapType<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = {
+static const MapType<std::string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = {
   MakePair("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
   MakePair("INVERSE_VOLUME", INVERSE_VOLUME)
   MakePair("WALL_DISTANCE", SOLID_WALL_DISTANCE)
@@ -2008,7 +2008,7 @@ enum ENUM_DIRECTDIFF_VAR {
   D_RHO_DL = 14,      /*!< \brief Derivative w.r.t. the density for dead loads */
   D_EFIELD = 15       /*!< \brief Derivative w.r.t. the electric field */
 };
-static const MapType<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
+static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("NONE", NO_DERIVATIVE)
   MakePair("MACH", D_MACH)
   MakePair("AOA", D_AOA)
@@ -2043,7 +2043,7 @@ enum ENUM_DYNAMIC {
   STATIC = 0,     /*!< \brief A static structural computation. */
   DYNAMIC = 1     /*!< \brief Use a time stepping strategy for dynamic computations. */
 };
-static const MapType<string, ENUM_DYNAMIC> Dynamic_Map = {
+static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
   MakePair("NO", STATIC)
   MakePair("YES", DYNAMIC)
 };
@@ -2055,7 +2055,7 @@ enum ENUM_INPUT_REF {
   SU2_REF = 1,              /*!< \brief SU2 input format (from a restart). */
   CUSTOM_REF = 2            /*!< \brief CGNS input format for the computational grid. */
 };
-static const MapType<string, ENUM_INPUT_REF> Input_Ref_Map = {
+static const MapType<std::string, ENUM_INPUT_REF> Input_Ref_Map = {
   MakePair("SU2", SU2_REF)
   MakePair("CUSTOM", CUSTOM_REF)
 };
@@ -2129,7 +2129,7 @@ enum COMM_LEVEL {
   COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
   COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
 };
-static const MapType<string, COMM_LEVEL> Comm_Map = {
+static const MapType<std::string, COMM_LEVEL> Comm_Map = {
   MakePair("NONE",    COMM_NONE)
   MakePair("MINIMAL", COMM_MINIMAL)
   MakePair("FULL",    COMM_FULL)
@@ -2145,7 +2145,7 @@ enum class ENUM_FILTER_KERNEL {
   DILATE_MORPH,     /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
   ERODE_MORPH,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
 };
-static const MapType<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
+static const MapType<std::string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = {
   MakePair("CONSTANT", ENUM_FILTER_KERNEL::CONSTANT_WEIGHT)
   MakePair("CONICAL", ENUM_FILTER_KERNEL::CONICAL_WEIGHT)
   MakePair("GAUSSIAN", ENUM_FILTER_KERNEL::GAUSSIAN_WEIGHT)
@@ -2161,7 +2161,7 @@ enum class ENUM_PROJECTION_FUNCTION {
   HEAVISIDE_UP,   /*!< \brief Project values towards 1. */
   HEAVISIDE_DOWN, /*!< \brief Project values towards 0. */
 };
-static const MapType<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
+static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = {
   MakePair("NO_PROJECTION", ENUM_PROJECTION_FUNCTION::NONE)
   MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
   MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
@@ -2185,7 +2185,7 @@ enum ENUM_VERIFICATION_SOLUTIONS {
   MMS_INC_NS               = 66,       /*!< \brief Manufactured solution of the laminar incompressible Navier Stokes equations. */
   USER_DEFINED_SOLUTION    = 99,       /*!< \brief User defined solution. */
 };
-static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = {
+static const MapType<std::string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_Map = {
   MakePair("NO_VERIFICATION_SOLUTION", NO_VERIFICATION_SOLUTION)
   MakePair("INVISCID_VORTEX",          INVISCID_VORTEX)
   MakePair("RINGLEB",                  RINGLEB)
@@ -2209,7 +2209,7 @@ enum class ENUM_STREAMWISE_PERIODIC {
   PRESSURE_DROP, /*!< \brief Prescribed pressure drop. */
   MASSFLOW,      /*!< \brief Prescribed massflow. */
 };
-static const MapType<string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
+static const MapType<std::string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_Map = {
   MakePair("NONE",          ENUM_STREAMWISE_PERIODIC::NONE)
   MakePair("PRESSURE_DROP", ENUM_STREAMWISE_PERIODIC::PRESSURE_DROP)
   MakePair("MASSFLOW",      ENUM_STREAMWISE_PERIODIC::MASSFLOW)
@@ -2242,18 +2242,18 @@ static const MapType<std::string, POD_KIND> POD_Map = {
 
 class COptionBase {
 private:
-  vector<string> value;
+  std::vector<std::string> value;
 public:
   COptionBase() {};
   virtual  ~COptionBase() = 0;
 
-  virtual string SetValue(vector<string> value){this->value = value; return "";}
-  vector<string> GetValue() {return value;}
+  virtual std::string SetValue(std::vector<std::string> value){this->value = value; return "";}
+  std::vector<std::string> GetValue() {return value;}
   virtual void SetDefault() = 0;
 
-  string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name) {
+  std::string optionCheckMultipleValues(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
     if (option_value.size() != 1) {
-      string newString;
+      std::string newString;
       newString.append(option_name);
       newString.append(": multiple values for type ");
       newString.append(type_id);
@@ -2262,8 +2262,8 @@ public:
     return "";
   }
 
-  string badValue(vector<string> & option_value, string type_id, string option_name) {
-    string newString;
+  std::string badValue(std::vector<std::string> & option_value, std::string type_id, std::string option_name) {
+    std::string newString;
     newString.append(option_name);
     newString.append(": improper option value for type ");
     newString.append(type_id);
