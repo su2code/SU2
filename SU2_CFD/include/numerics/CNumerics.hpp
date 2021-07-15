@@ -651,6 +651,7 @@ public:
                                                         const Vec2& var_i, const Vec2& var_j,
                                                         su2double* projNormal,
                                                         su2double* projCorrected) {
+    assert(nDim == 2 || nDim == 3);
     nDim = (nDim > 2)? 3 : 2;
     su2double edgeVec[MAXNDIM], dist_ij_2 = 0.0, proj_vector_ij = 0.0;
 
