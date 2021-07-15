@@ -203,7 +203,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals = [2.183540, 2.071459, -0.000363, -8.655000]
+    discadj_fea.test_vals = [1.774569, 1.928023, -0.000364, -8.690300]
     test_list.append(discadj_fea) 
 
     ######################################
