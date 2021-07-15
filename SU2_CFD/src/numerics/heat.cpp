@@ -76,7 +76,7 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Computing the second order centered scheme part ---*/
 
-  su2double ProjVelocity = 0.5*(ProjVelocity_i+ProjVelocity_j);
+  const su2double ProjVelocity = 0.5*(ProjVelocity_i+ProjVelocity_j);
 
   val_residual[0] = 0.5*(Temp_i + Temp_j)*ProjVelocity;
 
@@ -87,21 +87,21 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Adding artificial dissipation to stabilize the centered scheme ---*/
 
-  su2double Diff_Lapl = Und_Lapl_i[0]-Und_Lapl_j[0];
-  su2double Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
+  const su2double Diff_Lapl = Und_Lapl_i[0]-Und_Lapl_j[0];
+  const su2double Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
 
-  su2double SoundSpeed_i = sqrt(pow(ProjVelocity_i,2) + (BetaInc2_i/DensityInc_i)*Area2);
-  su2double SoundSpeed_j = sqrt(pow(ProjVelocity_j,2) + (BetaInc2_j/DensityInc_j)*Area2);
+  const su2double SoundSpeed_i = sqrt(pow(ProjVelocity_i,2) + (BetaInc2_i/DensityInc_i)*Area2);
+  const su2double SoundSpeed_j = sqrt(pow(ProjVelocity_j,2) + (BetaInc2_j/DensityInc_j)*Area2);
 
-  su2double Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
-  su2double Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
-  su2double MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
+  const su2double Local_Lambda_i = fabs(ProjVelocity_i)+SoundSpeed_i;
+  const su2double Local_Lambda_j = fabs(ProjVelocity_j)+SoundSpeed_j;
+  const su2double MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
 
   val_residual[0] += -Param_Kappa_4*Diff_Lapl*MeanLambda;
 
   if (implicit) {
-    su2double cte_0 = Param_Kappa_4*su2double(Neighbor_i+1)*MeanLambda;
-    su2double cte_1 = Param_Kappa_4*su2double(Neighbor_j+1)*MeanLambda;
+    const su2double cte_0 = Param_Kappa_4*su2double(Neighbor_i+1)*MeanLambda;
+    const su2double cte_1 = Param_Kappa_4*su2double(Neighbor_j+1)*MeanLambda;
 
     val_Jacobian_i[0][0] += cte_0;
     val_Jacobian_j[0][0] -= cte_1;
@@ -135,8 +135,8 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
 
   if (dynamic_grid) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
-      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
+      const su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
+      const su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
@@ -146,8 +146,8 @@ void CUpwSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     }
   }
 
-  su2double a0 = 0.5*(q_ij+fabs(q_ij));
-  su2double a1 = 0.5*(q_ij-fabs(q_ij));
+  const su2double a0 = 0.5*(q_ij+fabs(q_ij));
+  const su2double a1 = 0.5*(q_ij-fabs(q_ij));
 
   val_residual[0] = a0*Temp_i+a1*Temp_j;
 
