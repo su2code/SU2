@@ -892,12 +892,12 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal ---*/
 
-        if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
-          su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-          if (abs(denum)>EPS) 
+        //if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
+        //  su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
+        //  if (abs(denum)>EPS) 
         // nijso TODO FIXME 
         //    T_Wall = T_Normal / denum; 
-        }
+        //}
 
         /*--- update of wall density ---*/
         // nijso TODO FIXME

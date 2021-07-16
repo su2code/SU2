@@ -161,8 +161,6 @@ protected:
     }
     if(wallFun) addTauWall(iPoint, jPoint, solution.GetTauWall(), unitNormal, tau);
 
-    if(wallFun) addTauWall(iPoint, jPoint, solution.GetTauWall(), unitNormal, tau);
-
     Double cond = derived->thermalConductivity(avgV);
     VectorDbl<nDim> heatFlux;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
