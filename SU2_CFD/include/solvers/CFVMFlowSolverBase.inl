@@ -2880,6 +2880,7 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case EQUIVALENT_AREA:
       objFun += weight*Total_CEquivArea;
+      break;
     case THRUST_COEFFICIENT:
       objFun += weight * TotalCoeff.CT;
       break;
