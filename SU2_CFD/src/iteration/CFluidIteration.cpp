@@ -172,13 +172,15 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
                                                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL],
                                                                       config[val_iZone], iMesh);
+
+      integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
+                                                                        solver[val_iZone][val_iInst][iMesh][MESH_SOL],
+                                                                        config[val_iZone], iMesh);
+
       integration[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
 
-    /*--- Update dual time solver for the dynamic mesh solver ---*/
-    if (config[val_iZone]->GetDeform_Mesh()) {
-      solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
-    }
+    SetDualTime_Aeroelastic(config[val_iZone]);
 
     /*--- Update dual time solver for the turbulence model ---*/
 
@@ -198,6 +200,15 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
                                                                        solver[val_iZone][val_iInst][MESH_0][TRANS_SOL],
                                                                        config[val_iZone], MESH_0);
       integration[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
+    }
+
+    /*--- Update dual time solver for the weakly coupled energy equation ---*/
+
+    if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
+                                                                      solver[val_iZone][val_iInst][MESH_0][HEAT_SOL],
+                                                                      config[val_iZone], MESH_0);
+      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
   }
 }
@@ -556,4 +567,75 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
 
   /* --- Set convergence based on fixed CL convergence  --- */
   return fixed_cl_convergence;
+}
+
+void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
+
+  /*--- Store old aeroelastic solutions ---*/
+
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation()) {
+
+    config->SetAeroelastic_n1();
+    config->SetAeroelastic_n();
+
+    /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
+
+#ifdef HAVE_MPI
+    su2double plunge, pitch, *plunge_all = nullptr, *pitch_all = nullptr;
+    unsigned short iMarker, iMarker_Monitoring;
+    unsigned long iProcessor, owner, *owner_all = nullptr;
+
+    string Marker_Tag, Monitoring_Tag;
+    int nProcessor = size;
+
+    /*--- Only if master node allocate memory ---*/
+
+    if (rank == MASTER_NODE) {
+      plunge_all = new su2double[nProcessor];
+      pitch_all  = new su2double[nProcessor];
+      owner_all  = new unsigned long[nProcessor];
+    }
+
+    /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
+
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
+        } else {
+          owner = 0;
+        }
+
+      }
+      plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
+      pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
+
+      /*--- Gather the data on the master node. ---*/
+
+      SU2_MPI::Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+
+      /*--- Set plunge and pitch on the master node ---*/
+
+      if (rank == MASTER_NODE) {
+        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
+          if (owner_all[iProcessor] == 1) {
+            config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
+            config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
+            break;
+          }
+        }
+      }
+    }
+
+    delete [] plunge_all;
+    delete [] pitch_all;
+    delete [] owner_all;
+#endif
+  }
+
 }

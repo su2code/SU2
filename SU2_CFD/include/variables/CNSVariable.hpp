@@ -39,8 +39,6 @@ class CNSVariable final : public CEulerVariable {
 private:
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
 
-  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -85,11 +83,6 @@ public:
   inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override { Primitive(iPoint,nDim+8) = val_Cp; }
 
   /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
-
-  /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
@@ -125,18 +118,6 @@ public:
   inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,0) = temperature_wall;
   }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).

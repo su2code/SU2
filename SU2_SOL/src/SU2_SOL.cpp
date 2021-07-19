@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
   SU2_MPI::Init(&argc,&argv);
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();

@@ -2964,9 +2964,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
-
   }
-
 
 //  /*--- Read the target pressure ---*/
 
@@ -2984,14 +2982,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  RANS) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_RANS)) {
+      if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++)
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
       }

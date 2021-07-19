@@ -53,7 +53,7 @@ def init_submodules(method = 'auto'):
   sha_version_ninja = '52649de2c56b63f42bc59513d51286531c595b44'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_mpp = '5ff579f43781cae07411e5ab46291c9971536be6'
-  github_repo_mpp = 'https://github.com/mutationpp/Mutationpp.git'
+  github_repo_mpp = 'https://github.com/mutationpp/Mutationpp'
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'

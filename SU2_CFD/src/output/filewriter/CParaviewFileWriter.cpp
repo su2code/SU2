@@ -75,7 +75,7 @@ void CParaviewFileWriter::Write_Data(){
   Paraview_File.close();
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -99,7 +99,7 @@ void CParaviewFileWriter::Write_Data(){
 
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -124,7 +124,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Write connectivity data. ---*/
@@ -196,7 +196,7 @@ void CParaviewFileWriter::Write_Data(){
 
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -209,7 +209,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -224,7 +224,7 @@ void CParaviewFileWriter::Write_Data(){
     }
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -236,7 +236,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   unsigned short varStart = 2;
@@ -263,7 +263,7 @@ void CParaviewFileWriter::Write_Data(){
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -273,7 +273,7 @@ void CParaviewFileWriter::Write_Data(){
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -288,7 +288,7 @@ void CParaviewFileWriter::Write_Data(){
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -307,7 +307,7 @@ void CParaviewFileWriter::Write_Data(){
 
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
 
@@ -323,7 +323,7 @@ void CParaviewFileWriter::Write_Data(){
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -340,7 +340,7 @@ void CParaviewFileWriter::Write_Data(){
         }
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
 

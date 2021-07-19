@@ -177,10 +177,10 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
   delete[] Buffer_Receive_nVertex_Donor;
 
   unsigned long tmp = totalTargetPoints;
-  SU2_MPI::Allreduce(&tmp, &totalTargetPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp, &totalTargetPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   su2double tmp1 = AvgDistance, tmp2 = MaxDistance;
-  SU2_MPI::Allreduce(&tmp1, &AvgDistance, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&tmp2, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp1, &AvgDistance, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&tmp2, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
   AvgDistance /= totalTargetPoints;
 
 }

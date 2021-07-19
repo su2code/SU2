@@ -119,10 +119,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
   /*--- Flags for the dynamic grid (rigid movement or unsteady deformation). ---*/
   dynamic_grid = false;
 
-  /*--- Container to store the vertex tractions. ---*/
-  VertexTraction = nullptr;
-  VertexTractionAdjoint = nullptr;
-
   /*--- Auxiliary data needed for CFL adaption. ---*/
 
   Old_Func = 0;
@@ -137,7 +133,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 CSolver::~CSolver(void) {
 
   unsigned short iVar;
-  unsigned long iMarker, iVertex;
 
   /*--- Public variables, may be accessible outside ---*/
 
@@ -220,24 +215,6 @@ CSolver::~CSolver(void) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
-  }
-
-  if (VertexTraction != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTraction[iMarker][iVertex];
-      delete [] VertexTraction[iMarker];
-    }
-    delete [] VertexTraction;
-  }
-
-  if (VertexTractionAdjoint != nullptr) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] VertexTractionAdjoint[iMarker][iVertex];
-      delete [] VertexTractionAdjoint[iMarker];
-    }
-    delete [] VertexTractionAdjoint;
   }
 
   delete [] nVertex;
@@ -1431,9 +1408,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                with a subtraction before communicating, so now just add. ---*/
 
               for (iVar = 0; iVar < nVar; iVar++)
-                Diff[iVar] = bufDRecv[buf_offset+iVar];
-
-              base_nodes->AddUnd_Lapl(iPoint,Diff);
+                base_nodes->AddUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
 
               break;
 
@@ -1677,18 +1652,6 @@ void CSolver::GetCommCountAndType(const CConfig* config,
         COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_FEA_OLD:
-      COUNT_PER_POINT  = nVar*3;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case SOLUTION_PRED:
-      COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case SOLUTION_PRED_OLD:
-      COUNT_PER_POINT  = nVar*3;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
     case AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -1834,24 +1797,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel(iPoint, iVar);
                 bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel(iPoint, iVar);
               }
-            }
-            break;
-          case SOLUTION_FEA_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar]        = base_nodes->GetSolution_time_n(iPoint, iVar);
-              bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel_time_n(iPoint, iVar);
-              bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel_time_n(iPoint, iVar);
-            }
-            break;
-          case SOLUTION_PRED:
-            for (iVar = 0; iVar < nVar; iVar++)
-              bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Pred(iPoint, iVar);
-            break;
-          case SOLUTION_PRED_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset+iVar]        = base_nodes->GetSolution_Old(iPoint, iVar);
-              bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Pred(iPoint, iVar);
-              bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Pred_Old(iPoint, iVar);
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -2012,24 +1957,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 base_nodes->SetSolution_Vel(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
                 base_nodes->SetSolution_Accel(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
-            }
-            break;
-          case SOLUTION_FEA_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              base_nodes->Set_Solution_time_n(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              base_nodes->SetSolution_Vel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
-              base_nodes->SetSolution_Accel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
-            }
-            break;
-          case SOLUTION_PRED:
-            for (iVar = 0; iVar < nVar; iVar++)
-              base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-            break;
-          case SOLUTION_PRED_OLD:
-            for (iVar = 0; iVar < nVar; iVar++) {
-              base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-              base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
-              base_nodes->SetSolution_Pred_Old(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -2280,9 +2207,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       SU2_OMP_MASTER
       { /* MPI reduction. */
         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
-        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
       SU2_OMP_BARRIER
@@ -2328,8 +2255,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   if (config->GetComm_Level() == COMM_FULL) {
 
     unsigned long Local_nPointDomain = geometry->GetnPointDomain();
-    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   }
   else {
@@ -2374,9 +2301,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
         sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
 
-    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -2431,8 +2358,8 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
   Local_nPointDomain = geometry->GetnPointDomain();
 
 
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2467,9 +2394,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
       sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
   }
 
-  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -2551,8 +2478,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) {
 
-  const auto solution = base_nodes->GetAuxVar();
-  auto gradient = base_nodes->GetAuxVarGradient();
+  const auto& solution = base_nodes->GetAuxVar();
+  auto& gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_AUX_GG, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
@@ -2561,8 +2488,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
 
   bool weighted = true;
-  const auto solution = base_nodes->GetAuxVar();
-  auto gradient = base_nodes->GetAuxVarGradient();
+  const auto& solution = base_nodes->GetAuxVar();
+  auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
@@ -2595,6 +2522,50 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 
   computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, solution, 0, nVar, gradient, rmatrix);
+}
+
+void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
+
+  /*--- Loop domain points. ---*/
+
+  SU2_OMP_FOR_DYN(256)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+
+    /*--- Initialize. ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      base_nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
+
+    /*--- Loop over the neighbors of point i. ---*/
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
+      bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
+
+      /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        su2double delta = base_nodes->GetSolution(jPoint,iVar)-base_nodes->GetSolution(iPoint,iVar);
+        base_nodes->AddUnd_Lapl(iPoint, iVar, delta);
+      }
+    }
+  }
+
+  /*--- Correct the Laplacian across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+
 }
 
 void CSolver::Add_External_To_Solution() {
@@ -3195,7 +3166,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -3211,7 +3182,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3380,7 +3351,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -3397,7 +3368,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3427,7 +3398,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Broadcast the string names of the variables. ---*/
 
   SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
-                 MASTER_NODE, MPI_COMM_WORLD);
+                 MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
@@ -3993,7 +3964,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   } // end iMarker loop
 
-  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 
   if (global_failure > 0) {
     SU2_MPI::Error("Prescribed inlet data does not match markers within tolerance.", CURRENT_FUNCTION);
@@ -4065,24 +4036,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 }
 
 
-void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
+void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config){
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
-  su2double *Velocity_ND, *Velocity_Real;
+  const su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
   su2double factor;
 
-  unsigned short iDim, jDim;
+  unsigned short iDim;
 
   // Check whether the problem is viscous
-  bool viscous_flow = ((config->GetKind_Solver() == NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == INC_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == RANS) ||
-                       (config->GetKind_Solver() == INC_RANS) ||
-                       (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES) ||
-                       (config->GetKind_Solver() == DISC_ADJ_INC_RANS) ||
-                       (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool viscous_flow = config->GetViscous();
 
   // Parameters for the calculations
   su2double Pn = 0.0;
@@ -4090,7 +4054,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  su2double const *iNormal;
+  const su2double* iNormal;
 
   su2double Pressure_Inf = config->GetPressure_FreeStreamND();
 
@@ -4100,59 +4064,52 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
   Velocity_ND = config->GetVelocity_FreeStreamND();
   Density_ND  = config->GetDensity_FreeStreamND();
 
-  Velocity2_Real = 0.0;
-  Velocity2_ND   = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
-    Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
-  }
+  Velocity2_Real = GeometryToolbox::SquaredNorm(nDim, Velocity_Real);
+  Velocity2_ND   = GeometryToolbox::SquaredNorm(nDim, Velocity_ND);
 
   factor = Density_Real * Velocity2_Real / ( Density_ND * Velocity2_ND );
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      // Loop over the vertices
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    // Loop over the vertices
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        // Recover the point index
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        // Get the normal at the vertex: this normal goes inside the fluid domain.
-        iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      // Recover the point index
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      // Get the normal at the vertex: this normal goes inside the fluid domain.
+      iNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (geometry->nodes->GetDomain(iPoint)) {
 
-          // Retrieve the values of pressure
-          Pn = base_nodes->GetPressure(iPoint);
+        // Retrieve the values of pressure
+        Pn = base_nodes->GetPressure(iPoint);
 
-          // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-          for (iDim = 0; iDim < nDim; iDim++)
-            auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
+        // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+        for (iDim = 0; iDim < nDim; iDim++)
+          auxForce[iDim] = -(Pn-Pressure_Inf)*iNormal[iDim];
 
-          // Calculate tn in the fluid nodes for the viscous term
-          if (viscous_flow) {
-            su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-            su2double Tau[3][3];
-            CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
-            for (iDim = 0; iDim < nDim; iDim++) {
-              for (jDim = 0 ; jDim < nDim; jDim++) {
-                auxForce[iDim] += Tau[iDim][jDim]*iNormal[jDim];
-              }
-            }
-          }
-
-          // Redimensionalize the forces
+        // Calculate tn in the fluid nodes for the viscous term
+        if (viscous_flow) {
+          su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+          su2double Tau[3][3];
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
           for (iDim = 0; iDim < nDim; iDim++) {
-            VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
+            auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], iNormal);
           }
         }
-        else{
-          for (iDim = 0; iDim < nDim; iDim++) {
-            VertexTraction[iMarker][iVertex][iDim] = 0.0;
-          }
+
+        // Redimensionalize the forces
+        for (iDim = 0; iDim < nDim; iDim++) {
+          VertexTraction[iMarker][iVertex][iDim] = factor * auxForce[iDim];
+        }
+      }
+      else{
+        for (iDim = 0; iDim < nDim; iDim++) {
+          VertexTraction[iMarker][iVertex][iDim] = 0.0;
         }
       }
     }
@@ -4160,7 +4117,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
 }
 
-void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
+void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config){
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4168,31 +4125,28 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, CConfig *config){
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      /*--- Loop over the vertices ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    /*--- Loop over the vertices ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        /*--- Recover the point index ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*--- Recover the point index ---*/
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          /*--- Register the vertex traction as output ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-            AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
-          }
-
-        }
+      /*--- Register the vertex traction as output ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(VertexTraction[iMarker][iVertex][iDim]);
       }
     }
   }
 
 }
 
-void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
+void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config){
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4200,26 +4154,22 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config){
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    /*--- If this is defined as an interface marker ---*/
-    if (config->GetMarker_All_Fluid_Load(iMarker) == YES) {
+    /*--- If this is defined as a wall ---*/
+    if (!config->GetSolid_Wall(iMarker)) continue;
 
-      /*--- Loop over the vertices ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    /*--- Loop over the vertices ---*/
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-        /*--- Recover the point index ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*--- Recover the point index ---*/
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-        if (geometry->nodes->GetDomain(iPoint)) {
+      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-          /*--- Set the adjoint of the vertex traction from the value received ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-
-            SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                    SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
-          }
-
-        }
+      /*--- Set the adjoint of the vertex traction from the value received ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
+                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
   }

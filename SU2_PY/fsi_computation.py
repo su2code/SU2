@@ -97,7 +97,8 @@ def main():
 
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
-    print('\n***************************** Initializing fluid solver *****************************')
+    print("\n")
+    print(" Initializing fluid solver ".center(80,"*"))
   try:
     FluidSolver = pysu2.CSinglezoneDriver(CFD_ConFile, 1, comm)
   except TypeError as exception:
@@ -113,7 +114,8 @@ def main():
 
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   if myid == rootProcess:
-    print('\n***************************** Initializing solid solver *****************************')
+    print("\n")
+    print(" Initializing solid solver ".center(80,"*"))
     if CSD_Solver == 'AEROELASTIC':
       from SU2_Nastran import pysu2_nastran
       SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
@@ -130,19 +132,22 @@ def main():
 
   # --- Initialize and set the FSI interface (coupling environement) --- #
   if myid == rootProcess:
-    print('\n***************************** Initializing FSI interface *****************************')
+    print("\n")
+    print(" Initializing FSI interface ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
 
   if myid == rootProcess:
-    print('\n***************************** Connect fluid and solid solvers *****************************')
+    print("\n")
+    print(" Connect fluid and solid solvers ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface.connect(FSI_config, FluidSolver, SolidSolver)
 
   if myid == rootProcess:
-    print('\n***************************** Mapping fluid-solid interfaces *****************************')
+    print("\n")
+    print(" Mapping fluid-solid interfaces ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)

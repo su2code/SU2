@@ -27,9 +27,17 @@
 
 #include "mpi_structure.hpp"
 
+
+/* Initialise the MPI Communicator Rank and Size */
 int CBaseMPIWrapper::Rank = 0;
 int CBaseMPIWrapper::Size = 1;
+
+/* Set the default MPI Communicator */
+#ifdef HAVE_MPI
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
+#else
+CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = 0;  // dummy value
+#endif
 
 #ifdef HAVE_MPI
 int  CBaseMPIWrapper::MinRankError;

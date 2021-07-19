@@ -250,25 +250,25 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
 #ifdef HAVE_MPI
     /*--- For simplicity, broadcast small information about the interpolation matrix. ---*/
-    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&nPolynomial, 1, MPI_INT, iProcessor, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(keepPolynomialRow.data(), nDim, MPI_INT, iProcessor, SU2_MPI::GetComm());
 
     /*--- Send C_inv_trunc only to the ranks that need it (those with target points),
      *    partial broadcast. MPI wrapper not used due to passive double. ---*/
     vector<unsigned long> allNumVertex(nProcessor);
     SU2_MPI::Allgather(&nVertexTarget, 1, MPI_UNSIGNED_LONG,
-      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+      allNumVertex.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
     if (rank == iProcessor) {
       for (int jProcessor = 0; jProcessor < nProcessor; ++jProcessor)
         if ((jProcessor != iProcessor) && (allNumVertex[jProcessor] != 0))
           MPI_Send(C_inv_trunc.data(), C_inv_trunc.size(),
-                   MPI_DOUBLE, jProcessor, 0, MPI_COMM_WORLD);
+                   MPI_DOUBLE, jProcessor, 0, SU2_MPI::GetComm());
     }
     else if (nVertexTarget != 0) {
       C_inv_trunc.resize(1+nPolynomial+nGlobalVertexDonor, nGlobalVertexDonor);
       MPI_Recv(C_inv_trunc.data(), C_inv_trunc.size(), MPI_DOUBLE,
-               iProcessor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+               iProcessor, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
     }
 #endif
 
@@ -403,7 +403,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   /*--- Final reduction of interpolation statistics and basic sanity checks. ---*/
   auto Reduce = [](SU2_MPI::Op op, unsigned long &val) {
     auto tmp = val;
-    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&tmp, &val, 1, MPI_UNSIGNED_LONG, op, SU2_MPI::GetComm());
   };
   Reduce(MPI_SUM, totalTargetPoints);
   Reduce(MPI_SUM, totalDonorPoints);
@@ -412,8 +412,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
   Reduce(MPI_MAX, MaxDonors);
 #ifdef HAVE_MPI
   passivedouble tmp1 = AvgCorrection, tmp2 = MaxCorrection;
-  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&tmp1, &AvgCorrection, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  MPI_Allreduce(&tmp2, &MaxCorrection, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
   if (totalTargetPoints == 0)
     SU2_MPI::Error("Somehow there are no target interpolation points.", CURRENT_FUNCTION);

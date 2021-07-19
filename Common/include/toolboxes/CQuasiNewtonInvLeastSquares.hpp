@@ -95,11 +95,11 @@ private:
 
       su2vector<Scalar> tmp(mat.size());
       MPI_Wrapper::Allreduce(mat.data(), tmp.data(), iSample*(iSample+1)/2,
-                             type, MPI_SUM, MPI_COMM_WORLD);
+                             type, MPI_SUM, SU2_MPI::GetComm());
       mat = std::move(tmp);
 
       MPI_Wrapper::Allreduce(rhs.data(), sol.data(), iSample,
-                             type, MPI_SUM, MPI_COMM_WORLD);
+                             type, MPI_SUM, SU2_MPI::GetComm());
       std::swap(rhs, sol);
     }
   }

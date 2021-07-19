@@ -133,8 +133,8 @@ protected:
 
   bool dynamic_grid;       /*!< \brief Flag that determines whether the grid is dynamic (moving or deforming + grid velocities). */
 
-  su2double ***VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
-  su2double ***VertexTractionAdjoint;   /*- Also temporary -*/
+  vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
+  vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -150,6 +150,13 @@ protected:
    * \note One could set base_nodes directly if it were not private but that could lead to confusion
    */
   inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
+
+  /*!
+   * \brief Compute the undivided laplacian for the solution variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
 
 private:
 
@@ -306,13 +313,6 @@ public:
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
-
-  /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  inline virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
   /*!
    * \brief Get information whether the initialization is an adjoint solver or not.
@@ -1557,7 +1557,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Iteration(CGeometry *geometry,
+  inline virtual void ImplicitNewmark_Iteration(const CGeometry *geometry,
                                                 CNumerics **numerics,
                                                 const CConfig *config) { }
 
@@ -1567,8 +1567,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Update(CGeometry *geometry,
-                                             CConfig *config) { }
+  inline virtual void ImplicitNewmark_Update(const CGeometry *geometry,
+                                             const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1576,8 +1576,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ImplicitNewmark_Relaxation(CGeometry *geometry,
-                                                 CConfig *config) { }
+  inline virtual void ImplicitNewmark_Relaxation(const CGeometry *geometry,
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1585,7 +1585,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_Iteration(CGeometry *geometry,
+  inline virtual void GeneralizedAlpha_Iteration(const CGeometry *geometry,
                                                  CNumerics **numerics,
                                                  const CConfig *config) { }
 
@@ -1595,8 +1595,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateDisp(CGeometry *geometry,
-                                                  CConfig *config) { }
+  inline virtual void GeneralizedAlpha_UpdateDisp(const CGeometry *geometry,
+                                                  const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1604,8 +1604,8 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
-                                                      CConfig *config) { }
+  inline virtual void GeneralizedAlpha_UpdateSolution(const CGeometry *geometry,
+                                                      const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1613,7 +1613,7 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void GeneralizedAlpha_UpdateLoads(CGeometry *geometry,
+  inline virtual void GeneralizedAlpha_UpdateLoads(const CGeometry *geometry,
                                                    const CConfig *config) { }
 
   /*!
@@ -1666,13 +1666,6 @@ public:
   inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                                const CConfig *config,
                                                bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Index of the grid point.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
   /*!
    * \brief A virtual member.
@@ -2237,18 +2230,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void GetOutlet_Properties(CGeometry *geometry,
-                                           CConfig *config,
-                                           unsigned short iMesh,
-                                           bool Output) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] convergence - boolean for whether the solution is converged
    * \return boolean for whether the Fixed C_L mode is converged to target C_L
@@ -2465,15 +2446,21 @@ public:
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
-   * \brief Retrieve the value of the discreteness objective function
+   * \brief Retrieve the value of the discreteness objective function.
    */
   inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
 
   /*!
    * \brief A virtual member.
-   * \return Value of the objective function for the structural compliance.
+   * \return Value of the compliance objective function.
    */
   inline virtual su2double GetTotal_OFCompliance() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the stress penalty objective function.
+   */
+  inline virtual su2double GetTotal_OFStressPenalty() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2528,6 +2515,11 @@ public:
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
    */
   inline virtual void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3778,7 +3770,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_MassMatrix(CGeometry *geometry,
+  inline virtual void Compute_MassMatrix(const CGeometry *geometry,
                                          CNumerics **numerics,
                                          const CConfig *config) { }
 
@@ -3788,7 +3780,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_MassRes(CGeometry *geometry,
+  inline virtual void Compute_MassRes(const CGeometry *geometry,
                                       CNumerics **numerics,
                                       const CConfig *config) { }
 
@@ -3925,7 +3917,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetFreeStream_Solution(CConfig *config) { }
+  inline virtual void SetFreeStream_Solution(const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3936,29 +3928,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual unsigned long GetnDOFsGlobal(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetTauWall_WF(CGeometry *geometry,
-                                    CSolver** solver_container,
-                                    CConfig* config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetNuTilde_WF(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    CConfig *config,
-                                    unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -4316,18 +4285,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  inline virtual void SetBeta_Parameter(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config,
-                                        unsigned short iMesh) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
@@ -4382,7 +4339,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void ComputeVertexTractions(CGeometry *geometry, CConfig *config);
+  void ComputeVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the adjoints of the vertex tractions.
@@ -4399,7 +4356,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void RegisterVertexTractions(CGeometry *geometry, CConfig *config);
+  void RegisterVertexTractions(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Store the adjoints of the vertex tractions.
@@ -4420,7 +4377,7 @@ public:
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
    */
-  void SetVertexTractionsAdjoint(CGeometry *geometry, CConfig *config);
+  void SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Get minimun volume in the mesh

@@ -335,25 +335,19 @@ public:
 };
 
 class COptionDoubleArray : public COptionBase {
-  su2double * & field; // Reference to the feildname
-  string name; // identifier for the option
-  const int size;
-  su2double * def;
-  su2double * vals;
-  su2double * default_value;
+  string name; // Identifier for the option
+  const int size; // Number of elements
+  su2double* field; // Reference to the fieldname
 
 public:
-  COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
-    this->name = option_field_name;
-    this->default_value = default_value;
-    def  = nullptr;
-    vals = nullptr;
+  COptionDoubleArray(string option_field_name, const int list_size, su2double* option_field) :
+    name(option_field_name),
+    size(list_size),
+    field(option_field) {
   }
 
-  ~COptionDoubleArray() override {
-     delete [] def;
-     delete [] vals;
-  };
+  ~COptionDoubleArray() override {};
+
   string SetValue(vector<string> option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
@@ -371,27 +365,16 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
-      su2double val;
-      if (!(is >> val)) {
-        delete [] vals;
+      if (!(is >> field[i])) {
         return badValue(option_value, "su2double array", this->name);
       }
-      vals[i] = val;
     }
-    this->field = vals;
     return "";
   }
 
-  void SetDefault() override {
-    def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
-    this->field = def;
-  }
+  void SetDefault() override {}
 };
 
 class COptionDoubleList : public COptionBase {

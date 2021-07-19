@@ -86,8 +86,8 @@ def main():
     viscwedge.timeout   = 1600
     viscwedge.new_output = True
     viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)       
-    
+    test_list.append(viscwedge)
+
     #########################
     ## Compressible Euler ###
     #########################
@@ -375,6 +375,21 @@ def main():
     propeller.tol       = 0.00001
     test_list.append(propeller)
 
+    #######################################
+    ### Axisymmetric Compressible RANS  ###
+    #######################################
+    
+    # Axisymmetric air nozzle (transonic)
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 10
+    axi_rans_air_nozzle.test_vals = [ -12.093130, -6.619801, -8.806060, -2.393278]
+    axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
+    axi_rans_air_nozzle.timeout   = 1600
+    axi_rans_air_nozzle.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle)
+
     #################################
     ## Compressible RANS Restart  ###
     #################################
@@ -469,7 +484,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.108218, -2.158606, 0.019142, 1.902461] #last 4 columns
+    inc_poly_cylinder.test_vals = [-8.106741, -2.160042, 0.019225, 1.902421] #last 4 columns
     inc_poly_cylinder.new_output  = True
     inc_poly_cylinder.su2_exec  = "SU2_CFD"
     inc_poly_cylinder.timeout   = 1600
@@ -643,7 +658,7 @@ def main():
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
     schubauer_klebanoff_transition.test_iter    = 10
     schubauer_klebanoff_transition.new_output   = True
-    schubauer_klebanoff_transition.test_vals    = [-8.029786, -14.268310, 0.000053, 0.007986] #last 4 columns
+    schubauer_klebanoff_transition.test_vals    = [-8.029786, -14.268417, 0.000053, 0.007986] #last 4 columns
     schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
     schubauer_klebanoff_transition.timeout      = 1600
     schubauer_klebanoff_transition.tol          = 0.00001
@@ -1058,7 +1073,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280323, 0.379653, 72.211730, 1.277473] #last 4 columns
+    Jones_tc.test_vals = [-5.279937, 0.379653, 72.211730, 1.277472] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -1082,7 +1097,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933219, 5.379657, 73.357940, 0.925870] #last 4 columns
+    axial_stage2D.test_vals = [-1.933153, 5.379657, 73.357940, 0.925870] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -1144,7 +1159,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.397985, 0.352786, 0.405475] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398017, 0.352786, 0.405475] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1221,7 +1236,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.766116, -2.206522] #last 3 columns
+    slinc_steady.test_vals = [19.000000, -1.803326, -2.097400] #last 3 columns
     slinc_steady.su2_exec  = "SU2_CFD"
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00001
@@ -1510,6 +1525,19 @@ def main():
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
+
+    # intersection prevention
+    intersect_def            = TestCase('intersectionprevention')
+    intersect_def.cfg_dir   = "deformation/intersection_prevention"
+    intersect_def.cfg_file  = "def_intersect.cfg"
+    intersect_def.test_iter = 10
+    intersect_def.test_vals = [0.000112] #residual
+    intersect_def.su2_exec  = "SU2_DEF"
+    intersect_def.timeout   = 1600
+    intersect_def.tol       = 1e-04
+
+    pass_list.append(intersect_def.run_def())
+    test_list.append(intersect_def)
 
     # Inviscid NACA0012 (triangles)
     naca0012_def            = TestCase('naca0012_def')
@@ -1864,7 +1892,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.614167, 2.242632, -0.037871, 0.173912]
+    pywrapper_rigidMotion.test_vals     = [-1.551335, 2.295594, 0.350050, 0.093081]
     pywrapper_rigidMotion.su2_exec      = "python launch_flatPlate_rigidMotion.py -f"
     pywrapper_rigidMotion.new_output      = True
     pywrapper_rigidMotion.timeout       = 1600

@@ -56,6 +56,11 @@ class CFVMFlowSolverBase : public CSolver {
   su2double StrainMag_Max; /*!< \brief Maximum Strain Rate magnitude. */
   su2double Omega_Max;     /*!< \brief Maximum Omega. */
 
+  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
+  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
+
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+
   /*!
    * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
@@ -119,6 +124,8 @@ class CFVMFlowSolverBase : public CSolver {
 
   AeroCoeffsArray SurfaceCoeff; /*!< \brief Totals for each monitoring surface. */
   AeroCoeffs TotalCoeff;        /*!< \brief Totals for all boundaries. */
+
+  su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
 
   su2double InverseDesign = 0.0;        /*!< \brief Inverse design functional for each boundary. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
@@ -245,11 +252,856 @@ class CFVMFlowSolverBase : public CSolver {
   inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
 
   /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \note The convective residual methods include a call to this for each edge,
+   *       this allows convective and viscous loops to be "fused".
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                       CNumerics *numerics, CConfig *config) { }
+  void Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                             CNumerics *numerics, CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
+   * \brief General implementation to load a flow solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   * \param[in] RestartSolution - Optional buffer to load restart vars into,
+   *            this allows default values to be given when nVar > nVar_Restart.
+   * \param[in] nVar_Restart - Number of restart variables, if 0 defaults to nVar.
+   */
+  void LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo,
+                        su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
+
+  /*!
+   * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   * \tparam SoundSpeedFunc - Function object to compute speed of sound.
+   * \tparam LambdaViscFunc - Function object to compute the viscous lambda.
+   * \note Both functors need to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
+   */
+  template<class SoundSpeedFunc, class LambdaViscFunc>
+  FORCEINLINE void SetTime_Step_impl(const SoundSpeedFunc& soundSpeed,
+                                     const LambdaViscFunc& lambdaVisc,
+                                     CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CConfig *config,
+                                     unsigned short iMesh,
+                                     unsigned long Iteration) {
+
+    const bool viscous       = config->GetViscous();
+    const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+    const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                               (config->GetTime_Marching() == DT_STEPPING_2ND);
+    const su2double K_v = 0.25;
+
+    /*--- Init thread-shared variables to compute min/max values.
+     *    Critical sections are used for this instead of reduction
+     *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
+
+    SU2_OMP_MASTER
+    {
+      Min_Delta_Time = 1e30;
+      Max_Delta_Time = 0.0;
+      Global_Delta_UnstTimeND = 1e30;
+    }
+    SU2_OMP_BARRIER
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+      /*--- Set maximum eigenvalues to zero. ---*/
+
+      nodes->SetMax_Lambda_Inv(iPoint,0.0);
+
+      if (viscous)
+        nodes->SetMax_Lambda_Visc(iPoint,0.0);
+
+      /*--- Loop over the neighbors of point i. ---*/
+
+      for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+      {
+        auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+
+        auto iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+        auto Normal = geometry->edges->GetNormal(iEdge);
+        auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
+
+        /*--- Mean Values ---*/
+
+        su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * sqrt(Area2);
+
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+          const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+        }
+
+        /*--- Inviscid contribution ---*/
+
+        su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+        /*--- Viscous contribution ---*/
+
+        if (!viscous) continue;
+
+        Lambda = lambdaVisc(*nodes, iPoint, jPoint) * Area2;
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+      }
+
+    }
+
+    /*--- Loop boundary edges ---*/
+
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          /*--- Point identification, Normal vector and area ---*/
+
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
+
+          /*--- Mean Values ---*/
+
+          su2double ProjVel = nodes->GetProjVel(iPoint,Normal);
+          su2double SoundSpeed = soundSpeed(*nodes, iPoint) * sqrt(Area2);
+
+          /*--- Adjustment for grid movement ---*/
+
+          if (dynamic_grid) {
+            ProjVel -= GeometryToolbox::DotProduct(nDim, Normal, geometry->nodes->GetGridVel(iPoint));
+          }
+
+          /*--- Inviscid contribution ---*/
+
+          su2double Lambda = fabs(ProjVel) + SoundSpeed;
+          nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+
+          /*--- Viscous contribution ---*/
+
+          if (!viscous) continue;
+
+          Lambda = lambdaVisc(*nodes,iPoint) * Area2;
+          nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+        }
+      }
+    }
+
+    /*--- Each element uses their own speed, steady state simulation. ---*/
+    {
+      /*--- Thread-local variables for min/max reduction. ---*/
+      su2double minDt = 1e30, maxDt = 0.0;
+
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+        su2double Vol = geometry->nodes->GetVolume(iPoint);
+
+        if (Vol != 0.0) {
+          su2double Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+
+          if(viscous) {
+            su2double dt_visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol / nodes->GetMax_Lambda_Visc(iPoint);
+            Local_Delta_Time = min(Local_Delta_Time, dt_visc);
+          }
+
+          minDt = min(minDt, Local_Delta_Time);
+          maxDt = max(maxDt, Local_Delta_Time);
+
+          nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
+        }
+        else {
+          nodes->SetDelta_Time(iPoint,0.0);
+        }
+      }
+      /*--- Min/max over threads. ---*/
+      SU2_OMP_CRITICAL
+      {
+        Min_Delta_Time = min(Min_Delta_Time, minDt);
+        Max_Delta_Time = max(Max_Delta_Time, maxDt);
+        Global_Delta_Time = Min_Delta_Time;
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
+
+    SU2_OMP_MASTER
+    if (config->GetComm_Level() == COMM_FULL) {
+      su2double rbuf_time;
+      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+      Min_Delta_Time = rbuf_time;
+
+      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      Max_Delta_Time = rbuf_time;
+    }
+    SU2_OMP_BARRIER
+
+    /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
+    if (time_stepping) {
+
+      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
+       *    otherwise it computes the time step based on the unsteady CFL. ---*/
+
+      SU2_OMP_MASTER
+      {
+        if (config->GetUnst_CFL() == 0.0) {
+          Global_Delta_Time = config->GetDelta_UnstTime();
+        }
+        else {
+          Global_Delta_Time = Min_Delta_Time;
+        }
+        Max_Delta_Time = Global_Delta_Time;
+
+        config->SetDelta_UnstTimeND(Global_Delta_Time);
+      }
+      SU2_OMP_BARRIER
+
+      /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+        nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+      }
+
+    }
+
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
+
+    if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+
+      /*--- Thread-local variable for reduction. ---*/
+      su2double glbDtND = 1e30;
+
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
+      }
+      SU2_OMP_CRITICAL
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+      SU2_OMP_BARRIER
+
+      SU2_OMP_MASTER
+      {
+        SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        Global_Delta_UnstTimeND = glbDtND;
+
+        config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+
+    if (dual_time && !implicit) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+        nodes->SetDelta_Time(iPoint, dt);
+      }
+    }
+  }
+
+  /*!
+   * \brief Compute the max eigenvalue, gemeric implementation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \tparam SoundSpeedFunc - Function object to compute speed of sound.
+   * \note Functor needs to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
+   */
+  template<class SoundSpeedFunc>
+  FORCEINLINE void SetMax_Eigenvalue_impl(const SoundSpeedFunc& soundSpeed, CGeometry *geometry, const CConfig *config) {
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+      /*--- Set eigenvalues to zero. ---*/
+      nodes->SetLambda(iPoint,0.0);
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+      {
+        auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+
+        auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        auto Normal = geometry->edges->GetNormal(iEdge);
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        /*--- Mean Values ---*/
+
+        su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * Area;
+
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+          const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+        }
+
+        /*--- Inviscid contribution ---*/
+
+        nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
+      }
+    }
+
+    /*--- Loop boundary edges ---*/
+
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          /*--- Point identification, Normal vector and area ---*/
+
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+          /*--- Mean Values ---*/
+
+          su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+          su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint) * Area;
+
+          /*--- Adjustment for grid movement ---*/
+
+          if (dynamic_grid) {
+            Mean_ProjVel -= GeometryToolbox::DotProduct(nDim, Normal, geometry->nodes->GetGridVel(iPoint));
+          }
+
+          /*--- Inviscid contribution ---*/
+
+          nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
+        }
+      }
+    }
+
+    /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, MAX_EIGENVALUE);
+    CompleteComms(geometry, config, MAX_EIGENVALUE);
+  }
+
+  /*!
+   * \brief Compute the dissipation sensor for centered schemes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \tparam SensVarFunc - Function object implementing (nodes, iPoint) to return the sensor variable, e.g. pressure.
+   */
+  template<class SensVarFunc>
+  FORCEINLINE void SetCentered_Dissipation_Sensor_impl(const SensVarFunc& sensVar,
+                                                       CGeometry *geometry, const CConfig *config) {
+
+    /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
+
+    const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+      const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+      const su2double sensVar_i = sensVar(*nodes, iPoint);
+
+      /*--- Initialize. ---*/
+      iPoint_UndLapl[iPoint] = 0.0;
+      jPoint_UndLapl[iPoint] = 0.0;
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (auto jPoint : geometry->nodes->GetPoints(iPoint))
+      {
+        bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+        /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+        if (boundary_i && !boundary_j) continue;
+
+        su2double sensVar_j = sensVar(*nodes, jPoint);
+
+        /*--- Dissipation sensor, add variable difference and variable sum. ---*/
+        iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
+        jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+      }
+
+      if (!isPeriodic) {
+        /*--- Every neighbor is accounted for, sensor can be computed. ---*/
+        nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+      }
+    }
+
+    if (isPeriodic) {
+      /*--- Correct the sensor values across any periodic boundaries. ---*/
+
+      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      }
+
+      /*--- Set final pressure switch for each point ---*/
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+        nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, SENSOR);
+    CompleteComms(geometry, config, SENSOR);
+
+  }
+
+  /*!
+   * \brief Generic implementation of explicit iterations with a preconditioner.
+   * \note The preconditioner is a functor implementing the methods:
+   *       - compute(config, iPoint): Should prepare the preconditioner for iPoint.
+   *       - apply(iVar, residual[], resTruncError[]): Apply it to compute the iVar update.
+   *       See Explicit_Iteration for the general form of the preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType, class ResidualPrecond>
+  void Explicit_Iteration_impl(ResidualPrecond& preconditioner, CGeometry *geometry,
+                               CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+
+    static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
+                  IntegrationType == RUNGE_KUTTA_EXPLICIT ||
+                  IntegrationType == EULER_EXPLICIT, "");
+
+    const bool adjoint = config->GetContinuous_Adjoint();
+
+    const su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+
+    /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
+    const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+    const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
+
+    /*--- Set shared residual variables to 0 and declare
+     *    local ones for current thread to work on. ---*/
+
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    SU2_OMP_BARRIER
+
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    /*--- Update the solution and residuals ---*/
+
+    if (!adjoint) {
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+        su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
+
+        const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+        const su2double* Residual = LinSysRes.GetBlock(iPoint);
+
+        preconditioner.compute(config, iPoint);
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+          su2double Res = preconditioner.apply(iVar, Residual, Res_TruncError);
+
+          /*--- "Static" switch which should be optimized at compile time. ---*/
+          switch(IntegrationType) {
+
+            case EULER_EXPLICIT:
+              nodes->AddSolution(iPoint,iVar, -Res*Delta);
+              break;
+
+            case RUNGE_KUTTA_EXPLICIT:
+              nodes->AddSolution(iPoint, iVar, -Res*Delta*RK_AlphaCoeff);
+              break;
+
+            case CLASSICAL_RK4_EXPLICIT:
+            {
+              su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*Delta;
+              su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*Delta;
+
+              if (iRKStep < 3) {
+                /* Base Solution Update */
+                nodes->AddSolution(iPoint,iVar, tmp_time*Res);
+
+                /* New Solution Update */
+                nodes->AddSolution_New(iPoint,iVar, tmp_func*Res);
+              } else {
+                nodes->SetSolution(iPoint, iVar, nodes->GetSolution_New(iPoint, iVar) + tmp_func*Res);
+              }
+            }
+            break;
+          }
+
+          /*--- Update residual information for current thread. ---*/
+          resRMS[iVar] += Res*Res;
+          if (fabs(Res) > resMax[iVar]) {
+            resMax[iVar] = fabs(Res);
+            idxMax[iVar] = iPoint;
+            coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+          }
+        }
+      }
+      /*--- Reduce residual information over all threads in this rank. ---*/
+      SU2_OMP_CRITICAL
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        AddRes_RMS(iVar, resRMS[iVar]);
+        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    if (!adjoint) {
+      SU2_OMP_MASTER {
+        /*--- Compute the root mean square residual ---*/
+
+        SetResidual_RMS(geometry, config);
+
+        /*--- For verification cases, compute the global error metrics. ---*/
+
+        ComputeVerificationError(geometry, config);
+      }
+      SU2_OMP_BARRIER
+    }
+
+  }
+
+  /*!
+   * \brief Generic implementation of explicit iterations without preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  FORCEINLINE void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+    struct Identity {
+      FORCEINLINE void compute(const CConfig*, unsigned long) {}
+      FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) {
+        return res[iVar] + resTrunc[iVar];
+      }
+    } precond;
+
+    Explicit_Iteration_impl<IntegrationType>(precond, geometry, solver_container, config, iRKStep);
+  }
+
+  /*!
+   * \brief Generic implementation of implicit Euler iteration with an optional preconditioner applied to the diagonal.
+   * \param[in] compute_ur - Whether to use automatic under-relaxation for the update.
+   * \tparam DiagonalPrecond - A function object implementing:
+   *         - active: A boolean variable to determine if the preconditioner should be used.
+   *         - (config, iPoint, delta): Compute and return a matrix type compatible with the Jacobian matrix,
+   *           where "delta" is V/dt.
+   */
+  template<class DiagonalPrecond>
+  void ImplicitEuler_Iteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry,
+                                    CSolver **solver_container, CConfig *config, bool compute_ur) {
+
+    const bool adjoint = config->GetContinuous_Adjoint();
+
+    /*--- Set shared residual variables to 0 and declare
+     *    local ones for current thread to work on. ---*/
+
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    SU2_OMP_BARRIER
+
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    /*--- Build implicit system ---*/
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Read the residual ---*/
+
+      su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+      /*--- Read the volume ---*/
+
+      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+      /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+
+      if (nodes->GetDelta_Time(iPoint) != 0.0) {
+
+        su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+        if (preconditioner.active) {
+          Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
+        }
+        else {
+          Jacobian.AddVal2Diag(iPoint, Delta);
+        }
+      }
+      else {
+        Jacobian.SetVal2Diag(iPoint, 1.0);
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          LinSysRes(iPoint,iVar) = 0.0;
+          local_Res_TruncError[iVar] = 0.0;
+        }
+      }
+
+      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+        LinSysSol[total_index] = 0.0;
+
+        su2double Res = fabs(LinSysRes[total_index]);
+        resRMS[iVar] += Res*Res;
+        if (Res > resMax[iVar]) {
+          resMax[iVar] = Res;
+          idxMax[iVar] = iPoint;
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+        }
+      }
+    }
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AddRes_RMS(iVar, resRMS[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+    }
+
+    /*--- Initialize residual and solution at the ghost points ---*/
+
+    SU2_OMP(sections nowait)
+    {
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysRes.SetBlock_Zero(iPoint);
+
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysSol.SetBlock_Zero(iPoint);
+    }
+
+    /*--- Solve or smooth the linear system. ---*/
+
+    auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+    SU2_OMP_MASTER
+    {
+      SetIterLinSolver(iter);
+      SetResLinSolver(System.GetResidual());
+    }
+    SU2_OMP_BARRIER
+
+    if (compute_ur) ComputeUnderRelaxationFactor(solver_container, config);
+
+    /*--- Update solution (system written in terms of increments) ---*/
+
+    if (!adjoint) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+        }
+      }
+    }
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    SU2_OMP_MASTER
+    {
+      /*--- Compute the root mean square residual ---*/
+
+      SetResidual_RMS(geometry, config);
+
+      /*--- For verification cases, compute the global error metrics. ---*/
+
+      ComputeVerificationError(geometry, config);
+    }
+    SU2_OMP_BARRIER
+
+  }
+
+  /*!
+   * \brief Evaluate the vorticity and strain rate magnitude.
+   * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
+   */
+  template<size_t VelocityOffset>
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+
+    const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
+    auto& StrainMag = nodes->GetStrainMag();
+
+    SU2_OMP_MASTER {
+      StrainMag_Max = 0.0;
+      Omega_Max = 0.0;
+    }
+    SU2_OMP_BARRIER
+
+    su2double strainMax = 0.0, omegaMax = 0.0;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      constexpr size_t u = VelocityOffset;
+      constexpr size_t v = VelocityOffset+1;
+      constexpr size_t w = VelocityOffset+2;
+
+      /*--- Vorticity ---*/
+
+      su2double* Vorticity = nodes->GetVorticity(iPoint);
+
+      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+
+      Vorticity[2] = Gradient_Primitive(iPoint,v,0)-Gradient_Primitive(iPoint,u,1);
+
+      if (nDim == 3) {
+        Vorticity[0] = Gradient_Primitive(iPoint,w,1)-Gradient_Primitive(iPoint,v,2);
+        Vorticity[1] = -(Gradient_Primitive(iPoint,w,0)-Gradient_Primitive(iPoint,u,2));
+      }
+
+      /*--- Strain Magnitude ---*/
+
+      AD::StartPreacc();
+      AD::SetPreaccIn(&Gradient_Primitive[iPoint][VelocityOffset], nDim, nDim);
+
+      su2double Div = 0.0;
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Div += Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim);
+      Div /= 3.0;
+
+      StrainMag(iPoint) = 0.0;
+
+      /*--- Add diagonal part ---*/
+
+      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+        StrainMag(iPoint) += pow(Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim) - Div, 2);
+      }
+      if (nDim == 2) {
+        StrainMag(iPoint) += pow(Div, 2);
+      }
+
+      /*--- Add off diagonals ---*/
+
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,1) + Gradient_Primitive(iPoint,v,0)), 2);
+
+      if (nDim == 3) {
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,2) + Gradient_Primitive(iPoint,w,0)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,v,2) + Gradient_Primitive(iPoint,w,1)), 2);
+      }
+
+      StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+      AD::SetPreaccOut(StrainMag(iPoint));
+
+      /*--- Max is not differentiable, so we not register them for preacc. ---*/
+      strainMax = max(strainMax, StrainMag(iPoint));
+      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+
+      AD::EndPreacc();
+    }
+
+    if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
+      SU2_OMP_CRITICAL {
+        StrainMag_Max = max(StrainMag_Max, strainMax);
+        Omega_Max = max(Omega_Max, omegaMax);
+      }
+
+      SU2_OMP_BARRIER
+      SU2_OMP_MASTER {
+        su2double MyOmega_Max = Omega_Max;
+        su2double MyStrainMag_Max = StrainMag_Max;
+
+        SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      }
+      SU2_OMP_BARRIER
+    }
+
+  }
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
 
  public:
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo) override;
+
+  /*!
+   * \brief Set the initial condition for the Euler Equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) override;
+
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
@@ -281,6 +1133,18 @@ class CFVMFlowSolverBase : public CSolver {
    * Definition of the particular problem.
    */
   void ComputeUnderRelaxationFactor(CSolver** solver, const CConfig* config) final;
+
+  /*!
+   * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
    * \brief Set a uniform inlet profile
@@ -730,6 +1594,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the efficiency coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_CEff() const final { return TotalCoeff.CEff; }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.

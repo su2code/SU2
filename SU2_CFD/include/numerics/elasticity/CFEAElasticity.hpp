@@ -174,7 +174,33 @@ public:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  inline void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { };
+  inline su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) override { return 0; };
+
+  /*!
+   * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
+   */
+  template<class T>
+  static su2double VonMisesStress(unsigned short nDim, const T& stress) {
+    if (nDim == 2) {
+      su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
+
+      su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
+      su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
+      S1 += tauMax;
+      S2 -= tauMax;
+
+      return sqrt(S1*S1+S2*S2-2*S1*S2);
+    }
+    else {
+      su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
+      su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
+
+      return sqrt(0.5*(pow(Sxx - Syy, 2) +
+                       pow(Syy - Szz, 2) +
+                       pow(Szz - Sxx, 2) +
+                       6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+    }
+  }
 
 protected:
   /*!

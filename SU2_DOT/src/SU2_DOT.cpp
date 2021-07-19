@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
@@ -644,7 +644,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         }
       }
 
-      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       Gradient[iDV][0] += localGradient;
     }
   }
@@ -770,7 +770,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
       /*--- Angle of Attack design variable (this is different,
        the value comes form the input file) ---*/

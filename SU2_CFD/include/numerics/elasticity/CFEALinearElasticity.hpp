@@ -72,7 +72,7 @@ public:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
+  su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
 
 private:
   /*!

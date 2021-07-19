@@ -113,7 +113,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *
 
 #ifdef HAVE_MPI
   vector<unsigned long> domain_sizes(mpi_size);
-  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
   for (int i=0; i<mpi_rank; ++i) offset += domain_sizes[i];
 #endif
 
@@ -148,7 +148,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *
       /*--- Send and Receive data ---*/
       MPI_Sendrecv(Buffer_Send.data(), nVertexS, MPI_UNSIGNED_LONG, sender, 0,
                    Buffer_Recv.data(), nVertexR, MPI_UNSIGNED_LONG, recver, 0,
-                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                   SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
       /*--- Store received data---*/
       for (unsigned long iVertex = 0; iVertex < nVertexR; iVertex++)

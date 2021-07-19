@@ -243,6 +243,11 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
   SetElement_Properties(element, config);
   /*-----------------------------------------------------------*/
 
+  /*--- Register pre-accumulation inputs, density and reference coords. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Rho_s_DL);
+  element->SetPreaccIn_Coords(false);
+
   unsigned short iGauss, nGauss;
   unsigned short iNode, iDim, nNode;
 
@@ -285,6 +290,10 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
     }
 
   }
+
+  /*--- Register the dead load as preaccumulation output. ---*/
+  element->SetPreaccOut_FDL_a();
+  AD::EndPreacc();
 
 }
 

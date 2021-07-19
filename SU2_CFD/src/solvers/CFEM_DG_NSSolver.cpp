@@ -209,33 +209,13 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-  const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin      = config->GetRefOriginMoment(0);
-  const bool grid_movement     = config->GetGrid_Movement();
 
-/*--- Evaluate reference values for non-dimensionalization.
-        For dynamic meshes, use the motion Mach number as a reference value
-        for computing the force coefficients. Otherwise, use the freestream
-        values, which is the standard convention. ---*/
-  const su2double RefTemp     = Temperature_Inf;
-  const su2double RefDensity  = Density_Inf;
+  /*--- Evaluate reference values for non-dimensionalization. ---*/
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
 
-  su2double RefVel2;
-  if (grid_movement) {
-    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    const su2double Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim)
-      RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-
-  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Variables initialization ---*/
   AllBound_CD_Visc = 0.0;  AllBound_CL_Visc  = 0.0; AllBound_CSF_Visc = 0.0;
@@ -850,7 +830,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -877,7 +857,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   su2double localMax = AllBound_MaxHeatFlux_Visc;
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                       MPI_MAX, MPI_COMM_WORLD);
+                       MPI_MAX, SU2_MPI::GetComm());
   }
 #endif
 
@@ -1301,10 +1281,10 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 

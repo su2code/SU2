@@ -216,14 +216,14 @@ bool CFileWriter::OpenMPIFile(){
    to write a fresh output file, so we delete any existing files and create
    a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
     MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fileName.c_str(), MPI_INFO_NULL);
-    ierr = MPI_File_open(MPI_COMM_WORLD, fileName.c_str(),
+    ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
                          MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                          MPI_INFO_NULL, &fhw);
   }
@@ -264,7 +264,7 @@ bool CFileWriter::CloseMPIFile(){
 
   su2double my_fileSize = fileSize;
   SU2_MPI::Allreduce(&my_fileSize, &fileSize, 1,
-                     MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Compute and store the bandwidth ---*/
 

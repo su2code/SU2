@@ -93,7 +93,7 @@ private:
    * \brief Run the external solver for the task it is currently setup to execute.
    */
   void Run() {
-    dpastix(&state, MPI_COMM_WORLD, nCols, colptr.data(), rowidx.data(), values.data(),
+    dpastix(&state, SU2_MPI::GetComm(), nCols, colptr.data(), rowidx.data(), values.data(),
             loc2glb.data(), perm.data(), NULL, workvec.data(), 1, iparm, dparm);
   }
 

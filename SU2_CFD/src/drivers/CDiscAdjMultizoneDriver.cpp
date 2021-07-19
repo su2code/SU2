@@ -197,7 +197,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
-   su2double rhs_norm = 0.0;
+  su2double rhs_norm = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -569,7 +569,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
       su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
-      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
         cout << "-------------------------------------\n";

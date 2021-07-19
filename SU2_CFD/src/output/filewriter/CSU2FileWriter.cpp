@@ -76,7 +76,7 @@ void CSU2FileWriter::Write_Data(){
 
     /*--- Wait for iProcessor to finish and close the file. ---*/
 
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   }
 
   /*--- Compute and store the write time. ---*/

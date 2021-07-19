@@ -296,7 +296,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 #ifdef CODI_REVERSE_TYPE
     if (size > SINGLE_NODE) {
       su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
-      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       if (rank == MASTER_NODE) {
         cout << "MPI\n";
         cout << "-------------------------------------\n";

@@ -470,6 +470,13 @@ public:
     AD::SetPreaccOut(Mab.data(), nNodes*nNodes);
   }
 
+  /*!
+   * \brief Register the dead load as a pre-accumulation output.
+   */
+  inline void SetPreaccOut_FDL_a(void) {
+    AD::SetPreaccOut(FDL_a.data(), nNodes*nDim);
+  }
+
 };
 
 /*!

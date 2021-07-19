@@ -1501,7 +1501,7 @@ public:
    * \brief A virtual member to compute the averaged nodal stresses
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Averaged_NodalStress(CElement *element_container, const CConfig* config) { }
+  inline virtual su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig* config) { return 0; }
 
   /*!
    * \brief Computes a basis of orthogonal vectors from a supplied vector

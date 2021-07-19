@@ -46,8 +46,8 @@ protected:
   Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
 
   unsigned short nSpecies;        /*!< \brief Number of species in the gas mixture. */
-                  
-  su2double                  
+
+  su2double
   Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
   Temperature_ve_Inf;             /*!< \brief Vib.-el. free stream temperature. */
   const su2double *MassFrac_Inf;  /*!< \brief Free stream species mass fraction. */
@@ -62,6 +62,28 @@ protected:
   CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
+
+  /*!
+   * \brief Set the maximum value of the eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute a pressure sensor switch.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief Set the value of undivided laplacian.
+   * \param[in] val_und_lapl_i Undivided laplacian at point i.
+   * \param[in] val_und_lapl_j Undivided laplacian at point j.
+   */
+  inline void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
 public:
 
@@ -83,13 +105,6 @@ public:
   ~CNEMOEulerSolver(void) override;
 
   /*!
-   * \brief Set the maximum value of the eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -99,25 +114,6 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container,
                     CConfig *config, unsigned short iMesh, unsigned long Iteration) final;
-
-  /*!
-   * \brief Set the initial condition for the Euler Equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) final;
-
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -203,20 +199,20 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
 
- /*!
-  * \brief Set all the conserved variables from the primitive vector..
-  */
+  /*!
+   * \brief Set all the conserved variables from the primitive vector..
+   */
   void RecomputeConservativeVector(su2double *U, const su2double *V) const;
 
- /*!
-  * \brief Check for unphysical points.
-  * \return Boolean value of physical point
-  */
+  /*!
+   * \brief Check for unphysical points.
+   * \return Boolean value of physical point
+   */
   bool CheckNonPhys(const su2double *V) const;
 
-    /*!
+  /*!
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
@@ -235,38 +231,38 @@ public:
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
-     * \brief Impose the symmetry boundary condition using the residual.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] conv_numerics - Description of the numerical method for convective terms.
-     * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
+   * \brief Impose the symmetry boundary condition using the residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
 
   /*!
-     * \brief Impose a subsonic inlet boundary condition.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] conv_numerics - Description of the numerical method for convective terms.
-     * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
+   * \brief Impose a subsonic inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
-     * \brief Impose a supersonic inlet boundary condition.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] conv_numerics - Description of the numerical method for convective terms.
-     * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
+   * \brief Impose a supersonic inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker) override;
@@ -282,72 +278,54 @@ public:
                             CNumerics *conv_numerics, CNumerics *visc_numerics,
                             CConfig *config, unsigned short val_marker) override;
   /*!
-     * \brief Impose the outlet boundary condition.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] conv_numerics - Description of the numerical method for convective terms.
-     * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-
-     */
+   * \brief Impose the outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
-     * \brief Update the solution using an explicit Euler scheme.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
-
-  /*!
-     * \brief Update the solution using an explicit Euler scheme.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Runge-Kutta step.
-     */
-  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                            CConfig *config, unsigned short iRKStep) override;
-
-  /*!
-     * \brief Update the solution using an implicit Euler scheme.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-     */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
-
-  /*!
-     * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-     * \param[in] iMesh - Index of the mesh in multigrid computations.
-     * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-     */
-  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) override;
-
-  /*!
-   * \brief Compute a pressure sensor switch.
+   * \brief Update the solution using an explicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
-   /*!
-   * \brief Set the value of undivided laplacian.
-   * \param[in] val_und_lapl_i Undivided laplacian at point i.
-   * \param[in] val_und_lapl_j Undivided laplacian at point j.
+  /*!
+   * \brief Update the solution using a general explicit RK scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Runge-Kutta step.
    */
-  inline void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
+  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                            CConfig *config, unsigned short iRKStep) final;
 
-    /*!
+  /*!
+   * \brief Update the solution using the classical RK4 scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Runge-Kutta step.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                              CConfig *config, unsigned short iRKStep) final;
+
+  /*!
+   * \brief Update the solution using an implicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
+  /*!
    * \brief Print verification error to screen.
    * \param[in] config - Definition of the particular problem.
    */

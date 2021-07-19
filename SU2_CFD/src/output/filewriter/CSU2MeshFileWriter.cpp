@@ -114,7 +114,7 @@ void CSU2MeshFileWriter::Write_Data() {
     }
 
     /*--- Communicate offset, implies a barrier. ---*/
-    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&nElem, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Write the node coordinates. ---*/
@@ -150,7 +150,7 @@ void CSU2MeshFileWriter::Write_Data() {
     }
 
     /*--- Communicate offset, implies a barrier. ---*/
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   }
 
   if (rank == MASTER_NODE) {
@@ -248,5 +248,5 @@ void CSU2MeshFileWriter::Write_Data() {
     output_file.close();
   }
 
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 }

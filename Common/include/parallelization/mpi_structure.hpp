@@ -467,7 +467,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
 #else  // HAVE_MPI
 
-#define MPI_COMM_WORLD 0
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3

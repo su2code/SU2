@@ -29,16 +29,84 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os
+import shutil
+import copy
 import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
 from math import *
-from FSI_tools.switch import switch
 
 # ----------------------------------------------------------------------
 #  Config class
 # ----------------------------------------------------------------------
+
+class ImposedMotionClass:
+
+  def __init__(self,time0,typeOfMotion,parameters,mode):
+
+    self.time0 = time0
+    self.typeOfMotion = typeOfMotion
+    self.mode = mode
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      self.bias = parameters["BIAS"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.frequency = parameters["FREQUENCY"]
+      self.timeStart = parameters["TIME_0"]
+
+    elif self.typeOfMotion == "BLENDED_STEP":
+      self.kmax = parameters["K_MAX"]
+      self.vinf = parameters["V_INF"]
+      self.lref = parameters["L_REF"]
+      self.amplitude = parameters["AMPLITUDE"]
+      self.timeStart = parameters["TIME_0"]
+      self.tmax = 2*pi/self.kmax*self.lref/self.vinf
+      self.omega0 = 1/2*self.kmax
+
+    else:
+      raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
+
+
+  def GetDispl(self,time):
+    time = time - self.time0 - self.timeStart
+    if self.typeOfMotion == "SINUSOIDAL":
+      return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
+
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
+      return self.amplitude
+
+
+  def GetVel(self,time):
+    time = time - self.time0 - self.timeStart
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
+
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
+      return 0.0
+
+  def GetAcc(self,time):
+    time = time - self.time0 - self.timeStart
+
+    if self.typeOfMotion == "SINUSOIDAL":
+      return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
+
+    if self.typeOfMotion == "BLENDED_STEP":
+      if time < 0:
+        return 0.0
+      elif time < self.tmax:
+        return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
+      return 0.0
+
 
 class RefSystem:
 
@@ -190,7 +258,8 @@ class Solver:
     self.Config_file = config_fileName
     self.Config = {}
 
-    print("\n------------------------------ Configuring the structural tester solver for FSI simulation ------------------------------")
+    print("\n")
+    print(" Configuring the structural tester solver for FSI simulation ".center(80,"-"))
     self.__readConfig()
 
     self.Mesh_file = self.Config['MESH_FILE']
@@ -222,14 +291,19 @@ class Solver:
     self.node = []
     self.markers = {}
     self.refsystems = []
+    self.ImposedMotionToSet = True
+    self.ImposedMotionFunction = []
 
-    print("\n------------------------------ Reading the mesh ------------------------------")
+    print("\n")
+    print(" Reading the mesh ".center(80,"-"))
     self.__readNastranMesh()
 
-    print("\n------------------------------ Creating the structural model ------------------------------")
+    print("\n")
+    print(" Creating the structural model ".center(80,"-"))
     self.__setStructuralMatrices()
 
-    print("\n------------------------------ Setting the integration parameters ------------------------------")
+    print("\n")
+    print(" Setting the integration parameters ".center(80,"-"))
     self.__setIntegrationParameters()
     self.__setInitialConditions()
 
@@ -242,6 +316,9 @@ class Solver:
       header = header + '\n'
       histFile.write(header)
       histFile.close()
+    else:
+      self.__setRestart('nM1')
+      self.__setRestart('n')
 
   def __readConfig(self):
     """
@@ -265,41 +342,37 @@ class Solver:
         this_param = line[0].strip()
         this_value = line[1].strip()
 
-        for case in switch(this_param):
-          #integer values
-          if case("NMODES")		: pass
-          if case("IMPOSED_MODE") : pass
-          if case("RESTART_ITER") :
-            self.Config[this_param] = int(this_value)
-            break
+        #integer values
+        if (this_param == "NMODES") or \
+           (this_param == "RESTART_ITER"):
+          self.Config[this_param] = int(this_value)
 
-          #float values
-          if case("DELTA_T")			: pass
-          if case("MODAL_DAMPING")      : pass
-          if case("RHO")	      		:
-            self.Config[this_param] = float(this_value)
-            break
 
-          #string values
-          if case("TIME_MARCHING")	: pass
-          if case("MESH_FILE")			: pass
-          if case("PUNCH_FILE")        : pass
-          if case("RESTART_SOL")       : pass
-          if case("IMPOSED_DISP")      : pass
-          if case("IMPOSED_VEL")       : pass
-          if case("IMPOSED_ACC")       : pass
-          if case("MOVING_MARKER")		:
-            self.Config[this_param] = this_value
-            break
+        #float values
+        elif (this_param == "DELTA_T") or \
+             (this_param == "MODAL_DAMPING") or \
+             (this_param == "RHO"):
+          self.Config[this_param] = float(this_value)
 
-          #lists values
-          if case("INITIAL_MODES"):
-            self.Config[this_param] = eval(this_value)
-            break
 
-          if case():
-            print(this_param + " is an invalid option !")
-            break
+        #string values
+        elif (this_param == "TIME_MARCHING") or \
+             (this_param == "MESH_FILE") or \
+             (this_param == "PUNCH_FILE") or \
+             (this_param == "RESTART_SOL") or \
+             (this_param == "MOVING_MARKER"):
+          self.Config[this_param] = this_value
+
+
+        #lists values
+        elif (this_param == "INITIAL_MODES") or \
+             (this_param == "IMPOSED_MODES") or \
+             (this_param == "IMPOSED_PARAMETERS"):
+          self.Config[this_param] = eval(this_value)
+
+
+        else:
+          raise Exception('{} is an invalid option !'.format(this_param))
 
 
 
@@ -342,7 +415,7 @@ class Solver:
                 if self.refsystems[iRefSys].GetCID()==CP:
                   break
               if self.refsystems[iRefSys].GetCID()!=CP:
-                sys.exit('Definition reference {} system not found'.format(CP))
+                raise Exception('Definition reference {} system not found'.format(CP))
               DeltaPos = self.refsystems[iRefSys].GetOrigin()
               RotatedPos = self.refsystems[iRefSys].GetRotMatrix().dot(np.array([[x],[y],[z]]))
               x = RotatedPos[0]+DeltaPos[0]
@@ -367,8 +440,7 @@ class Solver:
             self.refsystems[self.nRefSys].SetCID(CID)
             RID = int(line[16:24])
             if RID!=0:
-              print('ERROR: Reference system {} must be defined with respect to global reference system'.format(CID))
-              sys.exit()
+              raise Exception('ERROR: Reference system {} must be defined with respect to global reference system'.format(CID))
             self.refsystems[self.nRefSys].SetRID(RID)
             AX = nastran_float(line[24:32])
             AY = nastran_float(line[32:40])
@@ -411,7 +483,7 @@ class Solver:
                   for iPoint in range(self.nPoint):
                       if self.node[iPoint].GetID() == ID:
                           break
-                  self.markers[self.FSI_marker].append(iPoint)
+                  self.markers[markerTag].append(iPoint)
                   existValue = len(line)>=1
               continue
 
@@ -480,7 +552,7 @@ class Solver:
                   if self.refsystems[iRefSys].GetCID()==self.node[iPoint].GetCD():
                     break
                 if self.refsystems[iRefSys].GetCID()!=self.node[iPoint].GetCD():
-                  sys.exit('Output reference {} system not found'.format(self.node[iPoint].GetCD()))
+                  raise Exception('Output reference {} system not found'.format(self.node[iPoint].GetCD()))
                 RotatedOutput = self.refsystems[iRefSys].GetRotMatrix().dot(np.array([[ux],[uy],[uz]]))
                 ux = RotatedOutput[0]
                 uy = RotatedOutput[1]
@@ -503,8 +575,7 @@ class Solver:
     self.UzT = self.Uz.transpose()
 
     if n<self.nDof:
-        print('ERROR: available {} degrees of freedom instead of {} as requested'.format(n,self.nDof))
-        sys.exit()
+        raise Exception('ERROR: available {} degrees of freedom instead of {} as requested'.format(n,self.nDof))
     else:
         print('Using {} degrees of freedom'.format(n))
 
@@ -524,9 +595,9 @@ class Solver:
     elif (not K_updated) and (not M_updated):
       print('Modal stiffness and mass matrices are diagonal')
     elif (not K_updated) and M_updated:
-      sys.exit('Non-Diagonal stiffness matrix is missing')
+      raise Exception('Non-Diagonal stiffness matrix is missing')
     elif (not M_updated) and K_updated:
-      sys.exit('Non-Diagonal mass matrix is missing')
+      raise Exception('Non-Diagonal mass matrix is missing')
 
   def __readNonDiagonalMatrix(self,keyword):
     """
@@ -665,14 +736,17 @@ class Solver:
     This method integrates in time the solution.
     """
 
+    self.__reset(self.q)
+    self.__reset(self.qdot)
+    self.__reset(self.qddot)
+    self.__reset(self.a)
+
     if not self.ImposedMotion:
       eps = 1e-6
 
       self.__SetLoads()
 
       # Prediction step
-      self.__reset(self.qddot)
-      self.__reset(self.a)
 
       self.a += (self.alpha_f)/(1-self.alpha_m)*self.qddot_n
       self.a -= (self.alpha_m)/(1-self.alpha_m)*self.a_n
@@ -699,9 +773,20 @@ class Solver:
 
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
-      self.q[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_DISP"])
-      self.qdot[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_VEL"])
-      self.qddot[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_ACC"])
+      if self.ImposedMotionToSet:
+        iImposedFunc = 0
+        for imode in self.Config["IMPOSED_MODES"].keys():
+          for isuperposed in range(len(self.Config["IMPOSED_MODES"][imode])):
+            typeOfMotion = self.Config["IMPOSED_MODES"][imode][isuperposed]
+            parameters = self.Config["IMPOSED_PARAMETERS"][imode][isuperposed]
+            self.ImposedMotionFunction.append(ImposedMotionClass(time, typeOfMotion, parameters, imode))
+            iImposedFunc += 1
+        self.ImposedMotionToSet = False
+      for iImposedFunc in range(len(self.ImposedMotionFunction)):
+        imode = self.ImposedMotionFunction[iImposedFunc].mode
+        self.q[imode] += self.ImposedMotionFunction[iImposedFunc].GetDispl(time)
+        self.qdot[imode] += self.ImposedMotionFunction[iImposedFunc].GetVel(time)
+        self.qddot[imode] += self.ImposedMotionFunction[iImposedFunc].GetAcc(time)
       self.a = np.copy(self.qddot)
 
 
@@ -773,7 +858,7 @@ class Solver:
 
     self.__computeInterfacePosVel(True)
 
-  def setRestart(self, timeIter):
+  def __setRestart(self, timeIter):
     if timeIter == 'nM1':
       #read the Structhistory to obtain the mode amplitudes
       with open('StructHistoryModal.dat','r') as file:
@@ -883,11 +968,11 @@ class Solver:
 
     return self.markers[markerID][iVertex]
 
-  def getInterfaceNodePos(self, markerID, iVertex):
+  def getInterfaceNodePosInit(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return Coord
+    Coord0 = self.node[iPoint].GetCoord0()
+    return Coord0
 
   def getInterfaceNodeDisp(self, markerID, iVertex):
 
