@@ -212,6 +212,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 
   /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
+  su2double Flux_Tensor[5][3];
+
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -675,6 +677,8 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
                                              su2double val_thermal_conductivity) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
