@@ -45,7 +45,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [2.473627,    2.473627,  -12.033039,  -11.945257,  -32.000000,   10.804939] #last 4 columns
+    thermalbath.test_vals = [0.945997, 0.945997, -12.018025, -12.217291, -32.000000, 10.013239]
     thermalbath.su2_exec  = "SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -57,7 +57,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000,  -32.000000,  -11.953727,  -12.066776,  -32.000000,   10.813864] #last 4 columns
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.018022, -12.217291, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -81,7 +81,7 @@ def main():
     visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
     visc_cone.cfg_file  = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
+    visc_cone.test_vals = [-5.173082, -5.697844, -20.831292, -20.719160, -23.419769, -1.564064, -2.069008, 2.203919, -2.590729]
     visc_cone.su2_exec  = "SU2_CFD"
     visc_cone.timeout   = 1600
     visc_cone.new_output = True
@@ -395,7 +395,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -12.093130, -6.619801, -8.806060, -2.393278]
+    axi_rans_air_nozzle.test_vals = [ -6.279299, -0.747627, -2.237638, 2.321596]
     axi_rans_air_nozzle.su2_exec  = "SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
