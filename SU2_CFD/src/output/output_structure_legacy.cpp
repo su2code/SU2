@@ -658,13 +658,6 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                                      geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
-          /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-
-          if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-            SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
-          }
-
           /*--- For specific applications, evaluate and plot the cp coefficent at different stations. ---*/
 
           if (config[val_iZone]->GetPlot_Section_Forces()) {
