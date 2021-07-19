@@ -707,17 +707,23 @@ vector<passivedouble> CDriver::GetConservativeStates(unsigned short iMarker) {
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
   unsigned long nVertex = geometry->GetnVertex(iMarker);
-  unsigned short iPoint;
-  vector<passivedouble> states(nVertex*5,0.0);
+  unsigned long iPoint;
+  unsigned long nVar = nDim + 2;
+  vector<passivedouble> states(nVertex*nVar,0.0);
 
-  for (unsigned short iVertex=0; iVertex < nVertex; iVertex++){
+  for (unsigned short iVertex = 0; iVertex < nVertex; iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-      states[5*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,0));
-      states[5*iVertex + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,1));
-      states[5*iVertex + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,2));
-      states[5*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,3));
-      states[5*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,4));
+      states[nVar*iVertex]     = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,0));
+      states[nVar*iVertex + 1] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,1));
+      states[nVar*iVertex + 2] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,2));
+
+      if (nDim == 2) {
+        states[nVar*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,3));
+      } else if (nDim == 3) {
+        states[nVar*iVertex + 3] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,3));
+        states[nVar*iVertex + 4] = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,4));
+      }
   }
 
   return states;
@@ -789,15 +795,21 @@ vector<passivedouble> CDriver::GetResiduals() {
 
   unsigned long nPoints = geometry->GetnPointDomain();
   unsigned long iPoint;
-  vector<passivedouble> resids(nPoints*5,0.0);
+  unsigned long nVar = nDim + 2;
+  vector<passivedouble> resids(nPoints*nVar,0.0);
 
   for (iPoint = 0; iPoint < nPoints; iPoint++) {
-      resids[5*iPoint]     = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,0));
-      resids[5*iPoint + 1] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,1));
-      resids[5*iPoint + 2] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,2));
-      resids[5*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
-      resids[5*iPoint + 4] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,4));
-    }
+      resids[nVar*iPoint]     = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,0));
+      resids[nVar*iPoint + 1] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,1));
+      resids[nVar*iPoint + 2] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,2));
+
+      if (nDim == 2) {
+        resids[nVar*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
+      } else if (nDim == 3) {
+        resids[nVar*iPoint + 3] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,3));
+        resids[nVar*iPoint + 4] = SU2_TYPE::GetValue(solver->LinSysRes(iPoint,4));
+      }
+  }
 
   return resids;
 }
