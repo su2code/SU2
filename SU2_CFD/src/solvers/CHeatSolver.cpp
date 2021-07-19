@@ -352,8 +352,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-            **Temp_i_Grad, **Temp_j_Grad, Project_Temp_i_Grad, Project_Temp_j_Grad;
+  su2double *V_i, *V_j, Temp_i, Temp_i_Corrected, Temp_j, Temp_j_Corrected,
+            Project_Grad_i, Project_Grad_j, Project_Temp_i_Grad, Project_Temp_j_Grad;
 
   su2double Vector_i[MAXNDIM] = {0};
   su2double Vector_j[MAXNDIM] = {0};
@@ -377,8 +377,8 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       V_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
       V_j = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(jPoint);
 
-      Temp_i_Grad = nodes->GetGradient(iPoint);
-      Temp_j_Grad = nodes->GetGradient(jPoint);
+      const auto Temp_i_Grad = nodes->GetGradient(iPoint);
+      const auto Temp_j_Grad = nodes->GetGradient(jPoint);
       numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
       Temp_i = nodes->GetTemperature(iPoint);
@@ -392,10 +392,10 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
           Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
         }
 
-        Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
-        Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
-        Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
-        Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
+        const auto Gradient_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Reconstruction(jPoint);
+        const auto Temp_i_Grad = nodes->GetGradient_Reconstruction(iPoint);
+        const auto Temp_j_Grad = nodes->GetGradient_Reconstruction(jPoint);
 
         /*Loop to correct the flow variables*/
         for (auto iVar = 0u; iVar < nVarFlow; iVar++) {
@@ -450,7 +450,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   CNumerics* numerics = numerics_container[VISC_TERM];
 
   su2double laminar_viscosity, Prandtl_Lam, Prandtl_Turb, eddy_viscosity_i, eddy_viscosity_j,
-            thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j, **Temp_i_Grad, **Temp_j_Grad;
+            thermal_diffusivity_i, thermal_diffusivity_j, Temp_i, Temp_j;
 
   const bool turb = ((config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
 
@@ -471,8 +471,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                        geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
-    Temp_i_Grad = nodes->GetGradient(iPoint);
-    Temp_j_Grad = nodes->GetGradient(jPoint);
+    const auto Temp_i_Grad = nodes->GetGradient(iPoint);
+    const auto Temp_j_Grad = nodes->GetGradient(jPoint);
     numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
     /*--- Primitive variables w/o reconstruction ---*/
