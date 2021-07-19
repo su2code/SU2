@@ -29,7 +29,18 @@
 
 ReadBFMInput::ReadBFMInput(CConfig *config, string file_inputname) 
 {
+    //vector<string> translated_names;
+    translated_names.resize(N_BFM_PARAMS);
+    translated_names.at(I_AXIAL_COORDINATE) = "axial_coordinate";
+    translated_names.at(I_RADIAL_COORDINATE) = "radial_coordinate";
+    translated_names.at(I_BLOCKAGE_FACTOR) = "blockage_factor";
+    translated_names.at(I_CAMBER_NORMAL_AXIAL) = "n_ax";
+    translated_names.at(I_CAMBER_NORMAL_TANGENTIAL) = "n_tang";
+    translated_names.at(I_CAMBER_NORMAL_RADIAL) = "n_rad";
+    translated_names.at(I_LEADING_EDGE_AXIAL) = "x_LE";
+    translated_names.at(I_BLADE_COUNT) = "blade_count";
 
+    ReadInputFile(file_inputname);
 }
 
 void ReadBFMInput::ReadInputFile(string input_file)
@@ -42,7 +53,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     bool eoRow{false};
     bool eoTang{false};
     bool eoRad{false};
-
+    
     file_stream.open(input_file.c_str(), ifstream::in);
 
     if (!file_stream.is_open()) {
@@ -62,6 +73,27 @@ void ReadBFMInput::ReadInputFile(string input_file)
             getline(file_stream, line);
             SetNBladeRows(stoi(line));
         }
+        if (line.compare("[row blade count]") == 0){
+            getline(file_stream, line);
+            istringstream stream_tang_locations(line);
+            while(stream_tang_locations){
+                stream_tang_locations >> word;
+                unsigned long tmp = stoul(word);
+                n_blades.push_back(tmp);
+            }
+            n_blades.pop_back();
+        }
+        if (line.compare("[rotation factor]") == 0){
+            getline(file_stream, line);
+            istringstream stream_tang_locations(line);
+            while(stream_tang_locations){
+                stream_tang_locations >> word;
+                unsigned long tmp = stoi(word);
+                rotation_factor.push_back(tmp);
+            }
+            rotation_factor.pop_back();
+        }
+
         if (line.compare("[number of tangential locations]") == 0){
             getline(file_stream, line);
             istringstream stream_tang_locations(line);
@@ -108,22 +140,117 @@ void ReadBFMInput::ReadInputFile(string input_file)
 
         if (line.compare("</header>") == 0) eoHeader = true;
     }
+    cout << "Number of blade rows: " << GetNBladeRows() << endl;
+    cout << "Number of spanwise sections: "<< n_axial_points.at(0) << endl;
+    cout << "Variables: ";
+    for(size_t i=0; i<variable_names.size(); ++i){
+        cout << variable_names.at(i) << " ";
+    }
+    cout << endl;
 
+    //TranslateVariables();
+    
     if((n_axial_points.size() != n_blade_rows) && (n_radial_points.size() != n_blade_rows) && (n_tangential_points.size() != n_blade_rows)){
         SU2_MPI::Error("Number of chordwise, spanwise or tangential data entries not provided for all blade rows", CURRENT_FUNCTION);
     }
 
-    if(variable_names.size() != N_BFM_PARAMS + 2){
+    if(variable_names.size() != N_BFM_PARAMS-2){
         SU2_MPI::Error("Number of variables in input file are unequal to the number required for Blade geometry definition", CURRENT_FUNCTION);
     }
 
     AllocateMemory();
-
-    line = SkipToFlag(&file_stream, "<data>");
     
+    line = SkipToFlag(&file_stream, "<data>");
+    unsigned short rowCounter{0};
+    unsigned long tangCounter{0};
+    unsigned long radCounter{0};
+    unsigned long pointCounter{0};
+    su2double temp;
+    while (getline(file_stream, line) && !eoData) {
+        if (line.compare("</data>") == 0){
+            eoData = true;
+        }
+        if(!eoData){
+            if(line.compare("<blade row>") == 0){
+                eoRow = false;
+                tangCounter = 0;
+                getline(file_stream, line);
+            }
+            if(line.compare("<tang section>") == 0){
+                eoTang = false;
+                radCounter = 0;
+                getline(file_stream, line);
+            }
+            if(line.compare("<radial section>") == 0){
+                eoRad = false;
+                pointCounter = 0;
+                getline(file_stream, line);
+            }
+            if(line.compare("</blade row>") == 0){
+                eoRow = true;
+                rowCounter++;
+                //getline(file_stream, line);
+            }
+            if(line.compare("</tang section>") == 0){
+                eoTang = true;
+                tangCounter++;
+                //getline(file_stream, line);
+            }
+            if(line.compare("</radial section>") == 0){
+                eoRad = true;
+                radCounter++;
+                //getline(file_stream, line);
+            }
+
+            if(!eoRow && !eoTang && !eoRad){
+                istringstream streamDataLine(line);
+                for (unsigned long iVar = 0; iVar < variable_names.size(); iVar++) {
+                    streamDataLine >> word;
+                    temp = stod(word);
+                    for(unsigned short iName=0; iName < translated_names.size(); ++iName){
+                        if(translated_names.at(iName).compare(variable_names.at(iVar)) == 0){
+                            Geometric_Parameters->at(rowCounter).at(iName)(tangCounter, radCounter, pointCounter) = temp;
+                        }
+                        
+                    }
+                    
+                }
+                
+                pointCounter ++;
+            }
+        }
+    }
 
 }
 
+// void ReadBFMInput::TranslateVariables(){
+//     name_translation.resize(variable_names.size());
+//     for(unsigned short iVar=0; iVar<variable_names.size(); ++iVar){
+//         if(variable_names.at(iVar) == "blockage_factor"){
+//             name_translation.at(iVar) = I_BLOCKAGE_FACTOR;
+//         }
+//         if(variable_names.at(iVar) == "n_ax"){
+//             name_translation.at(iVar) = I_CAMBER_NORMAL_AXIAL;
+//         }
+//         if(variable_names.at(iVar) == "n_tang"){
+//             name_translation.at(iVar) = make_pair(iVar, I_CAMBER_NORMAL_TANGENTIAL);
+//         }
+//         if(variable_names.at(iVar) == "n_rad"){
+//             name_translation.at(iVar) = make_pair(iVar, I_CAMBER_NORMAL_RADIAL);
+//         }
+//         if(variable_names.at(iVar) == "x_LE"){
+//             name_translation.at(iVar) = make_pair(iVar, I_LEADING_EDGE_AXIAL);
+//         }
+//         if(variable_names.at(iVar) == "rotation_factor"){
+//             name_translation.at(iVar) = make_pair(iVar, I_ROTATION_FACTOR);
+//         }
+//         if(variable_names.at(iVar) == "blade_count"){
+//             name_translation.at(iVar) = make_pair(iVar, I_BLADE_COUNT);
+//         }
+        
+        
+//     }
+// }
 string ReadBFMInput::SkipToFlag(ifstream *file_stream, string flag) {
   string line;
   getline(*file_stream, line);
@@ -140,6 +267,9 @@ string ReadBFMInput::SkipToFlag(ifstream *file_stream, string flag) {
 
 ReadBFMInput::~ReadBFMInput(void) 
 {
+    if(Geometric_Parameters != NULL){
+        delete Geometric_Parameters;
+    }
     if(axial_coordinate != NULL){
         delete axial_coordinate;
         delete radial_coordinate;

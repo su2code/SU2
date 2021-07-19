@@ -4441,6 +4441,8 @@ public:
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
 
+  inline virtual void ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources) {};
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4451,4 +4453,6 @@ protected:
   void SetVerificationSolution(unsigned short nDim,
                                unsigned short nVar,
                                CConfig        *config);
+
+
 };

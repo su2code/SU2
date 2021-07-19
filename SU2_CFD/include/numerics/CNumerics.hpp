@@ -945,6 +945,12 @@ public:
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
 
   /*!
+   * \brief Set the value of the Body-Force Model source term.
+   * \param[in] iDim - Index
+   * \param[in] value - Source term value
+  */
+  inline virtual void SetBFM_source(unsigned short iDim, su2double value){}
+  /*!
   * \brief Sets the values of the roe dissipation.
   * \param[in] diss_i - Dissipation value at node i
   * \param[in] diss_j - Dissipation value at node j

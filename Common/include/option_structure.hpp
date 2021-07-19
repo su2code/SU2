@@ -445,6 +445,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
+  RUNTIME_BFM_SYS = 8,
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,       /*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
@@ -2180,7 +2181,9 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_2 = 14,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   = 15,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
   PERIODIC_SOL_ULS    = 16,  /*!< \brief Solution gradient communication for unwieghted Least Squares (periodic only). */
-  PERIODIC_PRIM_ULS   = 17   /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_PRIM_ULS   = 17,  /*!< \brief Primitive gradient communication for unweighted Least Squares (periodic only). */
+  PERIODIC_AUX_GG     = 18,
+  PERIODIC_AUX_LS     = 19
 };
 
 /*!
@@ -2310,14 +2313,29 @@ static const map<string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = {
 };
 
 enum ENUM_BODY_FORCE_PARAMETERS {
-  I_ROTATION_FACTOR = 0,
-  I_BLOCKAGE_FACTOR = 1,
-  I_CAMBER_NORMAL_AXIAL = 2,
-  I_CAMBER_NORMAL_TANGENTIAL = 3,
-  I_CAMBER_NORMAL_RADIAL = 4,
-  I_LEADING_EDGE_AXIAL = 5,
-  I_AXIAL_CHORD = 6,
-  N_BFM_PARAMS = 7,
+  I_AXIAL_COORDINATE = 0,
+  I_RADIAL_COORDINATE = 1,
+  I_TANGENTIAL_ANGLE = 2,
+  I_ROTATION_FACTOR = 3,
+  I_BLOCKAGE_FACTOR = 4,
+  I_CAMBER_NORMAL_AXIAL = 5,
+  I_CAMBER_NORMAL_TANGENTIAL = 6,
+  I_CAMBER_NORMAL_RADIAL = 7,
+  I_LEADING_EDGE_AXIAL = 8,
+  I_AXIAL_CHORD = 9,
+  I_BLADE_COUNT = 10,
+  I_BODY_FORCE_FACTOR = 11,
+  N_BFM_PARAMS = 12,
+};
+
+enum ENUM_BODY_FORCE_MODEL_FORMULATION {
+  HALL = 0,
+  THOLLET = 1,
+};
+
+static const map<string, ENUM_BODY_FORCE_MODEL_FORMULATION> BFM_Formulation_Map = {
+        MakePair("HALL", HALL)
+        MakePair("THOLLET", THOLLET)
 };
 
 #undef MakePair

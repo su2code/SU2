@@ -360,9 +360,10 @@ CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_n
                   CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   /*--- Store the pointer to the constant body force vector. ---*/
+  Body_Force_Vector.resize(val_nDim);
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
+    Body_Force_Vector.at(iDim) = config->GetBody_Force_Vector()[iDim];
 
 }
 
@@ -378,16 +379,17 @@ CNumerics::ResidualType<> CSourceBodyForce::ComputeResidual(const CConfig* confi
   /*--- Momentum contribution ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+    residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector.at(iDim) / Force_Ref;
 
   /*--- Energy contribution ---*/
 
   residual[nDim+1] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+    residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector.at(iDim) / Force_Ref;
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
 
 CSourceIncBodyForce::CSourceIncBodyForce(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                      CSourceBase_Flow(val_nDim, val_nVar, config) {
@@ -429,6 +431,20 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
+CSourceBFM::CSourceBFM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                     CNumerics(val_nDim, val_nVar, config) {
+   BFM_sources.resize(val_nDim + 2);
+
+}
+
+CNumerics::ResidualType<> CSourceBFM::ComputeResidual(const CConfig* config){
+  su2double Force_Ref = config->GetForce_Ref();
+  su2double residual[nDim + 2];
+  for(unsigned short iDim=0; iDim<nDim + 2; ++iDim){
+    residual[iDim] = -Volume * BFM_sources.at(iDim) / Force_Ref;
+  }
+  return ResidualType<>(residual, nullptr, nullptr);
+}
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                    CSourceBase_Flow(val_nDim, val_nVar, config) {
 

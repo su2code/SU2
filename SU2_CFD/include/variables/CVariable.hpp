@@ -722,6 +722,16 @@ public:
   inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
 
   /*!
+   * \brief Add <i>value</i> to the auxilary variable gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value to add to the auxilary variable gradient.
+   */
+  inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Grad_AuxVar(iPoint,iVar,iDim) += value; }
+
+
+  /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */

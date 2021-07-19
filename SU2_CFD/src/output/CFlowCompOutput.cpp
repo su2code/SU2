@@ -30,6 +30,7 @@
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
+#include "../../include/variables/CBFMVariable.hpp"
 
 CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
@@ -427,17 +428,32 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
+
+  if(config->GetBFM()){
+    AddVolumeOutput("CAMBER_NORMAL_X", "n_x", "SOLUTION", "axial component of camber normal vector.");
+    AddVolumeOutput("CAMBER_NORMAL_Y", "n_y", "SOLUTION", "tangential component of camber normal vector.");
+    AddVolumeOutput("CAMBER_NORMAL_Z", "n_z", "SOLUTION", "radial component of camber normal vector.");
+    AddVolumeOutput("BLOCKAGE_FACTOR", "b", "SOLUTION", "Blade metal blockage factor.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_X", "blockage_gradient_x", "SOLUTION", "axial component of camber normal vector.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_Y", "blockage_gradient_y", "SOLUTION", "axial component of camber normal vector.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_Z", "blockage_gradient_z", "SOLUTION", "axial component of camber normal vector.");
+    AddVolumeOutput("BODY_FORCE_FACTOR", "body_force_factor", "SOLUTION", "indicator of blade presence.");
+    
+    
+  }
 }
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
   CVariable* Node_Turb = nullptr;
-
+  CVariable* Node_BFM = nullptr;
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
-
+  if(config->GetBFM()){
+    Node_BFM = solver[BFM_SOL]->GetNodes();
+  }
   CPoint*    Node_Geo  = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
@@ -574,6 +590,16 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   // MPI-Rank
   SetVolumeOutputValue("RANK", iPoint, rank);
 
+  if(config->GetBFM()){
+    SetVolumeOutputValue("CAMBER_NORMAL_X", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_AXIAL));
+    SetVolumeOutputValue("CAMBER_NORMAL_Y", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL));
+    SetVolumeOutputValue("CAMBER_NORMAL_Z", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_RADIAL));
+    SetVolumeOutputValue("BLOCKAGE_FACTOR", iPoint, Node_BFM->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
+    SetVolumeOutputValue("BLOCKAGE_GRADIENT_X", iPoint, Node_BFM->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, 0));
+    SetVolumeOutputValue("BLOCKAGE_GRADIENT_Y", iPoint, Node_BFM->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, 1));
+    SetVolumeOutputValue("BLOCKAGE_GRADIENT_Z", iPoint, Node_BFM->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, 2));
+    SetVolumeOutputValue("BODY_FORCE_FACTOR", iPoint, Node_BFM->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR));
+  }
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
   }

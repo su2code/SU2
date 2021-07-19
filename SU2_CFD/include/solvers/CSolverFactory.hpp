@@ -61,6 +61,7 @@ enum class SUB_SOLVER_TYPE {
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */
+  BFM,                     /*!< \brief Body-Force Model solver */
   NONE
 };
 

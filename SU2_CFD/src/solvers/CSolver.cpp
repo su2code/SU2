@@ -290,6 +290,12 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       ICOUNT           = nVar;
       JCOUNT           = nDim;
       break;
+    case PERIODIC_AUX_GG:
+      COUNT_PER_POINT  = (base_nodes->GetnAuxVar())*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = base_nodes->GetnAuxVar();
+      JCOUNT           = nDim;
+      break;
     case PERIODIC_PRIM_GG:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -741,6 +747,33 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             /*--- Store the partial gradient in the buffer. ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
+              }
+            }
+
+            break;
+          case PERIODIC_AUX_GG:
+
+            /*--- Access and rotate the partial G-G gradient. These will be
+             summed on both sides of the periodic faces before dividing
+             by the volume to complete the Green-Gauss gradient calc. ---*/
+
+            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                jacBlock[iVar][iDim] = base_nodes->GetAuxVarGradient(iPoint, iVar, iDim);
+              }
+            }
+
+            /*--- Rotate the gradients in x,y,z space for all variables. ---*/
+
+            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++) {
+              Rotate(zeros, jacBlock[iVar], rotBlock[iVar]);
+            }
+
+            /*--- Store the partial gradient in the buffer. ---*/
+
+            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = rotBlock[iVar][iDim];
               }
@@ -1429,6 +1462,18 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               for (iVar = 0; iVar < nVar; iVar++)
                 for (iDim = 0; iDim < nDim; iDim++)
                   base_nodes->AddGradient(iPoint, iVar, iDim,
+                                          bufDRecv[buf_offset+iVar*nDim+iDim]);
+
+              break;
+
+            case PERIODIC_AUX_GG:
+
+              /*--- For G-G, we accumulate partial gradients then compute
+               the final value using the entire volume of the periodic cell. ---*/
+
+              for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++)
+                for (iDim = 0; iDim < nDim; iDim++)
+                  base_nodes->AddAuxVarGradient(iPoint, iVar, iDim,
                                           bufDRecv[buf_offset+iVar*nDim+iDim]);
 
               break;
@@ -2509,7 +2554,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
 
-  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_AUX_GG, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
 }
 

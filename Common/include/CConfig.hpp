@@ -537,8 +537,8 @@ private:
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_CHT_Coupling,            /*!< \brief Kind of coupling method used at CHT interfaces. */
-  Kind_BFM;                     /*!< \brief Kind of BFM formulation. */
+  Kind_CHT_Coupling;            /*!< \brief Kind of coupling method used at CHT interfaces. */
+  
 
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
@@ -1028,6 +1028,7 @@ private:
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
   unsigned short Body_Force_Type;       /*!< \brief type of body-force model. */
+  unsigned short BFM_Formulation;       /*!< \brief Kind of BFM formulation. */
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5780,6 +5781,12 @@ public:
    * \return Type of body force
    */
   unsigned short GetBody_Force_Type(void) {return Body_Force_Type; }
+
+  /*!
+   * \brief Get information regarding body-force model formulation
+   * \return Type of body force model
+   */
+  unsigned short GetBFM_Formulation(void) {return BFM_Formulation; }
 
   bool GetBFM(void) {if(GetBody_Force() == VARIABLE_BF){
     return true;

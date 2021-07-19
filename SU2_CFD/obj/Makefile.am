@@ -80,6 +80,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/iteration/CHeatIteration.cpp \
   ../src/iteration/CTurboIteration.cpp \
   ../src/numerics/CNumerics.cpp \
+  ../src/numerics/ReadBFMInput.cpp \
+  ../src/numerics/BFMInterpolator.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
@@ -172,6 +174,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CNEMONSSolver.cpp \
   ../src/solvers/CNSSolver.cpp \
   ../src/solvers/CSolver.cpp \
+  ../src/solvers/CBFMSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
   ../src/solvers/CTransLMSolver.cpp \
   ../src/solvers/CTurbSolver.cpp \
@@ -214,7 +217,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CAdjEulerVariable.cpp \
   ../src/variables/CDiscAdjVariable.cpp \
   ../src/variables/CIncNSVariable.cpp \
-  ../src/variables/CEulerVariable.cpp
+  ../src/variables/CEulerVariable.cpp\
+  ../src/variables/CBFMVariable.cpp
 
 su2_cfd_sources = \
   ../src/SU2_CFD.cpp

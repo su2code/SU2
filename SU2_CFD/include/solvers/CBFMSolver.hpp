@@ -29,6 +29,8 @@
 
 #include "CSolver.hpp"
 #include "../variables/CBFMVariable.hpp"
+#include "../numerics/ReadBFMInput.hpp"
+#include "../numerics/BFMInterpolator.hpp"
 
 /*!
  * \class CBFMSolver
@@ -38,13 +40,32 @@
  */
 class CBFMSolver final : public CSolver {
 private:
+  
+  CBFMVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  ReadBFMInput* BFM_File_Reader;
+  BFMInterpolator* Interpolator;
+  vector<string> BFM_Parameter_Names{};
+  vector<unsigned short> BFM_Parameter_Indices{};
 
-  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
-
+  unsigned short BFM_formulation{HALL};
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
+  void ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  void ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*>W_cyl);
+
+  void ComputeCylProjections(CGeometry *geometry, CConfig *config);
+
+  void ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>W_cyl);
+
+  void ComputeBFMSources_Thollet(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>W_cyl);
+
+  void ComputeBlockageSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources);
+
+  su2double ComputeKMach(CSolver **solver_container, unsigned long iPoint,  vector<su2double*>W_cyl);
 
 public:
 
@@ -58,13 +79,22 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CBFMSolver(CGeometry *geometry, CConfig *config);
+  CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
   ~CBFMSolver(void) override;
 
+  /*!
+  * \brief Compute the source terms according to the BFM on the point iPoint
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] iPoint - Point index at which the BFM source terms are to be calcluated.
+  * \param[in] BFM_sources - Pointer to array where the BFM source terms are stored.
+  */
+  inline void ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources) override;
+
+ //void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) final;
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -294,5 +324,6 @@ public:
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
                                CConfig *config) override;
+
 
 };

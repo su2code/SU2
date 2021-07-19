@@ -1123,6 +1123,9 @@ void CConfig::SetConfig_Options() {
 
   /* BODY_FORCE_TYPE \n DESCRIPTION: Distinquish between constant body-force vector or turbomachinery body-force model*/
   addEnumOption("BODY_FORCE_TYPE", Body_Force_Type, Body_Force_Map, CONSTANT_BF);
+
+  addEnumOption("BFM_FORMULATION", BFM_Formulation, BFM_Formulation_Map, HALL);
+
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -8043,6 +8046,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
   switch (val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
+    case RUNTIME_BFM_SYS:       return BFM_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
