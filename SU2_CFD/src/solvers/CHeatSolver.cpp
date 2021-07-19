@@ -569,7 +569,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
   const su2double laminar_viscosity = config->GetMu_ConstantND();
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity_Solid();
+  const su2double thermal_diffusivity = flow ? laminar_viscosity/Prandtl_Lam : config->GetThermalDiffusivity();
 
   //su2double Prandtl_Turb = config->GetPrandtl_Turb();
   //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
@@ -597,12 +597,6 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
         dist_ij = sqrt(dist_ij);
 
         dTdn = -(nodes->GetSolution(Point_Normal,0) - Twall)/dist_ij;
-
-        if(flow) {
-          thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
-        }
-        else
-          thermal_diffusivity = config->GetThermalDiffusivity();
 
         Res_Visc[0] = thermal_diffusivity*dTdn*Area;
 
@@ -907,7 +901,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   string Marker_Tag, HeatFlux_Tag;
 
   const su2double thermal_diffusivity = flow ? config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam() :
-                                               config->GetThermalDiffusivity_Solid();
+                                               config->GetThermalDiffusivity();
 
   AllBound_HeatFlux = 0.0;
   AllBound_AverageT = 0.0;
@@ -945,13 +939,6 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
           dTdn = (Twall - nodes->GetSolution(iPointNormal,0))/dist;
 
-          if(flow) {
-            thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
-          }
-          else {
-            thermal_diffusivity = config->GetThermalDiffusivity();
-          }
-
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
 
           HeatFlux_per_Marker[iMarker] += HeatFlux[iMarker][iVertex]*Area;
@@ -982,13 +969,6 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           dist = sqrt(dist);
 
           dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
-
-          if(flow) {
-            thermal_diffusivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
-          }
-          else {
-            thermal_diffusivity = config->GetThermalDiffusivity();
-          }
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
 

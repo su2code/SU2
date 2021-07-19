@@ -4728,7 +4728,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        }
        for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = 0.0;
-         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = SMOOTH;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Check for mismatch in number of rough walls and solid walls. ---*/
