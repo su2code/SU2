@@ -711,7 +711,7 @@ vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
     // Species electronic energy
     num = 0.0;
-    denom = ElDegeneracy(iSpecies,0) * exp(CharElTemp(iSpecies,0)/Tve);
+    denom = ElDegeneracy(iSpecies,0) * exp(-CharElTemp(iSpecies,0)/Tve);
     for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
       num   += ElDegeneracy(iSpecies,iEl) * CharElTemp(iSpecies,iEl) * exp(-CharElTemp(iSpecies,iEl)/Tve);
       denom += ElDegeneracy(iSpecies,iEl) * exp(-CharElTemp(iSpecies,iEl)/Tve);
@@ -767,7 +767,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
         Ev = 0.0;
       /*--- Calculate electronic energy ---*/
       num = 0.0;
-      denom = ElDegeneracy[iSpecies][0] * exp(CharElTemp[iSpecies][0]/val_T);
+      denom = ElDegeneracy[iSpecies][0] * exp(-CharElTemp[iSpecies][0]/val_T);
       for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
         num   += ElDegeneracy[iSpecies][iEl] * CharElTemp[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
         denom += ElDegeneracy[iSpecies][iEl] * exp(-CharElTemp[iSpecies][iEl]/val_T);
@@ -953,7 +953,8 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
       mu(iSpecies,jSpecies) = MolarMass[iSpecies]*MolarMass[jSpecies] / (MolarMass[iSpecies] + MolarMass[jSpecies]);
       A_sr   = 1.16 * 1E-3 * sqrt(mu(iSpecies,jSpecies)) * pow(CharVibTemp[iSpecies], 4.0/3.0);
       B_sr   = 0.015 * pow(mu(iSpecies,jSpecies), 0.25);
-      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+      tau_sr = 101325.0/Pressure * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42); 
+
       num   += MolarFrac[jSpecies];
       denom += MolarFrac[jSpecies] / tau_sr;
     }
@@ -961,7 +962,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauMW = num / denom;
 
     /*--- Park limiting cross section ---*/
-    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*mu(iSpecies,0)));
+    Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
     sig_s = 3E-21*(2.5E9)/(T*T);
 
     tauP = 1/(sig_s*Cs*N);

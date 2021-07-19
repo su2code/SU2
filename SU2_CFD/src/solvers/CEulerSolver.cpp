@@ -2339,30 +2339,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- For viscous problems, we need an additional gradient. ---*/
     if (viscous) {
-
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
-        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
-        su2double xVelocity       = nodes->GetVelocity(iPoint,0);
-        su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
-
-        if (yCoord > EPS){
-          su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
-          nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
-          nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
-          nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
-        }
-      }
-
-      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-        SetAuxVar_Gradient_GG(geometry, config);
-      }
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-        SetAuxVar_Gradient_LS(geometry, config);
-      }
-
+      PrepareAndConputeAuxVarGrad(geometry, config);
     }
 
     /*--- loop over points ---*/

@@ -78,17 +78,17 @@ def main():
     invwedge.tol       = 0.00001
     test_list.append(invwedge)
 
-    # Viscous single wedge
-    viscwedge           = TestCase('viscwedge')
-    viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
-    viscwedge.cfg_file  = "viscwedge.cfg"
-    viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
-    viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
-    viscwedge.timeout   = 1600
-    viscwedge.new_output = True
-    viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)
+    # Viscous single cone - axisymmetric
+    visc_cone           = TestCase('visc_cone')
+    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_file  = "axi_visccone.cfg"
+    visc_cone.test_iter = 10
+    visc_cone.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
+    visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
+    visc_cone.timeout   = 1600
+    visc_cone.new_output = True
+    visc_cone.tol       = 0.00001
+    test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
     #viscwedge_mpp           = TestCase('viscwedge_mpp')
