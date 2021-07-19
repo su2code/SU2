@@ -1,5 +1,5 @@
 /*!
- * \file output_structure.cpp
+ * \file output_structure_legacy.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -347,7 +347,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool equiv_area = config->GetEquivArea();
-  bool buffet = (config->GetViscous() || config->GetKind_Regime() == COMPRESSIBLE);
+  bool buffet = (config->GetViscous() || config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
@@ -364,8 +364,8 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   bool incload = config->GetIncrementalLoad();
 
   bool thermal = false; /* Flag for whether to print heat flux values */
@@ -615,8 +615,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
   bool radiation            = config[val_iZone]->AddRadiation();
 
-  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
+  bool compressible = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
 
@@ -677,7 +677,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
       /*--- Output a file with the forces breakdown. ---*/
 
-      if (config[val_iZone]->GetTime_Marching() == HARMONIC_BALANCE) {
+      if (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
         SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
 
@@ -714,8 +714,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     }
 
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
-    if (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST ||
-        config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND)
+    if (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+        config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
       ExtIter_OffSet = 0;
 
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
@@ -761,13 +761,13 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                 (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                 (config[val_iZone]->GetKind_Solver() == INC_EULER) || (config[val_iZone]->GetKind_Solver() == INC_NAVIER_STOKES) ||
                 (config[val_iZone]->GetKind_Solver() == INC_RANS);
-    bool buffet = (config[val_iZone]->GetViscous() || config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
+    bool buffet = (config[val_iZone]->GetViscous() || config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
-    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-    bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
+    bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+    bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
+    bool fsi = (config[val_iZone]->GetFSI_Simulation());
     bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
@@ -1248,8 +1248,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- Header frequency ---*/
 
-    bool Unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                     (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
+    bool Unsteady = ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                     (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
     bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
     bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetScreen_Wrt_Freq(0) == 0));
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
@@ -1563,7 +1563,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         ) {
 
           if (!fem) {
-            if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_STEPPING)) {
+            if (!Unsteady && (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::TIME_STEPPING)) {
               switch (config[val_iZone]->GetKind_Solver()) {
               case EULER : case NAVIER_STOKES: case RANS:
               case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
@@ -1649,10 +1649,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             else {
               if (flow) {
-                if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
+                if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
                 {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
-                } else if ((config[val_iZone]->GetTime_Marching() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
+                } else if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][val_iInst][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
                 } else {
                   cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
@@ -2430,9 +2430,9 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
   unsigned short iDim, iMarker_Monitoring;
   ofstream Breakdown_file;
 
-  bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-  bool unsteady           = (config[val_iZone]->GetTime_Marching() != NO);
+  bool compressible       = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  bool incompressible     = (config[val_iZone]->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+  bool unsteady           = (config[val_iZone]->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous            = config[val_iZone]->GetViscous();
   bool dynamic_grid       = config[val_iZone]->GetDynamic_Grid();
   bool gravity            = config[val_iZone]->GetGravityForce();
@@ -2795,7 +2795,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
+    Breakdown_file << "| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
     Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
@@ -2954,7 +2954,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2962,7 +2962,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -2978,30 +2978,36 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
+          default:
+            break;
+
         }
         switch (config[val_iZone]->GetKind_ConductivityModel()) {
 
-          case CONSTANT_PRANDTL:
+          case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
             Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
             Breakdown_file << "Prandtl: " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
             break;
 
-          case CONSTANT_CONDUCTIVITY:
-            Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+          case CONDUCTIVITYMODEL::CONSTANT:
+            Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
             Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
+            break;
+
+          default:
             break;
 
         }
 
         if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
           switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
-            case CONSTANT_PRANDTL_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+              Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
               break;
-            case NO_CONDUCTIVITY_TURB:
-              Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+            case CONDUCTIVITYMODEL_TURB::NONE:
+              Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
               Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
               break;
           }
@@ -3185,7 +3191,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     /*--- Incompressible version of the console output ---*/
 
       bool energy     = config[val_iZone]->GetEnergy_Equation();
-      bool boussinesq = (config[val_iZone]->GetKind_DensityModel() == BOUSSINESQ);
+      bool boussinesq = (config[val_iZone]->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
       if (config[val_iZone]->GetRef_Inc_NonDim() == DIMENSIONAL) {
         Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
@@ -3230,16 +3236,16 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
       switch (config[val_iZone]->GetKind_DensityModel()) {
 
-        case CONSTANT:
+        case INC_DENSITYMODEL::CONSTANT:
           if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
           else Breakdown_file << "No energy equation." << "\n";
           break;
 
-        case BOUSSINESQ:
+        case INC_DENSITYMODEL::BOUSSINESQ:
           if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
           break;
 
-        case VARIABLE:
+        case INC_DENSITYMODEL::VARIABLE:
           if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
           break;
 
@@ -3298,7 +3304,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
       if (viscous) {
         switch (config[val_iZone]->GetKind_ViscosityModel()) {
 
-          case CONSTANT_VISCOSITY:
+          case VISCOSITYMODEL::CONSTANT:
             Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
             Breakdown_file << "Constant Laminar Viscosity: " << config[val_iZone]->GetMu_Constant();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3306,7 +3312,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Laminar Viscosity (non-dim): " << config[val_iZone]->GetMu_ConstantND()<< "\n";
             break;
 
-          case SUTHERLAND:
+          case VISCOSITYMODEL::SUTHERLAND:
             Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
             Breakdown_file << "Ref. Laminar Viscosity: " << config[val_iZone]->GetMu_Ref();
             if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
@@ -3322,7 +3328,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< "\n";
             break;
 
-          case POLYNOMIAL_VISCOSITY:
+          case VISCOSITYMODEL::POLYNOMIAL:
             Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
             Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
@@ -3343,19 +3349,19 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         if (energy) {
           switch (config[val_iZone]->GetKind_ConductivityModel()) {
 
-            case CONSTANT_PRANDTL:
+            case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
               Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
               Breakdown_file << "Prandtl (Laminar): " << config[val_iZone]->GetPrandtl_Lam()<< "\n";
               break;
 
-            case CONSTANT_CONDUCTIVITY:
-              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+            case CONDUCTIVITYMODEL::CONSTANT:
+              Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
               Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
               Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
               break;
 
-            case POLYNOMIAL_CONDUCTIVITY:
-              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            case CONDUCTIVITYMODEL::POLYNOMIAL:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL "<< endl;
               Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
               for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnPolyCoeffs(); iVar++) {
                 Breakdown_file << config[val_iZone]->GetKt_PolyCoeff(iVar);
@@ -3374,12 +3380,12 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
           if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
             switch (config[val_iZone]->GetKind_ConductivityModel_Turb()) {
-              case CONSTANT_PRANDTL_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
+                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
                 Breakdown_file << "Turbulent Prandtl: " << config[val_iZone]->GetPrandtl_Turb()<< "\n";
                 break;
-              case NO_CONDUCTIVITY_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              case CONDUCTIVITYMODEL_TURB::NONE:
+                Breakdown_file << "Turbulent Conductivity Model: NONE "<< "\n";
                 Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
                 break;
             }
@@ -4732,8 +4738,8 @@ void COutputLegacy::SetCp_InverseDesign(CSolver *solver_container, CGeometry *ge
 
   /*--- Write file name with extension if unsteady or steady ---*/
 
-  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
-      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+  if (((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) ||
+       (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -4883,8 +4889,8 @@ void COutputLegacy::SetHeatFlux_InverseDesign(CSolver *solver_container, CGeomet
 
   /*--- Write file name with extension if unsteady or steady ---*/
 
-  if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
-      (config->GetTime_Marching() == HARMONIC_BALANCE)) {
+  if (((config->GetTime_Marching() != TIME_MARCHING::STEADY) && config->GetTime_Domain()) ||
+       (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -7333,8 +7339,8 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
   unsigned short nDim         = geometry->GetnDim();
   unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
+  bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
+  bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   bool energy         = config->GetEnergy_Equation();
 
 
@@ -7417,7 +7423,7 @@ void COutputLegacy::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geo
           }
 
           if (incompressible){
-            if (config->GetKind_DensityModel() == VARIABLE) {
+            if (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) {
               Mach = sqrt(solver->GetNodes()->GetVelocity2(iPoint))/
               sqrt(solver->GetNodes()->GetSpecificHeatCp(iPoint)*config->GetPressure_ThermodynamicND()/(solver->GetNodes()->GetSpecificHeatCv(iPoint)*solver->GetNodes()->GetDensity(iPoint)));
             } else {

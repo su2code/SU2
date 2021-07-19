@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -69,9 +69,9 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.107800, 1.574246, 47250.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
 
@@ -210,7 +210,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.864178, -1.742176, 1090.300000, 0.000006]
+    unst_deforming_naca0012.test_vals = [-1.958006, -1.841808, 1081.700000, 0.000004]
     unst_deforming_naca0012.su2_exec  = "SU2_CFD_AD"
     unst_deforming_naca0012.timeout   = 1600
     unst_deforming_naca0012.tol       = 0.00001
@@ -241,7 +241,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.271573, 0.671242, -3.172000, -8.231600] #last 4 columns
+    discadj_heat.test_vals = [-2.271569, 0.671288, -3.172000, -8.231500] #last 4 columns
     discadj_heat.su2_exec  = "SU2_CFD_AD"
     discadj_heat.timeout   = 1600
     discadj_heat.tol       = 0.00001

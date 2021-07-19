@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,11 +73,11 @@ protected:
    * This function requires that the stress tensor already be
    * computed using \ref GetStressTensor
    *
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_tau_wall - The wall stress
+   * \param[in] UnitNormal - Unit normal vector.
+   * \param[in] TauWall - The wall stress.
    */
-  void AddTauWall(const su2double *val_normal,
-                  su2double val_tau_wall);
+  void AddTauWall(const su2double *UnitNormal,
+                  su2double TauWall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor

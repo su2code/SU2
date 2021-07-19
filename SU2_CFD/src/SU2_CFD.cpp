@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 #include "libxsmm.h"
 #endif
 
-/* Include file, needed for the runtime NaN catching. */
+/* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
 using namespace std;
@@ -56,6 +56,10 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv)
 
+  /*--- OpenMP initialization ---*/
+
+  omp_initialize();
+
   omp_set_num_threads(num_threads);
 
   /*--- MPI initialization, and buffer setting ---*/
@@ -69,8 +73,13 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
+  /*--- AD initialization ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().initialize();
+#endif
+
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
-  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+  // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Initialize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
@@ -89,7 +98,7 @@ int main(int argc, char *argv[]) {
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation). ---*/
 
-  const CConfig config(config_file_name, SU2_CFD);
+  const CConfig config(config_file_name, SU2_COMPONENT::SU2_CFD);
   const unsigned short nZone = config.GetnZone();
   const bool turbo = config.GetBoolTurbomachinery();
 
@@ -99,7 +108,7 @@ int main(int argc, char *argv[]) {
 
   const bool disc_adj = config.GetDiscrete_Adjoint();
   const bool multizone = config.GetMultizone_Problem();
-  const bool harmonic_balance = (config.GetTime_Marching() == HARMONIC_BALANCE);
+  const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
   if (dry_run) {
 
@@ -110,7 +119,7 @@ int main(int argc, char *argv[]) {
   else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
 
     /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
-    if (nZone != 1 )
+    if (nZone != 1)
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
 
     if (disc_adj) {
@@ -160,8 +169,16 @@ int main(int argc, char *argv[]) {
   libxsmm_finalize();
 #endif
 
+  /*--- Finalize AD, if necessary. ---*/
+#ifdef HAVE_OPDI
+  AD::getGlobalTape().finalize();
+#endif
+
   /*--- Finalize MPI parallelization. ---*/
   SU2_MPI::Finalize();
+
+  /*--- Finalize OpenMP. ---*/
+  omp_finalize();
 
   return EXIT_SUCCESS;
 

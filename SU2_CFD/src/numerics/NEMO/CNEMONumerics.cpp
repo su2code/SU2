@@ -11,7 +11,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -244,6 +244,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
+  su2activematrix Flux_Tensor(nVar,nDim);
+
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
@@ -282,8 +284,10 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
   /*--- Pre-compute mixture quantities ---*/
+
+  su2double Vector[MAXNDIM] = {0.0};
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }

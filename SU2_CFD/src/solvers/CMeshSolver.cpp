@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  System.SetToleranceType(LinearToleranceType::ABSOLUTE);
 
   /*--- Initialize structures for hybrid-parallel mode. ---*/
 
@@ -148,6 +147,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
   SU2_OMP_PARALLEL {
     SetMinMaxVolume(geometry, config, false);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Compute the wall distance using the reference coordinates ---*/
   SetWallDistance(geometry, config);
@@ -178,6 +178,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     MaxVolume = -1E22; MinVolume = 1E22;
     ElemCounter = 0;
   }
+  END_SU2_OMP_MASTER
 
   /*--- Local min/max, final reduction outside loop. ---*/
   su2double maxVol = -1E22, minVol = 1E22;
@@ -229,12 +230,14 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     /*--- Count distorted elements. ---*/
     if (ElemVolume <= 0.0) elCount++;
   }
+  END_SU2_OMP_FOR
   SU2_OMP_CRITICAL
   {
     MaxVolume = max(MaxVolume, maxVol);
     MinVolume = min(MinVolume, minVol);
     ElemCounter += elCount;
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   SU2_OMP_MASTER
@@ -244,6 +247,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     SU2_MPI::Allreduce(&maxVol, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&minVol, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- Volume from 0 to 1 ---*/
@@ -259,6 +263,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
       element[iElem].SetRef_Volume(ElemVolume);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Store the maximum and minimum volume. ---*/
   SU2_OMP_MASTER {
@@ -274,9 +279,12 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
 
-  } SU2_OMP_BARRIER
+  }
+  END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   AD::EndPassive(wasActive);
+
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
@@ -337,6 +345,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
       nodes->SetWallDistance(iPoint, MaxDistance);
     }
+    END_SU2_OMP_FOR
   }
   else {
     su2double MaxDistance_Local = -1E22, MinDistance_Local = 1E22;
@@ -359,11 +368,13 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       if (dist > EPS)  MinDistance_Local = min(MinDistance_Local, dist);
 
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       MaxDistance = max(MaxDistance, MaxDistance_Local);
       MinDistance = min(MinDistance, MinDistance_Local);
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     SU2_OMP_MASTER
@@ -373,6 +384,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -382,6 +394,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     su2double nodeDist = nodes->GetWallDistance(iPoint)/MaxDistance;
     nodes->SetWallDistance(iPoint,nodeDist);
   }
+  END_SU2_OMP_FOR
 
   /*--- Compute the element distances ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -402,8 +415,10 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     element[iElem].SetWallDistance(ElemDist);
   }
+  END_SU2_OMP_FOR
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, CConfig *config){
@@ -457,6 +472,8 @@ void CMeshSolver::SetMesh_Stiffness(CGeometry **geometry, CNumerics **numerics, 
     break;
   }
   }
+  END_SU2_OMP_PARALLEL
+
   stiffness_set = true;
 
 }
@@ -486,10 +503,19 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
+
+    if (time_domain && config->GetFSI_Simulation()) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+          LinSysSol(iPoint, iDim) = nodes->GetSolution(iPoint, iDim);
+      END_SU2_OMP_FOR
+    }
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
+  SetBoundaryDisplacements(geometry[MESH_0], config, false);
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
@@ -501,28 +527,31 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   UpdateGridCoord(geometry[MESH_0], config);
 
   /*--- Update the dual grid. ---*/
-  UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
-  if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
-
-  /*--- Update the multigrid structure. ---*/
-  UpdateMultiGrid(geometry, config);
+  CGeometry::UpdateGeometry(geometry, config);
 
   /*--- Check for failed deformation (negative volumes). ---*/
   SetMinMaxVolume(geometry[MESH_0], config, true);
 
-  } // end parallel
+  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
+  if (time_domain && !config->GetFSI_Simulation())
+    ComputeGridVelocity(geometry, config);
+
+  }
+  END_SU2_OMP_PARALLEL
+
+  if (time_domain && config->GetFSI_Simulation()) {
+    ComputeGridVelocity_FromBoundary(geometry, numerics, config);
+  }
 
 }
 
-void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
+void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
   /*--- LinSysSol contains the absolute x, y, z displacements. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       /*--- Retrieve the displacement from the solution of the linear system ---*/
       su2double val_disp = LinSysSol(iPoint, iDim);
@@ -534,34 +563,73 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
       geometry->nodes->SetCoord(iPoint, iDim, val_coord);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Communicate the updated displacements and mesh coordinates. ---*/
   geometry->InitiateComms(geometry, config, COORDINATES);
   geometry->CompleteComms(geometry, config, COORDINATES);
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+}
+
+void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+
+  if (config->GetnZone() == 1)
+    SU2_MPI::Error("It is not possible to compute grid velocity from boundary velocity for single zone problems.\n"
+                   "MARKER_FLUID_LOAD should only be used for structural boundaries.", CURRENT_FUNCTION);
+
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool wasActive = AD::BeginPassive();
+
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
+
+  AD::EndPassive(wasActive);
+
+  const su2double velRef = config->GetVelocity_Ref();
+  const su2double invVelRef = 1.0 / velRef;
+
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
+  SU2_OMP_PARALLEL {
+    LinSysRes.SetValZero();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        LinSysSol(iPoint, iDim) = geometry[MESH_0]->nodes->GetGridVel(iPoint)[iDim] * velRef;
+    END_SU2_OMP_FOR
+  }
+  END_SU2_OMP_PARALLEL
+
+  /*--- Impose boundary conditions including boundary velocity ---*/
+  SetBoundaryDisplacements(geometry[MESH_0], config, true);
+
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry[MESH_0], config);
+
+  SU2_OMP_PARALLEL {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, LinSysSol(iPoint,iDim)*invVelRef);
+    END_SU2_OMP_FOR
+
+    for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
+  }
+  END_SU2_OMP_PARALLEL
 
 }
 
-void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
+void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *config) const {
 
-  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
-   dual mesh control volumes in the domain and on the boundaries. ---*/
+  /*--- Compute the velocity of each node. ---*/
 
-  geometry->SetControlVolume(config, UPDATE);
-  geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
-
-}
-
-void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
-
-  /*--- Compute the velocity of each node in the domain of the current rank
-   (halo nodes are not computed as the grid velocity is later communicated). ---*/
+  const bool firstOrder = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST;
+  const bool secondOrder = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const su2double invTimeStep = 1.0 / config->GetDelta_UnstTimeND();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
 
@@ -569,53 +637,43 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     const su2double* Disp_n   = nodes->GetSolution_time_n(iPoint);
     const su2double* Disp_nP1 = nodes->GetSolution(iPoint);
 
-    /*--- Unsteady time step ---*/
-
-    su2double TimeStep = config->GetDelta_UnstTimeND();
-
-    /*--- Compute mesh velocity with 1st or 2nd-order approximation. ---*/
+    /*--- Compute mesh velocity for this point with 1st or 2nd-order approximation. ---*/
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double GridVel = 0.0;
+      if (firstOrder)
+        GridVel = (Disp_nP1[iDim] - Disp_n[iDim]) * invTimeStep;
+      else if (secondOrder)
+        GridVel = (1.5*Disp_nP1[iDim] - 2.0*Disp_n[iDim] + 0.5*Disp_nM1[iDim]) * invTimeStep;
 
-      if (config->GetTime_Marching() == DT_STEPPING_1ST)
-        GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
-      if (config->GetTime_Marching() == DT_STEPPING_2ND)
-        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim] +
-                    1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
-
-      /*--- Store grid velocity for this point ---*/
-
-      geometry->nodes->SetGridVel(iPoint, iDim, GridVel);
-
+      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
     }
   }
+  END_SU2_OMP_FOR
 
-  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
-  geometry->InitiateComms(geometry, config, GRID_VELOCITY);
-  geometry->CompleteComms(geometry, config, GRID_VELOCITY);
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
 
 }
 
-void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
+void CMeshSolver::BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity){
 
-  /*--- Update the multigrid structure after moving the finest grid,
-   including computing the grid velocities on the coarser levels
-   when the problem is solved in unsteady conditions. ---*/
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    const auto iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
-    geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
-    if (time_domain)
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+    /*--- Retrieve the boundary displacement or velocity ---*/
+    su2double Sol[MAXNVAR] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      if (velocity) Sol[iDim] = nodes->GetBound_Vel(iPoint,iDim);
+      else Sol[iDim] = nodes->GetBound_Disp(iPoint,iDim);
+    }
+    LinSysSol.SetBlock(iPoint, Sol);
+    Jacobian.EnforceSolutionAtNode(iPoint, Sol, LinSysRes);
   }
-
 }
 
-void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
+void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config, bool velocity_transfer){
 
   /* Surface motions are not applied during discrete adjoint runs as the corresponding
    * boundary displacements are computed when loading the primal solution, and it
@@ -624,6 +682,9 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
    * but this means that (for now) we cannot get derivatives w.r.t. motion parameters. */
 
   if (config->GetSurface_Movement(DEFORMING) && !config->GetDiscrete_Adjoint()) {
+    if (velocity_transfer)
+      SU2_MPI::Error("Forced motions are not compatible with FSI simulations.", CURRENT_FUNCTION);
+
     if (rank == MASTER_NODE)
       cout << endl << " Updating surface positions." << endl;
 
@@ -643,7 +704,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 
-      BC_Clamped(geometry, numerics, config, iMarker);
+      BC_Clamped(geometry, config, iMarker);
     }
   }
 
@@ -652,11 +713,11 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
-      BC_Deforming(geometry, numerics, config, iMarker);
+      BC_Deforming(geometry, config, iMarker, velocity_transfer);
     }
     else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 
-      BC_Sym_Plane(geometry, numerics, config, iMarker);
+      BC_Sym_Plane(geometry, config, iMarker);
     }
   }
 
@@ -764,10 +825,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  /*--- Communicate the new coordinates at the halos ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
   /*--- Init the linear system solution. ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
@@ -775,23 +832,14 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     }
   }
 
-  /*--- Recompute the edges and dual mesh control volumes in the
-   domain and on the boundaries. ---*/
-  UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- For time-domain problems, we need to compute the grid velocities ---*/
-  if (time_domain){
+  /*--- For time-domain problems, we need to compute the grid velocities. ---*/
+  if (time_domain && !config->GetFSI_Simulation()) {
     /*--- Update the old geometry (coordinates n and n-1) ---*/
-    Restart_OldGeometry(geometry[MESH_0], config);
-    /*--- Once Displacement_n and Displacement_n1 are filled,
-     we can compute the Grid Velocity ---*/
-    ComputeGridVelocity(geometry[MESH_0], config);
-  }
+    RestartOldGeometry(geometry[MESH_0], config);
 
-  /*--- Update the multigrid structure after setting up the finest grid,
-   including computing the grid velocities on the coarser levels
-   when the problem is unsteady. ---*/
-  UpdateMultiGrid(geometry, config);
+    /*--- Once Displacement_n and Displacement_n1 are filled we can compute the Grid Velocity ---*/
+    ComputeGridVelocity(geometry, config);
+  }
 
   /*--- Store the boundary displacements at the Bound_Disp variable. ---*/
 
@@ -818,7 +866,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 }
 
-void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
+void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config) {
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -833,7 +881,7 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Determine how many files need to be read. ---*/
 
-  unsigned short nSteps = (config->GetTime_Marching() == DT_STEPPING_2ND) ? 2 : 1;
+  unsigned short nSteps = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ? 2 : 1;
 
   for(unsigned short iStep = 1; iStep <= nSteps; ++iStep) {
 
@@ -841,16 +889,21 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;
-    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - iStep;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
+    if (!config->GetDiscrete_Adjoint())
+      Unst_RestartIter = static_cast<int>(config->GetRestart_Iter()) - iStep;
+    else
+      Unst_RestartIter = static_cast<int>(config->GetUnst_AdjointIter()) - config->GetTimeIter() - iStep - 1;
 
     if (Unst_RestartIter < 0) {
 
-      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
+      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;
 
-      /*--- Set loaded solution into correct previous time containers. ---*/
-      if(iStep==1) nodes->Set_Solution_time_n();
-      else nodes->Set_Solution_time_n1();
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          if(iStep == 1) nodes->Set_Solution_time_n(iPoint, iDim, 0.0);
+          else nodes->Set_Solution_time_n1(iPoint, iDim, 0.0);
+        }
+      }
     }
     else {
       string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");

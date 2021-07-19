@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -63,6 +63,7 @@ lib_sources = \
   ../src/grid_movement/CVolumetricMovement.cpp \
   ../src/grid_movement/CSurfaceMovement.cpp \
   ../include/parallelization/mpi_structure.cpp \
+  ../include/parallelization/omp_structure.cpp \
   ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
   ../src/geometry/CGeometry.cpp \

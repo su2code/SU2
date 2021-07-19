@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,23 @@ class CTurbSSTSolver final : public CTurbSolver {
 private:
   su2double
   constants[10] = {0.0}; /*!< \brief Constants for the model. */
+
+
+
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetTurbVars_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     const CConfig *config,
+                     unsigned short val_marker);
+
 
 public:
   /*!
@@ -281,4 +298,5 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
+  
 };
