@@ -792,14 +792,12 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
-  //AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
-  // Line below is temporary
   AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
   
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
-
+  // Transferred from output_structure_legacy.cpp
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;

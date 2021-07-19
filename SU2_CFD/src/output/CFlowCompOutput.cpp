@@ -281,7 +281,7 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   Add_CpInverseDesignOutput();
 
-  /*--- Add Cp diff fields ---*/
+  /*--- Add nearfield diff fields ---*/
 
   Add_NearfieldInverseDesignOutput();
 
@@ -700,8 +700,8 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   Set_CpInverseDesign(flow_solver, geometry, config);
 
-  /*--- Set neafield diff fields ---*/
-  Set_NearfieldInverseDesign(flow_solver, geometry, config);
+  /*--- Set nearfield diff fields ---*/
+  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
 }
 
