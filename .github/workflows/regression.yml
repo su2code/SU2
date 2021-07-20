@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: 
-        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py']
+        testscript: ['tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
         include:
           - testscript: 'tutorials.py'
             tag: MPI
@@ -73,6 +73,8 @@ jobs:
           - testscript: 'serial_regression_AD.py'
             tag: NoMPI
           - testscript: 'hybrid_regression.py'
+            tag: OMP
+          - testscript: 'hybrid_regression_AD.py'
             tag: OMP
     steps:
       - name: Download All artifact
