@@ -579,6 +579,14 @@ public:
   vector<passivedouble> GetForces(unsigned short iMarker);
 
   /*!
+   * \brief Set the solution state vector of a specified marker and vertex.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] states - User-defined conservative states vector.
+   */
+  void SetConservativeStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> states);
+
+  /*!
    * \brief Set new angle of attack based on user-input.
    * \param[in] alpha - user-defined angle of attack in [deg].
    */
