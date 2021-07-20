@@ -1672,7 +1672,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
-  const su2double *coord_i = nullptr, *coord_j = nullptr, *const *primVarGrad = nullptr, *vorticity = nullptr;
+  const su2double *coord_i = nullptr, *coord_j = nullptr, *vorticity = nullptr;
   su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -1681,7 +1681,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     coord_i                 = geometry->nodes->GetCoord(iPoint);
     nNeigh                  = geometry->nodes->GetnPoint(iPoint);
     wallDistance            = geometry->nodes->GetWall_Distance(iPoint);
-    primVarGrad             = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    const auto primVarGrad  = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
