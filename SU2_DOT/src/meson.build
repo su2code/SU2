@@ -1,4 +1,4 @@
-su2_dot_src = ['SU2_DOT.cpp']
+su2_dot_src = 'SU2_DOT.cpp'
 
 if get_option('enable-normal')
   su2_cfd_obj = su2_cfd_lib.extract_objects(['solvers/CSolver.cpp',
@@ -28,10 +28,11 @@ if get_option('enable-normal')
                                              'variables/CBaselineVariable.cpp',
                                              'variables/CVariable.cpp',
                                              'limiters/CLimiterDetails.cpp'])
+
   su2_dot = executable('SU2_DOT',
-                      su2_dot_src, 
+                      su2_dot_src,
                       install: true,
-                      dependencies: [su2_deps, common_dep], 
+                      dependencies: [su2_deps, common_dep],
                       objects : su2_cfd_obj,
                       cpp_args :[default_warning_flags, su2_cpp_args])
 
@@ -69,7 +70,7 @@ if get_option('enable-autodiff')
   su2_dot_ad = executable('SU2_DOT_AD',
                           su2_dot_src,
                           install: true,
-                          dependencies: [su2_deps, codi_dep, commonAD_dep], 
+                          dependencies: [su2_deps, codi_dep, commonAD_dep],
 		                      objects : su2_cfd_obj_ad,
 		                      cpp_args : [default_warning_flags, su2_cpp_args, codi_rev_args])
 
