@@ -837,7 +837,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 
   /*--- Preprocess viscous axisymm variables (if necessary) ---*/
   if (axisymm && viscous) {
-    PrepareAndConputeAuxVarGrad(geometry,config);
+    ComputeAxisymmetricAuxGradients(geometry,config);
   }
 
   /*--- loop over interior points ---*/

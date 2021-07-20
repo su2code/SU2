@@ -280,7 +280,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow.
    */
-  void PrepareAndConputeAuxVarGrad(CGeometry *geometry, const CConfig* config);
+  void ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config);
 
   /*!
    * \brief Instantiate a SIMD numerics object.

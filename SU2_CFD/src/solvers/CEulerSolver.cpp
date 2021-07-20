@@ -2339,7 +2339,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- For viscous problems, we need an additional gradient. ---*/
     if (viscous) {
-      PrepareAndConputeAuxVarGrad(geometry, config);
+      ComputeAxisymmetricAuxGradients(geometry, config);
     }
 
     /*--- loop over points ---*/

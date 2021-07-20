@@ -2925,7 +2925,7 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
 }
 
 template <class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V, FlowRegime>::PrepareAndConputeAuxVarGrad(CGeometry *geometry, const CConfig* config) {
+void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config) {
 
   /*--- Loop through all points to set the auxvargrad --*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
