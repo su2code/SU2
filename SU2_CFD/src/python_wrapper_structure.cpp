@@ -834,6 +834,25 @@ vector<passivedouble> CDriver::GetForces(unsigned short iMarker) {
   return forces;
 }
 
+void CDriver::SetConservativeStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> states) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+
+  unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+  solver->GetNodes()->SetSolution(iPoint,0,states[0]);
+  solver->GetNodes()->SetSolution(iPoint,1,states[1]);
+  solver->GetNodes()->SetSolution(iPoint,2,states[2]);
+
+  if (nDim == 2) {
+    solver->GetNodes()->SetSolution(iPoint,3,states[3]);
+  } else if (nDim == 3) {
+    solver->GetNodes()->SetSolution(iPoint,3,states[3]);
+    solver->GetNodes()->SetSolution(iPoint,4,states[4]);
+  }
+}
+
 void CDriver::SetAoA(passivedouble alpha) {
 
     CConfig *config = config_container[ZONE_0];
