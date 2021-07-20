@@ -923,6 +923,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     Iterations = IterLinSol;
   }
   END_SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   HandleTemporariesOut(LinSysSol);
 
