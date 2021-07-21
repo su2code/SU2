@@ -796,7 +796,7 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
-  // Transferred from output_structure_legacy.cpp
+
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
@@ -1321,13 +1321,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Store the value of the NearField coefficient ---*/
 
-  /// solver->SetTotal_CEquivArea(InverseDesign);
-
-
-  //su2double tmp = InverseDesign;
-  //SU2_MPI::Allreduce(&tmp, &InverseDesign, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   solver->SetTotal_CEquivArea(InverseDesign);
-  //SetHistoryOutputValue("EQUIV_AREA", InverseDesign);
   SetHistoryOutputValue("EQUIVALENT_AREA", InverseDesign);
 
 }

@@ -2125,7 +2125,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
-
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+   */
   inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!

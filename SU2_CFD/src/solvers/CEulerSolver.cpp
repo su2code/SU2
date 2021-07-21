@@ -846,7 +846,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
       SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
       SU2_MPI::Wait(&req,&status);
-      //SU2_MPI::Request_free(&req);
 
     } else {
 
@@ -934,7 +933,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
                      nPointTotal_s[iDomain]*(nPrimVar+3), MPI_DOUBLE, iDomain,
                      iDomain,  SU2_MPI::GetComm(), &req);
       SU2_MPI::Wait(&req,&status);
-      //SU2_MPI::Request_free(&req);
     }
 
     else {
@@ -4544,11 +4542,6 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
   Kind_ObjFunc   = config->GetKind_ObjFunc(0);
 
   switch(Kind_ObjFunc) {
-    /*
-    case EQUIVALENT_AREA:
-      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-      break;
-    */
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
       break;
