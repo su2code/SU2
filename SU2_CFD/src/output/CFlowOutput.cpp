@@ -834,95 +834,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 
-#ifndef HAVE_MPI
-
-  /*--- Compute the total number of points on the near-field ---*/
-
-  nVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        /*--- Using Face_Normal(z), and Coord(z) we identify only a surface,
-         note that there are 2 NEARFIELD_BOUNDARY surfaces ---*/
-
-        if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) nVertex_NearField ++;
-      }
-
-
-  /*--- Create an array with all the coordinates, points, pressures, face area,
-   equivalent area, and nearfield weight ---*/
-
-  Xcoord = new su2double[nVertex_NearField];
-  Ycoord = new su2double[nVertex_NearField];
-  Zcoord = new su2double[nVertex_NearField];
-  AzimuthalAngle = new short[nVertex_NearField];
-  IdPoint = new unsigned long[nVertex_NearField];
-  IdDomain = new unsigned long[nVertex_NearField];
-  Pressure = new su2double[nVertex_NearField];
-  FaceArea = new su2double[nVertex_NearField];
-  EquivArea = new su2double[nVertex_NearField];
-  TargetArea = new su2double[nVertex_NearField];
-  NearFieldWeight = new su2double[nVertex_NearField];
-  Weight = new su2double[nVertex_NearField];
-
-  /*--- Copy the boundary information to an array ---*/
-
-  nVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->nodes->GetCoord(iPoint);
-
-        if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) {
-
-          IdPoint[nVertex_NearField] = iPoint;
-          Xcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
-          Ycoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
-
-          if (nDim ==2) {
-            AzimuthalAngle[nVertex_NearField] = 0;
-          }
-
-          if (nDim == 3) {
-            Zcoord[nVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
-
-            /*--- Rotate the nearfield cylinder (AoA) only 3D ---*/
-
-            su2double YcoordRot = Ycoord[nVertex_NearField];
-            su2double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
-
-            /*--- Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
-
-            su2double AngleDouble; short AngleInt;
-            AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
-
-            /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
-
-            su2double FixAzimuthalLine = config->GetFixAzimuthalLine();
-
-            if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
-
-            AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
-            if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
-            else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
-          }
-
-          if (AzimuthalAngle[nVertex_NearField] <= 60) {
-            Pressure[nVertex_NearField] = solver->GetNodes()->GetPressure(iPoint);
-            FaceArea[nVertex_NearField] = fabs(Face_Normal[nDim-1]);
-            nVertex_NearField ++;
-          }
-
-        }
-      }
-
-#else
 
   int nProcessor;
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &nProcessor);
@@ -1105,7 +1016,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   }
 
-#endif
 
   if (rank == MASTER_NODE) {
 
@@ -1404,13 +1314,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   }
 
-#ifndef HAVE_MPI
-
-  /*--- Store the value of the NearField coefficient ---*/
-
-  /// solver->SetTotal_CEquivArea(InverseDesign);
-
-#else
 
   /*--- Send the value of the NearField coefficient to all the processors ---*/
 
@@ -1420,7 +1323,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /// solver->SetTotal_CEquivArea(InverseDesign);
 
-#endif
 
   //su2double tmp = InverseDesign;
   //SU2_MPI::Allreduce(&tmp, &InverseDesign, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
