@@ -271,11 +271,12 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
+  // NOTE: V[iSpecies] is == Ys.
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
     Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
   tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
   scl  = tmp1/ktr;
   ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
