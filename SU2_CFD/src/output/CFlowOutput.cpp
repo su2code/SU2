@@ -800,14 +800,12 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
-  short *AzimuthalAngle = nullptr;
   su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
   *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
   ModVelocity_Inf, Velocity_Inf[3], factor,
-  *Pressure = nullptr, *FaceArea = nullptr, *EquivArea = nullptr, *TargetArea = nullptr, *NearFieldWeight = nullptr,
-  *Weight = nullptr, jFunction, jp1Function;
+  jFunction, jp1Function;
   unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
-  *IdPoint = nullptr, *IdDomain = nullptr, auxDomain;
+  auxDomain;
   unsigned short iPhiAngle;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
 
@@ -841,9 +839,9 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
 
-  unsigned long *Buffer_Receive_nVertex = NULL;
+  vector<unsigned long> Buffer_Receive_nVertex;
   if (rank == MASTER_NODE) {
-    Buffer_Receive_nVertex = new unsigned long [nProcessor];
+    Buffer_Receive_nVertex.resize(nProcessor);
   }
 
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
@@ -868,30 +866,30 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex.data(), 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   delete [] Buffer_Send_nVertex;
 
-  su2double *Buffer_Send_Xcoord = new su2double[MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Ycoord = new su2double[MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Zcoord = new su2double[MaxLocalVertex_NearField];
-  unsigned long *Buffer_Send_IdPoint = new unsigned long [MaxLocalVertex_NearField];
-  su2double *Buffer_Send_Pressure = new su2double [MaxLocalVertex_NearField];
-  su2double *Buffer_Send_FaceArea = new su2double[MaxLocalVertex_NearField];
+  vector<su2double> Buffer_Send_Xcoord          (MaxLocalVertex_NearField);
+  vector<su2double> Buffer_Send_Ycoord          (MaxLocalVertex_NearField);
+  vector<su2double> Buffer_Send_Zcoord          (MaxLocalVertex_NearField);
+  vector<unsigned long> Buffer_Send_IdPoint     (MaxLocalVertex_NearField);
+  vector<su2double> Buffer_Send_Pressure        (MaxLocalVertex_NearField);
+  vector<su2double> Buffer_Send_FaceArea        (MaxLocalVertex_NearField);
 
-  su2double *Buffer_Receive_Xcoord = NULL;
-  su2double *Buffer_Receive_Ycoord = NULL;
-  su2double *Buffer_Receive_Zcoord = NULL;
-  unsigned long *Buffer_Receive_IdPoint = NULL;
-  su2double *Buffer_Receive_Pressure = NULL;
-  su2double *Buffer_Receive_FaceArea = NULL;
+  vector<su2double> Buffer_Receive_Xcoord;
+  vector<su2double> Buffer_Receive_Ycoord;
+  vector<su2double> Buffer_Receive_Zcoord;
+  vector<unsigned long> Buffer_Receive_IdPoint;
+  vector<su2double> Buffer_Receive_Pressure;
+  vector<su2double> Buffer_Receive_FaceArea;
 
   if (rank == MASTER_NODE) {
-    Buffer_Receive_Xcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Ycoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Zcoord = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_IdPoint = new unsigned long[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_Pressure = new su2double[nProcessor*MaxLocalVertex_NearField];
-    Buffer_Receive_FaceArea = new su2double[nProcessor*MaxLocalVertex_NearField];
+    Buffer_Receive_Xcoord.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_Ycoord.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_Zcoord.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_IdPoint.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_Pressure.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_FaceArea.resize(nProcessor*MaxLocalVertex_NearField);
   }
 
   unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
@@ -931,33 +929,40 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Send all the information --*/
 
-  SU2_MPI::Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  delete [] Buffer_Send_Xcoord;
-  delete [] Buffer_Send_Ycoord;
-  delete [] Buffer_Send_Zcoord;
-  delete [] Buffer_Send_IdPoint;
-  delete [] Buffer_Send_Pressure;
-  delete [] Buffer_Send_FaceArea;
+  SU2_MPI::Gather(Buffer_Send_Xcoord.data(), nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord.data(), nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Ycoord.data(), nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord.data(), nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Zcoord.data(), nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord.data(), nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_IdPoint.data(), nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint.data(), nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Pressure.data(), nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure.data(), nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_FaceArea.data(), nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea.data(), nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
-    vector<su2double> Xcoord          (nVertex_NearField,0.0);
-    vector<su2double> Ycoord          (nVertex_NearField,0.0);
-    vector<su2double> Zcoord          (nVertex_NearField,0.0);
+  vector<su2double> Xcoord;
+  vector<su2double> Ycoord;
+  vector<su2double> Zcoord;
+  vector<short> AzimuthalAngle;
+  vector<unsigned long> IdPoint;
+  vector<unsigned long> IdDomain;
+  vector<su2double> Pressure;
+  vector<su2double> FaceArea;
+  vector<su2double> EquivArea;
+  vector<su2double> TargetArea;
+  vector<su2double> NearFieldWeight;
+  vector<su2double> Weight;
+
   if (rank == MASTER_NODE) {
 
-    AzimuthalAngle = new short[nVertex_NearField];
-    IdPoint = new unsigned long[nVertex_NearField];
-    IdDomain = new unsigned long[nVertex_NearField];
-    Pressure = new su2double[nVertex_NearField];
-    FaceArea = new su2double[nVertex_NearField];
-    EquivArea = new su2double[nVertex_NearField];
-    TargetArea = new su2double[nVertex_NearField];
-    NearFieldWeight = new su2double[nVertex_NearField];
-    Weight = new su2double[nVertex_NearField];
+    Xcoord.resize(nVertex_NearField);
+    Ycoord.resize(nVertex_NearField);
+    Zcoord.resize(nVertex_NearField);
+    AzimuthalAngle.resize(nVertex_NearField);
+    IdPoint.resize(nVertex_NearField);
+    IdDomain.resize(nVertex_NearField);
+    Pressure.resize(nVertex_NearField);
+    FaceArea.resize(nVertex_NearField);
+    EquivArea.resize(nVertex_NearField);
+    TargetArea.resize(nVertex_NearField);
+    NearFieldWeight.resize(nVertex_NearField);
+    Weight.resize(nVertex_NearField);
 
     nVertex_NearField = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
@@ -1004,15 +1009,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
         }
 
       }
-
-    delete [] Buffer_Receive_nVertex;
-
-    delete [] Buffer_Receive_Xcoord;
-    delete [] Buffer_Receive_Ycoord;
-    delete [] Buffer_Receive_Zcoord;
-    delete [] Buffer_Receive_IdPoint;
-    delete [] Buffer_Receive_Pressure;
-    delete [] Buffer_Receive_FaceArea;
 
   }
 
@@ -1303,13 +1299,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
       FuncGrad_file.close();
 
     }
-
-    /*--- Delete structures ---*/
-
-    delete [] AzimuthalAngle; delete [] IdPoint; delete [] IdDomain;
-    delete [] Pressure; delete [] FaceArea;
-    delete [] EquivArea; delete [] TargetArea;
-    delete [] NearFieldWeight; delete [] Weight;
 
   }
 
