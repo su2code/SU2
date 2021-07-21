@@ -130,9 +130,10 @@ public:
 
   /*!
    * \brief Function, which computes the solution in the integration points.
+   * \param[in] sol - Solution in the DOFs that must be interpolated.
    * \return  A reference to the solution in the integration points.
    */
-  ColMajorMatrix<su2double> &ComputeSolIntPoints(void);
+  ColMajorMatrix<su2double> &ComputeSolIntPoints(ColMajorMatrix<su2double> &sol);
 
   /*!
    * \brief Function, which adds to the residual the contribution coming

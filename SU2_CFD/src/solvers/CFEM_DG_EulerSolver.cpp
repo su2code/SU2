@@ -2029,6 +2029,9 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  /*--- Initialize the norms for the residual monotoring to zero. ---*/
+  SetResToZero();
+
 /*--- Determine the chunk size for the OMP loops, if supported. ---*/
 #ifdef HAVE_OMP
   const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
@@ -2051,7 +2054,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 
     /*--- Determine the solution in the integration points and
           convert it to primitive variables. ---*/
-    ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints();
+    ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints(volElem[l].solDOFs);
     EntropyToPrimitiveVariables(solInt);
 
     /*--- Check for negative density and pressure in the integration
@@ -2417,7 +2420,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
       /*--- Determine the solution in the integration points. ---*/
-      ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints();
+      ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints(volElem[l].solDOFs);
 
       /*--- Abbreviate the number of integration points and its padded version. ---*/
       const unsigned short nInt    = volElem[l].standardElemFlow->GetNIntegration();
@@ -3230,7 +3233,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     /*---         points and store the reference to memory for the fluxes. ---*/
     /*------------------------------------------------------------------------*/
 
-    ColMajorMatrix<su2double>          &solInt = volElem[l].ComputeSolIntPoints();
+    ColMajorMatrix<su2double>          &solInt = volElem[l].ComputeSolIntPoints(volElem[l].solDOFsWork);
     vector<ColMajorMatrix<su2double> > &fluxes = volElem[l].standardElemFlow->workGradSolInt[omp_get_thread_num()];
 
     EntropyToPrimitiveVariables(solInt);
@@ -3863,6 +3866,10 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
   /*--- Definition of the object for the blas functionalities. ---*/
   CBlasStructure blas;
 
+  /*--- Define the local variables for the reduction of the residuals. ---*/
+  su2double L2Res[MAXNVAR] = {0.0}, LInfRes[MAXNVAR] = {0.0}, coorResMax[MAXNVAR][MAXNDIM] = {0.0};
+  unsigned long indResMax[MAXNVAR] = {0};
+
   /*--- Loop over the given element range. ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for(unsigned long l=elemBeg; l<elemEnd; ++l) {
@@ -3885,7 +3892,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
           variables is a positive definite matrix, but, as it depends on the solution,
           it changes during the simulation. Therefore a matrix free preconditioned
           flexible conjugate gradient method is used to solve this system efficiently.
-          Abbreviate the required vectors for the CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CG algorithm to improve readability. ---*/
+          Abbreviate the required vectors for the algorithm to improve readability. ---*/
     const int thread = omp_get_thread_num();
 
     ColMajorMatrix<su2double> &zVec   = volElem[l].standardElemFlow->workDOFs[thread][0];
@@ -3899,12 +3906,25 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
           integration points of the element. ---*/
     const ColMajorMatrix<su2double> &dUdV = volElem[l].dUdVInt;
 
+    /*--- Determine the inverse of the average Jacobian. ---*/
+    const su2double JacInv = 1.0/volElem[l].avgJacobian;
+
     /*--- Determine the maximum value of rVec. This serves as a scaling value
-          to determine the convergence. ---*/
+          to determine the convergence. Update the norms of residuals as well. ---*/
     su2double rVecInitMax = 0.0;
-    for(unsigned short j=0; j<nVar; ++j)
-      for(unsigned short i=0; i<nDOFs; ++i)
+    for(unsigned short j=0; j<nVar; ++j) {
+      for(unsigned short i=0; i<nDOFs; ++i) {
         rVecInitMax = max(rVecInitMax, fabs(rVec(i,j)));
+        const su2double val = fabs(JacInv*rVec(i,j));
+        L2Res[j] += val*val;
+        if(val > LInfRes[j]) {
+          LInfRes[j] = val;
+          indResMax[j] = volElem[l].elemIDGlobal;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            coorResMax[j][iDim] = volElem[l].coorSolDOFs(i,iDim);
+        }
+      }
+    }
 
     /*--- Initialize the solution vector to zero. ---*/
     for(unsigned short j=0; j<nVar; ++j) {
@@ -3912,9 +3932,6 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
       for(unsigned short i=0; i<nDOFsPad; ++i)
         solVec(i,j) = 0.0;
     }
-
-    /*--- Determine the inverse of the average Jacobian. ---*/
-    const su2double JacInv = 1.0/volElem[l].avgJacobian;
 
     /*--- If the value of rVecInitMax is very small, it does not make sense to
           solve the linear system, because the solution is zero.
@@ -4360,53 +4377,89 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- Reduce residual information over all threads in this rank. ---*/
+  SU2_OMP_CRITICAL
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Residual_RMS[iVar] += L2Res[iVar];
+    AddRes_Max(iVar, LInfRes[iVar], indResMax[iVar], coorResMax[iVar]);
+  }
+  END_SU2_OMP_CRITICAL
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Loop over the Euler and Navier-Stokes markers ---*/
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
 
-    if(i == rank) {
+    /* Check if this boundary must be monitored. */
+    const unsigned short Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    if(Monitoring == YES) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+      for(int i=0; i<size; ++i) {
+
+        if(i == rank) {
+
+          const int thread = omp_get_thread_num();
+          for(int j=0; j<omp_get_num_threads(); ++j) {
+            if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+            SU2_OMP_BARRIER
+          }
+        }
+
+        SU2_OMP_SINGLE
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
+        END_SU2_OMP_SINGLE
       }
+
+      SU2_OMP_SINGLE
+      SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+      END_SU2_OMP_SINGLE
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- Get the required parameters for the Runge-Kutta time integration. ---*/
+  const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  const unsigned short nRKStages     = config->GetnRKStep();
 
-    if(i == rank) {
+  /*--- Loop over owned elements. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
-      }
+    /*--- Set the reference for the variable where the new solution must be stored. ---*/
+    ColMajorMatrix<su2double> &solNew = (iRKStep == (nRKStages-1)) ? volElem[l].solDOFs :
+                                                                     volElem[l].solDOFsWork;
+
+    /*--- Determine the update coefficient for this time step. ---*/
+    const su2double tmp = RK_AlphaCoeff*volElem[l].deltaTime;
+
+    /*--- Compute the new state. ---*/
+    const unsigned short nDOFs = volElem[l].standardElemFlow->GetNDOFs();
+    for(unsigned short j=0; j<nVar; ++j) {
+
+      SU2_OMP_SIMD
+      for(unsigned short i=0; i<nDOFs; ++i)
+        solNew(i,j) = volElem[l].solDOFs(i,j) - tmp*volElem[l].resDOFs(i,j);
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
   }
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
+  /*--- Test for the last RK step. ---*/
+  if(iRKStep == (nRKStages-1)) {
+
+    /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+          function of CSolver cannot be used, because that is for the FV solver. ---*/
+    SetResidual_RMS_FEM(geometry, config);
+
+    /*--- For verification cases, compute the global error metrics. ---*/
+    ComputeVerificationError(geometry, config);
+  }
 }
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -4436,49 +4489,123 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
-  for(int i=0; i<size; ++i) {
+  SU2_OMP_SINGLE
+  {
+#ifdef HAVE_MPI
+    /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
+    if (config->GetComm_Level() == COMM_FULL) {
 
-    if(i == rank) {
+      /*--- The local L2 norms must be added to obtain the
+            global value. Also check for divergence. ---*/
+      vector<su2double> rbufRes(nVar);
+      SU2_MPI::Allreduce(Residual_RMS.data(), rbufRes.data(), nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+      for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+        if (rbufRes[iVar] != rbufRes[iVar])
+          SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
+
+        Residual_RMS[iVar] = max(EPS*EPS, sqrt(rbufRes[iVar]/nDOFsGlobal));
+      }
+
+      /*--- The global maximum norms must be obtained. ---*/
+      rbufRes.resize(nVar*size);
+      SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbufRes.data(),
+                         nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+
+      vector<unsigned long> rbufPoint(nVar*size);
+      SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbufPoint.data(),
+                         nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+      vector<su2double> sbufCoor(nDim*nVar);
+      for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          sbufCoor[iVar*nDim+iDim] = Point_Max_Coord[iVar][iDim];
+      }
+
+      vector<su2double> rbufCoor(nDim*nVar*size);
+      SU2_MPI::Allgather(sbufCoor.data(), nVar*nDim, MPI_DOUBLE, rbufCoor.data(),
+                         nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
+
+      for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+        for(int proc=0; proc<size; ++proc)
+          AddRes_Max(iVar, rbufRes[proc*nVar+iVar], rbufPoint[proc*nVar+iVar],
+                     &rbufCoor[proc*nVar*nDim+iVar*nDim]);
       }
     }
 
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
-  }
+#else
+    /*--- Sequential mode. Check for a divergence of the solver and compute
+          the L2-norm of the residuals. ---*/
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
 
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+      if(GetRes_RMS(iVar) != GetRes_RMS(iVar))
+        SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);
+
+      Residual_RMS[iVar] = max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal));
+    }
+#endif
+  }
   END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                    CConfig   *config) {
 
-  for(int i=0; i<size; ++i) {
+  /*--- The errors only need to be computed on the finest grid. ---*/
+  if(MGLevel != MESH_0) return;
 
-    if(i == rank) {
+  /*--- If this is a verification case, we can compute the global
+   error metrics by using the difference between the local error
+   and the known solution at each DOF. This is then collected into
+   RMS (L2) and maximum (Linf) global error norms. From these
+   global measures, one can compute the order of accuracy. ---*/
 
-      const int thread = omp_get_thread_num();
-      for(int j=0; j<omp_get_num_threads(); ++j) {
-        if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
-        SU2_OMP_BARRIER
+  bool write_heads = ((((config->GetTimeIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
+                       && (config->GetTimeIter()!= 0))
+                      || (config->GetTimeIter() == 1));
+  if( !write_heads ) return;
+
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
+  if (VerificationSolution) {
+    if (VerificationSolution->ExactSolutionKnown()) {
+
+      /*--- Get the physical time if necessary. ---*/
+      su2double time = 0.0;
+      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+      /*--- Reset the global error measures to zero. ---*/
+      SU2_OMP_SINGLE
+      {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          VerificationSolution->SetError_RMS(iVar, 0.0);
+          VerificationSolution->SetError_Max(iVar, 0.0, 0);
+        }
       }
+      END_SU2_OMP_SINGLE
+
+
+      for(int i=0; i<size; ++i) {
+
+        if(i == rank) {
+
+          const int thread = omp_get_thread_num();
+          for(int j=0; j<omp_get_num_threads(); ++j) {
+            if(j == thread) cout << "Rank: " << i << ", thread: " << j << endl << flush;
+            SU2_OMP_BARRIER
+          }
+        }
+
+        SU2_OMP_SINGLE
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
+        END_SU2_OMP_SINGLE
+      }
+
+      SU2_OMP_SINGLE
+      SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+      END_SU2_OMP_SINGLE
     }
-
-    SU2_OMP_SINGLE
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-    END_SU2_OMP_SINGLE
   }
-
-  SU2_OMP_SINGLE
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  END_SU2_OMP_SINGLE
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,

@@ -50,7 +50,7 @@ vector<ColMajorMatrix<su2double> > &CInternalFaceFEM_DG::ComputeGradSolSide0IntP
   /*--- Perform the gemm calls to compute the gradients in the integration
         points and return the vector of matrices. ---*/
   const int thread = omp_get_thread_num();
-  standardElemFlow->elem0->GradSolIntPoints(volElem[elemID0].solDOFs, 
+  standardElemFlow->elem0->GradSolIntPoints(volElem[elemID0].solDOFsWork, 
                                             standardElemFlow->elem0->workGradSolInt[thread]);
   return standardElemFlow->elem0->workGradSolInt[thread];
 }
@@ -61,7 +61,7 @@ vector<ColMajorMatrix<su2double> > &CInternalFaceFEM_DG::ComputeGradSolSide1IntP
   /*--- Perform the gemm calls to compute the gradients in the integration
         points and return the vector of matrices. ---*/
   const int thread = omp_get_thread_num();
-  standardElemFlow->elem1->GradSolIntPoints(volElem[elemID1].solDOFs, 
+  standardElemFlow->elem1->GradSolIntPoints(volElem[elemID1].solDOFsWork,
                                             standardElemFlow->elem1->workGradSolInt[thread]);
   return standardElemFlow->elem1->workGradSolInt[thread];
 }
@@ -72,7 +72,7 @@ ColMajorMatrix<su2double> &CInternalFaceFEM_DG::ComputeSolSide0IntPoints(
   /*--- Perform the gemm call to compute the solution in the
         integration points and return the matrix. ---*/
   const int thread = omp_get_thread_num();
-  standardElemFlow->elem0->SolIntPoints(volElem[elemID0].solDOFs,
+  standardElemFlow->elem0->SolIntPoints(volElem[elemID0].solDOFsWork,
                                         standardElemFlow->elem0->workSolInt[thread]);
   return standardElemFlow->elem0->workSolInt[thread];
 }
@@ -83,7 +83,7 @@ ColMajorMatrix<su2double> &CInternalFaceFEM_DG::ComputeSolSide1IntPoints(
   /*--- Perform the gemm call to compute the solution in the
         integration points and return the matrix. ---*/
   const int thread = omp_get_thread_num();
-  standardElemFlow->elem1->SolIntPoints(volElem[elemID1].solDOFs,
+  standardElemFlow->elem1->SolIntPoints(volElem[elemID1].solDOFsWork,
                                         standardElemFlow->elem1->workSolInt[thread]);
   return standardElemFlow->elem1->workSolInt[thread];
 }

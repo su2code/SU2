@@ -165,7 +165,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Determine the solution in the integration points and
             convert it to primitive variables. ---*/
-      ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints();
+      ColMajorMatrix<su2double> &solInt = volElem[l].ComputeSolIntPoints(volElem[l].solDOFs);
       EntropyToPrimitiveVariables(solInt);
 
       /*--- Determine the gradients in the integration points if an SGS
@@ -681,7 +681,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /*---         the entropy variables in the integration points.         ---*/
     /*------------------------------------------------------------------------*/
 
-    ColMajorMatrix<su2double>          &solInt     = volElem[l].ComputeSolIntPoints();
+    ColMajorMatrix<su2double>          &solInt     = volElem[l].ComputeSolIntPoints(volElem[l].solDOFsWork);
     vector<ColMajorMatrix<su2double> > &gradSolInt = volElem[l].ComputeGradSolIntPoints();
 
     EntropyToPrimitiveVariables(solInt);

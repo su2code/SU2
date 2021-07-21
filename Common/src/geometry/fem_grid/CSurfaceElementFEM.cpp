@@ -48,7 +48,7 @@ ColMajorMatrix<su2double> &CSurfaceElementFEM::ComputeSolSide0IntPoints(
   /*--- Perform the gemm call to compute the solution in the
         integration points and return the matrix. ---*/
   const int thread = omp_get_thread_num();
-  standardElemFlow->SolIntPoints(volElem[volElemID].solDOFs,
+  standardElemFlow->SolIntPoints(volElem[volElemID].solDOFsWork,
                                  standardElemFlow->workSolInt[thread]);
   return standardElemFlow->workSolInt[thread];
 }

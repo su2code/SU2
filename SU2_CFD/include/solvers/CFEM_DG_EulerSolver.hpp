@@ -39,6 +39,9 @@
  */
 class CFEM_DG_EulerSolver : public CFEM_DG_SolverBase {
 protected:
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = 5; /*!< \brief Max number of variables, for static arrays. */
+
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
