@@ -803,7 +803,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   short *AzimuthalAngle = nullptr;
   su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
   *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
-  ModVelocity_Inf, Velocity_Inf[3], factor, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr,
+  ModVelocity_Inf, Velocity_Inf[3], factor,
   *Pressure = nullptr, *FaceArea = nullptr, *EquivArea = nullptr, *TargetArea = nullptr, *NearFieldWeight = nullptr,
   *Weight = nullptr, jFunction, jp1Function;
   unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
@@ -944,11 +944,11 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   delete [] Buffer_Send_Pressure;
   delete [] Buffer_Send_FaceArea;
 
+    vector<su2double> Xcoord          (nVertex_NearField,0.0);
+    vector<su2double> Ycoord          (nVertex_NearField,0.0);
+    vector<su2double> Zcoord          (nVertex_NearField,0.0);
   if (rank == MASTER_NODE) {
 
-    Xcoord = new su2double[nVertex_NearField];
-    Ycoord = new su2double[nVertex_NearField];
-    Zcoord = new su2double[nVertex_NearField];
     AzimuthalAngle = new short[nVertex_NearField];
     IdPoint = new unsigned long[nVertex_NearField];
     IdDomain = new unsigned long[nVertex_NearField];
@@ -1306,7 +1306,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Delete structures ---*/
 
-    delete [] Xcoord; delete [] Ycoord; delete [] Zcoord;
     delete [] AzimuthalAngle; delete [] IdPoint; delete [] IdDomain;
     delete [] Pressure; delete [] FaceArea;
     delete [] EquivArea; delete [] TargetArea;
