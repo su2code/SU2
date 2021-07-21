@@ -75,6 +75,17 @@ def main():
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
     
+    # Equivalent area NACA64-206
+    ea_naca64206              = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file     = "NACA64206_adjoint.cfg"
+    ea_naca64206.test_iter    = 20
+    ea_naca64206.test_vals    = [-3.111181, -3.501516, 6.8705e-02, 0]
+    ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
+    ea_naca64206.timeout      = 1600
+    ea_naca64206.tol          = 0.00001
+    test_list.append(ea_naca64206)
+
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
