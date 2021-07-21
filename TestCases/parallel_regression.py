@@ -38,6 +38,188 @@ def main():
 
     test_list = []
 
+    ############################
+    ### Incompressible RANS  ###
+    ############################
+
+    # NACA0012
+    inc_turb_naca0012           = TestCase('inc_turb_naca0012')
+    inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012.cfg_file  = "naca0012.cfg"
+    inc_turb_naca0012.test_iter = 20
+    inc_turb_naca0012.test_vals = [-4.788595, -11.040557, -0.000002, 0.309519]
+    inc_turb_naca0012.su2_exec  = "parallel_computation.py -f"
+    inc_turb_naca0012.timeout   = 1600
+    inc_turb_naca0012.tol       = 0.00001
+    test_list.append(inc_turb_naca0012)
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276430, 0.145859, -0.000001, 0.312020]
+    inc_turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    inc_turb_naca0012_sst_sust.timeout   = 1600
+    inc_turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(inc_turb_naca0012_sst_sust)
+
+    ##########################
+    ### Compressible RANS  ###
+    ##########################
+
+    # RAE2822 SA
+    rae2822_sa           = TestCase('rae2822_sa')
+    rae2822_sa.cfg_dir   = "rans/rae2822"
+    rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
+    rae2822_sa.test_iter = 20
+    rae2822_sa.test_vals = [-2.004689, -5.265793, 0.809463, 0.062016]
+    rae2822_sa.su2_exec  = "parallel_computation.py -f"
+    rae2822_sa.timeout   = 1600
+    rae2822_sa.tol       = 0.00001
+    test_list.append(rae2822_sa)
+
+    # RAE2822 SST
+    rae2822_sst           = TestCase('rae2822_sst')
+    rae2822_sst.cfg_dir   = "rans/rae2822"
+    rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
+    rae2822_sst.test_iter = 20
+    rae2822_sst.test_vals = [-0.510641, 4.870022, 0.813722, 0.062439]
+    rae2822_sst.su2_exec  = "parallel_computation.py -f"
+    rae2822_sst.timeout   = 1600
+    rae2822_sst.tol       = 0.00001
+    test_list.append(rae2822_sst)
+
+    # RAE2822 SST_SUST
+    rae2822_sst_sust           = TestCase('rae2822_sst_sust')
+    rae2822_sst_sust.cfg_dir   = "rans/rae2822"
+    rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
+    rae2822_sst_sust.test_iter = 20
+    rae2822_sst_sust.test_vals = [-2.435890, 4.870022, 0.813722, 0.062439]
+    rae2822_sst_sust.su2_exec  = "parallel_computation.py -f"
+    rae2822_sst_sust.timeout   = 1600
+    rae2822_sst_sust.tol       = 0.00001
+    test_list.append(rae2822_sst_sust)
+
+    # Flat plate
+    turb_flatplate           = TestCase('turb_flatplate')
+    turb_flatplate.cfg_dir   = "rans/flatplate"
+    turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
+    turb_flatplate.test_iter = 20
+    turb_flatplate.test_vals = [-4.147548, -6.729213, -0.176227, 0.057731]
+    turb_flatplate.su2_exec  = "parallel_computation.py -f"
+    turb_flatplate.timeout   = 1600
+    turb_flatplate.tol       = 0.00001
+    test_list.append(turb_flatplate)
+
+    # ONERA M6 Wing
+    turb_oneram6           = TestCase('turb_oneram6')
+    turb_oneram6.cfg_dir   = "rans/oneram6"
+    turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
+    turb_oneram6.test_iter = 10
+    turb_oneram6.test_vals = [-2.388839, -6.689413, 0.230321, 0.157640] #last 4 columns
+    turb_oneram6.su2_exec  = "parallel_computation.py -f"
+    turb_oneram6.timeout   = 3200
+    turb_oneram6.tol       = 0.00001
+    test_list.append(turb_oneram6)
+
+    # ONERA M6 Wing - Newton-Krylov
+    turb_oneram6_nk           = TestCase('turb_oneram6_nk')
+    turb_oneram6_nk.cfg_dir   = "rans/oneram6"
+    turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
+    turb_oneram6_nk.test_iter = 20
+    turb_oneram6_nk.test_vals = [-4.892257, -4.514011, -11.432312, 0.221025, 0.045570, 2, -0.899459, 3.1384e+01]
+    turb_oneram6_nk.su2_exec  = "mpirun -n 2 SU2_CFD"
+    turb_oneram6_nk.timeout   = 600
+    turb_oneram6_nk.tol       = 0.0001
+    test_list.append(turb_oneram6_nk)
+
+    # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
+    turb_naca0012_sa           = TestCase('turb_naca0012_sa')
+    turb_naca0012_sa.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
+    turb_naca0012_sa.test_iter = 10
+    turb_naca0012_sa.test_vals = [-11.147929, -14.466781, 1.064330, 0.019756]
+    turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sa.timeout   = 3200
+    turb_naca0012_sa.tol       = 0.00001
+    test_list.append(turb_naca0012_sa)
+
+    # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst           = TestCase('turb_naca0012_sst')
+    turb_naca0012_sst.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
+    turb_naca0012_sst.test_iter = 10
+    turb_naca0012_sst.test_vals = [-11.456387, -12.800055, -5.865784, 1.049989, 0.019163, -1.838252]
+    turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst.timeout   = 3200
+    turb_naca0012_sst.tol       = 0.00001
+    test_list.append(turb_naca0012_sst)
+
+    # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
+    turb_naca0012_sst_sust           = TestCase('turb_naca0012_sst_sust')
+    turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
+    turb_naca0012_sst_sust.test_iter = 10
+    turb_naca0012_sst_sust.test_vals = [-11.370785, -12.641676, -5.748419, 1.005233, 0.019017, -2.057144]
+    turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_sust.timeout   = 3200
+    turb_naca0012_sst_sust.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_sust)
+
+    # NACA0012 (SST, fixed values for turbulence quantities)
+    turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
+    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
+    turb_naca0012_sst_fixedvalues.test_iter = 10
+    turb_naca0012_sst_fixedvalues.test_vals = [ -5.216685, -9.562448, -1.565778, 1.022393, 0.040542, -3.729648]
+    turb_naca0012_sst_fixedvalues.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_fixedvalues.timeout   = 3200
+    turb_naca0012_sst_fixedvalues.tol       = 0.00001
+    test_list.append(turb_naca0012_sst_fixedvalues)
+
+    # PROPELLER
+    propeller           = TestCase('propeller')
+    propeller.cfg_dir   = "rans/propeller"
+    propeller.cfg_file  = "propeller.cfg"
+    propeller.test_iter = 10
+    propeller.test_vals = [-3.389575, -8.409529, 0.000048, 0.056329] #last 4 columns
+    propeller.su2_exec  = "parallel_computation.py -f"
+    propeller.timeout   = 3200
+    propeller.tol       = 0.00001
+    test_list.append(propeller)
+
+    #######################################
+    ### Axisymmetric Compressible RANS  ###
+    #######################################
+    
+    # Axisymmetric air nozzle (transonic)
+    axi_rans_air_nozzle           = TestCase('axi_rans_air_nozzle')
+    axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
+    axi_rans_air_nozzle.test_iter = 10
+    axi_rans_air_nozzle.test_vals = [-6.278454, -0.744813, -2.243285, 2.312481]
+    axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
+    axi_rans_air_nozzle.timeout   = 1600
+    axi_rans_air_nozzle.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle)
+
+    #################################
+    ## Compressible RANS Restart  ###
+    #################################
+
+    # NACA0012 SST Multigrid restart
+    turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
+    turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
+    turb_naca0012_sst_restart_mg.test_iter = 20
+    turb_naca0012_sst_restart_mg.ntest_vals = 5
+    turb_naca0012_sst_restart_mg.test_vals = [-7.619889, -7.729499, -1.981039, -0.000016, 0.079062]
+    turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_restart_mg.timeout   = 3200
+    turb_naca0012_sst_restart_mg.tol       = 0.000001
+    test_list.append(turb_naca0012_sst_restart_mg)
+
     #########################
     ## NEMO solver ###
     #########################
