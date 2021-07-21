@@ -57,6 +57,7 @@ private:
 
   vector<vector<CVectorOfMatrix>> *Geometric_Parameters = NULL;
   vector<string> translated_names;
+  vector<pair<unsigned short, unsigned short>> name_translation;
     
   void AllocateMemory(){
     Geometric_Parameters = new vector<vector<CVectorOfMatrix>>;

@@ -1548,6 +1548,7 @@ public:
    */
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
+  inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return 12;}
   /*!
    * \brief A virtual member.
    * \param[in] val_velocity - Value of the velocity.

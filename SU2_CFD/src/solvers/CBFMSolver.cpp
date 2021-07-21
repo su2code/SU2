@@ -44,7 +44,7 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     nodes = new CBFMVariable(nPoint, nDim, N_BFM_PARAMS);
     SetBaseClassPointerToNodes();
     
-    string file_name = "/home/evert/Documents/TU_Delft_administratie/BodyForceModeling/TestCase/BFM_stage_input";
+    string file_name = "/home/evert/Documents/TU_Delft_administratie/BodyForceModeling/TestCase/BFM_stage_input_new";
     BFM_File_Reader = new ReadBFMInput(config, file_name);
 
     
@@ -121,8 +121,10 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
     vector<su2double*> W_cyl = {&W_ax, &W_th, &W_r};
     
     bffac = nodes->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR);
+
+    ComputeRelativeVelocity(solver_container, iPoint, W_cyl);
+    
     if(bffac == 1){
-        ComputeRelativeVelocity(solver_container, iPoint, W_cyl);
         switch (BFM_formulation)
         {
         case HALL:
@@ -143,7 +145,7 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
 
 void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources, vector<su2double*>W_cyl){
     su2double *U_i, F[nDim];
-    su2double Rotation_rate{0};
+    su2double Rotation_rate{-3500*PI_NUMBER/30};
     su2double b, Nx, Nt, Nr, rotFac, blade_count;
     su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
     su2double W_p, W_mag;
@@ -220,7 +222,7 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
 
 void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>W_cyl){
     su2double *U_i, F[nDim];
-    su2double Rotation_rate{0};
+    su2double Rotation_rate{-3500*PI_NUMBER/30};
     su2double b, Nx, Nt, Nr, rotFac, blade_count;
     su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
     su2double W_p, W_mag, K_mach;
@@ -268,14 +270,17 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
 
     ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
     ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
-    mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    //mu = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
+    //mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     density = U_i[0];
-
-    Re_ax = density * W_mag * (ax - ax_le) / (1.81*1e-5);
-    C_f = 0.0592 / pow(Re_ax, -0.2);
+    
+    Re_ax = abs(density * W_mag * (ax - ax_le)) / (1.716E-5);
+    if(Re_ax == 0.0){
+			Re_ax = (0.001 * W_mag * density) / (1.716E-5);
+		}
+    C_f = 0.0592 * pow(Re_ax, -0.2);
 
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
-    
     // Transforming the normal and force component to cyllindrical coordinates
     
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
@@ -311,24 +316,25 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     su2double source_density{0}, source_energy{0}, source_momentum[nDim];
 
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    energy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
+    energy = solver_container[FLOW_SOL]->GetNodes()->GetEnergy(iPoint);
+    b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
         source_momentum[iDim] = 0;
         velocity = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
         blockage_gradient = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
-        source_density += density * velocity * blockage_gradient;
-        source_energy += density * energy * velocity * blockage_gradient;
+        source_density += density * velocity * blockage_gradient / b;
+        source_energy += density * energy * velocity * blockage_gradient / b;
         for(unsigned short jDim=0; jDim<nDim; jDim++){
             velocity_j = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, jDim);
-            source_momentum[iDim] += density * velocity * velocity_j * blockage_gradient;
+            source_momentum[iDim] += density * velocity * velocity_j * blockage_gradient / b;
         }
     }
 
-    BFM_sources.at(0) += source_density;
+    BFM_sources.at(0) -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
-        BFM_sources.at(iDim + 1) += source_momentum[iDim];
+        BFM_sources.at(iDim + 1) -= source_momentum[iDim];
     }
-    BFM_sources.at(nDim + 1) = source_energy;
+    BFM_sources.at(nDim + 1) -= source_energy;
 
 
 }
@@ -372,6 +378,8 @@ void CBFMSolver::ComputeCylProjections(CGeometry *geometry, CConfig *config)
 		ax = sqrt(ax);	// Computing axial coordinate
 		if(rot_dot_x < 0.0){ax = -ax;}	// In case the coordinate parallel projection is negative, the axial coordinate is flipped
 
+        nodes->SetAuxVar(iPoint, I_AXIAL_COORDINATE, ax);
+        nodes->SetAuxVar(iPoint, I_RADIAL_COORDINATE, radius);
 		// Storing cylindrical coordinates in class property
 		// cyl_coordinates[iPoint][0] = ax;
 		// cyl_coordinates[iPoint][1] = radius;
@@ -397,7 +405,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 {
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate{200};
+    su2double Rotation_rate{-3500*PI_NUMBER/30};
 	for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); iPoint++){
 
 		// Obtaining node coordinates
@@ -435,7 +443,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*> W_cyl){
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate{4000*PI_NUMBER/30};
+    su2double Rotation_rate{-3500*PI_NUMBER/30};
 
     // Obtaining solution flow variables
     

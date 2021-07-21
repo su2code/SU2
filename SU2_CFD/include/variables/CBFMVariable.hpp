@@ -56,7 +56,7 @@ class CBFMVariable : public CVariable {
 
     void SetBodyForce(unsigned long iPoint, unsigned short iDim, su2double value){Body_Force_Vector.at(iPoint).at(iDim) = value;}
 
-    su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return Relative_Velocity.at(iPoint).at(iDim);}
+    inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return Relative_Velocity.at(iPoint).at(iDim);}
 
     void SetRelativeVelocity(unsigned long iPoint, unsigned short iDim, su2double value){Relative_Velocity.at(iPoint).at(iDim)= value;}
 

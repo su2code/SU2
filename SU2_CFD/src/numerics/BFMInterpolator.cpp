@@ -64,7 +64,20 @@ void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_containe
     axial_vector.resize(geometry->GetnDim());
     radial_vector.resize(geometry->GetnDim());
     Coord_Cart_v.resize(geometry->GetnDim());
+    int barwidth = 70;
+    su2double progress{0};
+    
     for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); ++iPoint){
+        progress = su2double(iPoint) / geometry->GetnPoint();
+        int pos = barwidth * progress;
+        cout << "[";
+        for(int iBar=0; iBar<barwidth; ++iBar){
+            if(iBar < pos) cout << "=";
+            else cout << " ";
+        }
+        cout << "] "<< int(100*progress) << " %\r";
+        cout.flush();
+
         Coord_Cart = geometry->nodes->GetCoord(iPoint);
         ax = Vector_Dot_Product(Coord_Cart, axial_direction);
         
@@ -91,6 +104,7 @@ void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_containe
         
         
     }
+    cout << endl;
 }
 
 void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput *reader, CSolver*solver_container){
@@ -131,7 +145,6 @@ void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long i
                             solver_container->GetNodes()->SetAuxVar(iPoint, iVar, DW_average(axis, radius, ax_cell, rad_cell, val_cell));
                         }
                     }
-                    
                     solver_container->GetNodes()->SetAuxVar(iPoint, I_ROTATION_FACTOR, reader->GetBFMParameter(iRow, iTang, iRad, iAx, I_ROTATION_FACTOR));
                     solver_container->GetNodes()->SetAuxVar(iPoint, I_BODY_FORCE_FACTOR, 1);
                     solver_container->GetNodes()->SetAuxVar(iPoint, I_BLADE_COUNT, reader->GetBFMParameter(iRow, iTang, iRad, iAx, I_BLADE_COUNT));
