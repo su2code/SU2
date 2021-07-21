@@ -206,6 +206,7 @@ private:
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatTransfer,           /*!< \brief Number of heat flux wall boundaries with prescribed heat transfer coefficient. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
   nMarker_Clamped,                /*!< \brief Number of clamped markers in the FEM. */
@@ -254,6 +255,7 @@ private:
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatTransfer,           /*!< \brief Heat flux wall markers with specified heat transfer coefficient. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
@@ -309,6 +311,8 @@ private:
   su2double *Engine_Area;                    /*!< \brief Specified engine area for nacelle boundaries. */
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
+  su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
+  su2double *HeatTransfer_WallTemp;          /*!< \brief Specified isothermal wall temperatures alongside heat transfer coefficients. */
   su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
@@ -801,11 +805,7 @@ private:
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
-  su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
-  Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
-  Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
-  Density_Solid,                   /*!< \brief Total density in solids. */
-  Energy_FreeStream,               /*!< \brief Free-stream total energy of the fluid.  */
+  su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
@@ -1644,12 +1644,6 @@ public:
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
 
   /*!
-   * \brief Get the value of the solid density.
-   * \return Solid density.
-   */
-  su2double GetDensity_Solid(void) const { return Density_Solid; }
-
-  /*!
    * \brief Get the value of the frestream temperature.
    * \return Freestream temperature.
    */
@@ -1686,22 +1680,10 @@ public:
   su2double GetwallModelB(void) const { return wallModelB; }
 
   /*!
-   * \brief Get the value of the thermal conductivity for solids.
-   * \return Thermal conductivity (solid).
-   */
-  su2double GetThermalConductivity_Solid(void) const { return Thermal_Conductivity_Solid; }
-
-  /*!
    * \brief Get the value of the thermal diffusivity for solids.
    * \return Thermal conductivity (solid).
    */
-  su2double GetThermalDiffusivity_Solid(void) const { return Thermal_Diffusivity_Solid; }
-
-  /*!
-   * \brief Get the temperature in solids at initial conditions.
-   * \return Freestream temperature (solid).
-   */
-  su2double GetTemperature_Initial_Solid(void) const { return Temperature_Freestream_Solid;  }
+  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -1947,12 +1929,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void) const { return RefArea; }
-
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the thermal expansion coefficient.
@@ -2545,7 +2521,7 @@ public:
    * \brief Set the thermal diffusivity for solids.
    * \return Value of the Froude number.
    */
-  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity) { Thermal_Diffusivity = val_thermal_diffusivity; }
 
   /*!
    * \brief Set the Froude number for free surface problems.
@@ -6633,6 +6609,20 @@ public:
    * \return The heat flux.
    */
   su2double GetWall_HeatFlux(string val_index) const;
+
+  /*!
+   * \brief Get the heat transfer coefficient on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The heat transfer coefficient.
+   */
+  su2double GetWall_HeatTransfer_Coefficient(string val_index) const;
+
+  /*!
+   * \brief Get the wall temperature on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The wall temperature.
+   */
+  su2double GetWall_HeatTransfer_Temperature(string val_index) const;
 
   /*!
    * \brief Get the wall function treatment for the given boundary marker.
