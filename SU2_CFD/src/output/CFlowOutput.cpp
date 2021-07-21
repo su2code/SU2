@@ -791,7 +791,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
-  AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area");
+  AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   
 }
 
