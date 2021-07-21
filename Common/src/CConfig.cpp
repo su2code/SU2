@@ -2781,6 +2781,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
+  
+  /*--- options that are used for libROM ---*/
+  /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
+  
+  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM", libROM, false);
+  
+  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
+  
+  /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3590,14 +3609,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-  }
-
-  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
-      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
-  }
-
-  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
-      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -5032,7 +5043,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
-  if (GetGasModel() == "ARGON") monoatomic = true;
+  if (GetGasModel() == "ARGON") {monoatomic = true;}
+  else {monoatomic = false;}
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {

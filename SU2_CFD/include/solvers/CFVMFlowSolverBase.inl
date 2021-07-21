@@ -1003,8 +1003,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
-  su2double** Grad_Reflected = new su2double*[nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) Grad_Reflected[iVar] = new su2double[nDim];
+  su2activematrix Grad_Reflected(nPrimVarGrad, nDim);
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -1210,7 +1209,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
                 GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
 
         /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), Grad_Reflected);
+        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
         /*--- Turbulent kinetic energy. ---*/
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
@@ -1230,9 +1229,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   }      // for iVertex
   END_SU2_OMP_FOR
 
-  /*--- Free locally allocated memory ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) delete[] Grad_Reflected[iVar];
-  delete[] Grad_Reflected;
 }
 
 template <class V, ENUM_REGIME R>
@@ -2876,4 +2872,33 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
   }
 
   return objFun;
+}
+
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config) {
+
+  /*--- Loop through all points to set the auxvargrad --*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+    su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+    su2double xVelocity       = nodes->GetVelocity(iPoint,0);
+    su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
+
+    if (yCoord > EPS){
+      su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
+      nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
+      nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
+      nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetAuxVar_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetAuxVar_Gradient_LS(geometry, config);
+  }
 }
