@@ -2096,7 +2096,6 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Set the value of the Equivalent Area coefficient.
    * \param[in] val_equiv - Value of the Equivalent Area coefficient.
    */
-
   inline void SetTotal_CEquivArea(su2double val_equiv) final { Total_CEquivArea = val_equiv; }
 
   /*!
