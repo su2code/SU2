@@ -41,11 +41,12 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     nPoint = geometry->GetnPoint();
     nDim = geometry->GetnDim();
     nVar = N_BFM_PARAMS;
+    Omega = config->GetBFM_Rotation();
+
     nodes = new CBFMVariable(nPoint, nDim, N_BFM_PARAMS);
     SetBaseClassPointerToNodes();
     
-    string file_name = "/home/evert/Documents/TU_Delft_administratie/BodyForceModeling/TestCase/BFM_stage_input_new";
-    BFM_File_Reader = new ReadBFMInput(config, file_name);
+    BFM_File_Reader = new ReadBFMInput(config, config->GetBFM_FileName());
 
     
     BFM_formulation = config->GetBFM_Formulation();
@@ -145,7 +146,7 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
 
 void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources, vector<su2double*>W_cyl){
     su2double *U_i, F[nDim];
-    su2double Rotation_rate{-3500*PI_NUMBER/30};
+    su2double Rotation_rate = Omega * PI_NUMBER / 30;
     su2double b, Nx, Nt, Nr, rotFac, blade_count;
     su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
     su2double W_p, W_mag;
@@ -222,7 +223,7 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
 
 void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>W_cyl){
     su2double *U_i, F[nDim];
-    su2double Rotation_rate{-3500*PI_NUMBER/30};
+    su2double Rotation_rate = Omega * PI_NUMBER / 30;
     su2double b, Nx, Nt, Nr, rotFac, blade_count;
     su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
     su2double W_p, W_mag, K_mach;
@@ -247,9 +248,6 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     W_th = *W_cyl.at(1);
     W_r = *W_cyl.at(2);
     
-    if(blade_count != 1){
-        su2double a{};
-    }
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
     pitch = 2 * PI_NUMBER * radius / blade_count;	// Computing pitch
 
@@ -270,8 +268,6 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
 
     ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
     ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
-    //mu = solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
-    //mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     density = U_i[0];
     
     Re_ax = abs(density * W_mag * (ax - ax_le)) / (1.716E-5);
@@ -357,20 +353,20 @@ void CBFMSolver::ComputeCylProjections(CGeometry *geometry, CConfig *config)
 
 		// Computing axial dot products
 		for(int iDim = 0; iDim < nDim; iDim ++){
-			rot_dot_x += config->GetRotation_Rate(iDim)*Coord[iDim];
-			rot_dot_rot += (config->GetRotation_Rate(iDim)) * (config->GetRotation_Rate(iDim));
+			rot_dot_x += config->GetBFM_Axis(iDim)*Coord[iDim];
+			rot_dot_rot += (config->GetBFM_Axis(iDim)) * (config->GetBFM_Axis(iDim));
 		}
 		//
 
        
         
 		for(int iDim = 0; iDim < nDim; iDim ++){
-			axial_vector[iDim] = (rot_dot_x/rot_dot_rot)*(config->GetRotation_Rate(iDim)); // Parallel projection of coordinate vector onto rotation axis
+			axial_vector[iDim] = (rot_dot_x/rot_dot_rot)*(config->GetBFM_Axis(iDim)); // Parallel projection of coordinate vector onto rotation axis
 			radial_vector[iDim] = Coord[iDim] - axial_vector[iDim];	// Orthogonal projection of coordinate vector onto rotation axis
 			ax += axial_vector[iDim]*axial_vector[iDim];	
 			radius += radial_vector[iDim]*radial_vector[iDim];
-            su2double rotrate = config->GetRotation_Rate(iDim);
-            nodes->SetAxialProjection(iPoint, iDim, config->GetRotation_Rate(iDim));
+            su2double rotrate = config->GetBFM_Axis(iDim);
+            nodes->SetAxialProjection(iPoint, iDim, config->GetBFM_Axis(iDim));
         }
         
 		// Computing absolute values for cylindrical coordinates
@@ -405,7 +401,8 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 {
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate{-3500*PI_NUMBER/30};
+    su2double Rotation_rate = Omega * PI_NUMBER / 30;
+
 	for(unsigned long iPoint=0; iPoint<geometry->GetnPoint(); iPoint++){
 
 		// Obtaining node coordinates
@@ -443,7 +440,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*> W_cyl){
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
-    su2double Rotation_rate{-3500*PI_NUMBER/30};
+    su2double Rotation_rate = Omega * PI_NUMBER / 30;
 
     // Obtaining solution flow variables
     
@@ -488,21 +485,7 @@ void CBFMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container
 void CBFMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) 
 {   
-    // cout << "Source Residual from CBFMSolver" << endl;
-    // vector<su2double> BFM_sources(nDim+2);
-    // su2double Volume;
-    // CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
-    // for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
-    //     Volume = geometry->nodes->GetVolume(iPoint);
-    //     ComputeBFMSources(solver_container, iPoint, BFM_sources);
-    //     second_numerics->SetVolume(Volume);
-    //     for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
-    //         second_numerics->SetBFM_source(iDim, BFM_sources.at(iDim));
-    //     }
-    //     auto residual = second_numerics->ComputeResidual(config);
-    //     solver_container[FLOW_SOL]->LinSysRes.SubtractBlock(iPoint, residual);
-        
-    // }
+
 }
 
 void CBFMSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

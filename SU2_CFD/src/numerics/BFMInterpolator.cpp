@@ -39,17 +39,11 @@ BFMInterpolator::BFMInterpolator(ReadBFMInput *reader, CSolver*solver_container,
     Rotation_Axis.resize(geometry->GetnDim());
     axial_direction.resize(geometry->GetnDim());
     su2double rotation_rate{0};
-    // for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-    //     Rotation_Axis.at(iDim) = config->GetRotation_Rate(iDim);
-    //     rotation_rate += pow(config->GetRotation_Rate(iDim), 2);
-    // }
-    // rotation_rate = sqrt(rotation_rate);
-    Rotation_Axis.at(0) = 0;
-    Rotation_Axis.at(1) = 0;
-    Rotation_Axis.at(2) = 1;
-    rotation_rate = 1;
     for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
-        axial_direction.at(iDim) = Rotation_Axis.at(iDim)/rotation_rate;
+        Rotation_Axis.at(iDim) = config->GetBFM_Axis(iDim);
+    }
+    for(unsigned short iDim=0; iDim<geometry->GetnDim(); ++iDim){
+        axial_direction.at(iDim) = Rotation_Axis.at(iDim);
     }
 
 }
@@ -64,6 +58,7 @@ void BFMInterpolator::Interpolate(ReadBFMInput *reader, CSolver *solver_containe
     axial_vector.resize(geometry->GetnDim());
     radial_vector.resize(geometry->GetnDim());
     Coord_Cart_v.resize(geometry->GetnDim());
+
     int barwidth = 70;
     su2double progress{0};
     

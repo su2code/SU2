@@ -876,7 +876,9 @@ private:
   Pitching_Ampl[3] = {0.0},           /*!< \brief Pitching amplitude. */
   Pitching_Phase[3] = {0.0},          /*!< \brief Pitching phase offset. */
   Plunging_Omega[3] = {0.0},          /*!< \brief Angular frequency of the mesh plunging. */
-  Plunging_Ampl[3] = {0.0};           /*!< \brief Plunging amplitude. */
+  Plunging_Ampl[3] = {0.0},           /*!< \brief Plunging amplitude. */
+  BFM_Rotation_Axis[3] = {0.0};       /*!< \brief rotation axis for BFM problem */
+
   su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
   *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
   *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
@@ -897,6 +899,9 @@ private:
   nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
   nRough_Wall;                    /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
+
+  su2double Omega_BFM;            /*!< \brief Rotation rate around BFM axis (in rounds per minute). */
+
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,             /*!< \brief Number of motion origins. */
@@ -5544,6 +5549,20 @@ public:
    * \return Translational velocity of the mesh.
    */
   void SetRotation_Rate(unsigned short iDim, su2double val) { Rotation_Rate[iDim] = val;}
+
+  /*!
+   * \brief Get the rotation axis of the BFM problem
+   * \param[in] iDim - spatial component
+   * \return Cartesian rotation axis component
+   */
+  su2double GetBFM_Axis(unsigned short iDim) const { return BFM_Rotation_Axis[iDim];}
+
+  /*!
+   * \brief Get the rotation rate of the BFM problem
+   * \return BFM rotation rate (rpm)
+   */
+  su2double GetBFM_Rotation() const { return Omega_BFM;}
+
 
   /*!
    * \brief Get the rotation rate of the marker.

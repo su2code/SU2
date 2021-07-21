@@ -2009,6 +2009,10 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
   addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate);
+  /* DESCRIPTION: Rotation axis of BFM problem in Cartesian coordinates */
+  addDoubleArrayOption("BFM_ROTATION_AXIS", 3, BFM_Rotation_Axis);
+  /* DESCRIPTION: Rotation rate around BFM axis (rpm) */
+  addDoubleOption("BODY_FORCE_ROTATION", Omega_BFM, 0);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
   addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */

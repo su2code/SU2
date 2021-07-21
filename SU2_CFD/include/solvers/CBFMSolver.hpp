@@ -46,7 +46,8 @@ private:
   BFMInterpolator* Interpolator;
   vector<string> BFM_Parameter_Names{};
   vector<unsigned short> BFM_Parameter_Indices{};
-
+  su2double Omega{};
+  
   unsigned short BFM_formulation{HALL};
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
