@@ -324,10 +324,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-  //Auxiliary variables for post-processment
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
-
   // Grid velocity
   if (gridMovement){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
