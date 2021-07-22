@@ -1048,6 +1048,16 @@ void CConfig::SetPointersNull(void) {
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
+  Molecular_Weight = nullptr; 
+  Mu_Constant = nullptr;
+  Mu_Ref = nullptr;
+  Mu_Temperature_Ref = nullptr;
+  Mu_S = nullptr;
+  Specific_Heat_Cp = nullptr;
+  Kt_Constant = nullptr;
+  Prandtl_Lam = nullptr; 
+  Prandtl_Turb = nullptr; 
+  // Mu_ConstantND = nullptr;
 
 }
 
@@ -1113,6 +1123,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
+/*\brief MIXTURE \n DESCRIPTION: Mixture simulation \n DEFAULT: false \ingroup Config */
+  addBoolOption("MIXTURE", Mixture, false);
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -1151,18 +1163,21 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
   /*--- Options related to freestream specification ---*/
 
+  /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
+  // addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight[0], 28.96);
+  addDoubleListOption("MOLECULAR_WEIGHT", n_species, Molecular_Weight);
+
   /*!\brief GAS_CONSTANT \n DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
+  // addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
+  addDoubleListOption("SPECIFIC_HEAT_CP", n_species, Specific_Heat_Cp);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
-  /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
-  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
@@ -1203,16 +1218,16 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to Constant Viscosity Model ---*/
 
   /* DESCRIPTION: default value for AIR */
-  addDoubleOption("MU_CONSTANT", Mu_Constant , 1.716E-5);
+  addDoubleListOption("MU_CONSTANT", n_species, Mu_Constant);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
-  addDoubleOption("MU_REF", Mu_Ref, 1.716E-5);
+  addDoubleListOption("MU_REF", n_species, Mu_Ref);
   /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
-  addDoubleOption("MU_T_REF", Mu_Temperature_Ref, 273.15);
+  addDoubleListOption("MU_T_REF", n_species, Mu_Temperature_Ref);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
-  addDoubleOption("SUTHERLAND_CONSTANT", Mu_S, 110.4);
+  addDoubleListOption("SUTHERLAND_CONSTANT", n_species, Mu_S);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -1224,7 +1239,8 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
+  // addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
+   addDoubleListOption("KT_CONSTANT", n_species, Kt_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
@@ -1250,9 +1266,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
   addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /*!\brief PRANDTL_LAM \n DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) \n DEFAULT: 0.72 \ingroup Config*/
-  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  // addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  addDoubleListOption("PRANDTL_LAM", n_species, Prandtl_Lam);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
-  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  // addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  addDoubleListOption("PRANDTL_TURB", n_species, Prandtl_Turb);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
@@ -3285,7 +3303,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY) ||
-                    (Kind_FluidModel == FLAMELET_FLUID_MODEL));
+                    (Kind_FluidModel == FLAMELET_FLUID_MODEL) ||
+                    (Kind_FluidModel == MIXTURE_FLUID_MODEL));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
@@ -3297,7 +3316,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
     Kind_DiffusivityModel  = DIFFUSIVITYMODEL::FLAMELET;
   }
-
+// this is probably not the right way because then user cannot choose for other viscosity models anymore...
+/*
+  if (Kind_FluidModel == MIXTURE_FLUID_MODEL){
+    Kind_Scalar_Model      = PASSIVE_SCALAR;
+    Kind_ViscosityModel    = VISCOSITYMODEL::MIXTURE;
+    Kind_ConductivityModel = CONDUCTIVITYMODEL::MIXTURE;
+    Kind_DiffusivityModel  = DIFFUSIVITYMODEL::MIXTURE;
+  }
+*/
   if (nZone > 1){
     Multizone_Problem = YES;
   }
@@ -3651,20 +3678,70 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if (Molecular_Weight == nullptr){
+    Molecular_Weight = new su2double[1];
+    Molecular_Weight[0] = 28.96; 
+  }
+
+  if (Mu_Constant == nullptr){
+    Mu_Constant = new su2double[1];
+    Mu_Constant[0] = 1.716E-5; 
+  }
+
+  if (Specific_Heat_Cp == nullptr){
+    Specific_Heat_Cp = new su2double[1];
+    Specific_Heat_Cp[0] = 1004.703; 
+  }
+
+  if (Kt_Constant == nullptr){
+    Kt_Constant = new su2double[1];
+    Kt_Constant[0] = 2.57E-2; 
+  }
+
+  if (Prandtl_Turb == nullptr){
+    Prandtl_Turb = new su2double[1];
+    Prandtl_Turb[0] = 0.9; 
+  }
+
+  if (Prandtl_Lam == nullptr){
+    Prandtl_Lam = new su2double[1];
+    Prandtl_Lam[0] = 0.72; 
+  }
+
+  if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr){
+    Mu_Ref = new su2double[1];
+    Mu_Temperature_Ref = new su2double[1]; 
+    Mu_S = new su2double[1];
+    Mu_Ref[0] = 1.716E-5; 
+    Mu_Temperature_Ref[0] = 273.15;
+    Mu_S[0] = 110.4;
+  }
+
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
 
     /* Correct the viscosities, if they contain the default SI values. */
-    if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
-    if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
+    for(unsigned short iVar = 0; iVar < n_species; iVar++){
+      if(fabs(Mu_Constant[iVar]-1.716E-5) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
+
+      if(fabs(Mu_Ref[iVar]-1.716E-5)      < 1.0E-15) Mu_Ref[iVar]      /= 47.88025898;
+
+      /* Correct the values with temperature dimension, if they contain the default SI values. */
+      if(fabs(Mu_Temperature_Ref[iVar]-273.15) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
+      if(fabs(Mu_S[iVar]-110.4)                < 1.0E-8) Mu_S[iVar]               *= 1.8;
+
+      if(fabs(Kt_Constant[iVar]-0.0257) < 1.0E-10) Kt_Constant[iVar] *= 0.577789317;
+    }
+    //if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
+    // if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
 
     /* Correct the values with temperature dimension, if they contain the default SI values. */
-    if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
-    if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
+    // if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
+    // if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
 
     /* Correct the thermal conductivity, if it contains the default SI value. */
-    if(fabs(Kt_Constant-0.0257) < 1.0E-10) Kt_Constant *= 0.577789317;
+    // if(fabs(Kt_Constant-0.0257) < 1.0E-10) Kt_Constant *= 0.577789317;
   }
 
   /*--- Check for Measurement System ---*/
@@ -4663,7 +4740,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLAMELET_FLUID_MODEL) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLAMELET_FLUID_MODEL && Kind_FluidModel != MIXTURE_FLUID_MODEL) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -4676,8 +4753,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if (Kind_ViscosityModel == VISCOSITYMODEL::SUTHERLAND) {
-      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLAMELET_FLUID_MODEL)) {
-        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY, or FLAMELET_FLUID_MODEL for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
+      if ((Kind_FluidModel != INC_IDEAL_GAS) && (Kind_FluidModel != INC_IDEAL_GAS_POLY) && (Kind_FluidModel != FLAMELET_FLUID_MODEL) && (Kind_FluidModel != MIXTURE_FLUID_MODEL)) {
+        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS or INC_IDEAL_GAS_POLY, or FLAMELET_FLUID_MODEL or MIXTURE_FLUID_MODEL for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
   }
@@ -7959,6 +8036,17 @@ CConfig::~CConfig(void) {
   delete [] Scalar_Clipping_Min;
   delete [] Scalar_Clipping_Max;
   delete [] Scalar_Init;
+
+  delete [] Molecular_Weight;
+  delete [] Mu_Constant; 
+  delete [] Mu_Ref;
+  delete [] Mu_Temperature_Ref; 
+  delete [] Mu_S; 
+  delete [] Specific_Heat_Cp; 
+  delete [] Kt_Constant; 
+  delete [] Prandtl_Lam; 
+  delete [] Prandtl_Turb; 
+  // delete [] Mu_ConstantND;
 
 }
 
