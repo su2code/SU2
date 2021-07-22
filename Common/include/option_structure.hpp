@@ -504,6 +504,7 @@ enum ENUM_FLUIDMODEL {
   MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
   SU2_NONEQ            = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
   FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
+  MIXTURE_FLUID_MODEL  = 10,/*!, \brief Mixture model */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -515,6 +516,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
   MakePair("FLAMELET_FLUID_MODEL", FLAMELET_FLUID_MODEL)
+  MakePair("MIXTURE_FLUID_MODEL", MIXTURE_FLUID_MODEL)
   MakePair("SU2_NONEQ", SU2_NONEQ)
 };
 
@@ -650,12 +652,14 @@ enum class DIFFUSIVITYMODEL {
   CONSTANT_DIFFUSIVITY, /*!< \brief Constant mass diffusivity for scalar transport. */
   CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
   FLAMELET,             /*!< \brief flamelet model */
+  UNITY_LEWIS,             /*!< \brief Unity Lewis model */
 };
 
 static const MapType<string, DIFFUSIVITYMODEL> DiffusivityModel_Map = {
   MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
   MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
+  MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
 };
 
 /*!

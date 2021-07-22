@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../include/fluid/CFluidFlamelet.hpp"
+#include "../include/fluid/CFluidScalar.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
@@ -240,6 +241,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   bool unsteady      = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   bool viscous       = config->GetViscous();
+  bool mixture       = config->GetMixture(); 
   bool turbulent     = ((config->GetKind_Solver() == INC_RANS) ||
                         (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
   bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
@@ -274,7 +276,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       break;
 
     case INC_IDEAL_GAS:
-
+    
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
@@ -286,7 +288,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case INC_IDEAL_GAS_POLY:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant(); 
       auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
@@ -300,22 +302,47 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       break;
 
     case FLAMELET_FLUID_MODEL:
-
+    
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant(); 
       auxFluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
       n_scalars = auxFluidModel->GetNScalars();
       dummy_scalar = new su2double[n_scalars]();
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
-
+   
+    case MIXTURE_FLUID_MODEL:
+    
+      //config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+      // config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.8507/1000.0));
+      // config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.9912/1000.0));
+      // config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.9647/1000.0));
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.965/1000.0));
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant(); 
+      auxFluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
+      // n_scalars = auxFluidModel->GetNScalars();
+      n_scalars = config->GetNScalarsInit();
+      dummy_scalar = new su2double[n_scalars]();
+      dummy_scalar[n_scalars-1] = 1;
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
+  
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
       break;
   }
-
+/*
+  if(mixture){
+    auxFluidModel = new CFluidScalar(config, auxFluidModel);
+    n_scalars = auxFluidModel->GetNScalars();
+    dummy_scalar = new su2double[n_scalars](); 
+    dummy_scalar[n_scalars-1] = 1;
+    auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar); //waarom op deze manier en hier intialiseren?  
+  }
+*/
   if (viscous) {
 
     /*--- The dimensional viscosity is needed to determine the free-stream conditions.
@@ -481,6 +508,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
         delete[] dummy_scalar;
         break;
+    
+      case MIXTURE_FLUID_MODEL:
+        fluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
+        fluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
+        delete[] dummy_scalar;
+        break;
+    
     }
 
     if (viscous) {
@@ -1870,7 +1904,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
     if (energy && !flame) Preconditioner[nDim+1][0] = Cp*Temperature/BetaInc2;
     else        Preconditioner[nDim+1][0] = 0.0;
-
+   
     for (jDim = 0; jDim < nDim; jDim++) {
       Preconditioner[0][jDim+1] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1886,7 +1920,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
     if (energy && !flame) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
-
+    
     for (iVar = 0; iVar < nVar; iVar ++ )
       for (jVar = 0; jVar < nVar; jVar ++ )
         Preconditioner[iVar][jVar] = delta*Preconditioner[iVar][jVar];
@@ -2234,7 +2268,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Cp is needed for Temperature equation. ---*/
 
     V_inlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
-
+    
     /*--- Set various quantities in the solver class ---*/
 
     conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2431,7 +2465,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Cp is needed for Temperature equation. ---*/
 
     V_outlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
-
+    
     /*--- Set various quantities in the solver class ---*/
 
     conv_numerics->SetPrimitive(V_domain, V_outlet);
