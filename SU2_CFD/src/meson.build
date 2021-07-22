@@ -12,6 +12,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp',
                       'fluid/CFluidFlamelet.cpp',
+                      'fluid/CFluidScalar.cpp',
                       ])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
