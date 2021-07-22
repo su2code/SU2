@@ -107,10 +107,14 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
 
-  if (implicit)
-    for (iVar = 0; iVar<nVar; iVar++)
-      for (jVar = 0; jVar<nVar; jVar++)
+    if (implicit) {
+      for (iVar = 0; iVar<nVar; iVar++) {
+        for (jVar = 0; jVar<nVar; jVar++) {
         jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
+        }
+      }
+    }
+
 
   return ResidualType<>(residual, jacobian, nullptr);
 
@@ -154,16 +158,20 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
   /*--- Compute residual and jacobians ---*/
   VTterm = fluidmodel -> ComputeEveSourceTerm();
-  if (implicit) 
-    fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
+    if (implicit) {
+        fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
                                          dTvedU_i, jacobian);
-
+    }
+    
   residual[nSpecies+nDim+1] = VTterm * Volume;
   
-  if (implicit)
-    for (iVar = 0; iVar<nVar; iVar++)
-      for (jVar = 0; jVar<nVar; jVar++)
-        jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume; 
+    if (implicit) {
+      for (iVar = 0; iVar<nVar; iVar++) {
+        for (jVar = 0; jVar<nVar; jVar++) {
+        jacobian[iVar][jVar] = jacobian[iVar][jVar] * Volume;
+        }
+      }
+    }
 
   /*--- Relax/limit vt transfer ---*/
   if(config->GetVTTransferResidualLimiting()){
