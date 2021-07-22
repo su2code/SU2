@@ -858,22 +858,18 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
             nLocalVertex_NearField ++;
       }
 
-  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Send_nVertex[0] = nLocalVertex_NearField;
-
   /*--- Send Near-Field vertex information --*/
 
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Gather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex.data(), 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-  delete [] Buffer_Send_nVertex;
+  SU2_MPI::Gather(&nLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex.data(), 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
-  vector<su2double> Buffer_Send_Xcoord          (MaxLocalVertex_NearField);
-  vector<su2double> Buffer_Send_Ycoord          (MaxLocalVertex_NearField);
-  vector<su2double> Buffer_Send_Zcoord          (MaxLocalVertex_NearField);
-  vector<unsigned long> Buffer_Send_IdPoint     (MaxLocalVertex_NearField);
-  vector<su2double> Buffer_Send_Pressure        (MaxLocalVertex_NearField);
-  vector<su2double> Buffer_Send_FaceArea        (MaxLocalVertex_NearField);
+  vector<su2double> Buffer_Send_Xcoord          (MaxLocalVertex_NearField, 0.0);
+  vector<su2double> Buffer_Send_Ycoord          (MaxLocalVertex_NearField, 0.0);
+  vector<su2double> Buffer_Send_Zcoord          (MaxLocalVertex_NearField, 0.0);
+  vector<unsigned long> Buffer_Send_IdPoint     (MaxLocalVertex_NearField, 0);
+  vector<su2double> Buffer_Send_Pressure        (MaxLocalVertex_NearField, 0.0);
+  vector<su2double> Buffer_Send_FaceArea        (MaxLocalVertex_NearField, 0.0);
 
   vector<su2double> Buffer_Receive_Xcoord;
   vector<su2double> Buffer_Receive_Ycoord;
@@ -898,11 +894,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   unsigned long nBuffer_Pressure = MaxLocalVertex_NearField;
   unsigned long nBuffer_FaceArea = MaxLocalVertex_NearField;
 
-  for (iVertex = 0; iVertex < MaxLocalVertex_NearField; iVertex++) {
-    Buffer_Send_IdPoint[iVertex] = 0; Buffer_Send_Pressure[iVertex] = 0.0;
-    Buffer_Send_FaceArea[iVertex] = 0.0; Buffer_Send_Xcoord[iVertex] = 0.0;
-    Buffer_Send_Ycoord[iVertex] = 0.0; Buffer_Send_Zcoord[iVertex] = 0.0;
-  }
 
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
 
@@ -935,33 +926,20 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   SU2_MPI::Gather(Buffer_Send_Pressure.data(), nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure.data(), nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Gather(Buffer_Send_FaceArea.data(), nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea.data(), nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
-  vector<su2double> Xcoord;
-  vector<su2double> Ycoord;
-  vector<su2double> Zcoord;
-  vector<short> AzimuthalAngle;
-  vector<unsigned long> IdPoint;
-  vector<unsigned long> IdDomain;
-  vector<su2double> Pressure;
-  vector<su2double> FaceArea;
-  vector<su2double> EquivArea;
-  vector<su2double> TargetArea;
-  vector<su2double> NearFieldWeight;
-  vector<su2double> Weight;
-
   if (rank == MASTER_NODE) {
 
-    Xcoord.resize(nVertex_NearField);
-    Ycoord.resize(nVertex_NearField);
-    Zcoord.resize(nVertex_NearField);
-    AzimuthalAngle.resize(nVertex_NearField);
-    IdPoint.resize(nVertex_NearField);
-    IdDomain.resize(nVertex_NearField);
-    Pressure.resize(nVertex_NearField);
-    FaceArea.resize(nVertex_NearField);
-    EquivArea.resize(nVertex_NearField);
-    TargetArea.resize(nVertex_NearField);
-    NearFieldWeight.resize(nVertex_NearField);
-    Weight.resize(nVertex_NearField);
+    vector<su2double> Xcoord(nVertex_NearField);
+    vector<su2double> Ycoord(nVertex_NearField);
+    vector<su2double> Zcoord(nVertex_NearField);
+    vector<short> AzimuthalAngle(nVertex_NearField);
+    vector<unsigned long> IdPoint(nVertex_NearField);
+    vector<unsigned long> IdDomain(nVertex_NearField);
+    vector<su2double> Pressure(nVertex_NearField);
+    vector<su2double> FaceArea(nVertex_NearField);
+    vector<su2double> EquivArea(nVertex_NearField);
+    vector<su2double> TargetArea(nVertex_NearField);
+    vector<su2double> NearFieldWeight(nVertex_NearField);
+    vector<su2double> Weight(nVertex_NearField);
 
     nVertex_NearField = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
@@ -1009,10 +987,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
       }
 
-  }
-
-
-  if (rank == MASTER_NODE) {
 
     vector<short> PhiAngleList;
     vector<short>::iterator IterPhiAngleList;
@@ -1026,17 +1000,17 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
 
-    vector<vector<su2double> > Xcoord_PhiAngle; Xcoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Ycoord_PhiAngle; Ycoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Zcoord_PhiAngle; Zcoord_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<unsigned long> > IdPoint_PhiAngle; IdPoint_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<unsigned long> > IdDomain_PhiAngle; IdDomain_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Pressure_PhiAngle; Pressure_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > FaceArea_PhiAngle; FaceArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > EquivArea_PhiAngle; EquivArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > TargetArea_PhiAngle; TargetArea_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > NearFieldWeight_PhiAngle; NearFieldWeight_PhiAngle.resize(PhiAngleList.size());
-    vector<vector<su2double> > Weight_PhiAngle; Weight_PhiAngle.resize(PhiAngleList.size());
+    vector<vector<su2double> > Xcoord_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > Ycoord_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > Zcoord_PhiAngle(PhiAngleList.size());
+    vector<vector<unsigned long> > IdPoint_PhiAngle(PhiAngleList.size());
+    vector<vector<unsigned long> > IdDomain_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > Pressure_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > FaceArea_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > EquivArea_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > TargetArea_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > NearFieldWeight_PhiAngle(PhiAngleList.size());
+    vector<vector<su2double> > Weight_PhiAngle(PhiAngleList.size());
 
     /*--- Distribute the values among the different PhiAngles ---*/
 
