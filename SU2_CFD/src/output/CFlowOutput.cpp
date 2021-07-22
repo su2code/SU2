@@ -833,8 +833,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 
 
-  int nProcessor;
-  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &nProcessor);
+  int nProcessor = size;
 
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
