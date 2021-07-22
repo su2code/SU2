@@ -837,12 +837,6 @@ public:
   inline su2double GetInflow_Mach(unsigned short val_marker) const final { return Inflow_Mach[val_marker]; }
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional aero CD.
    * \return Value of the Aero CD coefficient (inviscid + viscous contribution).
    */
@@ -860,12 +854,6 @@ public:
    * \param[in] val_obj - Value of the contribution to the 'combo' objective.
    */
   inline void AddTotal_ComboObj(su2double val_obj) final {Total_ComboObj +=val_obj;}
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_CEquivArea(su2double val_cequivarea) final { Total_CEquivArea = val_cequivarea; }
 
   /*!
    * \brief Set the value of the Aero drag.
