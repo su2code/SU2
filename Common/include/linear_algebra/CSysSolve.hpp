@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -100,7 +100,7 @@ private:
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
-  LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
+  LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
   bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
   bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
   unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
@@ -222,6 +222,7 @@ private:
       LinSysRes_ptr = &LinSysRes;
       LinSysSol_ptr = &LinSysSol;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -243,6 +244,7 @@ private:
       LinSysRes_ptr = &LinSysRes_tmp;
       LinSysSol_ptr = &LinSysSol_tmp;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -259,6 +261,7 @@ private:
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -278,6 +281,7 @@ private:
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -319,6 +323,13 @@ public:
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
+
+  /*!
+   * \brief Flexible Generalized Minimal Residual method with restarts (frequency comes from config).
+   */
+  unsigned long RFGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
+                                  const PrecondType & precond, ScalarType tol, unsigned long m,
+                                  ScalarType & residual, bool monitoring, const CConfig *config);
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -370,9 +381,10 @@ public:
    * \param[in,out] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] directCall - If this method is called directly, or in AD context.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, const CConfig *config);
+                        CGeometry *geometry, const CConfig *config, const bool directCall = true);
 
   /*!
    * \brief Get the number of iterations.

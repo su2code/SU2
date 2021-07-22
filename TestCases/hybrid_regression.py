@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -191,7 +191,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.797872, -5.863656, 1.049989, 0.019163]
+    turb_naca0012_sst.test_vals = [ -11.450482, -12.797872, -5.863656, 1.049989, 0.019163, -1.856223]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -199,8 +199,16 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.640670, -5.746919, 1.005233, 0.019017]
+    turb_naca0012_sst_sust.test_vals = [-11.367055, -12.640670, -5.746919, 1.005233, 0.019017, -1.913885]
     test_list.append(turb_naca0012_sst_sust)
+
+    # NACA0012 (SST, fixed values for turbulence quantities)
+    turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
+    turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
+    turb_naca0012_sst_fixedvalues.test_iter = 10
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.192492, -9.575904, -1.568271, 1.022569, 0.040527, -2.384883]
+    test_list.append(turb_naca0012_sst_fixedvalues)
 
     # PROPELLER
     propeller           = TestCase('propeller')
@@ -219,7 +227,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [-12.094937, -6.622043, -8.814412, -2.393288]
+    axi_rans_air_nozzle.test_vals = [-6.348077, -0.827162, -2.241982, 2.313210]
     test_list.append(axi_rans_air_nozzle)
 
     #################################
@@ -638,7 +646,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.764089, -4.081119]
+    fsi2d.test_vals = [4, 0, -3.743230, -4.133462]
     fsi2d.multizone= True
     fsi2d.unsteady = True
     test_list.append(fsi2d)
@@ -648,7 +656,7 @@ def main():
     stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
     stat_fsi.cfg_file  = "config.cfg"
     stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.242851, -4.866383, 0.000000, 11.000000]
+    stat_fsi.test_vals = [-3.242851, -4.866383, 0.000000, 11]
     stat_fsi.multizone = True
     test_list.append(stat_fsi)
 
@@ -657,7 +665,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.379823, -4.005990, 0.000000, 74.000000]
+    dyn_fsi.test_vals = [-4.355806, -4.060581, 5.3837e-08, 100]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)

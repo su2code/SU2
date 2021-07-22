@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -103,9 +103,6 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_Line_Linear{nullptr};
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
-
-  vector<int> GlobalMarkerStorageDispl;
-  vector<su2double> GlobalRoughness_Height;
 
   su2double Streamwise_Periodic_RefNode[MAXNDIM] = {0}; /*!< \brief Coordinates of the reference node [m] on the receiving periodic marker, for recovered pressure/temperature computation only.*/
 
@@ -767,10 +764,14 @@ public:
   std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] config - ignored
+   * \param[in] iZone - zone whose markers made the ADT
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 
   /*!
    * \brief Set wall distances a specific value
@@ -780,11 +781,6 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
-
-  /*!
-   * \brief Set roughness values for markers in a global array.
-   */
-  void SetGlobalMarkerRoughness(const CConfig* config);
 
   /*!
    * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.

@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -189,7 +189,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
     su2double tau[3][3];
-    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetGradient_Primitive(Point_Flow)+1,Viscosity);
+    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetGradient_Primitive(Point_Flow,1), Viscosity);
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         // Viscous component in the tn vector --> Units of force (non-dimensional).

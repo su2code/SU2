@@ -105,6 +105,17 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+
+  # add opdi dependency
+  if get_option('enable-autodiff')
+    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+
+    if get_option('opdi-backend') == 'macro'
+      su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
+    elif get_option('opdi-backend') == 'ompt'
+      su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+    endif
+  endif
 endif
 
 if get_option('enable-tecio')
@@ -159,6 +170,21 @@ elif get_option('enable-openblas')
 
 endif
 
+if get_option('enable-librom')
+   
+   assert(get_option('librom_root')!='',
+       'Must specify librom folder (-Dlibrom_root=path/to/libROM)')
+   
+   su2_cpp_args += '-DHAVE_LIBROM'
+
+   librom_root = get_option('librom_root')
+   librom_dep = declare_dependency(include_directories: librom_root,
+                                   link_args: ['-L'+librom_root+'/build', '-lROM'])
+
+   su2_deps += librom_dep
+
+endif
+
 extra_deps = get_option('extra-deps').split(',')
 foreach dep : extra_deps
   if dep != ''
@@ -174,6 +200,14 @@ if get_option('enable-mpp')
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+endif
+
+if omp and get_option('enable-autodiff')
+  py = find_program('python3','python')
+  p = run_command(py, 'externals/opdi/syntax/check.py', 'su2omp.syntax.json', 'Common', 'SU2_CFD', '-p', '*.hpp', '*.cpp', '*.inl', '-r', '-q')
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
 endif
 
 # compile common library
@@ -216,6 +250,7 @@ message('''---------------------------------------------------------------------
          OpenBlas:       @8@
          PaStiX:         @9@
          Mixed Float:    @10@
+         libROM:         @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -227,10 +262,10 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @11@ install' to compile and install SU2
+         Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), meson.build_root().split('/')[-1]))
 
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
@@ -239,4 +274,13 @@ if get_option('enable-mpp')
           export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
 
           ''')
+endif
+
+if get_option('enable-librom')
+  message(''' To run SU2 with libROM library, add this line to your .bashrc file:
+
+          export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
+          
+          '''.format(get_option('librom_root')))
+
 endif

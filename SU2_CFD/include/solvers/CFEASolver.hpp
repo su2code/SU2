@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -361,48 +361,40 @@ public:
   /*!
    * \brief Clamped boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped(CGeometry *geometry,
-                  CNumerics *numerics,
                   const CConfig *config,
                   unsigned short val_marker) final;
 
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped_Post(CGeometry *geometry,
-                       CNumerics *numerics,
                        const CConfig *config,
                        unsigned short val_marker) final;
 
   /*!
    * \brief Symmetry boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Sym_Plane(CGeometry *geometry,
-                    CNumerics *numerics,
                     const CConfig *config,
                     unsigned short val_marker) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_DispDir(CGeometry *geometry,
-                  CNumerics *numerics,
                   const CConfig *config,
                   unsigned short val_marker) final;
 
@@ -414,57 +406,38 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Normal_Load(CGeometry *geometry,
-                      CNumerics *numerics,
                       const CConfig *config,
                       unsigned short val_marker) final;
 
   /*!
    * \brief Impose a load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Dir_Load(CGeometry *geometry,
-                   CNumerics *numerics,
                    const CConfig *config,
                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Sine_Load(CGeometry *geometry,
-                           CNumerics *numerics,
                            const CConfig *config,
                            unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a damping load.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Damper(CGeometry *geometry,
-                 CNumerics *numerics,
                  const CConfig *config,
                  unsigned short val_marker) final;
-
-  /*!
-   * \brief Deformable boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Deforming(CGeometry *geometry,
-                    CNumerics *numerics,
-                    const CConfig *config,
-                    unsigned short val_marker) final;
 
   /*!
    * \brief Iterate using an implicit Newmark solver.
@@ -681,7 +654,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Configuration of the problem.
    */
-  void PredictStruct_Displacement(CGeometry *geometry, CConfig *config) final;
+  void PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.
@@ -690,7 +663,7 @@ public:
    * \param[in] iOuterIter - Current outer iteration.
    */
   void ComputeAitken_Coefficient(CGeometry *geometry,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned long iOuterIter) final;
 
   /*!
@@ -698,7 +671,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAitken_Relaxation(CGeometry *geometry, CConfig *config) final;
+  void SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the penalty due to the stiffness increase

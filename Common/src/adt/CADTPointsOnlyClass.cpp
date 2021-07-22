@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,8 +31,8 @@
 
 CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
                                          unsigned long  nPoints,
-                                         su2double      *coor,
-                                         unsigned long  *pointID,
+                                         const su2double *coor,
+                                         const unsigned long *pointID,
                                          const bool     globalTree) {
 
   /* Allocate some thread-safe working variables if required. */

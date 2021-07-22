@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,7 +73,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         algorithm below. ---*/
   bool TimeSyncSpecified   = false;
   const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
-  if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
+  if(config[iZone]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING &&
      config[iZone]->GetUnst_CFL()            != 0.0           &&
      TimeSync                                != 0.0) TimeSyncSpecified = true;
 

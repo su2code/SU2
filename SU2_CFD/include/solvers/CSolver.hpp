@@ -1,7 +1,6 @@
 /*!
  * \file CSolver.hpp
- * \brief Headers of the CSolver class which is inherited by all of the other
- *        solvers
+ * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
  *
@@ -10,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,6 +58,12 @@
 
 #include "../../../Common/include/eigen_structure.hpp"
 
+#ifdef HAVE_LIBROM
+#include "BasisGenerator.h"
+#include "QDEIM.h"
+#include "DEIM.h"
+#endif
+
 using namespace std;
 
 class CSolver {
@@ -89,17 +94,20 @@ protected:
   su2double Max_CFL_Local;  /*!< \brief Maximum value of the CFL across all the control volumes. */
   su2double Min_CFL_Local;  /*!< \brief Minimum value of the CFL across all the control volumes. */
   su2double Avg_CFL_Local;  /*!< \brief Average value of the CFL across all the control volumes. */
-  su2double *Residual_RMS,  /*!< \brief Vector with the mean residual for each variable. */
-  *Residual_Max,            /*!< \brief Vector with the maximal residual for each variable. */
-  *Residual,                /*!< \brief Auxiliary nVar vector. */
+  vector<su2double> Residual_RMS;      /*!< \brief Vector with the mean residual for each variable. */
+  vector<su2double> Residual_Max;      /*!< \brief Vector with the maximal residual for each variable. */
+  vector<su2double> Residual_BGS;      /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
+  vector<su2double> Residual_Max_BGS;  /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
+  vector<unsigned long> Point_Max;     /*!< \brief Vector with the maximal residual for each variable. */
+  vector<unsigned long> Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+  su2activematrix Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+
+  /*--- Variables that need to go. ---*/
+
+  su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
   *Residual_i,              /*!< \brief Auxiliary nVar vector for storing the residual at point i. */
   *Residual_j;              /*!< \brief Auxiliary nVar vector for storing the residual at point j. */
-  su2double *Residual_BGS,  /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
-  *Residual_Max_BGS;        /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
-  unsigned long *Point_Max;        /*!< \brief Vector with the maximal residual for each variable. */
-  unsigned long *Point_Max_BGS;    /*!< \brief Vector with the maximal residual for each variable. */
-  su2double **Point_Max_Coord;     /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
-  su2double **Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
   su2double *Solution,    /*!< \brief Auxiliary nVar vector. */
   *Solution_i,            /*!< \brief Auxiliary nVar vector for storing the solution at point i. */
   *Solution_j;            /*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -119,16 +127,19 @@ protected:
   **Jacobian_ij,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
+
+  /*--- End variables that need to go. ---*/
+
+  su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
-  unsigned long nMarker,            /*!< \brief Total number of markers using the grid information. */
-  *nVertex;                         /*!< \brief Store nVertex at each marker for deallocation */
+  unsigned long nMarker;            /*!< \brief Total number of markers using the grid information. */
+  vector<unsigned long> nVertex;    /*!< \brief Store nVertex at each marker for deallocation */
 
   bool rotate_periodic;    /*!< \brief Flag that controls whether the periodic solution needs to be rotated for the solver. */
   bool implicit_periodic;  /*!< \brief Flag that controls whether the implicit system should be treated by the periodic BC comms. */
@@ -162,6 +173,13 @@ protected:
 
 private:
 
+  /*!
+   * \brief Interpolate Restart_Data after reading it.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InterpolateRestartData(const CGeometry *geometry, const CConfig *config);
+
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
    most derived type possible, e.g. CEulerSolver has nodes of CEulerVariable* and not CVariable*.
    This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
@@ -186,6 +204,11 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
+  
+#ifdef HAVE_LIBROM
+  std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
+#endif
+  
   /*!
    * \brief Constructor of the class.
    */
@@ -297,19 +320,19 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_RMS(CGeometry *geometry, CConfig *config);
+  void SetResidual_RMS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Communicate the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void SetResidual_BGS(CGeometry *geometry, CConfig *config);
+  void SetResidual_BGS(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Move the mesh in time
@@ -417,18 +440,17 @@ public:
                                            unsigned short RunTime_EqSystem) { }
 
   /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \brief Set the RMS and MAX residual to zero.
    */
-  inline void SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+  inline void SetResToZero() {
+    SU2_OMP_MASTER {
+      for (auto& r : Residual_RMS) r = 0;
+      for (auto& r : Residual_Max) r = 0;
+      for (auto& p : Point_Max) p = 0;
+    }
+    END_SU2_OMP_MASTER
+    SU2_OMP_BARRIER
+  }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -436,17 +458,6 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
-
-  /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max(unsigned short val_var,
-                         su2double val_residual,
-                         unsigned long val_point) {
-    Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point;
-  }
 
   /*!
    * \brief Adds the maximal residual, this is useful for the convergence history (overload).
@@ -467,7 +478,6 @@ public:
     }
   }
 
-
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
@@ -476,36 +486,11 @@ public:
   inline su2double GetRes_Max(unsigned short val_var) const { return Residual_Max[val_var]; }
 
   /*!
-   * \brief Set the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
-
-  /*!
-   * \brief Adds the residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] += val_residual; }
-
-  /*!
    * \brief Get the residual for BGS subiterations.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_BGS(unsigned short val_var) const { return Residual_BGS[val_var]; }
-
-  /*!
-   * \brief Set the maximal residual for BGS subiterations.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  inline void SetRes_Max_BGS(unsigned short val_var,
-                             su2double val_residual,
-                             unsigned long val_point) {
-    Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point;
-  }
 
   /*!
    * \brief Adds the maximal residual for BGS subiterations.
@@ -525,7 +510,6 @@ public:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
-
 
   /*!
    * \brief Get the maximal residual for BGS subiterations.
@@ -553,7 +537,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
+  inline const su2double* GetPoint_Max_Coord(unsigned short val_var) const { return Point_Max_Coord[val_var]; }
 
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
@@ -567,7 +551,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
-  inline su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
+  inline const su2double* GetPoint_Max_Coord_BGS(unsigned short val_var) const { return Point_Max_Coord_BGS[val_var]; }
 
   /*!
    * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
@@ -659,7 +643,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -787,22 +771,6 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  inline virtual void Convective_Residual(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CNumerics *numerics,
-                                          CConfig *config,
-                                          unsigned short iMesh,
-                                          unsigned short iRKStep) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
@@ -876,48 +844,40 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Clamped(CGeometry *geometry,
-                                 CNumerics *numerics,
                                  const CConfig *config,
                                  unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Clamped_Post(CGeometry *geometry,
-                                      CNumerics *numerics,
                                       const CConfig *config,
                                       unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Sym_Plane(CGeometry *geometry,
-                                   CNumerics *numerics,
                                    const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_DispDir(CGeometry *geometry,
-                                 CNumerics *numerics,
                                  const CConfig *config,
                                  unsigned short val_marker) { }
 
@@ -936,63 +896,43 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Normal_Load(CGeometry *geometry,
-                                     CNumerics *numerics,
                                      const CConfig *config,
                                      unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Dir_Load(CGeometry *geometry,
-                                  CNumerics *numerics,
                                   const CConfig *config,
                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
 
   inline virtual void BC_Sine_Load(CGeometry *geometry,
-                                   CNumerics *numerics,
                                    const CConfig *config,
                                    unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline virtual void BC_Damper(CGeometry *geometry,
-                                CNumerics *numerics,
                                 const CConfig *config,
                                 unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Deforming(CGeometry *geometry,
-                                   CNumerics *numerics,
-                                   const CConfig *config,
-                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -1366,34 +1306,6 @@ public:
                                         unsigned short val_marker) { }
 
   /*!
-   * \brief Impose the symmetry boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Dielec(CGeometry *geometry,
-                                CSolver **solver_container,
-                                CNumerics *numerics,
-                                CConfig *config,
-                                unsigned short val_marker) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  inline virtual void BC_Electrode(CGeometry *geometry,
-                                   CSolver **solver_container,
-                                   CNumerics *numerics,
-                                   CConfig *config,
-                                   unsigned short val_marker) { }
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1422,6 +1334,14 @@ public:
                                               CNumerics *visc_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) { }
+  /*!
+   * \brief Virtual function to apply something like a strong BC to the whole domain.
+   * \details Overridden in CTurbSolver to impose fixed values to turbulence quantities
+   * in a specified upstream half-plane.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.
@@ -3174,6 +3094,22 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the u tau.
+   */
+  inline virtual su2double GetUTau(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the eddy viscosity.
+   */
+  inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the StrainMag_Max
    */
   inline virtual su2double GetStrainMag_Max(void) const { return 0; }
@@ -3436,11 +3372,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   */
-  inline virtual void ReadDV(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
    */
   inline virtual su2double GetVal_EField(unsigned short iVal) const { return 0.0; }
@@ -3524,7 +3455,7 @@ public:
    * \param[in] config - Definition of the problem.
    */
   inline virtual void PredictStruct_Displacement(CGeometry *geometry,
-                                                 CConfig *config) { }
+                                                 const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3533,7 +3464,7 @@ public:
    * \param[in] iOuterIter - Current outer iteration.
    */
   inline virtual void ComputeAitken_Coefficient(CGeometry *geometry,
-                                                CConfig *config,
+                                                const CConfig *config,
                                                 unsigned long iOuterIter) { }
 
   /*!
@@ -3542,7 +3473,19 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetAitken_Relaxation(CGeometry *geometry,
-                                           CConfig *config) { }
+                                           const CConfig *config) { }
+
+  /*!
+   * \brief Loads the solution from the restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] filename - Name of the restart file.
+   * \param[in] skipVars - Number of variables preceeding the solution.
+   */
+  void BasicLoadRestart(CGeometry *geometry,
+                        const CConfig *config,
+                        const string& filename,
+                        unsigned long skipVars);
 
   /*!
    * \brief A virtual member.
@@ -3708,25 +3651,11 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] solver_container - The solver container holding all solutions.
    * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
    */
-  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - The geometrical definition of the problem.
-   * \param[in] solver_container - The solver container holding all solutions.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
+  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
    * \brief  A virtual member.
@@ -3912,14 +3841,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] kind_recording - Kind of AD recording.
-   */
-  inline virtual void SetMesh_Recording(CGeometry **geometry,
-                                        CVolumetricMovement *grid_movement,
-                                        CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] reset - If true reset variables to their initial values.
@@ -4008,7 +3929,7 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
-  inline virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
+  inline virtual const su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4126,7 +4047,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4147,7 +4068,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
+  inline virtual const su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4214,7 +4135,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityIn(su2double *value,
+  inline virtual void SetTurboVelocityIn(const su2double *value,
                                          unsigned short inMarkerTP,
                                          unsigned short valSpan) { }
 
@@ -4241,7 +4162,7 @@ public:
    * \param[in] value      - turboperformance value to set.
    * \param[in] inMarkerTP - turboperformance marker.
    */
-  inline virtual void SetTurboVelocityOut(su2double *value,
+  inline virtual void SetTurboVelocityOut(const su2double *value,
                                           unsigned short inMarkerTP,
                                           unsigned short valSpan) { }
 
@@ -4521,7 +4442,14 @@ public:
    * \return Struct holding 4 su2doubles.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
-
+  
+  /*!
+   * \brief Save snapshot or POD data using libROM
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] converged - Whether or not solution has converged.
+  */
+  void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:
   /*!

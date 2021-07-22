@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   energy           = config->GetEnergy_Equation();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
