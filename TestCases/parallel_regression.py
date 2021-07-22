@@ -45,7 +45,7 @@ def main():
     # Multicomponent flow with variable fluid properties 
     multicompflow_variableprop           = TestCase('multicompflow_variableprop')
     multicompflow_variableprop.cfg_dir   = "incomp_rans/multicomponentflow_variablefluidproperties"
-    multicompflow_variableprop.cfg_file  = "config_c6_cms_venturi_conference.cfg"
+    multicompflow_variableprop.cfg_file  = "c6_cms_venturi_conference.cfg"
     multicompflow_variableprop.test_iter = 5
     multicompflow_variableprop.test_vals = [-5.560560,   -4.412340,   -4.090246,   -5.335476,          50,   -6.729831,          14,   -8.156767]
     multicompflow_variableprop.su2_exec  = "mpirun -n 2 SU2_CFD"
