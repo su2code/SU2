@@ -47,5 +47,5 @@ public:
 /*!
  * \brief Set mass diffusivity
  */
-  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) = 0;
+  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) = 0;
 };
