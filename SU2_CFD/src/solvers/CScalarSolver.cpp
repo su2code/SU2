@@ -361,7 +361,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 /*--- use preconditioner for scalar transport equations ---*/
  const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-//if (incompressible) SetPreconditioner(geometry, solver_container, config);
+// if (incompressible) SetPreconditioner(geometry, solver_container, config);
 
 
   /*--- Set shared residual variables to 0 and declare
@@ -413,7 +413,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     }
   }
 
-  //SetPreconditioner()
+  // SetPreconditioner();
 
 
   SU2_OMP_CRITICAL
