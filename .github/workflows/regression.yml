@@ -9,6 +9,7 @@ on:
     branches: 
       - 'develop'
       - 'master'
+      - 'feature_flamelet'
 
 jobs:
   build:
