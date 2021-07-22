@@ -1115,6 +1115,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("STREAMWISE_PERIODIC_PRESSURE_DROP", Streamwise_Periodic_PressureDrop, 1.0);
   /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met. \n DEFAULT: 0.0 \ingroup Config  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
+  /* BODY_FORCE_TYPE \n DESCRIPTION: Distinquish between constant body-force vector or turbomachinery body-force model*/
+  addEnumOption("BODY_FORCE_TYPE", Body_Force_Type, Body_Force_Map, CONSTANT_BF);
+
+  addEnumOption("BFM_FORMULATION", BFM_Formulation, BFM_Formulation_Map, HALL);
 
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
@@ -1946,6 +1950,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
+  /* DESCRIPTION: BFM input file */
+  addStringOption("BFM_INPUT_FILENAME", BFM_FileName, string("BFM_input.drg"));
+
   /* DESCRIPTION: List of the number of grid points in the RECTANGLE or BOX grid in the x,y,z directions. (default: (33,33,33) ). */
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
 
@@ -2027,6 +2034,10 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
   addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate);
+  /* DESCRIPTION: Rotation axis of BFM problem in Cartesian coordinates */
+  addDoubleArrayOption("BFM_ROTATION_AXIS", 3, BFM_Rotation_Axis);
+  /* DESCRIPTION: Rotation rate around BFM axis (rpm) */
+  addDoubleOption("BODY_FORCE_ROTATION", Omega_BFM, 0);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
   addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
@@ -8030,6 +8041,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
   switch (val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
+    case RUNTIME_BFM_SYS:       return BFM_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;

@@ -75,7 +75,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+const unsigned int MAX_SOLS = 13;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -196,7 +196,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<std::string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -413,6 +413,7 @@ enum RUNTIME_TYPE {
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
+  RUNTIME_BFM_SYS = 8,
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,       /*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_ADJFEA_SYS = 30,    /*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
@@ -437,6 +438,8 @@ const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbu
 
 const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
 const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
+
+const int BFM_SOL = 11;     /*!< \brief Position of the Body-Force Model solver */
 
 const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
@@ -2088,6 +2091,8 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_AUX_GG,
+  PERIODIC_AUX_LS,
 };
 
 /*!
@@ -2235,6 +2240,41 @@ enum class POD_KIND {
 static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
+};
+enum ENUM_BODY_FORCE_TYPE {
+    CONSTANT_BF = 0,			/*!< \brief Constant body force over domain using vector. */
+    VARIABLE_BF = 1,				/*!< \brief Body force model that is spatially varying. */
+};
+
+static const MapType<std::string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = {
+        MakePair("CONSTANT_BF", CONSTANT_BF)
+        MakePair("VARIABLE_BF", VARIABLE_BF)
+};
+
+enum ENUM_BODY_FORCE_PARAMETERS {
+  I_AXIAL_COORDINATE = 0,
+  I_RADIAL_COORDINATE = 1,
+  I_TANGENTIAL_ANGLE = 2,
+  I_ROTATION_FACTOR = 3,
+  I_BLOCKAGE_FACTOR = 4,
+  I_CAMBER_NORMAL_AXIAL = 5,
+  I_CAMBER_NORMAL_TANGENTIAL = 6,
+  I_CAMBER_NORMAL_RADIAL = 7,
+  I_LEADING_EDGE_AXIAL = 8,
+  I_AXIAL_CHORD = 9,
+  I_BLADE_COUNT = 10,
+  I_BODY_FORCE_FACTOR = 11,
+  N_BFM_PARAMS = 12,
+};
+
+enum ENUM_BODY_FORCE_MODEL_FORMULATION {
+  HALL = 0,
+  THOLLET = 1,
+};
+
+static const MapType<std::string, ENUM_BODY_FORCE_MODEL_FORMULATION> BFM_Formulation_Map = {
+        MakePair("HALL", HALL)
+        MakePair("THOLLET", THOLLET)
 };
 
 #undef MakePair

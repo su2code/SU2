@@ -153,7 +153,7 @@ public:
  * \author T. Economon
  */
 class CSourceBodyForce final : public CSourceBase_Flow {
-  su2double Body_Force_Vector[3];
+  vector<su2double> Body_Force_Vector;
 
 public:
   /*!
@@ -170,6 +170,15 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
+  /*!
+  * \brief Set Body Force source terms.
+  * \param[in] config - pointer to CConfig class
+  * \param[in] iDim - Dimension index
+  * \param[in] value - Body-Force value
+  */
+ void SetBodyForce(const CConfig* config, unsigned short iDim, su2double value){
+   Body_Force_Vector.at(iDim) = value;
+ }
 };
 
 /*!
@@ -180,7 +189,7 @@ public:
  * \version 7.1.1 "Blackbird"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
-  su2double Body_Force_Vector[3];
+  vector<su2double> Body_Force_Vector;
 
 public:
   /*!
@@ -196,6 +205,45 @@ public:
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
+
+  /*!
+  */
+  void SetBodyForce(const CConfig* config, unsigned short iDim, su2double value){
+    Body_Force_Vector.at(iDim) = value;
+  }
+
+};
+
+/*!
+ * \class CSourceBodyForce
+ * \brief Class for the source term integration of a body force.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ */
+class CSourceBFM final : public CNumerics {
+  vector<su2double> BFM_sources;
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceBFM(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) final ;
+
+  /*!
+  */
+  inline virtual void SetBFM_source(unsigned short iDim, su2double value) final {
+    BFM_sources.at(iDim) = value;
+  }
 
 };
 

@@ -4345,6 +4345,7 @@ public:
    * \param[in] converged - Whether or not solution has converged.
   */
   void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
+  inline virtual void ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources) {};
 
 protected:
   /*!
@@ -4356,4 +4357,6 @@ protected:
   void SetVerificationSolution(unsigned short nDim,
                                unsigned short nVar,
                                CConfig        *config);
+
+
 };

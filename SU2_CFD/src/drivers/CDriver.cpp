@@ -1613,6 +1613,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
           numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, false, config);
 
       }
+        
+
     }
     if (incompressible) {
       /*--- Incompressible flow, use preconditioning method ---*/
@@ -1627,12 +1629,18 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-      if (config->GetBody_Force() == YES) {
+      
+      if ((config->GetBody_Force() == YES) && !config->GetBFM()){
         if (incompressible)
-          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
+          numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
+          
         else
-          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
+          numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
+        
+      }
+      if(config->GetBFM()){
+        CNumerics* thingy = new CSourceBFM(nDim, nVar_Flow, config);
+        numerics[iMGlevel][FLOW_SOL][source_first_term] = thingy;
       }
       else if (incompressible && (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncStreamwise_Periodic(nDim, nVar_Flow, config);

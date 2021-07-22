@@ -51,6 +51,7 @@
 #include "../../include/solvers/CBaselineSolver.hpp"
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
+#include "../../include/solvers/CBFMSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -188,6 +189,11 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
   solver[MESH_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::MESH, solver, geometry, config, iMGLevel);
   solver[ADJMESH_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_MESH, solver, geometry, config, iMGLevel);
 
+  if(config->GetBFM()){
+    solver[BFM_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::BFM, solver, geometry, config, iMGLevel);
+    solver[BFM_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    //solver[BFM_SOL] = new CBFMSolver(geometry, config, iMGLevel);
+  }
   return solver;
 
 }
@@ -280,6 +286,10 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::TURB_SA:
     case SUB_SOLVER_TYPE::TURB_SST:
       genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      break;
+    case SUB_SOLVER_TYPE::BFM:
+      genericSolver = new CBFMSolver(geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:

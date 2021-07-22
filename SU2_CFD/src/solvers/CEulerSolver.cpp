@@ -2271,17 +2271,18 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool BFM              = config->GetBFM();
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
-
+  CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
   unsigned short iVar;
   unsigned long iPoint;
 
-  if (body_force) {
+  if (body_force && !BFM) {
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -2302,6 +2303,28 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+  }
+
+  if (BFM){
+    CSolver* BFM_solver = solver_container[BFM_SOL];
+    vector<su2double> BFM_sources(nDim + 2);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Load the volume of the dual mesh cell ---*/
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      BFM_solver->ComputeBFMSources(solver_container, iPoint, BFM_sources);
+      for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
+            numerics->SetBFM_source(iDim, BFM_sources.at(iDim));
+      }
+      /*--- Compute the rotating frame source residual ---*/
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add the source residual to the total ---*/
+      LinSysRes.AddBlock(iPoint, residual);
+
+    }
   }
 
   if (rotating_frame) {
@@ -2491,6 +2514,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       END_SU2_OMP_FOR
     }
   }
+  
 
 }
 

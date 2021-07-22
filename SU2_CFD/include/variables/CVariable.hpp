@@ -693,6 +693,34 @@ public:
   }
 
   /*!
+   * \overload
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the gradient.
+   */
+  inline void SetGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) = value; }
+
+  /*!
+   * \brief Add <i>value</i> to the solution gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value to add to the solution gradient.
+   */
+  inline void AddGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient(iPoint,iVar,iDim) += value; }
+
+  /*!
+   * \brief Add <i>value</i> to the auxilary variable gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value to add to the auxilary variable gradient.
+   */
+  inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Grad_AuxVar(iPoint,iVar,iDim) += value; }
+
+
+  /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
@@ -1388,6 +1416,7 @@ public:
    */
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
+  inline virtual su2double GetRelativeVelocity(unsigned long iPoint, unsigned short iDim){return 12;}
   /*!
    * \brief A virtual member.
    * \param[in] val_velocity - Value of the velocity.

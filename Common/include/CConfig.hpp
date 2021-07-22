@@ -753,7 +753,8 @@ private:
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-  VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  BFM_FileName;                  /*!< \brief BFM geometry input file */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -879,7 +880,9 @@ private:
   Pitching_Ampl[3] = {0.0},           /*!< \brief Pitching amplitude. */
   Pitching_Phase[3] = {0.0},          /*!< \brief Pitching phase offset. */
   Plunging_Omega[3] = {0.0},          /*!< \brief Angular frequency of the mesh plunging. */
-  Plunging_Ampl[3] = {0.0};           /*!< \brief Plunging amplitude. */
+  Plunging_Ampl[3] = {0.0},           /*!< \brief Plunging amplitude. */
+  BFM_Rotation_Axis[3] = {0.0};       /*!< \brief rotation axis for BFM problem */
+
   su2double *MarkerMotion_Origin, /*!< \brief Mesh motion origin of marker. */
   *MarkerTranslation_Rate,        /*!< \brief Translational velocity of marker. */
   *MarkerRotation_Rate,           /*!< \brief Angular velocity of marker. */
@@ -900,6 +903,9 @@ private:
   nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
   nRough_Wall;                    /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
+
+  su2double Omega_BFM;            /*!< \brief Rotation rate around BFM axis (in rounds per minute). */
+
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,             /*!< \brief Number of motion origins. */
@@ -1006,6 +1012,9 @@ private:
   su2double Streamwise_Periodic_TargetMassFlow;      /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_OutletHeat;          /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
 
+  su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
+  unsigned short Body_Force_Type;       /*!< \brief type of body-force model. */
+  unsigned short BFM_Formulation;       /*!< \brief Kind of BFM formulation. */
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5174,6 +5183,11 @@ public:
   string GetMesh_FileName(void) const { return Mesh_FileName; }
 
   /*!
+  * \brief Get name of BFM input file.
+  * \return File name of BFM geometry input file.
+  */
+  string GetBFM_FileName(void) const { return BFM_FileName; }
+  /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
    * \return File name of the output grid.
@@ -5598,6 +5612,20 @@ public:
   void SetRotation_Rate(unsigned short iDim, su2double val) { Rotation_Rate[iDim] = val;}
 
   /*!
+   * \brief Get the rotation axis of the BFM problem
+   * \param[in] iDim - spatial component
+   * \return Cartesian rotation axis component
+   */
+  su2double GetBFM_Axis(unsigned short iDim) const { return BFM_Rotation_Axis[iDim];}
+
+  /*!
+   * \brief Get the rotation rate of the BFM problem
+   * \return BFM rotation rate (rpm)
+   */
+  su2double GetBFM_Rotation() const { return Omega_BFM;}
+
+
+  /*!
    * \brief Get the rotation rate of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    * \param[in] iDim - spatial component
@@ -5802,6 +5830,23 @@ public:
    */
   su2double GetStreamwise_Periodic_TargetMassFlow(void) const { return Streamwise_Periodic_TargetMassFlow; }
 
+   /* \brief Get information regarding type of body force
+   * \return Type of body force
+   */
+  unsigned short GetBody_Force_Type(void) {return Body_Force_Type; }
+
+  /*!
+   * \brief Get information regarding body-force model formulation
+   * \return Type of body force model
+   */
+  unsigned short GetBFM_Formulation(void) {return BFM_Formulation; }
+
+  bool GetBFM(void) {if(GetBody_Force() == VARIABLE_BF){
+    return true;
+  }else{
+    return false;
+  }
+  }
   /*!
    * \brief Get information about the volumetric heat source.
    * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
