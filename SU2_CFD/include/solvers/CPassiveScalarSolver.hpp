@@ -88,6 +88,15 @@ public:
                       CConfig *config,
                       unsigned short iMesh);
 
+   /*!
+   * \brief Compute the primitive variables (diffusivities)
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
   
   /*!
    * \brief Set the initial condition for the scalar transport problem.

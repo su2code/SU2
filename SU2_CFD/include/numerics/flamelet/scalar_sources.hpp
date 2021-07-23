@@ -33,9 +33,9 @@
 
 /*!
  * \class CSourcePieceWise_transportedScalar_general
- * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
+ * \brief Class for integrating the source terms of the transported scalar turbulence model equations.
  * \ingroup SourceDiscr
- * \author A. Campos.
+ * \author N. Beishuizen
  */
 class CSourcePieceWise_transportedScalar_general final : public CNumerics {
 
@@ -47,17 +47,22 @@ private:
 
   su2double source_pv;
 
+  su2double Sc_t; 
+
   bool incompressible;
   bool viscous;
   bool axisymmetric;
   bool implicit;
+  bool inc_rans;
+
 
   /*!
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
   inline void ResidualAxisymmetric(void){
     su2double yinv,Density_i,Velocity_i[3];
-    if (Coord_i[1] > EPS){
+
+    if (Coord_i[1] > EPS) {
 
       AD::SetPreaccIn(Coord_i[1]);
 
@@ -74,14 +79,15 @@ private:
 
       /*--- Inviscid component of the source term. ---*/
     
+
       for (auto iVar=0u; iVar < nVar; iVar++)
-        Residual[iVar] = yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1]; 
+        Residual[iVar] -= yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1]; 
 
       if (implicit) {
         for (auto iVar=0u; iVar < nVar; iVar++) {
           for (auto jVar=0u; jVar < nVar; jVar++) {
-            if (iVar == jVar) Jacobian_i[iVar][jVar] = Velocity_i[1];
-            Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i;
+            if (iVar == jVar) Jacobian_i[iVar][jVar] = -Velocity_i[1];
+            Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i; 
           }
         }
       }
@@ -89,13 +95,23 @@ private:
       /*--- Add the viscous terms if necessary. ---*/
     
       if (viscous) {
-      // nijso: in case of flamelet, diffusion_coeff is actually rho*D
-      //        and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
+
+        Laminar_Viscosity_i    = V_i[nDim+4];
+        Eddy_Viscosity_i       = V_i[nDim+5];
+        Thermal_Conductivity_i = V_i[nDim+6];
+
+        su2double Mass_Diffusivity_Tur = 0.0;
+        if (inc_rans) 
+          Mass_Diffusivity_Tur = Eddy_Viscosity_i/Sc_t;
+
+      // In case of flamelet, diffusion_coeff is actually rho*D
+      // remember (rho*cp*D) = k when Le=1
+      // and in case of transported scalar, diffusion_coeff is binary diffusion coefficient
         for (auto iVar=0u; iVar < nVar; iVar++){
-          if (flame)
-            Residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
+          if (flame) 
+            Residual[iVar] += yinv*Volume*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
           else
-            Residual[iVar] -= Volume*yinv*Density_i*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
+            Residual[iVar] += yinv*Volume*Density_i*(Diffusion_Coeff_i[iVar]+Mass_Diffusivity_Tur)*ScalarVar_Grad_i[iVar][1];
         } 
       }
 
@@ -152,3 +168,5 @@ public:
 
 
 };
+
+

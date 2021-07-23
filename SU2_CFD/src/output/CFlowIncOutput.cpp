@@ -482,6 +482,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddVolumeOutput("PASSIVE_SCALAR", "Passive_Scalar", "SOLUTION", "Passive scalar solution");
+      AddVolumeOutput("DIFFUSIVITY"   , "Diffusivity"   , "SOLUTION", "Passive scalar diffusivity");
+      AddVolumeOutput("SPECIFIC_HEAT_CP"   , "Specific_Heat_Cp"   , "SOLUTION", "Mixture specific heat cp");
+      AddVolumeOutput("CONDUCTIVITY"   , "Conductivity"   , "SOLUTION", "Mixture conductivity");
+      AddVolumeOutput("MEAN_MOLECULAR_WEIGHT"   , "Mean_Molecular_Weight"   , "SOLUTION", "Mixture molecular weight");
       break;
     case PROGRESS_VARIABLE:
       AddVolumeOutput("PROGRESS_VARIABLE", "Progress_Variable", "SOLUTION", "Progress variable solution");
@@ -490,6 +494,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("Y_NOX"            , "Y_NOx"            , "SOLUTION", "NOx Mass fraction solution");
       AddVolumeOutput("DIFFUSIVITY_PV"   , "Diffusivity_PV"   , "SOLUTION", "Diffusivity of the progress variable");
       AddVolumeOutput("DIFFUSIVITY_ENTH" , "Diffusivity_Enth" , "SOLUTION", "Diffusivity of the enthalpy");
+      AddVolumeOutput("SPECIFIC_HEAT_CP"   , "Specific_Heat_Cp"   , "SOLUTION", "Mixture specific heat cp");
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
         if (config->GetLookupName(i_lookup)!="NULL"){ 
           string strname1="lookup_"+config->GetLookupName(i_lookup);
@@ -723,6 +728,12 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
+      SetVolumeOutputValue("DIFFUSIVITY"   , iPoint, Node_Scalar->GetDiffusivity(iPoint, 0));
+      // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
+      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
+      SetVolumeOutputValue("CONDUCTIVITY"   , iPoint, Node_Flow->GetThermalConductivity(iPoint));
+      // SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetMeanMolecularWeight()); 
+      SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, 1/(Node_Scalar->GetSolution(iPoint)[0]/(16.043/1000) + (1-Node_Scalar->GetSolution(iPoint)[0])/(28.965/1000)));
       break;
     case PROGRESS_VARIABLE:
       SetVolumeOutputValue("PROGRESS_VARIABLE", iPoint, Node_Scalar->GetSolution(iPoint, I_PROG_VAR));
@@ -731,6 +742,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("Y_NOX"            , iPoint, Node_Scalar->GetSolution(iPoint, I_NOX     ));
       SetVolumeOutputValue("DIFFUSIVITY_PV"   , iPoint, Node_Scalar->GetDiffusivity(iPoint, I_PROG_VAR));
       SetVolumeOutputValue("DIFFUSIVITY_ENTH" , iPoint, Node_Scalar->GetDiffusivity(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
 
       // update lookup
       scalars      = Node_Scalar->GetSolution(iPoint);

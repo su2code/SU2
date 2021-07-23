@@ -50,7 +50,8 @@ public:
                       su2double rho,
                       su2double mu_lam,
                       su2double mu_turb,
-                      su2double cp) override { }
+                      su2double cp,
+                      su2double kt) override { }
 
   private:
     su2double diff_{0.0};  

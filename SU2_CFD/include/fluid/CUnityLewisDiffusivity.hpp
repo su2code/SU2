@@ -1,6 +1,6 @@
 /*!
- * \file CDiffusivityModel.hpp
- * \brief Interface class for defining mass diffusivity models.
+ * \file CUnityLewisDiffusivity.hpp
+ * \brief Defines unity Lewis mass diffusivity.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 7.0.6 "Blackbird"
  *
@@ -27,25 +27,32 @@
 
 #pragma once
 
-#include "../../../Common/include/basic_types/datatype_structure.hpp"
+#include "CDiffusivityModel.hpp"
 
 /*!
- * \class CDiffusivityModel
- * \brief Defines a mass diffusivity model for species equations.
+ * \class CUnityLewisDiffusivity
+ * \brief Defines a unity lewis mass diffusivity model for species equations.
  * \author T. Economon
  */
-class CDiffusivityModel {
+class CUnityLewisDiffusivity final : public CDiffusivityModel {
 public:
-  CDiffusivityModel() = default;
-  CDiffusivityModel(const CDiffusivityModel&) = delete; 
-  void operator=(const CDiffusivityModel&) = delete;
-  virtual ~CDiffusivityModel() {}
+  /*!
+   * \brief Constructor of the class.
+   */
+  CUnityLewisDiffusivity() {}
+ 
+  su2double GetDiffusivity() const override {return diff_;}
 
+  /*!
+   * \brief Set diffusivity.
+   */
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override { 
+    diff_ = kt / (Lewis * rho * cp); // is this possible? cp is calculated with mass fracties while wilke is calculated with mole fractions?
+    // also: don't kt, rho, cp need to be constant (take values of air?) want je hebt ook geen mixture lewis getal dus je moet wel k, cp, rho pakken van elke species. 
+  }
 
-  virtual su2double GetDiffusivity(void) const = 0; /* new added virtual*/
-
-/*!
- * \brief Set mass diffusivity
- */
-  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) = 0;
+  private:
+    su2double diff_{0.0}; 
+    su2double kt_{0.0}; 
+    su2double Lewis{1};  
 };

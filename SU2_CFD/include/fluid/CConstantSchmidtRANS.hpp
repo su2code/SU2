@@ -57,7 +57,7 @@ public:
   /*!
    * \brief Set mass diffusivity.
    */
-  void SetDiffusivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) override {
+  void SetDiffusivity(su2double t, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override {
     diff_ = diff_lam_const_ + mu_turb/(rho*sc_turb_);
   }
  

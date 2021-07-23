@@ -251,7 +251,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
 
-  su2double yinv, Velocity_i[3];
+  su2double yinv, Velocity_i[3], total_viscosity;
   unsigned short iDim, iVar, jVar;
 
   if (Coord_i[1] > EPS) {
@@ -313,9 +313,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       Eddy_Viscosity_i       = V_i[nDim+5];
       Thermal_Conductivity_i = V_i[nDim+6];
 
-      su2double total_viscosity;
+      // nijso: FIXME: the viscous terms have serious convergence issues...
+
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
+      su2double total_conductivity = Thermal_Conductivity_i + Cp_i*Eddy_Viscosity_i/Prandtl_Turb;
 
       /*--- The full stress tensor is needed for variable density ---*/
       ComputeStressTensor(nDim, tau, PrimVar_Grad_i+1, total_viscosity);
@@ -323,12 +325,20 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       /*--- Viscous terms. ---*/
 
       residual[0] -= 0.0;
-      residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0][0]);
-      residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
-                             yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
-                             TWO3*AuxVar_Grad_i[0][1]);
+      //residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0][0]);
+      //residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
+      //                       yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
+      //                       TWO3*AuxVar_Grad_i[0][1]);
+      //residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
+      su2double tau_tt = 2.0*total_viscosity * yinv*Velocity_i[1];
+      su2double tau_rr = 2.0*total_viscosity * PrimVar_Grad_i[2][1];
+      su2double tau_rz = tau[0][1]; 
+ 
+      residual[1] -= Volume*(yinv*tau_rz);
+      residual[2] -= Volume*(yinv*tau_rr - yinv*tau_tt);
       residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-
+      // residual[3] -= 0.0; 
+      if (implicit) jacobian[2][2] = Volume*yinv*2.0*total_viscosity*yinv;
     }
 
   } else {
