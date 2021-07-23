@@ -257,22 +257,19 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
-    //if (implicit)
-    //  for (iVar = 0; iVar < nVar; iVar++)
-    //    for (jVar = 0; jVar < nVar; jVar++)
-    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-    //        err = true;
+    if (implicit)
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
+              (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar]))
+            err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.SubtractBlock(iPoint, residual);
       LinSysRes.AddBlock(jPoint, residual);
       if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-        Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
   } //iEdge
@@ -375,6 +372,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
       if (implicit) {
+        //TODO
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
         for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
@@ -573,7 +571,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       //      sour_numerics->ComputeChemistry(Res_Sour, Jacobian_i, config);
       //      LinSysRes.AddBlock(iPoint, Res_Sour);
       //      if (implicit)
-      //        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      //        Jacobian.AddBlock2Diag(iPoint, iPoint, Jacobian_i);
 
       /*--- Only change velocity-rows of the Jacobian (includes 1 in the diagonal)/
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
@@ -752,7 +750,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                 kve*theta/dij*dTvedU[iVar])*Area;
           Jacobian_i[nSpecies+nDim+1][iVar] = - kve*theta/dij*dTvedU[iVar]*Area;
         }
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       } // implicit
     }
   }
@@ -930,7 +928,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
               Jacobian_i[iVar][jVar] += Jacobian_j[iVar][kVar]*dVdU[kVar][jVar]*Area;
 
         /*--- Apply to the linear system ---*/
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
       }
     }
   }
