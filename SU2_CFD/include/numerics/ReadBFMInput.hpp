@@ -137,5 +137,7 @@ public:
     return index;
   }
   
+  unsigned short GetBladeCount(unsigned short i_row){return n_blades.at(i_row);}
+  unsigned short GetRotationFactor(unsigned short i_row){return rotation_factor.at(i_row);}
 
 };

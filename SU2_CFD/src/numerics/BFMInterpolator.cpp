@@ -126,10 +126,7 @@ void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long i
                 rad_cell.at(3) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx, I_RADIAL_COORDINATE);
                 
                 found = RC_Inclusion(axis, radius, ax_cell, rad_cell);
-                //cout << axis << " " << radius << " " << ax_cell.at(0) << " " << ax_cell.at(1) << " " << ax_cell.at(2) << " " << ax_cell.at(3) << " " << rad_cell.at(0) << " " << rad_cell.at(1) << " " << rad_cell.at(2) << " " << rad_cell.at(3)<< endl;
-                    
                 if(found){
-                    //cout << axis << " " << radius << " " << ax_cell.at(0) << " " << ax_cell.at(1) << " " << ax_cell.at(2) << " " << ax_cell.at(3) << " " << rad_cell.at(0) << " " << rad_cell.at(1) << " " << rad_cell.at(2) << " " << rad_cell.at(3) << endl;
                     for(unsigned short iVar=0; iVar<N_BFM_PARAMS; ++iVar){
                         if((iVar != I_ROTATION_FACTOR) && (iVar != I_BODY_FORCE_FACTOR) && (iVar != I_BLADE_COUNT)){
                             val_cell.at(0) = reader->GetBFMParameter(iRow, iTang, iRad, iAx, iVar);
@@ -140,9 +137,9 @@ void BFMInterpolator::Interp2D(su2double axis, su2double radius, unsigned long i
                             solver_container->GetNodes()->SetAuxVar(iPoint, iVar, DW_average(axis, radius, ax_cell, rad_cell, val_cell));
                         }
                     }
-                    solver_container->GetNodes()->SetAuxVar(iPoint, I_ROTATION_FACTOR, reader->GetBFMParameter(iRow, iTang, iRad, iAx, I_ROTATION_FACTOR));
                     solver_container->GetNodes()->SetAuxVar(iPoint, I_BODY_FORCE_FACTOR, 1);
-                    solver_container->GetNodes()->SetAuxVar(iPoint, I_BLADE_COUNT, reader->GetBFMParameter(iRow, iTang, iRad, iAx, I_BLADE_COUNT));
+                    solver_container->GetNodes()->SetAuxVar(iPoint, I_ROTATION_FACTOR, reader->GetRotationFactor(iRow));
+                    solver_container->GetNodes()->SetAuxVar(iPoint, I_BLADE_COUNT, reader->GetBladeCount(iRow));
                 }
                 ++iAx;
             }

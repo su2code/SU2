@@ -158,9 +158,9 @@ void ReadBFMInput::ReadInputFile(string input_file)
         SU2_MPI::Error("Number of chordwise, spanwise or tangential data entries not provided for all blade rows", CURRENT_FUNCTION);
     }
 
-    if(variable_names.size() != N_BFM_PARAMS-2){
-        SU2_MPI::Error("Number of variables in input file are unequal to the number required for Blade geometry definition", CURRENT_FUNCTION);
-    }
+    // if(variable_names.size() != N_BFM_PARAMS-2){
+    //     SU2_MPI::Error("Number of variables in input file are unequal to the number required for Blade geometry definition", CURRENT_FUNCTION);
+    // }
 
     AllocateMemory();
     
@@ -212,14 +212,12 @@ void ReadBFMInput::ReadInputFile(string input_file)
                     streamDataLine >> word;
                     temp = stod(word);
                     for(unsigned short iName=0; iName < translated_names.size(); ++iName){
-                        if(translated_names.at(iName).compare(variable_names.at(iVar)) == 0){
+                        if((translated_names.at(iName).compare(variable_names.at(iVar)) == 0)
+                         && (translated_names.at(I_ROTATION_FACTOR).compare(variable_names.at(iVar)) != 0)
+                         && (translated_names.at(I_BLADE_COUNT).compare(variable_names.at(iVar)) != 0)){
                             Geometric_Parameters->at(rowCounter).at(iName)(tangCounter, radCounter, pointCounter) = temp;
-                            //Geometric_Parameters->at(rowCounter).at(name_translation.at(iName).second)(tangCounter, radCounter, pointCounter) = temp;
                         }
-                        
-                        
                     }
-                    
                 }
                 
                 pointCounter ++;

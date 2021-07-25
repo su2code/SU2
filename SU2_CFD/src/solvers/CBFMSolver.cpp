@@ -36,32 +36,38 @@
 CBFMSolver::CBFMSolver(void) : CSolver() { }
 
 CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-    
+    /* This function initalizes the BFM solver */
+
     cout << "Initiating BFM solver" << endl;
     nPoint = geometry->GetnPoint();
     nDim = geometry->GetnDim();
     nVar = N_BFM_PARAMS;
     Omega = config->GetBFM_Rotation();
 
+    // Defining BFM variable class
     nodes = new CBFMVariable(nPoint, nDim, N_BFM_PARAMS);
     SetBaseClassPointerToNodes();
     
+    // Reading BFM geometry input file
     BFM_File_Reader = new ReadBFMInput(config, config->GetBFM_FileName());
 
     
     BFM_formulation = config->GetBFM_Formulation();
     switch (BFM_formulation)
     {
-    case 0:
-        cout << "Halls BFM was selected" << endl;
+    case HALL:
+        cout << "Body-Force Model selection: Hall" << endl;
         break;
-    case 1:
-        cout << "Thollets BFM was selected" << endl;
+    case THOLLET:
+        cout << "Body-Force Model selection: Thollet" << endl;
         break;
     default:
-        
+        SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
+                CURRENT_FUNCTION);
         break;
     }
+
+    // Filling in the blade geometry parameter names
     BFM_Parameter_Names.resize(N_BFM_PARAMS);
     BFM_Parameter_Names.at(I_AXIAL_CHORD) = "axial_coordinate";
     BFM_Parameter_Names.at(I_RADIAL_COORDINATE) = "radial_coordinate";
@@ -71,61 +77,63 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     BFM_Parameter_Names.at(I_CAMBER_NORMAL_RADIAL) = "n_rad";
     BFM_Parameter_Names.at(I_LEADING_EDGE_AXIAL) = "ax_LE";
 
+    // Commencing blade geometry interpolation
     cout << "Interpolating blade geometry parameters to nodes" << endl;
     Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
     Interpolator->Interpolate(BFM_File_Reader, this, geometry);
-    // SetAuxVar_Gradient_GG(geometry, config);
     
-    //SetAuxVar_Gradient_GG(geometry, config);
+    // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
     for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
         nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
     }
-    //SetSolution_Gradient_GG(geometry, config);
 
+    // Commencing metal blockage factor gradient computation
     const auto &solution = nodes->GetSolution();
     auto &gradient = nodes->GetGradient();
-    
     computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, 1, gradient);
     
+    // Storing metal blockage gradient in auxilary variable gradient
     for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
         for(unsigned short iDim=0; iDim<nDim; ++iDim){
             nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
         }
     }
-    cout << "After Gradient Computation" << endl;
+
+    // Interpolator class is no longer needed, so it's deleted to free up memory
     delete Interpolator;
 
-    cout << "Before computecylprojections" << endl;
+    // Computing cylindrical projections of the node coordinates.
     ComputeCylProjections(geometry, config);
-    cout << "After computecylprojections" << endl;
     
 }
 
 CBFMSolver::~CBFMSolver(void) { 
     delete nodes;
     delete BFM_File_Reader;
-    
-
 }
 
 
 
 void CBFMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { 
-    ComputeRelativeVelocity(geometry, solver_container, config);
-    
+
 }
 
 void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources){
-    su2double bffac;
-    su2double W_ax, W_th, W_r;
-    vector<su2double*> W_cyl = {&W_ax, &W_th, &W_r};
+    // In this function, the flow source terms according to the body-force model are computed
+
+    su2double bffac; // Body-force factor
+    su2double W_ax, W_th, W_r; // Relative, cylindrical velocity components (axial, tangential, radial)
+    vector<su2double*> W_cyl = {&W_ax, &W_th, &W_r}; // Vector containing the relative velocity components.
     
+    // Getting node body-force factor. If 1, the BFM source terms are computed at the current node.
     bffac = nodes->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR);
 
+    // Computing the relative velocity at the current node.
     ComputeRelativeVelocity(solver_container, iPoint, W_cyl);
     
     if(bffac == 1){
+        // Selection of the BFM stated in the config file.
         switch (BFM_formulation)
         {
         case HALL:
@@ -138,28 +146,38 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
             break;
         }
     }else{
+        // If the BFM is inactive at the current node, the BFM source terms are set to zero.
         for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
             BFM_sources.at(iDim) = 0;
         }
     }
 }
 
-void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources, vector<su2double*>W_cyl){
-    su2double *U_i, F[nDim];
-    su2double Rotation_rate = Omega * PI_NUMBER / 30;
-    su2double b, Nx, Nt, Nr, rotFac, blade_count;
-    su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
-    su2double W_p, W_mag;
-    su2double radius, pitch;
-    su2double delta;
-    su2double F_n, F_p, F_ax, F_th, F_r, e_source;
-    su2double Volume;
+void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned long iPoint, vector<su2double> & BFM_sources, vector<su2double*>&W_cyl){
+    /*---Halls Body-Force Model */
+    /*
+        This function computes the body-force source terms according to Halls BFM formulation. 
+        Halls BFM generates source terms for flow deflection only and does not take blade thickness
+        effects into account.
+    */
 
-
-// Getting solution variables from the flow solver
-    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+    su2double F[nDim]; // body-force vector(Cartesian)
+    su2double Rotation_rate = Omega * PI_NUMBER / 30; // Blade rotation rate [rad s^-1]
+    su2double Nx, Nt, Nr, rotFac, blade_count; // axial, tangential, radial camber normal vector components[-], rotation factor[-], blade count[-]
+    su2double W_ax, W_th, W_r, // axial, tangential, radial relative velocity [m s^-1]
+     WdotN, // Dot product between camber normal vector and relative velocity vector [m s^-1]
+    W_nx, W_nth, W_nr, // Normal projections of relative velocity components [m s^-1]
+    W_px, W_pth, W_pr; // Parallel projections of relative velocity components [m s^-1]
+    su2double W_p, W_mag; // Parallel projection relative velocity magnitude [m s^-1]
+    su2double radius, // Radius [m]
+    pitch, // Blade pitch [m]
+    density; // Fluid density [kg m^-3]
+    su2double delta; // Flow incidence angle [rad]
+    su2double F_n, F_p, // Normal, parallel body-force [m s^-2]
+     F_ax, F_th, F_r, // Cylindrical body-force components
+     e_source; // Energy equation source term [kg m^-1 s^-3]
     
-    b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);			// Metal blockage factor
+    // Getting interpolated blade geometry parameters from auxilary variable
     Nx = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_AXIAL); 		// Camber normal component in axial direction
     Nt = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL); 			// Camber normal component in tangential direction
     Nr = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_RADIAL);			// Camber normal component in radial direction
@@ -167,17 +185,11 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
     blade_count = nodes->GetAuxVar(iPoint, I_BLADE_COUNT);
 
     // // Getting cylindrical, relative velocity vector
-    // W_ax = nodes->GetRelativeVelocity(iPoint, 0);
-    // W_th = nodes->GetRelativeVelocity(iPoint, 1);
-    // W_r = nodes->GetRelativeVelocity(iPoint, 2);
-
     W_ax = *W_cyl.at(0);
     W_th = *W_cyl.at(1);
     W_r = *W_cyl.at(2);
     
-    if(blade_count != 1){
-        su2double a{};
-    }
+    // Getting local radius and computing blade pitch
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
     pitch = 2 * PI_NUMBER * radius / blade_count;	// Computing pitch
 
@@ -190,12 +202,12 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
     W_mag = sqrt(W_ax * W_ax + W_th * W_th + W_r * W_r);
     // Calculating the deviation angle
     delta = asin(WdotN / (W_mag + 1e-6));
-
+    
     // Computing normal body force magnitude
     F_n = -PI_NUMBER * delta * (1 / pitch) * (1 / abs(Nt)) * W_mag * W_mag;
 
     // Transforming the normal and force component to cyllindrical coordinates
-    su2double density = U_i[0];
+    density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6)));		// Axial body-force component
     F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / (W_p + 1e-6)));		// Radial body-force component
     F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / (W_p + 1e-6)));	// Tangential body-force component
@@ -203,7 +215,7 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
     
     // Appending Cartesial body-forces to body-force vector
     for(int iDim=0; iDim<nDim; iDim++){
-        F[iDim] = U_i[0] * (F_ax*(nodes->GetAxialProjection(iPoint, iDim))
+        F[iDim] = density * (F_ax*(nodes->GetAxialProjection(iPoint, iDim))
                           + F_th*(nodes->GetTangentialProjection(iPoint, iDim))
                           + F_r*(nodes->GetRadialProjection(iPoint, iDim)));
     }
@@ -217,26 +229,44 @@ void CBFMSolver::ComputeBFMSources_Hall(CSolver **solver_container, unsigned lon
         BFM_sources.at(iDim+1) = F[iDim];
     }
     // Appending energy source term
-    BFM_sources.at(nDim+1) = U_i[0] * e_source;
+    BFM_sources.at(nDim+1) = density * e_source;
 
 }
 
-void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>W_cyl){
-    su2double *U_i, F[nDim];
-    su2double Rotation_rate = Omega * PI_NUMBER / 30;
-    su2double b, Nx, Nt, Nr, rotFac, blade_count;
-    su2double W_ax, W_th, W_r, WdotN, W_nx, W_nth, W_nr, W_px, W_pth, W_pr;
-    su2double W_p, W_mag, K_mach;
-    su2double radius, pitch;
-    su2double delta;
-    su2double F_n, F_p, F_ax, F_th, F_r, e_source;
-    su2double ax, ax_le, mu, density, Re_ax, C_f;
-    su2double Volume;
+void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>&W_cyl){
+    /*---Thollets Body-Force Model */
+    /*
+        This function computes the body-force source terms according to Tholletss BFM formulation. 
+        Thollets BFM generates body-forces normal and parallel to the local, relative flow, enabling loss modeling.
+        Additionally, compressibility effects are accounted for while computing the normal body force component and
+        flow obstruction due to blade thickness is modeled through an additional set of source terms, of which the
+        magnitude depends on the metal blockage factor distribution.
+    */
 
+    su2double F[nDim];  // body-force vector(Cartesian)
+    su2double Rotation_rate = Omega * PI_NUMBER / 30;  // Blade rotation rate [rad s^-1]
+    su2double b, // Metal blockage factor [-]
+     Nx, Nt, Nr, // axial, tangential, radial camber normal vector components[-]
+     rotFac, // Rotation factor [-]
+     blade_count; // Blade row blade count [-]
+    su2double W_ax, W_th, W_r, // axial, tangential, radial relative velocity [m s^-1]
+    WdotN, // Dot product between camber normal vector and relative velocity vector [m s^-1]
+    W_nx, W_nth, W_nr, // Normal projections of relative velocity components [m s^-1]
+    W_px, W_pth, W_pr; // Parallel projections of relative velocity components [m s^-1]
+    su2double W_p, // Parallel projected rlative velocity magnitude [m s^-1]
+    W_mag, // Relative velocity magnitude [m s^-1]
+    K_mach; // Normal force compressibility correction factor [-]
+    su2double radius, pitch; // radius [m], blade pitch[m]
+    su2double delta; // Flow incidense angle [rad]
+    su2double F_n, F_p, // Normal, parallel body-force [m s^-2]
+     F_ax, F_th, F_r, // Cylindrical body-force components
+     e_source; // Energy equation source term [kg m^-1 s^-3]
+    su2double ax, ax_le, // Axial node coordiate [m], blade leading edge coordinate[m]
+     mu, // Dynamic viscosity [kg m^-1 s^-2]
+     density, // Fluid density [kg m^-3]
+     Re_ax, C_f; // Axial Reynolds number[-], blade friction factor [-]
 
-// Getting solution variables from the flow solver
-    U_i = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
-    
+    // Getting the blade geometric parameters from the auxilary variable
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);			// Metal blockage factor
     Nx = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_AXIAL); 		// Camber normal component in axial direction
     Nt = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL); 			// Camber normal component in tangential direction
@@ -244,10 +274,12 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     rotFac = nodes->GetAuxVar(iPoint, I_ROTATION_FACTOR);	// Rotation factor. Multiplies the body-force rotation value.
     blade_count = nodes->GetAuxVar(iPoint, I_BLADE_COUNT);
 
+    // Getting the relative velocity vector
     W_ax = *W_cyl.at(0);
     W_th = *W_cyl.at(1);
     W_r = *W_cyl.at(2);
     
+    // Getting the local radius and computing blade pitch
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
     pitch = 2 * PI_NUMBER * radius / blade_count;	// Computing pitch
 
@@ -261,24 +293,33 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     // Calculating the deviation angle
     delta = asin(WdotN / (W_mag + 1e-6));
 
+    // Computing the compressiblity correction factor for the normal body force
     K_mach = ComputeKMach(solver_container, iPoint, W_cyl);
 
     // Computing normal body force magnitude
     F_n = -PI_NUMBER * K_mach * delta * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
+    // Getting leading edge axial coordinate and node axial coordinate
     ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
     ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
-    density = U_i[0];
+
+    // Getting fluid density
+    density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     
+    // Computing the axial, relative Reynolds number
+    // TODO: Get dynamic viscosity from fluid model
     Re_ax = abs(density * W_mag * (ax - ax_le)) / (1.716E-5);
     if(Re_ax == 0.0){
 			Re_ax = (0.001 * W_mag * density) / (1.716E-5);
 		}
+    // Computing the blade friction factor
+    // TODO: Allow for the user to set the coefficients
     C_f = 0.0592 * pow(Re_ax, -0.2);
 
+    // Computing the parallel, loss generating body force
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
+
     // Transforming the normal and force component to cyllindrical coordinates
-    
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
     F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / (W_p + 1e-6))) + F_p * W_r / (W_mag + 1e-6);		// Radial body-force component
     F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / (W_p + 1e-6)))+ F_p * W_th / (W_mag + 1e-6);	// Tangential body-force component
@@ -300,32 +341,55 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
         BFM_sources.at(iDim+1) = F[iDim];
     }
     // Appending energy source term
-    BFM_sources.at(nDim+1) = U_i[0] * e_source;
+    BFM_sources.at(nDim+1) = density * e_source;
 
+    // Computing source terms due to metal blockage
     ComputeBlockageSources(solver_container, iPoint, BFM_sources);
 }
 
 void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources){
-    su2double density, energy, blockage_gradient;
-    su2double velocity, velocity_j;
-    su2double b;
-    su2double source_density{0}, source_energy{0}, source_momentum[nDim];
+    /*
+     This function computes the flow source terms due to flow obstruction caused by blade thickness effects.
+     The resulting source terms are added to the BFM source terms according to Thollets BFM formulation
+    */
+    su2double density, // Fluid density [kg m^-3]
+    energy, // Fluid energy [m^-1 s^-2]
+    blockage_gradient; // Metal blockage factor gradient [m^-1]
+    su2double velocity, velocity_j; // Flow velocity components [m s^-1]
+    su2double b; // Metal blockage factor [-]
+    su2double source_density{0}, // Density source term[kg m^-3 s^-1]
+    source_energy{0}, // Energy source term
+    source_momentum[nDim]; // Momentum source terms
 
+    // Getting fluid density and energy
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     energy = solver_container[FLOW_SOL]->GetNodes()->GetEnergy(iPoint);
+
+    // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
+
+    // Looping over dimensions to compute the divergence source terms
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
+        // Setting momentum source term to zero
         source_momentum[iDim] = 0;
+
+        // Getting flow velocity
         velocity = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        // Getting metal blockage gradient
         blockage_gradient = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
+
+        // Updating density and energy source terms
         source_density += density * velocity * blockage_gradient / b;
         source_energy += density * energy * velocity * blockage_gradient / b;
+
+        // Looping over dimensions to compute momentum source terms due to metal blockage
         for(unsigned short jDim=0; jDim<nDim; jDim++){
             velocity_j = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, jDim);
             source_momentum[iDim] += density * velocity * velocity_j * blockage_gradient / b;
         }
     }
 
+    // Subtracting metal blockage source terms from body force source terms
     BFM_sources.at(0) -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
         BFM_sources.at(iDim + 1) -= source_momentum[iDim];
@@ -437,7 +501,7 @@ void CBFMSolver::ComputeRelativeVelocity(CGeometry *geometry, CSolver **solver_c
 	}
 }
 
-void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*> W_cyl){
+void CBFMSolver::ComputeRelativeVelocity(CSolver **solver_container, unsigned long iPoint, vector<su2double*> &W_cyl){
     su2double *Coord, U_i,*Geometric_Parameters;
 	su2double W_ax, W_r, W_th, rotFac;
     su2double Rotation_rate = Omega * PI_NUMBER / 30;

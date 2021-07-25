@@ -5841,6 +5841,10 @@ public:
    */
   unsigned short GetBFM_Formulation(void) {return BFM_Formulation; }
 
+  /*!
+  * \brief Body-Force Model simulation
+  * \return bool of whether BFM is enabled or disabled.
+  */ 
   bool GetBFM(void) {if(GetBody_Force() == VARIABLE_BF){
     return true;
   }else{
