@@ -496,7 +496,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     if (implicit)
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
-          if ((resiudal.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
+          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
               (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar]))
             err = true;
 
