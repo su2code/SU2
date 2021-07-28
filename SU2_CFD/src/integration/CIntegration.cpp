@@ -78,7 +78,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Pause preaccumulation in boundary conditions for hybrid parallel AD. ---*/
   /// TODO: Check if this is really needed.
-  const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
+  //const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
 
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
@@ -182,7 +182,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
 
-  AD::ResumePreaccumulation(pausePreacc);
+  //AD::ResumePreaccumulation(pausePreacc);
 
 }
 
