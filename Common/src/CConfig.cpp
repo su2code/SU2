@@ -5076,7 +5076,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /*--- Compute the total number of markers in the config file ---*/
-  cout << "                 nMaker heat flux (2): " << nMarker_HeatFlux << endl;
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
