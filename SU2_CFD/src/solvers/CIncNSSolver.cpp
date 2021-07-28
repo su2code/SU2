@@ -380,16 +380,21 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
-  if (kind_boundary == HEAT_FLUX)
-    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-  else if (kind_boundary == ISOTHERMAL)
-    Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
-  else if (kind_boundary == HEAT_TRANSFER) {
-    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
-    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  switch(kind_boundary) {
+    case HEAT_FLUX:
+      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+      break;
+    case ISOTHERMAL:
+      Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      break;
+    case HEAT_TRANSFER:
+      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
+      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+      break;
+    default:
+      SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);
+      break;
   }
-  else
-    SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);
 
   /*--- Get wall function treatment from config. ---*/
 
@@ -440,7 +445,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     if (!energy) continue;
 
-    if (kind_boundary == HEAT_FLUX) {
+    switch(kind_boundary) {
+    case HEAT_FLUX:
 
       /*--- Apply a weak boundary condition for the energy equation.
       Compute the residual due to the prescribed heat flux. ---*/
@@ -462,8 +468,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
         LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
       } // if streamwise_periodic
-    }
-    else if (kind_boundary == HEAT_TRANSFER) {
+      break;
+
+    case HEAT_TRANSFER:
       Twall = nodes->GetTemperature(iPoint);
       Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
 
@@ -471,9 +478,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       Compute the residual due to the prescribed temperature and transfer coefficient.
       Note that for the Heat_Transfer wall, basically a heatflux wall that depends on the local Temperature is applied. ---*/
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
+      break;
 
-    }
-    else { // ISOTHERMAL
+    case ISOTHERMAL:
 
       const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -507,7 +514,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
           proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
         Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity*proj_vector_ij);
       }
-    }
+      break;
+    } // switch
   }
   END_SU2_OMP_FOR
 }
