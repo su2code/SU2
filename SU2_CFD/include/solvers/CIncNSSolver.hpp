@@ -38,7 +38,7 @@
 class CIncNSSolver final : public CIncEulerSolver {
 
   /*!
-   * \brief Generic implementation of the isothermal and heatflux walls.
+   * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.
    */
   void BC_Wall_Generic(const CGeometry *geometry,
                        const CConfig *config,
@@ -158,20 +158,14 @@ public:
                           unsigned short val_marker) override;
 
   /*!
-   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a wall temperature.
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatTransfer_Wall(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CNumerics *conv_numerics,
-                            CNumerics *visc_numerics,
-                            CConfig *config,
-                            unsigned short val_marker) override;
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
 
   /*!
    * \brief Impose the (received) conjugate heat variables.

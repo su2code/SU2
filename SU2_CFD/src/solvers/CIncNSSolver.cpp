@@ -397,7 +397,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   // nijso: we do not have a special treatment yet for heated walls
   // the wall function model is written for heat flux, we have to implement isothermal wall conditions
   //if (Wall_Function != WALL_FUNCTIONS::NONE)
-  //  SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
+  //  SU2_MPI::Error("Wall function treatment not implemented yet.", CURRENT_FUNCTION);
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -524,8 +524,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver**, CNumerics*
   BC_Wall_Generic(geometry, config, val_marker, ISOTHERMAL);
 }
 
-void CIncNSSolver::BC_HeatTransfer_Wall(CGeometry *geometry, CSolver**, CNumerics*,
-                                    CNumerics*, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
 
   BC_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
@@ -544,7 +543,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   /*--- Retrieve the specified wall function treatment.---*/
 
   if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
-    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
+    SU2_MPI::Error("Wall function treatment not implemented yet.", CURRENT_FUNCTION);
   }
 
   /*--- Loop over boundary points ---*/
