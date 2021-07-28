@@ -8864,47 +8864,38 @@ void CConfig::SetIncPressureOut_BC(su2double val_pressure) {
 
 su2double CConfig::GetIsothermal_Temperature(string val_marker) const {
 
-  unsigned short iMarker_Isothermal = 0;
+  for (unsigned short iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
+    if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
+      return Isothermal_Temperature[iMarker_Isothermal];
 
-  if (nMarker_Isothermal > 0) {
-    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
-      if (Marker_Isothermal[iMarker_Isothermal] == val_marker) break;
-  }
-
-  return Isothermal_Temperature[iMarker_Isothermal];
+  return Isothermal_Temperature[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(string val_marker) const {
-  unsigned short iMarker_HeatFlux = 0;
 
-  if (nMarker_HeatFlux > 0) {
-  for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
-    if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
-  }
+  for (unsigned short iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
+    if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker)
+      return Heat_Flux[iMarker_HeatFlux];
 
-  return Heat_Flux[iMarker_HeatFlux];
+  return Heat_Flux[0];
 }
 
 su2double CConfig::GetWall_HeatTransfer_Coefficient(string val_marker) const {
-  unsigned short iMarker_HeatTransfer = 0;
 
-  if (nMarker_HeatTransfer > 0) {
-  for (iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
-    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker) break;
-  }
+  for (unsigned short iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
+    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker)
+      return HeatTransfer_Coeff[iMarker_HeatTransfer];
 
-  return HeatTransfer_Coeff[iMarker_HeatTransfer];
+  return HeatTransfer_Coeff[0];
 }
 
 su2double CConfig::GetWall_HeatTransfer_Temperature(string val_marker) const {
-  unsigned short iMarker_HeatTransfer = 0;
 
-  if (nMarker_HeatTransfer > 0) {
-  for (iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
-    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker) break;
-  }
+  for (unsigned short iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
+    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker)
+      return HeatTransfer_WallTemp[iMarker_HeatTransfer];
 
-  return HeatTransfer_WallTemp[iMarker_HeatTransfer];
+  return HeatTransfer_WallTemp[0];
 }
 
 pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {

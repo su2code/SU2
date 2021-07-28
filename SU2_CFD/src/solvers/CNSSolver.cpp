@@ -441,7 +441,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != WALL_FUNCTION::NONE) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 //  }
 
   /*--- Jacobian, initialized to zero if needed. ---*/
