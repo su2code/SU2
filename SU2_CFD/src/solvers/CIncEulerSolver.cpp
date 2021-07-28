@@ -1318,6 +1318,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
+  AD::StartNoSharedReading();
+
   if (body_force) {
 
     /*--- Loop over all points ---*/
@@ -1419,11 +1421,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     END_SU2_OMP_FOR
   }
 
+  AD::EndNoSharedReading();
+
   if (axisymmetric) {
 
     /*--- For viscous problems, we need an additional gradient. ---*/
 
     if (viscous) {
+
+      AD::StartNoSharedReading();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1443,6 +1449,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
       END_SU2_OMP_FOR
 
+      AD::EndNoSharedReading();
+
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
 
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1455,6 +1463,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
 
     /*--- loop over points ---*/
+
+    AD::StartNoSharedReading();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1506,9 +1516,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
   if (radiation) {
+
+    AD::StartNoSharedReading();
 
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -1550,6 +1564,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
     END_SU2_OMP_FOR
 
+    AD::EndNoSharedReading();
   }
 
   if (streamwise_periodic) {
@@ -1557,12 +1572,16 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- For turbulent streamwise periodic problems w/ energy eq, we need an additional gradient of Eddy viscosity. ---*/
     if (streamwise_periodic_temperature && turbulent) {
 
+      AD::StartNoSharedReading();
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
         nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
       }
       END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -1576,6 +1595,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
     numerics->SetStreamwisePeriodicValues(SPvals);
+
+    AD::StartNoSharedReading();
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1604,12 +1625,16 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     } // for iPoint
     END_SU2_OMP_FOR
 
+    AD::EndNoSharedReading();
+
     if(!streamwise_periodic_temperature && energy) {
 
       CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
       /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
       second_numerics->SetStreamwisePeriodicValues(SPvals);
+
+      AD::StartNoSharedReading();
 
       /*--- This bit acts as a boundary condition rather than a source term. But logically it fits better here. ---*/
       for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1646,6 +1671,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         }// if periodic inlet boundary
       }// for iMarker
 
+      AD::EndNoSharedReading();
+
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
 
@@ -1657,6 +1684,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
       if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+      AD::StartNoSharedReading();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1679,6 +1708,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       }
       END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
     }
   }
 

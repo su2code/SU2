@@ -291,6 +291,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Loop over all points. ---*/
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -349,6 +351,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
 }
 

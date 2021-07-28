@@ -840,6 +840,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     ComputeAxisymmetricAuxGradients(geometry,config);
   }
 
+  AD::StartNoSharedReading();
+
   /*--- loop over interior points ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -964,6 +966,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     }
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   /*--- Checking for NaN ---*/
   unsigned long eAxi_global = eAxi_local;

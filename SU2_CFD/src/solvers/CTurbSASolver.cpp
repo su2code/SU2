@@ -301,6 +301,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
+  AD::StartNoSharedReading();
+
   /*--- Loop over all points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -399,6 +401,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     }
     END_SU2_OMP_FOR
   }
+
+  AD::EndNoSharedReading();
 
 }
 

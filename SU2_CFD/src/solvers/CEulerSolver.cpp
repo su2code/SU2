@@ -2291,6 +2291,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
+  AD::StartNoSharedReading();
+
   if (body_force) {
 
     /*--- Loop over all points ---*/
@@ -2345,12 +2347,16 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_FOR
   }
 
+  AD::EndNoSharedReading();
+
   if (axisymmetric) {
 
     /*--- For viscous problems, we need an additional gradient. ---*/
     if (viscous) {
       ComputeAxisymmetricAuxGradients(geometry, config);
     }
+
+    AD::StartNoSharedReading();
 
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -2397,7 +2403,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
+
+  AD::StartNoSharedReading();
 
   if (gravity) {
 
@@ -2470,6 +2480,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_FOR
   }
 
+  AD::EndNoSharedReading();
+
   /*--- Check if a verification solution is to be computed. ---*/
 
   if ( VerificationSolution ) {
@@ -2478,6 +2490,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
       if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+      AD::StartNoSharedReading();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -2499,6 +2513,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         }
       }
       END_SU2_OMP_FOR
+
+      AD::EndNoSharedReading();
     }
   }
 
