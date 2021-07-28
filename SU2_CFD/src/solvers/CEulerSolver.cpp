@@ -1534,19 +1534,19 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
   }
 
-  //std::ofstream outfile;
-  //outfile.open("gamma-su2.csv", std::ios_base::app);
-  //outfile << "T, gamma" << "\n"; 
-  //int np = 30100;
-  //vector<su2double> TT, Gammaa; TT.resize(np); Gammaa.resize(np);
-  //for ( int i = 100; i < np; i++){
-  //  TT[i] = i;
-  //  auxFluidModel->SetTDState_PT(Pressure_FreeStream, TT[i]);
-  //  Gammaa[i] = auxFluidModel->GetGamma();
-  //  outfile << TT[i] << ", " << Gammaa[i] << "\n"; 
-  //}
+//  std::ofstream outfile;
+//  outfile.open("cv-su2.csv", std::ios_base::app);
+//  outfile << "T, gamma" << "\n"; 
+//  int np = 15100;
+//  vector<su2double> TT, Gammaa; TT.resize(np); Gammaa.resize(np);
+//  for ( int i = 100; i < np; i+=10){
+//    TT[i] = i;
+//    auxFluidModel->SetTDState_PT(Pressure_FreeStream, TT[i]);
+//    Gammaa[i] = auxFluidModel->GetCv();
+//    outfile << TT[i] << ", " << Gammaa[i] << "\n"; 
+//  }
 
- 
+// exit(0);
   //cout << endl << "CEulerSolver::SetNondimensionalization" << endl;
 
   if (free_stream_temp) {
