@@ -48,6 +48,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
     transport_model = "Gupta-Yos";
 
   opt.setStateModel("ChemNonEqTTv");
+  if (frozen) opt.setMechanism("none");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model);
 
@@ -118,7 +119,7 @@ vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){
   return energies;
 }
 
-vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only){
 
   SetTDStateRhosTTv(rhos, T, val_T);
 
