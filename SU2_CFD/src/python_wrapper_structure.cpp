@@ -452,9 +452,7 @@ vector<string> CDriver::GetAllCHTMarkersTag() const {
 
   //The CHT markers can be identified as the markers that are customizable with a BC type HEAT_FLUX or ISOTHERMAL.
   for(iMarker=0; iMarker<nBoundariesMarker; iMarker++){
-    if((config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
-        config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ||
-        config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_TRANSFER) && config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker)){
+    if((config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX || config_container[ZONE_0]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) && config_container[ZONE_0]->GetMarker_All_PyCustom(iMarker)){
       Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
       CHTBoundariesTagList.push_back(Marker_Tag);
     }
