@@ -321,6 +321,13 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
             }
 
+            /*--- Check if new coordinates exceed geometrical constraint ---*/
+
+            // FIXME Dan: This is still buggy!
+            //CheckGeomConstr(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+            //MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+            
             /*--- Set total deformation values in config ---*/
             if (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) {
 
@@ -681,6 +688,60 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
   return totaldeformation;
 }
 
+
+void CSurfaceMovement::CheckGeomConstr(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox){
+
+  su2double *next_coords_def, *next_coords_orig;
+  su2double new_coords[2];
+  su2double *ffd_bounds = config->GetFFDBounds(); 
+  su2double ffd_bounds_x[2] = {ffd_bounds[0], ffd_bounds[3]};
+  su2double ffd_bounds_y[2] = {ffd_bounds[1], ffd_bounds[4]};
+  su2double dx, dy, dx_proj, dy_proj;
+
+  int counter = 0;
+
+  for (int i_dv = 0; i_dv < FFDBox->lOrder; ++i_dv) {
+    for (int j_dv = 0; j_dv < FFDBox->mOrder; ++j_dv) {
+      for (int k_dv = 0; k_dv < FFDBox->nOrder; ++k_dv) {
+
+          next_coords_def  = FFDBox->Coord_Control_Points[i_dv][j_dv][k_dv];
+          next_coords_orig = FFDBox->Coord_Control_Points_Copy[i_dv][j_dv][k_dv];
+
+          dx = dx_proj = next_coords_def[0] - next_coords_orig[0];
+          dy = dy_proj = next_coords_def[1] - next_coords_orig[1];
+
+          /*--- if out of x bounds but within y bounds ---*/
+          if ( ((next_coords_def[0] <  ffd_bounds_x[0]) || (next_coords_def[0] >  ffd_bounds_x[1])) &&
+               ((next_coords_def[1] >= ffd_bounds_y[0]) && (next_coords_def[1] <= ffd_bounds_y[1])) ){
+          }
+
+          /*--- if out of y+ bounds but within x bounds ---*/
+          if ( (next_coords_def[1] >  ffd_bounds_y[1]) &&
+              ((next_coords_def[0] >= ffd_bounds_x[0]) && (next_coords_def[0] <= ffd_bounds_x[1])) ){
+
+            dy_proj = ffd_bounds_y[1] - next_coords_orig[1];
+            dx_proj = dx/dy * dy_proj;
+
+          }
+
+          /*--- if out of y+ bounds but within x bounds ---*/
+          if (  (next_coords_def[1] <  ffd_bounds_y[0]) &&
+               ((next_coords_def[0] >= ffd_bounds_x[0]) && (next_coords_def[0] <= ffd_bounds_x[1])) ){
+
+            dy_proj = ffd_bounds_y[0] - next_coords_orig[1];
+            dx_proj = dx/dy * dy_proj;
+
+          }
+
+          new_coords[0] = next_coords_orig[0] + dx_proj;
+          new_coords[1] = next_coords_orig[1] + dy_proj;
+
+          FFDBox->SetCoordControlPoints(new_coords, i_dv, j_dv, k_dv);
+
+      }
+    }
+  }
+}
 
 void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config) {
 

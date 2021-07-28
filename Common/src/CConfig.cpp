@@ -1315,12 +1315,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
   addDoubleListOption("SCALAR_CLIPPING_MIN", nScalar_Clipping_Min, Scalar_Clipping_Min);
 
-  ffd_bounds[0] = 0.0;
-  ffd_bounds[1] = 0.0;
-  ffd_bounds[2] = 0.0;
-  ffd_bounds[3] = 1.0;
-  ffd_bounds[4] = 1.0;
-  ffd_bounds[5] = 1.0;
+  ffd_bounds[0] = -1e99;
+  ffd_bounds[1] = -1e99;
+  ffd_bounds[2] = -1e99;
+  ffd_bounds[3] = +1e99;
+  ffd_bounds[4] = +1e99;
+  ffd_bounds[5] = +1e99;
   addDoubleArrayOption("FFD_BOUNDS", 6, ffd_bounds);
 
   /*!\brief FLAME_OFFSET \n DESCRIPTION: Offset for flame initialization using the flamelet model \ingroup Config*/
