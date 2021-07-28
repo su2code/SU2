@@ -1929,6 +1929,8 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_MASTER {
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
@@ -1985,11 +1987,15 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
+
+  AD::EndNoSharedReading();
 }
 
 void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) {
 
   if (geometry->GetMGLevel() != MESH_0) return;
+
+  AD::StartNoSharedReading();
 
   SU2_OMP_MASTER {
 
@@ -2028,6 +2034,8 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
+
+  AD::EndNoSharedReading();
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
@@ -4111,6 +4119,8 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
 
   SU2_OMP_PARALLEL {
 
+  AD::StartNoSharedReading();
+
   /*--- Set Residuals to zero ---*/
   SU2_OMP_MASTER
   for (unsigned short iVar = 0; iVar < nVar; iVar++){
@@ -4151,6 +4161,8 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
   }
   END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
+
+  AD::EndNoSharedReading();
 
   SetResidual_BGS(geometry, config);
 
