@@ -1099,7 +1099,8 @@ void COutput::SetScreen_Output(const CConfig *config) {
           PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          // SURFACE_STATIC_TEMPERATURE e.g. is written to screen twice
+          if(false)PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::PERCENT:
           PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
