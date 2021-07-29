@@ -698,8 +698,6 @@ void CSurfaceMovement::CheckGeomConstr(CGeometry *geometry, CConfig *config, CFr
   su2double ffd_bounds_y[2] = {ffd_bounds[1], ffd_bounds[4]};
   su2double dx, dy, dx_proj, dy_proj;
 
-  int counter = 0;
-
   for (int i_dv = 0; i_dv < FFDBox->lOrder; ++i_dv) {
     for (int j_dv = 0; j_dv < FFDBox->mOrder; ++j_dv) {
       for (int k_dv = 0; k_dv < FFDBox->nOrder; ++k_dv) {

@@ -705,8 +705,6 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
 
-  bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
-
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
