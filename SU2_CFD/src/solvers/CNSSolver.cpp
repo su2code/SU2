@@ -534,6 +534,10 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
+      if (kind_boundary == HEAT_TRANSFER){
+        Jacobian.AddVal2Diag(iPoint, nDim+1, Transfer_Coefficient*Area);
+      }
+
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
         auto total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);

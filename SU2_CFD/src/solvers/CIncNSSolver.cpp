@@ -478,6 +478,10 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       Compute the residual due to the prescribed temperature and transfer coefficient.
       Note that for the Heat_Transfer wall, basically a heatflux wall that depends on the local Temperature is applied. ---*/
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
+
+      if (implicit) {
+        Jacobian.AddVal2Diag(iPoint, nDim+1, Transfer_Coefficient*Area);
+      }
       break;
 
     case ISOTHERMAL:
