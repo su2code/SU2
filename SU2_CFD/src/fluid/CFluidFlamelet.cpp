@@ -71,8 +71,6 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   su2double enth   = val_scalars[I_ENTHALPY];
   su2double prog   = val_scalars[I_PROG_VAR];
-  su2double y_co   = val_scalars[I_CO];
-  su2double y_nox  = val_scalars[I_NOX];
 
   string name_enth = table_scalar_names.at(I_ENTHALPY);
   string name_prog = table_scalar_names.at(I_PROG_VAR);
@@ -98,9 +96,6 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
     source_scalar.at(I_PROG_VAR) = 0.0;
   }
 
-  /* calculate derivatives for jacobian preconditioner*/
-  su2double delta_pv = 1e-6;
-  
   delete [] table_sources;
 
   /*--- not used at the moment ---*/ 
@@ -155,7 +150,6 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val
   su2double          delta_enth;
   su2double          delta_temp_iter  = 1e10;
   unsigned long      exit_code        = 0;
-  unsigned long      not_used;
   vector<string>     look_up_tags;
   vector<su2double*> look_up_data;
   int                counter_limit    = 50 ;
@@ -175,7 +169,7 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val
   while ( (abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit) ){
 
     /* look up temperature and heat capacity */
-    not_used        = look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, val_prog, enth_iter, name_prog, name_enth);
+    look_up_table->LookUp_ProgEnth(look_up_tags, look_up_data, val_prog, enth_iter, name_prog, name_enth);
 
     /* calculate delta_temperature */
     delta_temp_iter = val_temp - temp_iter;

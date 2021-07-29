@@ -477,7 +477,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLAMELET_FLUID_MODEL:
-        fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        fluidModel   = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        n_scalars    = fluidModel->GetNScalars();
+        dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
         delete[] dummy_scalar;
         break;
@@ -658,6 +660,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
+
+      case VISCOSITYMODEL::FLAMELET:
+        break;
       }
 
       switch(config->GetKind_ConductivityModel()){
@@ -688,6 +693,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         }
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::FLAMELET:
         break;
       }
     } else {
@@ -1290,7 +1298,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
-  const bool flame          = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
   const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);

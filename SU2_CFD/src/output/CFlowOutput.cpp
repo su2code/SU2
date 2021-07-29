@@ -1871,6 +1871,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             Breakdown_file << ")." << endl;
             break;
 
+          case VISCOSITYMODEL::FLAMELET:
+            break;
         }
 
         if (energy) {
@@ -1901,6 +1903,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
                 if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
               }
               Breakdown_file << ")." << endl;
+              break;
+
+            case CONDUCTIVITYMODEL::FLAMELET:
               break;
 
           }

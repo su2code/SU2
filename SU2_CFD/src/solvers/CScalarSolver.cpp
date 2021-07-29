@@ -359,11 +359,6 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
 
-/*--- use preconditioner for scalar transport equations ---*/
- const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-//if (incompressible) SetPreconditioner(geometry, solver_container, config);
-
-
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
@@ -431,11 +426,6 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-
-  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
-
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
 
@@ -447,12 +437,6 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-      su2double density = flowNodes->GetDensity(iPoint);
-      su2double density_old = density;
-
-      if (compressible)
-        density_old = flowNodes->GetSolution_Old(iPoint,0);
 
       // nijso: check difference between conservative and regular solution
       // nijso: conservative solution is for transport of rho*Y, 
@@ -550,7 +534,6 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
-  const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);

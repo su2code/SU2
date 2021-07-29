@@ -647,8 +647,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
-  bool turbulent =(config->GetKind_Turb_Model() !=NONE); 
-    // nijso: daniel, we have to add progvar here?
+
+  // nijso: daniel, we have to add progvar here?
 
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
