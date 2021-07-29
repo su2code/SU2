@@ -1099,10 +1099,7 @@ void COutput::SetScreen_Output(const CConfig *config) {
           PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          // This line causes SCIENTIFIC output from Marker_Analyze to be written to screen twice after one another.
-          // Thus ruining the nice alignment of the columns in the screen output. Requires debugging.
-          // Try e.g. SURFACE_STATIC_TEMPERATURE with incompressible cases.
-          //PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::PERCENT:
           PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);
