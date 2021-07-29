@@ -124,7 +124,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   if (heat_equation) {
     su2double rho_cp = config->GetMaterialDensity(0)*config->GetSpecific_Heat_Cp();
-    config->SetThermalDiffusivity(config->GetKt_Constant() / rho_cp);
+    config->SetThermalDiffusivity(config->GetThermal_Conductivity_Constant() / rho_cp);
 
     /*--- Fluxes are computed via thermal diffusivity (not conductivity), so we have to divide by rho*cp ---*/
     config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);

@@ -794,8 +794,8 @@ private:
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
   Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
   Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  Kt_Constant,           /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  Kt_ConstantND,         /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
   Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
   Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
@@ -3720,13 +3720,14 @@ public:
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetKt_Constant(void) const { return Kt_Constant; }
+  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant; }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-  su2double GetKt_ConstantND(void) const { return Kt_ConstantND; }
+    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
+
 
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
@@ -3832,7 +3833,7 @@ public:
   /*!
    * \brief Set the value of the non-dimensional thermal conductivity.
    */
-  void SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
 
   /*!
    * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
