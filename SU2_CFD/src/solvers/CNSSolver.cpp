@@ -541,12 +541,16 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         const su2double Gas_Constant = config->GetGas_ConstantND();
         const su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[1]);
         const su2double dTdrho = 1.0/Density * ( -Tinfinity + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+        const su2double dTdrhoe = (Gamma-1.0)/(Gas_Constant*Density);
 
-        /*--- Equivalent to derivation in CNSSolver::BC_Isothermal_Wall_Generic, but no idea why that derivation is correct. ---*/
+        /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
+        Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
         Jacobian_i[nDim+1][0] += Transfer_Coefficient * dTdrho * Area;
 
-        /*--- Take the definition of Temp for an ideal Gas, multiply with rho/rho and derive wrt to conservative variable (rho*E). ---*/
-        Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+        for (unsigned short iVar = 1; iVar < nVar-1; iVar++)
+          Jacobian_i[nDim+1][iVar] -= Transfer_Coefficient * dTdrhoe*nodes->GetVelocity(iPoint, iVar-1) * Area;
+
+        Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * dTdrhoe * Area;
 
       }
       if (dynamic_grid || (kind_boundary == HEAT_TRANSFER)) {
