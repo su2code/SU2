@@ -46,11 +46,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  vector<su2double> Energies_Inf;
-  unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iDim, iMarker, iSpecies, nLineLets;
+  unsigned short iMarker, nLineLets;
   unsigned short nZone = geometry->GetnZone();
-  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
+  su2double *Mvec_Inf, Alpha, Beta;
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
@@ -59,10 +57,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
-
-  bool nonPhys;
-
-  Energies_Inf.resize(2);
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
