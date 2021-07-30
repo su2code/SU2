@@ -543,7 +543,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         const su2double dTdrho = 1.0/Density * ( -Tinfinity + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
 
         /*--- Equivalent to derivation in CNSSolver::BC_Isothermal_Wall_Generic, but no idea why that derivation is correct. ---*/
-        Jacobian_i[nDim+1][0] = Transfer_Coefficient * dTdrho * Area;
+        Jacobian_i[nDim+1][0] += Transfer_Coefficient * dTdrho * Area;
 
         /*--- Take the definition of Temp for an ideal Gas, multiply with rho/rho and derive wrt to conservative variable (rho*E). ---*/
         Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * (Gamma-1.0)/(Gas_Constant*Density) * Area;
