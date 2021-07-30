@@ -537,7 +537,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
           for (auto iVar = 0u; iVar < nVar; ++iVar)
             Jacobian_i[nDim+1][iVar] = 0.0;
 
-        const su2double Density = nodes->GetDensity(iPoint);
+        const su2double oneOnRho = 1.0 / nodes->GetDensity(iPoint);
         const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
         const su2double Vel2 = nodes->GetVelocity2(iPoint);
         const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
