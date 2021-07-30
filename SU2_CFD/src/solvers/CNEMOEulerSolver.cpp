@@ -1074,7 +1074,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Gas_ConstantND         = 0.0, Viscosity_FreeStreamND    = 0.0, sqvel                       = 0.0,
   Tke_FreeStreamND       = 0.0, Total_UnstTimeND          = 0.0, Delta_UnstTimeND            = 0.0,
   soundspeed             = 0.0, GasConstant_Inf           = 0.0, Froude                      = 0.0,
-  Density_FreeStreamND   = 0.0;
+  Density_FreeStreamND   = 0.0, Heat_Flux_Ref             = 0.0;
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
 
@@ -1241,6 +1241,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
   Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
   Force_Ref         = config->GetDensity_Ref()*Velocity_Ref*Velocity_Ref*Length_Ref*Length_Ref; config->SetForce_Ref(Force_Ref);
+  Heat_Flux_Ref     = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref;           config->SetHeat_Flux_Ref(Heat_Flux_Ref);
   Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
