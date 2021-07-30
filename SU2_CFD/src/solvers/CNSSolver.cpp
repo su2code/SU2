@@ -531,14 +531,14 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
 
     if (implicit) {
       if (dynamic_grid) {
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       if (kind_boundary == HEAT_TRANSFER){
 
         /*--- It is necessary to zero the jacobian entries of the energy equation. ---*/
-        for (auto iVar = 0u; iVar < nVar; ++iVar)
-          Jacobian_i[nDim+1][iVar] = 0.0;
+        if (!dynamic_grid)
+          for (auto iVar = 0u; iVar < nVar; ++iVar)
+            Jacobian_i[nDim+1][iVar] = 0.0;
 
         const su2double Density = nodes->GetDensity(iPoint);
         const su2double Gas_Constant = config->GetGas_ConstantND();
@@ -551,8 +551,8 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         /*--- Take the definition of Temp for an ideal Gas, multiply with rho/rho and derive wrt to conservative variable (rho*E). ---*/
         Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * (Gamma-1.0)/(Gas_Constant*Density) * Area;
 
-        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
+      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
         auto total_index = iPoint*nVar+iVar;
