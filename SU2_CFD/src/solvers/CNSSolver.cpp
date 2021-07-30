@@ -530,9 +530,6 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
      And add the contributions to the Jacobian due to energy. ---*/
 
     if (implicit) {
-      if (dynamic_grid) {
-      }
-
       if (kind_boundary == HEAT_TRANSFER){
 
         /*--- It is necessary to zero the jacobian entries of the energy equation. ---*/
@@ -552,7 +549,9 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * (Gamma-1.0)/(Gas_Constant*Density) * Area;
 
       }
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      if (dynamic_grid || (kind_boundary == HEAT_TRANSFER)) {
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      }
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
         auto total_index = iPoint*nVar+iVar;
