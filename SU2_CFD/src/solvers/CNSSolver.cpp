@@ -446,7 +446,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
 
   /*--- Jacobian, initialized to zero if needed. ---*/
   su2double **Jacobian_i = nullptr;
-  if (dynamic_grid && implicit) {
+  if ((dynamic_grid || (kind_boundary == HEAT_TRANSFER)) && implicit) {
     Jacobian_i = new su2double* [nVar];
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar] ();
@@ -535,7 +535,23 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
       }
 
       if (kind_boundary == HEAT_TRANSFER){
-        Jacobian.AddVal2Diag(iPoint, nDim+1, Transfer_Coefficient*Area);
+
+        /*--- It is necessary to zero the jacobian entries of the energy equation. ---*/
+        for (auto iVar = 0u; iVar < nVar; ++iVar)
+          Jacobian_i[nDim+1][iVar] = 0.0;
+
+        const su2double Density = nodes->GetDensity(iPoint);
+        const su2double Gas_Constant = config->GetGas_ConstantND();
+        const su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[1]);
+        const su2double dTdrho = 1.0/Density * ( -Tinfinity + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+
+        /*--- Equivalent to derivation in CNSSolver::BC_Isothermal_Wall_Generic, but no idea why that derivation is correct. ---*/
+        Jacobian_i[nDim+1][0] = Transfer_Coefficient * dTdrho * Area;
+
+        /*--- Take the definition of Temp for an ideal Gas, multiply with rho/rho and derive wrt to conservative variable (rho*E). ---*/
+        Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
@@ -610,7 +626,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != WALL_FUNCTION::NONE) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 //  }
 
   su2double **Jacobian_i = nullptr;
