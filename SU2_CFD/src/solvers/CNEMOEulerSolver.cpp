@@ -256,7 +256,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
       config->SetNonphysical_Points(ErrorCounter);
       
       if ((rank == MASTER_NODE) && (ErrorCounter != 0))
-        cout << "Warning. The original solution contains "<< ErrorCounter << " points that are not physical." << endl;
+        cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
   }
 
   /*--- Artificial dissipation ---*/

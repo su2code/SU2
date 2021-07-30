@@ -429,7 +429,6 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
       break;
     case SUB_SOLVER_TYPE::NEMO_EULER:
       flowSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);
-      //flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
       flowSolver = new CNEMONSSolver(geometry, config, iMGLevel);

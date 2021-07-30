@@ -45,10 +45,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                          config ),
                                        Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  vector<su2double> energies;
   unsigned short iDim, iSpecies;
-  su2double soundspeed, rho;
-  su2double sqvel = 0.0;
 
   /*--- Setting variable amounts ---*/
   nDim            = ndim;
@@ -148,12 +145,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
 
   /*--- Compute necessary quantities ---*/
-  rho = fluidmodel->GetDensity();
-  soundspeed = fluidmodel->ComputeSoundSpeed();
-  for (iDim = 0; iDim < nDim; iDim++){
-    sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
-  }
-  energies = fluidmodel->ComputeMixtureEnergies();
+  const su2double rho = fluidmodel->GetDensity();
+  const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
+  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_mach) * pow(soundspeed,2);
+  const auto& energies = fluidmodel->ComputeMixtureEnergies();
   
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
