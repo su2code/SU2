@@ -540,7 +540,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         const su2double Density = nodes->GetDensity(iPoint);
         const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
         const su2double Vel2 = nodes->GetVelocity2(iPoint);
-        const su2double dTdrho = 1.0/Density * ( -Tinfinity + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+        const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
         const su2double dTdrhoe = (Gamma-1.0)/(Gas_Constant*Density);
 
         /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
