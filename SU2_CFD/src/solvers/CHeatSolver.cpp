@@ -596,7 +596,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
           dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
         dist_ij = sqrt(dist_ij);
 
-        dTdn = -(nodes->GetSolution(Point_Normal,0) - Twall)/dist_ij;
+        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
         Res_Visc[0] = thermal_diffusivity*dTdn*Area;
 
@@ -937,7 +937,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           for (auto iDim = 0u; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
           dist = sqrt(dist);
 
-          dTdn = (Twall - nodes->GetSolution(iPointNormal,0))/dist;
+          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
 
