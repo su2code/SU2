@@ -88,7 +88,7 @@ jobs:
         uses: docker://su2code/test-su2:20200303
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t feature_heatcoeff_BC -c feature_heatcoeff_BC -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t feature_heatcoeff_BC -c feature_heatcoeff_bc -s ${{matrix.testscript}}
   unit_tests:
     runs-on: ubuntu-latest
     name: Unit Tests
