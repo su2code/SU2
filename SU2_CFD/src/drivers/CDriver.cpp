@@ -234,10 +234,9 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
   if (nZone > 1) {
     if (rank == MASTER_NODE)
       cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
-double stime = SU2_MPI::Wtime();
+
     Interface_Preprocessing(config_container, solver_container, geometry_container,
                             interface_types, interface_container, interpolator_container);
-    std::cout << "duration Interface_Preprocessing: " << stime << "..." << SU2_MPI::Wtime() <<" = "<<SU2_MPI::Wtime() - stime << " s\n";
   }
 
   if (fsi) {
@@ -2773,9 +2772,7 @@ void CFluidDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr)
-          { double stime = SU2_MPI::Wtime();
         interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
-        std::cout <<"duration SetTransferCoeff in CDriver.cpp: " << stime << "..." << SU2_MPI::Wtime()<<" = "<< SU2_MPI::Wtime()-stime <<" s\n"; }
     }
   }
 

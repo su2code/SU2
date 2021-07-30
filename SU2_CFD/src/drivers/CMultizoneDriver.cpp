@@ -268,10 +268,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
         if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && prefixed_motion[iZone])
-          { double stime = SU2_MPI::Wtime();
           interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
-        std::cout <<"duration SetTransferCoeff in CMultizoneDriver.cpp: " << stime << "..." << SU2_MPI::Wtime()<<" = "<< SU2_MPI::Wtime()-stime <<" s\n"; }
-
       }
     }
   }
