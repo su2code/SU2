@@ -541,7 +541,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
         const su2double Vel2 = nodes->GetVelocity2(iPoint);
         const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
-        const su2double dTdrhoe = (Gamma-1.0)/(Gas_Constant*Density);
+        const su2double dTdrhoe = oneOnCv * oneOnRho;
 
         /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
         Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
