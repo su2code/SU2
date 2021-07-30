@@ -547,9 +547,6 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfi
         Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
         Jacobian_i[nDim+1][0] += Transfer_Coefficient * dTdrho * Area;
 
-        for (unsigned short iVar = 1; iVar < nVar-1; iVar++)
-          Jacobian_i[nDim+1][iVar] -= Transfer_Coefficient * dTdrhoe*nodes->GetVelocity(iPoint, iVar-1) * Area;
-
         Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * dTdrhoe * Area;
 
       }
