@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -828,7 +828,7 @@ public:
   * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.
   * \param[in] iZone              - The currently active zone number.
   */
-  void InitStaticMeshMovement(CConfig              *config,
+  void InitStaticMeshMovement(const CConfig        *config,
                               const unsigned short Kind_Grid_Movement,
                               const unsigned short iZone);
 
@@ -1227,11 +1227,14 @@ protected:
   void SetWallDistance(su2double val) override;
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] config - Config of this geometry (not the ADT zone's geometry)
+   * \param[in] iZone - ignored
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 };
 
 /*!

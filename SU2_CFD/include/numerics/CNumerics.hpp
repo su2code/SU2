@@ -10,7 +10,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,12 +34,7 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid/CNEMOGas.hpp"
-#include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
-
-using namespace std;
 
 class CElement;
 class CFluidModel;
@@ -58,22 +53,18 @@ protected:
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
-  su2double *Vector;          /*!< \brief Auxiliary vector. */
   su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double
-  **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
   const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
-  su2double
+  const su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
   su2double
   Laminar_Viscosity_i,   /*!< \brief Laminar viscosity at point i. */
-  Laminar_Viscosity_j,   /*!< \brief Laminar viscosity at point j. */
-  Laminar_Viscosity_id,  /*!< \brief Variation of laminar viscosity at point i. */
-  Laminar_Viscosity_jd;  /*!< \brief Variation of laminar viscosity at point j. */
+  Laminar_Viscosity_j;   /*!< \brief Laminar viscosity at point j. */
   su2double
   Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
@@ -81,9 +72,6 @@ protected:
   Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
-  su2double
-  SpecificHeat_i, /*!< \brief Specific heat c_p at point j. */
-  SpecificHeat_j; /*!< \brief Specific heat c_p at point j. */
   su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
@@ -97,9 +85,6 @@ protected:
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
-  GravityForce_i,  /*!< \brief Gravity force at point i. */
-  GravityForce_j;  /*!< \brief Gravity force at point j. */
-  su2double
   Density_i,  /*!< \brief Density at point i. */
   Density_j;  /*!< \brief Density at point j. */
   su2double
@@ -112,9 +97,6 @@ protected:
   Lambda_i,  /*!< \brief Spectral radius at point i. */
   Lambda_j;  /*!< \brief Spectral radius at point j. */
   su2double
-  LambdaComb_i,  /*!< \brief Spectral radius at point i. */
-  LambdaComb_j;  /*!< \brief Spectral radius at point j. */
-  su2double
   SoundSpeed_i,  /*!< \brief Sound speed at point i. */
   SoundSpeed_j;  /*!< \brief Sound speed at point j. */
   su2double
@@ -126,96 +108,77 @@ protected:
   su2double
   Temp_i,  /*!< \brief Temperature at point i. */
   Temp_j;  /*!< \brief Temperature at point j. */
-  su2double
+  const su2double
   *Und_Lapl_i,  /*!< \brief Undivided laplacians at point i. */
   *Und_Lapl_j;  /*!< \brief Undivided laplacians at point j. */
   su2double
   Sensor_i,  /*!< \brief Pressure sensor at point i. */
   Sensor_j;  /*!< \brief Pressure sensor at point j. */
-  su2double
+  const su2double
   *GridVel_i,  /*!< \brief Grid velocity at point i. */
   *GridVel_j;  /*!< \brief Grid velocity at point j. */
-  su2double
+  const su2double
   *U_i,           /*!< \brief Vector of conservative variables at point i. */
-  *U_id,          /*!< \brief Vector of derivative of conservative variables at point i. */
-  *U_j,           /*!< \brief Vector of conservative variables at point j. */
-  *U_jd;          /*!< \brief Vector of derivative of conservative variables at point j. */
-  su2double
+  *U_j;           /*!< \brief Vector of conservative variables at point j. */
+  const su2double
   *V_i,     /*!< \brief Vector of primitive variables at point i. */
   *V_j;     /*!< \brief Vector of primitive variables at point j. */
-  su2double
+  const su2double
   *S_i,     /*!< \brief Vector of secondary variables at point i. */
   *S_j;     /*!< \brief Vector of secondary variables at point j. */
-  su2double
+  const su2double
   *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
   *Psi_j;    /*!< \brief Vector of adjoint variables at point j. */
-  su2double
-  *DeltaU_i,  /*!< \brief Vector of linearized variables at point i. */
-  *DeltaU_j;  /*!< \brief Vector of linearized variables at point j. */
-  su2double
+  const su2double
   *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
-  *TurbVar_id,  /*!< \brief Vector of derivative of turbulent variables at point i. */
-  *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
-  *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
-  su2double
+  *TurbVar_j;   /*!< \brief Vector of turbulent variables at point j. */
+  const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
-  su2double
+  const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
-  su2double
-  **ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
-  **ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
-  **ConsVar_Grad;    /*!< \brief Gradient of conservative variables which is a scalar. */
-  su2double
-  **PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
-  **PrimVar_Grad_j;  /*!< \brief Gradient of primitive variables at point j. */
-  su2double
-  **PsiVar_Grad_i,  /*!< \brief Gradient of adjoint variables at point i. */
-  **PsiVar_Grad_j;  /*!< \brief Gradient of adjoint variables at point j. */
-  su2double
-  **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TurbVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
-  su2double
-  **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  **TransVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
-  su2double
-  **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
-  **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
-  su2double
-  **AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  **AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  CMatrixView<const su2double>
+  ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
+  ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
+  ConsVar_Grad,    /*!< \brief Gradient of conservative variables which is a scalar. */
+  PrimVar_Grad_i,  /*!< \brief Gradient of primitive variables at point i. */
+  PrimVar_Grad_j,  /*!< \brief Gradient of primitive variables at point j. */
+  PsiVar_Grad_i,   /*!< \brief Gradient of adjoint variables at point i. */
+  PsiVar_Grad_j,   /*!< \brief Gradient of adjoint variables at point j. */
+  TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
+  TurbVar_Grad_j,  /*!< \brief Gradient of turbulent variables at point j. */
+  TransVar_Grad_i, /*!< \brief Gradient of turbulent variables at point i. */
+  TransVar_Grad_j, /*!< \brief Gradient of turbulent variables at point j. */
+  TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
+  TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
+  AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
+  AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
-  su2double
+  const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
   *Coord_j;      /*!< \brief Cartesians coordinates of point j. */
   unsigned short
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
-  const su2double
-  *Normal;       /*!< \brief Normal vector, its norm is the area of the face. */
-  su2double
-  *UnitNormal,   /*!< \brief Unitary normal vector. */
-  *UnitNormald;  /*!< \brief Derivative of unitary normal vector. */
+  const su2double *Normal = nullptr;      /*!< \brief Normal vector, its norm is the area of the face. */
+  su2double UnitNormal[MAXNDIM] = {0.0};  /*!< \brief Unitary normal vector. */
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
   Volume;      /*!< \brief Volume of the control volume around point i. */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
-  su2double
+  const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
-  *WindGust_j;  /*!< \brief Wind gust at point j. */
-  su2double
+  *WindGust_j,  /*!< \brief Wind gust at point j. */
   *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
   *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
-  su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
+  const su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
-
-  su2double *l, *m;
 
   su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
@@ -289,7 +252,7 @@ public:
    * \brief Set the value of the vorticity
    * \param[in] val_vorticity - Value of the vorticity.
    */
-  void SetVorticity(su2double *val_vorticity_i, su2double *val_vorticity_j) {
+  void SetVorticity(const su2double *val_vorticity_i, const su2double *val_vorticity_j) {
     Vorticity_i = val_vorticity_i;
     Vorticity_j = val_vorticity_j;
   }
@@ -309,7 +272,7 @@ public:
    * \param[in] val_u_i - Value of the conservative variable at point i.
    * \param[in] val_u_j - Value of the conservative variable at point j.
    */
-  inline void SetConservative(su2double *val_u_i, su2double *val_u_j) {
+  inline void SetConservative(const su2double *val_u_i, const su2double *val_u_j) {
     U_i = val_u_i;
     U_j = val_u_j;
   }
@@ -319,7 +282,7 @@ public:
    * \param[in] val_v_i - Value of the primitive variable at point i.
    * \param[in] val_v_j - Value of the primitive variable at point j.
    */
-  inline void SetPrimitive(su2double *val_v_i, su2double *val_v_j) {
+  inline void SetPrimitive(const su2double *val_v_i, const su2double *val_v_j) {
     V_i = val_v_i;
     V_j = val_v_j;
   }
@@ -329,7 +292,7 @@ public:
    * \param[in] val_v_i - Value of the primitive variable at point i.
    * \param[in] val_v_j - Value of the primitive variable at point j.
    */
-  inline void SetSecondary(su2double *val_s_i, su2double *val_s_j) {
+  inline void SetSecondary(const su2double *val_s_i, const su2double *val_s_j) {
     S_i = val_s_i;
     S_j = val_s_j;
   }
@@ -339,8 +302,8 @@ public:
    * \param[in] val_consvar_grad_i - Gradient of the conservative variable at point i.
    * \param[in] val_consvar_grad_j - Gradient of the conservative variable at point j.
    */
-  inline void SetConsVarGradient(su2double **val_consvar_grad_i,
-                                 su2double **val_consvar_grad_j) {
+  inline void SetConsVarGradient(CMatrixView<const su2double> val_consvar_grad_i,
+                                 CMatrixView<const su2double> val_consvar_grad_j) {
     ConsVar_Grad_i = val_consvar_grad_i;
     ConsVar_Grad_j = val_consvar_grad_j;
   }
@@ -349,15 +312,15 @@ public:
    * \brief Set the gradient of the conservative variables.
    * \param[in] val_consvar_grad - Gradient of the conservative variable which is a scalar.
    */
-  inline void SetConsVarGradient(su2double **val_consvar_grad) { ConsVar_Grad = val_consvar_grad; }
+  inline void SetConsVarGradient(CMatrixView<const su2double> val_consvar_grad) { ConsVar_Grad = val_consvar_grad; }
 
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] val_primvar_grad_i - Gradient of the primitive variable at point i.
    * \param[in] val_primvar_grad_j - Gradient of the primitive variable at point j.
    */
-  void SetPrimVarGradient(su2double **val_primvar_grad_i,
-                          su2double **val_primvar_grad_j) {
+  void SetPrimVarGradient(CMatrixView<const su2double> val_primvar_grad_i,
+                          CMatrixView<const su2double> val_primvar_grad_j) {
     PrimVar_Grad_i = val_primvar_grad_i;
     PrimVar_Grad_j = val_primvar_grad_j;
   }
@@ -367,7 +330,7 @@ public:
    * \param[in] val_psi_i - Value of the adjoint variable at point i.
    * \param[in] val_psi_j - Value of the adjoint variable at point j.
    */
-  inline void SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j) {
+  inline void SetAdjointVar(const su2double *val_psi_i, const su2double *val_psi_j) {
     Psi_i = val_psi_i;
     Psi_j = val_psi_j;
   }
@@ -377,8 +340,8 @@ public:
    * \param[in] val_psivar_grad_i - Gradient of the adjoint variable at point i.
    * \param[in] val_psivar_grad_j - Gradient of the adjoint variable at point j.
    */
-  inline void SetAdjointVarGradient(su2double **val_psivar_grad_i,
-                                    su2double **val_psivar_grad_j) {
+  inline void SetAdjointVarGradient(CMatrixView<const su2double> val_psivar_grad_i,
+                                    CMatrixView<const su2double> val_psivar_grad_j) {
     PsiVar_Grad_i = val_psivar_grad_i;
     PsiVar_Grad_j = val_psivar_grad_j;
   }
@@ -388,7 +351,7 @@ public:
    * \param[in] val_turbvar_i - Value of the turbulent variable at point i.
    * \param[in] val_turbvar_j - Value of the turbulent variable at point j.
    */
-  inline void SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
+  inline void SetTurbVar(const su2double *val_turbvar_i, const su2double *val_turbvar_j) {
     TurbVar_i = val_turbvar_i;
     TurbVar_j = val_turbvar_j;
   }
@@ -398,7 +361,7 @@ public:
    * \param[in] val_transvar_i - Value of the turbulent variable at point i.
    * \param[in] val_transvar_j - Value of the turbulent variable at point j.
    */
-  inline void SetTransVar(su2double *val_transvar_i, su2double *val_transvar_j) {
+  inline void SetTransVar(const su2double *val_transvar_i, const su2double *val_transvar_j) {
     TransVar_i = val_transvar_i;
     TransVar_j = val_transvar_j;
   }
@@ -408,8 +371,8 @@ public:
    * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetTurbVarGradient(su2double **val_turbvar_grad_i,
-                                 su2double **val_turbvar_grad_j) {
+  inline void SetTurbVarGradient(CMatrixView<const su2double> val_turbvar_grad_i,
+                                 CMatrixView<const su2double> val_turbvar_grad_j) {
     TurbVar_Grad_i = val_turbvar_grad_i;
     TurbVar_Grad_j = val_turbvar_grad_j;
   }
@@ -419,8 +382,8 @@ public:
    * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetTransVarGradient(su2double **val_transvar_grad_i,
-                                  su2double **val_transvar_grad_j) {
+  inline void SetTransVarGradient(CMatrixView<const su2double> val_transvar_grad_i,
+                                  CMatrixView<const su2double> val_transvar_grad_j) {
     TransVar_Grad_i = val_transvar_grad_i;
     TransVar_Grad_j = val_transvar_grad_j;
   }
@@ -430,7 +393,7 @@ public:
    * \param[in] val_turbpsivar_i - Value of the adjoint turbulent variable at point i.
    * \param[in] val_turbpsivar_j - Value of the adjoint turbulent variable at point j.
    */
-  inline void SetTurbAdjointVar(su2double *val_turbpsivar_i, su2double *val_turbpsivar_j) {
+  inline void SetTurbAdjointVar(const su2double *val_turbpsivar_i, const su2double *val_turbpsivar_j) {
     TurbPsi_i = val_turbpsivar_i;
     TurbPsi_j = val_turbpsivar_j;
   }
@@ -440,8 +403,8 @@ public:
    * \param[in] val_turbpsivar_grad_i - Gradient of the adjoint turbulent variable at point i.
    * \param[in] val_turbpsivar_grad_j - Gradient of the adjoint turbulent variable at point j.
    */
-  inline void SetTurbAdjointGradient(su2double **val_turbpsivar_grad_i,
-                                     su2double **val_turbpsivar_grad_j) {
+  inline void SetTurbAdjointGradient(CMatrixView<const su2double> val_turbpsivar_grad_i,
+                                     CMatrixView<const su2double> val_turbpsivar_grad_j) {
     TurbPsi_Grad_i = val_turbpsivar_grad_i;
     TurbPsi_Grad_j = val_turbpsivar_grad_j;
   }
@@ -665,6 +628,59 @@ public:
   }
 
   /*!
+   * \brief Project average gradient onto normal (with or w/o correction) for viscous fluxes of scalar quantities.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] nVar - Number of variables.
+   * \param[in] normal - Area vector.
+   * \param[in] coord_i - Coordinate of point i.
+   * \param[in] coord_j - Coordinate of point j.
+   * \param[in] grad_i - Gradient at point i.
+   * \param[in] grad_j - Gradient at point j.
+   * \param[in] correct - Correct
+   * \param[in] var_i - Variable at point i.
+   * \param[in] var_j - Variable at point j.
+   * \param[out] projNormal - Average gradient projected on normal.
+   * \param[out] projCorrected - Corrected gradient projected on normal.
+   * \return (Edge_Vector DOT normal) / |Edge_Vector|^2.
+   */
+  template<class Vec1, class Vec2, class Mat>
+  FORCEINLINE static su2double ComputeProjectedGradient(int nDim, int nVar, const Vec1& normal,
+                                                        const Vec1& coord_i, const Vec1& coord_j,
+                                                        const Mat& grad_i, const Mat& grad_j,
+                                                        bool correct,
+                                                        const Vec2& var_i, const Vec2& var_j,
+                                                        su2double* projNormal,
+                                                        su2double* projCorrected) {
+    assert(nDim == 2 || nDim == 3);
+    nDim = (nDim > 2)? 3 : 2;
+    su2double edgeVec[MAXNDIM], dist_ij_2 = 0.0, proj_vector_ij = 0.0;
+
+    for (int iDim = 0; iDim < nDim; iDim++) {
+      edgeVec[iDim] = coord_j[iDim] - coord_i[iDim];
+      dist_ij_2 += pow(edgeVec[iDim], 2);
+      proj_vector_ij += edgeVec[iDim] * normal[iDim];
+    }
+    proj_vector_ij /= max(dist_ij_2,EPS);
+
+    /*--- Mean gradient approximation. ---*/
+    for (int iVar = 0; iVar < nVar; iVar++) {
+      projNormal[iVar] = 0.0;
+      su2double edgeProj = 0.0;
+
+      for (int iDim = 0; iDim < nDim; iDim++) {
+        su2double meanGrad = 0.5 * (grad_i[iVar][iDim] + grad_j[iVar][iDim]);
+        projNormal[iVar] += meanGrad * normal[iDim];
+        if (correct) edgeProj += meanGrad * edgeVec[iDim];
+      }
+
+      projCorrected[iVar] = projNormal[iVar];
+      if (correct) projCorrected[iVar] -= (edgeProj - (var_j[iVar]-var_i[iVar])) * proj_vector_ij;
+    }
+
+    return proj_vector_ij;
+  }
+
+  /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first Menter blending function at point i.
    * \param[in] val_F1_j - Value of the first Menter blending function at point j.
@@ -690,8 +706,8 @@ public:
    * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
    */
-  inline void SetAuxVarGrad(su2double **val_auxvar_grad_i,
-                            su2double **val_auxvar_grad_j) {
+  inline void SetAuxVarGrad(CMatrixView<const su2double> val_auxvar_grad_i,
+                            CMatrixView<const su2double> val_auxvar_grad_j) {
     AuxVar_Grad_i = val_auxvar_grad_i;
     AuxVar_Grad_j = val_auxvar_grad_j;
   }
@@ -701,8 +717,8 @@ public:
    * \param[in] val_diffusioncoeff_i - Value of the diffusion coefficients at i.
    * \param[in] val_diffusioncoeff_j - Value of the diffusion coefficients at j
    */
-  inline void SetDiffusionCoeff(su2double* val_diffusioncoeff_i,
-                                su2double* val_diffusioncoeff_j) {
+  inline void SetDiffusionCoeff(const su2double* val_diffusioncoeff_i,
+                                const su2double* val_diffusioncoeff_j) {
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
   }
@@ -761,8 +777,8 @@ public:
    */
   inline void SetSpecificHeat(su2double val_specific_heat_i,
                               su2double val_specific_heat_j) {
-    SpecificHeat_i = val_specific_heat_i;
-    SpecificHeat_j = val_specific_heat_j;
+    Cp_i = val_specific_heat_i;
+    Cp_j = val_specific_heat_j;
   }
 
   /*!
@@ -811,7 +827,7 @@ public:
    * \param[in] val_coord_i - Coordinates of the point i.
    * \param[in] val_coord_j - Coordinates of the point j.
    */
-  inline void SetCoord(su2double *val_coord_i, su2double *val_coord_j) {
+  inline void SetCoord(const su2double *val_coord_i, const su2double *val_coord_j) {
     Coord_i = val_coord_i;
     Coord_j = val_coord_j;
   }
@@ -821,7 +837,7 @@ public:
    * \param[in] val_gridvel_i - Grid velocity of the point i.
    * \param[in] val_gridvel_j - Grid velocity of the point j.
    */
-  inline void SetGridVel(su2double *val_gridvel_i, su2double *val_gridvel_j) {
+  inline void SetGridVel(const su2double *val_gridvel_i, const su2double *val_gridvel_j) {
     GridVel_i = val_gridvel_i;
     GridVel_j = val_gridvel_j;
   }
@@ -831,7 +847,7 @@ public:
    * \param[in] val_windgust_i - Wind gust of the point i.
    * \param[in] val_windgust_j - Wind gust of the point j.
    */
-  inline void SetWindGust(su2double *val_windgust_i, su2double *val_windgust_j) {
+  inline void SetWindGust(const su2double *val_windgust_i, const su2double *val_windgust_j) {
     WindGust_i = val_windgust_i;
     WindGust_j = val_windgust_j;
   }
@@ -841,7 +857,7 @@ public:
    * \param[in] val_windgust_i - Wind gust derivatives of the point i.
    * \param[in] val_windgust_j - Wind gust derivatives of the point j.
    */
-  inline void SetWindGustDer(su2double *val_windgustder_i, su2double *val_windgustder_j) {
+  inline void SetWindGustDer(const su2double *val_windgustder_i, const su2double *val_windgustder_j) {
     WindGustDer_i = val_windgustder_i;
     WindGustDer_j = val_windgustder_j;
   }
@@ -921,7 +937,7 @@ public:
    * \param[in] val_und_lapl_i Undivided laplacian at point i.
    * \param[in] val_und_lapl_j Undivided laplacian at point j.
    */
-  inline void SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
+  inline void SetUndivided_Laplacian(const su2double *val_und_lapl_i, const su2double *val_und_lapl_j) {
     Und_Lapl_i = val_und_lapl_i;
     Und_Lapl_j = val_und_lapl_j;
   }
@@ -972,15 +988,6 @@ public:
   * \brief Get the final Roe dissipation factor.
   */
   inline su2double GetDissipation() const { return Dissipation_ij; }
-
-  /*!
-   * \brief Get the inviscid fluxes.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_pressure - Value of the pressure.
-   * \param[in] val_enthalpy - Value of the enthalpy.
-   */
-  void GetInviscidFlux(su2double val_density, const su2double *val_velocity, su2double val_pressure, su2double val_enthalpy);
 
   /*!
    * \brief Compute the projected inviscid flux vector.
@@ -1515,7 +1522,7 @@ public:
    * \brief Computes a basis of orthogonal vectors from a supplied vector
    * \param[in] config - Normal vector
    */
-  void CreateBasis(const su2double *val_Normal);
+  void CreateBasis(const su2double *val_Normal, su2double* l, su2double* m);
 
   /*!
    * \brief Set the value of the Tauwall
@@ -1554,7 +1561,8 @@ public:
    * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline virtual void SetRadVarGradient(const su2double* const* val_radvar_grad_i, const su2double* const* val_radvar_grad_j) { }
+  inline virtual void SetRadVarGradient(CMatrixView<const su2double> val_radvar_grad_i,
+                                        CMatrixView<const su2double> val_radvar_grad_j) { }
 
   /*!
    * \brief Set the gradient of the radiation variables.

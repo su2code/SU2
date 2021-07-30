@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,57 +38,70 @@
  */
 class CDiscAdjFEASolver final : public CSolver {
 private:
+  static constexpr size_t MAXNVAR = 9;  /*!< \brief Max number of variables, for static arrays. */
   unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
-  su2double *Sens_E = nullptr,          /*!< \brief Young modulus sensitivity coefficient for each boundary. */
-  *Sens_Nu = nullptr,                   /*!< \brief Poisson's ratio sensitivity coefficient for each boundary. */
-  *Sens_nL = nullptr,                   /*!< \brief Normal pressure sensitivity coefficient for each boundary. */
-  **CSensitivity = nullptr;             /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 
-  su2double *Solution_Vel = nullptr,    /*!< \brief Velocity componenent of the solution. */
-  *Solution_Accel = nullptr;            /*!< \brief Acceleration componenent of the solution. */
+  /*!
+   * \brief A type to manage sensitivities of design variables.
+   */
+  struct SensData {
+    unsigned short size = 0;
+    su2double* val = nullptr;         /*!< \brief Value of the variable. */
+    su2double* LocalSens = nullptr;   /*!< \brief Local sensitivity (domain). */
+    su2double* GlobalSens = nullptr;  /*!< \brief Global sensitivity (mpi). */
+    su2double* TotalSens = nullptr;   /*!< \brief Total sensitivity (time domain). */
 
-  su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
+    su2double& operator[] (unsigned short i) { return val[i]; }
+    const su2double& operator[] (unsigned short i) const { return val[i]; }
 
-  unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
+    void resize(unsigned short n) {
+      clear();
+      size = n;
+      val = new su2double[n]();
+      LocalSens = new su2double[n]();
+      GlobalSens = new su2double[n]();
+      TotalSens = new su2double[n]();
+    }
 
-  su2double *E_i = nullptr,               /*!< \brief Values of the Young's Modulus. */
-            *Nu_i = nullptr,              /*!< \brief Values of the Poisson's ratio. */
-            *Rho_i = nullptr,             /*!< \brief Values of the density (for inertial effects). */
-            *Rho_DL_i = nullptr;          /*!< \brief Values of the density (for volume loading). */
-  int       *AD_Idx_E_i = nullptr,        /*!< \brief Derivative index of the Young's Modulus. */
-            *AD_Idx_Nu_i = nullptr,       /*!< \brief Derivative index of the Poisson's ratio. */
-            *AD_Idx_Rho_i = nullptr,      /*!< \brief Derivative index of the density (for inertial effects). */
-            *AD_Idx_Rho_DL_i = nullptr;   /*!< \brief Derivative index of the density (for volume loading). */
+    void clear() {
+      size = 0;
+      delete [] val;
+      delete [] LocalSens;
+      delete [] GlobalSens;
+      delete [] TotalSens;
+    }
 
-  su2double *Local_Sens_E = nullptr,        /*!< \brief Local sensitivity of the Young's modulus. */
-            *Global_Sens_E = nullptr,       /*!< \brief Global sensitivity of the Young's modulus. */
-            *Total_Sens_E = nullptr;        /*!< \brief Total sensitivity of the Young's modulus (time domain). */
-  su2double *Local_Sens_Nu = nullptr,       /*!< \brief Local sensitivity of the Poisson ratio. */
-            *Global_Sens_Nu = nullptr,      /*!< \brief Global sensitivity of the Poisson ratio. */
-            *Total_Sens_Nu = nullptr;       /*!< \brief Total sensitivity of the Poisson ratio (time domain). */
-  su2double *Local_Sens_Rho = nullptr,      /*!< \brief Local sensitivity of the density. */
-            *Global_Sens_Rho = nullptr,     /*!< \brief Global sensitivity of the density. */
-            *Total_Sens_Rho = nullptr;      /*!< \brief Total sensitivity of the density (time domain). */
-  su2double *Local_Sens_Rho_DL = nullptr,   /*!< \brief Local sensitivity of the volume load. */
-            *Global_Sens_Rho_DL = nullptr,  /*!< \brief Global sensitivity of the volume load. */
-            *Total_Sens_Rho_DL = nullptr;   /*!< \brief Total sensitivity of the volume load (time domain). */
+    void Register() {
+      for (auto i = 0u; i < size; ++i) AD::RegisterInput(val[i]);
+    }
 
-  bool de_effects = false;                  /*!< \brief Determines if DE effects are considered. */
-  unsigned short nEField = 0;               /*!< \brief Number of electric field areas in the problem. */
-  su2double *EField = nullptr;              /*!< \brief Array that stores the electric field as design variables. */
-  int       *AD_Idx_EField = nullptr;       /*!< \brief Derivative index of the electric field as design variables. */
-  su2double *Local_Sens_EField = nullptr,   /*!< \brief Local sensitivity of the Electric Field. */
-            *Global_Sens_EField = nullptr,  /*!< \brief Global sensitivity of the Electric Field. */
-            *Total_Sens_EField = nullptr;   /*!< \brief Total sensitivity of the Electric Field (time domain). */
+    void GetDerivative() {
+      for (auto i = 0u; i < size; ++i) LocalSens[i] = SU2_TYPE::GetDerivative(val[i]);
 
-  bool fea_dv = false;                  /*!< \brief Determines if the design variable we study is a FEA parameter. */
-  unsigned short nDV = 0;               /*!< \brief Number of design variables in the problem. */
-  su2double *DV_Val = nullptr;          /*!< \brief Values of the design variables. */
-  int       *AD_Idx_DV_Val = nullptr;   /*!< \brief Derivative index of the design variables. */
-  su2double *Local_Sens_DV = nullptr,   /*!< \brief Local sensitivity of the design variables. */
-            *Global_Sens_DV = nullptr,  /*!< \brief Global sensitivity of the design variables. */
-            *Total_Sens_DV = nullptr;   /*!< \brief Total sensitivity of the design variables (time domain). */
+      SU2_MPI::Allreduce(LocalSens, GlobalSens, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    }
+
+    void UpdateTotal() {
+      for (auto i = 0u; i < size; ++i) TotalSens[i] += GlobalSens[i];
+    }
+
+    ~SensData() { clear(); }
+  };
+
+  unsigned short nMPROP = 0;  /*!< \brief Number of material properties */
+  SensData E;                 /*!< \brief Values of the Young's Modulus. */
+  SensData Nu;                /*!< \brief Values of the Poisson's ratio. */
+  SensData Rho;               /*!< \brief Values of the density (for inertial effects). */
+  SensData Rho_DL;            /*!< \brief Values of the density (for volume loading). */
+
+  bool de_effects = false;    /*!< \brief Determines if DE effects are considered. */
+  unsigned short nEField = 0; /*!< \brief Number of electric field areas in the problem. */
+  SensData EField;            /*!< \brief Array that stores the electric field as design variables. */
+
+  bool fea_dv = false;        /*!< \brief Determines if the design variable we study is a FEA parameter. */
+  unsigned short nDV = 0;     /*!< \brief Number of design variables in the problem. */
+  SensData DV;                /*!< \brief Values of the design variables. */
 
   CDiscAdjFEABoundVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -97,20 +110,17 @@ private:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+  /*!
+   * \brief Read the design variables for the adjoint solver
+   */
+  void ReadDV(const CConfig *config);
+
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CDiscAdjFEASolver(void);
-
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  CDiscAdjFEASolver(CGeometry *geometry, CConfig *config);
+  CDiscAdjFEASolver() = default;
 
   /*!
    * \overload
@@ -124,7 +134,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEASolver(void) override;
+  ~CDiscAdjFEASolver() override;
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -157,14 +167,7 @@ public:
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
-  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Set the surface sensitivity.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetSurface_Sensitivity(CGeometry *geometry, CConfig* config) override;
+  void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) override;
 
   /*!
    * \brief Extract and set the geometrical sensitivity.
@@ -178,108 +181,103 @@ public:
    * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
-  inline su2double GetTotal_Sens_E(unsigned short iVal) const override { return Total_Sens_E[iVal]; }
+  inline su2double GetTotal_Sens_E(unsigned short iVal) const override { return E.TotalSens[iVal]; }
 
   /*!
    * \brief Set the total Poisson's ratio sensitivity.
    * \return Value of the Poisson's ratio sensitivity
    */
-  inline su2double GetTotal_Sens_Nu(unsigned short iVal) const override { return Total_Sens_Nu[iVal]; }
+  inline su2double GetTotal_Sens_Nu(unsigned short iVal) const override { return Nu.TotalSens[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  inline su2double GetTotal_Sens_Rho(unsigned short iVal) const override { return Total_Sens_Rho[iVal]; }
+  inline su2double GetTotal_Sens_Rho(unsigned short iVal) const override { return Rho.TotalSens[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  inline su2double GetTotal_Sens_Rho_DL(unsigned short iVal) const override { return Total_Sens_Rho_DL[iVal]; }
+  inline su2double GetTotal_Sens_Rho_DL(unsigned short iVal) const override { return Rho_DL.TotalSens[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField (time averaged)
    */
-  inline su2double GetTotal_Sens_EField(unsigned short iEField) const override { return Total_Sens_EField[iEField]; }
+  inline su2double GetTotal_Sens_EField(unsigned short iEField) const override { return EField.TotalSens[iEField]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the total sensitivity coefficient for the FEA DV in the region iDVFEA (time averaged)
    */
-  inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) const override { return Total_Sens_DV[iDVFEA]; }
+  inline su2double GetTotal_Sens_DVFEA(unsigned short iDVFEA) const override { return DV.TotalSens[iDVFEA]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  inline su2double GetGlobal_Sens_E(unsigned short iVal) const override { return Global_Sens_E[iVal]; }
+  inline su2double GetGlobal_Sens_E(unsigned short iVal) const override { return E.GlobalSens[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
-  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) const override { return Global_Sens_Nu[iVal]; }
+  inline su2double GetGlobal_Sens_Nu(unsigned short iVal) const override { return Nu.GlobalSens[iVal]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
    */
-  inline su2double GetGlobal_Sens_EField(unsigned short iEField) const override { return Global_Sens_EField[iEField]; }
+  inline su2double GetGlobal_Sens_EField(unsigned short iEField) const override { return EField.GlobalSens[iEField]; }
 
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
    */
-  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const override { return Global_Sens_DV[iDVFEA]; }
+  inline su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const override { return DV.GlobalSens[iDVFEA]; }
 
   /*!
    * \brief Get the total sensitivity for the structural density
    * \return Value of the structural density sensitivity
    */
-  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) const override { return Global_Sens_Rho[iVal]; }
+  inline su2double GetGlobal_Sens_Rho(unsigned short iVal) const override { return Rho.GlobalSens[iVal]; }
 
   /*!
    * \brief Get the total sensitivity for the structural weight
    * \return Value of the structural weight sensitivity
    */
-  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const override { return Global_Sens_Rho_DL[iVal]; }
+  inline su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const override { return Rho_DL.GlobalSens[iVal]; }
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
-  inline su2double GetVal_Young(unsigned short iVal) const override { return E_i[iVal]; }
+  inline su2double GetVal_Young(unsigned short iVal) const override { return E[iVal]; }
 
   /*!
    * \brief Get the value of the Poisson's ratio from the adjoint solver
    * \return Value of the Poisson's ratio from the adjoint solver
    */
-  inline su2double GetVal_Poisson(unsigned short iVal) const override { return Nu_i[iVal]; }
+  inline su2double GetVal_Poisson(unsigned short iVal) const override { return Nu[iVal]; }
 
   /*!
    * \brief Get the value of the density from the adjoint solver, for inertial effects
    * \return Value of the density from the adjoint solver
    */
-  inline su2double GetVal_Rho(unsigned short iVal) const override { return Rho_i[iVal]; }
+  inline su2double GetVal_Rho(unsigned short iVal) const override { return Rho[iVal]; }
 
   /*!
    * \brief Get the value of the density from the adjoint solver, for dead loads
    * \return Value of the density for dead loads, from the adjoint solver
    */
-  inline su2double GetVal_Rho_DL(unsigned short iVal) const override { return Rho_DL_i[iVal]; }
+  inline su2double GetVal_Rho_DL(unsigned short iVal) const override { return Rho_DL[iVal]; }
 
   /*!
    * \brief Get the number of variables for the Electric Field from the adjoint solver
    * \return Number of electric field variables from the adjoint solver
    */
   inline unsigned short GetnEField(void) const override { return nEField; }
-
-  /*!
-   * \brief Read the design variables for the adjoint solver
-   */
-  void ReadDV(CConfig *config) override;
 
   /*!
    * \brief Get the number of design variables from the adjoint solver,
@@ -297,7 +295,7 @@ public:
    * \brief Get the value of the design variables from the adjoint solver
    * \return Pointer to the values of the design variables
    */
-  inline su2double GetVal_DVFEA(unsigned short iVal) const override { return DV_Val[iVal]; }
+  inline su2double GetVal_DVFEA(unsigned short iVal) const override { return DV[iVal]; }
 
   /*!
    * \brief Prepare the solver for a new recording.

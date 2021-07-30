@@ -8,7 +8,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,16 @@
 namespace GeometryToolbox {
 
 /*! \return ||a-b||^2 */
-template<class T, typename Int>
-inline T SquaredDistance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T SquaredDistance(Int nDim, const T* a, const U* b) {
   T d(0);
   for(Int i = 0; i < nDim; i++) d += pow(a[i]-b[i], 2);
   return d;
 }
 
 /*! \return ||a-b|| */
-template<class T, typename Int>
-inline T Distance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T Distance(Int nDim, const T* a, const U* b) {
   return sqrt(SquaredDistance(nDim, a, b));
 }
 
@@ -190,6 +190,19 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
     c[iDim] = O[iDim];
     for (int k = 0; k < nDim; ++k) c[iDim] += R[iDim][k] * d[k];
   }
+}
+
+/*! \brief Tangent projection  */
+template<class Mat, class Scalar, class Int>
+inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector, Scalar* proj) {
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] = DotProduct(nDim, tensor[iDim], vector);
+
+  auto normalProj = DotProduct(nDim, proj, vector);
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] -= normalProj * vector[iDim];
 }
 
 }

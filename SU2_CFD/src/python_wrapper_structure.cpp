@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -228,7 +228,7 @@ vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsig
   return coord_passive;
 }
 
-vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDriver::GetVertexNormal(unsigned short iMarker, unsigned long iVertex, bool unitNormal) const {
 
   su2double *Normal;
   su2double Area;
@@ -236,6 +236,15 @@ vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsig
   vector<passivedouble> ret_Normal_passive(3, 0.0);
 
   Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
+
+  if (!unitNormal) {
+
+    ret_Normal_passive[0] = SU2_TYPE::GetValue(Normal[0]);
+    ret_Normal_passive[1] = SU2_TYPE::GetValue(Normal[1]);
+    if(nDim>2) ret_Normal_passive[2] = SU2_TYPE::GetValue(Normal[2]);
+
+    return ret_Normal_passive;
+  }
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -278,7 +287,7 @@ passivedouble CDriver::GetVertexTemperature(unsigned short iMarker, unsigned lon
   unsigned long iPoint;
   su2double vertexWallTemp(0.0);
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -309,7 +318,7 @@ vector<passivedouble> CDriver::GetVertexHeatFluxes(unsigned short iMarker, unsig
   vector<su2double> HeatFlux (3,0.0);
   vector<passivedouble> HeatFluxPassive (3,0.0);
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
@@ -343,7 +352,7 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
   su2double laminar_viscosity, thermal_conductivity, dTdn;
   su2double *Normal, GradT[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
 
-  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   vertexWallHeatFlux = 0.0;
   dTdn = 0.0;
@@ -602,6 +611,7 @@ void CSinglezoneDriver::SetInitialMesh() {
         /*--- Set the grid velocity for this coarse node. ---*/
         geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
       }
+      END_SU2_OMP_FOR
       /*--- Push back the volume. ---*/
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
@@ -610,6 +620,7 @@ void CSinglezoneDriver::SetInitialMesh() {
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
+  END_SU2_OMP_PARALLEL
 }
 
 void CDriver::BoundaryConditionsUpdate(){
@@ -801,6 +812,20 @@ void CDriver::SetSourceTerm_DispAdjoint(unsigned short iMarker, unsigned long iV
   solver->GetNodes()->SetSourceTerm_DispAdjoint(iPoint, 1, val_AdjointY);
   if (geometry->GetnDim() == 3)
     solver->GetNodes()->SetSourceTerm_DispAdjoint(iPoint, 2, val_AdjointZ);
+
+}
+
+void CDriver::SetSourceTerm_VelAdjoint(unsigned short iMarker, unsigned long iVertex, passivedouble val_AdjointX,
+                                        passivedouble val_AdjointY, passivedouble val_AdjointZ) {
+
+  CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL];
+  CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+  const auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+  solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 0, val_AdjointX);
+  solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 1, val_AdjointY);
+  if (geometry->GetnDim() == 3)
+    solver->GetNodes()->SetSourceTerm_VelAdjoint(iPoint, 2, val_AdjointZ);
 
 }
 
