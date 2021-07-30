@@ -688,17 +688,15 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
-  su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
+  su2double *VarCoord = nullptr, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV;
   unsigned long iVertex, nVertex, iPoint;
 
-  int rank = SU2_MPI::GetRank();
+  const int rank = SU2_MPI::GetRank();
 
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nDV     = config->GetnDV();
-
-  VarCoord = nullptr;
 
   /*--- Discrete adjoint gradient computation ---*/
 
@@ -712,21 +710,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   /*--- Register design variables as input and set them to zero
    * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
 
-
-
   for (iDV = 0; iDV < nDV; iDV++){
 
-    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      config->SetDV_Value(iDV, iDV_Value, 0.0);
 
-      /*--- Initilization with su2double resets the index ---*/
-
-      DV_Value = 0.0;
-
-      AD::RegisterInput(DV_Value);
-
-      config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      AD::RegisterInput(config->GetDV_Value(iDV, iDV_Value));
     }
   }
 
@@ -742,10 +732,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
    * We need that to make sure to set the sensitivity of surface points only once
    *  (Markers share points, so we would visit them more than once in the loop over the markers below) ---*/
 
-  bool* visited = new bool[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
-    visited[iPoint] = false;
-  }
+  vector<bool> visited(geometry->GetnPoint(), false);
 
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
@@ -779,18 +766,16 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     }
   }
 
-  delete [] visited;
-
   /*--- Compute derivatives and extract gradient ---*/
 
   AD::ComputeAdjoint();
 
   for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
 
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+
+      my_Gradient = SU2_TYPE::GetDerivative(config->GetDV_Value(iDV, iDV_Value));
+
       SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
       /*--- Angle of Attack design variable (this is different,

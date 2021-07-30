@@ -69,9 +69,9 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.189902, 1.635938, 47258.000000, 0.000000]
+    discadj_arina2k.test_vals    = [-3.111181, -3.501516, 6.8705e-02, 0]
     discadj_arina2k.su2_exec     = "parallel_computation.py -f"
-    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.timeout      = 1600
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
     
@@ -335,6 +335,19 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
+    # 2D unsteady CHT vortex shedding at RE=200. TAVG_Temperature OF
+    da_unsteadyCHT_cylinder           = TestCase('da_unsteadyCHT_cylinder')
+    da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
+    da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
+    da_unsteadyCHT_cylinder.test_iter = 2
+    da_unsteadyCHT_cylinder.test_vals = [-3.521358, -4.312658, -4.271025, -9.846075, -7.967741, 0.0000e+00, 3.6840e+00, 2.9483e-01]
+    da_unsteadyCHT_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    da_unsteadyCHT_cylinder.timeout   = 1600
+    da_unsteadyCHT_cylinder.tol       = 0.00001
+    da_unsteadyCHT_cylinder.unsteady  = True
+    da_unsteadyCHT_cylinder.multizone = True
+    test_list.append(da_unsteadyCHT_cylinder)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -406,6 +419,23 @@ def main():
     naca_restart_shape_opt.tol       = 0.00001
     pass_list.append(naca_restart_shape_opt.run_opt())
     test_list.append(naca_restart_shape_opt)
+
+    ####################################################################
+    ###  Unsteady Disc. Adj. Coupled FSI                             ###
+    ####################################################################
+
+    # Unsteady multi physics framework
+    dyn_discadj_fsi           = TestCase('dyn_discadj_fsi')
+    dyn_discadj_fsi.cfg_dir   = "disc_adj_fsi/dyn_fsi"
+    dyn_discadj_fsi.cfg_file  = "config.cfg"
+    dyn_discadj_fsi.test_iter = 2
+    dyn_discadj_fsi.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    dyn_discadj_fsi.timeout   = 1600
+    dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
+    dyn_discadj_fsi.test_file = "grad_young.opt"
+    dyn_discadj_fsi.unsteady  = True
+    pass_list.append(dyn_discadj_fsi.run_filediff())
+    test_list.append(dyn_discadj_fsi)
 
     # Tests summary
     print('==================================================================')

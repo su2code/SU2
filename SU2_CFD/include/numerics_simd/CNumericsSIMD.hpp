@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/parallelization/vectorization.hpp"
 
 /*!

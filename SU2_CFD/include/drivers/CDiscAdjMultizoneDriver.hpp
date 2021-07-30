@@ -98,6 +98,7 @@ protected:
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
   vector<unsigned short> direct_nInst;  /*!< \brief Total number of instances in the direct problem. */
   vector<unsigned long> nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
+  unsigned long wrt_sol_freq = std::numeric_limits<unsigned long>::max(); /*!< \brief File output frequency. */
 
   su2vector<bool> Has_Deformation;  /*!< \brief True if iZone has mesh deformation (used for
                                                 lazy evaluation of TRANSFER tape section). */
@@ -139,6 +140,11 @@ public:
 protected:
 
   /*!
+   * \brief Preprocess the multizone iteration
+   */
+  void Preprocess(unsigned long TimeIter) override;
+
+  /*!
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
@@ -150,14 +156,25 @@ protected:
   bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
 
   /*!
-   * \brief Evaluate sensitivites for the current adjoint solution and output files.
-   * \param[in] iOuterIter - Current outer iteration.
-   * \param[in] StopCalc - Final iteration flag (converged or reached max number of iters).
+   * \brief Run inner iterations using a Krylov method (GMRES atm).
    */
-  void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
+  void KrylovInnerIters(unsigned short iZone);
 
   /*!
-   * \brief Setup the matrix of cross-terms.
+   * \brief Evaluate the gradient of the objective function and add to "External".
+   * \return "True" if the gradient is numerically 0.
+   */
+  bool EvaluateObjectiveFunctionGradient();
+
+  /*!
+   * \brief Evaluate sensitivites for the current adjoint solution and output files.
+   * \param[in] Iter - Current outer or time iteration.
+   * \param[in] force_writing - Force file output.
+   */
+  void EvaluateSensitivities(unsigned long Iter, bool force_writing);
+
+  /*!
+   * \brief Setup the matrix of cross-terms. Allocate necessary memory and initialize to zero.
    */
   void InitializeCrossTerms();
 
@@ -216,6 +233,11 @@ protected:
    * \param[in] iZone - Zone index.
    */
   void Add_Solution_To_External(unsigned short iZone);
+
+  /*!
+   * \brief Puts dual time derivative vector to External.
+   */
+  void Set_External_To_DualTimeDer();
 
   /*!
    * \brief Add External_Old vector to Solution.

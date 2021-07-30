@@ -35,7 +35,6 @@
  * \brief Main class for defining the variables of the NEMO Euler's solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.8
  */
 class CNEMOEulerVariable : public CVariable {
 public:
@@ -256,7 +255,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
@@ -282,7 +281,9 @@ public:
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
+    return Gradient_Primitive(iPoint,iVar);
+  }
 
   /*!
    * \brief Get the primitive variable gradients for all points.

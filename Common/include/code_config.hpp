@@ -60,6 +60,13 @@
 template<bool condition>
 using su2enable_if = typename std::enable_if<condition,bool>::type;
 
+/*--- Compile-time type selection. ---*/
+template<bool B, class T, class F> struct su2conditional { using type = T; };
+template<class T, class F> struct su2conditional<false, T, F> { using type = F; };
+
+template<bool B, class T, class F>
+using su2conditional_t = typename su2conditional<B,T,F>::type;
+
 /*--- Detect compilation with OpenMP. ---*/
 #if defined(_OPENMP)
 #define HAVE_OMP
@@ -103,7 +110,7 @@ using su2double = codi::RealForward;
 using su2double = double;
 #endif
 
-/*--- This type can be used for (rare) compatiblity cases or for
+/*--- This type can be used for (rare) compatibility cases or for
  * computations that are intended to be (always) passive. ---*/
 using passivedouble = double;
 
@@ -116,9 +123,13 @@ using su2mixedfloat = passivedouble;
 
 /*--- Detect if OpDiLib has to be used. ---*/
 #if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
+#ifndef __INTEL_COMPILER
 #define HAVE_OPDI
+#else
+#warning Hybrid parallel reverse mode AD cannot be used with Intel compilers.
 #endif
 
 #if (_OPENMP >= 201811 && !defined(FORCE_OPDI_MACRO_BACKEND)) || defined(FORCE_OPDI_OMPT_BACKEND)
 #define HAVE_OMPT
+#endif
 #endif

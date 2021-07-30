@@ -128,8 +128,6 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
 
       }
-    } else {
-      //cout << "inlet profile reader is ignoring line: " << text_line << endl;
     }
   }
 

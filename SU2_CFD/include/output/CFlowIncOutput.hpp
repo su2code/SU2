@@ -1,5 +1,5 @@
-﻿/*!
- * \file CFlowIncCompOutput.hpp
+/*!
+ * \file CFlowIncOutput.hpp
  * \brief  Headers of the incompressible flow output.
  * \author T. Albring, R. Sanchez
  * \version 7.1.1 "Blackbird"
@@ -103,6 +103,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(CConfig *config) override;
+  bool SetInit_Residuals(const CConfig *config) override;
 
 };

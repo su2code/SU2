@@ -85,6 +85,11 @@ protected:
    */
   inline void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) { }
 
+  /*!
+   * \brief Set reference values for pressure, forces, etc.
+   */
+  void SetReferenceValues(const CConfig& config) final;
+
 public:
 
   /*!

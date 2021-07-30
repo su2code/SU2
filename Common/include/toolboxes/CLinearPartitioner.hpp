@@ -38,7 +38,7 @@ using namespace std;
  * \class CLinearPartitioner
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
- * \author: T. Economon
+ * \author T. Economon
  */
 class CLinearPartitioner {
 

@@ -367,20 +367,19 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
 
   CSolver *heatSolver = nullptr;
 
-  bool standalone = (config->GetKind_Solver() == HEAT_EQUATION) ||
-                    (config->GetKind_Solver() == DISC_ADJ_HEAT);
-
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
 
-  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || standalone){
+  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()){
     if (adjoint){
       if (config->GetDiscrete_Adjoint()){
         heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
-      } else {
+      }
+      else {
         SU2_MPI::Error("No continuous adjoint heat solver available.", CURRENT_FUNCTION);
       }
-    } else {
+    }
+    else {
       heatSolver = new CHeatSolver(geometry, config, iMGLevel);
     }
   }

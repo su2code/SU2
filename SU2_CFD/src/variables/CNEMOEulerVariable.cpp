@@ -192,22 +192,25 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
 
 bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys;
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                         dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
+  /*--- Set additional point quantities ---*/
   Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);
@@ -250,7 +253,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       U[iSpecies]            = 1E-20;
       V[RHOS_INDEX+iSpecies] = 1E-20;
       rhos[iSpecies]         = 1E-20;
-      //nonPhys                = true;
+    //nonPhys                = true;
     } else {
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
       rhos[iSpecies]         = U[iSpecies];
@@ -276,12 +279,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  //TODO: fIX THIS
-  if (V[T_INDEX] == Tmin) {
-    nonPhys = true;
-  } else if (V[T_INDEX] == Tmax){
-    nonPhys = true;
-  }
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true;}
+  else if (V[T_INDEX] >= Tmax) { nonPhys = true;}
+  else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
+    nonPhys = true;}
 
   /*--- Vibrational-Electronic Temperature ---*/
   vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);

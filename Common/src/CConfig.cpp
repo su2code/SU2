@@ -539,7 +539,7 @@ void CConfig::addActDiskOption(const string & name, unsigned short & nMarker_Act
 }
 
 void CConfig::addWallFunctionOption(const string &name, unsigned short &list_size, string* &string_field,
-                                    unsigned short* &val_Kind_WF, unsigned short** &val_IntInfo_WF,
+                                    WALL_FUNCTIONS* &val_Kind_WF, unsigned short** &val_IntInfo_WF,
                                     su2double** &val_DoubleInfo_WF) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -1253,6 +1253,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
+  addDoubleOption("WALLMODELKAPPA", wallModelKappa, 0.41);
+  /*!\brief WALLMODELB \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
+  addDoubleOption("WALLMODELB", wallModelB, 5.5);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
@@ -2527,13 +2531,13 @@ void CConfig::SetConfig_Options() {
    * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
    * Sets Kind_InletInterpolation \ingroup Config
    */
-  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, NO_INTERPOLATION);
+  addEnumOption("INLET_INTERPOLATION_FUNCTION",Kind_InletInterpolationFunction, Inlet_SpanwiseInterpolation_Map, INLET_SPANWISE_INTERP::NONE);
 
    /*!\par INLETINTERPOLATION \n
    * DESCRIPTION: Type of spanwise interpolation to use for the inlet face. \n OPTIONS: see \link Inlet_SpanwiseInterpolation_Map \endlink
    * Sets Kind_InletInterpolation \ingroup Config
    */
-  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, VR_VTHETA);
+  addEnumOption("INLET_INTERPOLATION_DATA_TYPE", Kind_Inlet_InterpolationType, Inlet_SpanwiseInterpolationType_Map, INLET_INTERP_TYPE::VR_VTHETA);
 
   addBoolOption("PRINT_INLET_INTERPOLATED_DATA", PrintInlet_InterpolatedData, false);
 
@@ -2873,6 +2877,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
+  
+  /*--- options that are used for libROM ---*/
+  /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
+  
+  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM", libROM, false);
+  
+  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
+  
+  /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3366,13 +3389,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Wall_Functions = false;
   if (nMarker_WallFunctions > 0) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
-      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+      if (Kind_WallFunctions[iMarker] != WALL_FUNCTIONS::NONE)
         Wall_Functions = true;
 
-      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+      if ((Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::ADAPTIVE_FUNCTION) || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::SCALABLE_FUNCTION)
+        || (Kind_WallFunctions[iMarker] == WALL_FUNCTIONS::NONEQUILIBRIUM_MODEL))
 
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("For RANS problems, use NONE, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
 
     }
   }
@@ -3686,14 +3709,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-  }
-
-  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
-      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
-  }
-
-  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
-      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -4536,8 +4551,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (DirectDiff != NO_DERIVATIVE) {
 #ifndef CODI_FORWARD_TYPE
     if (Kind_SU2 == SU2_COMPONENT::SU2_CFD) {
-      SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
-                     string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),
+      SU2_MPI::Error("SU2_CFD: Config option DIRECT_DIFF= YES requires AD support.\n"
+                     "Please use SU2_CFD_DIRECTDIFF (meson.py ... -Denable-directdiff=true ...).",
                      CURRENT_FUNCTION);
     }
 #endif
@@ -4575,8 +4590,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
 #else
   if (AD_Mode == YES) {
-    SU2_MPI::Error(string("AUTO_DIFF=YES requires Automatic Differentiation support.\n") +
-                   string("Please use correct executables (configuration/compilation is done using the preconfigure.py script)."),
+    SU2_MPI::Error("Config option AUTO_DIFF= YES requires AD support.\n"
+                   "Please use SU2_???_AD (meson.py ... -Denable-autodiff=true ...).",
                    CURRENT_FUNCTION);
   }
 #endif
@@ -4780,8 +4795,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for incompressible flow.", CURRENT_FUNCTION);
     if (Kind_Solver == INC_EULER)
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
-    if (nMarker_PerBound != 2)
-      SU2_MPI::Error("Streamwise Periodic Flow currently only implemented for one Periodic Marker pair. Combining Streamwise and Spanwise periodicity not possible in the moment.", CURRENT_FUNCTION);
+    if (nMarker_PerBound == 0)
+      SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
     if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
       SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
     if (DiscreteAdjoint && Kind_Streamwise_Periodic == ENUM_STREAMWISE_PERIODIC::MASSFLOW)
@@ -4991,15 +5006,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
     Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
 
-    if (TimeMarching != TIME_MARCHING::STEADY) {
+    if (Time_Domain) {
 
       Restart_Flow = false;
-
-      if (GetKind_GridMovement() != RIGID_MOTION &&
-          GetKind_GridMovement() != NO_MOVEMENT) {
-        SU2_MPI::Error(string("Dynamic mesh movement currently only supported for the discrete adjoint solver for\n") +
-                       string("GRID_MOVEMENT = RIGID_MOTION."), CURRENT_FUNCTION);
-      }
 
       if (Unst_AdjointIter- long(nTimeIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
@@ -5143,7 +5152,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
-  if (GetGasModel() == "ARGON") monoatomic = true;
+  if (GetGasModel() == "ARGON") {monoatomic = true;}
+  else {monoatomic = false;}
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
@@ -7962,7 +7972,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
+string CConfig::GetFilename(string filename, string ext, int Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7982,7 +7992,7 @@ string CConfig::GetFilename(string filename, string ext, unsigned long Iter) con
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
   if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, (int)Iter, ext);
+    filename = GetUnsteady_FileName(filename, Iter, ext);
   }
 
   return filename;
@@ -9043,9 +9053,9 @@ pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker
   return WallProp;
 }
 
-unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
+WALL_FUNCTIONS CConfig::GetWallFunction_Treatment(string val_marker) const {
 
-  unsigned short WallFunction = NO_WALL_FUNCTION;
+  WALL_FUNCTIONS WallFunction = WALL_FUNCTIONS::NONE;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {
     if(Marker_WallFunctions[iMarker] == val_marker) {

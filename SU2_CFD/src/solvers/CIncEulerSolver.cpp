@@ -192,6 +192,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
@@ -840,6 +842,29 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << ModelTableOut.str();
     cout << NonDimTableOut.str();
   }
+
+}
+
+void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
+   based on initial values, use the far-field state (inf). For a custom non-dim based
+   on user-provided reference values, use the ref values to compute the forces. ---*/
+
+  su2double RefDensity, RefVel2;
+
+  if ((config.GetRef_Inc_NonDim() == DIMENSIONAL) ||
+      (config.GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+    RefDensity = Density_Inf;
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+  else {
+    RefDensity = config.GetInc_Density_Ref();
+    RefVel2 = pow(config.GetInc_Velocity_Ref(), 2);
+  }
+
+  DynamicPressureRef = 0.5 * RefDensity * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
@@ -3064,13 +3089,13 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    write it to the restart if it is active. Therefore, we must reduce nVar
    here if energy is inactive so that the restart is read correctly. ---*/
 
-  bool energy = config->GetEnergy_Equation();
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  unsigned short nVar_Restart = nVar;
-  if (!(energy || weakly_coupled_heat)) nVar_Restart--;
   su2double Solution[MAXNVAR] = {0.0};
-  Solution[nVar-1] = GetTemperature_Inf();
+
+  auto nVar_Restart = nVar;
+  if (!(config->GetEnergy_Equation() || config->GetWeakly_Coupled_Heat())) {
+    nVar_Restart--;
+    Solution[nVar-1] = GetTemperature_Inf();
+  }
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 

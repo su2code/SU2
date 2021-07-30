@@ -29,6 +29,7 @@
 #include "../../include/geometry/elements/CElement.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/toolboxes/ndflattener.hpp"
 
 CGeometry::CGeometry(void) :
   size(SU2_MPI::GetSize()),
@@ -1491,68 +1492,6 @@ void CGeometry::TestGeometry(void) const {
 
 }
 
-void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2) {
-  unsigned long i, k;
-  su2double p, qn, sig, un, *u;
-
-  u = new su2double [n];
-
-  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;       // -ural"
-  else {                  // or else to have a specified first derivative.
-    y2[0] = -0.5;
-    u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
-  }
-
-  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;                      //  porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;                    //  factors.
-
-    su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
-    su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
-    u[i-1]= a1 - a2;
-    u[i-1]=(6.0*u[i-1]/(x[i]-x[i-2])-sig*u[i-2])/p;
-
-  }
-
-  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
-    qn=un=0.0;                  // "natural"
-  else {                        // or else to have a specified first derivative.
-    qn=0.5;
-    un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
-  }
-  y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)  // This is the backsubstitution loop of the tridiagonal algorithm.
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];
-
-  delete[] u;
-
-}
-
-su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<su2double>&y2a, unsigned long n, su2double x) {
-  unsigned long klo, khi, k;
-  su2double h, b, a, y;
-
-  if (x < xa[0]) x = xa[0];       // Clip max and min values
-  if (x > xa[n-1]) x = xa[n-1];
-
-  klo = 1;                     // We will find the right place in the table by means of
-  khi = n;                     // bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {        // routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;        // are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
-    else klo=k;                // they remain appropriate on the next call.
-  }                            // klo and khi now bracket the input value of x
-  h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa?s must be distinct.
-  a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;         // Cubic spline polynomial is now evaluated.
-  y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
-
-  return y;
-}
-
 bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
                                                            const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
@@ -2475,18 +2414,12 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
 }
 
-void CGeometry::RegisterCoordinates(const CConfig *config) const {
+void CGeometry::RegisterCoordinates() const {
   const bool input = true;
-  const bool push_index = config->GetMultizone_Problem()? false : true;
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
-    }
-    if(!push_index) {
-      nodes->SetIndex(iPoint, input);
-    }
+    nodes->RegisterCoordinates(iPoint, input);
   }
   END_SU2_OMP_FOR
 }
@@ -2495,10 +2428,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetDynamic_Grid()){
-    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
-  }
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
@@ -2730,8 +2659,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
-
-  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -2996,7 +2923,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
-  if ((rank == MASTER_NODE) && (!fea))
+  if (rank == MASTER_NODE)
     cout << "Max K: " << MaxK << ". Mean K: " << MeanK << ". Standard deviation K: " << SigmaK << "." << endl;
 
   Point_Critical.clear();
@@ -3922,15 +3849,14 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
     for (int iZone = 0; iZone < nZone; iZone++){
-      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
-      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      unique_ptr<CADTElemClass> WallADT = geometry_container[iZone][iInst][MESH_0]->ComputeViscousWallADT(config_container[iZone]);
       if (WallADT && !WallADT->IsEmpty()){
         allEmpty = false;
         /*--- Inner loop over all zones to update the wall distances.
        * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
         for (int jZone = 0; jZone < nZone; jZone++){
           if (wallDistanceNeeded[jZone])
-            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(WallADT.get(), config_container[jZone], iZone);
         }
       }
     }
@@ -3940,6 +3866,29 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       for (int iZone = 0; iZone < nZone; iZone++){
         CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
+      }
+    }
+    /*--- Otherwise, set wall roughnesses. ---*/
+    if(!allEmpty){
+      /*--- Store all wall roughnesses in a common data structure. ---*/
+      // [iZone][iMarker] -> roughness, for this rank
+      auto roughness_f =
+        make_pair( nZone, [config_container,geometry_container,iInst](unsigned long iZone){
+          const CConfig* config = config_container[iZone];
+          const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+          return make_pair( nMarker, [config](unsigned long iMarker){
+            return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
+          });
+        });
+      NdFlattener<2> roughness_local(roughness_f);
+      // [rank][iZone][iMarker] -> roughness
+      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+      // use it to update roughnesses
+      for(int jZone=0; jZone<nZone; jZone++){
+        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall()>0){
+          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+        }
       }
     }
   }

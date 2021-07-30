@@ -72,21 +72,14 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Update the dual grid after the grid movement (edges and control volumes).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+  void UpdateGridCoord(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the grid velocity form the displacements of the mesh.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
+  void ComputeGridVelocity(CGeometry **geometry, const CConfig *config) const;
 
   /*!
    * \brief Compute the grid velocity form the velocity at deformable boundary.
@@ -95,13 +88,6 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Update the coarse multigrid levels after the grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void UpdateMultiGrid(CGeometry **geometry, CConfig *config) const;
 
   /*!
    * \brief Check the boundary vertex that are going to be moved.
@@ -119,6 +105,12 @@ protected:
    * \param[in] velocity - Boolean for deforming displacement or velocity.
    */
   void BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity);
+
+  /*!
+   * \brief Load the geometries at the previous time states n and nM1.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void RestartOldGeometry(CGeometry *geometry, const CConfig *config);
 
 public:
   /*!
@@ -173,12 +165,6 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) override;
-
-  /*!
-   * \brief Load the geometries at the previous time states n and nM1.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Get minimun volume in the mesh

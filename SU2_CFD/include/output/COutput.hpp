@@ -490,26 +490,25 @@ protected:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Header(CConfig *config);
+  void SetHistoryFile_Header(const CConfig *config);
 
   /*!
    * \brief Write the history file output
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Output(CConfig *config);
+  void SetHistoryFile_Output(const CConfig *config);
 
   /*!
    * \brief Write the screen header.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Header(CConfig *config);
-
+  void SetScreen_Header(const CConfig *config);
 
   /*!
    * \brief Write the screen output.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Output(CConfig *config);
+  void SetScreen_Output(const CConfig *config);
 
   /*!
    * \brief Add a new field to the history output.
@@ -653,7 +652,7 @@ protected:
   }
 
   /*!
-   * \brief OutputScreenAndHistory
+   * \brief Write screen and history output.
    * \param[in] config - Definition of the particular problem.
    */
   void OutputScreenAndHistory(CConfig *config);
@@ -691,19 +690,19 @@ protected:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteHistoryFile_Output(CConfig *config);
+  virtual bool WriteHistoryFile_Output(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Header(CConfig *config);
+  virtual bool WriteScreen_Header(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Output(CConfig *config);
+  virtual bool WriteScreen_Output(const CConfig *config);
 
   /*!
    * \brief Determines if the the volume output should be written.
@@ -739,7 +738,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  inline virtual bool SetInit_Residuals(CConfig *config) {return false;}
+  inline virtual bool SetInit_Residuals(const CConfig *config) {return false;}
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.
@@ -798,6 +797,6 @@ protected:
    * \brief Write any additional output defined for the current solver.
    * \param[in] config - Definition of the particular problem per zone.
    */
-  inline virtual void SetAdditionalScreenOutput(CConfig *config){}
+  inline virtual void SetAdditionalScreenOutput(const CConfig *config){}
 
 };
