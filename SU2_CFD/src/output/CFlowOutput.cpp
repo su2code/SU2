@@ -35,8 +35,7 @@ CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) 
   lastInnerIter = curInnerIter;
 }
 
-void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
-
+void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
   /// DESCRIPTION: Average mass flow
   AddHistoryOutput("SURFACE_MASSFLOW",         "Avg_Massflow",              ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass flow on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);

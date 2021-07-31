@@ -532,8 +532,9 @@ protected:
    * \param[in] value - The new value of this field.
    */
   inline void SetHistoryOutputValue(string name, su2double value){
-    if (historyOutput_Map.count(name) > 0){
-      historyOutput_Map[name].value = value;
+    auto it = historyOutput_Map.find(name);
+    if (it != historyOutput_Map.end()){
+      it->second.value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -549,13 +550,16 @@ protected:
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
   inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format,
-                                         string groupname, vector<string> marker_names,
-                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT){
-    if (marker_names.size() != 0){
+                                         string groupname, const vector<string>& marker_names,
+                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
+    if (!marker_names.empty()) {
       historyOutputPerSurface_List.push_back(name);
-      for (unsigned short i = 0; i < marker_names.size(); i++){
-        historyOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
+      vector<HistoryOutputField> fields;
+      fields.reserve(marker_names.size());
+      for (const auto& marker : marker_names) {
+        fields.push_back(HistoryOutputField(field_name+"("+marker+")", format, groupname, field_type, ""));
       }
+      historyOutputPerSurface_Map[name] = std::move(fields);
     }
   }
 
@@ -565,9 +569,10 @@ protected:
    * \param[in] value - The new value of this field.
    * \param[in] iMarker - The index of the marker.
    */
-  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
-    if (historyOutputPerSurface_Map.count(name) > 0){
-      historyOutputPerSurface_Map[name][iMarker].value = value;
+  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker) {
+    auto it = historyOutputPerSurface_Map.find(name);
+    if (it != historyOutputPerSurface_Map.end()) {
+      it->second[iMarker].value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }

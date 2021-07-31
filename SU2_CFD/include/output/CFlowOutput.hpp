@@ -44,7 +44,7 @@ protected:
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAnalyzeSurfaceOutput(CConfig *config);
+  void AddAnalyzeSurfaceOutput(const CConfig *config);
 
   /*!
    * \brief Set flow surface output field values
