@@ -208,31 +208,13 @@ bool CFileWriter::WriteMPIString(const string &str, unsigned short processor){
 bool CFileWriter::OpenMPIFile(){
 
 #ifdef HAVE_MPI
-  int ierr;
-  disp     = 0.0;
+  disp = 0.0;
 
-  /*--- All ranks open the file using MPI. Here, we try to open the file with
-   exclusive so that an error is generated if the file exists. We always want
-   to write a fresh output file, so we delete any existing files and create
-   a new one. ---*/
-
-  ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
-                       MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
-                       MPI_INFO_NULL, &fhw);
-  if (ierr != MPI_SUCCESS)  {
-    MPI_File_close(&fhw);
-    if (rank == 0)
-      MPI_File_delete(fileName.c_str(), MPI_INFO_NULL);
-    ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
-                         MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
-                         MPI_INFO_NULL, &fhw);
-  }
-
-  /*--- Error check opening the file. ---*/
-
+  int ierr = MPI_File_open(SU2_MPI::GetComm(), fileName.c_str(),
+                           MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                           MPI_INFO_NULL, &fhw);
   if (ierr) {
-    SU2_MPI::Error(string("Unable to open file ") +
-                   fileName, CURRENT_FUNCTION);
+    SU2_MPI::Error(string("Unable to open file ") + fileName, CURRENT_FUNCTION);
   }
 #else
   fhw = fopen(fileName.c_str(), "wb");
