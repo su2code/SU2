@@ -779,6 +779,10 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   su2double        *Buffer_Send_PrimVar          = nullptr;
 
+  //vector<vector<unsigned long>> *nPointTotal_s2 = new vector<vector<unsigned long>>;
+  //vector<vector<unsigned long>> *nPointTotal_r2 = new vector<vector<unsigned long>>;
+  vector<vector<unsigned long>> nPointTotal_s2(size, vector<unsigned long> (size-1,0));
+  vector<vector<unsigned long>> nPointTotal_r2(size, vector<unsigned long> (size-1,0));
   unsigned long *nPointTotal_s = new unsigned long[size];
   unsigned long *nPointTotal_r = new unsigned long[size];
   su2double     *iPrimVar      = new su2double [nPrimVar];
@@ -793,6 +797,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- Basic dimensionalization ---*/
 
   nDomain = size;
+  cout << "nDomain=" << nDomain << endl;
 
   /*--- This loop gets the array sizes of points for each
    rank to send to each other rank. ---*/
@@ -828,39 +833,32 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
     Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar+3);
 
   }
-
+  /*
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    for (jDomain = 0; jDomain < nDomain-1; jDomain++){
+      //nPointTotal_s2[iDomain][jDomain] = nPointTotal_s[iDomain];
+      nPointTotal_s2[iDomain][jDomain] = Buffer_Send_nPointTotal;
+    }
+  }
+  */
   /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
-
+cout << "after nPointTotal_s2" << endl;
   Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
 
   /*--- Now that we know the sizes of the point, we can
    allocate and send the information in large chunks to all processors. ---*/
-
+  
+  //req_Recv   = new SU2_MPI::Request[size*(size-1)];
+  SU2_MPI::Request *req_Recv   = new SU2_MPI::Request[size-1];
+  
+  cout << "rank=" << rank << ", req_Recv[0]=" << &req_Recv[0] << ", req_Recv[1]=" << &req_Recv[1] << ", req_Recv[2]=" << &req_Recv[2] << endl; 
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
-
-    /*--- A rank does not communicate with itself through MPI ---*/
-
-    if (rank != iDomain) {
-
-      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
-
-      SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
-      SU2_MPI::Wait(&req,&status);
-
-    } else {
-
-      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
-
-      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
-
-    }
-
     /*--- Receive the counts. All processors are sending their counters to
      iDomain up above, so only iDomain needs to perform the recv here from
      all other ranks. ---*/
-
     if (rank == iDomain) {
 
+      int irecv=0;
       for (jDomain = 0; jDomain < size; jDomain++) {
 
         /*--- A rank does not communicate with itself through MPI ---*/
@@ -870,21 +868,86 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
 
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
-
+          //SU2_MPI::Irecv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
+          //SU2_MPI::Irecv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &(req_Recv[rank*(size-1)+irecv]));
+//          SU2_MPI::Irecv(&(nPointTotal_r2[jDomain][irecv]), 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &req_Recv[rank*(size-1)+irecv]);
+//cout << "index=" << rank*(size-1)+irecv << ", rank=" << rank << ", irecv=" << irecv << ", &req_Recv=" << &req_Recv[rank*(size-1)+irecv] << ", req_Recv=" << req_Recv << endl;
+          //SU2_MPI::Irecv(&(nPointTotal_r2[jDomain][irecv]), 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &req_Recv[irecv]);
+          SU2_MPI::Irecv(&(nPointTotal_r[jDomain]), 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &req_Recv[irecv]);
+          irecv++;
         }
       }
 
     }
   }
+  int irecv=0;
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
 
+    /*--- A rank does not communicate with itself through MPI ---*/
+
+    if (rank != iDomain) {
+
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+
+      //SU2_MPI::Send(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
+      //SU2_MPI::Send(&(nPointTotal_s2[iDomain][irecv]), 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm());
+      SU2_MPI::Send(&(nPointTotal_s[iDomain]), 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm());
+      //SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &(req_Recv[rank*(size-1)+irecv]));
+      //SU2_MPI::Wait(&req,&status);
+irecv++;
+    } else {
+
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+
+    }
+  }
+  /*
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    for (jDomain = 0; jDomain < nDomain-1; jDomain++){
+      int ierror;
+      cout << "index=" << iDomain*(nDomain-1)+jDomain << ", iDomain=" << iDomain << ", jDomain=" << jDomain << ", req_Recv=" << &req_Recv[iDomain*(nDomain-1)+jDomain] << endl;
+      //SU2_MPI::Wait(&req_Recv[iDomain*nDomain+jDomain],MPI_STATUS_IGNORE,&ierror);
+      SU2_MPI::Wait(&req_Recv[iDomain*(nDomain-1)+jDomain],MPI_STATUS_IGNORE);
+      //cout << "iDomain=" << iDomain << ", jDomain=" << jDomain << ", ierror=" << ierror << endl;
+    }
+  }
+  */
+ /*
+  for (jDomain = 0; jDomain < nDomain-1; jDomain++){
+    int ierror;
+    cout << "index=" << rank*(nDomain-1)+jDomain << ", rank=" << rank << ", jDomain=" << jDomain << ", req_Recv=" << &req_Recv[rank*(nDomain-1)+jDomain] << endl;
+    //SU2_MPI::Wait(&req_Recv[iDomain*nDomain+jDomain],MPI_STATUS_IGNORE,&ierror);
+    SU2_MPI::Wait(&req_Recv[rank*(nDomain-1)+jDomain],MPI_STATUS_IGNORE);
+    //cout << "iDomain=" << iDomain << ", jDomain=" << jDomain << ", ierror=" << ierror << endl;
+  }
+  */
+ cout << "&req_Recv=" << &req_Recv[0] << ", req_Recv=" << req_Recv << endl;
+  //SU2_MPI::Wait(&req_Recv[0],MPI_STATUS_IGNORE);
+  sleep(5);
+cout << "debug, before first waitall " << rank << endl;
+cout << "req_Recv=" << req_Recv << endl;
+cout << "req_Recv=" << &(req_Recv[0]) << endl;
+cout << "req_Recv=" << &(req_Recv[1]) << endl;
   /*--- Wait for the non-blocking sends to complete. ---*/
-
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  //SU2_MPI::Waitall(size*(size-1),&req_Recv[0],&status_Recv[0]);
+  //SU2_MPI::Waitall(size*(size-1),&(req_Recv[0]),&(status_Recv[0]));
+  //SU2_MPI::Waitall(size*(size-1),&req_Recv[0],MPI_STATUS_IGNORE);
+  //SU2_MPI::Waitall((size-1),&req_Recv[rank*(size-1)],MPI_STATUS_IGNORE);
+  SU2_MPI::Waitall((size-1),&req_Recv[0],MPI_STATUS_IGNORE);
+  //SU2_MPI::Barrier(SU2_MPI::GetComm());
+cout << "debug, after first waitall " << rank << endl;
+for (iDomain = 0; iDomain < nDomain; iDomain++){
+  cout << "rank=" << rank << ", nPointTotal_r[" << iDomain << "]=" << nPointTotal_r[iDomain] << endl;
+  cout << "rank=" << rank << ", nPointTotal_s[" << iDomain << "]=" << nPointTotal_s[iDomain] << endl;
+}
+  sleep(5);
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
   PointTotal_Counter  = 0;
+  vector<unsigned long> PointTotal_Counter2(size, 0);
 
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
 
@@ -906,11 +969,15 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
             jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
             jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
             for (iVar = 0; iVar < nPrimVar; iVar++) {
-              Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
+              //Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
+              Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter2[iDomain]+iPointTotal)+iVar] = nodes->GetPrimitive(iPoint,iVar);
             }
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+0)] = su2double(iGlobalIndex);
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = su2double(jVertex);
-            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+2)] = su2double(jMarker);
+            //Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+0)] = su2double(iGlobalIndex);
+            //Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = su2double(jVertex);
+            //Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter+iPointTotal)+(nPrimVar+2)] = su2double(jMarker);
+            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter2[iDomain]+iPointTotal)+(nPrimVar+0)] = su2double(iGlobalIndex);
+            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter2[iDomain]+iPointTotal)+(nPrimVar+1)] = su2double(jVertex);
+            Buffer_Send_PrimVar[(nPrimVar+3)*(PointTotal_Counter2[iDomain]+iPointTotal)+(nPrimVar+2)] = su2double(jMarker);
 
             iPointTotal++;
 
@@ -921,7 +988,72 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       }
 
     }
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
 
+    if (iDomain != nDomain) PointTotal_Counter2[iDomain+1] = PointTotal_Counter2[iDomain] + iPointTotal;
+  }
+  
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+
+  //SU2_MPI::Barrier(SU2_MPI::GetComm());
+
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+
+  //req_Recv2   = new SU2_MPI::Request[size*(size-1)];
+  //req_Recv2   = new SU2_MPI::Request[size-1];
+  SU2_MPI::Request *req_Recv2   = new SU2_MPI::Request[size-1];
+
+  //vector<vector<su2double> > Buffer_Receive_PrimVar2(size);
+  unsigned long nPointTotal_rDomain = 0;
+  //unsigned long *nPointTotal_rCum = new unsigned long[size];
+  unsigned long nPointTotal_rCum[size];
+  nPointTotal_rCum[0] = 0;
+  for (iDomain = 0; iDomain < nDomain; iDomain++){
+    nPointTotal_rDomain += nPointTotal_r[iDomain];
+    nPointTotal_rCum[iDomain+1] = nPointTotal_rCum[iDomain]+nPointTotal_r[iDomain];
+  }
+  su2double *Buffer_Receive_PrimVar3 = new su2double[nPointTotal_rDomain*(nPrimVar+3)];
+  
+  irecv = 0;
+  for (iDomain = 0; iDomain < size; iDomain++) {
+  
+    if (rank != iDomain) {
+
+#ifdef HAVE_MPI
+      //SU2_MPI::Irecv(Buffer_Receive_PrimVar2[iDomain], nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[iDomain]);
+      //SU2_MPI::Irecv(&Buffer_Receive_PrimVar2[iDomain], nPointTotal_r2[iDomain][irecv]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      
+      //SU2_MPI::Irecv(&Buffer_Receive_PrimVar2[iDomain][0], nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      //Buffer_Receive_PrimVar = new su2double [nPointTotal_r[iDomain]*(nPrimVar+3)];
+      /*
+      vector<su2double> Buffer_Receive_PrimVar(nPointTotal_r[iDomain]*(nPrimVar+3));
+      SU2_MPI::Irecv(&Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+                    iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      //Buffer_Receive_PrimVar2[iDomain].push_back(Buffer_Receive_PrimVar);
+      int i;
+      for (i = 0; i < nPointTotal_r[iDomain]*(nPrimVar+3); i++)
+        Buffer_Receive_PrimVar2[iDomain].push_back(Buffer_Receive_PrimVar[i]);
+      */
+      SU2_MPI::Irecv(&Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)], nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+                    iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      
+      cout << "Irecv: req_Recv2=" << &req_Recv2[irecv] << endl;
+      irecv++;
+#endif
+    }
+
+  }
+
+  cout << "nPointTotal_s=" << nPointTotal_s[0] << ", " << nPointTotal_s[1] << ", " << nPointTotal_s[2] << ", " << nPointTotal_s[3] << ", " << nPointTotal_s[4] << endl;
+  cout << "PointTotal_Counter2=" << PointTotal_Counter2[0] << ", " << PointTotal_Counter2[1] << ", " << PointTotal_Counter2[2] << ", " << PointTotal_Counter2[3] << ", " << PointTotal_Counter2[4] << endl;
+
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
     /*--- Send the buffers with the geometrical information ---*/
 
     if (iDomain != rank) {
@@ -929,10 +1061,13 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       /*--- Communicate the coordinates, global index, colors, and element
        date to iDomain with non-blocking sends. ---*/
 
-      SU2_MPI::Isend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar+3)],
+      //SU2_MPI::Isend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar+3)],
+      //               nPointTotal_s[iDomain]*(nPrimVar+3), MPI_DOUBLE, iDomain,
+      //               iDomain,  SU2_MPI::GetComm(), &req);
+      SU2_MPI::Send(&Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)],
                      nPointTotal_s[iDomain]*(nPrimVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  SU2_MPI::GetComm(), &req);
-      SU2_MPI::Wait(&req,&status);
+                     iDomain,  SU2_MPI::GetComm());
+      //SU2_MPI::Wait(&req,&status);
     }
 
     else {
@@ -942,7 +1077,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_PrimVar = new su2double[nPointTotal_s[iDomain]*(nPrimVar+3)];
 
       for (iter = 0; iter < nPointTotal_s[iDomain]*(nPrimVar+3); iter++)
-        Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar+3)+iter];
+        Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+iter];
 
       /*--- Recv the point data from ourselves (same procedure as above) ---*/
 
@@ -964,6 +1099,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
           DonorPrimVar[iMarker][iVertex][iVar] = iPrimVar[iVar];
 
         SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+//cout << "GetDonorGlobalIndex(" << iMarker << ", " << iVertex << ")=" << GetDonorGlobalIndex(iMarker, iVertex) << endl;
 
       }
 
@@ -975,44 +1111,98 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     /*--- Increment the counters for the send buffers (iDomain loop) ---*/
 
-    PointTotal_Counter += iPointTotal;
+    //PointTotal_Counter += iPointTotal;
 
   }
-
+//cout << "Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)]=" << Buffer_Send_PrimVar[PointTotal_Counter2[rank]*(nPrimVar+3)] <<  endl;
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  //SU2_MPI::Waitall(size-1,&req_Recv2[0],&status_Recv[0]);
+  cout << "Waitall, req_Recv2=" << &req_Recv2[0] << ", " << &req_Recv2[1] << ", " << &req_Recv2[2] << endl;
+  /*
+  vector<SU2_MPI::Status> tmpstatus;
+  tmpstatus.resize(size);
+  SU2_MPI::Waitall(size-1,&req_Recv2[0],&tmpstatus[0]);
+  //cout << "MPI status=" << tmpstatus[0] << ", " << tmpstatus[1] << ", " << tmpstatus[2] << ", " << tmpstatus[3] << ", " << tmpstatus[4] << ", " <<  endl;
+  cout << "MPI status=" << tmpstatus[0] << endl;
+  */
+  SU2_MPI::Waitall(size-1,&req_Recv2[0],MPI_STATUS_IGNORE);
+  //SU2_MPI::Barrier(SU2_MPI::GetComm());
+cout << "debug, end " << rank << endl;
+//cout << "Buffer_Receive_PrimVar2=" << Buffer_Receive_PrimVar2[0][0] << endl;
+if (size==5){
+  if (rank==4){
+    iDomain=2;
+    //cout << "MPI test, Buffer_Receive_PrimVar2=" << Buffer_Receive_PrimVar2[iDomain][0] << ", " << Buffer_Receive_PrimVar2[iDomain][1] << ", " << Buffer_Receive_PrimVar2[iDomain][2] << ", " << Buffer_Receive_PrimVar2[iDomain][3] << ", " << Buffer_Receive_PrimVar2[iDomain][4] << endl;
+    cout << "MPI test, Buffer_Receive_PrimVar3=" << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+0] << ", " << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+1] << ", " << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+2] << ", " << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+3] << ", " << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+4] << endl;
+  }
+  if (rank==2){
+    iDomain=4;
+    cout << "MPI test, Buffer_Send_PrimVar=" << Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+0] << ", " << Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+1] << ", " << Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+2] << ", " << Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+3] << ", " << Buffer_Send_PrimVar[PointTotal_Counter2[iDomain]*(nPrimVar+3)+4] << endl;
+  }
+}
 
-  /*--- The next section begins the recv of all data for the interior
-   points/elements in the mesh. First, create the domain structures for
-   the points on this rank. First, we recv all of the point data ---*/
+for (iDomain = 0; iDomain < size; iDomain++) {
 
-  for (iDomain = 0; iDomain < size; iDomain++) {
-
+    int irecv=0;
     if (rank != iDomain) {
 
 #ifdef HAVE_MPI
-
+cout << "HAVE_MPI" <<  endl;
+cout << "nPointTotal_r[iDomain]=" << nPointTotal_r[iDomain] << endl;
       /*--- Allocate the receive buffer vector. Send the colors so that we
        know whether what we recv is an owned or halo node. ---*/
 
-      Buffer_Receive_PrimVar = new su2double [nPointTotal_r[iDomain]*(nPrimVar+3)];
+      //Buffer_Receive_PrimVar = new su2double [nPointTotal_r[iDomain]*(nPrimVar+3)];
 
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
-      SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
-                    iDomain, rank, SU2_MPI::GetComm(), &status);
-
+      //SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &status);
+      //SU2_MPI::Irecv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      //SU2_MPI::Irecv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar+3) , MPI_DOUBLE,
+      //              iDomain, rank, SU2_MPI::GetComm(), &req_Recv2[irecv]);
+      //irecv++;
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index vertex and markers ---*/
 
       for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        /*
+        cout << "before iGlobal, iPoint=" << iPoint << endl;
+        cout << "Buffer_Receive_PrimVar2[0]=" << Buffer_Receive_PrimVar2[iDomain][0] << endl;
+        cout << "Buffer_Receive_PrimVar2[1]=" << Buffer_Receive_PrimVar2[iDomain][1] << endl;
+        cout << "Buffer_Receive_PrimVar2[2]=" << Buffer_Receive_PrimVar2[iDomain][2] << endl;
+        cout << "Buffer_Receive_PrimVar2[3]=" << Buffer_Receive_PrimVar2[iDomain][3] << endl;
+        cout << "Buffer_Receive_PrimVar2[4]=" << Buffer_Receive_PrimVar2[iDomain][4] << endl;
+        cout << "Buffer_Receive_PrimVar2[5]=" << Buffer_Receive_PrimVar2[iDomain][5] << endl;
+        cout << "Buffer_Receive_PrimVar2[6]=" << Buffer_Receive_PrimVar2[iDomain][6] << endl;
+        cout << "Buffer_Receive_PrimVar2[7]=" << Buffer_Receive_PrimVar2[iDomain][7] << endl;
+        */
 
-        iGlobal      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+0)]);
-        iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+1)]);
-        iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+2)]);
+        cout << "before iGlobal, iPoint=" << iPoint << endl;
+        cout << "Buffer_Receive_PrimVar3[0]=" << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+0)] << endl;
+        cout << "Buffer_Receive_PrimVar3[1]=" << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+1)] << endl;
+        cout << "Buffer_Receive_PrimVar3[2]=" << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+2)] << endl;
+        cout << "Buffer_Receive_PrimVar3[3]=" << Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+3)] << endl;
+
+        //iGlobal      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+0)]);
+        //iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+1)]);
+        //iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+(nPrimVar+2)]);
+        /*
+        iGlobal      = SU2_TYPE::Int(Buffer_Receive_PrimVar2[iDomain][iPoint*(nPrimVar+3)+(nPrimVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar2[iDomain][iPoint*(nPrimVar+3)+(nPrimVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar2[iDomain][iPoint*(nPrimVar+3)+(nPrimVar+2)]);
+        */
+        iGlobal      = SU2_TYPE::Int(Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+2)]);
+
+        cout << "after iMarker, iPoint=" << iPoint << endl;
         for (iVar = 0; iVar < nPrimVar; iVar++)
-          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+iVar];
+          iPrimVar[iVar] = Buffer_Receive_PrimVar3[nPointTotal_rCum[iDomain]*(nPrimVar+3)+iPoint*(nPrimVar+3)+iVar];
+          //iPrimVar[iVar] = Buffer_Receive_PrimVar2[iDomain][iPoint*(nPrimVar+3)+iVar];
+          //iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar+3)+iVar];
 
         if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
         if (iMarker < 0.0) cout <<" Negative iMarker (receive)" << endl;
@@ -1024,22 +1214,25 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
           DonorPrimVar[iMarker][iVertex][iVar] = iPrimVar[iVar];
 
         SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
-
+//cout << "GetDonorGlobalIndex(" << iMarker << ", " << iVertex << ")=" << GetDonorGlobalIndex(iMarker, iVertex) << endl;
       }
 
       /*--- Delete memory for recv the point stuff ---*/
 
-      delete [] Buffer_Receive_PrimVar;
+      //delete [] Buffer_Receive_PrimVar;
 
 #endif
 
     }
 
   }
-
-  /*--- Wait for the non-blocking sends to complete. ---*/
-
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  cout << "rank=" << rank << ", nPointTotal_rCum=" << nPointTotal_rCum[0] << ", " << nPointTotal_rCum[1] << ", " <<
+    nPointTotal_rCum[2] << ", " << nPointTotal_rCum[3] << ", " << nPointTotal_rCum[4] << endl;
+  /* temporary */
+  delete [] req_Recv;
+  delete [] req_Recv2;
+  //delete [] nPointTotal_rCum;//
+  delete [] Buffer_Receive_PrimVar3;
 
   /*--- Free all of the memory used for communicating points and elements ---*/
 
@@ -1051,6 +1244,10 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   delete [] nPointTotal_r;
   delete [] iPrimVar;
 
+  cout << "End of CEulerSolver::Set_MPI_Nearfield, rank=" << rank << endl;
+  //char c;
+  //cin >> c;
+  //system("PAUSE");
 }
 
 void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -1811,7 +2008,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     /*--- Compute NearField MPI ---*/
 
     if (nearfield) Set_MPI_Nearfield(geometry, config);
-
+cout << "After Set_MPI_Nearfield, rank=" << rank << endl;
   }
   END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
