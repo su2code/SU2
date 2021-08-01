@@ -938,6 +938,8 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
   unsigned long iPoint, nonPhysicalPoints = 0;
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -950,6 +952,8 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     if (!physical) nonPhysicalPoints++;
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 }
@@ -1634,8 +1638,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Set delta_p, m_dot, inlet_T, integrated_heat ---*/
       second_numerics->SetStreamwisePeriodicValues(SPvals);
 
-      AD::StartNoSharedReading();
-
       /*--- This bit acts as a boundary condition rather than a source term. But logically it fits better here. ---*/
       for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -1670,9 +1672,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           END_SU2_OMP_FOR
         }// if periodic inlet boundary
       }// for iMarker
-
-      AD::EndNoSharedReading();
-
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
 

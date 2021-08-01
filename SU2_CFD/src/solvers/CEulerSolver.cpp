@@ -1886,6 +1886,8 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -1899,6 +1901,8 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     if (!physical) nonPhysicalPoints++;
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 }
@@ -2291,11 +2295,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned short iVar;
   unsigned long iPoint;
 
-  AD::StartNoSharedReading();
-
   if (body_force) {
 
     /*--- Loop over all points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2314,6 +2317,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
   }
 
   if (rotating_frame) {
@@ -2324,6 +2328,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     SetRotatingFrame_GCL(geometry, config);
 
     /*--- Loop over all points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2345,9 +2350,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
   }
-
-  AD::EndNoSharedReading();
 
   if (axisymmetric) {
 
@@ -2356,9 +2360,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       ComputeAxisymmetricAuxGradients(geometry, config);
     }
 
-    AD::StartNoSharedReading();
-
     /*--- loop over points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2480,8 +2483,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_FOR
   }
 
-  AD::EndNoSharedReading();
-
   /*--- Check if a verification solution is to be computed. ---*/
 
   if ( VerificationSolution ) {
@@ -2490,8 +2491,6 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Get the physical time. ---*/
       su2double time = 0.0;
       if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
-
-      AD::StartNoSharedReading();
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -2513,11 +2512,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         }
       }
       END_SU2_OMP_FOR
-
-      AD::EndNoSharedReading();
     }
   }
 
+  AD::EndNoSharedReading();
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

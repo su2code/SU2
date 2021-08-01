@@ -255,6 +255,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Compute eddy viscosity ---*/
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -284,6 +286,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   }
   END_SU2_OMP_FOR
 
+  AD::EndNoSharedReading();
 }
 
 
@@ -296,7 +299,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
