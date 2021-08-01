@@ -485,7 +485,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       /*--- Constant thermal conductivity model ---*/
 
-      config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+      config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
       /*--- Conductivity model via polynomial. ---*/
 
@@ -655,7 +655,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       case CONDUCTIVITYMODEL::CONSTANT:
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
+        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
