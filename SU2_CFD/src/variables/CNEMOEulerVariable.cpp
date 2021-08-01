@@ -46,6 +46,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
   unsigned short iDim, iSpecies;
+  
+  /*--- Setting flags ---*/
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Setting variable amounts ---*/
   nDim            = ndim;
@@ -223,8 +226,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Set booleans ---*/
   bool nonPhys  = false;
-  bool implicit = false;
-
 
   /*--- Set temperature clipping values ---*/
   Tmin   = 50.0; Tmax   = 8E4;
@@ -282,6 +283,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
+
   const auto& cvves = fluidmodel->ComputeSpeciesCvVibEle();
   vector<su2double> eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
 
