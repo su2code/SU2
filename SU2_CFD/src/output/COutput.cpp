@@ -46,15 +46,17 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
+COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
+  rank(SU2_MPI::GetRank()),
+  size(SU2_MPI::GetSize()),
+  nDim(ndim),
+  multiZone(config->GetMultizone_Problem()),
+  gridMovement(config->GetGrid_Movement()),
+  femOutput(fem_output),
+  si_units(config->GetSystemMeasurements() == SI),
+  us_units(config->GetSystemMeasurements() == US) {
 
   cauchyTimeConverged = false;
-  this->nDim = nDim;
-
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-
-  fieldWidth = 12;
 
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
@@ -107,10 +109,6 @@ COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutp
   for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
     requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
-
-  gridMovement = config->GetGrid_Movement();
-
-  multiZone     = config->GetMultizone_Problem();
 
   /*--- Default is to write history to file and screen --- */
 
@@ -181,13 +179,8 @@ COutput::~COutput(void) {
   delete historyFileTable;
 
   delete volumeDataSorter;
-  volumeDataSorter = nullptr;
-
   delete surfaceDataSorter;
-  surfaceDataSorter = nullptr;
 }
-
-
 
 void COutput::SetHistory_Output(CGeometry *geometry,
                                   CSolver **solver_container,
