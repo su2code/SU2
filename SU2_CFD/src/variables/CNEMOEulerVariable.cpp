@@ -222,7 +222,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
 
   /*--- Set booleans ---*/
-  bool nonPhys = false;
+  bool nonPhys  = false;
+  bool implicit = false;
+
 
   /*--- Set temperature clipping values ---*/
   Tmin   = 50.0; Tmax   = 8E4;
@@ -267,38 +269,16 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  if (V[T_INDEX] <= Tmin)      { nonPhys = true;}
-  else if (V[T_INDEX] >= Tmax) { nonPhys = true;}
-  else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
-    nonPhys = true;}
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
+  else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
 
-  /*--- Vibrational-Electronic Temperature ---*/
-  vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
-  vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
-
-  // Check for non-physical solutions
   if (!monoatomic){
-    su2double rhoEve_min = 0.0;
-    su2double rhoEve_max = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
-    }
-
-    if (rhoEve < rhoEve_min) {
-
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemin;
-      U[nSpecies+nDim+1] = rhoEve_min;
-    } else if (rhoEve > rhoEve_max) {
-      nonPhys      = true;
-      V[TVE_INDEX] = Tvemax;
-      U[nSpecies+nDim+1] = rhoEve_max;
-    }
-  } else {
-    //TODO: can e-modes/vibe modes be active?
-    V[TVE_INDEX] = Tve_Freestream;
+    if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
   }
+  else {V[TVE_INDEX] = Tve_Freestream;}
 
   // Determine other properties of the mixture at the current state
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
@@ -310,11 +290,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     val_Cvves[iSpecies] = cvves[iSpecies];
   }
 
-  su2double rhoCvtr = fluidmodel->ComputerhoCvtr();
-  su2double rhoCvve = fluidmodel->ComputerhoCvve();
-
-  V[RHOCVTR_INDEX] = rhoCvtr;
-  V[RHOCVVE_INDEX] = rhoCvve;
+  V[RHOCVTR_INDEX] = fluidmodel->ComputerhoCvtr();
+  V[RHOCVVE_INDEX] = fluidmodel->ComputerhoCvve();
 
   /*--- Pressure ---*/
   V[P_INDEX] = fluidmodel->ComputePressure();
@@ -325,9 +302,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
-  fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
-  fluidmodel->ComputedTdU  (V, val_dTdU );
-  fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
+  if(implicit){
+    fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
+    fluidmodel->ComputedTdU  (V, val_dTdU );
+    fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
+  }
 
   /*--- Sound speed ---*/
   V[A_INDEX] = fluidmodel->ComputeSoundSpeed();
