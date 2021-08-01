@@ -850,10 +850,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const bool viscous = config->GetViscous();
   const bool dynamic_grid = config->GetDynamic_Grid();
   const bool gravity = config->GetGravityForce();
-  const bool turbulent = config->GetKind_Solver() == RANS;
+  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
+  const bool turbulent = Kind_Turb_Model != NONE;
   const bool fixed_cl = config->GetFixed_CL_Mode();
   const auto Kind_Solver = config->GetKind_Solver();
-  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
   const auto Ref_NonDim = config->GetRef_NonDim();
   const auto nMonitoring = config->GetnMarker_Monitoring();
 
