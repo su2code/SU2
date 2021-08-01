@@ -931,7 +931,8 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
     }
     /*--- Increment the counters for the send buffers (iDomain loop) ---*/
 
-    if (iDomain != nDomain) PointTotal_Counter2[iDomain+1] = PointTotal_Counter2[iDomain] + iPointTotal;
+    if (iDomain < nDomain-1) PointTotal_Counter2[iDomain+1] = PointTotal_Counter2[iDomain] + iPointTotal;
+
   }
   
 
