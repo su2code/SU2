@@ -1253,7 +1253,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
       }
 
-      if ((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)) {
+      if (turbulent) {
         switch (config->GetKind_ConductivityModel_Turb()) {
           case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
             file << "Turbulent Conductivity Model: CONSTANT_PRANDTL \n";
@@ -1605,7 +1605,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             break;
         }
 
-        if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+        if (turbulent) {
           switch (config->GetKind_ConductivityModel_Turb()) {
             case CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL:
               file << "Turbulent Conductivity Model: CONSTANT_PRANDTL  \n";
