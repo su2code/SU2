@@ -156,7 +156,7 @@ protected:
   TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
-  AuxVar_Grad_j   /*!< \brief Gradient of an auxiliary variable at point i. */
+  AuxVar_Grad_j,   /*!< \brief Gradient of an auxiliary variable at point i. */
   ScalarVar_Grad_i,   /*!< \brief Gradient of scalar variables at point i. */
   ScalarVar_Grad_j; 
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
@@ -405,7 +405,8 @@ public:
    * \param[in] val_scalar_grad_i - Gradient of the transported scalarsat point i.
    * \param[in] val_scalar_grad_j - Gradient of the transported scalarsat point j.
    */
-  inline void SetScalarVarGradient(su2double **val_scalar_grad_i, su2double **val_scalar_grad_j) {
+  inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalar_grad_i, 
+                                   CMatrixView<const su2double> val_scalar_grad_j) {
     ScalarVar_Grad_i = val_scalar_grad_i;
     ScalarVar_Grad_j = val_scalar_grad_j;
 }

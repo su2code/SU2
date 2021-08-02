@@ -652,7 +652,7 @@ enum class DIFFUSIVITYMODEL {
   FLAMELET,             /*!< \brief flamelet model */
 };
 
-static const MapType<string, DIFFUSIVITYMODEL> DiffusivityModel_Map = {
+static const MapType<std::string, DIFFUSIVITYMODEL> DiffusivityModel_Map = {
   MakePair("CONSTANT_DIFFUSIVITY", DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY)
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
   MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
@@ -901,7 +901,7 @@ enum ENUM_SCALAR_MODEL {
   PROGRESS_VARIABLE = 2,  /*!< \brief Progress variable combustion model. */
   CUSTOM_SCALAR     = 3,  /*!< \brief Custom scalar transport model. */
 };
-static const MapType<string, ENUM_SCALAR_MODEL> Scalar_Model_Map = {
+static const MapType<std::string, ENUM_SCALAR_MODEL> Scalar_Model_Map = {
   MakePair("NONE", NO_SCALAR_MODEL)
   MakePair("PASSIVE_SCALAR", PASSIVE_SCALAR)
   MakePair("PROGRESS_VARIABLE", PROGRESS_VARIABLE)
@@ -1529,7 +1529,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_TEMP = 82,
 };
 
-static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
+static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
   MakePair("LIFT", LIFT_COEFFICIENT)
   MakePair("SIDEFORCE", SIDEFORCE_COEFFICIENT)
