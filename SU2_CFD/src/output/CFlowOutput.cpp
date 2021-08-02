@@ -842,8 +842,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format off
   if (rank != MASTER_NODE) return;
 
-  unsigned short iMarker_Monitoring;
-
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   const bool unsteady = config->GetTime_Domain();
@@ -867,7 +865,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   /*--- Output the mean flow solution using only the master node ---*/
 
-  cout << endl << "Writing the forces breakdown file (" << fileName << ")." << endl;
+  cout << "\nWriting the forces breakdown file (" << fileName << ")." << endl;
 
   vector<su2double> Surface_CL(nMonitoring);
   vector<su2double> Surface_CD(nMonitoring);
@@ -981,49 +979,49 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   /*--- Look over the markers being monitored and get the desired values ---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < nMonitoring; iMarker_Monitoring++) {
-    Surface_CL[iMarker_Monitoring] = flow_solver->GetSurface_CL(iMarker_Monitoring);
-    Surface_CD[iMarker_Monitoring] = flow_solver->GetSurface_CD(iMarker_Monitoring);
-    Surface_CSF[iMarker_Monitoring] = flow_solver->GetSurface_CSF(iMarker_Monitoring);
-    Surface_CEff[iMarker_Monitoring] = flow_solver->GetSurface_CEff(iMarker_Monitoring);
-    Surface_CMx[iMarker_Monitoring] = flow_solver->GetSurface_CMx(iMarker_Monitoring);
-    Surface_CMy[iMarker_Monitoring] = flow_solver->GetSurface_CMy(iMarker_Monitoring);
-    Surface_CMz[iMarker_Monitoring] = flow_solver->GetSurface_CMz(iMarker_Monitoring);
-    Surface_CFx[iMarker_Monitoring] = flow_solver->GetSurface_CFx(iMarker_Monitoring);
-    Surface_CFy[iMarker_Monitoring] = flow_solver->GetSurface_CFy(iMarker_Monitoring);
-    Surface_CFz[iMarker_Monitoring] = flow_solver->GetSurface_CFz(iMarker_Monitoring);
+  for (auto iMarker = 0u; iMarker < nMonitoring; iMarker++) {
+    Surface_CL[iMarker] = flow_solver->GetSurface_CL(iMarker);
+    Surface_CD[iMarker] = flow_solver->GetSurface_CD(iMarker);
+    Surface_CSF[iMarker] = flow_solver->GetSurface_CSF(iMarker);
+    Surface_CEff[iMarker] = flow_solver->GetSurface_CEff(iMarker);
+    Surface_CMx[iMarker] = flow_solver->GetSurface_CMx(iMarker);
+    Surface_CMy[iMarker] = flow_solver->GetSurface_CMy(iMarker);
+    Surface_CMz[iMarker] = flow_solver->GetSurface_CMz(iMarker);
+    Surface_CFx[iMarker] = flow_solver->GetSurface_CFx(iMarker);
+    Surface_CFy[iMarker] = flow_solver->GetSurface_CFy(iMarker);
+    Surface_CFz[iMarker] = flow_solver->GetSurface_CFz(iMarker);
 
-    Surface_CL_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CL_Inv(iMarker_Monitoring);
-    Surface_CD_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CD_Inv(iMarker_Monitoring);
-    Surface_CSF_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CSF_Inv(iMarker_Monitoring);
-    Surface_CEff_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CEff_Inv(iMarker_Monitoring);
-    Surface_CMx_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CMx_Inv(iMarker_Monitoring);
-    Surface_CMy_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CMy_Inv(iMarker_Monitoring);
-    Surface_CMz_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CMz_Inv(iMarker_Monitoring);
-    Surface_CFx_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CFx_Inv(iMarker_Monitoring);
-    Surface_CFy_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CFy_Inv(iMarker_Monitoring);
-    Surface_CFz_Inv[iMarker_Monitoring] = flow_solver->GetSurface_CFz_Inv(iMarker_Monitoring);
-    Surface_CL_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CL_Visc(iMarker_Monitoring);
-    Surface_CD_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CD_Visc(iMarker_Monitoring);
-    Surface_CSF_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CSF_Visc(iMarker_Monitoring);
-    Surface_CEff_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CEff_Visc(iMarker_Monitoring);
-    Surface_CMx_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CMx_Visc(iMarker_Monitoring);
-    Surface_CMy_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CMy_Visc(iMarker_Monitoring);
-    Surface_CMz_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CMz_Visc(iMarker_Monitoring);
-    Surface_CFx_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CFx_Visc(iMarker_Monitoring);
-    Surface_CFy_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CFy_Visc(iMarker_Monitoring);
-    Surface_CFz_Visc[iMarker_Monitoring] = flow_solver->GetSurface_CFz_Visc(iMarker_Monitoring);
+    Surface_CL_Inv[iMarker] = flow_solver->GetSurface_CL_Inv(iMarker);
+    Surface_CD_Inv[iMarker] = flow_solver->GetSurface_CD_Inv(iMarker);
+    Surface_CSF_Inv[iMarker] = flow_solver->GetSurface_CSF_Inv(iMarker);
+    Surface_CEff_Inv[iMarker] = flow_solver->GetSurface_CEff_Inv(iMarker);
+    Surface_CMx_Inv[iMarker] = flow_solver->GetSurface_CMx_Inv(iMarker);
+    Surface_CMy_Inv[iMarker] = flow_solver->GetSurface_CMy_Inv(iMarker);
+    Surface_CMz_Inv[iMarker] = flow_solver->GetSurface_CMz_Inv(iMarker);
+    Surface_CFx_Inv[iMarker] = flow_solver->GetSurface_CFx_Inv(iMarker);
+    Surface_CFy_Inv[iMarker] = flow_solver->GetSurface_CFy_Inv(iMarker);
+    Surface_CFz_Inv[iMarker] = flow_solver->GetSurface_CFz_Inv(iMarker);
+    Surface_CL_Visc[iMarker] = flow_solver->GetSurface_CL_Visc(iMarker);
+    Surface_CD_Visc[iMarker] = flow_solver->GetSurface_CD_Visc(iMarker);
+    Surface_CSF_Visc[iMarker] = flow_solver->GetSurface_CSF_Visc(iMarker);
+    Surface_CEff_Visc[iMarker] = flow_solver->GetSurface_CEff_Visc(iMarker);
+    Surface_CMx_Visc[iMarker] = flow_solver->GetSurface_CMx_Visc(iMarker);
+    Surface_CMy_Visc[iMarker] = flow_solver->GetSurface_CMy_Visc(iMarker);
+    Surface_CMz_Visc[iMarker] = flow_solver->GetSurface_CMz_Visc(iMarker);
+    Surface_CFx_Visc[iMarker] = flow_solver->GetSurface_CFx_Visc(iMarker);
+    Surface_CFy_Visc[iMarker] = flow_solver->GetSurface_CFy_Visc(iMarker);
+    Surface_CFz_Visc[iMarker] = flow_solver->GetSurface_CFz_Visc(iMarker);
 
-    Surface_CL_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CL_Mnt(iMarker_Monitoring);
-    Surface_CD_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CD_Mnt(iMarker_Monitoring);
-    Surface_CSF_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CSF_Mnt(iMarker_Monitoring);
-    Surface_CEff_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CEff_Mnt(iMarker_Monitoring);
-    Surface_CMx_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CMx_Mnt(iMarker_Monitoring);
-    Surface_CMy_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CMy_Mnt(iMarker_Monitoring);
-    Surface_CMz_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CMz_Mnt(iMarker_Monitoring);
-    Surface_CFx_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CFx_Mnt(iMarker_Monitoring);
-    Surface_CFy_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CFy_Mnt(iMarker_Monitoring);
-    Surface_CFz_Mnt[iMarker_Monitoring] = flow_solver->GetSurface_CFz_Mnt(iMarker_Monitoring);
+    Surface_CL_Mnt[iMarker] = flow_solver->GetSurface_CL_Mnt(iMarker);
+    Surface_CD_Mnt[iMarker] = flow_solver->GetSurface_CD_Mnt(iMarker);
+    Surface_CSF_Mnt[iMarker] = flow_solver->GetSurface_CSF_Mnt(iMarker);
+    Surface_CEff_Mnt[iMarker] = flow_solver->GetSurface_CEff_Mnt(iMarker);
+    Surface_CMx_Mnt[iMarker] = flow_solver->GetSurface_CMx_Mnt(iMarker);
+    Surface_CMy_Mnt[iMarker] = flow_solver->GetSurface_CMy_Mnt(iMarker);
+    Surface_CMz_Mnt[iMarker] = flow_solver->GetSurface_CMz_Mnt(iMarker);
+    Surface_CFx_Mnt[iMarker] = flow_solver->GetSurface_CFx_Mnt(iMarker);
+    Surface_CFy_Mnt[iMarker] = flow_solver->GetSurface_CFy_Mnt(iMarker);
+    Surface_CFz_Mnt[iMarker] = flow_solver->GetSurface_CFz_Mnt(iMarker);
   }
 
   /*--- Write file name with extension ---*/
@@ -1097,8 +1095,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           file << "Compressibility Correction Edwards Spalart Allmaras\n";
           break;
         case SST:
-          file << "Menter's SST"
-               << "\n";
+          file << "Menter's SST\n";
           break;
         case SST_SUST:
           file << "Menter's SST with sustaining terms\n";
@@ -1292,16 +1289,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     if (si_units) file << " kg/m^3.\n";
     else file << " slug/ft^3.\n";
 
-    if (nDim == 2) {
-      file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      file << config->GetVelocity_FreeStream()[1] << ")";
-    }
+    file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0];
+    file << ", " << config->GetVelocity_FreeStream()[1];
     if (nDim == 3) {
-      file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      file << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
+      file << ", " << config->GetVelocity_FreeStream()[2];
     }
-    if (si_units) file << " m/s. ";
-    else file << " ft/s. ";
+    if (si_units) file << ") m/s. ";
+    else file << ") ft/s. ";
 
     file << "Magnitude: " << config->GetModVel_FreeStream();
     if (si_units) file << " m/s.\n";
@@ -1386,9 +1380,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
     file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
     file << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
-
     file << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
-
     file << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
 
     if (nDim == 2) {
@@ -1399,7 +1391,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
       file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
     }
     file << "Magnitude: " << config->GetModVel_FreeStreamND() << "\n";
-
     file << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << "\n";
 
     if (viscous) {
@@ -1419,31 +1410,24 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
     /*--- Incompressible version of the console output ---*/
 
-    bool energy = config->GetEnergy_Equation();
-    bool boussinesq = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
+    const bool energy = config->GetEnergy_Equation();
+    const bool boussinesq = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
 
     if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
       file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref\n";
       file << "are set to 1.0 in order to perform a dimensional calculation.\n";
-      if (dynamic_grid)
-        file << "Force coefficients computed using MACH_MOTION.\n";
-      else
-        file << "Force coefficients computed using initial values.\n";
     } else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
       file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref\n";
       file << "are based on the initial values, p_ref = rho_ref*vel_ref^2.\n";
-      if (dynamic_grid)
-        file << "Force coefficients computed using MACH_MOTION.\n";
-      else
-        file << "Force coefficients computed using initial values.\n";
     } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
       file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref\n";
       file << "are user-provided reference values, p_ref = rho_ref*vel_ref^2.\n";
-      if (dynamic_grid)
-        file << "Force coefficients computed using MACH_MOTION.\n";
-      else
-        file << "Force coefficients computed using reference values.\n";
     }
+    if (dynamic_grid)
+      file << "Force coefficients computed using MACH_MOTION.\n";
+    else
+      file << "Force coefficients computed using initial values.\n";
+
     file << "The reference area for force coeffs. is " << config->GetRefArea() << " m^2.\n";
     file << "The reference length for force coeffs. is " << config->GetRefLength() << " m.\n";
 
@@ -1456,7 +1440,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     } else {
       file << ", computed using fluid speed of sound.\n";
     }
-
     file << "For external flows, the initial state is imposed at the far-field.\n";
     file << "Angle of attack (deg): " << config->GetAoA() << ", computed using the initial velocity.\n";
     file << "Side slip angle (deg): " << config->GetAoS() << ", computed using the initial velocity.\n";
@@ -1497,39 +1480,39 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         break;
 
       case INC_IDEAL_GAS:
-        file << "Fluid Model: INC_IDEAL_GAS " << endl;
-        file << "Variable density incompressible flow using ideal gas law." << endl;
-        file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-        file << "Molecular weight : " << config->GetMolecular_Weight() << " g/mol" << endl;
-        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+        file << "Fluid Model: INC_IDEAL_GAS \n";
+        file << "Variable density incompressible flow using ideal gas law.\n";
+        file << "Density is a function of temperature (constant thermodynamic pressure).\n";
+        file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K.\n";
+        file << "Molecular weight : " << config->GetMolecular_Weight() << " g/mol\n";
+        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
         file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (si_units) file << " Pa." << endl;
-        else file << " psf." << endl;
+        if (si_units) file << " Pa.\n";
+        else file << " psf.\n";
         break;
 
       case INC_IDEAL_GAS_POLY:
-        file << "Fluid Model: INC_IDEAL_GAS_POLY " << endl;
-        file << "Variable density incompressible flow using ideal gas law." << endl;
-        file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        file << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
-        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-        file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
+        file << "Fluid Model: INC_IDEAL_GAS_POLY \n";
+        file << "Variable density incompressible flow using ideal gas law.\n";
+        file << "Density is a function of temperature (constant thermodynamic pressure).\n";
+        file << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol.\n";
+        file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K.\n";
+        file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
         file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (si_units) file << " Pa." << endl;
-        else file << " psf." << endl;
+        if (si_units) file << " Pa.\n";
+        else file << " psf.\n";
         file << "Cp(T) polynomial coefficients: \n  (";
         for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           file << config->GetCp_PolyCoeff(iVar);
           if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
         }
-        file << ")." << endl;
+        file << ").\n";
         file << "Cp(T) polynomial coefficients (non-dim.): \n  (";
         for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
           file << config->GetCp_PolyCoeffND(iVar);
           if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
         }
-        file << ")." << endl;
+        file << ").\n";
         break;
     }
     if (viscous) {
@@ -1559,19 +1542,19 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           break;
 
         case VISCOSITYMODEL::POLYNOMIAL:
-          file << "Viscosity Model: POLYNOMIAL_VISCOSITY  " << endl;
+          file << "Viscosity Model: POLYNOMIAL_VISCOSITY  \n";
           file << "Mu(T) polynomial coefficients: \n  (";
           for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
             file << config->GetMu_PolyCoeff(iVar);
             if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
           }
-          file << ")." << endl;
+          file << ").\n";
           file << "Mu(T) polynomial coefficients (non-dim.): \n  (";
           for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
             file << config->GetMu_PolyCoeffND(iVar);
             if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
           }
-          file << ")." << endl;
+          file << ").\n";
           break;
       }
 
@@ -1589,19 +1572,19 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
             break;
 
           case CONDUCTIVITYMODEL::POLYNOMIAL:
-            file << "Viscosity Model: POLYNOMIAL " << endl;
+            file << "Viscosity Model: POLYNOMIAL \n";
             file << "Kt(T) polynomial coefficients: \n  (";
             for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
               file << config->GetKt_PolyCoeff(iVar);
               if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
             }
-            file << ")." << endl;
+            file << ").\n";
             file << "Kt(T) polynomial coefficients (non-dim.): \n  (";
             for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
               file << config->GetKt_PolyCoeffND(iVar);
               if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
             }
-            file << ")." << endl;
+            file << ").\n";
             break;
         }
 
@@ -1646,16 +1629,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     if (si_units) file << " kg/m^3.\n";
     else file << " slug/ft^3.\n";
 
-    if (nDim == 2) {
-      file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      file << config->GetVelocity_FreeStream()[1] << ")";
-    }
+    file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0];
+    file << ", " << config->GetVelocity_FreeStream()[1];
     if (nDim == 3) {
-      file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      file << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
+      file << ", " << config->GetVelocity_FreeStream()[2];
     }
-    if (si_units) file << " m/s. ";
-    else file << " ft/s. ";
+    if (si_units) file << ") m/s. ";
+    else file << ") ft/s. ";
 
     file << "Magnitude: " << config->GetModVel_FreeStream();
     if (si_units) file << " m/s.\n";
@@ -1749,14 +1729,12 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
     file << "Initial pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
     file << "Initial density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
 
-    if (nDim == 2) {
-      file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      file << config->GetVelocity_FreeStreamND()[1] << "). ";
-    } else {
-      file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
+    file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0];
+    file << ", " << config->GetVelocity_FreeStreamND()[1];
+    if (nDim == 3) {
+      file << ", " << config->GetVelocity_FreeStreamND()[2];
     }
-    file << "Magnitude: " << config->GetModVel_FreeStreamND() << "\n";
+    file << "). Magnitude: " << config->GetModVel_FreeStreamND() << "\n";
 
     if (viscous) {
       file << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
@@ -1775,8 +1753,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   /*--- Begin forces breakdown info. ---*/
 
   file << fixed;
-  file << "\n\n"
-       << "Forces breakdown:\n\n";
+  file << "\n\nForces breakdown:\n\n";
 
   if (nDim == 3) {
     su2double m = flow_solver->GetTotal_CFz() / flow_solver->GetTotal_CFx();
@@ -2032,263 +2009,263 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   file << "\n\n";
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < nMonitoring; iMarker_Monitoring++) {
-    file << "Surface name: " << config->GetMarker_Monitoring_TagBound(iMarker_Monitoring) << "\n\n";
+  for (auto iMarker = 0u; iMarker < nMonitoring; iMarker++) {
+    file << "Surface name: " << config->GetMarker_Monitoring_TagBound(iMarker) << "\n\n";
 
     file << "Total CL    (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CL[iMarker_Monitoring] * 100.0) / (Total_CL + EPS));
+    file << SU2_TYPE::Int((Surface_CL[iMarker] * 100.0) / (Total_CL + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CL[iMarker_Monitoring];
+    file << Surface_CL[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CL_Inv[iMarker_Monitoring] * 100.0) / (Surface_CL[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CL_Inv[iMarker] * 100.0) / (Surface_CL[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CL_Inv[iMarker_Monitoring];
+    file << Surface_CL_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CL_Visc[iMarker_Monitoring] * 100.0) / (Surface_CL[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CL_Visc[iMarker] * 100.0) / (Surface_CL[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CL_Visc[iMarker_Monitoring];
+    file << Surface_CL_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CL_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CL[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CL_Mnt[iMarker] * 100.0) / (Surface_CL[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CL_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CL_Mnt[iMarker] << "\n";
 
     file << "Total CD    (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CD[iMarker_Monitoring] * 100.0) / (Total_CD + EPS));
+    file << SU2_TYPE::Int((Surface_CD[iMarker] * 100.0) / (Total_CD + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CD[iMarker_Monitoring];
+    file << Surface_CD[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CD_Inv[iMarker_Monitoring] * 100.0) / (Surface_CD[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CD_Inv[iMarker] * 100.0) / (Surface_CD[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CD_Inv[iMarker_Monitoring];
+    file << Surface_CD_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CD_Visc[iMarker_Monitoring] * 100.0) / (Surface_CD[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CD_Visc[iMarker] * 100.0) / (Surface_CD[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CD_Visc[iMarker_Monitoring];
+    file << Surface_CD_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CD_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CD[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CD_Mnt[iMarker] * 100.0) / (Surface_CD[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CD_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CD_Mnt[iMarker] << "\n";
 
     if (nDim == 3) {
       file << "Total CSF   (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CSF[iMarker_Monitoring] * 100.0) / (Total_CSF + EPS));
+      file << SU2_TYPE::Int((Surface_CSF[iMarker] * 100.0) / (Total_CSF + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CSF[iMarker_Monitoring];
+      file << Surface_CSF[iMarker];
       file << " | Pressure (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CSF_Inv[iMarker_Monitoring] * 100.0) / (Surface_CSF[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CSF_Inv[iMarker] * 100.0) / (Surface_CSF[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CSF_Inv[iMarker_Monitoring];
+      file << Surface_CSF_Inv[iMarker];
       file << " | Friction (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CSF_Visc[iMarker_Monitoring] * 100.0) / (Surface_CSF[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CSF_Visc[iMarker] * 100.0) / (Surface_CSF[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CSF_Visc[iMarker_Monitoring];
+      file << Surface_CSF_Visc[iMarker];
       file << " | Momentum (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CSF_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CSF[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CSF_Mnt[iMarker] * 100.0) / (Surface_CSF[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CSF_Mnt[iMarker_Monitoring] << "\n";
+      file << Surface_CSF_Mnt[iMarker] << "\n";
     }
 
     file << "Total CL/CD (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CEff[iMarker_Monitoring] * 100.0) / (Total_CEff + EPS));
+    file << SU2_TYPE::Int((Surface_CEff[iMarker] * 100.0) / (Total_CEff + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CEff[iMarker_Monitoring];
+    file << Surface_CEff[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CEff_Inv[iMarker_Monitoring] * 100.0) / (Surface_CEff[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CEff_Inv[iMarker] * 100.0) / (Surface_CEff[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CEff_Inv[iMarker_Monitoring];
+    file << Surface_CEff_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CEff_Visc[iMarker_Monitoring] * 100.0) / (Surface_CEff[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CEff_Visc[iMarker] * 100.0) / (Surface_CEff[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CEff_Visc[iMarker_Monitoring];
+    file << Surface_CEff_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CEff_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CEff[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CEff_Mnt[iMarker] * 100.0) / (Surface_CEff[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CEff_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CEff_Mnt[iMarker] << "\n";
 
     if (nDim == 3) {
       file << "Total CMx   (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMx[iMarker_Monitoring] * 100.0) / (Total_CMx + EPS));
+      file << SU2_TYPE::Int((Surface_CMx[iMarker] * 100.0) / (Total_CMx + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMx[iMarker_Monitoring];
+      file << Surface_CMx[iMarker];
       file << " | Pressure (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMx_Inv[iMarker_Monitoring] * 100.0) / (Surface_CMx[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMx_Inv[iMarker] * 100.0) / (Surface_CMx[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMx_Inv[iMarker_Monitoring];
+      file << Surface_CMx_Inv[iMarker];
       file << " | Friction (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMx_Visc[iMarker_Monitoring] * 100.0) / (Surface_CMx[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMx_Visc[iMarker] * 100.0) / (Surface_CMx[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMx_Visc[iMarker_Monitoring];
+      file << Surface_CMx_Visc[iMarker];
       file << " | Momentum (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMx_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CMx[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMx_Mnt[iMarker] * 100.0) / (Surface_CMx[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMx_Mnt[iMarker_Monitoring] << "\n";
+      file << Surface_CMx_Mnt[iMarker] << "\n";
 
       file << "Total CMy   (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMy[iMarker_Monitoring] * 100.0) / (Total_CMy + EPS));
+      file << SU2_TYPE::Int((Surface_CMy[iMarker] * 100.0) / (Total_CMy + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMy[iMarker_Monitoring];
+      file << Surface_CMy[iMarker];
       file << " | Pressure (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMy_Inv[iMarker_Monitoring] * 100.0) / (Surface_CMy[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMy_Inv[iMarker] * 100.0) / (Surface_CMy[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMy_Inv[iMarker_Monitoring];
+      file << Surface_CMy_Inv[iMarker];
       file << " | Friction (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMy_Visc[iMarker_Monitoring] * 100.0) / (Surface_CMy[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMy_Visc[iMarker] * 100.0) / (Surface_CMy[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMy_Visc[iMarker_Monitoring];
+      file << Surface_CMy_Visc[iMarker];
       file << " | Momentum (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CMy_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CMy[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CMy_Mnt[iMarker] * 100.0) / (Surface_CMy[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CMy_Mnt[iMarker_Monitoring] << "\n";
+      file << Surface_CMy_Mnt[iMarker] << "\n";
     }
 
     file << "Total CMz   (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CMz[iMarker_Monitoring] * 100.0) / (Total_CMz + EPS));
+    file << SU2_TYPE::Int((Surface_CMz[iMarker] * 100.0) / (Total_CMz + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CMz[iMarker_Monitoring];
+    file << Surface_CMz[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CMz_Inv[iMarker_Monitoring] * 100.0) / (Surface_CMz[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CMz_Inv[iMarker] * 100.0) / (Surface_CMz[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CMz_Inv[iMarker_Monitoring];
+    file << Surface_CMz_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CMz_Visc[iMarker_Monitoring] * 100.0) / (Surface_CMz[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CMz_Visc[iMarker] * 100.0) / (Surface_CMz[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CMz_Visc[iMarker_Monitoring];
+    file << Surface_CMz_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CMz_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CMz[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CMz_Mnt[iMarker] * 100.0) / (Surface_CMz[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CMz_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CMz_Mnt[iMarker] << "\n";
 
     file << "Total CFx   (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFx[iMarker_Monitoring] * 100.0) / (Total_CFx + EPS));
+    file << SU2_TYPE::Int((Surface_CFx[iMarker] * 100.0) / (Total_CFx + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFx[iMarker_Monitoring];
+    file << Surface_CFx[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFx_Inv[iMarker_Monitoring] * 100.0) / (Surface_CFx[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFx_Inv[iMarker] * 100.0) / (Surface_CFx[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFx_Inv[iMarker_Monitoring];
+    file << Surface_CFx_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFx_Visc[iMarker_Monitoring] * 100.0) / (Surface_CFx[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFx_Visc[iMarker] * 100.0) / (Surface_CFx[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFx_Visc[iMarker_Monitoring];
+    file << Surface_CFx_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFx_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CFx[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFx_Mnt[iMarker] * 100.0) / (Surface_CFx[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFx_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CFx_Mnt[iMarker] << "\n";
 
     file << "Total CFy   (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFy[iMarker_Monitoring] * 100.0) / (Total_CFy + EPS));
+    file << SU2_TYPE::Int((Surface_CFy[iMarker] * 100.0) / (Total_CFy + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFy[iMarker_Monitoring];
+    file << Surface_CFy[iMarker];
     file << " | Pressure (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFy_Inv[iMarker_Monitoring] * 100.0) / (Surface_CFy[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFy_Inv[iMarker] * 100.0) / (Surface_CFy[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFy_Inv[iMarker_Monitoring];
+    file << Surface_CFy_Inv[iMarker];
     file << " | Friction (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFy_Visc[iMarker_Monitoring] * 100.0) / (Surface_CFy[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFy_Visc[iMarker] * 100.0) / (Surface_CFy[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFy_Visc[iMarker_Monitoring];
+    file << Surface_CFy_Visc[iMarker];
     file << " | Momentum (";
     file.width(5);
-    file << SU2_TYPE::Int((Surface_CFy_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CFy[iMarker_Monitoring] + EPS));
+    file << SU2_TYPE::Int((Surface_CFy_Mnt[iMarker] * 100.0) / (Surface_CFy[iMarker] + EPS));
     file << "%): ";
     file.width(11);
-    file << Surface_CFy_Mnt[iMarker_Monitoring] << "\n";
+    file << Surface_CFy_Mnt[iMarker] << "\n";
 
     if (nDim == 3) {
       file << "Total CFz   (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CFz[iMarker_Monitoring] * 100.0) / (Total_CFz + EPS));
+      file << SU2_TYPE::Int((Surface_CFz[iMarker] * 100.0) / (Total_CFz + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CFz[iMarker_Monitoring];
+      file << Surface_CFz[iMarker];
       file << " | Pressure (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CFz_Inv[iMarker_Monitoring] * 100.0) / (Surface_CFz[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CFz_Inv[iMarker] * 100.0) / (Surface_CFz[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CFz_Inv[iMarker_Monitoring];
+      file << Surface_CFz_Inv[iMarker];
       file << " | Friction (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CFz_Visc[iMarker_Monitoring] * 100.0) / (Surface_CFz[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CFz_Visc[iMarker] * 100.0) / (Surface_CFz[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CFz_Visc[iMarker_Monitoring];
+      file << Surface_CFz_Visc[iMarker];
       file << " | Momentum (";
       file.width(5);
-      file << SU2_TYPE::Int((Surface_CFz_Mnt[iMarker_Monitoring] * 100.0) / (Surface_CFz[iMarker_Monitoring] + EPS));
+      file << SU2_TYPE::Int((Surface_CFz_Mnt[iMarker] * 100.0) / (Surface_CFz[iMarker] + EPS));
       file << "%): ";
       file.width(11);
-      file << Surface_CFz_Mnt[iMarker_Monitoring] << "\n";
+      file << Surface_CFz_Mnt[iMarker] << "\n";
     }
 
     file << "\n";
