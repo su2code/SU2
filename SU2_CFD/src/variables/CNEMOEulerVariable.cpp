@@ -225,7 +225,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
 
   /*--- Set booleans ---*/
-  bool nonPhys  = false;
+  bool nonPhys = false;
 
   /*--- Set temperature clipping values ---*/
   Tmin   = 50.0; Tmax   = 8E4;
