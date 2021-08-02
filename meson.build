@@ -117,16 +117,20 @@ if omp
 
   # add opdi dependency
   if get_option('enable-autodiff')
-    codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+    if get_option('opdi-backend') == 'none'
+      su2_cpp_args += '-DFORCE_OPDI_OFF'
+    else
+      codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
 
-    if get_option('opdi-backend') == 'macro'
-      su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
-    elif get_option('opdi-backend') == 'ompt'
-      su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
-    endif
+      if get_option('opdi-backend') == 'macro'
+        su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
+      elif get_option('opdi-backend') == 'ompt'
+        su2_cpp_args += '-DFORCE_OPDI_OMPT_BACKEND'
+      endif
 
-    if get_option('opdi-shared-read-opt') == false
-      su2_cpp_args += '-DOPDI_VARIABLE_ADJOINT_ACCESS_MODE=0'
+      if get_option('opdi-shared-read-opt') == false
+        su2_cpp_args += '-DOPDI_VARIABLE_ADJOINT_ACCESS_MODE=0'
+      endif
     endif
   endif
 endif
