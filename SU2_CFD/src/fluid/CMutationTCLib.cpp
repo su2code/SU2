@@ -46,6 +46,8 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
     transport_model = "Wilke";
   else if (Kind_TransCoeffModel == GUPTAYOS)
     transport_model = "Gupta-Yos";
+  else if (Kind_TransCoeffModel == CHAPMANN_ENSKOG)
+    transport_model = "Chapmann-Enskog_LDLT";
 
   opt.setStateModel("ChemNonEqTTv");
   if (frozen) opt.setMechanism("none");

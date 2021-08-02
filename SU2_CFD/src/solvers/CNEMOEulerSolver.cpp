@@ -1292,6 +1292,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
         NonDimTable.PrintFooter();
         break;
 
+      case CHAPMANN_ENSKOG:
+        ModelTable << "CHAPMANN-ENSKOG_LDLT";
+        NonDimTable.PrintFooter();
+        break;
+
       default:
         break;
       }

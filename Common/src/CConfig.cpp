@@ -3586,8 +3586,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_TransCoeffModel != WILKE ) {
-    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
+  if (Kind_FluidModel == SU2_NONEQ && Kind_TransCoeffModel != WILKE ) {
+    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+  }
+
+  if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != WILKE && Kind_TransCoeffModel != CHAPMANN_ENSKOG)) {
+    SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.", CURRENT_FUNCTION);
   }
 
   if (!ideal_gas && !nemo) {
