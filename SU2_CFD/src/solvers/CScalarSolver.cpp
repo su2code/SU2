@@ -418,11 +418,13 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   /*--- Compute the root mean square residual ---*/
   SU2_OMP_MASTER
   SetResidual_RMS(geometry, config);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
@@ -482,6 +484,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CompleteImplicitIteration(geometry, solver_container, config);
@@ -892,7 +895,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  } 
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- MPI solution and compute the scalars ---*/

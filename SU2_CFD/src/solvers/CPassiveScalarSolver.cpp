@@ -471,7 +471,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
-
+  END_SU2_OMP_FOR
 }
 
 void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
