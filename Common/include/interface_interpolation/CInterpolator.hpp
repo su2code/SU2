@@ -29,8 +29,6 @@
 #include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/containers/C2DContainer.hpp"
 #include <vector>
-#include <forward_list>
-#include <algorithm>
 
 class CConfig;
 class CGeometry;
@@ -61,15 +59,11 @@ protected:
   su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values. */
   *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
-  /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
-  unsigned long *Buffer_Receive_nLinkedNodes;
-  /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
-  unsigned long *Buffer_Receive_StartLinkedNodes;
-  /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
-   * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
-  unsigned long *Buffer_Receive_LinkedNodes;
-  /*! \brief Buffer to receive the rank that owns the vertex. */
-  unsigned long *Buffer_Receive_Proc;
+  unsigned long
+  *Buffer_Receive_nLinkedNodes,      /*!< \brief Buffer to receive the number of edges connected to each node. */
+  *Buffer_Receive_LinkedNodes,       /*!< \brief Buffer to receive the list of notes connected to the nodes through an edge. */
+  *Buffer_Receive_StartLinkedNodes,  /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
+  *Buffer_Receive_Proc;              /*!< \brief Buffer to receive the thread that owns the node. */
 
   unsigned long
   nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
@@ -147,7 +141,7 @@ public:
 
 protected:
   /*!
-   * \brief Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads.
+   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
    * \param[in] val_zone   - index of the zone
    * \param[in] val_marker - index of the marker
    */
