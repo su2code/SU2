@@ -514,6 +514,7 @@ void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
       }
     }
   }
+  END_SU2_OMP_FOR
 
 }
 

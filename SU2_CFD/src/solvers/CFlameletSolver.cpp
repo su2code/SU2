@@ -577,7 +577,7 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
     
   }
-  
+  END_SU2_OMP_FOR
 }
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry,

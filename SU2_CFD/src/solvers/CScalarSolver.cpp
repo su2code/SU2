@@ -243,6 +243,7 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
+  END_SU2_OMP_FOR
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
@@ -313,6 +314,7 @@ void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -447,7 +449,8 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
           //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
         nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar]);
       }
-    }                
+    }
+    END_SU2_OMP_FOR
   }
 
 
@@ -528,6 +531,7 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -619,6 +623,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       }
 
     }
+    END_SU2_OMP_FOR
 
   } else {
 
@@ -665,6 +670,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -712,6 +718,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
           //}
 
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -784,7 +791,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
-
+    END_SU2_OMP_FOR
   } // end dynamic grid
 
 }
@@ -913,6 +920,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
       }
       solver[iMesh][SCALAR_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+    END_SU2_OMP_FOR
     solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
