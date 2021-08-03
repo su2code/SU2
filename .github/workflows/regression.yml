@@ -87,6 +87,7 @@ jobs:
       - name: Run Tests in Container
         uses: docker://su2code/test-su2:20200303
         with:
+          # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
   unit_tests:
     runs-on: ubuntu-latest

@@ -553,7 +553,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 7.0.2 \'Blackbird\'                         | \n'\
+          '|   / __| | | |_  )   Release 7.1.1 \'Blackbird\'                         | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -572,7 +572,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       | \n'\
+          '| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\

@@ -373,7 +373,7 @@ AC_MSG_RESULT([
 | - Prof. Edwin van der Weide's group at the University of Twente.      |
 | - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
 -------------------------------------------------------------------------
-| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       |
+| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       |
 |                      Tim Albring, and the SU2 contributors.           |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |

@@ -1133,7 +1133,8 @@ enum BC_TYPE {
   ENGINE_EXHAUST = 22,        /*!< \brief Boundary nacelle exhaust. */
   RIEMANN_BOUNDARY= 24,       /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,            /*!< \brief No slip isothermal wall boundary condition. */
-  HEAT_FLUX  = 26,            /*!< \brief No slip constant heat flux wall boundary condition. */
+  HEAT_FLUX = 26,             /*!< \brief No slip constant heat flux wall boundary condition. */
+  HEAT_TRANSFER = 27,         /*!< \brief No slip heat transfer boundary condition. */
   ACTDISK_INLET = 32,         /*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,        /*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,      /*!< \brief Clamped Boundary definition. */
