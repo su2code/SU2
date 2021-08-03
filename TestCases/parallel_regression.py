@@ -485,6 +485,17 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
+    # 2D pin array with heat transfer BC on pin surfaces
+    inc_heatTransfer_BC           = TestCase('inc_heatTransfer_BC')
+    inc_heatTransfer_BC.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    inc_heatTransfer_BC.cfg_file  = "BC_HeatTransfer.cfg"
+    inc_heatTransfer_BC.test_iter = 50
+    inc_heatTransfer_BC.test_vals = [-8.242458, -7.340502, -7.407009, -0.152357, -1.6675e+03] #last 7 lines
+    inc_heatTransfer_BC.su2_exec  = "mpirun -n 2 SU2_CFD"
+    inc_heatTransfer_BC.timeout   = 1600
+    inc_heatTransfer_BC.tol       = 0.00001
+    test_list.append(inc_heatTransfer_BC)
+
     ############################
     ### Incompressible RANS  ###
     ############################

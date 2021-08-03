@@ -2991,8 +2991,8 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
           case CONDUCTIVITYMODEL::CONSTANT:
             Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-            Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
-            Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
+            Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+            Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
             break;
 
           default:
@@ -3356,8 +3356,8 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
             case CONDUCTIVITYMODEL::CONSTANT:
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-              Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_Constant()<< " W/m^2.K." << "\n";
-              Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< "\n";
+              Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+              Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetThermal_Conductivity_ConstantND()<< "\n";
               break;
 
             case CONDUCTIVITYMODEL::POLYNOMIAL:
