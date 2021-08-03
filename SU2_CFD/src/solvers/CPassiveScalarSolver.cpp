@@ -552,6 +552,7 @@ void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_conta
         }
     }
   }
+  END_SU2_OMP_FOR
 
 }
 

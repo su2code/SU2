@@ -927,7 +927,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
 
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
   
 }

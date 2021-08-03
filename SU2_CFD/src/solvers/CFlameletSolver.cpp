@@ -665,6 +665,7 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
