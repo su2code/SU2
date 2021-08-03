@@ -317,7 +317,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
-      su2double total_conductivity = Thermal_Conductivity_i + Cp_i*Eddy_Viscosity_i/Prandtl_Turb;
+      // su2double total_conductivity = Thermal_Conductivity_i + Cp_i*Eddy_Viscosity_i/Prandtl_Turb;
 
       /*--- The full stress tensor is needed for variable density ---*/
       ComputeStressTensor(nDim, tau, PrimVar_Grad_i+1, total_viscosity);

@@ -44,8 +44,6 @@
 #include "../../include/fluid/CUnityLewisDiffusivity.hpp"
 
 void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
-//  if(config->GetKind_Scalar_Model() == NONE){
-
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
       LaminarViscosity = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_ConstantND()));
@@ -65,8 +63,6 @@ void CFluidModel::SetLaminarViscosityModel(const CConfig* config) {
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
-//  }
-  // else {} 
 }
 
 void CFluidModel::SetThermalConductivityModel(const CConfig* config) {

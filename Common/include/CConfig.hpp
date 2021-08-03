@@ -111,7 +111,6 @@ private:
   su2double StartTime;
   unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
-  Mixture, 
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -375,6 +374,7 @@ private:
   su2double *Surface_TotalPressure;          /*!< \brief Total pressure at the boundaries. */
   su2double *Surface_CO;                     /*!< \brief Mass fraction of CO at the boundaries. */
   su2double *Surface_NOx;                    /*!< \brief Mass fraction of NO at the boundaries. */
+  su2double *Surface_CH4;                    /*!< \brief Mass fraction of CH4 at the boundaries. */
   //su2double **Surface_Scalar;
   su2double *Surface_PressureDrop;           /*!< \brief Pressure drop between boundaries. */
   su2double *Surface_DC60;                   /*!< \brief Specified surface DC60 for nacelle boundaries. */
@@ -1708,7 +1708,6 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  // su2double GetPrandtl_Lam(void) const { return Prandtl_Lam; }
   su2double GetPrandtl_Lam(void) const { return Prandtl_Lam[0]; }
   su2double GetPrandtl_Lam(unsigned short val_index) const { return Prandtl_Lam [val_index]; }
 
@@ -1716,7 +1715,6 @@ public:
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  // su2double GetPrandtl_Turb(void) const { return Prandtl_Turb; }
   su2double GetPrandtl_Turb(void) const { return Prandtl_Turb[0]; }
   su2double GetPrandtl_Turb(unsigned short val_index) const { return Prandtl_Turb [val_index]; }
 
@@ -2443,7 +2441,6 @@ public:
    * \brief Set the value of the specific heat at constant pressure (incompressible fluids with energy equation).
    * \param[in] val_specific_heat_cp - specific heat at constant pressure.
    */
-  // void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp = val_specific_heat_cp; }
   void SetSpecific_Heat_Cp(su2double val_specific_heat_cp) { Specific_Heat_Cp[0] = val_specific_heat_cp; }
   void SetSpecific_Heat_Cp(su2double val_specific_heat_cp, unsigned short val_index) { Specific_Heat_Cp[val_index] = val_specific_heat_cp; }
 
@@ -3818,7 +3815,6 @@ public:
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  //su2double GetMu_Constant(void) const { return Mu_Constant; }
   su2double GetMu_Constant(void) const { return Mu_Constant[0]; }
   su2double GetMu_Constant(unsigned short val_index) const { return Mu_Constant [val_index]; }
 
@@ -3827,13 +3823,11 @@ public:
    * \return Non-dimensional constant viscosity.
    */
   su2double GetMu_ConstantND(void) const { return Mu_ConstantND; }
-  // su2double GetMu_ConstantND(unsigned short val_index) const { return Mu_ConstantND [val_index]; }
 
   /*!
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  // su2double GetKt_Constant(void) const { return Kt_Constant; }
    su2double GetKt_Constant(void) const { return Kt_Constant[0]; }
    su2double GetKt_Constant(unsigned short val_index) const { return Kt_Constant [val_index]; }
 
@@ -3871,7 +3865,6 @@ public:
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  // su2double GetMu_Ref(void) const { return Mu_Ref; }
   su2double GetMu_Ref(void) const { return Mu_Ref[0]; } 
   su2double GetMu_Ref(unsigned short val_index) const { return Mu_Ref [val_index]; }
 
@@ -3885,7 +3878,6 @@ public:
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  // su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref; }
   su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref[0]; }
   su2double GetMu_Temperature_Ref(unsigned short val_index) const { return Mu_Temperature_Ref [val_index]; }
 
@@ -3972,7 +3964,6 @@ public:
    * \brief Set the value of the non-dimensional constant viscosity.
    */
   void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
-  // void SetMu_ConstantND(su2double mu_const, unsigned short val_index) { Mu_ConstantND[val_index] = mu_const; }
 
   /*!
    * \brief Set the value of the non-dimensional thermal conductivity.
@@ -6250,12 +6241,6 @@ public:
   bool GetViscous(void) const { return Viscous; }
 
   /*!
-   * \brief Determines if problem involves a mixture
-   * \return true if Mixture
-   */
-  bool GetMixture(void) const { return Mixture; }
-
-  /*!
    * \brief Provides the index of the solution in the container.
    * \param[in] val_eqsystem - Equation that is being solved.
    * \return Index on the solution container.
@@ -7647,6 +7632,13 @@ public:
   void SetSurface_NOx(unsigned short val_imarker, su2double val_surface_nox){ Surface_NOx[val_imarker] = val_surface_nox; };
 
   /*!
+   * \brief Set the CH4 mass fraction at the surface.
+   * \param[in] val_imarker - Index corresponding to the outlet boundary.
+   * \param[in] val_surface_no - Value of the CH4 mass fraction.
+   */
+  void SetSurface_CH4(unsigned short val_imarker, su2double val_surface_ch4){ Surface_CH4[val_imarker] = val_surface_ch4; };
+
+  /*!
    * \brief Set the pressure drop between two surfaces.
    * \param[in] val_marker - Index corresponding to the outlet boundary.
    * \param[in] val_surface_pressuredrop - Value of the pressure drop.
@@ -7932,6 +7924,13 @@ public:
    * \return The NOx mass fraction.
    */
   su2double GetSurface_NOx(unsigned short val_imarker) const { return Surface_NOx[val_imarker]; };
+
+    /*!
+   * \brief Get the CH4 mass fraction at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The CH4 mass fraction.
+   */
+  su2double GetSurface_CH4(unsigned short val_imarker) const { return Surface_CH4[val_imarker]; };
 
   /*!
    * \brief Get the pressure drop between two surfaces.

@@ -1251,6 +1251,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     if (is_scalar_model) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][SCALAR_SOL]->GetHasHybridParallel()))
       solver[MESH_0][SCALAR_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+      END_SU2_OMP_PARALLEL
     }
     if (fem) {
       if (time_domain) val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;

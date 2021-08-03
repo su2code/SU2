@@ -14,21 +14,11 @@
 #include "../../include/fluid/CConstantPrandtlRANS.hpp"
 #include "../../include/fluid/CPolynomialConductivity.hpp"
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
-
 #include "../../include/fluid/CIncIdealGas.hpp"
 
-// CFluidScalar::CFluidScalar(CConfig *config, CFluidModel *fluidModel) : CFluidModel(), fluidModel(fluidModel){
 CFluidScalar::CFluidScalar(CConfig *config, su2double value_pressure_operating) : CFluidModel() {
-  
-/*
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-*/
-
   unsigned short n_scalars = config->GetNScalarsInit(); 
   config->SetNScalarsInit(n_scalars); 
-
   n_species_mixture = n_scalars + 1; 
 
   specificHeat.resize(n_species_mixture); 
@@ -49,18 +39,16 @@ CFluidScalar::CFluidScalar(CConfig *config, su2double value_pressure_operating) 
   Pressure = value_pressure_operating;
   Gas_Constant = config->GetGas_Constant();
   Gamma = 1.0;
-  // fluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure);
 
   SetLaminarViscosityModel(config); 
   SetThermalConductivityModel(config); 
 }
 
 std::vector<su2double> CFluidScalar::massToMoleFractions(su2double* val_scalars){
-  su2double mixtureMolarMass = 0.0; 
-  su2double mixtureFractionDenumerator = 0.0; 
-  
-  // change if val_scalars becomes array of scalar su2double* 
-  massFractions.at(0) = val_scalars[0];
+  su2double mixtureMolarMass {0.0};
+
+  /* Change if val_scalars becomes array of scalar su2double*. */
+  massFractions.at(0) = val_scalars[0]; // massFractions.at(0) = val_scalars.at(0)
   massFractions.at(1) = 1 - val_scalars[0]; 
 
   for(int iVar = 0; iVar < n_species_mixture; iVar++){
@@ -70,14 +58,14 @@ std::vector<su2double> CFluidScalar::massToMoleFractions(su2double* val_scalars)
   for(int iVar = 0; iVar < n_species_mixture; iVar++){
     moleFractions.at(iVar) = (massFractions[iVar] / molarMasses[iVar]) / mixtureMolarMass;
   }
-  
+
   return moleFractions; 
 }
 
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
   switch (config->GetKind_ViscosityModel()) {
     case VISCOSITYMODEL::CONSTANT:
-    // Build a list of LaminarViscosity pointers to be used in e.g. wilkeViscosity to get the species viscosities. 
+    /* Build a list of LaminarViscosity pointers to be used in e.g. wilkeViscosity to get the species viscosities. */
       for (int iVar = 0; iVar < n_species_mixture; iVar++){
         LaminarViscosityPointers[iVar] = unique_ptr<CConstantViscosity>(new CConstantViscosity(config->GetMu_Constant(iVar)));
       }
@@ -155,11 +143,7 @@ su2double CFluidScalar::wilkeViscosity(su2double* val_scalars){
    
   massToMoleFractions(val_scalars); 
 
-  // Density = GetDensity();
-  // Temperature = GetTemperature();
-
-  // here laminarViscosity is filled with n_species_mixture viscosity values. Commented because laminarViscosity is hardcoded right now
-
+  /* Fill laminarViscosity with n_species_mixture viscosity values. */
   for (int iVar = 0; iVar < n_species_mixture; iVar++){
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
     laminarViscosity.at(iVar) = LaminarViscosityPointers[iVar]->GetViscosity();
@@ -189,11 +173,6 @@ su2double CFluidScalar::davidsonViscosity(su2double* val_scalars){
   mixtureFractions.clear(); 
   
   massToMoleFractions(val_scalars); 
-
- /* 
-  Density = GetDensity();
-  Temperature = GetTemperature();
-*/
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++){
     LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
@@ -248,17 +227,11 @@ su2double CFluidScalar::wilkeConductivity(su2double* val_scalars){
 }
 
 unsigned long CFluidScalar::SetTDState_T(su2double val_temperature, su2double *val_scalars){
-  // fluidModel->SetTDState_T(val_temperature, val_scalars);  // this is probably not needed as well. Relates to the first comment of this document
-
-  //val_scalars moet eigenlijk een pointer array zijn die de massafracties van alle species bevat.
-  //dus voor 3 species: 1e array element species 1, 2e array element species 2, 3e array element species 3 = 1 - Yspecies 1 - Yspecies 2
-  // bovenste is niet handig. val_scalars moet een pointer array zijn met de massafracties van alle species dus niet N-1.  
   MeanMolecularWeight = 1/(val_scalars[0]/(molarMasses[0]/1000) + (1-val_scalars[0])/(molarMasses[1]/1000)); 
-  // FluidModel->SetMeanMolecularWeight(val_scalars); 
-   
+
   // Cp = specificHeat[0] * val_scalars[0] + specificHeat[1] * (1- val_scalars[0]); 
-  // Cp = 1000 * val_scalars[0] + 1005 * (1- val_scalars[0]);  
   Cp = 1009.39; 
+  // Cp = 1009.3; 
   Cv = Cp/1.4; 
   Temperature = val_temperature;
   Density = Pressure / ((Temperature * UNIVERSAL_GAS_CONSTANT) / MeanMolecularWeight);
@@ -274,4 +247,3 @@ unsigned long CFluidScalar::SetTDState_T(su2double val_temperature, su2double *v
 
   return 0;
 }
-

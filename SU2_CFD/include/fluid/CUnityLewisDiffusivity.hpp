@@ -1,7 +1,7 @@
 /*!
  * \file CUnityLewisDiffusivity.hpp
  * \brief Defines unity Lewis mass diffusivity.
- * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
+ * \author M.Heimgartner
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,8 +31,8 @@
 
 /*!
  * \class CUnityLewisDiffusivity
- * \brief Defines a unity lewis mass diffusivity model for species equations.
- * \author T. Economon
+ * \brief Defines a unity Lewis mass diffusivity model for species equations.
+ * \author M.Heimgartner 
  */
 class CUnityLewisDiffusivity final : public CDiffusivityModel {
 public:
@@ -47,8 +47,7 @@ public:
    * \brief Set diffusivity.
    */
   void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp, su2double kt) override { 
-    diff_ = kt / (Lewis * rho * cp); // is this possible? cp is calculated with mass fracties while wilke is calculated with mole fractions?
-    // also: don't kt, rho, cp need to be constant (take values of air?) want je hebt ook geen mixture lewis getal dus je moet wel k, cp, rho pakken van elke species. 
+    diff_ = kt / (Lewis * rho * cp);
   }
 
   private:

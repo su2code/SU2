@@ -495,6 +495,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("DIFFUSIVITY_PV"   , "Diffusivity_PV"   , "SOLUTION", "Diffusivity of the progress variable");
       AddVolumeOutput("DIFFUSIVITY_ENTH" , "Diffusivity_Enth" , "SOLUTION", "Diffusivity of the enthalpy");
       AddVolumeOutput("SPECIFIC_HEAT_CP"   , "Specific_Heat_Cp"   , "SOLUTION", "Mixture specific heat cp");
+
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
         if (config->GetLookupName(i_lookup)!="NULL"){ 
           string strname1="lookup_"+config->GetLookupName(i_lookup);

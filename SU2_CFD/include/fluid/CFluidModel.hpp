@@ -70,7 +70,7 @@ class CFluidModel {
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
   su2double mass_diffusivity{0.0};
-  su2double MeanMolecularWeight{0.0}; 
+  su2double MeanMolecularWeight{0.0};    /*!< \brief Mean molecular weight. */ 
 
   unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
@@ -127,10 +127,9 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
-   * \brief Get fluid specific heat at constant volume.
+   * \brief Get fluid mean molecular weight.
    */
   su2double GetMeanMolecularWeight() const { return MeanMolecularWeight; }
-  // virtual unsigned long GetMeanMolecularWeight(su2double *val_scalars) {return MeanMolecularWeight;}
 
   /*!
    * \brief Get the source term of the transported scalar
@@ -171,14 +170,11 @@ class CFluidModel {
    * \brief Get fluid dynamic viscosity.
    */
   virtual inline su2double GetLaminarViscosity() {
-  //  if(false){ // find a way to apply config->GetKind_Scalar_Model()
       LaminarViscosity->SetViscosity(Temperature, Density);
       Mu = LaminarViscosity->GetViscosity();
       LaminarViscosity->SetDerViscosity(Temperature, Density);
       dmudrho_T = LaminarViscosity->Getdmudrho_T();
       dmudT_rho = LaminarViscosity->GetdmudT_rho();
-    // }
-    // dmudrho_T en dmuT_rho moeten hier ook een waarde krijgen uit SetTDState_T in CFluidScalar 
     return Mu;
   }
 

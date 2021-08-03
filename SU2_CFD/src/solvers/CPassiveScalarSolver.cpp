@@ -31,7 +31,6 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-#include <iostream>
 #include <vector>
 
 CPassiveScalarSolver::CPassiveScalarSolver(void) : CScalarSolver() {}
@@ -54,8 +53,6 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
  
   nVar = config->GetNScalarsInit();
   nPrimVar = nVar; 
-  // nVar     = 1;
-  // nPrimVar = 1;
 
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -167,7 +164,6 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
      nodes->SetDiffusivity(iPoint, M, iVar);
   }
 
-
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -236,20 +232,12 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
 
 CPassiveScalarSolver::~CPassiveScalarSolver(void) {
   
-  unsigned long iMarker, iVertex;
-  unsigned short iVar;
+  // unsigned long iMarker, iVertex;
+  // unsigned short iVar;
   
   if (FluidModel != nullptr) delete FluidModel;
 
 }
-
-
-
-
-
-
-
-
 
 void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -267,13 +255,13 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
     CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double * scalars = nodes->GetSolution(i_point);
  
-    // su2double Temperature = nodes->GetTemperature(i_point);
     su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
 
     n_not_in_domain += fluid_model_local->SetTDState_T(Temperature, scalars); /*--- first argument (temperature) is not used ---*/
 
-    // temporary solution: compute mass diffusivity here with variable Cp.
+    // Temporary solution: compute mass diffusivity here with variable Cp.
     su2double cp = 2224.43 * scalars[0] + 1009.39 * (1- scalars[0]);
+    // su2double cp = 2219.8 * scalars[0] + 1009.3 * (1- scalars[0]);
     su2double density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(i_point); 
     su2double thermal_conductivity     = solver_container[FLOW_SOL]->GetNodes()->GetThermalConductivity(i_point);
     su2double Lewis = 1;  
@@ -324,15 +312,8 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
     SetSolution_Gradient_LS(geometry, config);
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
+
 }
-
-
-
-
-
-
-
-
 
 void CPassiveScalarSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
@@ -345,7 +326,7 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
                                                CSolver ***solver_container,
                                                CConfig *config,
                                                unsigned long ExtIter) {
-  su2double *coords;
+  // su2double *coords;
   bool Restart   = (config->GetRestart() || config->GetRestart_Flow());
   
   
@@ -356,11 +337,11 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
     }  
 
     su2double* scalar_init = new su2double[nVar];
-    CFluidModel *fluid_model_local;
+    // CFluidModel *fluid_model_local;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
 
-      fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
+      // fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
       for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
         
@@ -392,14 +373,12 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
 
 }
 
-
 void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_container,  CConfig *config) {
-//original code
-
   unsigned short iVar;
   unsigned long iPoint, total_index;
   
-  su2double  BetaInc2, Density, dRhodT, dRhodC, Temperature, Cp, Delta;
+  su2double  BetaInc2, Density, dRhodT, dRhodC, Temperature, Delta;
+  // su2double Cp; 
   
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -410,7 +389,7 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
     
     Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     BetaInc2    = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-    Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
+    // Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
     Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     
     unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
@@ -427,10 +406,7 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
     } else {
       dRhodT = 0.0;
     }
-    
-    /*--- Passive scalars have no impact on the density. ---*/
-    
-    // dRhodC = 0.0;
+        
     std::vector<su2double> MolecularWeight;
     std::vector<su2double> SpecificHeatCp; 
     unsigned short n_species_mixture = nVar + 1; 
@@ -466,8 +442,8 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
         su2double c = nodes->GetSolution(iPoint,iVar);
         dRhodC = -Density*((MolecularWeight[1]-MolecularWeight[0])/(MolecularWeight[0]+(MolecularWeight[1]-MolecularWeight[0])*c));
         
-        su2double dCpdC = SpecificHeatCp[0] - SpecificHeatCp[1]; 
-        // su2double dCpdC = 1000 - 1005; 
+        // su2double dCpdC = SpecificHeatCp[0] - SpecificHeatCp[1]; 
+      
         /*--- Compute the lag terms for the decoupled linear system from
          the mean flow equations and add to the residual for the scalar.
          In short, we are effectively making these terms explicit. ---*/
@@ -492,64 +468,6 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
     
   }
 
-  //New preconditioner which includes scalar influence on density and specific heat capacity,
-  //i.e. an extra row and column are added which in include terms such as drho/dY. Also dCp/dY is added. 
-
-  // unsigned long iPoint;
-  // unsigned short iDim, jDim, iVar, jVar;
-
-  // bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
-  // bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  // bool energy           = config->GetEnergy_Equation();
-
-  // for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-  // /*--- Access the primitive variables at this node. ---*/
-
-  // su2double Density     = nodes->GetDensity(iPoint);
-  // su2double BetaInc2    = nodes->GetBetaInc2(iPoint);
-  // su2double Cp          = nodes->GetSpecificHeatCp(iPoint);
-  // su2double Temperature = nodes->GetTemperature(iPoint);
-
-  // std::vector<su2double> MolecularWeight;
-  // std::vector<su2double> SpecificHeatCp; 
-  // unsigned short n_species_mixture = nVar + 1; 
-
-  // for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-  //   MolecularWeight.at(iVar) = config->GetMolecular_Weight(iVar);
-  //   SpecificHeatCp.at(iVar) = config->GetSpecific_Heat_Cp(iVar); 
-  // }
-  
-  // su2double  Velocity[MAXNDIM] = {0.0};
-  // for (iDim = 0; iDim < nDim; iDim++){
-  //   Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
-  // }
-   
-  // su2double dRhodT;
-  // if (variable_density) {
-  //   dRhodT = -Density/Temperature;
-  // } else {
-  //   dRhodT = 0.0;
-  // }
-
-  // std::vector<su2double> scalar; 
-  // su2double sumScalars; 
-  // su2double weightedSumScalars; 
-  // std::vector<su2double> dRhodY;
-  // std::vector<su2double> dCpdY; 
-  // for (iVar = 0; iVar < nVar; iVar++) {
-  //   scalar.at(iVar) = nodes->GetSolution(iPoint, iVar);
-  //   sumScalars += scalar[iVar];
-  //   weightedSumScalars += scalar[iVar]/MolecularWeight[iVar]; 
-  //   dRhodY.at(iVar) = -Density*(1/MolecularWeight[iVar] - 1/MolecularWeight[nVar]) / (weightedSumScalars + (1-sumScalars)/MolecularWeight[nVar]); 
-  //   dCpdY.at(iVar) = SpecificHeatCp[iVar] + SpecificHeatCp[nVar]; 
-  // }
-  
-  // if (implicit) {
-    
-  // }
-
-  // }
 }
 
 void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -558,7 +476,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
   bool axisymmetric = config->GetAxisymmetric();
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous        = config->GetViscous();
+  // bool viscous        = config->GetViscous();
 
   vector<su2double> zero_sources(nVar,0.);
 
@@ -658,13 +576,13 @@ void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
       }
     }
   }
-
+// END_SU2_OMP_FOR
 }
 
 void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  // const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -698,7 +616,7 @@ void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_conta
         }
     }
   }
-
+// END_SU2_OMP_FOR
 }
 
 void CPassiveScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,

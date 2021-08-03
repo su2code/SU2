@@ -6,12 +6,10 @@
 #include "CFluidModel.hpp"
 
 class CFluidScalar : public CFluidModel {
+// class CFluidScalar final : public CFluidModel {
 
 protected:
   unsigned short n_species_mixture = 0.0;
-  // su2double viscosityMixture = 0.0;
-  // su2double Density;
-  // su2double Temperature;
   su2double Gas_Constant = 0.0; 
   su2double Gamma = 0.0; 
   
@@ -23,47 +21,37 @@ protected:
   std::vector<su2double> molarMasses;
   std::vector<su2double> laminarViscosity;
   std::vector<su2double> specificHeat; 
-  // std::vector<su2double> laminarViscosity = {1.099e-05, 1.823e-05}; 
-  // std::vector<su2double> laminarViscosity = {1.126e-05, 1.849e-05}; //corresponds with Fluent 
   std::vector<su2double> laminarthermalConductivity; 
   
-  unique_ptr<CViscosityModel> LaminarViscosityPointers[100];  
-  unique_ptr<CConductivityModel> ThermalConductivityPointers[100]; 
-  // using LaminarViscosityPointers = std::unique_ptr<std::unique_ptr<CViscosityModel>[100]>; 
-  // unique_ptr<CViscosityModel[]> LaminarViscosityPointers(new CViscosityModel[100]); 
-  // auto LaminarViscosityPointers = std::make_unique<CViscosityModel[]>(100);
-
-  CFluidModel *FluidModel = nullptr;
+  unique_ptr<CViscosityModel> LaminarViscosityPointers[100];  // How to fix this?
+  unique_ptr<CConductivityModel> ThermalConductivityPointers[100];  
 
  public:
 
   CFluidScalar(CConfig *config, su2double value_pressure_operating);
 
-  ~CFluidScalar() {};
+  ~CFluidScalar() {}; // Remove. 
 
   void SetLaminarViscosityModel(const CConfig* config);
+  // void SetLaminarViscosityModel(const CConfig* config) override;
 
   void SetThermalConductivityModel(const CConfig* config);
+  // void SetThermalConductivityModel(const CConfig* config) override;
 
   unsigned long SetTDState_T(su2double val_temperature, su2double *val_scalars);
+  // unsigned long SetTDState_T(su2double val_temperature, su2double *val_scalars) override;
 
-  std::vector<su2double> massToMoleFractions(su2double* val_scalars);
+  std::vector<su2double> massToMoleFractions(su2double* val_scalars); // Make private. 
 
-  su2double wilkeViscosity(su2double* val_scalars);
+  su2double wilkeViscosity(su2double* val_scalars); // Make private. 
 
-  su2double davidsonViscosity(su2double* val_scalars);
+  su2double davidsonViscosity(su2double* val_scalars); // Make private. 
 
-  su2double wilkeConductivity(su2double *val_scalars);
+  su2double wilkeConductivity(su2double *val_scalars); // Make private. 
 
   inline su2double GetLaminarViscosity() {return Mu; }
+  // inline su2double GetLaminarViscosity() const {return Mu; }
 
   inline su2double GetThermalConductivity() { return Kt; }
-
-
- // CFluidScalar(CConfig *config, CFluidModel *fluidModel);
-  // ~CFluidScalar() {delete FluidModel;};
-
-  inline su2double GetTemperature() {return FluidModel->GetTemperature(); }
-
-  inline su2double GetDensity() {return FluidModel->GetDensity(); }
+  // inline su2double GetThermalConductivity() const { return Kt; }
 };

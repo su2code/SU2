@@ -909,7 +909,7 @@ void CConfig::SetPointersNull(void) {
   Surface_Temperature     = nullptr;    Surface_Pressure         = nullptr;    Surface_Density          = nullptr;    Surface_Enthalpy        = nullptr;
   Surface_NormalVelocity  = nullptr;    Surface_TotalTemperature = nullptr;    Surface_TotalPressure    = nullptr;    Surface_PressureDrop    = nullptr;
   Surface_DC60            = nullptr;    Surface_IDC              = nullptr;
-  Surface_CO              = nullptr;    Surface_NOx               = nullptr;
+  Surface_CO              = nullptr;    Surface_NOx               = nullptr;   Surface_CH4              = nullptr;
   //Surface_Scalar          = nullptr;
 
   Outlet_MassFlow      = nullptr;       Outlet_Density      = nullptr;      Outlet_Area     = nullptr;
@@ -1057,7 +1057,6 @@ void CConfig::SetPointersNull(void) {
   Kt_Constant = nullptr;
   Prandtl_Lam = nullptr; 
   Prandtl_Turb = nullptr; 
-  // Mu_ConstantND = nullptr;
 
 }
 
@@ -1123,8 +1122,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
-/*\brief MIXTURE \n DESCRIPTION: Mixture simulation \n DEFAULT: false \ingroup Config */
-  addBoolOption("MIXTURE", Mixture, false);
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -1164,15 +1161,12 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to freestream specification ---*/
 
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
-  // addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight[0], 28.96);
   addDoubleListOption("MOLECULAR_WEIGHT", n_species, Molecular_Weight);
-
   /*!\brief GAS_CONSTANT \n DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  // addDoubleOption("SPECIFIC_HEAT_CP", Specific_Heat_Cp, 1004.703);
   addDoubleListOption("SPECIFIC_HEAT_CP", n_species, Specific_Heat_Cp);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
@@ -1239,7 +1233,6 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  // addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
    addDoubleListOption("KT_CONSTANT", n_species, Kt_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
@@ -1266,10 +1259,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
   addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /*!\brief PRANDTL_LAM \n DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) \n DEFAULT: 0.72 \ingroup Config*/
-  // addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   addDoubleListOption("PRANDTL_LAM", n_species, Prandtl_Lam);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
-  // addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   addDoubleListOption("PRANDTL_TURB", n_species, Prandtl_Turb);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
@@ -3316,15 +3307,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Kind_ConductivityModel = CONDUCTIVITYMODEL::FLAMELET;
     Kind_DiffusivityModel  = DIFFUSIVITYMODEL::FLAMELET;
   }
-// this is probably not the right way because then user cannot choose for other viscosity models anymore...
-/*
-  if (Kind_FluidModel == MIXTURE_FLUID_MODEL){
-    Kind_Scalar_Model      = PASSIVE_SCALAR;
-    Kind_ViscosityModel    = VISCOSITYMODEL::MIXTURE;
-    Kind_ConductivityModel = CONDUCTIVITYMODEL::MIXTURE;
-    Kind_DiffusivityModel  = DIFFUSIVITYMODEL::MIXTURE;
-  }
-*/
+
   if (nZone > 1){
     Multizone_Problem = YES;
   }
@@ -3733,15 +3716,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
       if(fabs(Kt_Constant[iVar]-0.0257) < 1.0E-10) Kt_Constant[iVar] *= 0.577789317;
     }
-    //if(fabs(Mu_Constant-1.716E-5) < 1.0E-15) Mu_Constant /= 47.88025898;
-    // if(fabs(Mu_Ref-1.716E-5)      < 1.0E-15) Mu_Ref      /= 47.88025898;
-
-    /* Correct the values with temperature dimension, if they contain the default SI values. */
-    // if(fabs(Mu_Temperature_Ref-273.15) < 1.0E-8) Mu_Temperature_Ref *= 1.8;
-    // if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
-
-    /* Correct the thermal conductivity, if it contains the default SI value. */
-    // if(fabs(Kt_Constant-0.0257) < 1.0E-10) Kt_Constant *= 0.577789317;
   }
 
   /*--- Check for Measurement System ---*/
@@ -5344,6 +5318,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Surface_IDR                = new su2double [nMarker_Analyze] ();
   Surface_CO                 = new su2double [nMarker_Analyze] ();
   Surface_NOx                = new su2double [nMarker_Analyze] ();
+  Surface_CH4                = new su2double [nMarker_Analyze] ();
 
   //Surface_Scalar = new su2double*[nMarker_Analyze] ();
   //for (int i_scalar=0; i_scalar < nMarker_Analyze; ++i_scalar)
@@ -7864,6 +7839,7 @@ CConfig::~CConfig(void) {
      delete[]  Surface_IDR;
      delete[]  Surface_CO;
      delete[]  Surface_NOx;
+     delete[]  Surface_CH4;
      //delete[]  Surface_Scalar;
 
   delete[]  Inlet_Ttotal;
@@ -8046,7 +8022,6 @@ CConfig::~CConfig(void) {
   delete [] Kt_Constant; 
   delete [] Prandtl_Lam; 
   delete [] Prandtl_Turb; 
-  // delete [] Mu_ConstantND;
 
 }
 

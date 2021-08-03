@@ -340,7 +340,8 @@ COutputLegacy::~COutputLegacy(void) {
 }
 
 void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-  char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000], scalar_resid[1000];
+  char cstr[200], turb_resid[1000], adj_turb_resid[1000], scalar_resid[1000];
+  // char buffer[50];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
 
@@ -3378,7 +3379,9 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
             }
             Breakdown_file << ")." << endl;
             break;
-
+          
+          case VISCOSITYMODEL::FLAMELET:
+            break;
         }
 
         if (energy) {
@@ -3409,6 +3412,9 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
                 if (iVar < config[val_iZone]->GetnPolyCoeffs()-1) Breakdown_file << ", ";
               }
               Breakdown_file << ")." << endl;
+              break;
+
+            case CONDUCTIVITYMODEL::FLAMELET:
               break;
 
           }
