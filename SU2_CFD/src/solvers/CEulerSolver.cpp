@@ -1334,7 +1334,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
 
     /*--- Constant thermal conductivity model. ---*/
-    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
   }
 
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
@@ -1480,7 +1480,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       case CONDUCTIVITYMODEL::CONSTANT:
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
+        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -2339,30 +2339,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- For viscous problems, we need an additional gradient. ---*/
     if (viscous) {
-
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
-        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
-        su2double xVelocity       = nodes->GetVelocity(iPoint,0);
-        su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
-
-        if (yCoord > EPS){
-          su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
-          nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
-          nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
-          nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
-        }
-      }
-
-      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-        SetAuxVar_Gradient_GG(geometry, config);
-      }
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-        SetAuxVar_Gradient_LS(geometry, config);
-      }
-
+      ComputeAxisymmetricAuxGradients(geometry, config);
     }
 
     /*--- loop over points ---*/

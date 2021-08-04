@@ -184,18 +184,18 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
 CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
-  unsigned short iDim, iSpecies, iVar, jVar,jSpecies;
-  su2double rho, rhou, rhov, rhoEve, vel2, H, yinv, T, Tve, Ru, RuSI;
-  su2double *Ds, **GV, ktr, kve;
+  unsigned short iDim, iSpecies, iVar;
+  su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
+  su2double ktr, kve;
 
   /*--- Rename for convenience ---*/
-  Ds = Diffusion_Coeff_i;
+  auto Ds = Diffusion_Coeff_i;
   ktr = Thermal_Conductivity_i;
   kve = Thermal_Conductivity_ve_i;
   rho = V_i[RHO_INDEX];
   T   = V_i[T_INDEX];
   Tve  = V_i[TVE_INDEX];
-  GV  = PrimVar_Grad_i;
+  auto GV  = PrimVar_Grad_i;
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
@@ -234,64 +234,104 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   residual[nSpecies+2] = yinv*rhov*H*Volume;
   residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
 
- if (implicit) {
+  if (implicit) {
 
-   /*--- Initialize ---*/
-   for (iVar = 0; iVar < nVar; iVar++)
-     for (jVar = 0; jVar < nVar; jVar++)
-       jacobian[iVar][jVar] = 0.0;
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-       dYdr[iSpecies][jSpecies] = 0.0;
+    /*--- Initialize ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        jacobian[iVar][jVar] = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+        dYdr[iSpecies][jSpecies] = 0.0;
 
-   /*--- Calculate additional quantities ---*/
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-       dYdr[iSpecies][jSpecies] += -1/rho*Y[iSpecies];
-     }
-     dYdr[iSpecies][iSpecies] += 1/rho;
-   }
+    /*--- Calculate additional quantities ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        dYdr[iSpecies][jSpecies] += -1/rho*Y[iSpecies];
+      }
+      dYdr[iSpecies][iSpecies] += 1/rho;
+    }
 
-   /*--- Populate Jacobian ---*/
+    /*--- Populate Jacobian ---*/
 
-   // Species density
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-       jacobian[iSpecies][jSpecies] = dYdr[iSpecies][jSpecies]*rhov;
-     }
-     jacobian[iSpecies][nSpecies+1] = Y[iSpecies];
-   }
+    // Species density
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        jacobian[iSpecies][jSpecies] = dYdr[iSpecies][jSpecies]*rhov;
+      }
+      jacobian[iSpecies][nSpecies+1] = Y[iSpecies];
+    }
 
-   // X-momentum
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-     jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
-   jacobian[nSpecies][nSpecies]   = rhov/rho;
-   jacobian[nSpecies][nSpecies+1] = rhou/rho;
+    // X-momentum
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
+    jacobian[nSpecies][nSpecies]   = rhov/rho;
+    jacobian[nSpecies][nSpecies+1] = rhou/rho;
 
-   // Y-momentum
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    // Y-momentum
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
      jacobian[nSpecies+1][iSpecies] = -rhov*rhov/(rho*rho);
-   jacobian[nSpecies+1][nSpecies+1] = 2*rhov/rho;
+    jacobian[nSpecies+1][nSpecies+1] = 2*rhov/rho;
 
-   // Energy
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-     jacobian[nSpecies+nDim][iSpecies]      = -H*rhov/rho + dPdU_i[iSpecies]*rhov/rho;
-   jacobian[nSpecies+nDim][nSpecies]        = dPdU_i[nSpecies]*rhov/rho;
-   jacobian[nSpecies+nDim][nSpecies+1]      = H + dPdU_i[nSpecies+1]*rhov/rho;
-   jacobian[nSpecies+nDim][nSpecies+nDim]   = (1+dPdU_i[nSpecies+nDim])*rhov/rho;
-   jacobian[nSpecies+nDim][nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1]*rhov/rho;
+    // Energy
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      jacobian[nSpecies+nDim][iSpecies]      = -H*rhov/rho + dPdU_i[iSpecies]*rhov/rho;
+    jacobian[nSpecies+nDim][nSpecies]        = dPdU_i[nSpecies]*rhov/rho;
+    jacobian[nSpecies+nDim][nSpecies+1]      = H + dPdU_i[nSpecies+1]*rhov/rho;
+    jacobian[nSpecies+nDim][nSpecies+nDim]   = (1+dPdU_i[nSpecies+nDim])*rhov/rho;
+    jacobian[nSpecies+nDim][nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1]*rhov/rho;
 
-   // Vib-el energy
-   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-     jacobian[nSpecies+nDim+1][iSpecies] = -rhoEve*rhov/(rho*rho);
-   jacobian[nSpecies+nDim+1][nSpecies+1] = rhoEve/rho;
-   jacobian[nSpecies+nDim+1][nSpecies+nDim+1] = rhov/rho;
+    // Vib-el energy
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      jacobian[nSpecies+nDim+1][iSpecies] = -rhoEve*rhov/(rho*rho);
+    jacobian[nSpecies+nDim+1][nSpecies+1] = rhoEve/rho;
+    jacobian[nSpecies+nDim+1][nSpecies+nDim+1] = rhov/rho;
 
-   for (iVar = 0; iVar < nVar; iVar++)
-     for (jVar = 0; jVar < nVar; jVar++)
-       jacobian[iVar][jVar] *= yinv*Volume;
- }
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        jacobian[iVar][jVar] *= yinv*Volume;
+  }
 
-  return ResidualType<>(residual, jacobian, nullptr);
+  if (viscous) {
+    if (!rans){ turb_ke_i = 0.0; }
 
+    su2double Vector = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      Vector += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1];
+
+    su2double sumJhs_y  = 0.0;
+    su2double sumJeve_y = 0.0;
+    su2double Mass      = 0.0;
+
+    for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      Mass += V_i[iSpecies]*Ms[iSpecies];
+
+    su2double heat_capacity_cp_i   = V_i[RHOCVTR_INDEX]/rho + Ru/Mass;
+    su2double total_viscosity_i    = Laminar_Viscosity_i + Eddy_Viscosity_i;
+    su2double total_conductivity_i = ktr + kve + heat_capacity_cp_i*Eddy_Viscosity_i/Prandtl_Turb;
+    su2double u                    = V_i[VEL_INDEX];
+    su2double v                    = V_i[VEL_INDEX+1];
+    su2double qy_t                 = -total_conductivity_i*GV[T_INDEX][1];
+    su2double qy_ve                = -kve*GV[TVE_INDEX][1];
+
+    /*--- Enthalpy and vib-el energy transport due to y-direction diffusion---*/
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      sumJhs_y  += -(rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * hs[iSpecies];
+      sumJeve_y += -(rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * eve_i[iSpecies];
+    }
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      residual[iSpecies] -= 0.0;
+    residual[nSpecies] -= Volume*(yinv*total_viscosity_i*(GV[nSpecies+2][1]+GV[nSpecies+3][0])
+                                                         -TWO3*AuxVar_Grad_i[0][0]);
+    residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(GV[nSpecies+3][1]-v*yinv)
+                                                             -TWO3*AuxVar_Grad_i[0][1]);
+    residual[nSpecies+2] -= Volume*(yinv*(-sumJhs_y + total_viscosity_i*(u*(GV[nSpecies+3][0]+GV[nSpecies+2][1])
+                                                                        +v*TWO3*(2*GV[nSpecies+2][1]-GV[nSpecies+2][0]
+                                                                        -v*yinv+rho*turb_ke_i))-qy_t)
+                                                                        -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
+    residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
+  }
+
+  return ResidualType<>(residual, nullptr, nullptr);
 }

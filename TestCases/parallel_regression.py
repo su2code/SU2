@@ -47,7 +47,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [2.473627,    2.473627,  -11.989166,  -11.879331,  -32.000000,   10.804939]
+    thermalbath.test_vals = [0.945997, 0.945997, -12.039262, -12.171767, -32.000000, 10.013239]
     thermalbath.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -59,7 +59,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864]
+    thermalbath_frozen.test_vals = [-32.000000, -32.000000, -12.039251, -12.171781, -32.000000, 10.013545]
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -78,17 +78,17 @@ def main():
     invwedge.tol       = 0.00001
     test_list.append(invwedge)
 
-    # Viscous single wedge
-    viscwedge           = TestCase('viscwedge')
-    viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
-    viscwedge.cfg_file  = "viscwedge.cfg"
-    viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
-    viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
-    viscwedge.timeout   = 1600
-    viscwedge.new_output = True
-    viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)
+    # Viscous single cone - axisymmetric
+    visc_cone           = TestCase('visc_cone')
+    visc_cone.cfg_dir   = "nonequilibrium/axi_visccone"
+    visc_cone.cfg_file  = "axi_visccone.cfg"
+    visc_cone.test_iter = 10
+    visc_cone.test_vals = [-5.173082, -5.697844, -20.831292, -20.719160, -23.419769, -1.564064, -2.069008, 2.203919, -2.590729]
+    visc_cone.su2_exec  = "mpirun -n 2 SU2_CFD"
+    visc_cone.timeout   = 1600
+    visc_cone.new_output = True
+    visc_cone.tol       = 0.00001
+    test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
     #viscwedge_mpp           = TestCase('viscwedge_mpp')
@@ -378,7 +378,7 @@ def main():
     axi_rans_air_nozzle.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle.cfg_file  = "air_nozzle.cfg"
     axi_rans_air_nozzle.test_iter = 10
-    axi_rans_air_nozzle.test_vals = [ -12.096569, -6.625843, -8.807541, -2.393279]
+    axi_rans_air_nozzle.test_vals = [-6.278454, -0.744813, -2.243285, 2.312481]
     axi_rans_air_nozzle.su2_exec  = "mpirun -n 2 SU2_CFD"
     axi_rans_air_nozzle.timeout   = 1600
     axi_rans_air_nozzle.tol       = 0.0001
@@ -484,6 +484,17 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.timeout   = 1600
     sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
+
+    # 2D pin array with heat transfer BC on pin surfaces
+    inc_heatTransfer_BC           = TestCase('inc_heatTransfer_BC')
+    inc_heatTransfer_BC.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    inc_heatTransfer_BC.cfg_file  = "BC_HeatTransfer.cfg"
+    inc_heatTransfer_BC.test_iter = 50
+    inc_heatTransfer_BC.test_vals = [-8.242458, -7.340502, -7.407009, -0.152357, -1.6675e+03] #last 7 lines
+    inc_heatTransfer_BC.su2_exec  = "mpirun -n 2 SU2_CFD"
+    inc_heatTransfer_BC.timeout   = 1600
+    inc_heatTransfer_BC.tol       = 0.00001
+    test_list.append(inc_heatTransfer_BC)
 
     ############################
     ### Incompressible RANS  ###

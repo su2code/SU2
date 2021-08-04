@@ -153,7 +153,7 @@ public:
   /*!
    * \brief Get vector of species V-E energy.
    */
-  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
+  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) = 0;
 
   /*!
    * \brief Compute species enthalpies.

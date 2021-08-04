@@ -1086,7 +1086,8 @@ enum BC_TYPE {
   ENGINE_EXHAUST = 22,        /*!< \brief Boundary nacelle exhaust. */
   RIEMANN_BOUNDARY= 24,       /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,            /*!< \brief No slip isothermal wall boundary condition. */
-  HEAT_FLUX  = 26,            /*!< \brief No slip constant heat flux wall boundary condition. */
+  HEAT_FLUX = 26,             /*!< \brief No slip constant heat flux wall boundary condition. */
+  HEAT_TRANSFER = 27,         /*!< \brief No slip heat transfer boundary condition. */
   ACTDISK_INLET = 32,         /*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,        /*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,      /*!< \brief Clamped Boundary definition. */
@@ -2223,6 +2224,18 @@ struct StreamwisePeriodicValues {
   su2double Streamwise_Periodic_MassFlow;           /*!< \brief Value of current massflow [kg/s] which results in a delta p and therefore an artificial body force vector. */
   su2double Streamwise_Periodic_IntegratedHeatFlow; /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
   su2double Streamwise_Periodic_InletTemperature;   /*!< \brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
+};
+
+/*!
+ * \brief Type of POD basis generation (for use with libROM)
+ */
+enum class POD_KIND {
+  STATIC,            /*!< \brief Use static SVD for POD basis generation. */
+  INCREMENTAL,       /*!< \brief Use incremental SVD for POD basis generation. */
+};
+static const MapType<std::string, POD_KIND> POD_Map = {
+  MakePair("STATIC_POD",      POD_KIND::STATIC)
+  MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
 };
 
 #undef MakePair

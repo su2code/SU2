@@ -45,9 +45,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                          config ),
                                        Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
-  vector<su2double> energies;
   unsigned short iDim, iSpecies;
-  su2double soundspeed, sqvel, rho;
 
   /*--- Setting variable amounts ---*/
   nDim            = ndim;
@@ -143,22 +141,17 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
 
+  /*--- Set mixture state ---*/
+  fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
+
+  /*--- Compute necessary quantities ---*/
+  const su2double rho = fluidmodel->GetDensity();
+  const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
+  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_mach) * pow(soundspeed,2);
+  const auto& energies = fluidmodel->ComputeMixtureEnergies();
+  
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
-
-    /*--- Reset velocity^2 [m2/s2] to zero ---*/
-    sqvel = 0.0;
-
-    /*--- Set mixture state ---*/
-    fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
-
-    /*--- Compute necessary quantities ---*/
-    rho = fluidmodel->GetDensity();
-    soundspeed = fluidmodel->ComputeSoundSpeed();
-    for (iDim = 0; iDim < nDim; iDim++){
-      sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
-    }
-    energies = fluidmodel->ComputeMixtureEnergies();
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -168,14 +161,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
-
-    Solution_Old = Solution;
-
-    /*--- Assign primitive variables ---*/
-    Primitive(iPoint,T_INDEX)   = val_temperature;
-    Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
-    Primitive(iPoint,P_INDEX)   = val_pressure;
   }
+
+  Solution_Old = Solution;
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
@@ -192,22 +180,25 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
 
 bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys;
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                         dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
+                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
+  /*--- Set additional point quantities ---*/
   Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);
@@ -250,7 +241,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       U[iSpecies]            = 1E-20;
       V[RHOS_INDEX+iSpecies] = 1E-20;
       rhos[iSpecies]         = 1E-20;
-      //nonPhys                = true;
+    //nonPhys                = true;
     } else {
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
       rhos[iSpecies]         = U[iSpecies];
@@ -276,12 +267,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[TVE_INDEX] = T[1];
 
   // Determine if the temperature lies within the acceptable range
-  //TODO: fIX THIS
-  if (V[T_INDEX] == Tmin) {
-    nonPhys = true;
-  } else if (V[T_INDEX] == Tmax){
-    nonPhys = true;
-  }
+  if (V[T_INDEX] <= Tmin)      { nonPhys = true;}
+  else if (V[T_INDEX] >= Tmax) { nonPhys = true;}
+  else if (V[T_INDEX] != V[T_INDEX] || V[TVE_INDEX] != V[TVE_INDEX]){
+    nonPhys = true;}
 
   /*--- Vibrational-Electronic Temperature ---*/
   vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);

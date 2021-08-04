@@ -284,7 +284,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /*--- Add Cp diff fields ---*/
 
-  Add_CpInverseDesignOutput(config);
+  Add_CpInverseDesignOutput();
 
 }
 
@@ -323,10 +323,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-
-  //Auxiliary variables for post-processment
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
   // Grid velocity
   if (gridMovement){

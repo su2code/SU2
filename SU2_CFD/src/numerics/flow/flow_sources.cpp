@@ -154,10 +154,10 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
   residual[2] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
                          -TWO3*AuxVar_Grad_i[0][1]);
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
-                                                  +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
-                                                           -v*yinv+U_i[0]*turb_ke_i))
-                               -total_conductivity_i*PrimVar_Grad_i[0][1])
-                         -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
+                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
+                                                 -v*yinv+U_i[0]*turb_ke_i))
+                                                 +total_conductivity_i*PrimVar_Grad_i[0][1])
+                                                 -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
 }
 
 
@@ -674,7 +674,7 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
   smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
   smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
   //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
-  
+
   se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
   //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
 
@@ -777,7 +777,7 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
 
   /*--- Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual contribution ---*/
   const su2double delta_T = SPvals.Streamwise_Periodic_InletTemperature - config->GetInc_Temperature_Init()/config->GetTemperature_Ref();
-  residual[nDim+1] += 0.5 * abs(local_Massflow) * SpecificHeat_i * delta_T;
+  residual[nDim+1] += 0.5 * abs(local_Massflow) * Cp_i * delta_T;
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
