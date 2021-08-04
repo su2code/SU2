@@ -352,9 +352,10 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     su2double zero[MAXNDIM] = {0.0};
     nodes->SetVelocity_Old(iPoint, zero);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
+    for (auto iDim = 0u; iDim < nDim; iDim++){
+      LinSysRes(iPoint, nSpecies+iDim) = 0.0;
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
 
     /*--- Apply viscous residual to the linear system ---*/
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
