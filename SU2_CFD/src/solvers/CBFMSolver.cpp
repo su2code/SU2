@@ -315,7 +315,6 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
     C_f = 0.0592 * pow(Re_ax, -0.2);
-
     // Computing the parallel, loss generating body force
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
