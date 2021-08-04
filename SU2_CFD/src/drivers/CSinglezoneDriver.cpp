@@ -93,6 +93,12 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Output the solution in files. ---*/
 
     Output(TimeIter);
+    
+    /*--- Save iteration solution for libROM ---*/
+    if (config_container[MESH_0]->GetSave_libROM()) {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                     config_container[ZONE_0], StopCalc);
+    }
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -133,6 +139,12 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                                 solver_container[ZONE_0][INST_0],
                                                                                 config_container[ZONE_0], TimeIter);
   }
+  else if (config_container[ZONE_0]->GetHeatProblem()) {
+    /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
+    solver_container[ZONE_0][INST_0][MESH_0][HEAT_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                            solver_container[ZONE_0][INST_0],
+                                                                            config_container[ZONE_0], TimeIter);
+  }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
@@ -162,14 +174,14 @@ void CSinglezoneDriver::Run() {
 
 void CSinglezoneDriver::Postprocess() {
 
-    iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+  iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
+      numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+
+  /*--- A corrector step can help preventing numerical instabilities ---*/
+
+  if (config_container[ZONE_0]->GetRelaxation())
+    iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-    /*--- A corrector step can help preventing numerical instabilities ---*/
-
-    if (config_container[ZONE_0]->GetRelaxation())
-      iteration_container[ZONE_0][INST_0]->Relaxation(output_container[ZONE_0], integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
 

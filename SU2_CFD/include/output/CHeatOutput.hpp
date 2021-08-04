@@ -1,6 +1,6 @@
 /*!
  * \file CHeatOutput.hpp
- * \brief  Headers of the heat output.
+ * \brief Headers of the heat output.
  * \author R. Sanchez, T. Albring.
  * \version 7.1.1 "Blackbird"
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "COutput.hpp"
+#include "CFVMOutput.hpp"
 
 
 /*! \class CHeatOutput
@@ -35,7 +35,7 @@
  *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
-class CHeatOutput final: public COutput {
+class CHeatOutput final: public CFVMOutput {
 public:
 
   /*!

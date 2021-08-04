@@ -30,12 +30,10 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
+CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : CFVMOutput (config, nDim, fem_output){
 
+  lastInnerIter = curInnerIter;
 }
-
-
-CFlowOutput::~CFlowOutput(void){}
 
 void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
 
@@ -74,6 +72,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutput("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of NO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of CH4    
   AddHistoryOutput("AVG_CH4",                  "Avg_CH4",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of CH4 on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average temperature
+  AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 
@@ -117,6 +117,8 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutputPerSurface("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of CH4    
   AddHistoryOutputPerSurface("AVG_CH4",                  "Avg_CH4",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+  /// DESCRIPTION: Average temperature    
+  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -182,6 +184,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   su2double  Tot_Surface_CO                = 0.0;
   su2double  Tot_Surface_NOx               = 0.0;
   su2double  Tot_Surface_CH4               = 0.0;
+  su2double  Tot_Surface_Temp              = 0.0;
   //su2double  Tot_Surface_Scalar[n_scalars];
   //for (int i_scalar = 0; i_scalar < n_scalars; ++i_scalar)
   //  Tot_Surface_Scalar[i_scalar] = 0.0;
@@ -534,6 +537,11 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
     SetHistoryOutputPerSurfaceValue("AVG_CH4", y_CH4, iMarker_Analyze);
     Tot_Surface_CH4 += y_CH4;
     config->SetSurface_CH4(iMarker_Analyze, y_CH4);
+
+    su2double temp = Surface_TotalTemperature_Total[iMarker_Analyze];
+    SetHistoryOutputPerSurfaceValue("AVG_TEMP", temp, iMarker_Analyze);
+    Tot_Surface_Temp += temp;
+    config->SetSurface_Temperature(iMarker_Analyze, temp);
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -549,8 +557,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
       Pressure_Drop = (Surface_Pressure_Total[1]-Surface_Pressure_Total[0]) * config->GetPressure_Ref();
       config->SetSurface_PressureDrop(iMarker_Analyze, Pressure_Drop);
     }
+    SetHistoryOutputPerSurfaceValue("SURFACE_PRESSURE_DROP",  Pressure_Drop, iMarker_Analyze);
     Tot_Surface_PressureDrop += Pressure_Drop;
-    SetHistoryOutputPerSurfaceValue("SURFACE_PRESSURE_DROP", Pressure_Drop, iMarker_Analyze);
   }
 
   SetHistoryOutputValue("SURFACE_MASSFLOW", Tot_Surface_MassFlow);
@@ -567,9 +575,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   SetHistoryOutputValue("SURFACE_PRESSURE_DROP", Tot_Surface_PressureDrop);
-  SetHistoryOutputValue("AVG_CO", Tot_Surface_CO);
-  SetHistoryOutputValue("AVG_NOX", Tot_Surface_NOx);
-  SetHistoryOutputValue("AVG_CH4", Tot_Surface_CH4);
+  SetHistoryOutputValue("AVG_CO",   Tot_Surface_CO);
+  SetHistoryOutputValue("AVG_NOX",  Tot_Surface_NOx);
+  SetHistoryOutputValue("AVG_CH4",  Tot_Surface_CH4);
+  SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temp);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
@@ -716,8 +725,6 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
 
 void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solver){
 
-  // bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
-
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
@@ -769,158 +776,98 @@ void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_so
 }
 
 
-void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
+void CFlowOutput::Add_CpInverseDesignOutput(){
 
   AddHistoryOutput("INVERSE_DESIGN_PRESSURE", "Cp_Diff", ScreenOutputFormat::FIXED, "CP_DIFF", "Cp difference for inverse design");
 
 }
 
-void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
-
-  unsigned short iMarker, icommas, Boundary;
-  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
-  bool *PointInDomain;
-  string text_line, surfCp_filename;
-  ifstream Surface_file;
+void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
-  surfCp_filename = config->GetUnsteady_FileName("TargetCp", (int)curTimeIter, ".dat");
+  const auto surfCp_filename = config->GetUnsteady_FileName("TargetCp", curTimeIter, ".dat");
 
-  /*--- Read the surface pressure file ---*/
+  /*--- Read the surface pressure file, on the first inner iteration. ---*/
 
-  string::size_type position;
-
+  ifstream Surface_file;
   Surface_file.open(surfCp_filename);
 
-  if (!(Surface_file.fail())) {
+  if (!Surface_file.good()) {
+    solver->SetTotal_CpDiff(0.0);
+    SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", 0.0);
+    return;
+  }
 
-    nPointLocal = geometry->GetnPoint();
-    SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-    Point2Vertex = new unsigned long[nPointGlobal][2];
-    PointInDomain = new bool[nPointGlobal];
-
-    for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
-      PointInDomain[iPoint] = false;
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      Boundary   = config->GetMarker_All_KindBC(iMarker);
-
-      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-          /*--- The Pressure file uses the global numbering ---*/
-
-          iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
-
-          if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
-            Point2Vertex[iPoint][0] = iMarker;
-            Point2Vertex[iPoint][1] = iVertex;
-            PointInDomain[iPoint] = true;
-            solver->SetCPressureTarget(iMarker, iVertex, 0.0);
-          }
-
-        }
-      }
-    }
-
+  if ((config->GetInnerIter() == 0) || config->GetDiscrete_Adjoint()) {
+    string text_line;
     getline(Surface_file, text_line);
 
     while (getline(Surface_file, text_line)) {
-      for (icommas = 0; icommas < 50; icommas++) {
-        position = text_line.find( ",", 0 );
-        if (position!=string::npos) text_line.erase (position,1);
-      }
-      stringstream  point_line(text_line);
+      /*--- remove commas ---*/
+      for (auto& c : text_line) if (c == ',') c = ' ';
+      stringstream point_line(text_line);
 
-      if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff;
-      if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff;
+      /*--- parse line ---*/
+      unsigned long iPointGlobal;
+      su2double XCoord, YCoord, ZCoord=0, Pressure, PressureCoeff;
 
-      if (PointInDomain[iPoint]) {
+      point_line >> iPointGlobal >> XCoord >> YCoord;
+      if (nDim == 3) point_line >> ZCoord;
+      point_line >> Pressure >> PressureCoeff;
 
-        /*--- Find the vertex for the Point and Marker ---*/
+      const auto iPoint = geometry->GetGlobal_to_Local_Point(iPointGlobal);
 
-        iMarker = Point2Vertex[iPoint][0];
-        iVertex = Point2Vertex[iPoint][1];
+      /*--- If the point is on this rank set the Cp to associated vertices
+       *    (one point may be shared by multiple vertices). ---*/
+      if (iPoint >= 0) {
+        bool set = false;
+        for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); ++iMarker) {
+          const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
 
-        solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
-
-      }
-
-    }
-
-    Surface_file.close();
-
-    delete [] Point2Vertex;
-    delete [] PointInDomain;
-
-    /*--- Compute the pressure difference ---*/
-
-    PressDiff = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      Boundary   = config->GetMarker_All_KindBC(iMarker);
-
-      if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-          Cp = solver->GetCPressure(iMarker, iVertex);
-          CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
-
-          Area = GeometryToolbox::Norm(nDim, Normal);
-
-          PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
+          if (iVertex >= 0) {
+            solver->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+            set = true;
+          }
         }
-
+        if (!set)
+          cout << "WARNING: In file " << surfCp_filename << ", point " << iPointGlobal << " is not a vertex." << endl;
       }
     }
-
-    su2double MyPressDiff = PressDiff;
-    SU2_MPI::Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   }
 
-  /*--- Update the total Cp difference coeffient ---*/
+  /*--- Compute the pressure difference. ---*/
+
+  su2double PressDiff = 0.0;
+
+  for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); ++iMarker) {
+
+    const auto Boundary = config->GetMarker_All_KindBC(iMarker);
+
+    if (config->GetSolid_Wall(iMarker) || (Boundary == NEARFIELD_BOUNDARY)) {
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+        const auto Cp = solver->GetCPressure(iMarker, iVertex);
+        const auto CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
+
+        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const auto Area = GeometryToolbox::Norm(nDim, Normal);
+
+        PressDiff += Area * pow(CpTarget-Cp, 2);
+      }
+    }
+  }
+  su2double tmp = PressDiff;
+  SU2_MPI::Allreduce(&tmp, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  /*--- Update the total Cp difference coeffient. ---*/
 
   solver->SetTotal_CpDiff(PressDiff);
-
   SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", PressDiff);
 
-}
-
-su2double CFlowOutput::GetQ_Criterion(su2double** VelocityGradient) const {
-
-  /*--- Make a 3D copy of the gradient so we do not have worry about nDim ---*/
-
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
-      Grad_Vel[iDim][jDim] = VelocityGradient[iDim][jDim];
-
-  /*--- Q Criterion Eq 1.2 of HALLER, G. (2005). An objective definition of a vortex.
-   Journal of Fluid Mechanics, 525, 1-26. doi:10.1017/S0022112004002526 ---*/
-
-  /*--- Components of the strain rate tensor (symmetric) ---*/
-  su2double s11 = Grad_Vel[0][0];
-  su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
-  su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
-  su2double s22 = Grad_Vel[1][1];
-  su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
-  su2double s33 = Grad_Vel[2][2];
-
-  /*--- Components of the spin tensor (skew-symmetric) ---*/
-  su2double omega12 = 0.5 * (Grad_Vel[0][1] - Grad_Vel[1][0]);
-  su2double omega13 = 0.5 * (Grad_Vel[0][2] - Grad_Vel[2][0]);
-  su2double omega23 = 0.5 * (Grad_Vel[1][2] - Grad_Vel[2][1]);
-
-  /*--- Q = ||Omega|| - ||Strain|| ---*/
-  su2double Q = 2*(pow(omega12,2) + pow(omega13,2) + pow(omega23,2)) -
-    (pow(s11,2) + pow(s22,2) + pow(s33,2) + 2*(pow(s12,2) + pow(s13,2) + pow(s23,2)));
-
-  return Q;
 }
 
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
@@ -935,7 +882,7 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-void CFlowOutput::WriteMetaData(CConfig *config){
+void CFlowOutput::WriteMetaData(const CConfig *config){
 
   ofstream meta_file;
 
@@ -1531,8 +1478,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
           case CONDUCTIVITYMODEL::CONSTANT:
             Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-            Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
-            Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+            Breakdown_file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+            Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND()<< "\n";
             break;
 
           default:
@@ -1883,10 +1830,9 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
             }
             Breakdown_file << ")." << endl;
             break;
-          
+
           case VISCOSITYMODEL::FLAMELET:
             break;
-
         }
 
         if (energy) {
@@ -1899,8 +1845,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
             case CONDUCTIVITYMODEL::CONSTANT:
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-              Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
-              Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+              Breakdown_file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+              Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND()<< "\n";
               break;
 
             case CONDUCTIVITYMODEL::POLYNOMIAL:
@@ -2789,7 +2735,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
 }
 
-
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
@@ -2811,41 +2756,6 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
   }
 
   return false || force_writing;
-}
-
-void CFlowOutput::AddCommonFVMOutputs(const CConfig *config) {
-
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
-
-  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
-
-  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-    stringstream key, name;
-    key << "MG_" << iMesh;
-    name << "Coarse_Grid_" << iMesh;
-    AddVolumeOutput(key.str(), name.str(), "MULTIGRID", "Coarse mesh");
-  }
-}
-
-void CFlowOutput::LoadCommonFVMOutputs(const CConfig* config, const CGeometry* geometry, unsigned long iPoint) {
-
-  if (config->GetWrt_MeshQuality()) {
-    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
-  }
-
-  SetVolumeOutputValue("RANK", iPoint, rank);
-
-  if (config->GetWrt_MultiGrid()) {
-    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); ++iMesh) {
-      stringstream key;
-      key << "MG_" << iMesh;
-      SetVolumeOutputValue(key.str(), iPoint, geometry->CoarseGridColor(iPoint,iMesh-1));
-    }
-  }
 }
 
 void CFlowOutput::SetTimeAveragedFields(){
@@ -2913,5 +2823,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+}
+
+void CFlowOutput::SetFixedCLScreenOutput(const CConfig *config){
+  PrintingToolbox::CTablePrinter FixedCLSummary(&cout);
+
+  if (fabs(historyOutput_Map["CL_DRIVER_COMMAND"].value) > 1e-16){
+    FixedCLSummary.AddColumn("Fixed CL Mode", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Current CL" << historyOutput_Map["LIFT"].value;
+    FixedCLSummary << "Target CL" << config->GetTarget_CL();
+    FixedCLSummary << "Previous AOA" << historyOutput_Map["PREV_AOA"].value;
+    if (config->GetFinite_Difference_Mode()){
+      FixedCLSummary << "Changed AoA by (Finite Difference step)" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+      lastInnerIter = curInnerIter - 1;
+    }
+    else
+      FixedCLSummary << "Changed AoA by" << historyOutput_Map["CL_DRIVER_COMMAND"].value;
+    FixedCLSummary.PrintFooter();
+    SetScreen_Header(config);
+  }
+
+  else if (config->GetFinite_Difference_Mode() && historyOutput_Map["AOA"].value == historyOutput_Map["PREV_AOA"].value){
+    FixedCLSummary.AddColumn("Fixed CL Mode (Finite Difference)", 40);
+    FixedCLSummary.AddColumn("Value", 30);
+    FixedCLSummary.SetAlign(PrintingToolbox::CTablePrinter::LEFT);
+    FixedCLSummary.PrintHeader();
+    FixedCLSummary << "Delta CL / Delta AoA" << config->GetdCL_dAlpha();
+    FixedCLSummary << "Delta CD / Delta CL" << config->GetdCD_dCL();
+    if (nDim == 3){
+      FixedCLSummary << "Delta CMx / Delta CL" << config->GetdCMx_dCL();
+      FixedCLSummary << "Delta CMy / Delta CL" << config->GetdCMy_dCL();
+    }
+    FixedCLSummary << "Delta CMz / Delta CL" << config->GetdCMz_dCL();
+    FixedCLSummary.PrintFooter();
+    curInnerIter = lastInnerIter;
+    WriteMetaData(config);
+    curInnerIter = config->GetInnerIter();
   }
 }

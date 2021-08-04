@@ -413,7 +413,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
   if (config->GetWall_Functions()) {
     SU2_OMP_MASTER
-    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    SetTurbVars_WF(geometry, solver_container, config, val_marker);
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     return;
@@ -580,7 +580,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
-      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
 
       conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Inlet_TurbVars[val_marker][iVertex]);
@@ -1574,24 +1573,20 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
   //
 }
 
-void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, const CConfig *config, unsigned short val_marker) {
+void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
+                                  const CConfig *config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
-  constexpr unsigned short max_iter = 100;
-  const su2double tol = 1e-10;
+  /*--- We use a very high max nr of iterations, but we only need this the first couple of iterations ---*/
+  constexpr unsigned short max_iter = 200;
 
-  /*--- Compute the recovery factor ---*/
-  // su2double-check: laminar or turbulent Pr for this?
-  const su2double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
+  /* --- tolerance has LARGE impact on convergence, do not increase this value! --- */
+  const su2double tol = 1e-12;
+  su2double relax = 0.5;            /*--- relaxation factor for the Newton solver ---*/
 
   /*--- Typical constants from boundary layer theory ---*/
 
-  const su2double kappa = 0.4;
-  const su2double B = 5.5;
   const su2double cv1_3 = 7.1*7.1*7.1;
 
   CVariable* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
@@ -1600,126 +1595,63 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-    if (!geometry->nodes->GetDomain(Point_Normal)) continue;
-
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    /*--- Compute dual-grid area and boundary normal ---*/
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    if (geometry->nodes->GetDomain(iPoint_Neighbor)) {
 
-    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-    su2double UnitNormal[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      UnitNormal[iDim] = -Normal[iDim]/Area;
+      /*--- note that we do not do anything for y+ < 5, meaning that we have a zero flux (Neumann) boundary condition ---*/
 
-    /*--- Get the velocity, pressure, and temperature at the nearest
-     (normal) interior point. ---*/
+      if (Y_Plus < 5.0) continue;
 
-    su2double Vel[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      Vel[iDim] = flow_nodes->GetVelocity(Point_Normal,iDim);
-    su2double P_Normal = flow_nodes->GetPressure(Point_Normal);
-    su2double T_Normal = flow_nodes->GetTemperature(Point_Normal);
+      su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(iPoint_Neighbor);
+      su2double Density_Normal = flow_nodes->GetDensity(iPoint_Neighbor);
+      su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
 
-    /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+      su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
 
-    su2double VelNormal = GeometryToolbox::DotProduct(int(MAXNDIM), Vel, UnitNormal);
+      /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
 
-    su2double VelTang[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+      // start with positive value of nu_til_old
+      su2double nu_til = 0.0;
+      su2double nu_til_old = nodes->GetSolution(iPoint,0);
 
-    su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
+      unsigned short counter = 0;
+      su2double diff = 1.0;
+      relax = 0.5;
+      while (diff > tol) {
+        // note the error in Nichols and Nelson
+        su2double func = pow(nu_til_old,4) - (Eddy_Visc/Density_Normal)*(pow(nu_til_old,3) + pow(Kin_Visc_Normal,3)*cv1_3);
+        su2double func_prim = 4.0 * pow(nu_til_old,3) - 3.0*(Eddy_Visc/Density_Normal)*pow(nu_til_old,2);
 
-    /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+        // damped Newton method
+        nu_til = nu_til_old - relax*(func/func_prim);
 
-    //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
-    su2double T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+        diff = fabs(nu_til-nu_til_old);
+        nu_til_old = nu_til;
 
-    /*--- Extrapolate the pressure from the interior & compute the
-     wall density using the equation of state ---*/
+        // sometimes we get negative values when the solution has not converged yet, we just reset the nu_tilde in that case.
+        if (nu_til_old<tol) {
+          relax /= 2.0;
+          nu_til_old = nodes->GetSolution(iPoint,0)/relax;
+        }
 
-    su2double P_Wall = P_Normal;
-    su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
-
-    /*--- Get wall shear stress computed by flow solver ---*/
-
-    su2double Lam_Visc_Wall = flow_nodes->GetLaminarViscosity(iPoint);
-    su2double Tau_Wall = flow_nodes->GetTauWall(iPoint);
-
-    /*--- Friction velocity and u+ ---*/
-
-    su2double U_Tau = sqrt(Tau_Wall/Density_Wall);
-    su2double U_Plus = VelTangMod/U_Tau;
-
-    /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
-
-    su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-    su2double Beta = 0.0; // For adiabatic flows only
-    su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
-    su2double Phi  = asin(-1.0*Beta/Q);
-
-    /*--- Y+ defined by White & Christoph (compressibility and heat transfer)
-     negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
-
-    su2double Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
-
-    /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
-
-    su2double Lam_Visc_Normal = flow_nodes->GetLaminarViscosity(Point_Normal);
-    su2double Density_Normal = flow_nodes->GetDensity(Point_Normal);
-    su2double Kin_Visc_Normal = Lam_Visc_Normal/Density_Normal;
-
-    su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
-    su2double Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
-                                         (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
-                                         - Lam_Visc_Normal/Lam_Visc_Wall);
-
-    /*--- Eddy viscosity should be always a positive number ---*/
-
-    Eddy_Visc = max(0.0, Eddy_Visc);
-
-    /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
-
-    su2double nu_til_old = nodes->GetSolution(iPoint,0);
-
-    unsigned short counter = 0;
-    su2double diff = 1.0;
-
-    while (diff > tol) {
-
-      su2double const_term = (Eddy_Visc/Density_Normal) * pow(Kin_Visc_Normal,3)*cv1_3;
-
-      su2double nu_til_2 = pow(nu_til_old,2);
-      su2double nu_til_3 = nu_til_old * nu_til_2;
-
-      su2double func = nu_til_old * (nu_til_3 - (Eddy_Visc/Density_Normal)*nu_til_2) + const_term;
-      su2double func_prime = 4.0*nu_til_3 - 3.0*(Eddy_Visc/Density_Normal)*nu_til_2;
-      su2double nu_til = nu_til_old - func/func_prime;
-
-      diff = fabs(nu_til-nu_til_old);
-      nu_til_old = nu_til;
-
-      counter++;
-      if (counter > max_iter) {
-        cout << "WARNING: Nu_tilde evaluation has not converged." << endl;
-        break;
+        counter++;
+        if (counter > max_iter) break;
       }
+
+      nodes->SetSolution_Old(iPoint_Neighbor, &nu_til);
+      LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+
+      /*--- includes 1 in the diagonal ---*/
+
+      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
     }
-
-    nodes->SetSolution_Old(Point_Normal, 0, nu_til_old);
-    LinSysRes.SetBlock_Zero(Point_Normal);
-
-    /*--- includes 1 in the diagonal ---*/
-
-    if (implicit) Jacobian.DeleteValsRowi(Point_Normal);
-
   }
-
 }
 
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
@@ -1740,7 +1672,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   su2double cb1   = 0.1355, ct3 = 1.2, ct4   = 0.5;
   su2double sigma = 2./3., cb2 = 0.622, f_max=1.0, f_min=0.1, a1=0.15, a2=0.3;
   su2double cw1 = 0.0, Ji = 0.0, Ji_2 = 0.0, Ji_3 = 0.0, fv1 = 0.0, fv2 = 0.0, ft2 = 0.0, psi_2 = 0.0;
-  const su2double *coord_i = nullptr, *coord_j = nullptr, *const *primVarGrad = nullptr, *vorticity = nullptr;
+  const su2double *coord_i = nullptr, *coord_j = nullptr, *vorticity = nullptr;
   su2double delta[3] = {0.0}, ratioOmega[3] = {0.0}, vortexTiltingMeasure = 0.0;
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -1749,7 +1681,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     coord_i                 = geometry->nodes->GetCoord(iPoint);
     nNeigh                  = geometry->nodes->GetnPoint(iPoint);
     wallDistance            = geometry->nodes->GetWall_Distance(iPoint);
-    primVarGrad             = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    const auto primVarGrad  = solver[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     vorticity               = solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     density                 = solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     laminarViscosity        = solver[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);

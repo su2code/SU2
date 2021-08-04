@@ -1900,8 +1900,8 @@ class Interface:
 
           if FSI_config['RESTART_SOL'] == 'YES':
             NbTimeIter = ((totTime)/deltaT)-1
-            time = (FSI_config['RESTART_ITER']+1)*deltaT
-            TimeIter = FSI_config['RESTART_ITER']+1
+            time = (FSI_config['RESTART_ITER'])*deltaT
+            TimeIter = FSI_config['RESTART_ITER']
           else:
             NbTimeIter = (totTime/deltaT)-1		# number of time iterations
             time = 0.0					# initial time
@@ -1922,13 +1922,6 @@ class Interface:
             TimeIterTreshold = -1
             self.getSolidInterfaceDisplacement(SolidSolver)
             self.displacementPredictor(FSI_config, SolidSolver, deltaT)
-            # We need now to update the solution because both restarter functions (solid and fluid)
-            # load the files in the solution containers, pushing back the previous solutions. We need
-            # then to push it back once more to compute the solution at the next time level
-            # Also this is required because in the fluid iteration preprocessor, if we do not update
-            # and step to the next time level, there is a flag "fsi" that will initialise the flow
-            if myid in self.fluidSolverProcessors:
-              FluidSolver.Update()
             if myid in self.solidSolverProcessors:
               SolidSolver.updateSolution()
           #If no restart

@@ -284,6 +284,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
   SU2_OMP_BARRIER
 
   AD::EndPassive(wasActive);
+
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
@@ -502,7 +503,14 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    if (time_domain && config->GetFSI_Simulation()) LinSysSol.SetValZero();
+
+    if (time_domain && config->GetFSI_Simulation()) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+          LinSysSol(iPoint, iDim) = nodes->GetSolution(iPoint, iDim);
+      END_SU2_OMP_FOR
+    }
   }
   END_SU2_OMP_PARALLEL
 
@@ -519,14 +527,14 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   UpdateGridCoord(geometry[MESH_0], config);
 
   /*--- Update the dual grid. ---*/
-  UpdateDualGrid(geometry[MESH_0], config);
+  CGeometry::UpdateGeometry(geometry, config);
 
   /*--- Check for failed deformation (negative volumes). ---*/
   SetMinMaxVolume(geometry[MESH_0], config, true);
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
   if (time_domain && !config->GetFSI_Simulation())
-    ComputeGridVelocity(geometry[MESH_0], config);
+    ComputeGridVelocity(geometry, config);
 
   }
   END_SU2_OMP_PARALLEL
@@ -535,14 +543,9 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
     ComputeGridVelocity_FromBoundary(geometry, numerics, config);
   }
 
-  /*--- Update the multigrid structure. ---*/
-  SU2_OMP_PARALLEL
-  UpdateMultiGrid(geometry, config);
-  END_SU2_OMP_PARALLEL
-
 }
 
-void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
+void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
@@ -568,17 +571,6 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
 }
 
-void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
-
-  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
-   dual mesh control volumes in the domain and on the boundaries. ---*/
-
-  geometry->SetControlVolume(config, UPDATE);
-  geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
-
-}
-
 void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
 
   if (config->GetnZone() == 1)
@@ -593,10 +585,18 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
 
   AD::EndPassive(wasActive);
 
+  const su2double velRef = config->GetVelocity_Ref();
+  const su2double invVelRef = 1.0 / velRef;
+
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
-    LinSysSol.SetValZero();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        LinSysSol(iPoint, iDim) = geometry[MESH_0]->nodes->GetGridVel(iPoint)[iDim] * velRef;
+    END_SU2_OMP_FOR
   }
   END_SU2_OMP_PARALLEL
 
@@ -606,27 +606,30 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
 
-  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      su2double val_vel = LinSysSol(iPoint, iDim);
+  SU2_OMP_PARALLEL {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, LinSysSol(iPoint,iDim)*invVelRef);
+    END_SU2_OMP_FOR
 
-      /*--- Non-dimensionalize velocity ---*/
-      val_vel /= config->GetVelocity_Ref();
-
-      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
-    }
+    for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
   }
   END_SU2_OMP_PARALLEL
+
 }
 
-void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
+void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *config) const {
 
-  /*--- Compute the velocity of each node in the domain of the current rank
-   (halo nodes are not computed as the grid velocity is later communicated). ---*/
+  /*--- Compute the velocity of each node. ---*/
+
+  const bool firstOrder = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST;
+  const bool secondOrder = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const su2double invTimeStep = 1.0 / config->GetDelta_UnstTimeND();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels. ---*/
 
@@ -634,50 +637,23 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     const su2double* Disp_n   = nodes->GetSolution_time_n(iPoint);
     const su2double* Disp_nP1 = nodes->GetSolution(iPoint);
 
-    /*--- Unsteady time step ---*/
-
-    su2double TimeStep = config->GetDelta_UnstTimeND();
-
-    /*--- Compute mesh velocity with 1st or 2nd-order approximation. ---*/
+    /*--- Compute mesh velocity for this point with 1st or 2nd-order approximation. ---*/
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 
       su2double GridVel = 0.0;
+      if (firstOrder)
+        GridVel = (Disp_nP1[iDim] - Disp_n[iDim]) * invTimeStep;
+      else if (secondOrder)
+        GridVel = (1.5*Disp_nP1[iDim] - 2.0*Disp_n[iDim] + 0.5*Disp_nM1[iDim]) * invTimeStep;
 
-      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-        GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
-      if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
-        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim] +
-                    1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
-
-      /*--- Store grid velocity for this point ---*/
-
-      geometry->nodes->SetGridVel(iPoint, iDim, GridVel);
-
+      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
     }
   }
   END_SU2_OMP_FOR
 
-  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
-  geometry->InitiateComms(geometry, config, GRID_VELOCITY);
-  geometry->CompleteComms(geometry, config, GRID_VELOCITY);
-
-}
-
-void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
-
-  /*--- Update the multigrid structure after moving the finest grid,
-   including computing the grid velocities on the coarser levels
-   when the problem is solved in unsteady conditions. ---*/
-
-  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    const auto iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
-    geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
-    if (time_domain)
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
-  }
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGlevel-1], config);
 
 }
 
@@ -830,8 +806,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
          minus the coordinates of the reference mesh file ---*/
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
-        su2double vel = Restart_Data[index+iDim+6];
-        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, vel);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -851,10 +825,6 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
 
-  /*--- Communicate the new coordinates at the halos ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
   /*--- Init the linear system solution. ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
@@ -862,23 +832,14 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     }
   }
 
-  /*--- Recompute the edges and dual mesh control volumes in the
-   domain and on the boundaries. ---*/
-  UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- For time-domain problems, we need to compute the grid velocities ---*/
-  if (time_domain){
+  /*--- For time-domain problems, we need to compute the grid velocities. ---*/
+  if (time_domain && !config->GetFSI_Simulation()) {
     /*--- Update the old geometry (coordinates n and n-1) ---*/
-    Restart_OldGeometry(geometry[MESH_0], config);
-    /*--- Once Displacement_n and Displacement_n1 are filled,
-     we can compute the Grid Velocity ---*/
-    ComputeGridVelocity(geometry[MESH_0], config);
-  }
+    RestartOldGeometry(geometry[MESH_0], config);
 
-  /*--- Update the multigrid structure after setting up the finest grid,
-   including computing the grid velocities on the coarser levels
-   when the problem is unsteady. ---*/
-  UpdateMultiGrid(geometry, config);
+    /*--- Once Displacement_n and Displacement_n1 are filled we can compute the Grid Velocity ---*/
+    ComputeGridVelocity(geometry, config);
+  }
 
   /*--- Store the boundary displacements at the Bound_Disp variable. ---*/
 
@@ -905,7 +866,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 }
 
-void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
+void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config) {
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -928,8 +889,10 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;
-    if (config->GetRestart()) Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter()) - iStep;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetTimeIter())-iStep-1;
+    if (!config->GetDiscrete_Adjoint())
+      Unst_RestartIter = static_cast<int>(config->GetRestart_Iter()) - iStep;
+    else
+      Unst_RestartIter = static_cast<int>(config->GetUnst_AdjointIter()) - config->GetTimeIter() - iStep - 1;
 
     if (Unst_RestartIter < 0) {
 

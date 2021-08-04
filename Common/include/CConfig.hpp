@@ -207,6 +207,7 @@ private:
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatTransfer,           /*!< \brief Number of heat-transfer/convection wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
   nMarker_Clamped,                /*!< \brief Number of clamped markers in the FEM. */
@@ -256,6 +257,7 @@ private:
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatTransfer,           /*!< \brief Heat-transfer/convection markers. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
@@ -312,6 +314,8 @@ private:
   su2double *Engine_Area;                    /*!< \brief Specified engine area for nacelle boundaries. */
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
+  su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
+  su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
   su2double *Wall_Catalycity;                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
   su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
@@ -695,7 +699,7 @@ private:
 
   unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;               /*!< \brief List of names for configuration files. */
-  unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
+  WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
   unsigned short  *Marker_All_Monitoring,     /*!< \brief Global index for monitoring using the grid information. */
@@ -810,8 +814,8 @@ private:
   Acentric_Factor,       /*!< \brief Acentric Factor for real fluid model.  */
   *Mu_Constant,           /*!< \brief Constant viscosity for ConstantViscosity model.  */
   Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
-  *Kt_Constant,           /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
-  Kt_ConstantND,         /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  *Thermal_Conductivity_Constant,   /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
+  Thermal_Conductivity_ConstantND, /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
   *Scalar_Init,          /*!< \brief Initial uniform value for scalar transport. */
   *Mu_Ref,                /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,              /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
@@ -842,21 +846,23 @@ private:
   Turb2LamViscRatio_FreeStream,    /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
-  SecondaryFlow_ActDisk,      /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Initial_BCThrust,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
-  Pressure_FreeStream,        /*!< \brief Total pressure of the fluid. */
-  Pressure_Thermodynamic,     /*!< \brief Thermodynamic pressure of the fluid. */
-  Temperature_FreeStream,     /*!< \brief Total temperature of the fluid.  */
-  Temperature_ve_FreeStream;  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
-  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
-  *Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
-  Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-  Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
-  Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
-  Temperature_ve_Ref,  /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
-  Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
-  Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-  Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
+  SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
+  Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
+  Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
+  Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
+  Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  su2double *Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,                    /*!< \brief Turbulent Prandtl number for the gas.  */
+  wallModelKappa,                  /*!< \brief von Karman constant kappa for turbulence wall modeling */
+  wallModelB,                  /*!< \brief constant B for turbulence wall modeling */
+  Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
+  Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
+  Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
+  Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
+  Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
   Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
@@ -1164,10 +1170,17 @@ private:
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
 
-  unsigned short Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
-  unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
+  INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
+  INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  /*--- libROM configure options ---*/
+  bool libROM;                              /*!< \brief Toggle saving to libROM. */
+  string libROMbase_FileName;               /*!< \brief Base filename for libROM file saving. */
+  POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
+  unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
+  rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
+  
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
@@ -1305,7 +1318,7 @@ private:
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
-                             string* &string_field,            unsigned short* &val_Kind_WF,
+                             string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
                              unsigned short** &val_IntInfo_WF, su2double** &val_DoubleInfo_WF);
 
   void addPythonOption(const string name);
@@ -1687,20 +1700,14 @@ public:
   su2double GetDensity_FreeStream(void) const { return Density_FreeStream; }
 
   /*!
-   * \brief Get the value of the solid density.
-   * \return Solid density.
-   */
-  su2double GetDensity_Solid(void) const { return Density_Solid; }
-
-  /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the magnitude of the free-stream velocity of the fluid.
+   * \return Magnitude of the free-stream velocity.
    */
   su2double GetModVel_FreeStream(void) const { return ModVel_FreeStream; }
 
   /*!
-   * \brief Get the value of the frestream temperature.
-   * \return Freestream temperature.
+   * \brief Get the non-dimensional magnitude of the free-stream velocity of the fluid.
+   * \return Non-dimensional magnitude of the free-stream velocity.
    */
   su2double GetModVel_FreeStreamND(void) const { return ModVel_FreeStreamND; }
 
@@ -1719,22 +1726,22 @@ public:
   su2double GetPrandtl_Turb(unsigned short val_index) const { return Prandtl_Turb [val_index]; }
 
   /*!
-   * \brief Get the value of the thermal conductivity for solids.
-   * \return Thermal conductivity (solid).
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
    */
-  su2double GetThermalConductivity_Solid(void) const { return Thermal_Conductivity_Solid; }
+  su2double GetwallModelKappa(void) const { return wallModelKappa; }
+
+  /*!
+   * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
+   * \return von Karman constant.
+   */
+  su2double GetwallModelB(void) const { return wallModelB; }
 
   /*!
    * \brief Get the value of the thermal diffusivity for solids.
    * \return Thermal conductivity (solid).
    */
-  su2double GetThermalDiffusivity_Solid(void) const { return Thermal_Diffusivity_Solid; }
-
-  /*!
-   * \brief Get the temperature in solids at initial conditions.
-   * \return Freestream temperature (solid).
-   */
-  su2double GetTemperature_Initial_Solid(void) const { return Temperature_Freestream_Solid;  }
+  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the value of the reference length for non-dimensionalization.
@@ -1859,8 +1866,8 @@ public:
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
 
   /*!
-   * \brief Get the value of the non-dimensionalized freestream temperature.
-   * \return Non-dimensionalized freestream temperature.
+   * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
+   * \return Non-dimensionalized vibrational-electronic freestream temperature.
    */
   su2double GetTemperature_ve_FreeStreamND(void) const { return Temperature_ve_FreeStreamND; }
 
@@ -1980,12 +1987,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void) const { return RefArea; }
-
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetThermalDiffusivity(void) const { return Thermal_Diffusivity; }
 
   /*!
    * \brief Get the thermal expansion coefficient.
@@ -2349,91 +2350,91 @@ public:
 
   /*!
    * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \param[in] val_froude - Value of the Froude number.
    */
   void SetFroude(su2double val_froude) { Froude = val_froude; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the Mach number.
+   * \param[in] val_mach - Value of the Mach number.
    */
   void SetMach(su2double val_mach) { Mach = val_mach; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the Reynolds number.
+   * \param[in] val_reynolds - Value of the Reynolds number.
    */
   void SetReynolds(su2double val_reynolds) { Reynolds = val_reynolds; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference length for nondimensionalization.
+   * \param[in] val_length_ref - Value of the reference length.
    */
   void SetLength_Ref(su2double val_length_ref) { Length_Ref = val_length_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference velocity for nondimensionalization.
+   * \param[in] val_velocity_ref - Value of the reference velocity.
    */
   void SetVelocity_Ref(su2double val_velocity_ref) { Velocity_Ref = val_velocity_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference pressure for nondimensionalization.
+   * \param[in] val_pressure_ref - Value of the reference pressure.
    */
   void SetPressure_Ref(su2double val_pressure_ref) { Pressure_Ref = val_pressure_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference pressure for nondimensionalization.
+   * \param[in] val_density_ref - Value of the reference pressure.
    */
   void SetDensity_Ref(su2double val_density_ref) { Density_Ref = val_density_ref; }
 
   /*!
-   * \brief Set the reference temperature.
-   * \return Value of the Froude number.
+   * \brief Set the reference temperature for nondimensionalization.
+   * \param[in] val_temperature_ref - Value of the reference temperature.
    */
   void SetTemperature_Ref(su2double val_temperature_ref) { Temperature_Ref = val_temperature_ref; }
 
   /*!
    * \brief Set the reference temperature.
-   * \return Value of the Froude number.
+   * \param[in] val_temperature_ve_ref - Value of the reference temperature.
    */
   void SetTemperature_ve_Ref(su2double val_temperature_ve_ref) { Temperature_ve_Ref = val_temperature_ve_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference time for nondimensionalization.
+   * \param[in] val_time_ref - Value of the reference time.
    */
   void SetTime_Ref(su2double val_time_ref) { Time_Ref = val_time_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference energy for nondimensionalization.
+   * \param[in] val_energy_ref - Value of the reference energy.
    */
   void SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference Omega for nondimensionalization.
+   * \param[in] val_omega_ref - Value of the reference omega.
    */
   void SetOmega_Ref(su2double val_omega_ref) { Omega_Ref = val_omega_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference Force for nondimensionalization.
+   * \param[in] val_force_ref - Value of the reference Force.
    */
   void SetForce_Ref(su2double val_force_ref) { Force_Ref = val_force_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference gas-constant for nondimensionalization.
+   * \param[in] val_gas_constant_ref - Value of the reference gas-constant.
    */
   void SetGas_Constant_Ref(su2double val_gas_constant_ref) { Gas_Constant_Ref = val_gas_constant_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the gas-constant.
+   * \param[in] val_gas_constant - Value of the gas-constant.
    */
   void SetGas_Constant(su2double val_gas_constant) { Gas_Constant = val_gas_constant; }
 
@@ -2469,26 +2470,26 @@ public:
   void SetHeat_Flux_Ref(su2double val_heat_flux_ref) { Heat_Flux_Ref = val_heat_flux_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference viscosity for nondimensionalization.
+   * \param[in] val_viscosity_ref - Value of the reference viscosity.
    */
   void SetViscosity_Ref(su2double val_viscosity_ref) { Viscosity_Ref = val_viscosity_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the reference conductivity for nondimensionalization.
+   * \param[in] val_conductivity_ref - Value of the reference conductivity.
    */
   void SetConductivity_Ref(su2double val_conductivity_ref) { Conductivity_Ref = val_conductivity_ref; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the nondimensionalized freestream pressure.
+   * \param[in] val_pressure_freestreamnd - Value of the nondimensionalized freestream pressure.
    */
   void SetPressure_FreeStreamND(su2double val_pressure_freestreamnd) { Pressure_FreeStreamND = val_pressure_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream pressure.
+   * \param[in] val_pressure_freestream - Value of the freestream pressure.
    */
   void SetPressure_FreeStream(su2double val_pressure_freestream) { Pressure_FreeStream = val_pressure_freestream; }
 
@@ -2505,62 +2506,62 @@ public:
   void SetPressure_Thermodynamic(su2double val_pressure_thermodynamic) { Pressure_Thermodynamic = val_pressure_thermodynamic; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the nondimensionalized freestream density.
+   * \param[in] val_density_freestreamnd - Value of the nondimensionalized freestream density.
    */
   void SetDensity_FreeStreamND(su2double val_density_freestreamnd) { Density_FreeStreamND = val_density_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream density.
+   * \param[in] val_density_freestream - Value of the freestream density.
    */
   void SetDensity_FreeStream(su2double val_density_freestream) { Density_FreeStream = val_density_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream viscosity.
+   * \param[in] val_viscosity_freestream - Value of the freestream viscosity.
    */
   void SetViscosity_FreeStream(su2double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the magnitude of the free-stream velocity.
+   * \param[in] val_modvel_freestream - Magnitude of the free-stream velocity.
    */
   void SetModVel_FreeStream(su2double val_modvel_freestream) { ModVel_FreeStream = val_modvel_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional magnitude of the free-stream velocity.
+   * \param[in] val_modvel_freestreamnd - Non-dimensional magnitude of the free-stream velocity.
    */
   void SetModVel_FreeStreamND(su2double val_modvel_freestreamnd) { ModVel_FreeStreamND = val_modvel_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream temperature.
+   * \param[in] val_temperature_freestream - Value of the freestream temperature.
    */
   void SetTemperature_FreeStream(su2double val_temperature_freestream) { Temperature_FreeStream = val_temperature_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional freestream temperature.
+   * \param[in] val_temperature_freestreamnd - Value of the non-dimensional freestream temperature.
    */
   void SetTemperature_FreeStreamND(su2double val_temperature_freestreamnd) { Temperature_FreeStreamND = val_temperature_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream vibrational-electronic temperature.
+   * \param[in] val_temperature_ve_freestream - Value of the freestream vibrational-electronic temperature.
    */
   void SetTemperature_ve_FreeStream(su2double val_temperature_ve_freestream) { Temperature_ve_FreeStream = val_temperature_ve_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional freestream vibrational-electronic temperature.
+   * \param[in] val_temperature_ve_freestreamnd - Value of the non-dimensional freestream vibrational-electronic temperature.
    */
   void SetTemperature_ve_FreeStreamND(su2double val_temperature_ve_freestreamnd) { Temperature_ve_FreeStreamND = val_temperature_ve_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional gas-constant.
+   * \param[in] val_gas_constantnd - Value of the non-dimensional gas-constant.
    */
   void SetGas_ConstantND(su2double val_gas_constantnd) { Gas_ConstantND = val_gas_constantnd; }
 
@@ -2572,62 +2573,63 @@ public:
   void SetVelocity_FreeStream(su2double val_velocity_freestream, unsigned short val_dim) { vel_inf[val_dim] = val_velocity_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional free-stream velocity.
+   * \param[in] val_velocity_freestreamnd - Value of the non-dimensional free-stream velocity component.
+   * \param[in] val_dim - Value of the current dimension.
    */
   void SetVelocity_FreeStreamND(su2double val_velocity_freestreamnd, unsigned short val_dim) { Velocity_FreeStreamND[val_dim] = val_velocity_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional free-stream viscosity.
+   * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
    */
   void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional freestream turbulent kinetic energy.
+   * \param[in] val_tke_freestreamnd - Value of the non-dimensional freestream turbulent kinetic energy.
    */
   void SetTke_FreeStreamND(su2double val_tke_freestreamnd) { Tke_FreeStreamND = val_tke_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional freestream specific dissipation rate omega.
+   * \param[in] val_omega_freestreamnd - Value of the non-dimensional freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStreamND(su2double val_omega_freestreamnd) { Omega_FreeStreamND = val_omega_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream turbulent kinetic energy.
+   * \param[in] val_tke_freestream - Value of the freestream turbulent kinetic energy.
    */
   void SetTke_FreeStream(su2double val_tke_freestream) { Tke_FreeStream = val_tke_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream specific dissipation rate omega.
+   * \param[in] val_omega_freestream - Value of the freestream specific dissipation rate omega.
    */
   void SetOmega_FreeStream(su2double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional freestream energy.
+   * \param[in] val_energy_freestreamnd - Value of the non-dimensional freestream energy.
    */
   void SetEnergy_FreeStreamND(su2double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the freestream energy.
+   * \param[in] val_energy_freestream - Value of the freestream energy.
    */
   void SetEnergy_FreeStream(su2double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
 
   /*!
    * \brief Set the thermal diffusivity for solids.
-   * \return Value of the Froude number.
+   * \param[in] val_thermal_diffusivity - Value of the thermal diffusivity.
    */
-  void SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
+  void SetThermalDiffusivity(su2double val_thermal_diffusivity) { Thermal_Diffusivity = val_thermal_diffusivity; }
 
   /*!
-   * \brief Set the Froude number for free surface problems.
-   * \return Value of the Froude number.
+   * \brief Set the non-dimensional total time for unsteady simulations.
+   * \param[in] val_total_unsttimend - Value of the non-dimensional total time.
    */
   void SetTotal_UnstTimeND(su2double val_total_unsttimend) { Total_UnstTimeND = val_total_unsttimend; }
 
@@ -3828,14 +3830,15 @@ public:
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-   su2double GetKt_Constant(void) const { return Kt_Constant[0]; }
-   su2double GetKt_Constant(unsigned short val_index) const { return Kt_Constant [val_index]; }
+  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant[0]; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index) const { return Thermal_Conductivity_Constant [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-  su2double GetKt_ConstantND(void) const { return Kt_ConstantND; }
+    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
+
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
@@ -3968,7 +3971,7 @@ public:
   /*!
    * \brief Set the value of the non-dimensional thermal conductivity.
    */
-  void SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+  void SetThermal_Conductivity_ConstantND(su2double therm_cond_const) { Thermal_Conductivity_ConstantND = therm_cond_const; }
 
   /*!
    * \brief Set the value of the non-dimensional constant mass diffusivity.
@@ -5446,7 +5449,7 @@ public:
    * \param[in] ext - the extension to be added.
    * \return The new filename
    */
-  string GetFilename(string filename, string ext, unsigned long Iter) const;
+  string GetFilename(string filename, string ext, int Iter) const;
 
   /*!
    * \brief Append the zone index to the restart or the solution files.
@@ -5655,7 +5658,8 @@ public:
    * \param[in] val_val - Value of the design variable that we want to read.
    * \return Design variable step.
    */
-  su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
+  su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) { return DV_Value[val_dv][val_val]; }
+  const su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
@@ -6838,11 +6842,25 @@ public:
   su2double GetWall_HeatFlux(string val_index) const;
 
   /*!
+   * \brief Get the heat transfer coefficient on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The heat transfer coefficient.
+   */
+  su2double GetWall_HeatTransfer_Coefficient(string val_index) const;
+
+  /*!
+   * \brief Get the temperature at inifinty on a heat transfer boundary.
+   * \param[in] val_index - Index corresponding to the heat transfer boundary.
+   * \return The temperature at infinity.
+   */
+  su2double GetWall_HeatTransfer_Temperature(string val_index) const;
+
+  /*!
    * \brief Get the wall function treatment for the given boundary marker.
    * \param[in] val_marker - String of the viscous wall marker.
    * \return The type of wall function treatment.
    */
-  unsigned short GetWallFunction_Treatment(string val_marker) const;
+  WALL_FUNCTIONS GetWallFunction_Treatment(string val_marker) const;
 
   /*!
    * \brief Get the additional integer info for the wall function treatment
@@ -9001,12 +9019,12 @@ public:
   /*!
    * \brief Get the kind of inlet face interpolation function to use.
    */
-  inline unsigned short GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
+  inline INLET_SPANWISE_INTERP GetKindInletInterpolationFunction(void) const { return Kind_InletInterpolationFunction; }
 
   /*!
    * \brief Get the kind of inlet face interpolation data type.
    */
-  inline unsigned short GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
+  inline INLET_INTERP_TYPE GetKindInletInterpolationType (void) const  { return Kind_Inlet_InterpolationType; }
 
   /*!
    * \brief Get whether to print inlet interpolated data or not.
@@ -9640,4 +9658,33 @@ public:
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
 
+  /*!
+   * \brief Get whether or not to save solution data to libROM.
+   * \return True if specified in config file.
+   */
+  bool GetSave_libROM(void) const {return libROM; }
+  
+  /*!
+   * \brief Get the name of the file for libROM to save.
+   * \return Filename prefix for libROM to save to (default: "su2").
+   */
+  string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
+  
+  /*!
+   * \brief Static or incremental toggle for POD basis generation type.
+   * \return Type of POD generation type
+   */
+  POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
+  
+  /*!
+   * \brief Get maximum number of POD basis dimensions (default: 100).
+   * \return Maximum number of POD basis vectors.
+   */
+  unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
+  
+  /*!
+   * \brief Get frequency of unsteady time steps to save (default: 1).
+   * \return Save frequency for unsteady time steps.
+   */
+  unsigned short GetRom_SaveFreq(void) const { return rom_save_freq; }
 };

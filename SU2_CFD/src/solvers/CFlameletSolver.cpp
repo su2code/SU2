@@ -238,12 +238,7 @@ CFlameletSolver::CFlameletSolver(CGeometry *geometry,
 }
 
 CFlameletSolver::~CFlameletSolver(void) {
-  
-  // unsigned long iMarker, iVertex;
-  // unsigned short iVar;
-  
   if (FluidModel != nullptr) delete FluidModel;
-
 }
 
 
@@ -350,7 +345,6 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
     su2double enth_inlet;
     su2double point_loc;
-    // su2double dist;
     unsigned long n_not_iterated  = 0;
     unsigned long n_not_in_domain = 0;
 
@@ -449,7 +443,6 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint, total_index;
   
   su2double  BetaInc2, Density, dRhodT, dRhodC, Temperature, Delta;
-  // su2double Cp; 
   
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -460,7 +453,6 @@ void CFlameletSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_co
     
     Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     BetaInc2    = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-    // Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
     Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     
     unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
@@ -537,21 +529,10 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
 
   bool implicit            = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool axisymmetric        = config->GetAxisymmetric();
-  // bool viscous             = config->GetViscous();
-  // unsigned short n_scalars = config->GetNScalars();
-  // unsigned short n_lookups = config->GetNLookups();
 
-  // su2double delta_enth_lut;
-  // su2double delta_temp_lut;
-  // su2double delta_source_prog_lut;
-  // su2double delta_source_energy_lut;
-
-  // CNumerics *second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
   CNumerics *first_numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
 
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-  
-  // su2double zero_sources[4] {0,0,0,0};
   
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
@@ -596,7 +577,7 @@ void CFlameletSolver::Source_Residual(CGeometry *geometry,
     if (implicit) Jacobian.SubtractBlock2Diag(i_point, residual.jacobian_i);
     
   }
-  
+  END_SU2_OMP_FOR
 }
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry,
@@ -606,22 +587,18 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry,
                                CConfig *config,
                                unsigned short val_marker) {
   
-  // unsigned short iDim, iVar;
-  unsigned short iVar; 
+  unsigned short iVar;
   unsigned long iVertex, iPoint, total_index;
-  // unsigned long not_used;
-  // su2double *Coords;
-  // su2double enth_inlet;
+  su2double enth_inlet;
 
-  // bool        grid_movement = config->GetGrid_Movement      (          );
   string      Marker_Tag    = config->GetMarker_All_TagBound(val_marker);
-  // su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
+  su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
   su2double  *inlet_scalar  = config->GetInlet_ScalarVal    (Marker_Tag);
  
-  // CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+  CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
-  // not_used                 = fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROG_VAR], temp_inlet);
-  // inlet_scalar[I_ENTHALPY] = enth_inlet;
+  fluid_model_local->GetEnthFromTemp(&enth_inlet, inlet_scalar[I_PROG_VAR], temp_inlet);
+  inlet_scalar[I_ENTHALPY] = enth_inlet;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -656,8 +633,6 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry,
 void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  // const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -690,7 +665,8 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
     }
   }
-  // END_SU2_OMP_FOR
+  END_SU2_OMP_FOR
+
 }
 
 void CFlameletSolver::BC_HeatFlux_Wall(CGeometry *geometry, 
@@ -708,25 +684,14 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                          CConfig *config,
                                          unsigned short val_marker) {
 
-  // unsigned short iVar, jVar, iDim;
   unsigned long iVertex, iPoint, total_index;
 
   bool implicit                   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   string Marker_Tag               = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall             = config->GetIsothermal_Temperature(Marker_Tag);
-  CFluidModel *fluid_model_local  = solver_container[FLOW_SOL]->GetFluidModel(); 
+  CFluidModel *fluid_model_local  = solver_container[FLOW_SOL]->GetFluidModel();    
   su2double enth_wall, prog_wall;
   unsigned long n_not_iterated    = 0;
-
-  // bool use_weak_bc                = config->GetUseWeakScalarBC();
-  // su2double *normal;
-  // su2double *coord_i, *coord_j;
-  // unsigned long point_normal;
-  // su2double area;
-  // su2double dist_ij;
-  // su2double dEnth_dn;
-  // su2double dT_dn;
-  // su2double mass_diffusivity;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -770,14 +735,12 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
 void CFlameletSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                               CConfig *config, unsigned short val_marker) {
 
-  // unsigned short iVar, jVar, iDim;
   unsigned long iVertex, iPoint, total_index;
 
   bool implicit                   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   string Marker_Tag               = config->GetMarker_All_TagBound(val_marker);
   su2double temp_wall             = config->GetIsothermal_Temperature(Marker_Tag);
   CFluidModel *fluid_model_local  = solver_container[FLOW_SOL]->GetFluidModel();    
-  // CSolver *heat_solver            = solver_container[HEAT_SOL];
   su2double enth_wall, prog_wall;
   unsigned long n_not_iterated    = 0;
 

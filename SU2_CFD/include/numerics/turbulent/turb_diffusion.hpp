@@ -47,11 +47,8 @@
 class CAvgGrad_Scalar : public CNumerics {
 protected:
   su2double
-  Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
   *Proj_Mean_GradTurbVar_Normal = nullptr,  /*!< \brief Mean_gradTurbVar DOT normal. */
-  *Proj_Mean_GradTurbVar_Edge = nullptr,    /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
   *Proj_Mean_GradTurbVar = nullptr,         /*!< \brief Mean_gradTurbVar DOT normal, corrected if required. */
-  dist_ij_2 = 0.0,                          /*!< \brief |Edge_Vector|^2 */
   proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */

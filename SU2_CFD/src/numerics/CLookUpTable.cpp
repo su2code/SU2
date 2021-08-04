@@ -60,7 +60,6 @@ CLookUpTable::CLookUpTable(string var_file_name_lut, string name_prog, string na
 void CLookUpTable::LoadTableRaw(string var_file_name_lut) {
 
   CFileReaderLUT file_reader;
-  // int iVar;
 
   if (rank == MASTER_NODE)
   cout << "Loading look-up-table-file " << var_file_name_lut << " ..." << endl;
@@ -498,7 +497,7 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
 
   vector<su2double*> look_up_data;
 
-  for (double i_var=0; i_var < val_vars.size(); ++i_var) {
+  for (long unsigned int i_var=0; i_var < val_vars.size(); ++i_var) {
     look_up_data.push_back(&val_vars[i_var]);
   }
 
@@ -550,9 +549,9 @@ unsigned long CLookUpTable::LookUp_ProgEnth(vector<string>     &val_names_var,
     exit_code = 1;
 
   }
-  int val_names_var_length = val_names_var.size(); 
+
   /* loop over variable names and interpolate / get values */
-  for (int i_var = 0; i_var < val_names_var_length; ++i_var) {
+  for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
 
     if (val_names_var.at(i_var).compare("NULL")==0) {
 
@@ -617,7 +616,7 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog,
   su2double next_distance = 1.e99;
   su2double next_prog_norm;
   su2double next_enth_norm;
-  unsigned long neighbor_id;
+  unsigned long neighbor_id = 0;
 
   const vector<su2double> &prog_table = GetData(name_prog);
   const vector<su2double> &enth_table = GetData(name_enth);
@@ -640,7 +639,6 @@ unsigned long CLookUpTable::FindNearestNeighborOnHull(su2double val_prog,
       neighbor_id  = hull.at(i_point);
     }
   }
-  // neighbor_id = 0; // Warning: May be used used uninitialised in this function. TODO 
   return neighbor_id;
 }
 

@@ -278,7 +278,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
-                                                 CSolver **solution_container,
+                                                 CSolver **solver_container,
                                                  CNumerics *conv_numerics,
                                                  CNumerics *sour_numerics,
                                                  CConfig *config,
@@ -290,8 +290,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   unsigned short T_INDEX, TVE_INDEX, RHOCVTR_INDEX;
   unsigned long iVertex, iPoint, total_index;
   su2double dTdn, dTvedn, ktr, kve, pcontrol, Wall_HeatFlux;
-  su2double *Normal, Area;
-  su2double **GradV, *V;
+  su2double *Normal, Area, *V;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -330,7 +329,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       // Note: Contributions from qtr and qve are used for proportional control
       //       to drive the solution toward the specified heatflux more quickly.
       V      = nodes->GetPrimitive(iPoint);
-      GradV  = nodes->GetGradient_Primitive(iPoint);
+      const auto GradV  = nodes->GetGradient_Primitive(iPoint);
       dTdn   = 0.0;
       dTvedn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -385,7 +384,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
-                                     CSolver **solution_container,
+                                     CSolver **solver_container,
                                      CNumerics *conv_numerics,
                                      CNumerics *sour_numerics,
                                      CConfig *config,
@@ -407,7 +406,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_HeatFluxCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
                                 sour_numerics, config, val_marker);
       break;
 
@@ -418,14 +417,14 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     }
   }
 
-  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                               sour_numerics, config, val_marker);
 
 
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *sour_numerics,
                                               CConfig *config,
@@ -442,7 +441,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *V, *dYdn, SdYdn;
-  su2double **GradV, **GradY;
+  su2double **GradY;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -498,7 +497,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
       /*--- Get temperature gradient information ---*/
       V = nodes->GetPrimitive(iPoint);
-      GradV  = nodes->GetGradient_Primitive(iPoint);
+      const auto GradV  = nodes->GetGradient_Primitive(iPoint);
       dTdn   = 0.0;
       dTvedn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -594,7 +593,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
-                                       CSolver **solution_container,
+                                       CSolver **solver_container,
                                        CNumerics *conv_numerics,
                                        CNumerics *sour_numerics,
                                        CConfig *config,
@@ -616,7 +615,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_IsothermalCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
                                   sour_numerics, config, val_marker);
       break;
     } else {
@@ -624,12 +623,12 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
     }
   }
 
-  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                                 sour_numerics, config, val_marker);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                                   CSolver **solution_container,
+                                                   CSolver **solver_container,
                                                    CNumerics *conv_numerics,
                                                    CNumerics *sour_numerics,
                                                    CConfig *config,
@@ -757,7 +756,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
-                                                CSolver **solution_container,
+                                                CSolver **solver_container,
                                                 CNumerics *conv_numerics,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
@@ -766,7 +765,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
-  BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
@@ -944,7 +943,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                            CSolver **solution_container,
+                                            CSolver **solver_container,
                                             CNumerics *conv_numerics,
                                             CNumerics *visc_numerics,
                                             CConfig *config,
@@ -964,14 +963,12 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double Viscosity, Eddy_Visc, Lambda;
   su2double Density, GasConstant;
 
-  const su2double* const* Grad_PrimVar;
   su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0}, Vector_Tangent_HF[MAXNDIM] = {0.0};
   su2double dTn, dTven;
   su2double rhoCvtr, rhoCvve;
 
-  su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
+  su2double TauTangent[MAXNDIM] = {0.0};
   su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  su2double TauNormal;
 
   bool ionization = config->GetIonization();
 
@@ -1059,7 +1056,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       kve  = kve*(1.0+scl);
 
       /*--- Retrieve Primitive Gradients ---*/
-      Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+      const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
       /*--- Calculate specific gas constant --- */
       //TODO: Move to fluidmodel?
@@ -1095,14 +1092,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         Res_Visc[iVar] = 0.0;
 
       CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
 
-      /*--- Compute wall shear stress (using the stress tensor) ---*/
-      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)

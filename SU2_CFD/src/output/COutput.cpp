@@ -1,5 +1,5 @@
 /*!
- * \file output_structure.cpp
+ * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
  * \version 7.1.1 "Blackbird"
@@ -262,20 +262,13 @@ void COutput::SetMultizoneHistory_Output(COutput **output, CConfig **config, CCo
 
 void COutput::OutputScreenAndHistory(CConfig *config) {
 
-  bool write_header, write_screen, write_history;
   if (rank == MASTER_NODE && !noWriting) {
 
-    /*--- Write the history file ---------------------------------------------------------------------------*/
-    write_history = WriteHistoryFile_Output(config);
-    if (write_history) SetHistoryFile_Output(config);
+    if (WriteHistoryFile_Output(config)) SetHistoryFile_Output(config);
 
-    /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = WriteScreen_Header(config);
-    if (write_header) SetScreen_Header(config);
+    if (WriteScreen_Header(config)) SetScreen_Header(config);
 
-    /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = WriteScreen_Output(config);
-    if (write_screen) SetScreen_Output(config);
+    if (WriteScreen_Output(config)) SetScreen_Output(config);
 
   }
 }
@@ -1013,7 +1006,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
   return TimeConvergence;
 }
 
-void COutput::SetHistoryFile_Header(CConfig *config) {
+void COutput::SetHistoryFile_Header(const CConfig *config) {
 
   unsigned short iField_Output = 0,
       iReqField = 0,
@@ -1057,7 +1050,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 }
 
 
-void COutput::SetHistoryFile_Output(CConfig *config) {
+void COutput::SetHistoryFile_Output(const CConfig *config) {
 
   unsigned short iField_Output = 0,
       iReqField = 0,
@@ -1093,14 +1086,14 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   histFile.flush();
 }
 
-void COutput::SetScreen_Header(CConfig *config) {
+void COutput::SetScreen_Header(const CConfig *config) {
   if (config->GetMultizone_Problem())
     multiZoneHeaderTable->PrintHeader();
   convergenceTable->PrintHeader();
 }
 
 
-void COutput::SetScreen_Output(CConfig *config) {
+void COutput::SetScreen_Output(const CConfig *config) {
 
   string RequestedField;
 
@@ -1848,7 +1841,7 @@ void COutput::Postprocess_HistoryFields(CConfig *config){
   }
 }
 
-bool COutput::WriteScreen_Header(CConfig *config) {
+bool COutput::WriteScreen_Header(const CConfig *config) {
 
   unsigned long RestartIter = 0;
 
@@ -1900,7 +1893,7 @@ bool COutput::WriteScreen_Header(CConfig *config) {
   return false;
 }
 
-bool COutput::WriteScreen_Output(CConfig *config) {
+bool COutput::WriteScreen_Output(const CConfig *config) {
 
   unsigned long ScreenWrt_Freq_Inner = config->GetScreen_Wrt_Freq(2);
   unsigned long ScreenWrt_Freq_Outer = config->GetScreen_Wrt_Freq(1);
@@ -1941,7 +1934,7 @@ bool COutput::WriteScreen_Output(CConfig *config) {
 
 }
 
-bool COutput::WriteHistoryFile_Output(CConfig *config) {
+bool COutput::WriteHistoryFile_Output(const CConfig *config) {
 
   unsigned long HistoryWrt_Freq_Inner = config->GetHistory_Wrt_Freq(2);
   unsigned long HistoryWrt_Freq_Outer = config->GetHistory_Wrt_Freq(1);

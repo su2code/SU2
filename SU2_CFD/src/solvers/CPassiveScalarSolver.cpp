@@ -231,19 +231,14 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
 }
 
 CPassiveScalarSolver::~CPassiveScalarSolver(void) {
-  
-  // unsigned long iMarker, iVertex;
-  // unsigned short iVar;
-  
   if (FluidModel != nullptr) delete FluidModel;
-
 }
+
 
 void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long n_not_in_domain     = 0;
-  unsigned long global_table_misses = 0;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl    =  config->GetMUSCL_Scalar();
@@ -277,13 +272,6 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
 
-  }
-
-  if (config->GetComm_Level() == COMM_FULL) {
-    SU2_MPI::Reduce(&n_not_in_domain, &global_table_misses, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-    if (rank == MASTER_NODE) {
-      SetNTableMisses(global_table_misses);
-    } 
   }
 
   /*--- Clear residual and system matrix, not needed for
@@ -326,7 +314,6 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
                                                CSolver ***solver_container,
                                                CConfig *config,
                                                unsigned long ExtIter) {
-  // su2double *coords;
   bool Restart   = (config->GetRestart() || config->GetRestart_Flow());
   
   
@@ -337,11 +324,8 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
     }  
 
     su2double* scalar_init = new su2double[nVar];
-    // CFluidModel *fluid_model_local;
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
-
-      // fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
       for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
         
@@ -373,12 +357,13 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
 
 }
 
+
 void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_container,  CConfig *config) {
+  
   unsigned short iVar;
   unsigned long iPoint, total_index;
   
   su2double  BetaInc2, Density, dRhodT, dRhodC, Temperature, Delta;
-  // su2double Cp; 
   
   bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -389,7 +374,6 @@ void CPassiveScalarSolver::SetPreconditioner(CGeometry *geometry, CSolver **solv
     
     Density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     BetaInc2    = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-    // Cp          = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
     Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     
     unsigned short nVar_Flow = solver_container[FLOW_SOL]->GetnVar();
@@ -476,7 +460,6 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
   bool axisymmetric = config->GetAxisymmetric();
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  // bool viscous        = config->GetViscous();
 
   vector<su2double> zero_sources(nVar,0.);
 
@@ -533,7 +516,7 @@ void CPassiveScalarSolver::Source_Residual(CGeometry *geometry, CSolver **solver
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
   }
-
+  END_SU2_OMP_FOR
 }
 
 void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
@@ -576,13 +559,12 @@ void CPassiveScalarSolver::BC_Inlet(CGeometry *geometry,
       }
     }
   }
-// END_SU2_OMP_FOR
+  END_SU2_OMP_FOR
+
 }
 
 void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  // const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -616,7 +598,8 @@ void CPassiveScalarSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_conta
         }
     }
   }
-// END_SU2_OMP_FOR
+  END_SU2_OMP_FOR
+
 }
 
 void CPassiveScalarSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,

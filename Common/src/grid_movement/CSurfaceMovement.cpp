@@ -26,6 +26,7 @@
  */
 
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
+#include "../../include/toolboxes/C1DInterpolation.hpp"
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
@@ -321,6 +322,13 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
 
             }
 
+            /*--- Check if new coordinates exceed geometrical constraint ---*/
+
+            // FIXME Dan: This is still buggy!
+            //CheckGeomConstr(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+            //MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+            
             /*--- Set total deformation values in config ---*/
             if (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) {
 
@@ -681,6 +689,58 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *g
   return totaldeformation;
 }
 
+
+void CSurfaceMovement::CheckGeomConstr(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox){
+
+  su2double *next_coords_def, *next_coords_orig;
+  su2double new_coords[2];
+  su2double *ffd_bounds = config->GetFFDBounds(); 
+  su2double ffd_bounds_x[2] = {ffd_bounds[0], ffd_bounds[3]};
+  su2double ffd_bounds_y[2] = {ffd_bounds[1], ffd_bounds[4]};
+  su2double dx, dy, dx_proj, dy_proj;
+
+  for (int i_dv = 0; i_dv < FFDBox->lOrder; ++i_dv) {
+    for (int j_dv = 0; j_dv < FFDBox->mOrder; ++j_dv) {
+      for (int k_dv = 0; k_dv < FFDBox->nOrder; ++k_dv) {
+
+          next_coords_def  = FFDBox->Coord_Control_Points[i_dv][j_dv][k_dv];
+          next_coords_orig = FFDBox->Coord_Control_Points_Copy[i_dv][j_dv][k_dv];
+
+          dx = dx_proj = next_coords_def[0] - next_coords_orig[0];
+          dy = dy_proj = next_coords_def[1] - next_coords_orig[1];
+
+          /*--- if out of x bounds but within y bounds ---*/
+          if ( ((next_coords_def[0] <  ffd_bounds_x[0]) || (next_coords_def[0] >  ffd_bounds_x[1])) &&
+               ((next_coords_def[1] >= ffd_bounds_y[0]) && (next_coords_def[1] <= ffd_bounds_y[1])) ){
+          }
+
+          /*--- if out of y+ bounds but within x bounds ---*/
+          if ( (next_coords_def[1] >  ffd_bounds_y[1]) &&
+              ((next_coords_def[0] >= ffd_bounds_x[0]) && (next_coords_def[0] <= ffd_bounds_x[1])) ){
+
+            dy_proj = ffd_bounds_y[1] - next_coords_orig[1];
+            dx_proj = dx/dy * dy_proj;
+
+          }
+
+          /*--- if out of y+ bounds but within x bounds ---*/
+          if (  (next_coords_def[1] <  ffd_bounds_y[0]) &&
+               ((next_coords_def[0] >= ffd_bounds_x[0]) && (next_coords_def[0] <= ffd_bounds_x[1])) ){
+
+            dy_proj = ffd_bounds_y[0] - next_coords_orig[1];
+            dx_proj = dx/dy * dy_proj;
+
+          }
+
+          new_coords[0] = next_coords_orig[0] + dx_proj;
+          new_coords[1] = next_coords_orig[1] + dy_proj;
+
+          FFDBox->SetCoordControlPoints(new_coords, i_dv, j_dv, k_dv);
+
+      }
+    }
+  }
+}
 
 void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config) {
 
@@ -1576,11 +1636,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *conf
     }
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-#else
-  MaxDiff = my_MaxDiff;
-#endif
 
   if (rank == MASTER_NODE)
     cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
@@ -3788,15 +3844,13 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   yp1 = (Xcoord[1]-Xcoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Xcoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
+  CCubicSpline splineX(Svalue, Xcoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   n_Airfoil = Svalue.size();
   yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
   ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
 
-  Ycoord2.resize(n_Airfoil+1);
-  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  CCubicSpline splineY(Svalue, Ycoord, CCubicSpline::FIRST, yp1, CCubicSpline::FIRST, ypn);
 
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3837,8 +3891,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
           Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i))/TotalArch;
         }
 
-        NewXCoord = boundary->GetSpline(Svalue, Xcoord, Xcoord2, n_Airfoil, Arch);
-        NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
+        NewXCoord = splineX(Arch);
+        NewYCoord = splineY(Arch);
 
         /*--- Store the delta change in the x & y coordinates ---*/
 

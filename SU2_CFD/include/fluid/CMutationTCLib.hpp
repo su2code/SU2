@@ -87,7 +87,7 @@ public:
   /*!
    * \brief Compute vector of species V-E energy.
    */
-  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) final;
 
   /*!
    * \brief Compute species net production rates.

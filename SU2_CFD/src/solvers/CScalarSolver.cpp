@@ -243,6 +243,7 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
   }
   } // end color loop
+  END_SU2_OMP_FOR
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
@@ -313,6 +314,7 @@ void CScalarSolver::SumEdgeFluxes(CGeometry* geometry) {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
     }
   }
+  END_SU2_OMP_FOR
 
 }
 
@@ -413,7 +415,7 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     }
   }
 
-  // SetPreconditioner();
+  //SetPreconditioner()
 
 
   SU2_OMP_CRITICAL
@@ -421,20 +423,17 @@ void CScalarSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solv
     Residual_RMS[iVar] += resRMS[iVar];
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
+  END_SU2_OMP_CRITICAL
   SU2_OMP_BARRIER
 
   /*--- Compute the root mean square residual ---*/
   SU2_OMP_MASTER
   SetResidual_RMS(geometry, config);
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 }
 
 void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-
-  // const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-
-  // const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
 
   // nijso: TODO: we also still have an underrelaxation factor as config option
   ComputeUnderRelaxationFactor(config);
@@ -448,12 +447,6 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      // su2double density = flowNodes->GetDensity(iPoint);
-      // su2double density_old = density;
-
-      // if (compressible)
-        // density_old = flowNodes->GetSolution_Old(iPoint,0);
-
       // nijso: check difference between conservative and regular solution
       // nijso: conservative solution is for transport of rho*Y, 
       // nijso: check underrelaxation
@@ -463,7 +456,8 @@ void CScalarSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver **sol
           //nodes->GetUnderRelaxation(iPoint)*LinSysSol(iPoint,iVar),
         nodes->AddClippedSolution(iPoint, iVar, LinSysSol(iPoint,iVar), lowerlimit[iVar], upperlimit[iVar]);
       }
-    }                
+    }
+    END_SU2_OMP_FOR
   }
 
 
@@ -495,6 +489,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solve
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   CompleteImplicitIteration(geometry, solver_container, config);
@@ -544,13 +539,13 @@ void CScalarSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
 
   }
+  END_SU2_OMP_FOR
 
 }
 
 void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
-  // const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -636,6 +631,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
       }
 
     }
+    END_SU2_OMP_FOR
 
   } else {
 
@@ -682,6 +678,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
           LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Loop over the boundary edges ---*/
 
@@ -729,6 +726,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
           //}
 
         }
+        END_SU2_OMP_FOR
       }
     }
 
@@ -801,7 +799,7 @@ void CScalarSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
         if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
-
+    END_SU2_OMP_FOR
   } // end dynamic grid
 
 }
@@ -902,7 +900,8 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  } 
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /*--- MPI solution and compute the scalars ---*/
@@ -930,6 +929,7 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
       }
       solver[iMesh][SCALAR_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
+    END_SU2_OMP_FOR
     solver[iMesh][SCALAR_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][SCALAR_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -944,9 +944,9 @@ void CScalarSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
 
-  } // end SU2_OMP_MASTER
+  }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
-  // END_SU2_OMP_MASTER
   
 }
 

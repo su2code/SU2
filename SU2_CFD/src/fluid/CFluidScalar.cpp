@@ -96,9 +96,9 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
       for(int iVar = 0; iVar < n_species_mixture; iVar++){
         if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
           ThermalConductivityPointers[iVar] = unique_ptr<CConstantConductivityRANS>(
-            new CConstantConductivityRANS(config->GetKt_Constant(iVar), config->GetPrandtl_Turb(iVar)));
+            new CConstantConductivityRANS(config->GetThermal_Conductivity_Constant(iVar), config->GetPrandtl_Turb(iVar)));
         } else {
-          ThermalConductivityPointers[iVar] = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetKt_Constant(iVar)));
+          ThermalConductivityPointers[iVar] = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_Constant(iVar)));
         }
       }  
       break;

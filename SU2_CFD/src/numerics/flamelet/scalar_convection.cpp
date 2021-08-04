@@ -65,9 +65,12 @@ CNumerics::ResidualType<> CUpwtransportedScalar::ComputeResidual(const CConfig* 
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(ScalarVar_i, nVar);  AD::SetPreaccIn(ScalarVar_j, nVar);
+  AD::SetPreaccIn(ScalarVar_i, nVar);
+  AD::SetPreaccIn(ScalarVar_j, nVar);
+
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim);
+    AD::SetPreaccIn(GridVel_j, nDim);
   }
 
   ExtraADPreaccIn();

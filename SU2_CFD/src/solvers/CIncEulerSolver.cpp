@@ -193,6 +193,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
 
+  SetReferenceValues(*config);
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
@@ -264,8 +266,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   su2double *dummy_scalar;
   unsigned short n_scalars;
-  n_scalars = 1; //To work with regression test. Get rid of maybe unitialised warning. TODO MH
-  dummy_scalar = new su2double[n_scalars]();
+  // n_scalars = 1; //To work with regression test. Get rid of maybe unitialised warning. TODO MH
+  // dummy_scalar = new su2double[n_scalars]();
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -308,7 +310,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
       n_scalars = auxFluidModel->GetNScalars();
-      // dummy_scalar = new su2double[n_scalars]();
+      dummy_scalar = new su2double[n_scalars]();
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
@@ -320,7 +322,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant(); 
       auxFluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
       n_scalars = config->GetNScalarsInit();
-      // dummy_scalar = new su2double[n_scalars]();
+      dummy_scalar = new su2double[n_scalars]();
       dummy_scalar[n_scalars-1] = 1;
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
@@ -493,19 +495,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case FLAMELET_FLUID_MODEL:
-        fluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        fluidModel   = new CFluidFlamelet(config,Pressure_Thermodynamic);
+        n_scalars    = fluidModel->GetNScalars();
+        dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
-        // delete[] dummy_scalar;
+        delete[] dummy_scalar;
         break;
-    
+
       case MIXTURE_FLUID_MODEL:
-        fluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
+        fluidModel   = new CFluidScalar(config, Pressure_Thermodynamic);
+	n_scalars    = fluidModel->GetNScalars();
+        dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
-        // delete[] dummy_scalar;
+        delete[] dummy_scalar;
         break;
     }
 
-    delete[] dummy_scalar;
+    // delete[] dummy_scalar;
 
     if (viscous) {
 
@@ -527,7 +533,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       /*--- Constant thermal conductivity model ---*/
 
-      config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+      config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
       /*--- Conductivity model via polynomial. ---*/
 
@@ -682,7 +688,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
-      
+
       case VISCOSITYMODEL::FLAMELET:
         break;
       }
@@ -700,7 +706,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       case CONDUCTIVITYMODEL::CONSTANT:
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
+        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -719,7 +725,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case CONDUCTIVITYMODEL::FLAMELET:
         break;
-
       }
     } else {
       ModelTable << "-" << "-";
@@ -863,6 +868,29 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << ModelTableOut.str();
     cout << NonDimTableOut.str();
   }
+
+}
+
+void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+
+  /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
+   based on initial values, use the far-field state (inf). For a custom non-dim based
+   on user-provided reference values, use the ref values to compute the forces. ---*/
+
+  su2double RefDensity, RefVel2;
+
+  if ((config.GetRef_Inc_NonDim() == DIMENSIONAL) ||
+      (config.GetRef_Inc_NonDim() == INITIAL_VALUES)) {
+    RefDensity = Density_Inf;
+    RefVel2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+  }
+  else {
+    RefDensity = config.GetInc_Density_Ref();
+    RefVel2 = pow(config.GetInc_Velocity_Ref(), 2);
+  }
+
+  DynamicPressureRef = 0.5 * RefDensity * RefVel2;
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
@@ -1321,7 +1349,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool viscous        = config->GetViscous();
   const bool radiation      = config->AddRadiation();
   const bool vol_heat       = config->GetHeatSource();
-  // const bool flame          = (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE);
   const bool turbulent      = (config->GetKind_Turb_Model() != NONE);
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -1956,6 +1983,75 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   }
 
 }
+
+void CIncEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
+
+  unsigned short iMarker_Monitoring, Kind_ObjFunc;
+  su2double Weight_ObjFunc;
+
+  Total_ComboObj = EvaluateCommonObjFunc(*config);
+
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+
+    switch(Kind_ObjFunc) {
+      case DRAG_COEFFICIENT:
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+
+  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+
+  switch(Kind_ObjFunc) {
+    case EQUIVALENT_AREA:
+      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+      break;
+    case NEARFIELD_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
+      break;
+    case SURFACE_MACH:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+      break;
+    case SURFACE_CO:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_CO(0);
+      break;
+    case SURFACE_NOX:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_NOx(0);
+      break;
+    case SURFACE_TEMP:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+      break;
+    case AVG_TEMPERATURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+      break;
+    default:
+      break;
+  }
+}
+
 
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -3019,13 +3115,13 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    write it to the restart if it is active. Therefore, we must reduce nVar
    here if energy is inactive so that the restart is read correctly. ---*/
 
-  bool energy = config->GetEnergy_Equation();
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  unsigned short nVar_Restart = nVar;
-  if (!(energy || weakly_coupled_heat)) nVar_Restart--;
   su2double Solution[MAXNVAR] = {0.0};
-  Solution[nVar-1] = GetTemperature_Inf();
+
+  auto nVar_Restart = nVar;
+  if (!(config->GetEnergy_Equation() || config->GetWeakly_Coupled_Heat())) {
+    nVar_Restart--;
+    Solution[nVar-1] = GetTemperature_Inf();
+  }
 
   LoadRestart_impl(geometry, solver, config, val_iter, val_update_geo, Solution, nVar_Restart);
 
