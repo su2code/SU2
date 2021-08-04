@@ -47,26 +47,16 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
                                           const CConfig *donor_config, unsigned long Marker_Donor,
                                           unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short iVar, nDonorVar;
-  nDonorVar = donor_solution->GetnPrimVar();
-
-  /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
-  bool SA, SST;
-  SA  = (nDonorVar == 1);
-  SST = (nDonorVar == 2);
-
-  if (SA){
-    /*---  for SA turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
-  }
-  else if (SST){
-    /*---  for SST turbulent solver retrieve solution and set it as the donor variable ---*/
-    Donor_Variable[0] = donor_solution->GetNodes()->GetSolution(Point_Donor,0);
-    Donor_Variable[1] = donor_solution->GetNodes()->GetSolution(Point_Donor,1);
-  }
-  else{
-    /*---  Retrieve primitive variables and set them as the donor variables ---*/
-    for (iVar = 0; iVar < nDonorVar; iVar++) {
+  const unsigned short nDonorVar = donor_solution->GetnPrimVar();
+  const bool turbulent = (nDonorVar==1) || (nDonorVar==2); // SA or SST
+  if (turbulent){
+    /*---  For turbulent solver retrieve solution variables and set then as the donor variables. ---*/
+    for (unsigned short iVar = 0; iVar < nDonorVar; iVar++) {
+      Donor_Variable[iVar] = donor_solution->GetNodes()->GetSolution(Point_Donor, iVar);
+    }
+  } else {
+    /*---  For flow solver retrieve primitive variables and set them as the donor variables. ---*/
+    for (unsigned short iVar = 0; iVar < nDonorVar; iVar++) {
       Donor_Variable[iVar] = donor_solution->GetNodes()->GetPrimitive(Point_Donor, iVar);
     }
   }
