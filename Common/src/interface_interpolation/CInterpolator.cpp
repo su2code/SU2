@@ -296,7 +296,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   /*--- Master process gathers data from all ranks ---*/
 #ifdef HAVE_MPI
   int nProcessor = size, iRank;
-  unsigned long received_nLocalLinkedNodes, received_nLocalVertex, received_nLocalLinkedNodes_sum;
+  unsigned long received_nLocalLinkedNodes, received_nLocalVertex;
 
   if (rank == MASTER_NODE){
     /*--- "Receive" from master process, i.e. copy. ---*/
