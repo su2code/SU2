@@ -299,10 +299,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-    su2double UnitNormal[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      UnitNormal[iDim] = -Normal[iDim]/Area;
-
     /*--- Initialize the convective & viscous residuals to zero ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {Res_Visc[iVar] = 0.0;}
 
@@ -433,7 +429,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *V, *dYdn, SdYdn;
-  su2double **GradV, **GradY;
+  su2double **GradY;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -620,8 +616,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const bool ionization = config->GetIonization();
 
@@ -660,10 +654,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
     /*--- Compute dual-grid area and boundary normal ---*/
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-    su2double UnitNormal[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      UnitNormal[iDim] = -Normal[iDim]/Area;
 
     /*--- Compute closest normal neighbor ---*/
     const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
