@@ -539,7 +539,7 @@ public:
       Solution(iPoint, nSpecies+iDim) = Primitive(iPoint,RHO_INDEX) * val_vector[iDim];
   }
 
-    /*!
+  /*!
    * \brief Get the value of the vorticity.
    * \return Value of the vorticity.
    */
