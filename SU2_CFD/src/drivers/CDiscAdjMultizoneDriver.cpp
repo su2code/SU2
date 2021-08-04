@@ -881,7 +881,9 @@ void CDiscAdjMultizoneDriver::SetAdj_ObjFunction() {
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
 #if defined(CODI_INDEX_TAPE) || defined(HAVE_OPDI)
-  assert(nZone <= 1 && "index AD types do not support multiple zones");
+  if (nZone > 1) {
+    std::cout << "WARNING: Index AD types do not support multiple zones." << std::endl;
+  }
 #endif
 
   AD::ClearAdjoints();
