@@ -469,15 +469,14 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         nEdges_target = Target_nLinkedNodes[target_iPoint];
 
-        target_element = new su2double*[ 2*nEdges_target + 2 ];
-        for (ii = 0; ii < 2*nEdges_target + 2; ii++)
+        nNode_target = 2*(nEdges_target + 1);
+
+        target_element = new su2double*[nNode_target];
+        for (ii = 0; ii < nNode_target; ii++)
           target_element[ii] = new su2double[nDim];
 
-//      nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
-//                                                TargetPoint_Coord, target_iPoint, target_element);
-
-        nNode_target = Build_DualElement(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
-                                           TargetPoint_Coord, target_iPoint, target_element);
+        nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
+                                                TargetPoint_Coord, target_iPoint, target_element);
 
         /*--- Brute force to find the closest donor_node ---*/
 
@@ -509,11 +508,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
           donor_element[ii] = new su2double[nDim];
 
-//      nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-//                                               DonorPoint_Coord, donor_iPoint, donor_element);
-
-        nNode_donor = Build_DualElement(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                          DonorPoint_Coord, donor_iPoint, donor_element);
+        nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+                                               DonorPoint_Coord, donor_iPoint, donor_element);
 
         Area = 0;
         for (ii = 1; ii < nNode_target-1; ii++){
@@ -613,11 +609,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                   donor_element[ii] = new su2double[nDim];
 
-//              nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-//                                                       DonorPoint_Coord, donor_iPoint, donor_element);
-
-                nNode_donor = Build_DualElement(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                                  DonorPoint_Coord, donor_iPoint, donor_element);
+                nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+                                                       DonorPoint_Coord, donor_iPoint, donor_element);
 
                 tmp_Area = 0;
                 for (ii = 1; ii < nNode_target-1; ii++)
@@ -844,134 +837,6 @@ int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsig
 
   return (int)iElementNode;
 
-}
-
-int CSlidingMesh::Build_DualElement(const unsigned long *map, const unsigned long *startIndex,
-                                    const unsigned long* nNeighbor, const su2double *coord,
-                                    unsigned long centralNode, su2double** element){
-//return Build_3D_surface_element(map, startIndex, nNeighbor,
-//coord, centralNode, element);
-    /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface quadrilateral element around the node and stores it into "element" ---*/
-    /*--- Returns the number of points included in the element ---*/
-
-    unsigned long iNode, jNode, kNode, ElementIndex, iPoint, jPoint, kPoint, nOuterNodes, nTriNodes;
-    unsigned short nDim = 3, iDim, niPointNeighbours;
-    const unsigned long *OuterNodes, *iPointNeighbours;
-    int LocalElementIndex;
-    unsigned long **DualElement;
-
-    nTriNodes = 3;
-
-    /* --- Store central node as element first point --- */
-    for (iDim = 0; iDim < nDim; iDim++) {
-        element[0][iDim] = coord[centralNode * nDim + iDim];
-    }
-
-    /* --- Get the number of nodes directly connected to the central node  --- */
-    nOuterNodes = nNeighbor[centralNode];
-
-    /* --- Array containing the points connected to the central node --- */
-    OuterNodes = &map[startIndex[centralNode]];
-
-    /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
-    DualElement = new unsigned long*[nOuterNodes];
-    for ( int i = 0; i < nOuterNodes; i++ ) {
-        DualElement[i] = new unsigned long[nTriNodes];
-    }
-
-    /*--- Initialise dual elements ---*/
-    for ( int i = 0; i < nOuterNodes; i++ ){
-        for (int j = 0; j < nTriNodes; j++) {
-            DualElement[i][j] = -1;
-        }
-    }
-
-    LocalElementIndex = 0;
-
-    /* --- Build and order tri segments of a hexa dual element --- */
-
-    bool isFound = false;
-
-    while ((nOuterNodes - LocalElementIndex) > 0) {
-        
-        for (iNode = 0; iNode < nOuterNodes && ((nOuterNodes - LocalElementIndex) > 0); iNode++) {
-            iPoint = OuterNodes[iNode];
-            iPointNeighbours = &map[startIndex[iPoint]];
-            niPointNeighbours = nNeighbor[iPoint];
-            isFound = false;
-
-            for (jNode = 0; jNode < niPointNeighbours && !isFound; jNode++) {
-                jPoint = iPointNeighbours[jNode];
-
-                for (kNode = 0; kNode < nOuterNodes; kNode++) {
-                    kPoint = OuterNodes[kNode];
-
-                    /*--- Find the shared outer nodes in order ---*/
-                    if (jPoint == kPoint) {
-
-                        if (LocalElementIndex == 0) {
-                            DualElement[LocalElementIndex][0] = centralNode;
-                            DualElement[LocalElementIndex][1] = iPoint;
-                            DualElement[LocalElementIndex][2] = jPoint;
-                            LocalElementIndex++;
-                            isFound = true;
-                            break;
-                        }
-
-                        if (iPoint == DualElement[LocalElementIndex - 1][2] && jPoint != DualElement[LocalElementIndex - 1][1]) {
-                            DualElement[LocalElementIndex][0] = centralNode;
-                            DualElement[LocalElementIndex][1] = iPoint;
-                            DualElement[LocalElementIndex][2] = jPoint;
-                            LocalElementIndex++;
-                            isFound = true;
-                            break;
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
-    LocalElementIndex = 0;
-    ElementIndex = 1;
-
-    /* --- Build array containing the quad dual element by finding the mid point of each edge and the baricenter of each face.
-     * Each quad is split through its diagonal connecting the central node, baricenter and 4th node.   --- */
-    while ((nOuterNodes - LocalElementIndex) > 0) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex][1] * nDim + iDim]) / 2;
-        }
-        ElementIndex++;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex][1] * nDim + iDim] + coord[DualElement[LocalElementIndex][2] * nDim + iDim]) / 3;
-        }
-        ElementIndex++;
-        LocalElementIndex++;
-    }
-
-    // This is a closed element, so add again element 1 to the end of the structure, useful later
-    if(DualElement[LocalElementIndex - 1][2] == DualElement[0][1]){
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = element[1][iDim];
-        }
-        ElementIndex++;
-    }
-    else {
-        for (iDim = 0; iDim < nDim; iDim++) {
-            element[ElementIndex][iDim] = (element[0][iDim] + coord[DualElement[LocalElementIndex - 1][2] * nDim + iDim]) / 2;
-        }
-        ElementIndex++;
-    }
-
-    for ( int i = 0; i < nOuterNodes; i++ ) {
-        delete[] DualElement[i];
-    }
-    delete [] DualElement;
-
-    return (int)ElementIndex;
 }
 
 su2double CSlidingMesh::ComputeLineIntersectionLength(unsigned short nDim, const su2double* A1, const su2double* A2,
