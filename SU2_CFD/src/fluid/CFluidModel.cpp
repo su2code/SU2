@@ -59,9 +59,9 @@ void CFluidModel::SetThermalConductivityModel(const CConfig* config) {
     case CONDUCTIVITYMODEL::CONSTANT:
       if (config->GetKind_ConductivityModel_Turb() == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
         ThermalConductivity = unique_ptr<CConstantConductivityRANS>(
-            new CConstantConductivityRANS(config->GetKt_ConstantND(), config->GetPrandtl_Turb()));
+            new CConstantConductivityRANS(config->GetThermal_Conductivity_ConstantND(), config->GetPrandtl_Turb()));
       } else {
-        ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetKt_ConstantND()));
+        ThermalConductivity = unique_ptr<CConstantConductivity>(new CConstantConductivity(config->GetThermal_Conductivity_ConstantND()));
       }
       break;
     case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
