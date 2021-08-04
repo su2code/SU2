@@ -112,7 +112,7 @@ using su2mixedfloat = passivedouble;
 #endif
 
 /*--- Detect if OpDiLib has to be used. ---*/
-#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE) && !defined(FORCE_OPDI_OFF)
+#if defined(HAVE_OMP) && defined(CODI_REVERSE_TYPE)
 #ifndef __INTEL_COMPILER
 #define HAVE_OPDI
 #else
