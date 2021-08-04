@@ -47,8 +47,9 @@ void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *do
                                           const CConfig *donor_config, unsigned long Marker_Donor,
                                           unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  const unsigned short nDonorVar = donor_solution->GetnPrimVar();
-  const bool turbulent = (nDonorVar==1) || (nDonorVar==2); // SA or SST
+  const auto nDonorVar = donor_solution->GetnPrimVar();
+  /// TODO: Replace with approach compatible with any number of variables (e.g. encapsulate in a "solver info" object).
+  const bool turbulent = nDonorVar <= 2;
   if (turbulent){
     /*---  For turbulent solver retrieve solution variables and set then as the donor variables. ---*/
     for (unsigned short iVar = 0; iVar < nDonorVar; iVar++) {
