@@ -65,6 +65,14 @@ private:
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
 
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+
 public:
 
   /*!
