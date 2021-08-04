@@ -257,7 +257,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
   /*--- Calculate supporting quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++)
-    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+    Vel[iDim] = V[VEL_INDEX+iDim];
   su2double v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
 
   /*--- Species density derivatives ---*/
