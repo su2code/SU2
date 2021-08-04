@@ -953,28 +953,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned short val_marker) {
 
-  unsigned short iDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
-  unsigned long iVertex, iPoint, jPoint;
-  su2double ktr, kve, Mass = 0.0;
-  su2double Ti, Tvei, Tj, Tvej;
-  su2double Twall, Tslip, Tslip_ve, dij;
-  su2double Pi;
-  su2double Area, UnitNormal[MAXNDIM];
-  su2double C, alpha_V, alpha_T;
-
-  su2double TMAC, TAC;
-  su2double Viscosity, Eddy_Visc, Lambda;
-  su2double Density, GasConstant;
-
-  const su2double* const* Grad_PrimVar;
-  su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0}, Vector_Tangent_HF[MAXNDIM] = {0.0};
-  su2double dTn, dTven;
-  su2double rhoCvtr, rhoCvve;
-
-  su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
-  su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  su2double TauNormal;
 
   bool ionization = config->GetIonization();
 
@@ -983,158 +961,162 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 1;
+  su2double C = 1;
 
   /*---Define under-relaxation factors --- */
-  alpha_V = 0.1;
-  alpha_T = 1.0;
+  su2double alpha_V = 0.1;
+  su2double alpha_T = 1.0;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Retrieve the specified wall temperature and accomodation coefficients---*/
-  Twall = config->GetIsothermal_Temperature(Marker_Tag);
-  TMAC  = 1.0;
-  TAC   = 1.0;
+  su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
+  su2double TMAC  = 1.0;
+  su2double TAC   = 1.0;
 
   /*--- Extract necessary indices ---*/
-  T_INDEX       = nodes->GetTIndex();
-  VEL_INDEX     = nodes->GetVelIndex();
-  TVE_INDEX     = nodes->GetTveIndex();
+  unsigned short T_INDEX   = nodes->GetTIndex();
+  unsigned short VEL_INDEX = nodes->GetVelIndex();
+  unsigned short TVE_INDEX = nodes->GetTveIndex();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for(auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      /*--- Compute dual-grid area and boundary normal ---*/
-      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
+    /*--- Compute dual-grid area and boundary normal ---*/
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      /*--- Compute closest normal neighbor ---*/
-      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    su2double UnitNormal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
 
-      /*--- Compute distance between wall & normal neighbor ---*/
-      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      const auto Coord_j = geometry->nodes->GetCoord(jPoint);
+    /*--- Compute closest normal neighbor ---*/
+    const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    /*--- Compute distance between wall & normal neighbor ---*/
+    const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+    const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
-      /*--- Calculate Pressure ---*/
-      Pi   = nodes->GetPressure(iPoint);
+    su2double dij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
-      /*--- Calculate the gradient of temperature ---*/
-      Ti   = nodes->GetTemperature(iPoint);
-      Tj   = nodes->GetTemperature(jPoint);
-      Tvei = nodes->GetTemperature_ve(iPoint);
-      Tvej = nodes->GetTemperature_ve(jPoint);
+    /*--- Calculate Pressure ---*/
+    su2double Pi   = nodes->GetPressure(iPoint);
 
-      /*--- Rename variables for convenience ---*/
-      ktr  = nodes->GetThermalConductivity(iPoint);
-      kve  = nodes->GetThermalConductivity_ve(iPoint);
+    /*--- Calculate the gradient of temperature ---*/
+    su2double Ti   = nodes->GetTemperature(iPoint);
+    su2double Tj   = nodes->GetTemperature(jPoint);
+    su2double Tvei = nodes->GetTemperature_ve(iPoint);
+    su2double Tvej = nodes->GetTemperature_ve(jPoint);
 
-      /*--- Retrieve Cv*density ---*/
-      rhoCvtr = nodes->GetRhoCv_tr(iPoint);
-      rhoCvve = nodes->GetRhoCv_ve(iPoint);
+    /*--- Rename variables for convenience ---*/
+    su2double ktr  = nodes->GetThermalConductivity(iPoint);
+    su2double kve  = nodes->GetThermalConductivity_ve(iPoint);
 
-      /*--- Retrieve Flow Data ---*/
-      Viscosity = nodes->GetLaminarViscosity(iPoint);
-      Eddy_Visc = nodes->GetEddyViscosity(iPoint);
-      Density   = nodes->GetDensity(iPoint);
-      Gamma     = nodes->GetGamma(iPoint);
+    /*--- Retrieve Cv*density ---*/
+    su2double rhoCvtr = nodes->GetRhoCv_tr(iPoint);
+    su2double rhoCvve = nodes->GetRhoCv_ve(iPoint);
 
-      /*--- Incorporate turbulence effects ---*/
-      const auto& Ms = FluidModel->GetSpeciesMolarMass();
-      su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
-      su2double  tmp1, scl, Cptr;
-      su2double *Vi = nodes->GetPrimitive(iPoint);
+    /*--- Retrieve Flow Data ---*/
+    su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
+    su2double Eddy_Visc = nodes->GetEddyViscosity(iPoint);
+    su2double Density   = nodes->GetDensity(iPoint);
+    su2double Gamma     = nodes->GetGamma(iPoint);
 
-      for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-        Mass += Vi[iSpecies]*Ms[iSpecies];
-      Cptr = rhoCvtr + Ru/Mass;
-      tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
-      scl  = tmp1/ktr;
-      ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
-      kve  = kve*(1.0+scl);
+    /*--- Incorporate turbulence effects ---*/
+    const auto& Ms = FluidModel->GetSpeciesMolarMass();
+    su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+    auto Vi = nodes->GetPrimitive(iPoint);
 
-      /*--- Retrieve Primitive Gradients ---*/
-      const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+    su2double Mass = 0.0;
+    for (auto iSpecies=0u; iSpecies<nSpecies; iSpecies++)
+      Mass += Vi[iSpecies]*Ms[iSpecies];
+    su2double Cptr = rhoCvtr + Ru/Mass;
+    su2double tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
+    su2double scl  = tmp1/ktr;
+    ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
+    kve  = kve*(1.0+scl);
 
-      /*--- Calculate specific gas constant --- */
-      //TODO: Move to fluidmodel?
-      GasConstant = 0.0;
-      for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
-        GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
+    /*--- Retrieve Primitive Gradients ---*/
+    const auto Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
-      /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
-      dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
-      dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
+    /*--- Calculate specific gas constant --- */
+    su2double GasConstant = FluidModel->ComputeGasConstant();
 
-      /*--- Calculate molecular mean free path ---*/
-      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
+    /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
+    su2double dTn = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[T_INDEX], UnitNormal);
+    su2double dTven = GeometryToolbox::DotProduct(nDim, Grad_PrimVar[TVE_INDEX], UnitNormal);
 
-      /*--- Calculate Temperature Slip ---*/
-      Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
+    /*--- Calculate molecular mean free path ---*/
+    su2double Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
-      if (dTven==0) Tslip_ve = Twall;
-      else Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
+    /*--- Calculate Temperature Slip ---*/
+    su2double Tslip = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
 
-      /*--- Calculate temperature gradients tangent to surface ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_Tangent_dT[iDim]   = Grad_PrimVar[T_INDEX][iDim] - dTn * UnitNormal[iDim];
-        Vector_Tangent_dTve[iDim] = Grad_PrimVar[TVE_INDEX][iDim] - dTven * UnitNormal[iDim];
-      }
+    su2double Tslip_ve = Twall;
+    if (dTven !=0) Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
-      /*--- Calculate Heatflux tangent to surface ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
-
-      /*--- Initialize viscous residual to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar ++)
-        Res_Visc[iVar] = 0.0;
-
-      CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
-
-      /*--- Compute wall shear stress (using the stress tensor) ---*/
-      TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-      /*--- Store the Slip Velocity at the wall */
-      for (iDim = 0; iDim < nDim; iDim++)
-        Vector[iDim] = Lambda/Viscosity*(2.0-TMAC)/TMAC*(TauTangent[iDim])-3.0/4.0*(Gamma-1.0)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
-
-      /*--- Apply under-relaxation ---*/
-      Tslip    = (1.0-alpha_T)*nodes->GetTemperature(iPoint)+(alpha_T)*Tslip;
-      Tslip_ve = (1.0-alpha_T)*nodes->GetTemperature_ve(iPoint)+(alpha_T)*Tslip_ve;
-
-      for (iDim = 0; iDim < nDim; iDim++){
-        Vector[iDim] = (1.0-alpha_V)*nodes->GetVelocity(iPoint,iDim)+(alpha_V)*Vector[iDim];
-      }
-
-      nodes->SetVelocity_Old(iPoint,Vector);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
-        nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
-      }
-
-      /*--- Apply to the linear system ---*/
-      Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
-                                   (ktr*(Tslip-Ti) + kve*(Tslip_ve-Tvei))*C)*Area/dij;
-      Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Tslip_ve-Tvei)*C)*Area/dij;
-
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    /*--- Calculate temperature gradients tangent to surface ---*/
+    su2double Vector_Tangent_dT[MAXNDIM] = {0.0}, Vector_Tangent_dTve[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      Vector_Tangent_dT[iDim]   = Grad_PrimVar[T_INDEX][iDim] - dTn * UnitNormal[iDim];
+      Vector_Tangent_dTve[iDim] = Grad_PrimVar[TVE_INDEX][iDim] - dTven * UnitNormal[iDim];
     }
+
+    /*--- Calculate Heatflux tangent to surface ---*/
+    su2double Vector_Tangent_HF[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
+
+    /*--- Initialize viscous residual to zero ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar ++) Res_Visc[iVar] = 0.0;
+
+    /*--- Compute wall shear stress (using the stress tensor) ---*/
+    su2double TauElem[MAXNDIM] = {0.0}, TauTangent[MAXNDIM] = {0.0};
+    su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
+    CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      TauElem[iDim] = GeometryToolbox::DotProduct(nDim, Tau[iDim], UnitNormal);
+
+    su2double TauNormal = GeometryToolbox::DotProduct(nDim, TauElem, UnitNormal);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+
+    /*--- Store the Slip Velocity at the wall */
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Vector[iDim] = Lambda/Viscosity*(2.0-TMAC)/TMAC*(TauTangent[iDim])-3.0/4.0*(Gamma-1.0)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
+
+    /*--- Apply under-relaxation ---*/
+    Tslip    = (1.0-alpha_T)*nodes->GetTemperature(iPoint)+(alpha_T)*Tslip;
+    Tslip_ve = (1.0-alpha_T)*nodes->GetTemperature_ve(iPoint)+(alpha_T)*Tslip_ve;
+
+    for (auto iDim = 0u; iDim < nDim; iDim++){
+      Vector[iDim] = (1.0-alpha_V)*nodes->GetVelocity(iPoint,iDim)+(alpha_V)*Vector[iDim];
+    }
+
+    nodes->SetVelocity_Old(iPoint,Vector);
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      LinSysRes(iPoint, nSpecies+iDim) = 0.0;
+      nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
+    }
+
+    /*--- Apply to the linear system ---*/
+    Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
+                                 (ktr*(Tslip-Ti) + kve*(Tslip_ve-Tvei))*C)*Area/dij;
+    Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Tslip_ve-Tvei)*C)*Area/dij;
+
+    LinSysRes.SubtractBlock(iPoint, Res_Visc);
   }
+  END_SU2_OMP_FOR
 }
+
 void CNEMONSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
