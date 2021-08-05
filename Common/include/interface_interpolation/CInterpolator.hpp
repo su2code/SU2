@@ -28,6 +28,7 @@
 
 #include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/containers/C2DContainer.hpp"
+#include "../../include/containers/container_decorators.hpp"
 #include <vector>
 #include <forward_list>
 #include <algorithm>
@@ -58,8 +59,8 @@ protected:
   long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices. */
   *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
 
-  su2double *Buffer_Send_Coord,      /*!< \brief Buffer to send coordinate values. */
-  *Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
+  su2activematrix Buffer_Send_Coord;      /*!< \brief Buffer to send coordinate values. */
+  su2activematrix Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
   /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
   unsigned long *Buffer_Receive_nLinkedNodes;

@@ -82,7 +82,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long  *Target_Proc;
   long *Target_GlobalPoint, *Donor_GlobalPoint;
 
-  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+  su2double *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
+  su2activematrix TargetPoint_Coord;
 
   /* --- Donor variables --- */
 
@@ -95,7 +96,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long *Donor_Proc;
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
-  su2double **donor_element, *DonorPoint_Coord;
+  su2double **donor_element;
+  su2activematrix DonorPoint_Coord;
 
   targetVertices.resize(config[targetZone]->GetnMarker_All());
 
@@ -204,7 +206,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
 
-            Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+            Coord_j = DonorPoint_Coord[ donor_iPoint ];
 
             dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
@@ -240,9 +242,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
-            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] +
+            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ target_segment[0] ][ iDim ] +
                                             target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
-            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] +
+            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ target_segment[1] ][ iDim ] +
                                             target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
@@ -286,10 +288,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point ][ iDim] +
+                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point ][ iDim] +
+                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -369,10 +371,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] +
-                                             DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  ][ iDim] +
+                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point ][ iDim] +
+                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -485,7 +487,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
 
-          Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
+          Coord_j = DonorPoint_Coord[ donor_iPoint ];
 
           dist = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
@@ -701,14 +703,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    delete [] TargetPoint_Coord;
     delete [] Target_GlobalPoint;
     delete [] Target_Proc;
     delete [] Target_nLinkedNodes;
     delete [] Target_LinkedNodes;
     delete [] Target_StartLinkedNodes;
 
-    delete [] DonorPoint_Coord;
     delete [] Donor_GlobalPoint;
     delete [] Donor_Proc;
     delete [] Donor_nLinkedNodes;
@@ -726,7 +726,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 }
 
 int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
-                                           const unsigned long* nNeighbor, const su2double *coord,
+                                           const unsigned long* nNeighbor, su2activematrix const& coord,
                                            unsigned long centralNode, su2double** element) {
 
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered
@@ -743,7 +743,7 @@ int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsig
   /* --- Store central node as element first point --- */
 
   for (iDim = 0; iDim < nDim; iDim++)
-    element[0][iDim] = coord[centralNode * nDim + iDim];
+    element[0][iDim] = coord[centralNode ][ iDim];
 
   nOuterNodes = nNeighbor[centralNode];
 
@@ -797,13 +797,13 @@ int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsig
   while( NextNode != -1 ){
 
     for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim ])/2;
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim ])/2;
 
     iElementNode++;
 
     for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] +
-                                        coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] +
+                                        coord[ OuterNodes[ NextNode ] ][ iDim] )/3;
     iElementNode++;
 
     if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
@@ -827,7 +827,7 @@ int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsig
   }
   else{
     for (iDim = 0; iDim < nDim; iDim++)
-    element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] )/2;
+    element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] )/2;
     iElementNode++;
   }
 

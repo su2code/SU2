@@ -64,7 +64,7 @@ private:
    * \return Number of points included in the element.
    */
   static int Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
-                                      const unsigned long* nNeighbor, const su2double *coord,
+                                      const unsigned long* nNeighbor, su2activematrix const& coord,
                                       unsigned long centralNode, su2double** element);
 
   /*!
