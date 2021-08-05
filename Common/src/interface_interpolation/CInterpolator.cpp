@@ -98,7 +98,7 @@ void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
     if (donor_geometry->nodes->GetDomain(iPointDonor)) {
       Buffer_Send_GlobalPoint[iLocalVertexDonor] = donor_geometry->nodes->GetGlobalIndex(iPointDonor);
       for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[iLocalVertexDonor][iDim] = donor_geometry->nodes->GetCoord(iPointDonor, iDim);
+        Buffer_Send_Coord(iLocalVertexDonor, iDim) = donor_geometry->nodes->GetCoord(iPointDonor, iDim);
       iLocalVertexDonor++;
     }
   }
@@ -293,7 +293,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     /*--- "Receive" from master process, i.e. copy. ---*/
     for(unsigned long iVertex=0; iVertex<nLocalVertex; iVertex++)
       for(unsigned long iDim=0; iDim<nDim; iDim++)
-        Buffer_Receive_Coord[iVertex][iDim]  = Buffer_Send_Coord[iVertex][iDim];
+        Buffer_Receive_Coord(iVertex, iDim)  = Buffer_Send_Coord(iVertex, iDim);
 
     for (iVertex = 0; iVertex < nLocalVertex; iVertex++){
       Buffer_Receive_GlobalPoint[iVertex]      = Buffer_Send_GlobalPoint[iVertex];
@@ -344,7 +344,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 #else
   for(unsigned long iVertex=0; iVertex<nLocalVertex; iVertex++)
     for(unsigned long iDim=0; iDim<nDim; iDim++)
-      Buffer_Receive_Coord[iVertex][iDim]  = Buffer_Send_Coord[iVertex][iDim];
+      Buffer_Receive_Coord(iVertex,iDim)  = Buffer_Send_Coord(iVertex,iDim);
 
   for (iVertex = 0; iVertex < nGlobalVertex; iVertex++){
     Buffer_Receive_GlobalPoint[iVertex]      = Buffer_Send_GlobalPoint[iVertex];
