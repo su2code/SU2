@@ -84,9 +84,6 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
-  unsigned short iDim, iVar, iMarker;
-  unsigned long iPoint, iVertex;
-
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual_RMS.resize(nVar,0.0);

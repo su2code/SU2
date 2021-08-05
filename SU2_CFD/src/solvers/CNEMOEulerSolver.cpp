@@ -449,7 +449,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     if (implicit)
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
-          if ((resiudal.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
+          if ((residual.jacobian_i[iVar][jVar] != residual.jacobian_i[iVar][jVar]) ||
               (residual.jacobian_j[iVar][jVar] != residual.jacobian_j[iVar][jVar]))
             err = true;
 
@@ -913,8 +913,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       } else
           eAxi_local++;
     }
-
-  } //iPoint
+  }
   END_SU2_OMP_FOR
 
   /*--- Checking for NaN ---*/
@@ -2449,7 +2448,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solve
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
-      
+
       /*--- Jacobian contribution for implicit integration ---*/
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
