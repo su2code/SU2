@@ -42,11 +42,11 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
   /*--- Define transport model ---*/
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     transport_model = "Wilke";
-  else if (Kind_TransCoeffModel == GUPTAYOS)
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     transport_model = "Gupta-Yos";
-  else if (Kind_TransCoeffModel == CHAPMANN_ENSKOG)
+  else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
     transport_model = "Chapmann-Enskog_LDLT";
 
   opt.setStateModel("ChemNonEqTTv");
