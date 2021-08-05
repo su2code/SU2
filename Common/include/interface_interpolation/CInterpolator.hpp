@@ -68,7 +68,7 @@ protected:
   unsigned long *Buffer_Receive_StartLinkedNodes;
   /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
    * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
-  unsigned long *Buffer_Receive_LinkedNodes;
+  su2vector<unsigned long> Buffer_Receive_LinkedNodes;
   /*! \brief Buffer to receive the rank that owns the vertex. */
   su2vector<unsigned long> Buffer_Receive_Proc;
 

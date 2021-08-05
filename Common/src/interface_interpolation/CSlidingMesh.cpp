@@ -78,7 +78,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long target_iPoint, jVertexTarget;
   unsigned long nEdges_target, nNode_target;
 
-  unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  unsigned long *Target_nLinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  su2vector<unsigned long> Target_LinkedNodes;
   long *Target_GlobalPoint, *Donor_GlobalPoint;
 
   su2double *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
@@ -91,7 +92,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
-  unsigned long *Donor_nLinkedNodes, *Donor_LinkedNodes, *Donor_StartLinkedNodes;
+  unsigned long *Donor_nLinkedNodes, *Donor_StartLinkedNodes;
+  su2vector<unsigned long> Donor_LinkedNodes;
   su2vector<unsigned long> Donor_Proc;
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
@@ -703,13 +705,11 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
     delete [] Target_GlobalPoint;
     delete [] Target_nLinkedNodes;
-    delete [] Target_LinkedNodes;
     delete [] Target_StartLinkedNodes;
 
     delete [] Donor_GlobalPoint;
     delete [] Donor_nLinkedNodes;
     delete [] Donor_StartLinkedNodes;
-    delete [] Donor_LinkedNodes;
 
   }
 
@@ -721,7 +721,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   delete [] storeProc;
 }
 
-int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
+int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, const unsigned long *startIndex,
                                            const unsigned long* nNeighbor, su2activematrix const& coord,
                                            unsigned long centralNode, su2double** element) {
 

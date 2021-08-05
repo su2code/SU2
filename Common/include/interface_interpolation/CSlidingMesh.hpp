@@ -63,7 +63,7 @@ private:
    * \param[out] element  - double array where element node coordinates will be stored
    * \return Number of points included in the element.
    */
-  static int Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
+  static int Build_3D_surface_element(const su2vector<unsigned long>& map, const unsigned long *startIndex,
                                       const unsigned long* nNeighbor, const su2activematrix& coord,
                                       unsigned long centralNode, su2double** element);
 
