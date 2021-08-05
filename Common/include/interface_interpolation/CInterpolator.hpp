@@ -65,7 +65,7 @@ protected:
   /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
   su2vector<unsigned long> Buffer_Receive_nLinkedNodes;
   /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
-  unsigned long *Buffer_Receive_StartLinkedNodes;
+  su2vector<unsigned long> Buffer_Receive_StartLinkedNodes;
   /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
    * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
   su2vector<unsigned long> Buffer_Receive_LinkedNodes;

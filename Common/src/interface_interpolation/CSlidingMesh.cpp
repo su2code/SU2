@@ -79,7 +79,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long nEdges_target, nNode_target;
 
   su2vector<unsigned long> Target_nLinkedNodes;
-  unsigned long *Target_StartLinkedNodes, *target_segment;
+  su2vector<unsigned long> Target_StartLinkedNodes;
+  unsigned long *target_segment;
   su2vector<unsigned long> Target_LinkedNodes;
   su2vector<unsigned long> Target_GlobalPoint, Donor_GlobalPoint;
 
@@ -94,7 +95,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
   su2vector<unsigned long> Donor_nLinkedNodes;
-  unsigned long *Donor_StartLinkedNodes;
+  su2vector<unsigned long> Donor_StartLinkedNodes;
   su2vector<unsigned long> Donor_LinkedNodes;
   su2vector<unsigned long> Donor_Proc;
 
@@ -705,10 +706,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    delete [] Target_StartLinkedNodes;
-
-    delete [] Donor_StartLinkedNodes;
-
   }
 
   delete [] Normal;
@@ -719,7 +716,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   delete [] storeProc;
 }
 
-int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, const unsigned long *startIndex,
+int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, const su2vector<unsigned long>& startIndex,
                                            const su2vector<unsigned long>& nNeighbor, su2activematrix const& coord,
                                            unsigned long centralNode, su2double** element) {
 
