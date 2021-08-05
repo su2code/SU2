@@ -115,7 +115,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          donorCoord(iCount,iDim) = Buffer_Receive_Coord[offset+iVertex][iDim];
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord(offset+iVertex, iDim);
         donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
         donorProc[iCount] = iProcessor;
         assert((globalToLocalMap.count(donorPoint[iCount]) == 0) && "Duplicate donor point found.");
