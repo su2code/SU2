@@ -254,7 +254,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     }
   }
   // global point IDs of surface-neighbors of all domain vertices on the marker
-  unsigned long *Buffer_Send_LinkedNodes        = new unsigned long [ nLocalLinkedNodes ];
+  su2vector<unsigned long> Buffer_Send_LinkedNodes(nLocalLinkedNodes);
   unsigned long index = 0;
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
@@ -279,7 +279,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   Buffer_Receive_GlobalPoint.resize(nGlobalVertex);
   Buffer_Receive_Proc.resize(nGlobalVertex);
 
-  Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex ];
+  Buffer_Receive_nLinkedNodes.resize(nGlobalVertex);
   Buffer_Receive_LinkedNodes.resize(nGlobalLinkedNodes);
   Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex ];
 
@@ -331,7 +331,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   }
   else{
     SU2_MPI::Send(     &nLocalLinkedNodes,                 1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
-    SU2_MPI::Send(Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_LinkedNodes.data(), nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
 
     SU2_MPI::Send(    &nLocalVertex,                   1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(),        MPI_DOUBLE, 0, 1, SU2_MPI::GetComm());
@@ -388,11 +388,10 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   SU2_MPI::Bcast(Buffer_Receive_Coord.data(), Buffer_Receive_Coord.size(), MPI_DOUBLE, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_Proc.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
 
-  SU2_MPI::Bcast(Buffer_Receive_nLinkedNodes, nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_nLinkedNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes, nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_LinkedNodes.data(), nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
 
-  delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = nullptr;
   delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = nullptr;
 
 }

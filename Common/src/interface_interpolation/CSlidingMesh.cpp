@@ -78,7 +78,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long target_iPoint, jVertexTarget;
   unsigned long nEdges_target, nNode_target;
 
-  unsigned long *Target_nLinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  su2vector<unsigned long> Target_nLinkedNodes;
+  unsigned long *Target_StartLinkedNodes, *target_segment;
   su2vector<unsigned long> Target_LinkedNodes;
   su2vector<unsigned long> Target_GlobalPoint, Donor_GlobalPoint;
 
@@ -92,7 +93,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
-  unsigned long *Donor_nLinkedNodes, *Donor_StartLinkedNodes;
+  su2vector<unsigned long> Donor_nLinkedNodes;
+  unsigned long *Donor_StartLinkedNodes;
   su2vector<unsigned long> Donor_LinkedNodes;
   su2vector<unsigned long> Donor_Proc;
 
@@ -703,10 +705,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    delete [] Target_nLinkedNodes;
     delete [] Target_StartLinkedNodes;
 
-    delete [] Donor_nLinkedNodes;
     delete [] Donor_StartLinkedNodes;
 
   }
@@ -720,7 +720,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 }
 
 int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, const unsigned long *startIndex,
-                                           const unsigned long* nNeighbor, su2activematrix const& coord,
+                                           const su2vector<unsigned long>& nNeighbor, su2activematrix const& coord,
                                            unsigned long centralNode, su2double** element) {
 
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered

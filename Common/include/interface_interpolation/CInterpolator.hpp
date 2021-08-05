@@ -63,7 +63,7 @@ protected:
   su2activematrix Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
 
   /*! \brief Buffer to receive the number of surface-connected edges, for each vertex. */
-  unsigned long *Buffer_Receive_nLinkedNodes;
+  su2vector<unsigned long> Buffer_Receive_nLinkedNodes;
   /*! \brief Buffer to receive the index of the Receive_LinkedNodes buffer where corresponding list of linked nodes begins. */
   unsigned long *Buffer_Receive_StartLinkedNodes;
   /*! \brief Buffer to receive the list of surface-connected nodes, for each vertex.
