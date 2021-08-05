@@ -371,6 +371,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       }
     }
   }
+  END_SU2_OMP_FOR
 
   if (Jacobian_i)
     for (auto iVar = 0u; iVar < nVar; iVar++)
