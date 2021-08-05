@@ -47,21 +47,6 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   daL    = new su2double [nVar];
   daR    = new su2double [nVar];
 
-  //THIS IS ONLY FOR IMPLICIT WITH ROE JACOBIAN
-  //DELETE ME TODO
-  RoeU        = new su2double  [nVar];
-  RoeV        = new su2double  [nPrimVar];
-  RoedPdU     = new su2double  [nVar];
-  Lambda      = new su2double  [nVar];
-  Epsilon     = new su2double  [nVar];
-  
-  P_Tensor    = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar]    = new su2double [nVar];
-    invP_Tensor[iVar] = new su2double [nVar];
-  }
-
   Flux   = new su2double[nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -87,26 +72,6 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   delete [] daL;
   delete [] daR;
   
-  //THIS IS ONLY FOR IMPLICIT WITH ROE JACOBIAN
-  //DELETE ME TODO
-  delete [] RoeU;
-  delete [] RoeV;
-  delete [] RoedPdU;
-  delete [] Lambda;
-  delete [] Epsilon;
-  
-  if (P_Tensor != NULL){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      delete [] P_Tensor[iVar];
-    delete [] P_Tensor;
-  }
-
-  if (invP_Tensor != NULL){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      delete [] invP_Tensor[iVar];
-    delete [] invP_Tensor;
-  }
-
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
@@ -206,9 +171,23 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   //TODO DELETE THIS: ROE Jacobian for DEBUGGING
   if (implicit){
 
+    RoeU        = new su2double  [nVar];
+    RoeV        = new su2double  [nPrimVar];
+    RoedPdU     = new su2double  [nVar];
+    Lambda      = new su2double  [nVar];
+    Epsilon     = new su2double  [nVar];
+    P_Tensor    = new su2double* [nVar];
+    invP_Tensor = new su2double* [nVar];
+
     roe_eves.resize(nSpecies,0.0);
- 
-    su2double R = sqrt(fabs(rho_i/rho_j));   
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      P_Tensor[iVar]    = new su2double [nVar];
+      invP_Tensor[iVar] = new su2double [nVar];
+    }
+	  
+    su2double R = sqrt(fabs(rho_i/rho_j));
+    
     
     for (iVar = 0; iVar < nVar; iVar++){
       RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
