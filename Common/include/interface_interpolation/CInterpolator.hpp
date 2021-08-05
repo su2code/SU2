@@ -70,7 +70,7 @@ protected:
    * \details The vertices are ordered as in Buffer_Receive_nLinkedNodes and Buffer_Receive_StartLinkedNodes, but for each*/
   unsigned long *Buffer_Receive_LinkedNodes;
   /*! \brief Buffer to receive the rank that owns the vertex. */
-  unsigned long *Buffer_Receive_Proc;
+  su2vector<unsigned long> Buffer_Receive_Proc;
 
   unsigned long
   nGlobalVertex_Target,              /*!< \brief Global number of vertex of the target boundary. */
