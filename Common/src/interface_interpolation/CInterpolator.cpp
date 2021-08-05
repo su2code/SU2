@@ -216,7 +216,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
       unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
-      Buffer_Send_GlobalPoint[iLocalVertex] = (long) geom->nodes->GetGlobalIndex(iPoint);
+      Buffer_Send_GlobalPoint[iLocalVertex] = static_cast<long>( geom->nodes->GetGlobalIndex(iPoint) );
       for (iDim = 0; iDim < nDim; iDim++)
         Buffer_Send_Coord[iLocalVertex][iDim] = geom->nodes->GetCoord(iPoint, iDim);
       neighbors.insert(pair<unsigned long, forward_list<unsigned long>*>(iPoint, new forward_list<unsigned long>));
