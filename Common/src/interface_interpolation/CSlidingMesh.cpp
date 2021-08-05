@@ -80,7 +80,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   unsigned long *Target_nLinkedNodes, *Target_StartLinkedNodes, *target_segment;
   su2vector<unsigned long> Target_LinkedNodes;
-  long *Target_GlobalPoint, *Donor_GlobalPoint;
+  su2vector<unsigned long> Target_GlobalPoint, Donor_GlobalPoint;
 
   su2double *target_iMidEdge_point, *target_jMidEdge_point, **target_element;
   su2activematrix TargetPoint_Coord;
@@ -226,7 +226,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Contruct information regarding the target cell ---*/
 
-          long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+          unsigned long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
           for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
             if( dPoint == Target_GlobalPoint[jVertexTarget] )
               break;
@@ -461,7 +461,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         for (iDim = 0; iDim < nDim; iDim++)
           Coord_i[iDim] = target_geometry->nodes->GetCoord(target_iPoint, iDim);
 
-        long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+        unsigned long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
         for (target_iPoint = 0; target_iPoint < nGlobalVertex_Target; target_iPoint++){
           if( dPoint == Target_GlobalPoint[target_iPoint] )
             break;
@@ -703,11 +703,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    delete [] Target_GlobalPoint;
     delete [] Target_nLinkedNodes;
     delete [] Target_StartLinkedNodes;
 
-    delete [] Donor_GlobalPoint;
     delete [] Donor_nLinkedNodes;
     delete [] Donor_StartLinkedNodes;
 

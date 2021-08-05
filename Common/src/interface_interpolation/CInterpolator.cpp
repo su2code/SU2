@@ -102,12 +102,11 @@ void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
       iLocalVertexDonor++;
     }
   }
-  auto nBuffer_Point = MaxLocalVertex_Donor;
 
   SU2_MPI::Allgather(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(), MPI_DOUBLE,
                      Buffer_Receive_Coord.data(), Buffer_Send_Coord.size(), MPI_DOUBLE, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_LONG,
-                     Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG,
+                     Buffer_Receive_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG, SU2_MPI::GetComm());
 }
 
 unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short nDim, bool compress,
@@ -206,7 +205,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   // coordinates of all domain vertices on the marker
   su2activematrix Buffer_Send_Coord(nLocalVertex, nDim);
   // global point IDs of all domain vertices on the marker
-  long *Buffer_Send_GlobalPoint = new long [ nVertex ];
+  su2vector<unsigned long> Buffer_Send_GlobalPoint(nVertex);
 
   // Assign to each domain vertex on the marker, identified by local point ID,
   // a set of surface-neighbor vertices on the marker, identified by global point ID.
@@ -217,7 +216,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
       unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
-      Buffer_Send_GlobalPoint[iLocalVertex] = static_cast<long>( geom->nodes->GetGlobalIndex(iPoint) );
+      Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
         Buffer_Send_Coord[iLocalVertex][iDim] = geom->nodes->GetCoord(iPoint, iDim);
       neighbors.insert(pair<unsigned long, unordered_set<unsigned long> >(iPoint, unordered_set<unsigned long>()));
@@ -277,7 +276,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   SU2_MPI::Allreduce(&nLocalLinkedNodes, &nGlobalLinkedNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   Buffer_Receive_Coord.resize(nGlobalVertex, nDim);
-  Buffer_Receive_GlobalPoint = new long[ nGlobalVertex ];
+  Buffer_Receive_GlobalPoint.resize(nGlobalVertex);
   Buffer_Receive_Proc.resize(nGlobalVertex);
 
   Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex ];
@@ -337,7 +336,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     SU2_MPI::Send(    &nLocalVertex,                   1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(),        MPI_DOUBLE, 0, 1, SU2_MPI::GetComm());
 
-    SU2_MPI::Send(     Buffer_Send_GlobalPoint, nLocalVertex, MPI_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(     Buffer_Send_GlobalPoint.data(), nLocalVertex, MPI_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(    Buffer_Send_nLinkedNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_StartLinkedNodes, nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
   }
@@ -367,7 +366,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
         unsigned long jPoint = uptr[ jLinkedNode ];
         bool found = false; // Global point index has been found
         for (kVertex = 0; kVertex < nGlobalVertex; kVertex++){
-          if( Buffer_Receive_GlobalPoint[kVertex] == long(jPoint) ){
+          if( Buffer_Receive_GlobalPoint[kVertex] == jPoint ){
             uptr[ jLinkedNode ] = kVertex;
             found = true;
             break;
@@ -385,7 +384,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     }
   }
 
-  SU2_MPI::Bcast(Buffer_Receive_GlobalPoint, nGlobalVertex, MPI_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_GlobalPoint.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_Coord.data(), Buffer_Receive_Coord.size(), MPI_DOUBLE, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_Proc.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
 
@@ -393,7 +392,6 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
   SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes, nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_LinkedNodes.data(), nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
 
-  delete [] Buffer_Send_GlobalPoint;      Buffer_Send_GlobalPoint      = nullptr;
   delete [] Buffer_Send_LinkedNodes;      Buffer_Send_LinkedNodes      = nullptr;
   delete [] Buffer_Send_StartLinkedNodes; Buffer_Send_StartLinkedNodes = nullptr;
 

@@ -144,9 +144,9 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Gather coordinates and global point indices. ---*/
     Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
+    Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor);
     Buffer_Receive_Coord.resize(nProcessor * MaxLocalVertex_Donor, nDim);
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
 
@@ -170,9 +170,6 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Give an MPI-independent order to the points (required due to high condition
      *    number of the RBF matrix, avoids diff results with diff number of ranks. ---*/

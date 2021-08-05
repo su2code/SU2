@@ -94,9 +94,9 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
                                     Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
     Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
+    Buffer_Send_GlobalPoint .resize(MaxLocalVertex_Donor);
     Buffer_Receive_Coord.resize(nProcessor*MaxLocalVertex_Donor,nDim);
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
@@ -124,9 +124,6 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Collect donor element (face) information. ---*/
 

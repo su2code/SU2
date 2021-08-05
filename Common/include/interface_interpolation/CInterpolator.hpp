@@ -56,8 +56,8 @@ protected:
   Buffer_Send_nVertex_Donor[1],      /*!< \brief Buffer to send number of vertices on the local processor. */
   *Buffer_Receive_nVertex_Donor;     /*!< \brief Buffer to store the number of vertices per processor on the Donor domain. */
 
-  long *Buffer_Send_GlobalPoint,     /*!< \brief Buffer to send global point indices. */
-  *Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
+  su2vector<unsigned long> Buffer_Send_GlobalPoint;     /*!< \brief Buffer to send global point indices. */
+  su2vector<unsigned long> Buffer_Receive_GlobalPoint;       /*!< \brief Buffer to receive global point indices. */
 
   su2activematrix Buffer_Send_Coord;      /*!< \brief Buffer to send coordinate values. */
   su2activematrix Buffer_Receive_Coord;             /*!< \brief Buffer to receive coordinate values. */
