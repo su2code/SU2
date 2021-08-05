@@ -2306,25 +2306,31 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   if (BFM){
+    // Add source terms from the body-force model
+
     CSolver* BFM_solver = solver_container[BFM_SOL];
     vector<su2double> BFM_sources(nDim + 2);
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
+      /*--- Compute body-force model source terms ---*/
       BFM_solver->ComputeBFMSources(solver_container, iPoint, BFM_sources);
+      /*--- Transferring source terms to numerics container ---*/
       for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
             numerics->SetBFM_source(iDim, BFM_sources.at(iDim));
       }
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the BFM source residual ---*/
       auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, residual);
 
     }
+    END_SU2_OMP_FOR
   }
 
   if (rotating_frame) {

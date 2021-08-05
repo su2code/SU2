@@ -1,10 +1,9 @@
 ﻿/*!
  * \file ReadBFMInput.hpp
- * \brief Declarations of template (empty) numerics classes, these give
- *        an idea of the methods that need to be defined to implement
- *        new schemes in SU2, in practice you should look for a similar
- *        scheme and try to re-use functionality (not by copy-paste).
- * \author F. Palacios, T. Economon
+ * \brief Declaration and inlines of the classes used to read
+ *        the blade geometry input file for body-force model
+ *        simulations.
+ * \author E.C.Bunschoten
  * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -32,57 +31,88 @@
 #include <vector>
 #include "../variables/CVariable.hpp"
 
-/*!
- * \class CConvectiveTemplate
- * \brief Class for setting up new method for spatial discretization of convective terms in flow equations.
- * \ingroup ConvDiscr
- * \author A. Lonkar
- */
 class ReadBFMInput{
 private:
-  string version_input_file;
-  
 
-  unsigned short n_blade_rows{1};
-  vector<unsigned long> n_axial_points{};
-  vector<unsigned long> n_radial_points{};
-  vector<unsigned long> n_tangential_points{};
-  vector<unsigned short> n_blades{};
-  vector<unsigned short> rotation_factor{};
-  vector<string> variable_names{};
+  string version_input_file;                  // Blade geometric parameter input file version
+  unsigned short n_blade_rows{1};             // Number of blade rows in input file
+  vector<unsigned long> n_axial_points{};     // Number of axial data entries per blade row
+  vector<unsigned long> n_radial_points{};    // Number of radial data entries per blade row
+  vector<unsigned long> n_tangential_points{};// Number of tangential sections per blade row
+  vector<unsigned short> n_blades{};          // Number of blades in each blade row
+  vector<unsigned short> rotation_factor{};   // Rotation factor for each blade row
+  vector<string> variable_names{};            // Blade geometric parameter names
 
-  vector<CVectorOfMatrix> *axial_coordinate = NULL;
-  vector<CVectorOfMatrix> *radial_coordinate = NULL;
-  vector<CVectorOfMatrix> *tangential_angle = NULL;
+  // vector<CVectorOfMatrix> *axial_coordinate = NULL; // Axial coordinate data entries
+  // vector<CVectorOfMatrix> *radial_coordinate = NULL;// Radial coordinate data entries
+  // vector<CVectorOfMatrix> *tangential_angle = NULL; // Tangential angle data entries
 
-  vector<vector<CVectorOfMatrix>> *Geometric_Parameters = NULL;
-  vector<string> translated_names;
-  vector<pair<unsigned short, unsigned short>> name_translation;
+  vector<vector<CVectorOfMatrix>> *Geometric_Parameters = NULL;  // Geometric blade parameters read from input file
+  vector<string> translated_names;                               // Variable name for each blade parameter
+  vector<pair<unsigned short, unsigned short>> name_translation; // Pairing name with variable index
     
+  /*!
+   * \brief Size blade input data matrix according to header information
+   */
   void AllocateMemory(){
+    // Allocate memory from heap
     Geometric_Parameters = new vector<vector<CVectorOfMatrix>>;
     
+    // Size according to number of blade rows
     Geometric_Parameters->resize(n_blade_rows);
     
+    // Looping through blade rows
     for(unsigned short i_row = 0; i_row<n_blade_rows; ++i_row){
       
+      // Size according to number of geometric parameters
       Geometric_Parameters->at(i_row).resize(N_BFM_PARAMS);
       
+      // Looping through parameters to size data structure according to number of spatial data entries
       for(unsigned short i_param=0; i_param<N_BFM_PARAMS; ++i_param){
         Geometric_Parameters->at(i_row).at(i_param).resize(n_tangential_points.at(i_row), n_radial_points.at(i_row), n_axial_points.at(i_row));
       }
     }
   }
 
+  /*!
+   * \brief Read blade geometry parameter input file
+   * \param [in] file_name - input file name
+   */
   void ReadInputFile(string file_name);
 
+  /*!
+   * \brief Skip to flag in input file
+   * \param [in] file_stream - pointer to file stream of input file
+   * \param [in] flag - flag to which to skip
+   * \returns line at flag
+   */
   string SkipToFlag(ifstream *file_stream, string flag);
+
+  /*!
+   * \brief Set number of axial data entries at a blade row
+   * \param [in] n_input - number of axial data entries in the blade row
+   * \param [in] i_row - Blade row index
+   */
   void SetNAxialPoints(unsigned long n_input, unsigned short i_row){n_axial_points.at(i_row) = n_input;}
 
+  /*!
+   * \brief Set number of radial data entries at a blade row
+   * \param [in] n_input - number of radial data entries in the blade row
+   * \param [in] i_row - Blade row index
+   */
   void SetNRadialPoints(unsigned long n_input, unsigned short i_row){n_radial_points.at(i_row) = n_input;}
 
+  /*!
+   * \brief Set number of tangential data entries at a blade row
+   * \param [in] n_input - number of tangential data entries in the blade row
+   * \param [in] i_row - Blade row index
+   */
   void SetNTangentialPoints(unsigned long n_input, unsigned short i_row){n_tangential_points.at(i_row) = n_input;}
 
+  /*!
+   * \brief Set number of blade rows
+   * \param [in] n_input - number of blade rows
+   */
   void SetNBladeRows(unsigned short n_input)
   {
     n_blade_rows = n_input;
@@ -92,9 +122,8 @@ private:
 public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config - pointer to config class
+   * \param[in] file_input_name - Name of blade geometry input file.
    */
   ReadBFMInput(CConfig *config, string file_input_name);
 
@@ -111,17 +140,38 @@ public:
 
   /*!
   * \brief Get number of data points in axial direction in BFM input file
+  * \param[in] i_row - blade row index
   * \returns Number of data points in axial direction.
   */
   unsigned long GetNAxialPoints(unsigned short i_row){return n_axial_points.at(i_row);}
 
+  /*!
+  * \brief Get number of data points in radial direction in BFM input file
+  * \param[in] i_row - blade row index
+  * \returns Number of data points in radial direction.
+  */
   unsigned long GetNRadialPoints(unsigned short i_row){return n_radial_points.at(i_row);}
 
+  /*!
+  * \brief Get number of data points in tangential direction in BFM input file
+  * \param[in] i_row - blade row index
+  * \returns Number of data points in tangential direction.
+  */
   unsigned long GetNTangentialPoints(unsigned short i_row){return n_tangential_points.at(i_row);}
 
+  /*!
+  * \brief Get blade geometric parameter at a specific entry
+  * \param[in] iRow - Blade row index
+  * \param[in] iTang - Tangential section index
+  * \param[in] iRad - Radial section index
+  * \param[in] iAx - Axial point index
+  * \param[in] iVar - Parameter index
+  * \returns Blade geometric parameter value
+  */
   su2double GetBFMParameter(unsigned short iRow, unsigned long iTang, unsigned long iRad, unsigned long iAx, unsigned short iVar){
     return Geometric_Parameters->at(iRow).at(iVar)(iTang, iRad, iAx);
   }
+
   inline int GetIndexOfVar(string nameVar) {
     int index;
     int endoflist;

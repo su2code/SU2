@@ -1,10 +1,8 @@
 /*!
  * \file ReadBFMInput.hpp
- * \brief Declarations of template (empty) numerics classes, these give
- *        an idea of the methods that need to be defined to implement
- *        new schemes in SU2, in practice you should look for a similar
- *        scheme and try to re-use functionality (not by copy-paste).
- * \author F. Palacios, T. Economon
+ * \brief Declarations and inlines of the classes used to interpolate
+ *        the blade geometric parameters onto the mesh nodes.
+ * \author E.C.Bunschoten
  * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -35,12 +33,40 @@
 class BFMInterpolator
 {
     private:
-    vector<su2double> Rotation_Axis;
-    vector<su2double> axial_direction;
+    vector<su2double> Rotation_Axis;   // BFM rotation axis (Cartesian)
+    vector<su2double> axial_direction; // Axial direction unit vector (Cartesian)
 
+    /*! 
+    * \brief 2D interpolation of blade geometric parameters onto mesh nodes.
+    * \param [in] axis - Axial coordinate of mesh node.
+    * \param [in] radius - Radial coordinate of mesh node.
+    * \param [in] iPoint - Mesh node index.
+    * \param [in] reader - Pointer to input file reader class.
+    * \param [in] solver_container - Pointer to solver container class. 
+    */
     void Interp2D(su2double axis, su2double radius, unsigned long iPoint, ReadBFMInput *reader, CSolver*solver_container);
+
+    /*!
+    * \brief Ray-cast inclusion algorithm which checks for query point inclusion whithin cell.
+    * \param [in] axis - Axial coordinate of query point.
+    * \param [in] radius - Radial coordinate of query point.
+    * \param [in] ax_cell - Axial boundary coordinates of query cell.
+    * \param [in] rad_cell - Radial boundary coordinates of query cell.
+    * \returns Inclusion of query point into query cell.
+    */
     bool RC_Inclusion(su2double axis, su2double radius, vector<su2double>ax_cell, vector<su2double>rad_cell);
+
+    /*!
+    * \brief Distance-weighted interpolation algorithm.
+    * \param [in] axis - Axial coordinate of query point.
+    * \param [in] radius - Radial coordinate of query point.
+    * \param [in] ax_cell - Axial boundary coordinates of query cell.
+    * \param [in] rad_cell - Radial boundary coordinates of query cell.
+    * \param [in] val_cell - Data points at cell boundary.
+    * \returns Interpolated data value at query point.
+    */
     su2double DW_average(su2double axis, su2double radius, vector<su2double>ax_cell, vector<su2double>rad_cell, vector<su2double>val_cell);
+    
     
     su2double Vector_Dot_Product(vector<su2double>a, vector<su2double>b){
         if(a.size() != b.size()){

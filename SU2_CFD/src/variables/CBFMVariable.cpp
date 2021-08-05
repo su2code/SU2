@@ -70,6 +70,6 @@ CBFMVariable::CBFMVariable(unsigned long nPoints, unsigned short NDim, unsigned 
     Solution.resize(nPoint, nBFMParams) = su2double(0.0);
     Gradient.resize(nPoint, nBFMParams, nDim, 0.0);
     
-};
+}
 
 

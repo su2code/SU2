@@ -215,10 +215,10 @@ public:
 };
 
 /*!
- * \class CSourceBodyForce
- * \brief Class for the source term integration of a body force.
+ * \class CSourceBFM
+ * \brief Class for the source term integration of a body-force model
  * \ingroup SourceDiscr
- * \author T. Economon
+ * \author E.C.Bunschoten
  */
 class CSourceBFM final : public CNumerics {
   vector<su2double> BFM_sources;
@@ -240,6 +240,9 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) final ;
 
   /*!
+  * \brief Set solution source term according to the body-force model
+  * \param [in] iDim - Solution variable index.
+  * \param [in] value - Solution variable BFM source term.
   */
   inline virtual void SetBFM_source(unsigned short iDim, su2double value) final {
     BFM_sources.at(iDim) = value;
