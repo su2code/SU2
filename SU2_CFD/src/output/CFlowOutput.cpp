@@ -1895,8 +1895,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
           case CONDUCTIVITYMODEL::CONSTANT:
             Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-            Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
-            Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+            Breakdown_file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+            Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND()<< "\n";
             break;
 
           default:
@@ -2260,8 +2260,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
             case CONDUCTIVITYMODEL::CONSTANT:
               Breakdown_file << "Conductivity Model: CONSTANT "<< "\n";
-              Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
-              Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+              Breakdown_file << "Molecular Conductivity: " << config->GetThermal_Conductivity_Constant()<< " W/m^2.K." << "\n";
+              Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND()<< "\n";
               break;
 
             case CONDUCTIVITYMODEL::POLYNOMIAL:

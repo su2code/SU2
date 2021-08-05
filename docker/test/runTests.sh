@@ -9,7 +9,7 @@
 usage="$(basename "$0") [-h] [-t tutorial_branch] [-b su2_branch] [-c testcases_branch] [-s test_script] 
 where:
     -h  show this help text
-    -t  branch of su2code/su2code.github.io repo 
+    -t  branch of su2code/Tutorials repo
     (if not provided, it is assumed that it is mounted at /src/SU2)
     -b  branch of su2code/SU2 repo.
     (if not provided, it is assumed that it is mounted at /src/Tutorials)
