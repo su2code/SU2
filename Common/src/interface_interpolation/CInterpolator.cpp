@@ -191,7 +191,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
   /*--- Get the number of domain vertices on the marker, and a mapping
   * (iVertex) -> (iLocalVertex, non-domain points being ignored). ---*/
-  unsigned long* iVertex_to_iLocalVertex = new unsigned long[ nVertex ];
+  su2vector<unsigned long> iVertex_to_iLocalVertex(nVertex);
   nLocalVertex = 0;
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
@@ -272,9 +272,6 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       neighbors[iPoint]=nullptr;
     }
   }
-
-  delete[] iVertex_to_iLocalVertex;
-
 
   /*--- Now these arrays of all processes must be joined to a single/global arrays. For this,
    * the entries of StartLinkedNodes must be shifted.
