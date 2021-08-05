@@ -2257,7 +2257,7 @@ enum ENUM_SOBOLEV_MODUS {
  DEBUG = 4,                       /*!< \brief Special flag for debugging. */
  ONLY_GRAD = 5,                   /*!< \brief Flag for OneShot to only compute the original gradient. */
 };
-static const map<string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
  MakePair("NONE", NO_MODUS)
  MakePair("PARAM_LEVEL_COMPLETE"  , PARAM_LEVEL_COMPLETE)
  MakePair("MESH_LEVEL" , MESH_LEVEL)
@@ -2273,7 +2273,7 @@ enum ENUM_ONESHOT_MODE {
  PIGGYBACK   = 1,      /*!< \brief Operate on parameter level. */
  ONESHOT  = 2,         /*!< \brief Operate on mesh level. */
 };
-static const map<string, ENUM_ONESHOT_MODE> Oneshot_Mode_Map = {
+static const MapType<std::string, ENUM_ONESHOT_MODE> Oneshot_Mode_Map = {
  MakePair("NONE", NO_MODE)
  MakePair("PIGGYBACK"  , PIGGYBACK)
  MakePair("ONESHOT" , ONESHOT)

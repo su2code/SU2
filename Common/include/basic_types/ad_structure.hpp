@@ -340,7 +340,7 @@ namespace AD{
   #endif
   }
 
-  FORCEINLINE void ComputeAdjointForward() {AD::globalTape.evaluateForward(); adjointVectorPosition = 0; }
+  FORCEINLINE void ComputeAdjointForward() {AD::getGlobalTape().evaluateForward();}
 
   FORCEINLINE void Reset() {
     AD::getGlobalTape().reset();

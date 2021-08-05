@@ -9504,7 +9504,7 @@ public:
    * \brief Check if a One-Shot modus is specified in the config file.
    * \return YES if one-shot is enabled.
    */
-  bool GetOneShot(void) { return (OneShotMode != NO_MODE); }
+  bool GetOneShot(void) const { return (OneShotMode != NO_MODE); }
 
   /*!
    * \brief Get the kind of One Shot method from the config file.

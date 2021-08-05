@@ -37,7 +37,7 @@
  * \author T. Albring
  */
 class CDiscAdjSolver : public CSolver {
-private:
+protected:
   static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 32; /*!< \brief Max number of variables, for static arrays. */
 

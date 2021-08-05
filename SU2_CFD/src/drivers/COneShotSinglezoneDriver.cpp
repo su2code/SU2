@@ -138,7 +138,7 @@ void COneShotSinglezoneDriver::RunOneShot(){
 
     /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
      * are removed for future runs. */
-    SetRecording(NONE);
+    SetRecording(RECORDING::CLEAR_INDICES);
 
     /// call to Piggyback
     PiggyBack();
@@ -209,11 +209,11 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
 
   /*--- In the last Piggyback step we need to calculate the mesh sensitivities as well ---*/
 
-  unsigned short kind_recording;
+  RECORDING kind_recording;
   if (iPiggyIter == nPiggyIter-1 || StopNext) {
-    kind_recording = SOLUTION_AND_MESH;
+    kind_recording = RECORDING::SOLUTION_AND_MESH;
   } else {
-    kind_recording = SOLUTION_VARIABLES;
+    kind_recording = RECORDING::SOLUTION_VARIABLES;
   }
 
   /*--- Store the computational graph of one direct iteration. ---*/
@@ -245,7 +245,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
 
   /*--- Extract the computed sensitivity values. ---*/
 
-  if (RecordingState == SOLUTION_AND_MESH) {
+  if (RecordingState == RECORDING::SOLUTION_AND_MESH) {
     solver[MainSolver]->SetSensitivity(geometry, config);
   }
 
@@ -273,7 +273,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
 
 }
 
-void COneShotSinglezoneDriver::SetRecording(unsigned short kind_recording){
+void COneShotSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   AD::Reset();
 
@@ -283,14 +283,14 @@ void COneShotSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
 
-  if (kind_recording != NONE){
+  if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
 
     if (rank == MASTER_NODE && (TimeIter == 0)) {
       cout << "Direct iteration to store the primal computational graph." << endl;
     }
-    if (rank == MASTER_NODE && kind_recording == SOLUTION_AND_MESH) {
+    if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_AND_MESH) {
       cout << "Combined recording of flow and design variables." << endl;
     }
 
@@ -306,7 +306,7 @@ void COneShotSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   RecordingState = kind_recording;
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
+  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
 
   /*--- Evaluate the objective function and store it --- */
 
@@ -359,7 +359,7 @@ void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
 
 void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& deltaVector, CConfig *config) {
 
-  config->SetKind_SU2(SU2_DEF);
+  config->SetKind_SU2(SU2_COMPONENT::SU2_DEF);
 
   unsigned short iDV, iDV_Value, nDV_Value;
   unsigned long iDVtotal=0;
@@ -380,7 +380,7 @@ void COneShotSinglezoneDriver::DeformGeometry(vector<su2double>& deltaVector, CC
     grid_movement[ZONE_0][INST_0]->SetVolume_Deformation(geometry, config, true);
   }
 
-  config->SetKind_SU2(SU2_CFD);
+  config->SetKind_SU2(SU2_COMPONENT::SU2_CFD);
 
 }
 
@@ -422,9 +422,9 @@ void COneShotSinglezoneDriver::Linesearch(su2double funcValue, vector<su2double>
       /// update the design
       DeformGeometry(delta_design, config);
 
-      /* We need to record with NONE as input to ensure that all auxiliary variable dependencies
+      /* We need to record with RECORDING::CLEAR_INDICES as input to ensure that all auxiliary variable dependencies
        * are removed for future runs. */
-      SetRecording(NONE);
+      SetRecording(RECORDING::CLEAR_INDICES);
 
       /// call to Piggyback
       PiggyBack();

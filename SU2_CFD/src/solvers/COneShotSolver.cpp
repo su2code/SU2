@@ -42,10 +42,6 @@ COneShotSolver::COneShotSolver(void) : CDiscAdjSolver () {
 
 }
 
-COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config)  : CDiscAdjSolver(geometry, config) {
-
-}
-
 COneShotSolver::COneShotSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CDiscAdjSolver(geometry, config, direct_solver, Kind_Solver, iMesh) {
 
 }
@@ -57,8 +53,8 @@ COneShotSolver::~COneShotSolver(void) {
 void COneShotSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
-  bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
-  bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
+  bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;
 
   unsigned long iPoint;
   unsigned short iVar;

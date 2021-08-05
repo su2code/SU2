@@ -849,7 +849,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     KindSolver   = config->GetKind_Grad_Linear_Solver();
     KindPrecond  = config->GetKind_Grad_Linear_Solver_Prec();
     MaxIter      = config->GetGrad_Linear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
     ScreenOutput = true;
   }
@@ -861,7 +860,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, co
     KindSolver   = config->GetKind_Linear_Solver();
     KindPrecond  = config->GetKind_Linear_Solver_Prec();
     MaxIter      = config->GetLinear_Solver_Iter();
-    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
     SolverTol    = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
     ScreenOutput = false;
   }
@@ -1033,9 +1031,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     SolverTol    = SU2_TYPE::GetValue(config->GetDeform_Linear_Solver_Error());
     ScreenOutput = config->GetDeform_Output();
   }
-
-  /*--- To keep the behavior of SU2_DOT even though it should not be strictly required. ---*/
-  if (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT || config->GetSmoothGradient()) RequiresTranspose = true;
 
   /*--- Set up preconditioner and matrix-vector product ---*/
 
