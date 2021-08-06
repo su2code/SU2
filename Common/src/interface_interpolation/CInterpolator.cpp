@@ -103,8 +103,8 @@ void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
     }
   }
 
-  SU2_MPI::Allgather(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(), MPI_DOUBLE,
-                     Buffer_Receive_Coord.data(), Buffer_Send_Coord.size(), MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_Coord.data(), MaxLocalVertex_Donor*nDim, MPI_DOUBLE,
+                     Buffer_Receive_Coord.data(), MaxLocalVertex_Donor*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
   SU2_MPI::Allgather(Buffer_Send_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG,
                      Buffer_Receive_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG, SU2_MPI::GetComm());
 }
