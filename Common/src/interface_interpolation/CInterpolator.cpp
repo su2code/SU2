@@ -83,21 +83,17 @@ void CInterpolator::Determine_ArraySize(int markDonor, int markTarget,
 void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
                     unsigned long nVertexDonor, unsigned short nDim) {
 
-  unsigned long iVertex;
-  unsigned short iDim;
-
-  for (iVertex = 0; iVertex < MaxLocalVertex_Donor; iVertex++) Buffer_Send_GlobalPoint[iVertex] = -1;
-
-  Buffer_Send_Coord.resize(nVertexDonor,nDim);
+  Buffer_Send_Coord.resize(MaxLocalVertex_Donor,nDim);
+  Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor) = -1;
 
   /*--- Copy coordinates and point to the auxiliar vector --*/
-  auto iLocalVertexDonor = 0ul;
+  unsigned long iLocalVertexDonor = 0;
 
-  for (iVertex = 0; iVertex < nVertexDonor; iVertex++) {
+  for (unsigned long iVertex = 0; iVertex < nVertexDonor; iVertex++) {
     auto iPointDonor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
     if (donor_geometry->nodes->GetDomain(iPointDonor)) {
       Buffer_Send_GlobalPoint[iLocalVertexDonor] = donor_geometry->nodes->GetGlobalIndex(iPointDonor);
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Buffer_Send_Coord(iLocalVertexDonor, iDim) = donor_geometry->nodes->GetCoord(iPointDonor, iDim);
       iLocalVertexDonor++;
     }
