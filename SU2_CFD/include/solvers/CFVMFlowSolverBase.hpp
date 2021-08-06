@@ -268,11 +268,6 @@ class CFVMFlowSolverBase : public CSolver {
   su2double EvaluateCommonObjFunc(const CConfig& config) const;
 
   /*!
-   * \brief Evaluate common part of constraint function to all solvers.
-   */
-  su2double EvaluateCommonConstrFunc(const CConfig& config, unsigned short iConstr) const;
-
-  /*!
    * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
    */
   void EdgeFluxResidual(const CGeometry *geometry, const CSolver* const* solvers, const CConfig *config);

@@ -939,13 +939,6 @@ void CConfig::SetPointersNull(void) {
 
   Weight_ObjFunc = nullptr;
 
-  /*--- One Shot constraint function pointers ---*/
-
-  Kind_ConstrFunc = nullptr;
-  ConstrFuncTarget = nullptr;
-  ConstrFuncScale = nullptr;
-  InitialMultiplier = nullptr;
-
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -2848,38 +2841,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
-  /* Options related to the OneShot method
-
-  /* DESCRIPTION: Use OneShot method for optimization */
-  addEnumOption("ONE_SHOT", OneShotMode, Oneshot_Mode_Map, NO_MODE);
-
-  /* DESCRIPTION: number of optimizations steps with design updates */
-  addUnsignedLongOption("ONESHOT_ITER", OneShotIter, 999999);
-
-  /* DESCRIPTION: number additional Piggyback steps for first and last optimization iteration. */
-  addUnsignedLongOption("ADDITIONAL_INNER_ITER", AddInnerIter, 0);
-
-  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
-  addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
-
-  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
-  addDoubleListOption("CONSTRAINT_VALUE", nConstrHelp, ConstrFuncTarget);
-
-  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
-  addDoubleListOption("CONSTRAINT_SCALE", nConstrHelp, ConstrFuncScale);
-
-  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
-  addDoubleListOption("INITIAL_MULTIPLIER", nConstrHelp, InitialMultiplier);
-
-  /* DESCRIPTION: max stepsize for design updates */
-  addDoubleOption("MAX_ONESHOT_STEPSIZE", MaxOneShotStepsize, 1.0);
-
-  /*!\brief DESCRIPTION: Lower and upper bound of design variables \ingroup Config*/
-  addDoubleOption("DV_BOUND", DV_Bound, 1000);
-
-  /* DESCRIPTION: Reload solution and mesh needed for linesearches.  */
-  addBoolOption("CHECK_AND_RESET", CheckAndReset, false);
-
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3541,27 +3502,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         default:
           break;
       }
-    }
-  }
-
-  /*--- Correction in case constraint function setting have less than nConstr entries specified. ---*/
-
-  if (nConstr!=0 && ConstrFuncTarget==NULL) {
-    ConstrFuncTarget = new su2double[nConstr];
-    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      ConstrFuncTarget[iConstr] = 0.0;
-    }
-  }
-  if(nConstr!=0 && ConstrFuncScale==NULL){
-    ConstrFuncScale = new su2double[nConstr];
-    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      ConstrFuncScale[iConstr] = 1.0;
-    }
-  }
-  if(nConstr!=0 && InitialMultiplier==NULL){
-    InitialMultiplier = new su2double[nConstr];
-    for (unsigned short iConstr=0; iConstr < nConstr; iConstr++){
-      InitialMultiplier[iConstr] = 1.0;
     }
   }
 
@@ -7689,11 +7629,6 @@ CConfig::~CConfig(void) {
 
        delete[] Kind_ObjFunc;
        delete[] Weight_ObjFunc;
-
-  delete [] Kind_ConstrFunc;
-  delete [] ConstrFuncTarget;
-  delete [] ConstrFuncScale;
-  delete [] InitialMultiplier;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];

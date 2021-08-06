@@ -748,11 +748,6 @@ public:
   void SetCoord_Old();
 
   /*!
-   * \brief Get the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
-   */
-  void GetCoord_Old();
-
-  /*!
    * \brief Get the value of the summed coordinates for implicit smoothing.
    * \param[in] iPoint - Index of the point.
    * \return Sum of coordinates at a point.

@@ -140,11 +140,6 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
-  /*--- Structures for storing old node coordinates for the One Shot process. ---*/
-  if (Coord_Old.empty() || (config->GetOneShotMode()==ONESHOT && config->GetCheckAndReset()) ) {
-     Coord_Old.resize(npoint,nDim) = su2double(0.0);
-  }
-
 }
 
 void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) {
@@ -209,8 +204,3 @@ void CPoint::SetCoord_Old() {
 }
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
-
-void CPoint::GetCoord_Old() {
-  assert(Coord.size() == Coord_Old.size());
-  parallelCopy(Coord_Old.size(), Coord_Old.data(), Coord.data());
-}

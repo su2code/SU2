@@ -1485,7 +1485,6 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
-  THICKNESS_CONSTRAINT = 66,    /*!< \brief Variation in thickness for OneShot optimization. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -1538,7 +1537,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
-  MakePair("THICKNESS_CONSTRAINT", THICKNESS_CONSTRAINT)
 };
 
 /*!
@@ -2263,20 +2261,6 @@ static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
  MakePair("MESH_LEVEL" , MESH_LEVEL)
  MakePair("DEBUG" , DEBUG)
  MakePair("ONLY_GRADIENT" , ONLY_GRAD)
-};
-
-/*!
-* \brief mode of operation for the One Shot driver.
-*/
-enum ENUM_ONESHOT_MODE {
- NO_MODE = 0,         /*!< \brief Default option if none is choosen. */
- PIGGYBACK   = 1,      /*!< \brief Operate on parameter level. */
- ONESHOT  = 2,         /*!< \brief Operate on mesh level. */
-};
-static const MapType<std::string, ENUM_ONESHOT_MODE> Oneshot_Mode_Map = {
- MakePair("NONE", NO_MODE)
- MakePair("PIGGYBACK"  , PIGGYBACK)
- MakePair("ONESHOT" , ONESHOT)
 };
 
 #undef MakePair

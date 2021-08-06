@@ -60,11 +60,9 @@ public:
     : J_X(0.0), J_x(0.0), iGaussPoint(val_iGauss)
   {
 
-    /* needed to increase the number of dimensions in GradNi_Xj for the surface case by 1
-     * TODO: change to a BETTER SOLUTION later
-     * 25.11. T.Dick
-     *
-     * take this over during merge, talk to Ruben about that issue
+    /*
+     * Needed to increase the number of dimensions in GradNi_Xj by 1.
+     * Necessary for the Sobolev smoothing solver when operating on the surface.
      */
 
     GradNi_Xj.resize(val_nNodes,val_nDim+1) = su2double(0.0);

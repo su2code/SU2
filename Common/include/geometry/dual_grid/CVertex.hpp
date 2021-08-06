@@ -47,7 +47,6 @@ protected:
   short Rotation_Type;                  /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   unsigned long Normal_Neighbor;        /*!< \brief Index of the closest neighbor. */
   su2double Basis_Function[3] = {0.0};  /*!< \brief Basis function values for interpolation across zones. */
-  su2double Normal_Old[3] = {0.0};      /*!< \brief stored old normal coordinates. */
 
 public:
   /*!
@@ -327,19 +326,5 @@ public:
    * \return Index of the closest neighbor.
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
-
-  /*!
-   * \brief Get the stored old vector of the normal.
-   * \return Dimensional normal vector, the modulus is the area of the face.
-   */
-  inline su2double *GetNormal_Old(void) { return Normal_Old; }
-
-  /*!
-   * \brief Set the old normal vector for store.
-   */
-  inline void SetNormal_Old(const su2double *val) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal_Old[iDim]=val[iDim];
-  }
 
 };

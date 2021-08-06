@@ -109,7 +109,6 @@ int main(int argc, char *argv[]) {
   const bool disc_adj = config.GetDiscrete_Adjoint();
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
-  const bool oneshot = (config.GetOneShot() && disc_adj);
 
   if (dry_run) {
 
@@ -123,9 +122,7 @@ int main(int argc, char *argv[]) {
     if (nZone != 1)
       SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
 
-    if (oneshot) {
-      driver = new COneShotSinglezoneDriver(config_file_name, nZone, MPICommunicator);
-    } else if (disc_adj) {
+    if (disc_adj) {
       driver = new CDiscAdjSinglezoneDriver(config_file_name, nZone, MPICommunicator);
     }
     else {

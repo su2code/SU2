@@ -1163,19 +1163,6 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
 
-  /* One Shot options */
-  unsigned short OneShotMode;           /*!< \brief Kind of One-Shot mode specified */
-  unsigned long OneShotIter;            /*!< \brief The max number of design updates the optimizer makes. */
-  unsigned long AddInnerIter;           /*!< \brief Additional Piggyback steps for first and last optimization iteration. */
-  unsigned short nConstr, nConstrHelp;  /*!< \brief Number of constraint function. */
-  unsigned short *Kind_ConstrFunc;      /*!< \brief Kind of constraint function. */
-  su2double *ConstrFuncTarget;          /*!< \brief Kind of constraint function. */
-  su2double *ConstrFuncScale;           /*!< \brief Kind of constraint function. */
-  su2double *InitialMultiplier;         /*!< \brief Initial multiplier value. */
-  su2double MaxOneShotStepsize;         /*!< \brief Maximum stepsize for design updates. */
-  su2double DV_Bound;                   /*!< \brief Lower/upper bound for the design variables. */
-  bool CheckAndReset;                   /*!< \brief Reload solution and mesh for linesearches. */
-
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -4240,7 +4227,7 @@ public:
   unsigned short GetRef_Inc_NonDim(void) const { return Ref_Inc_NonDim; }
 
   /*!
-   * \brief Set the kind of SU2 software component.
+   * \brief Get the kind of SU2 software component.
    * \return Kind of the SU2 software component.
    */
   void SetKind_SU2(SU2_COMPONENT val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
@@ -9497,90 +9484,5 @@ public:
    * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
-
-  /** Config functions related to the One Shot driver. **/
-
-  /*!
-   * \brief Check if a One-Shot modus is specified in the config file.
-   * \return YES if one-shot is enabled.
-   */
-  bool GetOneShot(void) const { return (OneShotMode != NO_MODE); }
-
-  /*!
-   * \brief Get the kind of One Shot method from the config file.
-   * \return type of iteration to run.
-   */
-  unsigned short GetOneShotMode(void) const { return OneShotMode; }
-
-  /*!
-   * \brief Get the number of Piggyback steps between line searches.
-   * \return number of steps
-   */
-  unsigned long GetOneShotIter(void) { return OneShotIter; }
-
-  /*!
-   * \brief Get the number of additional Piggyback steps for first and last optimization iteration.
-   * \return number of steps
-   */
-  unsigned long GetAddInnerIter(void) { return AddInnerIter; }
-
-  /*!
-   * \brief Get the number of constraints.
-   * \return number of constraints
-   */
-  unsigned short GetnConstr(void) { return nConstr; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the kind of constraint function.
-   * \param[in] iConstr - The number of the constraint.
-   * \return Kind of constraint function.
-   */
-  unsigned short GetKind_ConstrFunc(unsigned short iConstr) const { return Kind_ConstrFunc[iConstr]; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the target value of the constraint function.
-   * \param[in] iConstr - The number of the constraint.
-   * \return Target value of the constraint function.
-   */
-  inline su2double GetConstrFuncTarget(unsigned short iConstr) const { return ConstrFuncTarget[iConstr]; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the scale of the constraint function.
-   * \param[in] iConstr - The number of the constraint.
-   * \return Scale of the constraint function.
-   */
-  inline su2double GetConstrFuncScale(unsigned short iConstr) const { return ConstrFuncScale[iConstr]; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the initial values for the constraint multiplier.
-   * \param[in] iConstr - The number of the constraint.
-   * \return Initial multiplier values.
-   */
-  inline su2double GetInitialMultiplier(unsigned short iConstr) const { return InitialMultiplier[iConstr]; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the max stepsize for design deformations.
-   * \return max stepsize for design updates
-   */
-  su2double GetMaxOneShotStepsize(void) { return MaxOneShotStepsize; }
-
-  /*!
-   * \author T. Dick
-   * \brief Get the lower/upper bound for the design variables.
-   * \return bound value
-   */
-  su2double GetDVBound(void) { return DV_Bound; }
-
-  /*!
-   * \author T. Dick
-   * \brief Check if the One Shot linesearch needs to store and reload solution and mesh for linesearches.
-   * \return Flag wether resets are needed.
-   */
-  bool GetCheckAndReset(void) const { return CheckAndReset; }
 
 };

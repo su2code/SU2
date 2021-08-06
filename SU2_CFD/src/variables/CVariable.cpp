@@ -59,10 +59,6 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetCheckAndReset()) {
-    Solution_Store.resize(nPoint,nVar) = su2double(0.0);
-  }
-
   if (config->GetTime_Domain())
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
 
@@ -125,14 +121,4 @@ void CVariable::RegisterSolution_time_n() {
 
 void CVariable::RegisterSolution_time_n1() {
   RegisterContainer(true, Solution_time_n1);
-}
-
-void CVariable::SetSolution_Store() {
-  assert(Solution_Store.size() == Solution.size());
-  parallelCopy(Solution.size(), Solution.data(), Solution_Store.data());
-}
-
-void CVariable::GetSolution_Store() {
-  assert(Solution.size() == Solution_Store.size());
-  parallelCopy(Solution_Store.size(), Solution_Store.data(), Solution.data());
 }

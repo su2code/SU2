@@ -288,35 +288,6 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config) {
 
 }
 
-su2double CNSSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) {
-
-  unsigned int iMarker_Monitoring;
-  unsigned short Kind_ConstrFunc;
-  su2double ConstraintFunction=0.0;
-
-  /*--- Evaluate constraint functions common to Euler and NS solvers ---*/
-
-  ConstraintFunction = CEulerSolver::Evaluate_ConstrFunc(config, iConstr);
-
-  /*--- Evaluate constraint functions specific to NS solver ---*/
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-    Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
-
-    switch(Kind_ConstrFunc) {
-      case BUFFET_SENSOR:
-          ConstraintFunction +=Surface_Buffet_Metric[iMarker_Monitoring];
-          break;
-      default:
-          break;
-    }
-  }
-
-  return ConstraintFunction;
-
-}
-
 void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();

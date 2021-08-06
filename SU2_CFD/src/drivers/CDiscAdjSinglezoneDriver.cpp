@@ -34,8 +34,6 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
-#include <chrono>
-
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
@@ -435,9 +433,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
   /*--- Print the direct residual to screen ---*/
 
-  if (!config->GetOneShot()) {
-    Print_DirectResidual(kind_recording);
-  }
+  Print_DirectResidual(kind_recording);
 
 }
 

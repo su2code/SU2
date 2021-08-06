@@ -4533,56 +4533,6 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
   }
 }
 
-su2double CEulerSolver::Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) {
-
-  unsigned int iMarker_Monitoring;
-
-  su2double ConstraintFunction = EvaluateCommonConstrFunc(*config, iConstr);
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-
-    switch(config->GetKind_ConstrFunc(iConstr)) {
-      case DRAG_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) ConstraintFunction -= config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;    
-      case MOMENT_X_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) ConstraintFunction -= config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      default:
-        break;
-    }
-  }
-
-  /*--- The following are not per-surface, and so to avoid that they are
-   double-counted when multiple surfaces are specified, they have been
-   placed outside of the loop above. In addition, multi-objective mode is
-   also disabled for these objective functions (error thrown at start). ---*/
-
-  switch(config->GetKind_ConstrFunc(iConstr)) {
-    case EQUIVALENT_AREA:
-      ConstraintFunction+=Total_CEquivArea;
-      break;
-    case NEARFIELD_PRESSURE:
-      ConstraintFunction+=Total_CNearFieldOF;
-      break;
-    case SURFACE_MACH:
-      ConstraintFunction+=config->GetSurface_Mach(0);
-      break;
-    default:
-      break;
-  }
-
-  return ConstraintFunction;
-
-}
-
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 

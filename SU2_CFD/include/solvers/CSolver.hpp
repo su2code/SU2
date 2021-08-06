@@ -819,13 +819,6 @@ public:
   inline virtual void Evaluate_ObjFunc(const CConfig *config) {}
 
   /*!
-   * \brief A virtual member
-   * \param[in] config - Definition of the particular problem.
-   * \param iConstr - Number of constraint from the list.
-   */
-  inline virtual su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) { return 0.0; }
-
-  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -4312,35 +4305,6 @@ public:
    * \brief A virtual member.
    */
   virtual void GetHessianMatrix() {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - config class object
-   * \param[in] geometry - geometry class object
-   */
-  virtual void StoreMeshPoints(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - config class object
-   * \param[in] geometry - geometry class object
-   */
-  virtual void LoadMeshPoints(CGeometry *geometry, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void UpdateAuxiliaryGeometryVariables(CGeometry **geometry_container, CVolumetricMovement *grid_movement, CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual su2double EvaluateGeometryFunction(CGeometry* geometry, CConfig *config, unsigned int iPlane) { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual vector<su2double> EvaluateGeometryGradient(CGeometry* geometry, CSurfaceMovement* surface_movement, CConfig* config) { return vector<su2double>(); }
 
   /*!
    * \brief Routine that sets the flag controlling implicit treatment for periodic BCs.

@@ -37,7 +37,6 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
 #include "../../../Common/include/containers/C2DContainer.hpp"
-using namespace std;
 
 class CElement;
 class CFluidModel;

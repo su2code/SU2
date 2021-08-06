@@ -2278,14 +2278,4 @@ public:
    */
   virtual bool IsBoundaryPoint(unsigned long iPoint) { return false;}
 
-  /*!
-   * \brief Get the stored solution of the old design.
-   */
-  void GetSolution_Store();
-
-  /*!
-   * \brief Set the value of the stored solution.
-   */
-  void SetSolution_Store();
-
 };

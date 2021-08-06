@@ -249,16 +249,6 @@ public:
   }
 
   /*!
-   * \author T. Dick
-   * \brief Compute single constraint function from list
-   * \param[in] config - Definition of the particular problem.
-   * \param iConstr - Number of constraint from the list.
-   */
-  su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) final {
-    return EvaluateCommonConstrFunc(*config, iConstr);
-  }
-
-  /*!
    * \brief Impose the far-field boundary condition using characteristics.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
