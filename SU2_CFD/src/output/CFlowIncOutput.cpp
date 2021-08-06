@@ -130,7 +130,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddHistoryOutput("RMS_PASSIVE_SCALAR", "rms[c]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
@@ -173,7 +173,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddHistoryOutput("MAX_PASSIVE_SCALAR", "max[c]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
@@ -217,7 +217,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddHistoryOutput("BGS_PASSIVE_SCALAR", "bgs[c]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
@@ -318,7 +318,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
 
 
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetHistoryOutputValue("RMS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_RMS(0)));
@@ -334,7 +334,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("LINSOL_RESIDUAL_SCALAR", log10(scalar_solver->GetResLinSolver()));      break;
       break;
   }
-  
+
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
@@ -349,7 +349,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetHistoryOutputValue("MAX_PASSIVE_SCALAR", log10(scalar_solver->GetRes_Max(0)));
@@ -361,7 +361,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("MAX_Y_NOX"            , log10(scalar_solver->GetRes_Max(I_NOX)     ));
       break;
   }
-  
+
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
@@ -381,7 +381,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     if (config->AddRadiation())
       SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
 
-    
+
     switch(scalar_model){
       case PASSIVE_SCALAR:
         SetHistoryOutputValue("BGS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_BGS(0)));
@@ -390,7 +390,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
         SetHistoryOutputValue("BGS_PROGRESS_VARIABLE", log10(scalar_solver->GetRes_BGS(I_PROG_VAR)));
         SetHistoryOutputValue("BGS_ENTHALPY"         , log10(scalar_solver->GetRes_BGS(I_ENTHALPY)));
         SetHistoryOutputValue("BGS_Y_CO"             , log10(scalar_solver->GetRes_BGS(I_CO)      ));
-        SetHistoryOutputValue("BGS_Y_NOX"            , log10(scalar_solver->GetRes_BGS(I_NOX)     )); 
+        SetHistoryOutputValue("BGS_Y_NOX"            , log10(scalar_solver->GetRes_BGS(I_NOX)     ));
         break;
     }
   }
@@ -483,7 +483,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddVolumeOutput("PASSIVE_SCALAR", "Passive_Scalar", "SOLUTION", "Passive scalar solution");
@@ -502,12 +502,12 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("SPECIFIC_HEAT_CP"   , "Specific_Heat_Cp"   , "SOLUTION", "Mixture specific heat cp");
 
       for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
-        if (config->GetLookupName(i_lookup)!="NULL"){ 
+        if (config->GetLookupName(i_lookup)!="NULL"){
           string strname1="lookup_"+config->GetLookupName(i_lookup);
           AddVolumeOutput(config->GetLookupName(i_lookup),strname1,"LOOKUP",config->GetLookupName(i_lookup));
         }
       AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "SOLUTION", "Lookup table misses");
-      
+
 
       break;
     case NO_SCALAR_MODEL:
@@ -585,7 +585,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddVolumeOutput("RES_PASSIVE_SCALAR", "Residual_Passive_Scalar", "RESIDUAL", "Residual of passive scalar equation");
@@ -600,7 +600,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     case NO_SCALAR_MODEL:
       break;
   }
-  
+
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
     AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
@@ -625,7 +625,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       break;
     }
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       AddVolumeOutput("LIMITER_PASSIVE_SCALAR", "Limiter_Passive_Scalar", "LIMITER", "Limiter value for the passive scalar");
@@ -639,7 +639,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     case NO_SCALAR_MODEL:
       break;
   }
-  
+
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -723,7 +723,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   case NONE:
     break;
   }
-  
+
   // Solution data
   su2double *scalars;
   unsigned long table_misses;
@@ -734,7 +734,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       // SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
       SetVolumeOutputValue("SPECIFIC_HEAT_CP"   , iPoint, 2224.43 * Node_Scalar->GetSolution(iPoint)[0] + 1009.39 * (1- Node_Scalar->GetSolution(iPoint)[0]));
       SetVolumeOutputValue("CONDUCTIVITY"   , iPoint, Node_Flow->GetThermalConductivity(iPoint));
-      // SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetMeanMolecularWeight()); 
+      // SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, solver[FLOW_SOL]->GetFluidModel()->GetMeanMolecularWeight());
       SetVolumeOutputValue("MEAN_MOLECULAR_WEIGHT"   , iPoint, 1/(Node_Scalar->GetSolution(iPoint)[0]/(16.043/1000) + (1-Node_Scalar->GetSolution(iPoint)[0])/(28.965/1000)));
       break;
     case PROGRESS_VARIABLE:
@@ -838,11 +838,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("RES_ENTHALPY"         , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_ENTHALPY));
       SetVolumeOutputValue("RES_Y_CO"             , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_CO      ));
       SetVolumeOutputValue("RES_Y_NOX"            , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_NOX     ));
-     break;      
+     break;
     case NO_SCALAR_MODEL:
       break;
   }
-  
+
 
   if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER && config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
@@ -869,7 +869,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       break;
     }
   }
-  
+
   switch(scalar_model){
     case PASSIVE_SCALAR:
       SetVolumeOutputValue("LIMITER_PASSIVE_SCALAR", iPoint, Node_Scalar->GetLimiter(iPoint, 0));
@@ -879,11 +879,11 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("LIMITER_ENTHALPY"         , iPoint, Node_Scalar->GetLimiter(iPoint, I_ENTHALPY));
       SetVolumeOutputValue("LIMITER_Y_CO"             , iPoint, Node_Scalar->GetLimiter(iPoint, I_CO      ));
       SetVolumeOutputValue("LIMITER_Y_NOX"            , iPoint, Node_Scalar->GetLimiter(iPoint, I_NOX     ));
-      break;          
+      break;
     case NO_SCALAR_MODEL:
       break;
   }
-  
+
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
@@ -907,7 +907,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT){
     SetVolumeOutputValue("TIMESTEP", iPoint, Node_Flow->GetDelta_Time(iPoint));
   }
-    
+
   // Streamwise Periodicity
   if(streamwisePeriodic) {
     SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));

@@ -98,7 +98,7 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   delete [] table_sources;
 
-  /*--- not used at the moment ---*/ 
+  /*--- not used at the moment ---*/
   return exit_code;
 }
 

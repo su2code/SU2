@@ -314,12 +314,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
-   
+
     case MIXTURE_FLUID_MODEL:
 
       //config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.965/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant(); 
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
       n_scalars = config->GetNScalarsInit();
       dummy_scalar = new su2double[n_scalars]();
@@ -327,7 +327,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
-  
+
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);

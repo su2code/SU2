@@ -1146,12 +1146,12 @@ private:
   unsigned short nScreenOutput,   /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
-  
+
   unsigned short n_scalars;
-  unsigned short n_species; 
+  unsigned short n_species;
   unsigned short n_lookups;
   unsigned short n_table_sources;       /* the number of transported scalars for combustion */
-  
+
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
   string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
@@ -1180,7 +1180,7 @@ private:
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
-  
+
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
@@ -1618,15 +1618,13 @@ public:
    * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
    * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
    */
-  su2double GetMolecular_Weight(void) const { return Molecular_Weight[0]; }
-  su2double GetMolecular_Weight (unsigned short val_index) const { return Molecular_Weight [val_index]; }
-  
+  su2double GetMolecular_Weight(unsigned short val_index = 0) const { return Molecular_Weight [val_index]; }
+
   /*!
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
    */
-  su2double GetSpecific_Heat_Cp(void) const { return Specific_Heat_Cp[0]; }
-  su2double GetSpecific_Heat_Cp(unsigned short val_index) const { return Specific_Heat_Cp [val_index]; }
+  su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp [val_index]; }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.
@@ -1715,15 +1713,13 @@ public:
    * \brief Get the value of the laminar Prandtl number.
    * \return Laminar Prandtl number.
    */
-  su2double GetPrandtl_Lam(void) const { return Prandtl_Lam[0]; }
-  su2double GetPrandtl_Lam(unsigned short val_index) const { return Prandtl_Lam [val_index]; }
+  su2double GetPrandtl_Lam(unsigned short val_index = 0) const { return Prandtl_Lam [val_index]; }
 
   /*!
    * \brief Get the value of the turbulent Prandtl number.
    * \return Turbulent Prandtl number.
    */
-  su2double GetPrandtl_Turb(void) const { return Prandtl_Turb[0]; }
-  su2double GetPrandtl_Turb(unsigned short val_index) const { return Prandtl_Turb [val_index]; }
+  su2double GetPrandtl_Turb(unsigned short val_index = 0) const { return Prandtl_Turb [val_index]; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
@@ -2047,21 +2043,21 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
-  
+
   /*!
    * \brief Get the flag for activating scalar transport clipping
    * \return Flag for scalar clipping
    */
   bool GetScalar_Clipping(void) { return Scalar_Clipping; }
-  
+
   bool GetEnableRemeshing(void) { return enable_remeshing; }
 
   bool GetUseWeakScalarBC(void) { return use_weak_scalar_bc; }
 
-  
+
 
   su2double *GetFFDBounds(void) { return ffd_bounds; }
-  
+
   /*!
    * \brief Get the flame offset for flamelet model initialization
    * \return flame offset for flamelet model initialization
@@ -2188,7 +2184,7 @@ public:
 
   /*!
    * \brief Get the file name of the look up table
-   * \return File name of the look up table 
+   * \return File name of the look up table
    */
   string GetFileNameLUT(void){ return file_name_lut; };
 
@@ -3812,13 +3808,12 @@ public:
    * \return Mass diffusivity model.
    */
   DIFFUSIVITYMODEL GetKind_DiffusivityModel(void) const { return Kind_DiffusivityModel; }
-  
+
   /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
-  su2double GetMu_Constant(void) const { return Mu_Constant[0]; }
-  su2double GetMu_Constant(unsigned short val_index) const { return Mu_Constant [val_index]; }
+  su2double GetMu_Constant(unsigned short val_index = 0) const { return Mu_Constant [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional constant viscosity.
@@ -3830,46 +3825,43 @@ public:
    * \brief Get the value of the thermal conductivity.
    * \return Thermal conductivity.
    */
-  su2double GetThermal_Conductivity_Constant(void) const { return Thermal_Conductivity_Constant[0]; }
-  su2double GetThermal_Conductivity_Constant(unsigned short val_index) const { return Thermal_Conductivity_Constant [val_index]; }
+  su2double GetThermal_Conductivity_Constant(unsigned short val_index = 0) const { return Thermal_Conductivity_Constant [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional thermal conductivity.
    * \return Non-dimensional thermal conductivity.
    */
-    su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
-
+  su2double GetThermal_Conductivity_ConstantND(void) const { return Thermal_Conductivity_ConstantND; }
 
   /*!
    * \brief Get the value of the constant mass diffusivity for scalar transport.
    * \return Constant mass diffusivity.
    */
   su2double GetDiffusivity_Constant(void) const { return Diffusivity_Constant; }
-  
+
   /*!
    * \brief Get the value of the non-dimensional constant mass diffusivity.
    * \return Non-dimensional constant mass diffusivity.
    */
   su2double GetDiffusivity_ConstantND(void) const { return Diffusivity_ConstantND; }
-  
+
   /*!
    * \brief Get the value of the laminar Schmidt number for scalar transport.
    * \return Laminar Schmidt number for scalar transport.
    */
   su2double GetSchmidt_Lam(void) const { return Schmidt_Lam; }
-  
+
   /*!
    * \brief Get the value of the turbulent Schmidt number for scalar transport.
    * \return Turbulent Schmidt number for scalar transport.
    */
   su2double GetSchmidt_Turb(void) const { return Schmidt_Turb; }
-  
+
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
-  su2double GetMu_Ref(void) const { return Mu_Ref[0]; } 
-  su2double GetMu_Ref(unsigned short val_index) const { return Mu_Ref [val_index]; }
+  su2double GetMu_Ref(unsigned short val_index = 0) const { return Mu_Ref [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference viscosity for Sutherland model.
@@ -3881,8 +3873,7 @@ public:
    * \brief Get the value of the reference temperature for Sutherland model.
    * \return The reference temperature.
    */
-  su2double GetMu_Temperature_Ref(void) const { return Mu_Temperature_Ref[0]; }
-  su2double GetMu_Temperature_Ref(unsigned short val_index) const { return Mu_Temperature_Ref [val_index]; }
+  su2double GetMu_Temperature_Ref(unsigned short val_index = 0) const { return Mu_Temperature_Ref [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference temperature for Sutherland model.
@@ -3894,8 +3885,7 @@ public:
    * \brief Get the value of the reference S for Sutherland model.
    * \return The reference S.
    */
-  su2double GetMu_S(void) const { return Mu_S[0]; }
-  su2double GetMu_S(unsigned short val_index) const { return Mu_S [val_index]; }
+  su2double GetMu_S(unsigned short val_index = 0) const { return Mu_S [val_index]; }
 
   /*!
    * \brief Get the value of the non-dimensional reference S for Sutherland model.
@@ -3977,12 +3967,12 @@ public:
    * \brief Set the value of the non-dimensional constant mass diffusivity.
    */
   void SetDiffusivity_ConstantND(su2double diffusivity_const) { Diffusivity_ConstantND = diffusivity_const; }
-  
+
   /*!
    * \brief Set the value of the reference mass diffusivity.
    */
   void SetDiffusivity_Ref(su2double diffusivity_ref);
-  
+
   /*!
    * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
    */
@@ -4126,7 +4116,7 @@ public:
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
   su2double GetRelaxation_Factor_Scalar(void) { return Relaxation_Factor_Scalar; }
-  
+
   /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
    * \return relaxation coefficient of the CHT coupling.
@@ -4335,8 +4325,8 @@ public:
    * \return Kind of the scalar transport model.
    */
   unsigned short GetKind_Scalar_Model(void) const { return Kind_Scalar_Model; };
-  
-  
+
+
   /*!
    * \brief Get the kind of time integration method.
    * \note This is the information that the code will use, the method will
@@ -4426,7 +4416,7 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Scalar(void)  { return MUSCL_Scalar; }
-  
+
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
@@ -4610,7 +4600,7 @@ public:
    * \return Method for limiting the spatial gradients solving the scalar transport equations.
    */
   unsigned short GetKind_SlopeLimit_Scalar(void) { return Kind_SlopeLimit_Scalar; }
-  
+
   /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
@@ -4726,7 +4716,7 @@ public:
    * \return Kind of integration scheme for the scalar transport equations.
    */
   unsigned short GetKind_TimeIntScheme_Scalar(void) const { return Kind_TimeIntScheme_Scalar; }
-  
+
   /*!
    * \brief Get the kind of convective numerical scheme for the scalar transport equations (upwind).
    * \note This value is obtained from the config file, and it is constant
@@ -4734,7 +4724,7 @@ public:
    * \return Kind of convective numerical scheme for the scalar transport equations.
    */
   unsigned short GetKind_ConvNumScheme_Scalar(void) const { return Kind_ConvNumScheme_Scalar; }
-  
+
   /*!
    * \brief Get the kind of center convective numerical scheme for the scalar transport equations.
    * \note This value is obtained from the config file, and it is constant
@@ -4742,7 +4732,7 @@ public:
    * \return Kind of center convective numerical scheme for the scalar transport equations.
    */
   unsigned short GetKind_Centered_Scalar(void) const { return Kind_Centered_Scalar; }
-  
+
   /*!
    * \brief Get the kind of upwind convective numerical scheme for the scalar transport equations.
    * \note This value is obtained from the config file, and it is constant
@@ -4750,7 +4740,7 @@ public:
    * \return Kind of upwind convective numerical scheme for the scalar transport equations.
    */
   unsigned short GetKind_Upwind_Scalar(void) const {  return Kind_Upwind_Scalar; }
-  
+
   /*!
    * \brief Get the kind of integration scheme (implicit)
    *        for the turbulence equations.
@@ -6592,11 +6582,11 @@ public:
     /*!
    * \brief Get the scalar values at an inlet boundary
    * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The inlet scalar values. 
+   * \return The inlet scalar values.
    */
   // nijso: TODO we do not need inlet enthalpy, it is computed from temperature!
   su2double* GetInlet_ScalarVal(string val_index) const;
-  
+
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -6657,7 +6647,7 @@ public:
    * \return Value of the CFL reduction for scalar transport equations.
    */
   su2double GetCFLRedCoeff_Scalar(void) { return CFLRedCoeff_Scalar; }
-  
+
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -7928,14 +7918,14 @@ public:
    * \return The CO mass fraction.
    */
   su2double GetSurface_CO(unsigned short val_imarker) const { return Surface_CO[val_imarker]; }
- 
+
   /*!
    * \brief Get the scalar mass fraction at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The scalar mass fraction.
    */
   //su2double GetSurface_Scalar(unsigned short val_imarker, unsigned short val_i_scalar) const { return Surface_Scalar[val_imarker][val_i_scalar]; }
- 
+
   /*!
    * \brief Get the NOx mass fraction at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
@@ -9404,26 +9394,26 @@ public:
   void SetNScalars(unsigned short n_scalars) { this->n_scalars = n_scalars; }
 
   /*!
-   * \brief Get the number of transported scalars for combustion   
+   * \brief Get the number of transported scalars for combustion
    */
   unsigned short GetNScalars(void) const { return n_scalars; }
 
   /*!
-   * \brief Get the number of transported scalars required for initialisation   
+   * \brief Get the number of transported scalars required for initialisation
    */
   unsigned short GetNScalarsInit(void) const { return nScalar_Init; }
 
   void SetNScalarsInit(unsigned short nScalar_Init) { this->nScalar_Init = nScalar_Init; }
 
   /*!
-   * \brief Get the number of transported scalars for combustion   
+   * \brief Get the number of transported scalars for combustion
    */
   unsigned short GetNLookups(void) const { return n_lookups; }
 
   void SetNTableSources(unsigned short n_table_sources) { this->n_table_sources = n_table_sources; }
 
   /*!
-   * \brief Get the number of transported scalars source terms for combustion   
+   * \brief Get the number of transported scalars source terms for combustion
    */
   unsigned short GetNTableSources(void) const { return n_table_sources; }
 
@@ -9458,13 +9448,13 @@ public:
    * \brief Get the scalar source term name i_source
    */
   string GetTableSourceName(unsigned short i_source) const { return table_source_names.at(i_source); }
-  
+
   /*!
    * \brief Get the maximum bound for scalar transport clipping
    * \return Maximum value for scalar clipping
    */
   su2double *GetScalar_Clipping_Max(void) { return Scalar_Clipping_Max; }
-  
+
   /*!
    * \brief Get the minimum bound for scalar transport clipping
    * \return Minimum value for scalar clipping
@@ -9475,7 +9465,7 @@ public:
    * \return Maximum value for scalar clipping
    */
   su2double GetScalar_Clipping_Max(unsigned short iVal) { return Scalar_Clipping_Max[iVal]; }
-  
+
   /*!
    * \brief Get the minimum bound for scalar transport clipping
    * \return Minimum value for scalar clipping
@@ -9487,7 +9477,7 @@ public:
    * \return Minimum value for scalar clipping
    */
   su2double GetScalar_Init(unsigned short ival) { return Scalar_Init[ival]; }
-  
+
   /*!
   * \brief Get the convergence fields for monitoring
   * \param[in] iField - Index of the field
@@ -9663,25 +9653,25 @@ public:
    * \return True if specified in config file.
    */
   bool GetSave_libROM(void) const {return libROM; }
-  
+
   /*!
    * \brief Get the name of the file for libROM to save.
    * \return Filename prefix for libROM to save to (default: "su2").
    */
   string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
-  
+
   /*!
    * \brief Static or incremental toggle for POD basis generation type.
    * \return Type of POD generation type
    */
   POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
-  
+
   /*!
    * \brief Get maximum number of POD basis dimensions (default: 100).
    * \return Maximum number of POD basis vectors.
    */
   unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
-  
+
   /*!
    * \brief Get frequency of unsteady time steps to save (default: 1).
    * \return Save frequency for unsteady time steps.

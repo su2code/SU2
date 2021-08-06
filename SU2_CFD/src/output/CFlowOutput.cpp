@@ -66,11 +66,11 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutput("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average total pressure on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
   AddHistoryOutput("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total pressure drop on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of CO    
+  /// DESCRIPTION: Average mass fraction of CO
   AddHistoryOutput("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of CO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of NO    
+  /// DESCRIPTION: Average mass fraction of NO
   AddHistoryOutput("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of NO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of CH4    
+  /// DESCRIPTION: Average mass fraction of CH4
   AddHistoryOutput("AVG_CH4",                  "Avg_CH4",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average mass fraction of CH4 on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average temperature
   AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
@@ -111,13 +111,13 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(CConfig *config){
   AddHistoryOutputPerSurface("SURFACE_TOTAL_PRESSURE",   "Avg_TotalPress",            ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Pressure drop
   AddHistoryOutputPerSurface("SURFACE_PRESSURE_DROP",    "Pressure_Drop",             ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of CO    
+  /// DESCRIPTION: Average mass fraction of CO
   AddHistoryOutputPerSurface("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of NO    
+  /// DESCRIPTION: Average mass fraction of NO
   AddHistoryOutputPerSurface("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average mass fraction of CH4    
+  /// DESCRIPTION: Average mass fraction of CH4
   AddHistoryOutputPerSurface("AVG_CH4",                  "Avg_CH4",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average temperature    
+  /// DESCRIPTION: Average temperature
   AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
@@ -324,7 +324,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   vector<su2double> Surface_CO_Local                (nMarker_Analyze,0.0);
   vector<su2double> Surface_NOx_Local               (nMarker_Analyze,0.0);
   vector<su2double> Surface_CH4_Local               (nMarker_Analyze,0.0);
-  
+
   vector<su2double> Surface_MassFlow_Total          (nMarker_Analyze,0.0);
   vector<su2double> Surface_Mach_Total              (nMarker_Analyze,0.0);
   vector<su2double> Surface_Temperature_Total       (nMarker_Analyze,0.0);
@@ -527,7 +527,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
     SetHistoryOutputPerSurfaceValue("AVG_CO", y_CO, iMarker_Analyze);
     Tot_Surface_CO += y_CO;
     config->SetSurface_CO(iMarker_Analyze, y_CO);
-    
+
     su2double y_NOx = Surface_NOx_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_NOX", y_NOx, iMarker_Analyze);
     Tot_Surface_NOx += y_NOx;

@@ -270,12 +270,12 @@ class CFluidModel {
   /*!
    * \brief Set viscosity model.
    */
-  void SetLaminarViscosityModel(const CConfig* config);
+  virtual void SetLaminarViscosityModel(const CConfig* config);
 
   /*!
    * \brief Set thermal conductivity model.
    */
-  void SetThermalConductivityModel(const CConfig* config);
+  virtual void SetThermalConductivityModel(const CConfig* config);
 
   /*!
    * \brief Set mass diffusivity model.

@@ -1016,7 +1016,7 @@ void CConfig::SetPointersNull(void) {
   Scalar_Init           = nullptr;
   Scalar_Clipping_Min   = nullptr;
   Scalar_Clipping_Max   = nullptr;
-  
+
   /*--- Variable initialization ---*/
 
   TimeIter   = 0;
@@ -1048,15 +1048,15 @@ void CConfig::SetPointersNull(void) {
   Kind_TimeNumScheme = EULER_IMPLICIT;
 
   Gas_Composition = nullptr;
-  Molecular_Weight = nullptr; 
+  Molecular_Weight = nullptr;
   Mu_Constant = nullptr;
   Mu_Ref = nullptr;
   Mu_Temperature_Ref = nullptr;
   Mu_S = nullptr;
   Specific_Heat_Cp = nullptr;
   Thermal_Conductivity_Constant = nullptr;
-  Prandtl_Lam = nullptr; 
-  Prandtl_Turb = nullptr; 
+  Prandtl_Lam = nullptr;
+  Prandtl_Turb = nullptr;
 
 }
 
@@ -1172,7 +1172,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleListOption("MOLECULAR_WEIGHT", n_species, Molecular_Weight);
-  
+
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
@@ -1245,7 +1245,7 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, kt_polycoeffs.data());
 
   /*--- Options related to mass diffusivity ---*/
-  
+
   addEnumOption("DIFFUSIVITY_MODEL", Kind_DiffusivityModel, DiffusivityModel_Map, DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY);
   /* DESCRIPTION: default value for AIR */
   addDoubleOption("DIFFUSIVITY_CONSTANT", Diffusivity_Constant , 0.001);
@@ -1253,7 +1253,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("SCHMIDT_LAM", Schmidt_Lam, 1.0);
   /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("SCHMIDT_TURB", Schmidt_Turb, 0.7);
-  
+
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
@@ -1314,7 +1314,7 @@ void CConfig::SetConfig_Options() {
   //addDoubleOption("SCALAR_INIT", Scalar_Init, 0.0);
 
   addDoubleListOption("SCALAR_INIT", nScalar_Init, Scalar_Init);
-  
+
   /*!\brief SCALAR_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \ingroup Config*/
   addBoolOption("SCALAR_CLIPPING", Scalar_Clipping, false);
 
@@ -1324,7 +1324,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief SCALAR_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
   addDoubleListOption("SCALAR_CLIPPING_MAX", nScalar_Clipping_Max, Scalar_Clipping_Max);
-  
+
   /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
   addDoubleListOption("SCALAR_CLIPPING_MIN", nScalar_Clipping_Min, Scalar_Clipping_Min);
 
@@ -1344,13 +1344,13 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAME_THICKNESS \n DESCRIPTION: Thickness for flame initialization using the flamelet model \ingroup Config*/
   addDoubleOption("FLAME_THICKNESS", flame_thickness, 0.5e-3);
-  
+
   /*!\brief FLAME_NORMAL \n DESCRIPTION: Normal for flame initialization using the flamelet model \ingroup Config*/
   flame_normal[0] = 1.0;
   flame_normal[1] = 0.0;
   flame_normal[2] = 0.0;
   addDoubleArrayOption("FLAME_NORMAL", 3, flame_normal);
-  
+
   addDoubleOption("BURNT_THICKNESS", burnt_thickness, 1);
 
   /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
@@ -1940,7 +1940,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_NUM_METHOD_SCALAR
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_SCALAR", Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar, Kind_Upwind_Scalar);
-  
+
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
@@ -2877,25 +2877,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
-  
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
-  
+
   /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
   addBoolOption("SAVE_LIBROM", libROM, false);
-  
+
   /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
   addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
-  
+
   /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
   addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
-  
+
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
-  
+
   /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
-  
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3687,39 +3687,39 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Molecular_Weight == nullptr){
     Molecular_Weight = new su2double[1];
-    Molecular_Weight[0] = 28.96; 
+    Molecular_Weight[0] = 28.96;
   }
 
   if (Mu_Constant == nullptr){
     Mu_Constant = new su2double[1];
-    Mu_Constant[0] = 1.716E-5; 
+    Mu_Constant[0] = 1.716E-5;
   }
 
   if (Specific_Heat_Cp == nullptr){
     Specific_Heat_Cp = new su2double[1];
-    Specific_Heat_Cp[0] = 1004.703; 
+    Specific_Heat_Cp[0] = 1004.703;
   }
 
   if (Thermal_Conductivity_Constant == nullptr){
     Thermal_Conductivity_Constant = new su2double[1];
-    Thermal_Conductivity_Constant[0] = 2.57E-2; 
+    Thermal_Conductivity_Constant[0] = 2.57E-2;
   }
 
   if (Prandtl_Turb == nullptr){
     Prandtl_Turb = new su2double[1];
-    Prandtl_Turb[0] = 0.9; 
+    Prandtl_Turb[0] = 0.9;
   }
 
   if (Prandtl_Lam == nullptr){
     Prandtl_Lam = new su2double[1];
-    Prandtl_Lam[0] = 0.72; 
+    Prandtl_Lam[0] = 0.72;
   }
 
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr){
     Mu_Ref = new su2double[1];
-    Mu_Temperature_Ref = new su2double[1]; 
+    Mu_Temperature_Ref = new su2double[1];
     Mu_S = new su2double[1];
-    Mu_Ref[0] = 1.716E-5; 
+    Mu_Ref[0] = 1.716E-5;
     Mu_Temperature_Ref[0] = 273.15;
     Mu_S[0] = 110.4;
   }
@@ -3728,17 +3728,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (SystemMeasurements == US) {
 
+    static const su2double Mu_Constant_Default_SI = 1.716E-5;
+    static const su2double Mu_Temperature_Ref_Default_SI = 273.15;
+    static const su2double Mu_S_Default_SI = 110.4;
+    static const su2double Thermal_Conductivity_Constant_Default_SI = 0.0257;
+
     /* Correct the viscosities, if they contain the default SI values. */
     for(unsigned short iVar = 0; iVar < n_species; iVar++){
-      if(fabs(Mu_Constant[iVar]-1.716E-5) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
-      if(fabs(Mu_Ref[iVar]-1.716E-5)      < 1.0E-15) Mu_Ref[iVar]      /= 47.88025898;
+      if(fabs(Mu_Constant[iVar]-Mu_Constant_Default_SI) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
+      if(fabs(Mu_Ref[iVar]-Mu_Constant_Default_SI)      < 1.0E-15) Mu_Ref[iVar]      /= 47.88025898;
 
       /* Correct the values with temperature dimension, if they contain the default SI values. */
-      if(fabs(Mu_Temperature_Ref[iVar]-273.15) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
-      if(fabs(Mu_S[iVar]-110.4)                < 1.0E-8) Mu_S[iVar]               *= 1.8;
- 
+      if(fabs(Mu_Temperature_Ref[iVar]-Mu_Temperature_Ref_Default_SI) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
+      if(fabs(Mu_S[iVar]-Mu_S_Default_SI)                < 1.0E-8) Mu_S[iVar]               *= 1.8;
+
       /* Correct the thermal conductivity, if it contains the default SI value. */
-      if(fabs(Thermal_Conductivity_Constant[iVar]-0.0257) < 1.0E-10) Thermal_Conductivity_Constant[iVar] *= 0.577789317;
+      if(fabs(Thermal_Conductivity_Constant[iVar]-Thermal_Conductivity_Constant_Default_SI) < 1.0E-10) Thermal_Conductivity_Constant[iVar] *= 0.577789317;
     }
   }
 
@@ -4832,15 +4837,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
-  
+
   /*--- Disable any scalar model until they are implemented. ---*/
-  
+
   if ((Kind_Scalar_Model != NO_SCALAR_MODEL) &&
       (Kind_Scalar_Model != PASSIVE_SCALAR) &&
       (Kind_Scalar_Model != PROGRESS_VARIABLE)) {
     SU2_MPI::Error(string("Selected scalar model not yet implemented.") , CURRENT_FUNCTION);
   }
-  
+
   /*--- Check feasibility for Streamwise Periodic flow ---*/
   if (Kind_Streamwise_Periodic != ENUM_STREAMWISE_PERIODIC::NONE) {
     if (Kind_Regime != ENUM_REGIME::INCOMPRESSIBLE)
@@ -8052,14 +8057,14 @@ CConfig::~CConfig(void) {
   delete [] Scalar_Init;
 
   delete [] Molecular_Weight;
-  delete [] Mu_Constant; 
+  delete [] Mu_Constant;
   delete [] Mu_Ref;
-  delete [] Mu_Temperature_Ref; 
-  delete [] Mu_S; 
-  delete [] Specific_Heat_Cp; 
-  delete [] Thermal_Conductivity_Constant; 
-  delete [] Prandtl_Lam; 
-  delete [] Prandtl_Turb; 
+  delete [] Mu_Temperature_Ref;
+  delete [] Mu_S;
+  delete [] Specific_Heat_Cp;
+  delete [] Thermal_Conductivity_Constant;
+  delete [] Prandtl_Lam;
+  delete [] Prandtl_Turb;
 
 }
 

@@ -5,53 +5,79 @@
 
 #include "CFluidModel.hpp"
 
-class CFluidScalar : public CFluidModel {
-// class CFluidScalar final : public CFluidModel {
+class CFluidScalar final : public CFluidModel {
+private:
+  unsigned short n_species_mixture = 0.0;             /*!< \brief Number of species in mixture. */
+  su2double Gas_Constant = 0.0;                       /*!< \brief Specific gas constant. */
+  su2double Gamma = 0.0;                              /*!< \brief Ratio of specific heats of the gas. */
 
-protected:
-  unsigned short n_species_mixture = 0.0;
-  su2double Gas_Constant = 0.0; 
-  su2double Gamma = 0.0; 
-  
   bool wilke;
-  bool davidson; 
+  bool davidson;
 
-  std::vector<su2double> massFractions; 
-  std::vector<su2double> moleFractions;  
-  std::vector<su2double> molarMasses;
-  std::vector<su2double> laminarViscosity;
-  std::vector<su2double> specificHeat; 
-  std::vector<su2double> laminarthermalConductivity; 
-  
-  unique_ptr<CViscosityModel> LaminarViscosityPointers[100];  // How to fix this?
-  unique_ptr<CConductivityModel> ThermalConductivityPointers[100];  
+  std::vector<su2double> massFractions;               /*!< \brief Mass fractions of all species. */
+  std::vector<su2double> moleFractions;               /*!< \brief Mole fractions of all species. */
+  std::vector<su2double> molarMasses;                 /*!< \brief Molar masses of all species. */
+  std::vector<su2double> laminarViscosity;            /*!< \brief Laminar viscosity of all species. */
+  std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
+  std::vector<su2double> laminarthermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
 
- public:
+  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[100];  // How to fix this such that I don't need to hardcode the size?
+  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[100];
 
-  CFluidScalar(CConfig *config, su2double value_pressure_operating);
+  /*!
+   * \brief Convert mass fractions to mole fractions.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  std::vector<su2double>& massToMoleFractions(const su2double * const val_scalars);
 
-  ~CFluidScalar() {}; // Remove. 
+  /*!
+   * \brief Wilke mixing law for mixture viscosity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double wilkeViscosity(const su2double * const val_scalars);
 
-  void SetLaminarViscosityModel(const CConfig* config);
-  // void SetLaminarViscosityModel(const CConfig* config) override;
+  /*!
+   * \brief Davidson mixing law for mixture viscosity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double davidsonViscosity(const su2double * const val_scalars);
 
-  void SetThermalConductivityModel(const CConfig* config);
-  // void SetThermalConductivityModel(const CConfig* config) override;
+  /*!
+   * \brief Wilke mixing law for mixture thermal conductivity.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  su2double wilkeConductivity(const su2double * const val_scalars);
 
-  unsigned long SetTDState_T(su2double val_temperature, su2double *val_scalars);
-  // unsigned long SetTDState_T(su2double val_temperature, su2double *val_scalars) override;
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CFluidScalar(CConfig *config, const su2double value_pressure_operating);
 
-  std::vector<su2double> massToMoleFractions(su2double* val_scalars); // Make private. 
+  /*!
+   * \brief Set viscosity model.
+   */
+  void SetLaminarViscosityModel(const CConfig* config) override;
 
-  su2double wilkeViscosity(su2double* val_scalars); // Make private. 
+  /*!
+   * \brief Set thermal conductivity model.
+   */
+  void SetThermalConductivityModel(const CConfig* config) override;
 
-  su2double davidsonViscosity(su2double* val_scalars); // Make private. 
+  /*!
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] val_temperature - Temperature value at the point.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  unsigned long SetTDState_T(const su2double val_temperature, su2double * const val_scalars) override;
 
-  su2double wilkeConductivity(su2double *val_scalars); // Make private. 
+  /*!
+   * \brief Get fluid dynamic viscosity.
+   */
+  inline su2double GetLaminarViscosity() override {return Mu; }
 
-  inline su2double GetLaminarViscosity() {return Mu; }
-  // inline su2double GetLaminarViscosity() const {return Mu; }
-
-  inline su2double GetThermalConductivity() { return Kt; }
-  // inline su2double GetThermalConductivity() const { return Kt; }
+  /*!
+   * \brief Get fluid thermal conductivity.
+   */
+  inline su2double GetThermalConductivity() override { return Kt; }
 };
