@@ -105,8 +105,8 @@ void CInterpolator::Collect_VertexInfo(int markDonor, int markTarget,
 
   SU2_MPI::Allgather(Buffer_Send_Coord.data(), MaxLocalVertex_Donor*nDim, MPI_DOUBLE,
                      Buffer_Receive_Coord.data(), MaxLocalVertex_Donor*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
-  SU2_MPI::Allgather(Buffer_Send_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG,
-                     Buffer_Receive_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_UNSIGNED_LONG,
+                     Buffer_Receive_GlobalPoint.data(), MaxLocalVertex_Donor, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 }
 
 unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short nDim, bool compress,
@@ -316,7 +316,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       SU2_MPI::Recv(&received_nLocalVertex, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
       SU2_MPI::Recv(Buffer_Receive_Coord[received_nLocalVertex_sum], nDim*received_nLocalVertex,        MPI_DOUBLE, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
-      SU2_MPI::Recv(     &Buffer_Receive_GlobalPoint[received_nLocalVertex_sum], received_nLocalVertex, MPI_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(     &Buffer_Receive_GlobalPoint[received_nLocalVertex_sum], received_nLocalVertex, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
       SU2_MPI::Recv(    &Buffer_Receive_nLinkedNodes[received_nLocalVertex_sum], received_nLocalVertex, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
       SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[received_nLocalVertex_sum], received_nLocalVertex, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
@@ -336,7 +336,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     SU2_MPI::Send(    &nLocalVertex,                   1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(),        MPI_DOUBLE, 0, 1, SU2_MPI::GetComm());
 
-    SU2_MPI::Send(     Buffer_Send_GlobalPoint.data(), nLocalVertex, MPI_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(     Buffer_Send_GlobalPoint.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(    Buffer_Send_nLinkedNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
     SU2_MPI::Send(Buffer_Send_StartLinkedNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
   }
