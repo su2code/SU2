@@ -547,10 +547,12 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
 void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
 
+  AD::StartNoSharedReading();
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     solver->LinSysRes.AddBlock(iPoint, solver->GetNodes()->GetResTruncError(iPoint));
   END_SU2_OMP_FOR
+  AD::EndNoSharedReading();
 
 }
 
