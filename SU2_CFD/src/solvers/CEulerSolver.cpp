@@ -875,7 +875,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-  SU2_MPI::Waitall(size-1,&req_Recv[0],MPI_STATUS_IGNORE);
+  SU2_MPI::Waitall(size-1,req_Recv,MPI_STATUS_IGNORE);
 
 
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
