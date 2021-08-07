@@ -828,7 +828,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   }
   /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
-  
   Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
     
   /*--- Receive the counts. All processors are sending their counters to
