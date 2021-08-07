@@ -796,8 +796,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0, iDim;
   su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
-  *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf,
-  ModVelocity_Inf, Velocity_Inf[3], factor,
+  *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf, factor,
   jFunction, jp1Function;
   unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
   auxDomain;
