@@ -827,7 +827,6 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
     Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar+3);
 
   }
-  
   /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
   
   Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
