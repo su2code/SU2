@@ -190,7 +190,7 @@ def main():
     ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file  = "NACA64206.cfg"
     ea_naca64206.test_iter = 10
-    ea_naca64206.test_vals = [-1.086302, -0.391816, -0.002329, 6.7775e+04]
+    ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.0]
     ea_naca64206.su2_exec  = "mpirun -n 2 SU2_CFD"
     ea_naca64206.timeout   = 1600
     ea_naca64206.tol       = 0.00001
