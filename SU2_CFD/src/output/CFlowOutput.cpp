@@ -882,12 +882,12 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     Buffer_Receive_FaceArea.resize(nProcessor*MaxLocalVertex_NearField);
   }
 
-  unsigned long nBuffer_Xcoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Ycoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Zcoord = MaxLocalVertex_NearField;
-  unsigned long nBuffer_IdPoint = MaxLocalVertex_NearField;
-  unsigned long nBuffer_Pressure = MaxLocalVertex_NearField;
-  unsigned long nBuffer_FaceArea = MaxLocalVertex_NearField;
+  const auto nBuffer_Xcoord = MaxLocalVertex_NearField;
+  const auto nBuffer_Ycoord = MaxLocalVertex_NearField;
+  const auto nBuffer_Zcoord = MaxLocalVertex_NearField;
+  const auto nBuffer_IdPoint = MaxLocalVertex_NearField;
+  const auto nBuffer_Pressure = MaxLocalVertex_NearField;
+  const auto nBuffer_FaceArea = MaxLocalVertex_NearField;
 
 
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
