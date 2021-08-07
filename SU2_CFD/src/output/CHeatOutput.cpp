@@ -32,8 +32,6 @@
 
 CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(config, nDim, false) {
 
-  multiZone = config->GetMultizone_Problem();
-
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
