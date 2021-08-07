@@ -29,7 +29,7 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 
 
-CFVMOutput::CFVMOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
+CFVMOutput::CFVMOutput(const CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){ }
 
 void CFVMOutput::AddCoordinates() {
 
