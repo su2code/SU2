@@ -816,12 +816,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   Beta = sqrt(Mach*Mach-1.0);
   R_Plane = fabs(config->GetEA_IntLimit(2));
   Pressure_Inf = config->GetPressure_FreeStreamND();
-  Velocity_Inf[0] = config->GetVelocity_FreeStreamND()[0];
-  Velocity_Inf[1] = config->GetVelocity_FreeStreamND()[1];
-  Velocity_Inf[2] = config->GetVelocity_FreeStreamND()[2];
-  ModVelocity_Inf = 0;
-  for (iDim = 0; iDim < 3; iDim++)
-    ModVelocity_Inf += Velocity_Inf[iDim] * Velocity_Inf[iDim];
+  const su2double ModVelocity_Inf = GeometryToolbox::SquaredNorm(3, config->GetVelocity_FreeStreamND());
 
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
