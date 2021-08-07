@@ -777,10 +777,10 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- Define buffer vector interior domain ---*/
 
   su2double     *Buffer_Send_PrimVar = nullptr;
-  unsigned long *nPointTotal_s       = new unsigned long[size];
-  unsigned long *nPointTotal_r       = new unsigned long[size];
-  su2double     *iPrimVar            = new su2double [nPrimVar];
-  unsigned long nPointTotal_rCum[size+1];
+  vector<unsigned long> nPointTotal_s(size);
+  vector<unsigned long> nPointTotal_r(size);
+  vector<su2double> iPrimVar(nPrimVar);
+  vector<unsigned long> nPointTotal_rCum(size+1);
   unsigned long Buffer_Size_PrimVar  = 0;
   vector<unsigned long> PointTotal_Counter(size, 0);
 
@@ -1072,12 +1072,6 @@ for (iDomain = 0; iDomain < size; iDomain++) {
   delete [] Buffer_Send_PrimVar;
   delete [] Buffer_Receive_PrimVarMPI;
   delete [] req_Recv;
-
-  /*--- Release all of the temporary memory ---*/
-
-  delete [] nPointTotal_s;
-  delete [] nPointTotal_r;
-  delete [] iPrimVar;
 
 }
 
