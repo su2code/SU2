@@ -79,8 +79,8 @@ def main():
     ea_naca64206              = TestCase('ea_naca64206')
     ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file     = "NACA64206_adjoint.cfg"
-    ea_naca64206.test_iter    = 20
-    ea_naca64206.test_vals    = [3.663941, 3.471570, 0.0000e+00, 1.2218e+02]
+    ea_naca64206.test_iter    = 10
+    ea_naca64206.test_vals    = [2.805558, 2.096837, 2.3722e+06, 4.5048e+00]
     ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
     ea_naca64206.timeout      = 1600
     ea_naca64206.tol          = 0.00001
