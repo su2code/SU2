@@ -794,7 +794,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
-  unsigned short iMarker = 0, iDim;
+  unsigned short iMarker = 0;
   su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
   *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf, factor,
   jFunction, jp1Function;
@@ -815,7 +815,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   Beta = sqrt(Mach*Mach-1.0);
   R_Plane = fabs(config->GetEA_IntLimit(2));
   Pressure_Inf = config->GetPressure_FreeStreamND();
-  const su2double ModVelocity_Inf = GeometryToolbox::SquaredNorm(3, config->GetVelocity_FreeStreamND());
 
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
