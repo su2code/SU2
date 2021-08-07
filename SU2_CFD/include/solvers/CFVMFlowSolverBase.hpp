@@ -154,7 +154,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  su2double Total_CEquivArea =0.0;      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
