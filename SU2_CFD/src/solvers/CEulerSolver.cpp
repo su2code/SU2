@@ -780,7 +780,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   unsigned long *nPointTotal_s       = new unsigned long[size];
   unsigned long *nPointTotal_r       = new unsigned long[size];
   su2double     *iPrimVar            = new su2double [nPrimVar];
-  unsigned long nPointTotal_rCum[size];
+  unsigned long nPointTotal_rCum[size+1];
   unsigned long Buffer_Size_PrimVar  = 0;
   vector<unsigned long> PointTotal_Counter(size, 0);
 
@@ -933,9 +933,9 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- Store cumulative number of points to identify beginning of points 
    for the rank in array ---*/
 
-  nPointTotal_rCum[0] = nPointTotal_r[0];
+  nPointTotal_rCum[0] = 0;
   
-  for (iDomain = 1; iDomain < nDomain; iDomain++){
+  for (iDomain = 1; iDomain < nDomain+1; iDomain++){
     nPointTotal_rCum[iDomain] 
         = nPointTotal_rCum[iDomain-1]+nPointTotal_r[iDomain-1];
   }
@@ -943,7 +943,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- Initialize buffer for recv ---*/
 
   Buffer_Receive_PrimVarMPI
-        = new su2double[nPointTotal_rCum[size-1]*(nPrimVar+3)];
+        = new su2double[nPointTotal_rCum[size]*(nPrimVar+3)];
   
   /*--- Recv all data ---*/
 
@@ -953,7 +953,7 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
     if (rank != iDomain) {
 
 #ifdef HAVE_MPI
-      SU2_MPI::Irecv(&Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain-1]
+      SU2_MPI::Irecv(&Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain]
             *(nPrimVar+3)], nPointTotal_r[iDomain]*(nPrimVar+3), MPI_DOUBLE,
             iDomain, rank, SU2_MPI::GetComm(), &req_Recv[irecv]);
       
@@ -1036,18 +1036,18 @@ for (iDomain = 0; iDomain < size; iDomain++) {
       for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
 
         iGlobal  = SU2_TYPE::Int(
-                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain-1]
+                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain]
                       *(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+0)]);
         iVertex  = SU2_TYPE::Int(
-                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain-1]
+                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain]
                       *(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+1)]);
         iMarker  = SU2_TYPE::Int(
-                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain-1]
+                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain]
                       *(nPrimVar+3)+iPoint*(nPrimVar+3)+(nPrimVar+2)]);
 
         for (iVar = 0; iVar < nPrimVar; iVar++)
           iPrimVar[iVar] = 
-                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain-1]
+                      Buffer_Receive_PrimVarMPI[nPointTotal_rCum[iDomain]
                       *(nPrimVar+3)+iPoint*(nPrimVar+3)+iVar];
 
         if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
