@@ -2230,8 +2230,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
   /* DESCRIPTION: Compute the entropy in the fluid model (YES, NO) */
   addBoolOption("COMPUTE_ENTROPY_FLUID_MODEL", Compute_Entropy, true);
-  /* DESCRIPTION: Use the lumped mass matrix for steady DGFEM computations */
-  addBoolOption("USE_LUMPED_MASSMATRIX_DGFEM", Use_Lumped_MassMatrix_DGFEM, false);
   /* DESCRIPTION: Only compute the exact Jacobian of the spatial discretization (NO, YES) */
   addBoolOption("JACOBIAN_SPATIAL_DISCRETIZATION_ONLY", Jacobian_Spatial_Discretization_Only, false);
 
@@ -3476,11 +3474,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Time_Domain){
     Delta_UnstTime = Time_Step;
     Delta_DynTime  = Time_Step;
-
-    if (TimeMarching == TIME_MARCHING::TIME_STEPPING) {
-      InnerIter = 1;
-      Use_Lumped_MassMatrix_DGFEM = false;
-    }
 
     /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
     if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }

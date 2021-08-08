@@ -53,13 +53,11 @@ public:
    *                              by the integration rule.
    * \param[in] val_locGridDOFs - Location of the grid DOFs (LGL or Equidistant).
    * \param[in] val_nVar        - Number of variables in the jitted gemm calls (not used).
-   * \param[in] val_useLumpedMM - Whether or not the lumped mass matrix is used.
    */
   CFEMStandardQuadVolumeSol(const unsigned short val_nPoly,
                             const unsigned short val_orderExact,
                             const unsigned short val_locGridDOFs,
-                            const unsigned short val_nVar,
-                            const bool           val_useLumpedMM);
+                            const unsigned short val_nVar);
 
   /*!
    * \brief Destructor. Nothing to be done.

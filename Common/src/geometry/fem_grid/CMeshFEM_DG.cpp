@@ -2239,8 +2239,7 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
   /*--- Call the functions to actually create the standard elements. ---*/
   CreateStandardVolumeElementsGrid(elemTypesGrid, config->GetKind_FEM_GridDOFsLocation());
   CreateStandardVolumeElementsSolution(elemTypesSol, nAllocVar,
-                                       config->GetKind_FEM_GridDOFsLocation(),
-                                       config->GetUse_Lumped_MassMatrix_DGFEM());
+                                       config->GetKind_FEM_GridDOFsLocation());
 
   /*--- Loop again over the volume elements to set the pointers to the appropriate
         standard elements. ---*/
@@ -4148,8 +4147,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
 void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
                                                        const unsigned short           nAllocVar,
-                                                       const unsigned short           locGridDOFs,
-                                                       const bool                     useLumpedMM) {
+                                                       const unsigned short           locGridDOFs) {
 
   /*--- The master node writes a message. ---*/
   if(rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
@@ -4171,27 +4169,27 @@ void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedSho
     switch( VTK_Type ) {
       case TRIANGLE:
         standardVolumeElementsSolution[i] = new CFEMStandardTriVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                         nSolVar, useLumpedMM);
+                                                                         nSolVar);
         break;
       case QUADRILATERAL:
         standardVolumeElementsSolution[i] = new CFEMStandardQuadVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                          nSolVar, useLumpedMM);
+                                                                          nSolVar);
         break;
       case TETRAHEDRON:
         standardVolumeElementsSolution[i] = new CFEMStandardTetVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                         nSolVar, useLumpedMM);
+                                                                         nSolVar);
         break;
       case PYRAMID:
         standardVolumeElementsSolution[i] = new CFEMStandardPyraVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                          nSolVar, useLumpedMM);
+                                                                          nSolVar);
         break;
       case PRISM:
         standardVolumeElementsSolution[i] = new CFEMStandardPrismVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                           nSolVar, useLumpedMM);
+                                                                           nSolVar);
         break;
       case HEXAHEDRON:
         standardVolumeElementsSolution[i] = new CFEMStandardHexVolumeSol(nPoly, orderExact, locGridDOFs,
-                                                                         nSolVar, useLumpedMM);
+                                                                         nSolVar);
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown volume element. This should not happen"),

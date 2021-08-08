@@ -441,17 +441,17 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
 
   /* Copy the values from c into tmpJ. This is done because of the possible swapping. */
   sourceFile << std::endl;
-  sourceFile << "    /*--- Copy the value from the appropriate location in c." << std::endl;
+  sourceFile << "    /*--- Copy the value from the appropriate location in b." << std::endl;
   sourceFile << "          Take a possible swapping into account. ---*/" << std::endl;
   sourceFile << "    if( swapTangDir ) {" << std::endl;
   sourceFile << "      for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
   sourceFile << "        for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
-  sourceFile << "          tmpJ[j][i] = b[j][i];" << std::endl;
+  sourceFile << "          tmpJ[j][i] = b[i][j];" << std::endl;
   sourceFile << "    }" << std::endl;
   sourceFile << "    else {" << std::endl;
   sourceFile << "      for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
   sourceFile << "        for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
-  sourceFile << "          tmpJ[j][i] = b[i][j];" << std::endl;
+  sourceFile << "          tmpJ[j][i] = b[j][i];" << std::endl;
   sourceFile << "    }" << std::endl;
 
   /* Tensor product in the second tangential direction. */
@@ -471,7 +471,7 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   /* Tensor product in the first tangential direction. */
   sourceFile << std::endl;
   sourceFile << "    /*--- Tensor product in first tangential direction to obtain the data" << std::endl;
-  sourceFile << "          in the DOFs in the both direction of the face. ---*/"      << std::endl;
+  sourceFile << "          in the DOFs in both directions of the face. ---*/"      << std::endl;
   sourceFile << "    for(int j=0; j<" << nDOFs1D << "; ++j) {" << std::endl;
   sourceFile << "      SU2_OMP_SIMD" << std::endl;
   sourceFile << "      for(int i=0; i<KP; ++i) bFace[j][i] = 0.0;" << std::endl;

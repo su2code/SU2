@@ -2491,6 +2491,11 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius();
       volElem[l].deltaTime = CFL*volElem[l].lenScale/(factInv*sqrt(charVel2Max));
 
+      // TEST
+      volElem[l].deltaTime = 0.01;
+      //volElem[l].deltaTime = 1.e-25;
+      // END TEST
+
       /*--- Update the minimum and maximum value, for which the factor for
             time accurate local time stepping must be taken into account. ---*/
       const su2double dtEff = volElem[l].factTimeLevel*volElem[l].deltaTime;
@@ -3826,23 +3831,23 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
     const unsigned int nResTot = volElem[l].resDOFs.cols() * volElem[l].resDOFs.rows();
     su2double *resVol = volElem[l].resDOFs.data();
 
-    /* Loop over the internal faces of this element and add the residual. */
-    for(unsigned long j=0; j<volElem[l].internalFaceIDs.size(); ++j) {
-      const unsigned long jj = volElem[l].internalFaceIDs[j];
-      const su2double *resSurf;
-      if(matchingInternalFaces[jj].elemID0 == l) resSurf = matchingInternalFaces[jj].resDOFsSide0.data();
-      else                                       resSurf = matchingInternalFaces[jj].resDOFsSide1.data();
-
-      SU2_OMP_SIMD_IF_NOT_AD
-      for(unsigned int i=0; i<nResTot; ++i) resVol[i] += resSurf[i];
-    }
-
     /* Loop over the boundary faces of this element and add the residual. */
     for(unsigned long j=0; j<volElem[l].boundaryFaceIDs.size(); ++j) {
       const unsigned long iMarker = volElem[l].boundaryFaceIDs[j].long0;
       const unsigned long jj      = volElem[l].boundaryFaceIDs[j].long1;
 
       const su2double *resSurf = boundaries[iMarker].surfElem[jj].resDOFsElem.data();
+
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned int i=0; i<nResTot; ++i) resVol[i] += resSurf[i];
+    }
+
+    /* Loop over the internal faces of this element and add the residual. */
+    for(unsigned long j=0; j<volElem[l].internalFaceIDs.size(); ++j) {
+      const unsigned long jj = volElem[l].internalFaceIDs[j];
+      const su2double *resSurf;
+      if(matchingInternalFaces[jj].elemID0 == l) resSurf = matchingInternalFaces[jj].resDOFsSide0.data();
+      else                                       resSurf = matchingInternalFaces[jj].resDOFsSide1.data();
 
       SU2_OMP_SIMD_IF_NOT_AD
       for(unsigned int i=0; i<nResTot; ++i) resVol[i] += resSurf[i];
@@ -4442,6 +4447,13 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
     /*--- Compute the new state. ---*/
     const unsigned short nDOFs = volElem[l].standardElemFlow->GetNDOFs();
+
+    // TEST
+    //for(unsigned short i=0; i<nDOFs; ++i)
+    //  std::cout << volElem[l].solDOFs(i,4) << std::endl;
+    // END TEST
+    //std::cout << std::endl;
+
     for(unsigned short j=0; j<nVar; ++j) {
 
       SU2_OMP_SIMD

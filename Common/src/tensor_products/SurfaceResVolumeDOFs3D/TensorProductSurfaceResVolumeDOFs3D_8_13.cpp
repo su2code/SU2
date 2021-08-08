@@ -60,17 +60,17 @@ void TensorProductSurfaceResVolumeDOFs3D_8_13(const int           N,
     const su2double (*b)[13] = (const su2double (*)[13]) &B[l*ldb];
     su2double (*c)[8][8] = (su2double (*)[8][8]) &C[l*ldc];
 
-    /*--- Copy the value from the appropriate location in c.
+    /*--- Copy the value from the appropriate location in b.
           Take a possible swapping into account. ---*/
     if( swapTangDir ) {
       for(int j=0; j<13; ++j)
         for(int i=0; i<13; ++i)
-          tmpJ[j][i] = b[j][i];
+          tmpJ[j][i] = b[i][j];
     }
     else {
       for(int j=0; j<13; ++j)
         for(int i=0; i<13; ++i)
-          tmpJ[j][i] = b[i][j];
+          tmpJ[j][i] = b[j][i];
     }
 
     /*--- Tensor product in second tangential direction to obtain the data
@@ -86,7 +86,7 @@ void TensorProductSurfaceResVolumeDOFs3D_8_13(const int           N,
     }
 
     /*--- Tensor product in first tangential direction to obtain the data
-          in the DOFs in the both direction of the face. ---*/
+          in the DOFs in both directions of the face. ---*/
     for(int j=0; j<8; ++j) {
       SU2_OMP_SIMD
       for(int i=0; i<KP; ++i) bFace[j][i] = 0.0;

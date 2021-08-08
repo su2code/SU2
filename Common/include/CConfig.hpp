@@ -1072,7 +1072,6 @@ private:
   su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
-  bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
   bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
@@ -8710,13 +8709,6 @@ public:
    * \return The boolean whether or not the entropy must be computed.
    */
   bool GetCompute_Entropy(void) const { return Compute_Entropy; }
-
-  /*!
-   * \brief Function to make available whether or not the lumped mass matrix
-            must be used for steady computations.
-   * \return The boolean whether or not to use the lumped mass matrix.
-   */
-  bool GetUse_Lumped_MassMatrix_DGFEM(void) const { return Use_Lumped_MassMatrix_DGFEM; }
 
   /*!
    * \brief Function to make available whether or not only the exact Jacobian

@@ -131,6 +131,11 @@ void CVolumeElementFEM_DG::SetConstantSolution(const su2double *sol,
 
     /*--- Set the first entry of solDOFs to the constant solution. ---*/
     solDOFs(0,ii) = sol[iVar]*invBasis0;
+
+    // TEST
+    for(unsigned short i=1; i<nDOFs; ++i)
+      solDOFs(i,ii) = 0.02*solDOFs(0,ii);
+    // END TEST
   }
   
 }

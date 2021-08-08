@@ -307,12 +307,10 @@ private:
    * \param[in] nAllocVar   - Number of variables for which memory must be allocated
    *                          in the working vectors.
    * \param[in] locGridDOFs - Location of the grid DOFs, either LGL or equidistant.
-   * \param[in] useLumpedMM - Whether or not the lumped mass matrix is used.
    */
   void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
                                             const unsigned short           nAllocVar,
-                                            const unsigned short           locGridDOFs,
-                                            const bool                     useLumpedMM);
+                                            const unsigned short           locGridDOFs);
 
   /*!
    * \brief Function, which computes the parametric coordinates of the given

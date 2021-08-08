@@ -35,8 +35,7 @@
 CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_nPoly,
                                                        const unsigned short val_orderExact,
                                                        const unsigned short val_locGridDOFs,
-                                                       const unsigned short val_nVar,
-                                                       const bool           val_useLumpedMM)
+                                                       const unsigned short val_nVar)
   : CFEMStandardPrismBase(val_nPoly, val_orderExact) {
 
   /*--- Determine the location of the nodal solution DOFs. ---*/
@@ -163,45 +162,20 @@ CFEMStandardPrismVolumeSol::CFEMStandardPrismVolumeSol(const unsigned short val_
 
   /*--- Determine the correction factors for the inviscid and viscous
         spectral radii for the high order element. These factors depend
-        on the polynomial degree, the element type and whether or not
-        a lumped mass matrix is used. ---*/
-  if( val_useLumpedMM ) {
-
-    /*--- Lumped mass matrix. Set the values, depending on the
-          polynomial degree of the element. ---*/
-    switch( nPoly ) {
-      case 0: factInviscidRad =  2.0; factViscousRad =    6.0; break;
-      case 1: factInviscidRad =  4.0; factViscousRad =   20.0; break;
-      case 2: factInviscidRad =  8.0; factViscousRad =   80.0; break;
-      case 3: factInviscidRad = 12.0; factViscousRad =  180.0; break;
-      case 4: factInviscidRad = 16.0; factViscousRad =  320.0; break;
-      case 5: factInviscidRad = 20.0; factViscousRad =  500.0; break;
-      case 6: factInviscidRad = 24.0; factViscousRad =  720.0; break;
-      case 7: factInviscidRad = 28.0; factViscousRad =  980.0; break;
-      case 8: factInviscidRad = 32.0; factViscousRad = 1280.0; break;
-      case 9: factInviscidRad = 36.0; factViscousRad = 1620.0; break;
-      default:
-        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
-    }
-  }
-  else {
-
-    /*--- Full mass matrix. Set the values, depending on the
-          polynomial degree of the element. ---*/
-    switch( nPoly ) {
-      case 0: factInviscidRad =  2.0; factViscousRad =     6.0; break;
-      case 1: factInviscidRad =  6.0; factViscousRad =    36.0; break;
-      case 2: factInviscidRad = 12.0; factViscousRad =   150.0; break;
-      case 3: factInviscidRad = 20.0; factViscousRad =   420.0; break;
-      case 4: factInviscidRad = 28.0; factViscousRad =   980.0; break;
-      case 5: factInviscidRad = 38.0; factViscousRad =  1975.0; break;
-      case 6: factInviscidRad = 50.0; factViscousRad =  3575.0; break;
-      case 7: factInviscidRad = 64.0; factViscousRad =  7000.0; break;
-      case 8: factInviscidRad = 80.0; factViscousRad = 14000.0; break;
-      case 9: factInviscidRad = 98.0; factViscousRad = 28000.0; break;
-      default:
-        SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
-    }
+        on the polynomial degree and the element type. ---*/
+  switch( nPoly ) {
+    case 0: factInviscidRad =  2.0; factViscousRad =     6.0; break;
+    case 1: factInviscidRad =  6.0; factViscousRad =    36.0; break;
+    case 2: factInviscidRad = 12.0; factViscousRad =   150.0; break;
+    case 3: factInviscidRad = 20.0; factViscousRad =   420.0; break;
+    case 4: factInviscidRad = 28.0; factViscousRad =   980.0; break;
+    case 5: factInviscidRad = 38.0; factViscousRad =  1975.0; break;
+    case 6: factInviscidRad = 50.0; factViscousRad =  3575.0; break;
+    case 7: factInviscidRad = 64.0; factViscousRad =  7000.0; break;
+    case 8: factInviscidRad = 80.0; factViscousRad = 14000.0; break;
+    case 9: factInviscidRad = 98.0; factViscousRad = 28000.0; break;
+    default:
+      SU2_MPI::Error(string("Polynomial order not foreseen"), CURRENT_FUNCTION);
   }
 }
 
