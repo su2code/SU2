@@ -46,10 +46,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned long iPoint, counter_local, counter_global = 0;
-  unsigned short iDim, iMarker, iSpecies, nLineLets;
+  unsigned short iMarker, nLineLets;
   unsigned short nZone = geometry->GetnZone();
-  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
+  su2double *Mvec_Inf, Alpha, Beta;
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
@@ -58,8 +57,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
-
-  bool nonPhys;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -216,52 +213,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   node_infty->SetPrimVar(0, FluidModel);
 
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-
-  counter_local = 0;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-
-    /*--- Set mixture state ---*/
-    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
-
-    /*--- Compute other freestream quantities ---*/
-    Density_Inf    = FluidModel->GetDensity();
-    Soundspeed_Inf = FluidModel->GetSoundSpeed();
-
-    sqvel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++){
-      sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-    }
-    const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
-
-    /*--- Initialize Solution & Solution_Old vectors ---*/
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
-    }
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
-    }
-    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
-    nodes->SetSolution(iPoint,Solution);
-    nodes->SetSolution_Old(iPoint,Solution);
-
-    if(nonPhys)
-      counter_local++;
-  }
-
-  /*--- Warning message about non-physical points ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-
-    if ((rank == MASTER_NODE) && (counter_global != 0))
-      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-  }
-
   /*--- Initial comms. ---*/
 
   CommunicateInitialState(geometry, config);
@@ -303,7 +254,9 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
-
+      
+      if ((rank == MASTER_NODE) && (ErrorCounter != 0))
+        cout << "Warning. The initial solution contains "<< ErrorCounter << " points that are not physical." << endl;
   }
 
   /*--- Artificial dissipation ---*/
@@ -840,6 +793,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     ComputeAxisymmetricAuxGradients(geometry,config);
   }
 
+  AD::StartNoSharedReading();
+
   /*--- loop over interior points ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -964,6 +919,8 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     }
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   /*--- Checking for NaN ---*/
   unsigned long eAxi_global = eAxi_local;
@@ -1247,7 +1204,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
 
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
 
   }
 

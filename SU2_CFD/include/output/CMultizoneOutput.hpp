@@ -61,12 +61,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CMultizoneOutput(CConfig *driver_config, CConfig** config, unsigned short nDim);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CMultizoneOutput(void) override;
+  CMultizoneOutput(const CConfig *driver_config, const CConfig* const* config, unsigned short nDim);
 
   /*!
    * \brief Load the multizone history output field values

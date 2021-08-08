@@ -269,7 +269,11 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
       cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
            << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)."
+#ifdef HAVE_OPDI
+           << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
+#endif
+           << endl;
     }
 
     if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
@@ -1481,6 +1485,12 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
   }
 
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
@@ -1502,6 +1512,10 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     }
     END_SU2_OMP_FOR
   }
+
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
@@ -1557,6 +1571,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
 
     /*--- Loop over all nodes (excluding halos) ---*/
 
+    AD::StartNoSharedReading();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -1591,6 +1607,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
 
   }
 
@@ -1669,6 +1687,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
     /*--- Loop over all nodes (excluding halos) to compute the remainder
      of the dual time-stepping source term. ---*/
 
+    AD::StartNoSharedReading();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -1706,6 +1726,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
 }

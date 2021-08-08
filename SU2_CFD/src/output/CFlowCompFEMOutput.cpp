@@ -35,8 +35,6 @@ CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : C
 
   turb_model = config->GetKind_Turb_Model();
 
-  gridMovement = config->GetGrid_Movement();
-
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){

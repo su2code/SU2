@@ -1110,6 +1110,16 @@ public:
                                        unsigned short val_marker) { }
 
   /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                                           const CConfig *config,
+                                           const unsigned short val_marker) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

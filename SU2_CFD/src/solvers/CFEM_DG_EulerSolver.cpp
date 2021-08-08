@@ -444,7 +444,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
 
     /*--- Constant thermal conductivity model. ---*/
-    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    config->SetThermal_Conductivity_ConstantND(config->GetThermal_Conductivity_Constant()/Conductivity_Ref);
   }
   
 
@@ -593,7 +593,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       case CONDUCTIVITYMODEL::CONSTANT:
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();
+        NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -4461,6 +4461,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
         solNew(i,j) = volElem[l].solDOFs(i,j) - tmp*volElem[l].resDOFs(i,j);
     }
   }
+  END_SU2_OMP_FOR
 
   /*--- Test for the last RK step. ---*/
   if(iRKStep == (nRKStages-1)) {

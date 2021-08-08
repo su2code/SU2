@@ -29,6 +29,7 @@
 
 #include "CVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable

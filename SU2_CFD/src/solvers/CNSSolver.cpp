@@ -135,6 +135,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -163,6 +165,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 }
@@ -313,7 +317,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
 }
 
 void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigned long Point_Normal,
-                                                   CGeometry* geometry,  const su2double* UnitNormal,
+                                                   const CGeometry* geometry,  const su2double* UnitNormal,
                                                    su2double Area, const su2double* GridVel,
                                                    su2double** Jacobian_i, su2double& Res_Conv,
                                                    su2double& Res_Visc) const {
@@ -406,24 +410,47 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   }
 }
 
-void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+                                 CNumerics*, CConfig *config, unsigned short val_marker) {
+
+  BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
+}
+
+void CNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
+
+  BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
+}
+
+void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry *geometry, const CConfig *config,
+                                         unsigned short val_marker, unsigned short kind_boundary) {
 
   /*--- Identify the boundary by string name and get the specified wall
    heat flux from config as well as the wall function treatment. ---*/
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+
+  /*--- Get the specified wall heat flux, temperature or heat transfer coefficient from config ---*/
+
+  su2double Wall_HeatFlux = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
+
+  if (kind_boundary == HEAT_FLUX) {
+    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  }
+  else if (kind_boundary == HEAT_TRANSFER) {
+    /*--- The required heatflux will be computed for each iPoint individually based on local Temperature. ---*/
+    Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref()/config->GetHeat_Flux_Ref();
+    Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  }
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != WALL_FUNCTION::NONE) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 //  }
 
   /*--- Jacobian, initialized to zero if needed. ---*/
   su2double **Jacobian_i = nullptr;
-  if (dynamic_grid && implicit) {
+  if ((dynamic_grid || (kind_boundary == HEAT_TRANSFER)) && implicit) {
     Jacobian_i = new su2double* [nVar];
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar] ();
@@ -444,6 +471,10 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
     if (config->GetMarker_All_PyCustom(val_marker))
       Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+    else if (kind_boundary == HEAT_TRANSFER) {
+      const su2double Twall = nodes->GetTemperature(iPoint);
+      Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
+    }
 
     /*--- Compute dual-grid area and boundary normal ---*/
 
@@ -503,7 +534,30 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
      And add the contributions to the Jacobian due to energy. ---*/
 
     if (implicit) {
-      if (dynamic_grid) {
+      if (kind_boundary == HEAT_TRANSFER){
+
+        /*--- It is necessary to zero the jacobian entries of the energy equation. ---*/
+        if (!dynamic_grid)
+          for (auto iVar = 0u; iVar < nVar; ++iVar)
+            Jacobian_i[nDim+1][iVar] = 0.0;
+
+        const su2double oneOnRho = 1.0 / nodes->GetDensity(iPoint);
+        const su2double oneOnCv = (Gamma - 1.0) / config->GetGas_ConstantND();
+        const su2double Vel2 = nodes->GetVelocity2(iPoint);
+        const su2double dTdrho = oneOnRho * ( -Tinfinity + oneOnCv * 0.5 * Vel2);
+        const su2double dTdrhoe = oneOnCv * oneOnRho;
+
+        /*--- Total specific energy: e=c_v*T+1/2*v^2 => T=1/c_v(rho*e/rho - 1/2||rho v||^2/rho^2).
+        Together with cv=R/(gamma-1) the following Jacobian contributions for the energy equation can be derived. ---*/
+        Jacobian_i[nDim+1][0] += Transfer_Coefficient * dTdrho * Area;
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[nDim+1][iDim+1] -= Transfer_Coefficient * dTdrhoe * nodes->GetVelocity(iPoint, iDim) * Area;
+
+        Jacobian_i[nDim+1][nDim+1] += Transfer_Coefficient * dTdrhoe * Area;
+
+      }
+      if (dynamic_grid || (kind_boundary == HEAT_TRANSFER)) {
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
 
@@ -579,7 +633,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
 //  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
 //  if (Wall_Function != WALL_FUNCTION::NONE) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
 //  }
 
   su2double **Jacobian_i = nullptr;
