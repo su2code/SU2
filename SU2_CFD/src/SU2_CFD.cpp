@@ -73,11 +73,6 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
-  /*--- AD initialization ---*/
-#ifdef HAVE_OPDI
-  AD::getGlobalTape().initialize();
-#endif
-
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
