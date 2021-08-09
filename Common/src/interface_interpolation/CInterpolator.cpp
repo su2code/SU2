@@ -232,7 +232,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
       unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
-      Buffer_Send_nLinkedNodes[iLocalVertex] = neighbors[iPoint].size();
+      Buffer_Send_nLinkedNodes[iLocalVertex] = neighbors.at(iPoint).size();
       Buffer_Send_StartLinkedNodes[iLocalVertex] = nLocalLinkedNodes;
       nLocalLinkedNodes += Buffer_Send_nLinkedNodes[iLocalVertex];
     }
@@ -243,7 +243,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
     iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
-      for (unsigned long jPoint_global : neighbors[iPoint]) {
+      for (unsigned long jPoint_global : neighbors.at(iPoint)) {
         Buffer_Send_LinkedNodes[index] = jPoint_global;
         index++;
       }
