@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unordered_set>
+#include <set>
 #include "../../include/interface_interpolation/CInterpolator.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
@@ -205,7 +205,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
 
   // Assign to each domain vertex on the marker, identified by local point ID,
   // a set of surface-neighbor vertices on the marker, identified by global point ID.
-  unordered_map<unsigned long, unordered_set<unsigned long> > neighbors;
+  unordered_map<unsigned long, set<unsigned long> > neighbors;
 
   /*--- Define or initialize them. ---*/
   for (iVertex = 0; iVertex < nVertex; iVertex++) {
@@ -215,7 +215,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
       Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
         Buffer_Send_Coord[iLocalVertex][iDim] = geom->nodes->GetCoord(iPoint, iDim);
-      neighbors.insert(pair<unsigned long, unordered_set<unsigned long> >(iPoint, unordered_set<unsigned long>()));
+      neighbors.insert(pair<unsigned long, set<unsigned long> >(iPoint, set<unsigned long>()));
     }
   }
 
@@ -225,7 +225,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     for(unsigned short iNode=0; iNode<elem->GetnNodes(); iNode++){
       iPoint = elem->GetNode(iNode);
       if (geom->nodes->GetDomain(iPoint)) {
-        unordered_set<unsigned long>& neighb = neighbors.at(iPoint);
+        set<unsigned long>& neighb = neighbors.at(iPoint);
         for(unsigned short iNeighbor=0; iNeighbor<elem->GetnNeighbor_Nodes(iNode); iNeighbor++){
           unsigned long jPoint = elem->GetNode( elem->GetNeighbor_Nodes(iNode,iNeighbor) );
           unsigned long jPoint_global = geom->nodes->GetGlobalIndex(jPoint);
