@@ -327,6 +327,8 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
   bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -355,6 +357,8 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 
