@@ -47,7 +47,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowCompOutput(CConfig *config, unsigned short nDim);
+  CFlowCompOutput(const CConfig *config, unsigned short nDim);
 
   /*!
    * \brief Load the history output field values
