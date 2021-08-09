@@ -43,12 +43,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                          ndim,
                                                                          nvar,
                                                                          config ),
-                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive),
+                                       implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
-  
-  /*--- Setting flags ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Setting variable amounts ---*/
   nDim            = ndim;

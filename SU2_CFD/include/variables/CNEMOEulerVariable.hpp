@@ -81,7 +81,7 @@ protected:
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
-  bool implicit;
+  const bool implicit;      /*!< \brief Implicit flag. */
 
 public:
 
