@@ -1172,7 +1172,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) final;
+  // void ComputeTurboPerformance(CConfig *config, CGeometry *geometry) final;
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.

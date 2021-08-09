@@ -71,8 +71,6 @@ private:
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_MixingPlaneInterface;      /*!< \brief Kind of mixing process.*/
   unsigned short Kind_SpanWise;                  /*!< \brief Kind of span-wise section computation.*/
-  //unsigned short *Kind_TurboMachinery;           /*!< \brief Kind of turbomachynery architecture.*/
-  //unsigned short *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone;    /*!< \brief Number of zones in the mesh. */
   unsigned short nZoneSpecified;  /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area;        /*!< \brief Highlite area. */

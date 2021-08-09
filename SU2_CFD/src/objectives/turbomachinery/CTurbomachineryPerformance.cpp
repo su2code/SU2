@@ -60,9 +60,9 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   /*--- Assign new primitive values ---*/
   Density = primitiveState.GetDensity();
   Pressure = primitiveState.GetPressure();
-  auto velocity = primitiveState.GetVelocity();
+  std::vector<su2double> velocity = primitiveState.GetVelocity();
   Velocity.assign(velocity.begin(), velocity.end());
-  auto tangVel = primitiveState.GetTangVelocity();
+  su2double tangVel = primitiveState.GetTangVelocity();
 
   /*--- Compute static TD quantities ---*/
   fluidModel.SetTDState_Prho(Pressure, Density);
@@ -83,10 +83,10 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   std::for_each(Mach.begin(), Mach.end(), [&](su2double &el) { el /= soundSpeed; });
 
   /*--- Compute relative kinematic quantities ---*/
-  auto tangVel2 = tangVel * tangVel;
+  su2double tangVel2 = tangVel * tangVel;
   RelVelocity.assign(Velocity.begin(), Velocity.end());
   RelVelocity[1] -= tangVel;
-  auto relVel2 = GetRelVelocityValue();
+  su2double relVel2 = GetRelVelocityValue();
   FlowAngle = atan(RelVelocity[1] / RelVelocity[0]);
   RelMach.assign(RelVelocity.begin(), RelVelocity.end());
   std::for_each(RelMach.begin(), RelMach.end(), [&](su2double &el) { el /= soundSpeed; });
@@ -127,9 +127,9 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
 
   /*--- Compute isentropic Outflow quantities ---*/
   FluidModel.SetTDState_Ps(OutletState.GetPressure(), InletState.GetEntropy());
-  auto enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
-  auto tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
-  auto relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+  su2double enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
+  su2double tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute performance ---*/
   EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()); // / abs(InletState.GetEntropy() + 1);
@@ -153,9 +153,9 @@ void CCompressorBladePerformance::ComputePerformance(const CTurbomachineryCombin
 
   /*--- Compute isentropic Outflow quantities ---*/
   FluidModel.SetTDState_Ps(OutletState.GetPressure(), InletState.GetEntropy());
-  auto enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
-  auto tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
-  auto relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+  su2double enthalpyOutIs = FluidModel.GetStaticEnergy() + OutletState.GetPressure() / FluidModel.GetDensity();
+  su2double tangVel = primitives.GetOutletPrimitiveState().GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute performance ---*/
   EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()); // / abs(InletState.GetEntropy() + 1);
@@ -185,13 +185,13 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
 
   for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
     vector <shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    auto nSpan = config.GetnSpanWiseSections();
+    unsigned short nSpan = config.GetnSpanWiseSections();
     for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
 
-      auto areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
-      auto areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
-      auto radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
-      auto radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
+      su2double areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
+      su2double areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
+      su2double radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
+      su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
 
       // TODO: I have a feeling this should not be in such a for loop, to be discussed with Salvo (Nitish)
       SU2_OMP_PARALLEL
@@ -230,6 +230,11 @@ CTurbomachineryPerformance::CTurbomachineryPerformance(const CConfig& config,
 
 void CTurbomachineryPerformance::ComputeTurbomachineryPerformance(
   vector <vector<CTurbomachineryCombinedPrimitiveStates>> const bladesPrimitives) {
+    // for (std::vector<su2double>::iterator BladePerf = BladesPerformances.begin(), bldPrim = bladesPrimitives.begin();
+    // BladePerf!=BladesPerformances.end() && bldPrim!=bladesPrimitives.end();
+    // BladesPerformances++, bladesPrimitives++ ){
+    //   ComputePerBlade(BladePerf,bldPrim);
+    // }
   boost::for_each(BladesPerformances, bladesPrimitives, boost::bind(&ComputePerBlade, _1, _2));
 }
 
@@ -272,9 +277,9 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachi
 
     /*--- Compute isentropic Outflow quantities ---*/
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
-  auto enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
-  auto tangVel = 0.0; //primitives.GetOutletPrimitiveState().GetTangVelocity();
-  auto relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+  su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
+  su2double tangVel = 0.0; //primitives.GetOutletPrimitiveState().GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
   su2double IseTotalEnthalpyOut = enthalpyOutIs + 0.5*OutState.GetVelocityValue()*OutState.GetVelocityValue();
 
   /*--- Compute performance ---*/
@@ -293,9 +298,9 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(CTurboma
 
   /*--- Compute isentropic Outflow quantities ---*/
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
-  auto enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
-  auto tangVel = 0.0; //primitives.GetOutletPrimitiveState().GetTangVelocity();
-  auto relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
+  su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
+  su2double tangVel = 0.0; //primitives.GetOutletPrimitiveState().GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
   su2double IseTotalEnthalpyOut = enthalpyOutIs + 0.5*OutState.GetVelocityValue()*OutState.GetVelocityValue();
 
   /*--- Compute performance ---*/

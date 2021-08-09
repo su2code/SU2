@@ -150,7 +150,6 @@ int main(int argc, char *argv[]) {
   else if (turbo) {
 
     /*--- Turbomachinery problem. ---*/
-    //TODO: this is a temporary change
     if (multizone)
       driver = new CMultizoneDriver(config_file_name, nZone, MPICommunicator);
     else

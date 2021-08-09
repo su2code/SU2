@@ -1,8 +1,8 @@
 /*!
  * \file CTurbomachineryPerformance.hpp
  * \brief Headers of the Turbomachinery Performance class.
- * \author S. Vitale
- * \version 7.0.1 "Blackbird"
+ * \author S. Vitale, N. Anand
+ * \version 7.1.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

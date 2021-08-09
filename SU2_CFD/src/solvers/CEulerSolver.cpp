@@ -9850,27 +9850,3 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     }
   }
 }
-
-// should live in the drive and and should get the primitive for each zone
-void CEulerSolver::ComputeTurboPerformance(CConfig *config, CGeometry *geometry) {
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
-  unsigned short iBlade = config->GetiZone(), iSpan;
-  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
-
-  if (rank == MASTER_NODE){
-    if(true){
-      /* Blade Primitive initialized per blade */
-      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = config->GetnSpan_iZones(iBlade);
-      for (iSpan = 0; iSpan < nSpan + 1; iSpan++){
-        // auto spanInletPrimitive = CTurbomachineryPrimitiveState(DensityIn[iBlade][iSpan], PressureIn[iBlade][iSpan], TurboVelocityIn[iBlade][iSpan], nDim, geometry->GetTangGridVelIn(iBlade, iSpan));
-        // auto spanOutletPrimitive = CTurbomachineryPrimitiveState(DensityOut[iBlade][iSpan], PressureOut[iBlade][iSpan], TurboVelocityOut[iBlade][iSpan], nDim, geometry->GetTangGridVelOut(iBlade, iSpan));
-        // auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-        // bladePrimitives.push_back(spanCombinedPrimitive);
-      }
-      // bladesPrimitives.push_back(bladePrimitives);
-    }
-    // TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-  }
-}

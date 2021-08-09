@@ -2588,22 +2588,11 @@ void CDriver::Turbomachinery_Preprocessing(CConfig** config, CGeometry**** geome
     }
   }
 
-  // // SKIPPING FOR NOW
-  // if (rank == MASTER_NODE) cout << "Transfer average geometric quantities to zone 0." << endl;
-  // for (iZone = 0; iZone < nZone-1; iZone++) {
-  //   interface[iZone][nZone-1]->GatherAverageTurboGeoValues(geometry[iZone][INST_0][MESH_0],geometry[nZone-1][INST_0][MESH_0], iZone);
-  // }
-
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
   for (iZone = 1; iZone < nZone; iZone++) {
     nBlades = config[iZone]->GetnBlades(iZone);
     config[ZONE_0]->SetnBlades(iZone, nBlades);
   }
-
-  // if (rank == MASTER_NODE) cout<<"Initialize solver containers for turbomachinery-performance quantities." << endl;
-  // for (iZone = 0; iZone < nZone; iZone++) {
-  //   solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboPerformance(geometry[iZone][INST_0][MESH_0],config[iZone]);
-  // }
 
   if (rank == MASTER_NODE){
     for (iZone = 0; iZone < nZone; iZone++) {
