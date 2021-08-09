@@ -792,7 +792,6 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
-  bool output = true;
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0;
   su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
@@ -820,15 +819,12 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 
-
-  int nProcessor = size;
-
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
 
   vector<unsigned long> Buffer_Receive_nVertex;
   if (rank == MASTER_NODE) {
-    Buffer_Receive_nVertex.resize(nProcessor);
+    Buffer_Receive_nVertex.resize(size);
   }
 
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
@@ -867,12 +863,12 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   vector<su2double> Buffer_Receive_FaceArea;
 
   if (rank == MASTER_NODE) {
-    Buffer_Receive_Xcoord.resize(nProcessor*MaxLocalVertex_NearField);
-    Buffer_Receive_Ycoord.resize(nProcessor*MaxLocalVertex_NearField);
-    Buffer_Receive_Zcoord.resize(nProcessor*MaxLocalVertex_NearField);
-    Buffer_Receive_IdPoint.resize(nProcessor*MaxLocalVertex_NearField);
-    Buffer_Receive_Pressure.resize(nProcessor*MaxLocalVertex_NearField);
-    Buffer_Receive_FaceArea.resize(nProcessor*MaxLocalVertex_NearField);
+    Buffer_Receive_Xcoord.resize(size*MaxLocalVertex_NearField);
+    Buffer_Receive_Ycoord.resize(size*MaxLocalVertex_NearField);
+    Buffer_Receive_Zcoord.resize(size*MaxLocalVertex_NearField);
+    Buffer_Receive_IdPoint.resize(size*MaxLocalVertex_NearField);
+    Buffer_Receive_Pressure.resize(size*MaxLocalVertex_NearField);
+    Buffer_Receive_FaceArea.resize(size*MaxLocalVertex_NearField);
   }
 
   const auto nBuffer_Xcoord = MaxLocalVertex_NearField;
@@ -930,7 +926,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     vector<su2double> Weight(nVertex_NearField);
 
     nVertex_NearField = 0;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+    for (iProcessor = 0; iProcessor < size; iProcessor++)
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         Xcoord[nVertex_NearField] = Buffer_Receive_Xcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
         Ycoord[nVertex_NearField] = Buffer_Receive_Ycoord[iProcessor*MaxLocalVertex_NearField+iVertex];
@@ -1069,46 +1065,43 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
 
-    NearFieldEA_file.precision(15);
+    NearFieldEA_file.precision(config->GetOutput_Precision());
 
-    if (output) {
+    NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
+    NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
 
-      NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
-      NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
+    if (config->GetSystemMeasurements() == US)
+      NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
+    else
+      NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
+
+    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+      if (config->GetSystemMeasurements() == US)
+        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
+      else
+        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
+    }
+
+    NearFieldEA_file << "\n";
+    for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+
+      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+      su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
 
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\"";
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
       else
-        NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
 
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        if (config->GetSystemMeasurements() == US)
-          NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
-        else
-          NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
 
       NearFieldEA_file << "\n";
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
-
-        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-
-        if (config->GetSystemMeasurements() == US)
-          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
-        else
-          NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
-
-        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-          NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
-        }
-
-        NearFieldEA_file << "\n";
-
-      }
-      NearFieldEA_file.close();
 
     }
+    NearFieldEA_file.close();
+
 
     /*--- Read target equivalent area from the configuration file,
      this first implementation requires a complete table (same as the original
@@ -1204,65 +1197,58 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
 
-    EquivArea_file.precision(15);
+    EquivArea_file.precision(config->GetOutput_Precision());
 
-    if (output) {
+    EquivArea_file.open("nearfield_flow.dat", ios::out);
+    EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
 
-      EquivArea_file.open("nearfield_flow.dat", ios::out);
-      EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << "\n";
+    if (config->GetSystemMeasurements() == US)
+      EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << "\n";
+    else
+      EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
 
-      if (config->GetSystemMeasurements() == US)
-        EquivArea_file << "VARIABLES = \"Height (in) at r="<< R_Plane*12.0 << " in. (cyl. coord. system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << "\n";
-      else
-        EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
+    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+      EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
+      for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
 
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-        EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
-        for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
+        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+        su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
 
-          su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-          su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
+        if (config->GetSystemMeasurements() == US)
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+        else
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
 
-          if (config->GetSystemMeasurements() == US)
-            EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
-          else
-            EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
-
-          EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-          << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << "\n";
-        }
+        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << "\n";
       }
-
-      EquivArea_file.close();
-
     }
+
+    EquivArea_file.close();
+
 
     /*--- Write Weight file for adjoint computation ---*/
 
-    FuncGrad_file.precision(15);
+    FuncGrad_file.precision(config->GetOutput_Precision());
 
-    if (output) {
 
-      FuncGrad_file.open("WeightNF.dat", ios::out);
+    FuncGrad_file.open("WeightNF.dat", ios::out);
 
-      FuncGrad_file << scientific << "-1.0";
+    FuncGrad_file << scientific << "-1.0";
+    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
+    FuncGrad_file << "\n";
+
+    for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
+      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
+      FuncGrad_file << scientific << XcoordRot;
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
+        FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
       FuncGrad_file << "\n";
-
-      for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
-        su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-        FuncGrad_file << scientific << XcoordRot;
-        for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-          FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
-        FuncGrad_file << "\n";
-      }
-      FuncGrad_file.close();
-
     }
+    FuncGrad_file.close();
 
   }
-
 
   /*--- Send the value of the NearField coefficient to all the processors ---*/
 
