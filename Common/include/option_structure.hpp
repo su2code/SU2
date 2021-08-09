@@ -540,13 +540,15 @@ MakePair("ONESPECIES", ONESPECIES)
 /*!
  * \brief types of coefficient transport model
  */
-enum ENUM_TRANSCOEFFMODEL {
-  WILKE      = 0,
-  GUPTAYOS   = 1
+enum class TRANSCOEFFMODEL {
+  WILKE,
+  GUPTAYOS,
+  CHAPMANN_ENSKOG
 };
-static const MapType<std::string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
-MakePair("WILKE", WILKE)
-MakePair("GUPTA-YOS", GUPTAYOS)
+static const MapType<std::string, TRANSCOEFFMODEL> TransCoeffModel_Map = {
+MakePair("WILKE", TRANSCOEFFMODEL::WILKE)
+MakePair("GUPTA-YOS", TRANSCOEFFMODEL::GUPTAYOS)
+MakePair("CHAPMANN-ENSKOG", TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
 };
 
 /*!
