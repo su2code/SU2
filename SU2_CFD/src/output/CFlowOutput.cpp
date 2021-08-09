@@ -794,11 +794,11 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   ofstream EquivArea_file, FuncGrad_file;
   unsigned short iMarker = 0;
-  su2double Gamma, auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX, Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFuntion,
-  *Face_Normal = nullptr, auxArea, auxPress, Mach, Beta, R_Plane, Pressure_Inf, factor,
-  jFunction, jp1Function;
+  su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX,
+    Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFunction,
+    *Face_Normal = nullptr, auxArea, auxPress, jFunction, jp1Function;
   unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
-  auxDomain;
+    auxDomain;
   unsigned short iPhiAngle;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
 
@@ -809,13 +809,13 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
 
-  Mach  = config->GetMach();
-  Gamma = config->GetGamma();
-  Beta = sqrt(Mach*Mach-1.0);
-  R_Plane = fabs(config->GetEA_IntLimit(2));
-  Pressure_Inf = config->GetPressure_FreeStreamND();
+  const su2double Mach  = config->GetMach();
+  const su2double Gamma = config->GetGamma();
+  const su2double Beta = sqrt(Mach*Mach-1.0);
+  const su2double R_Plane = fabs(config->GetEA_IntLimit(2));
+  const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
 
-  factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
+  const su2double factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
 
   if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 
@@ -1057,8 +1057,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
           jp1Function = factor*(Pressure_PhiAngle[iPhiAngle][jVertex+1] - Pressure_Inf)*sqrt(Coord_i-jp1Coord);
 
           DeltaX = (jp1Coord-Coord_j);
-          MeanFuntion = 0.5*(jp1Function + jFunction);
-          EquivArea_PhiAngle[iPhiAngle][iVertex] += DeltaX * MeanFuntion;
+          MeanFunction = 0.5*(jp1Function + jFunction);
+          EquivArea_PhiAngle[iPhiAngle][iVertex] += DeltaX * MeanFunction;
         }
       }
     }
