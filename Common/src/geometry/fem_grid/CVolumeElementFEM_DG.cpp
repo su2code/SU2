@@ -131,28 +131,5 @@ void CVolumeElementFEM_DG::SetConstantSolution(const su2double *sol,
 
     /*--- Set the first entry of solDOFs to the constant solution. ---*/
     solDOFs(0,ii) = sol[iVar]*invBasis0;
-
-    // TEST
-    ColMajorMatrix<su2double> &dParDx = metricTermsInt[0];
-    ColMajorMatrix<su2double> &dParDy = metricTermsInt[1];
-    ColMajorMatrix<su2double> &dParDz = metricTermsInt[2];
-
-    int signR = 1, signS = 1, signT = 1;
-    if((dParDx(0,0) < -1.e-6) || (dParDy(0,0) < -1.e-6) || (dParDz(0,0) < -1.e-6)) signR = -1;
-    if((dParDx(0,1) < -1.e-6) || (dParDy(0,1) < -1.e-6) || (dParDz(0,1) < -1.e-6)) signS = -1;
-    if((dParDx(0,2) < -1.e-6) || (dParDy(0,2) < -1.e-6) || (dParDz(0,2) < -1.e-6)) signT = -1;
-
-    for(unsigned short i=1; i<nDOFs; ++i)
-      solDOFs(i,ii) = 0.02*solDOFs(0,ii);
-
-    solDOFs(1,ii) *= signR;
-    solDOFs(2,ii) *= signS;
-    solDOFs(3,ii) *= signR*signS;
-    solDOFs(4,ii) *= signT;
-    solDOFs(5,ii) *= signR*signT;
-    solDOFs(6,ii) *= signS*signT;
-    solDOFs(7,ii) *= signR*signS*signT;
-    // END TEST
   }
-  
 }

@@ -1533,6 +1533,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       SU2_MPI::Isend(sendBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][i]);
     }
+    END_SU2_OMP_FOR
 
     /*--- OpenMP loop over the number of ranks from which data is received. ---*/
     SU2_OMP_FOR_STAT(1)
@@ -1628,6 +1629,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
         }
       }
     }
+    END_SU2_OMP_FOR
   }
 
 #endif
@@ -1840,6 +1842,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       SU2_MPI::Isend(recvBuf, ii, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                      &commRequests[timeLevel][i]);
     }
+    END_SU2_OMP_FOR
 
     /*--- Post the non-blocking receives. As this is the reverse communication,
           a loop over the sending ranks must be carried out. ---*/
@@ -1904,30 +1907,35 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 
     /*--- Loop over the received residual data from all ranks and update the
           residual of the DOFs of the corresponding elements. Note that in
-          reverse mode the send communication data must be used. ---*/
-    SU2_OMP(for schedule(static,1) SU2_NOWAIT)
-    for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
-      unsigned long ii = 0;
+          reverse mode the send communication data must be used.
+          To avoid a race condition in the update, the loop below must
+          be carried out by a single thread. ---*/
+    SU2_OMP_SINGLE
+    {
+      for(unsigned long i=0; i<ranksSendMPI[timeLevel].size(); ++i) {
+        unsigned long ii = 0;
 
-      /*--- Loop over the elements that must be updated. ---*/
-      su2double *sendBuf = commSendBuf[timeLevel][i].data();
-      for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
-        const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
-        const unsigned long nItems = volElem[jj].nDOFsSol;
+        /*--- Loop over the elements that must be updated. ---*/
+        su2double *sendBuf = commSendBuf[timeLevel][i].data();
+        for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
+          const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
+          const unsigned long nItems = volElem[jj].nDOFsSol;
 
-        /*--- Set the reference for the residual, depending on the situation. ---*/
-        ColMajorMatrix<su2double> &res = ADER ? volElem[jj].resTotDOFsADER
-                                              : volElem[jj].resDOFs;
+          /*--- Set the reference for the residual, depending on the situation. ---*/
+          ColMajorMatrix<su2double> &res = ADER ? volElem[jj].resTotDOFsADER
+                                                : volElem[jj].resDOFs;
 
-        /*--- Update the residuals of the DOFs. ---*/
-        for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-          SU2_OMP_SIMD_IF_NOT_AD
-          for(unsigned long mm=0; mm<nItems; ++mm)
-            res(mm,iVar) += sendBuf[mm+ii];
-          ii += nItems;
+          /*--- Update the residuals of the DOFs. ---*/
+          for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+            SU2_OMP_SIMD_IF_NOT_AD
+            for(unsigned long mm=0; mm<nItems; ++mm)
+              res(mm,iVar) += sendBuf[mm+ii];
+            ii += nItems;
+          }
         }
       }
     }
+    END_SU2_OMP_SINGLE
   }
 #endif
 
@@ -1935,15 +1943,10 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
   /*---               Carry out the self communication.                 ---*/
   /*-----------------------------------------------------------------------*/
 
-  /*--- Determine the chunk size for the OMP loops, if supported. ---*/
-  const unsigned long nSelfCom = elementsSendSelfComm[timeLevel].size();
-#ifdef HAVE_OMP
-  const size_t omp_chunk_size_elem = computeStaticChunkSize(nSelfCom, omp_get_num_threads(), 64);
-#endif
-
-  /*--- Loop over the elements for self-communication. ---*/
-  SU2_OMP_FOR_STAT(omp_chunk_size_elem)
-  for(unsigned long i=0; i<nSelfCom; ++i) {
+  /*--- Loop over the elements for self-communication. Also this loop must
+        be carried out by a single thread to avoid a race condition. ---*/
+  SU2_OMP_SINGLE
+  for(unsigned long i=0; i<elementsSendSelfComm[timeLevel].size(); ++i) {
     const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
     const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
     const unsigned long nItems = volElem[elemS].nDOFsSol;
@@ -1961,13 +1964,20 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
         resS(j,iVar) += resR(j,iVar);
     }
   }
-  END_SU2_OMP_FOR
+  END_SU2_OMP_SINGLE
 
   /*-----------------------------------------------------------------------*/
   /*---   Initialize the halo residuals for this time level for ADER.   ---*/
   /*-----------------------------------------------------------------------*/
 
   if( ADER ) {
+
+#ifdef HAVE_OMP
+    const unsigned long nHaloElem = nVolElemHaloPerTimeLevel[timeLevel+1]
+                                  - nVolElemHaloPerTimeLevel[timeLevel];
+    const size_t omp_chunk_size_halo = computeStaticChunkSize(nHaloElem, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_halo)
     for(unsigned long i=nVolElemHaloPerTimeLevel[timeLevel];
                       i<nVolElemHaloPerTimeLevel[timeLevel+1]; ++i)
       volElem[i].resTotDOFsADER.setConstant(0.0);
@@ -2490,11 +2500,6 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
             and the element type, must be taken into account. ---*/
       const passivedouble factInv = volElem[l].standardElemFlow->GetFactorInviscidSpectralRadius();
       volElem[l].deltaTime = CFL*volElem[l].lenScale/(factInv*sqrt(charVel2Max));
-
-      // TEST
-      volElem[l].deltaTime = 0.01;
-      //volElem[l].deltaTime = 1.e-25;
-      // END TEST
 
       /*--- Update the minimum and maximum value, for which the factor for
             time accurate local time stepping must be taken into account. ---*/
@@ -4450,31 +4455,13 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     /*--- Compute the new state. ---*/
     const unsigned short nDOFs = volElem[l].standardElemFlow->GetNDOFs();
 
-    // TEST
-    //for(unsigned short i=0; i<nDOFs; ++i)
-    //  std::cout << volElem[l].solDOFs(i,4) << std::endl;
-    // END TEST
-    //std::cout << std::endl;
-
     for(unsigned short j=0; j<nVar; ++j) {
-
       SU2_OMP_SIMD
       for(unsigned short i=0; i<nDOFs; ++i)
         solNew(i,j) = volElem[l].solDOFs(i,j) - tmp*volElem[l].resDOFs(i,j);
     }
-
-    // TEST
-    //std::cout << std::endl;
-    //std::cout << "Global elem ID: " << volElem[l].elemIDGlobal << std::endl;
-    //for(unsigned short i=0; i<nDOFs; ++i)
-    //  std::cout << i << " " << volElem[l].resDOFs(i,0) << std::endl;
-    // END TEST
   }
   END_SU2_OMP_FOR
-
-  // TEST
-  //std::exit(1);
-  // END TEST
 
   /*--- Test for the last RK step. ---*/
   if(iRKStep == (nRKStages-1)) {
