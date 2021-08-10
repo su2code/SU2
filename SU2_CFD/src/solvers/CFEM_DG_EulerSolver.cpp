@@ -2623,6 +2623,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
           to make sure that a communication is completed in case there are no
           other tasks ---*/
     for(unsigned short j=0; j<2; ++j) {
+
       bool taskCarriedOut = false;
       for(unsigned long i=lowestIndexInList; i<tasksList.size(); ++i) {
 
@@ -2633,6 +2634,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
           if( !taskCompleted[tasksList[i].indMustBeCompleted[ind]] )
             taskCanBeCarriedOut = false;
         }
+        SU2_OMP_BARRIER
 
         if( taskCanBeCarriedOut ) {
 
