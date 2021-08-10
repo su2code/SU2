@@ -3317,9 +3317,9 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       case 3: {
 
         /*--- Three dimensional simulation. Easier storage of the metric terms. ---*/
-            ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
-            ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
-            ColMajorMatrix<su2double> &dParDz = volElem[l].metricTermsInt[2];
+        ColMajorMatrix<su2double> &dParDx = volElem[l].metricTermsInt[0];
+        ColMajorMatrix<su2double> &dParDy = volElem[l].metricTermsInt[1];
+        ColMajorMatrix<su2double> &dParDz = volElem[l].metricTermsInt[2];
 
         /*--- Loop over the padded number of integration points, such that vectorization
               is more efficient, and compute the fluxes in r-, s- and t-direction. ---*/
@@ -4460,8 +4460,19 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
       for(unsigned short i=0; i<nDOFs; ++i)
         solNew(i,j) = volElem[l].solDOFs(i,j) - tmp*volElem[l].resDOFs(i,j);
     }
+
+    // TEST
+    //std::cout << std::endl;
+    //std::cout << "Global elem ID: " << volElem[l].elemIDGlobal << std::endl;
+    //for(unsigned short i=0; i<nDOFs; ++i)
+    //  std::cout << i << " " << volElem[l].resDOFs(i,0) << std::endl;
+    // END TEST
   }
   END_SU2_OMP_FOR
+
+  // TEST
+  //std::exit(1);
+  // END TEST
 
   /*--- Test for the last RK step. ---*/
   if(iRKStep == (nRKStages-1)) {
@@ -5083,6 +5094,331 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
   /*--- Make a distinction between the several Riemann solvers. ---*/
   switch( config->GetRiemann_Solver_FEM() ) {
 
+    case ISMAIL_ROE: {
+
+      /*--- Entropy satisfying Riemann flux of Ismail and Roe.
+            Values to scale the acoustic eigenvalues to obtain an adequate amount
+            of dissipation to be entropy satisfying in the Ismail_Roe flux. Note
+            that only beta is taken, assuming that the jump in Mach number over the
+            interface is less than 0.5. For alphaMax = 0 the EC1 flux is obtained. ---*/
+      const su2double beta     = 1.0/6.0;
+      //const su2double alphaMax = 2.0;
+      const su2double alphaMax = 0.0;
+
+      /*--- Some more constants involving Gamma. ---*/
+      const su2double gp1Ovg = (Gamma+1.0)/Gamma;
+      const su2double gm1Ovg = gm1/Gamma;
+
+      /*--- Make a distinction between two and three space dimensions
+            in order to have the most efficient code. ---*/
+      switch( nDim ) {
+
+        case 2: {
+
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  the Jacobian (which is the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double Area = JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0), rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1), uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2), vR   = solRight(i,2);
+            const su2double pL   = solLeft(i,3), pR   = solRight(i,3);
+
+            /*--- Compute the total energy of the left and right state. ---*/
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR);
+
+            /*--- Compute the entropy variables of the left and right state. ---*/
+            const su2double sL    = log(pL/pow(rhoL,Gamma));
+            const su2double pInvL = 1.0/pL;
+
+            const su2double V3L = -pInvL*rhoL;
+            const su2double V2L = -V3L*vL;
+            const su2double V1L = -V3L*uL;
+            const su2double V0L = (Gamma-sL)*ovgm1 + 0.5*V3L*(uL*uL + vL*vL);
+
+            const su2double sR    = log(pR/pow(rhoR,Gamma));
+            const su2double pInvR = 1.0/pR;
+
+            const su2double V3R = -pInvR*rhoR;
+            const su2double V2R = -V3R*vR;
+            const su2double V1R = -V3R*uR;
+            const su2double V0R = (Gamma-sR)*ovgm1 + 0.5*V3R*(uR*uR + vR*vR);
+
+            /*--- Compute the z-variables of the left and right states. ---*/
+            const su2double z0L = sqrt(rhoL/pL), z0R = sqrt(rhoR/pR);
+            const su2double z1L = uL*z0L,        z1R = uR*z0R;
+            const su2double z2L = vL*z0L,        z2R = vR*z0R;
+            const su2double z3L = sqrt(rhoL*pL), z3R = sqrt(rhoR*pR);
+
+            /*--- Compute the arithmetic average of the z-variables. ---*/
+            const su2double z0Avg = 0.5*(z0L + z0R);
+            const su2double z1Avg = 0.5*(z1L + z1R);
+            const su2double z2Avg = 0.5*(z2L + z2R);
+            const su2double z3Avg = 0.5*(z3L + z3R);
+
+            /*--- Compute the logarithmic mean of z0. ---*/
+            su2double zeta, f, u, F;
+
+            zeta = z0L/z0R;
+            f    = (zeta-1.0)/(zeta+1.0);
+            u    = f*f;
+            if(u < (su2double) 0.01)
+              F = 1.0 + u/3.0 + u*u/5.0 + u*u*u/7.0 + u*u*u*u/9.0;
+            else
+              F = log(zeta)/(2.0*f);
+
+            const su2double z0LogAvg = z0Avg/F;
+
+            /*--- Compute the logarithmic mean of z3. ---*/
+            zeta = z3L/z3R;
+            f    = (zeta-1.0)/(zeta+1.0);
+            u    = f*f;
+            if(u < (su2double) 0.01)
+              F = 1.0 + u/3.0 + u*u/5.0 + u*u*u/7.0 + u*u*u*u/9.0;
+            else
+              F = log(zeta)/(2.0*f);
+
+            const su2double z3LogAvg = z3Avg/F;
+
+            /*--- Compute the other averaged quantities that are necessary. ---*/
+            const su2double oneOvz0Avg = 1.0/z0Avg;
+            const su2double rhoAvg = z0Avg*z3LogAvg;
+            const su2double p1Avg  = oneOvz0Avg*z3Avg;
+            const su2double p2Avg  = 0.5*(gp1Ovg*z3LogAvg/z0LogAvg + gm1Ovg*p1Avg);
+            const su2double uAvg   = oneOvz0Avg*z1Avg;
+            const su2double vAvg   = oneOvz0Avg*z2Avg;
+
+            const su2double vnAvg  = uAvg*nx + vAvg*ny;
+            const su2double unAvg  = vnAvg - gridVelNorm;
+            const su2double kinAvg = 0.5*(uAvg*uAvg + vAvg*vAvg);
+            const su2double a2Avg  = Gamma*p2Avg/rhoAvg;
+            const su2double aAvg   = sqrt(a2Avg);
+            const su2double HAvg   = a2Avg*ovgm1 + kinAvg;
+            const su2double EAvg   = HAvg - p2Avg/rhoAvg;
+
+            const su2double ovaAvg  = 1.0/aAvg;
+            const su2double ova2Avg = 1.0/a2Avg;
+
+            /*--- Compute the difference in entropy variables. ---*/
+            const su2double dV0 = V0R - V0L, dV1 = V1R - V1L, dV2 = V2R - V2L,
+                            dV3 = V3R - V3L;
+
+            /*--- Define the difference in conservative variables as dU/dV deltaV, where the
+                  transformation matrix dU/dV must be evaluated at the averaged state. ---*/
+            su2double abv1 = rhoAvg*(uAvg*dV1 + vAvg*dV2);
+            su2double abv2 = abv1 + rhoAvg*(dV0 + HAvg*dV3);
+
+            const su2double dr  = abv1 + rhoAvg*(dV0 + EAvg*dV3);
+            const su2double dru = uAvg*abv2 + p2Avg*dV1;
+            const su2double drv = vAvg*abv2 + p2Avg*dV2;
+            const su2double drE = HAvg*abv1 + rhoAvg*EAvg*(dV0 + HAvg*dV3)
+                                + p2Avg*kinAvg*dV3;
+
+            /*--- Compute the absolute values of the eigenvalues of the flux Jacobian. ---*/
+            su2double lam1 = fabs(unAvg + aAvg);
+            su2double lam2 = fabs(unAvg - aAvg);
+            su2double lam3 = fabs(unAvg);
+
+            /*--- Scale the acoustic eigenvalue, such that the EC2 (or EC1) flux of Ismail
+                  and Roe is obtained. Also multiply all eigenvalues by half to obtain
+                  the correct scaling. ---*/
+            lam1 *= 0.5*(1.0 + beta + alphaMax);
+            lam2 *= 0.5*(1.0 + beta + alphaMax);
+            lam3 *= 0.5;
+
+            /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
+            abv1 = 0.5*(lam1 + lam2);
+            abv2 = 0.5*(lam1 - lam2);
+
+            const su2double abv3 = abv1 - lam3;
+            const su2double abv4 = gm1*(kinAvg*dr - uAvg*dru - vAvg*drv + drE);
+            const su2double abv5 = nx*dru + ny*drv - vnAvg*dr;
+            const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+            const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+            /*--- Compute the fluxes. ---*/
+            fluxes(i,0) = Area*(rhoAvg*unAvg - lam3*dr -abv6);
+            fluxes(i,1) = Area*(rhoAvg*unAvg*uAvg + p1Avg*nx - lam3*dru - uAvg*abv6 - nx*abv7);
+            fluxes(i,2) = Area*(rhoAvg*unAvg*vAvg + p1Avg*ny - lam3*drv - vAvg*abv6 - ny*abv7);
+            fluxes(i,3) = Area*(rhoAvg*unAvg*HAvg + p2Avg*gridVelNorm  - lam3*drE - HAvg*abv6 - vnAvg*abv7);
+          }
+
+          break;
+        }
+
+        /*--------------------------------------------------------------------*/
+
+        case 3: {
+
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  the Jacobian (which is the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double nz = normalsFace(i,2);
+            const su2double Area = JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny
+                                        + gridVelocities(i,2)*nz;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0), rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1), uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2), vR   = solRight(i,2);
+            const su2double wL   = solLeft(i,3), wR   = solRight(i,3);
+            const su2double pL   = solLeft(i,4), pR   = solRight(i,4);
+
+            /*--- Compute the total energy of the left and right state. ---*/
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL + wL*wL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR + wR*wR);
+
+            /*--- Compute the entropy variables of the left and right state. ---*/
+            const su2double sL    = log(pL/pow(rhoL,Gamma));
+            const su2double pInvL = 1.0/pL;
+
+            const su2double V4L = -pInvL*rhoL;
+            const su2double V3L = -V4L*wL;
+            const su2double V2L = -V4L*vL;
+            const su2double V1L = -V4L*uL;
+            const su2double V0L = (Gamma-sL)*ovgm1 + 0.5*V4L*(uL*uL + vL*vL + wL*wL);
+
+            const su2double sR    = log(pR/pow(rhoR,Gamma));
+            const su2double pInvR = 1.0/pR;
+
+            const su2double V4R = -pInvR*rhoR;
+            const su2double V3R = -V4R*wR;
+            const su2double V2R = -V4R*vR;
+            const su2double V1R = -V4R*uR;
+            const su2double V0R = (Gamma-sR)*ovgm1 + 0.5*V4R*(uR*uR + vR*vR + wR*wR);
+
+            /*--- Compute the z-variables of the left and right states. ---*/
+            const su2double z0L = sqrt(rhoL/pL), z0R = sqrt(rhoR/pR);
+            const su2double z1L = uL*z0L,        z1R = uR*z0R;
+            const su2double z2L = vL*z0L,        z2R = vR*z0R;
+            const su2double z3L = wL*z0L,        z3R = wR*z0R;
+            const su2double z4L = sqrt(rhoL*pL), z4R = sqrt(rhoR*pR);
+
+            /*--- Compute the arithmetic average of the z-variables. ---*/
+            const su2double z0Avg = 0.5*(z0L + z0R);
+            const su2double z1Avg = 0.5*(z1L + z1R);
+            const su2double z2Avg = 0.5*(z2L + z2R);
+            const su2double z3Avg = 0.5*(z3L + z3R);
+            const su2double z4Avg = 0.5*(z4L + z4R);
+
+            /*--- Compute the logarithmic mean of z0. ---*/
+            su2double zeta, f, u, F;
+
+            zeta = z0L/z0R;
+            f    = (zeta-1.0)/(zeta+1.0);
+            u    = f*f;
+            if(u < (su2double) 0.01)
+              F = 1.0 + u/3.0 + u*u/5.0 + u*u*u/7.0 + u*u*u*u/9.0;
+            else
+              F = log(zeta)/(2.0*f);
+
+            const su2double z0LogAvg = z0Avg/F;
+
+            /*--- Compute the logarithmic mean of z4. ---*/
+            zeta = z4L/z4R;
+            f    = (zeta-1.0)/(zeta+1.0);
+            u    = f*f;
+            if(u < (su2double) 0.01)
+              F = 1.0 + u/3.0 + u*u/5.0 + u*u*u/7.0 + u*u*u*u/9.0;
+            else
+              F = log(zeta)/(2.0*f);
+
+            const su2double z4LogAvg = z4Avg/F;
+
+            /*--- Compute the other averaged quantities that are necessary. ---*/
+            const su2double oneOvz0Avg = 1.0/z0Avg;
+            const su2double rhoAvg = z0Avg*z4LogAvg;
+            const su2double p1Avg  = oneOvz0Avg*z4Avg;
+            const su2double p2Avg  = 0.5*(gp1Ovg*z4LogAvg/z0LogAvg + gm1Ovg*p1Avg);
+            const su2double uAvg   = oneOvz0Avg*z1Avg;
+            const su2double vAvg   = oneOvz0Avg*z2Avg;
+            const su2double wAvg   = oneOvz0Avg*z3Avg;
+
+            const su2double vnAvg  = uAvg*nx + vAvg*ny + wAvg*nz;
+            const su2double unAvg  = vnAvg - gridVelNorm;
+            const su2double kinAvg = 0.5*(uAvg*uAvg + vAvg*vAvg + wAvg*wAvg);
+            const su2double a2Avg  = Gamma*p2Avg/rhoAvg;
+            const su2double aAvg   = sqrt(a2Avg);
+            const su2double HAvg   = a2Avg*ovgm1 + kinAvg;
+            const su2double EAvg   = HAvg - p2Avg/rhoAvg;
+
+            const su2double ovaAvg  = 1.0/aAvg;
+            const su2double ova2Avg = 1.0/a2Avg;
+
+            /*--- Compute the difference in entropy variables. ---*/
+            const su2double dV0 = V0R - V0L, dV1 = V1R - V1L, dV2 = V2R - V2L,
+                            dV3 = V3R - V3L, dV4 = V4R - V4L;
+
+            /*--- Define the difference in conservative variables as dU/dV deltaV, where the
+                  transformation matrix dU/dV must be evaluated at the averaged state. ---*/
+            su2double abv1 = rhoAvg*(uAvg*dV1 + vAvg*dV2 + wAvg*dV3);
+            su2double abv2 = abv1 + rhoAvg*(dV0 + HAvg*dV4);
+
+            const su2double dr  = abv1 + rhoAvg*(dV0 + EAvg*dV4);
+            const su2double dru = uAvg*abv2 + p2Avg*dV1;
+            const su2double drv = vAvg*abv2 + p2Avg*dV2;
+            const su2double drw = wAvg*abv2 + p2Avg*dV3;
+            const su2double drE = HAvg*abv1 + rhoAvg*EAvg*(dV0 + HAvg*dV4)
+                                + p2Avg*kinAvg*dV4;
+
+            /*--- Compute the absolute values of the eigenvalues of the flux Jacobian. ---*/
+            su2double lam1 = fabs(unAvg + aAvg);
+            su2double lam2 = fabs(unAvg - aAvg);
+            su2double lam3 = fabs(unAvg);
+
+            /*--- Scale the acoustic eigenvalue, such that the EC2 (or EC1) flux of Ismail
+                  and Roe is obtained. Also multiply all eigenvalues by half to obtain
+                  the correct scaling. ---*/
+            lam1 *= 0.5*(1.0 + beta + alphaMax);
+            lam2 *= 0.5*(1.0 + beta + alphaMax);
+            lam3 *= 0.5;
+
+            /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
+            abv1 = 0.5*(lam1 + lam2);
+            abv2 = 0.5*(lam1 - lam2);
+
+            const su2double abv3 = abv1 - lam3;
+            const su2double abv4 = gm1*(kinAvg*dr - uAvg*dru - vAvg*drv - wAvg*drw + drE);
+            const su2double abv5 = nx*dru + ny*drv + nz*drw - vnAvg*dr;
+            const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+            const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+            /*--- Compute the fluxes. ---*/
+            fluxes(i,0) = Area*(rhoAvg*unAvg - lam3*dr -abv6);
+            fluxes(i,1) = Area*(rhoAvg*unAvg*uAvg + p1Avg*nx - lam3*dru - uAvg*abv6 - nx*abv7);
+            fluxes(i,2) = Area*(rhoAvg*unAvg*vAvg + p1Avg*ny - lam3*drv - vAvg*abv6 - ny*abv7);
+            fluxes(i,3) = Area*(rhoAvg*unAvg*wAvg + p1Avg*nz - lam3*drw - wAvg*abv6 - nz*abv7);
+            fluxes(i,4) = Area*(rhoAvg*unAvg*HAvg + p2Avg*gridVelNorm  - lam3*drE - HAvg*abv6 - vnAvg*abv7);
+          }
+
+          break;
+        }
+      }
+
+      break;
+    }
+
     case ROE: {
 
       /*--- Roe's approximate Riemann solver. Easier storage of the cut off
@@ -5205,7 +5541,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
 
             /*--- Compute the normal grid velocity. ---*/
             const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny
-                                        + gridVelocities(i,2)*ny;
+                                        + gridVelocities(i,2)*nz;
 
             /*--- Easier storage of the primitive variables of
                   the left and right state. ---*/
@@ -5306,12 +5642,123 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig                   *c
 
         case 2: {
 
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  half the Jacobian (which is half the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double halfArea = 0.5*JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0),  rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1),  uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2),  vR   = solRight(i,2);
+            const su2double pL   = solLeft(i,3),  pR   = solRight(i,3);
+
+            /*--- Compute the speed of sound squared and the total energy of
+                  the left and right state. ---*/
+            const su2double a2L = Gamma*pL/rhoL;
+            const su2double a2R = Gamma*pR/rhoR;
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR);
+
+            /*--- Compute the difference of the conservative mean flow variables. ---*/
+            const su2double dr  = rhoR    - rhoL;
+            const su2double dru = rhoR*uR - rhoL*uL;
+            const su2double drv = rhoR*vR - rhoL*vL;
+            const su2double drE = rER     - rEL;
+
+            /*--- Compute the spectral radii of the left and right state
+                  and take the maximum for the dissipation terms. ---*/
+            const su2double vnL = uL*nx + vL*ny;
+            const su2double vnR = uR*nx + vR*ny;
+            const su2double unL = vnL - gridVelNorm;
+            const su2double unR = vnR - gridVelNorm;
+
+            const su2double radL = fabs(unL) + sqrt(fabs(a2L));
+            const su2double radR = fabs(unR) + sqrt(fabs(a2R));
+            const su2double rad  = max(radL, radR);
+
+            /*--- Compute the flux vector, which is 0.5*(FL + FR - rad(UR-UL)). ---*/
+            const su2double pa = pL + pR;
+
+            fluxes(i,0) = halfArea*(rhoL*unL + rhoR*unR - rad*dr);
+            fluxes(i,1) = halfArea*(rhoL*uL*unL + rhoR*uR*unR + pa*nx - rad*dru);
+            fluxes(i,2) = halfArea*(rhoL*vL*unL + rhoR*vR*unR + pa*ny - rad*drv);
+            fluxes(i,3) = halfArea*(rEL*unL + rER*unR + pL*vnL + pR*vnR - rad*drE);
+          }
+
           break;
         }
 
         /*--------------------------------------------------------------------*/
 
         case 3: {
+
+          /*--- Loop over the items. ---*/
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(unsigned int i=0; i<nItems; ++i) {
+
+            /*--- Easier storage of the components of the unit normal and
+                  half the Jacobian (which is half the area of the face). ---*/
+            const su2double nx = normalsFace(i,0);
+            const su2double ny = normalsFace(i,1);
+            const su2double nz = normalsFace(i,2);
+            const su2double halfArea = 0.5*JacobiansFace(i);
+
+            /*--- Compute the normal grid velocity. ---*/
+            const su2double gridVelNorm = gridVelocities(i,0)*nx + gridVelocities(i,1)*ny
+                                        + gridVelocities(i,2)*nz;
+
+            /*--- Easier storage of the primitive variables of
+                  the left and right state. ---*/
+            const su2double rhoL = solLeft(i,0), rhoR = solRight(i,0);
+            const su2double uL   = solLeft(i,1), uR   = solRight(i,1);
+            const su2double vL   = solLeft(i,2), vR   = solRight(i,2);
+            const su2double wL   = solLeft(i,3), wR   = solRight(i,3);
+            const su2double pL   = solLeft(i,4), pR   = solRight(i,4);
+
+            /*--- Compute the speed of sound squared and the total energy of
+                  the left and right state. ---*/
+            const su2double a2L = Gamma*pL/rhoL;
+            const su2double a2R = Gamma*pR/rhoR;
+            const su2double rEL = ovgm1*pL + 0.5*rhoL*(uL*uL + vL*vL + wL*wL);
+            const su2double rER = ovgm1*pR + 0.5*rhoR*(uR*uR + vR*vR + wR*wR);
+
+            /*--- Compute the difference of the conservative mean flow variables. ---*/
+            const su2double dr  = rhoR    - rhoL;
+            const su2double dru = rhoR*uR - rhoL*uL;
+            const su2double drv = rhoR*vR - rhoL*vL;
+            const su2double drw = rhoR*wR - rhoL*wL;
+            const su2double drE = rER     - rEL;
+
+            /*--- Compute the spectral radii of the left and right state
+                  and take the maximum for the dissipation terms. ---*/
+            const su2double vnL = uL*nx + vL*ny + wL*nz;
+            const su2double vnR = uR*nx + vR*ny + wR*nz;
+            const su2double unL = vnL - gridVelNorm;
+            const su2double unR = vnR - gridVelNorm;
+
+            const su2double radL = fabs(unL) + sqrt(fabs(a2L));
+            const su2double radR = fabs(unR) + sqrt(fabs(a2R));
+            const su2double rad  = max(radL, radR);
+
+            /*--- Compute the flux vector, which is 0.5*(FL + FR - rad(UR-UL)). ---*/
+            const su2double pa  = pL + pR;
+
+            fluxes(i,0) = halfArea*(rhoL*unL + rhoR*unR - rad*dr);
+            fluxes(i,1) = halfArea*(rhoL*uL*unL + rhoR*uR*unR + pa*nx - rad*dru);
+            fluxes(i,2) = halfArea*(rhoL*vL*unL + rhoR*vR*unR + pa*ny - rad*drv);
+            fluxes(i,3) = halfArea*(rhoL*wL*unL + rhoR*wR*unR + pa*nz - rad*drw);
+            fluxes(i,4) = halfArea*(rEL*unL + rER*unR + pL*vnL + pR*vnR - rad*drE);
+          }
 
           break;
         }
