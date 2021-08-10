@@ -2037,8 +2037,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       if(e1 < nVolElemTot) {
         const unsigned short timeLevel = min(volElem[e0].timeLevel,
                                              volElem[e1].timeLevel);
-        if(e1 < nVolElemOwned) ++nMatchingFacesInternal[timeLevel+1];
-        else                   ++nMatchingFacesWithHaloElem[timeLevel+1];
+        if(max(e0,e1) < nVolElemOwned) ++nMatchingFacesInternal[timeLevel+1];
+        else                           ++nMatchingFacesWithHaloElem[timeLevel+1];
       }
       else ++nNonMatchingFaces;
     }
