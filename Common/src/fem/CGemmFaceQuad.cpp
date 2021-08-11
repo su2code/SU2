@@ -53,12 +53,12 @@ CGemmFaceQuad::CGemmFaceQuad(const int val_M, const int val_Type, const int val_
 
       /*--- Try to find the combination of K and M in mapFunctions. If not found,
             write a clear error message that this tensor product is not supported. ---*/
-      CUnsignedShort2T KM(K, M);
-      auto MI = mapFunctions.find(KM);
+      CUnsignedShort2T MK(M, K);
+      auto MI = mapFunctions.find(MK);
       if(MI == mapFunctions.end()) {
         std::ostringstream message;
-        message << "The tensor product TensorProductSurfaceIntPoints2D_" << K
-                << "_" << M << " not created by the automatic source code "
+        message << "The tensor product TensorProductSurfaceIntPoints2D_" << M
+                << "_" << K << " not created by the automatic source code "
                 << "generator. Modify this automatic source code creator";
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
