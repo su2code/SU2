@@ -132,6 +132,9 @@ void CreateMapTensorProductSurfaceResVolumeDOFs2D(map<CUnsignedShort2T, TPDR2D> 
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceResVolumeDOFs2D_8_8);
 
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 11;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceResVolumeDOFs2D_8_11);
+
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 12;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceResVolumeDOFs2D_8_12);
 

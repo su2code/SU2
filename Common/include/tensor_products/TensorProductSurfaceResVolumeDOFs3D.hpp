@@ -887,6 +887,32 @@ void TensorProductSurfaceResVolumeDOFs3D_8_8(const int           N,
 /*!
  * \brief Function, which carries out the tensor product to update the residual
  *        in the 3D DOFs of a hex from the data in the 2D integration points
+ *        of a quad adjacent to the hex for (nDOFs1D,nInt1D) = (8,11).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex on which the quad data are defined
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the quad.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  ATt0       - Component of the A transpose tensor in the first tangential direction.
+ * \param[in]  ATt1       - Component of the A transpose tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the residual in the integration points of the quad.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceResVolumeDOFs3D_8_11(const int           N,
+                                              const int           faceID,
+                                              const int           ldb,
+                                              const int           ldc,
+                                              const bool          swapTanDir,
+                                              const passivedouble *An,
+                                              const passivedouble *ATt0,
+                                              const passivedouble *ATt1,
+                                              const su2double     *B,
+                                              su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to update the residual
+ *        in the 3D DOFs of a hex from the data in the 2D integration points
  *        of a quad adjacent to the hex for (nDOFs1D,nInt1D) = (8,12).
  * \param[in]  N          - Number of variables to be determined in the integration points
  * \param[in]  faceID     - Face ID of the hex on which the quad data are defined

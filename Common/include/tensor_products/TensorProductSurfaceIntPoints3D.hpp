@@ -154,6 +154,31 @@ void TensorProductSurfaceIntPoints3D_1_5(const int           N,
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,1).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_1(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
  *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,2).
  * \param[in]  N          - Number of variables to be determined in the integration points
  * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
@@ -242,6 +267,306 @@ void TensorProductSurfaceIntPoints3D_2_4(const int           N,
  * \param[out] C          - Result of the tensor product C = A*B.
  */
 void TensorProductSurfaceIntPoints3D_2_5(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,6).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_6(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,7).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_7(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,8).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_8(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,9).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_9(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,10).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_10(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,11).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_11(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,12).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_12(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,13).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_13(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,14).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_14(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (2,15).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_2_15(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (3,1).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_3_1(const int           N,
+                                         const int           faceID,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const bool          swapTanDir,
+                                         const passivedouble *An,
+                                         const passivedouble *At0,
+                                         const passivedouble *At1,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (3,2).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_3_2(const int           N,
                                          const int           faceID,
                                          const int           ldb,
                                          const int           ldc,
@@ -851,6 +1176,31 @@ void TensorProductSurfaceIntPoints3D_8_8(const int           N,
                                          const passivedouble *At1,
                                          const su2double     *B,
                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 2D integration points adjacent to a hex for (nDOFs1D,nInt1D) = (8,11).
+ * \param[in]  N          - Number of variables to be determined in the integration points
+ * \param[in]  faceID     - Face ID of the hex for which the quad data must be created
+ * \param[in]  ldb        - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc        - Leading dimension of C when stored as a matrix.
+ * \param[in]  swapTanDir - Whether or not to swap the tangential directions of the result.
+ * \param[in]  An         - Component of the A tensor normal to the face.
+ * \param[in]  At0        - Component of the A tensor in the first tangential direction.
+ * \param[in]  At1        - Component of the A tensor in the second tangential direction.
+ * \param[in]  B          - Tensor, which contains the data to be interpolated.
+ * \param[out] C          - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints3D_8_11(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const bool          swapTanDir,
+                                          const passivedouble *An,
+                                          const passivedouble *At0,
+                                          const passivedouble *At1,
+                                          const su2double     *B,
+                                          su2double           *C);
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data

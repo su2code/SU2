@@ -241,6 +241,216 @@ void TensorProductVolumeIntPoints3D_2_5(const int           N,
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,6).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_6(const int           N,
+                                        const int           ldb,
+                                        const int           ldc,
+                                        const passivedouble *Ai,
+                                        const passivedouble *Aj,
+                                        const passivedouble *Ak,
+                                        const su2double     *B,
+                                        su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,7).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_7(const int           N,
+                                        const int           ldb,
+                                        const int           ldc,
+                                        const passivedouble *Ai,
+                                        const passivedouble *Aj,
+                                        const passivedouble *Ak,
+                                        const su2double     *B,
+                                        su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,8).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_8(const int           N,
+                                        const int           ldb,
+                                        const int           ldc,
+                                        const passivedouble *Ai,
+                                        const passivedouble *Aj,
+                                        const passivedouble *Ak,
+                                        const su2double     *B,
+                                        su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,9).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_9(const int           N,
+                                        const int           ldb,
+                                        const int           ldc,
+                                        const passivedouble *Ai,
+                                        const passivedouble *Aj,
+                                        const passivedouble *Ak,
+                                        const su2double     *B,
+                                        su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,10).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_10(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,11).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_11(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,12).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_12(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,13).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_13(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,14).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_14(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (2,15).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_2_15(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
  *        in the 3D integration points for (nDOFs1D,nInt1D) = (3,1).
  * \param[in]  N   - Number of variables to be determined in the integration points
  * \param[in]  ldb - Leading dimension of B when stored as a matrix.
@@ -1165,6 +1375,69 @@ void TensorProductVolumeIntPoints3D_8_8(const int           N,
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (8,9).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_8_9(const int           N,
+                                        const int           ldb,
+                                        const int           ldc,
+                                        const passivedouble *Ai,
+                                        const passivedouble *Aj,
+                                        const passivedouble *Ak,
+                                        const su2double     *B,
+                                        su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (8,10).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_8_10(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (8,11).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_8_11(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
  *        in the 3D integration points for (nDOFs1D,nInt1D) = (8,12).
  * \param[in]  N   - Number of variables to be determined in the integration points
  * \param[in]  ldb - Leading dimension of B when stored as a matrix.
@@ -1351,6 +1624,27 @@ void TensorProductVolumeIntPoints3D_10_14(const int           N,
                                           const passivedouble *Ak,
                                           const su2double     *B,
                                           su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 3D integration points for (nDOFs1D,nInt1D) = (11,8).
+ * \param[in]  N   - Number of variables to be determined in the integration points
+ * \param[in]  ldb - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc - Leading dimension of C when stored as a matrix.
+ * \param[in]  Ai  - I-componnent of the A tensor.
+ * \param[in]  Aj  - J-componnent of the A tensor.
+ * \param[in]  Ak  - K-componnent of the A tensor.
+ * \param[in]  B   - Tensor, which contains the data to be interpolated.
+ * \param[out] C   - Result of the tensor product C = A*B.
+ */
+void TensorProductVolumeIntPoints3D_11_8(const int           N,
+                                         const int           ldb,
+                                         const int           ldc,
+                                         const passivedouble *Ai,
+                                         const passivedouble *Aj,
+                                         const passivedouble *Ak,
+                                         const su2double     *B,
+                                         su2double           *C);
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data

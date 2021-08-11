@@ -757,6 +757,28 @@ void TensorProductSurfaceResVolumeDOFs2D_8_8(const int           N,
 /*!
  * \brief Function, which carries out the tensor product to update the residual
  *        in the 2D DOFs of a quad from the data in the 1D integration points
+ *        of a line adjacent to the quad for (nDOFs1D,nInt1D) = (8,11).
+ * \param[in]  N      - Number of variables to be determined in the integration points
+ * \param[in]  faceID - Face ID of the quad on which the line data are defined
+ * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  ATt    - Component of the A transpose tensor tangential to the line.
+ * \param[in]  B      - Tensor, which contains the residual in the integration points of the line.
+ * \param[out] C      - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceResVolumeDOFs2D_8_11(const int           N,
+                                              const int           faceID,
+                                              const int           ldb,
+                                              const int           ldc,
+                                              const passivedouble *An,
+                                              const passivedouble *ATt,
+                                              const su2double     *B,
+                                              su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to update the residual
+ *        in the 2D DOFs of a quad from the data in the 1D integration points
  *        of a line adjacent to the quad for (nDOFs1D,nInt1D) = (8,12).
  * \param[in]  N      - Number of variables to be determined in the integration points
  * \param[in]  faceID - Face ID of the quad on which the line data are defined

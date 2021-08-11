@@ -57,10 +57,11 @@
       1D integration points, respectively, for the 1st pair, K2 and M2 for
       the second pair, etc. So the number of DOFs and integration points are
       separated by - and the pairs by a _. ---*/
-const std::string Pairs = "1-2_1-3_1-4_1-5_2-2_2-3_2-4_2-5_3-3_3-4_3-5_3-6_"
-                          "3-7_3-8_4-4_4-5_4-6_4-7_4-8_5-5_5-6_5-7_5-8_6-6_"
-                          "6-7_6-8_6-9_7-7_7-8_7-9_7-12_8-8_8-12_8-13_9-9_"
-                          "9-13_9-14_10-10_10-14";
+const std::string Pairs = "1-2_1-3_1-4_1-5_2-1_2-2_2-3_2-4_2-5_2-6_2-7_2-8_"
+                          "2-9_2-10_2-11_2-12_2-13_2-14_2-15_3-1_3-2_3-3_"
+                          "3-4_3-5_3-6_3-7_3-8_4-4_4-5_4-6_4-7_4-8_5-5_5-6_"
+                          "5-7_5-8_6-6_6-7_6-8_6-9_7-7_7-8_7-9_7-12_8-8_"
+                          "8-11_8-12_8-13_9-9_9-13_9-14_10-10_10-14";
 
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
