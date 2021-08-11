@@ -545,24 +545,37 @@ public:
   vector<passivedouble> GetVolumeCoordinates();
 
   /*!
-   * \brief Get the solution state vector of a specified marker.
+   * \brief Get the primitive state vector of a specified marker.
    * \param[in] iMarker - Marker identifier.
-   * \return States (vector) at the marker.
+   * \return Primitive states (vector) at the marker.
    */
-  vector<passivedouble> GetStates(unsigned short iMarker);
+  vector<passivedouble> GetPrimitiveStates(unsigned short iMarker);
+
+  /*!
+   * \brief Get the conservative state vector.
+   * \return Conservative states (vector) at each cell in fluid mesh.
+   */
+  vector<passivedouble> GetStates();
 
   /*!
    * \brief Get the conservative state vector of a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Conservative states (vector) at the marker.
    */
-  vector<passivedouble> GetConservativeStates(unsigned short iMarker);
+  vector<passivedouble> GetSurfaceStates(unsigned short iMarker);
 
   /*!
    * \brief Get vector of flow residuals.
    * \return Flow residuals (vector) at each cell in fluid mesh.
    */
   vector<passivedouble> GetResiduals();
+
+   /*!
+   * \brief Get vector of flow residuals at the specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Flow residuals (vector) at the marker.
+   */
+  vector<passivedouble> GetSurfaceResiduals(unsigned short iMarker);
 
   /*!
    * \brief Get the AIP parameters at the specified marker.
@@ -584,7 +597,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \param[in] states - User-defined conservative states vector.
    */
-  void SetConservativeStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> states);
+  void SetStates(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> states);
 
   /*!
    * \brief Set new angle of attack based on user-input.
