@@ -54,15 +54,15 @@
 
 /*--- Define the string, which contains the combinations of number of DOFs
       and integration points in 1D for which the code must be generated for
-      the 2D tensor product. The convention is as follows:
+      the 3D tensor product. The convention is as follows:
       K1-M1_K2-M2_K3-M3_....., where K1 and M1 are the number of 1D DOFs and
       1D integration points, respectively, for the 1st pair, K2 and M2 for
       the second pair, etc. So the number of DOFs and integration points are
       separated by - and the pairs by a _. ---*/
-const std::string Pairs = "2-1_3-1_4-1_5-1_2-2_3-2_4-2_5-2_3-3_4-3_5-3_6-3_"
-                          "7-3_8-3_4-4_5-4_6-4_7-4_8-4_5-5_6-5_7-5_8-5_6-6_"
-                          "7-6_8-6_9-6_7-7_8-7_9-7_12-7_8-8_12-8_13-8_9-9_"
-                          "13-9_14-9_10-10_14-10";
+const std::string Pairs = "1-2_1-3_1-4_1-5_2-2_2-3_2-4_2-5_3-3_3-4_3-5_3-6_"
+                          "3-7_3-8_4-4_4-5_4-6_4-7_4-8_5-5_5-6_5-7_5-8_6-6_"
+                          "6-7_6-8_6-9_7-7_7-8_7-9_7-12_8-8_8-12_8-13_9-9_"
+                          "9-13_9-14_10-10_10-14";
 
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
@@ -195,7 +195,7 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
     includeFile << "/*!" << std::endl;
     includeFile << " * \\brief Function, which carries out the tensor product to update the residual" << std::endl;
     includeFile << " *        in the 2D DOFs of a quad from the data in the 1D integration points" << std::endl;
-    includeFile << " *        of a line adjacent to the quad for (nInt1D,nDOFs1D) = ("
+    includeFile << " *        of a line adjacent to the quad for (nDOFs1D,nInt1D) = ("
                 << nDOFs1D[i] << "," << nInt1D[i] << ")." << std::endl;
     includeFile << " * \\param[in]  N      - Number of variables to be determined in the integration points" << std::endl;
     includeFile << " * \\param[in]  faceID - Face ID of the quad on which the line data are defined" << std::endl;

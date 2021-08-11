@@ -126,8 +126,11 @@ void CreateMapTensorProductSurfaceIntPoints3D(map<CUnsignedShort2T, TPIS3D> &map
   nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints3D_7_9);
 
-  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 8;
-  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints3D_7_8);
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 12;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints3D_7_12);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 8;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints3D_8_8);
 
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 12;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints3D_8_12);

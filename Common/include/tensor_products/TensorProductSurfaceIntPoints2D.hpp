@@ -682,7 +682,7 @@ void TensorProductSurfaceIntPoints2D_7_9(const int           N,
 
 /*!
  * \brief Function, which carries out the tensor product to obtain the data
- *        in the 1D integration points adjacent to a quad for (nDOFs1D,nInt1D) = (7,8).
+ *        in the 1D integration points adjacent to a quad for (nDOFs1D,nInt1D) = (7,12).
  * \param[in]  N      - Number of variables to be determined in the integration points
  * \param[in]  faceID - Face ID of the quad for which the line data must be created
  * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
@@ -692,7 +692,28 @@ void TensorProductSurfaceIntPoints2D_7_9(const int           N,
  * \param[in]  B      - Tensor, which contains the data to be interpolated.
  * \param[out] C      - Result of the tensor product C = A*B.
  */
-void TensorProductSurfaceIntPoints2D_7_8(const int           N,
+void TensorProductSurfaceIntPoints2D_7_12(const int           N,
+                                          const int           faceID,
+                                          const int           ldb,
+                                          const int           ldc,
+                                          const passivedouble *An,
+                                          const passivedouble *At,
+                                          const su2double     *B,
+                                          su2double           *C);
+
+/*!
+ * \brief Function, which carries out the tensor product to obtain the data
+ *        in the 1D integration points adjacent to a quad for (nDOFs1D,nInt1D) = (8,8).
+ * \param[in]  N      - Number of variables to be determined in the integration points
+ * \param[in]  faceID - Face ID of the quad for which the line data must be created
+ * \param[in]  ldb    - Leading dimension of B when stored as a matrix.
+ * \param[in]  ldc    - Leading dimension of C when stored as a matrix.
+ * \param[in]  An     - Component of the A tensor normal to the line.
+ * \param[in]  At     - Component of the A tensor tangential to the line.
+ * \param[in]  B      - Tensor, which contains the data to be interpolated.
+ * \param[out] C      - Result of the tensor product C = A*B.
+ */
+void TensorProductSurfaceIntPoints2D_8_8(const int           N,
                                          const int           faceID,
                                          const int           ldb,
                                          const int           ldc,
