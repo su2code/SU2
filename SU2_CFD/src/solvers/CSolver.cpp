@@ -3528,12 +3528,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short nVar_Turb = 0;
   if (config->GetKind_Turb_Model() != NONE) nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
+  unsigned short nVar_Scalar = 0;
+  if (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL) nVar_Scalar = solver[MESH_0][SCALAR_SOL]->GetnVar();
+
   /*--- names of the columns in the profile ---*/
   vector<string> columnNames;
   vector<string> columnValues;
-
-  unsigned int nVar_Scalar = 0;
-  if (config->GetKind_FluidModel()!=NO_SCALAR_MODEL) nVar_Scalar = solver[MESH_0][SCALAR_SOL]->GetnVar();
 
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
