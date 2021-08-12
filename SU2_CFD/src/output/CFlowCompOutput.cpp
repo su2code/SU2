@@ -25,13 +25,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
   scalar_model = config->GetKind_Scalar_Model();
@@ -771,7 +770,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(solver, geometry, config, false);
+  SetAnalyzeSurface(flow_solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

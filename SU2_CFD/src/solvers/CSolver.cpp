@@ -4236,7 +4236,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 }
 
 void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
-  
+
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   const bool unsteady            = config->GetTime_Domain();
   const string filename          = config->GetlibROMbase_FileName();
@@ -4248,38 +4248,38 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
   bool incremental = false;
 
   if (!u_basis_generator) {
-    
+
     /*--- Define SVD basis generator ---*/
     auto timesteps = static_cast<int>(nTimeIter - TimeIter);
     CAROM::Options svd_options = CAROM::Options(dim, timesteps, -1,
                                                 false, true).setMaxBasisDimension(int(maxBasisDim));
-    
+
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
       if (rank == MASTER_NODE) std::cout << "Creating static basis generator." << std::endl;
-      
+
       if (unsteady) {
         if (rank == MASTER_NODE) std::cout << "Incremental basis generator recommended for unsteady simulations." << std::endl;
       }
     }
     else {
       if (rank == MASTER_NODE) std::cout << "Creating incremental basis generator." << std::endl;
-      
+
       svd_options.setIncrementalSVD(1.0e-3, config->GetDelta_UnstTime(),
                                     1.0e-2, config->GetDelta_UnstTime()*nTimeIter, true).setDebugMode(false);
       incremental = true;
     }
-    
+
     u_basis_generator.reset(new CAROM::BasisGenerator(
       svd_options, incremental,
       filename));
-    
+
     // Save mesh ordering
     std::ofstream f;
     f.open(filename + "_mesh_" + to_string(rank) + ".csv");
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         unsigned long globalPoint = geometry->nodes->GetGlobalIndex(iPoint);
         auto Coord = geometry->nodes->GetCoord(iPoint);
-        
+
         for (unsigned long iDim; iDim < nDim; iDim++) {
           f << Coord[iDim] << ", ";
         }
@@ -4294,31 +4294,31 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
     su2double t =  config->GetCurrent_UnstTime();
     u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
   }
-   
+
   /*--- End collection of data and save POD ---*/
-  
+
   if (converged) {
-  
+
     if (!unsteady) {
        // dt is different for each node, so just use a placeholder dt
        su2double dt = base_nodes->GetDelta_Time(0);
        su2double t = dt*TimeIter;
        u_basis_generator->takeSample(const_cast<su2double*>(base_nodes->GetSolution().data()), t, dt);
     }
-    
+
     if (config->GetKind_PODBasis() == POD_KIND::STATIC) {
       u_basis_generator->writeSnapshot();
     }
-    
+
     if (rank == MASTER_NODE) std::cout << "Computing SVD" << std::endl;
     int rom_dim = u_basis_generator->getSpatialBasis()->numColumns();
-    
+
     if (rank == MASTER_NODE) std::cout << "Basis dimension: " << rom_dim << std::endl;
     u_basis_generator->endSamples();
-    
+
     if (rank == MASTER_NODE) std::cout << "ROM Sampling ended" << std::endl;
   }
-  
+
 #else
   SU2_MPI::Error("SU2 was not compiled with libROM support.", CURRENT_FUNCTION);
 #endif

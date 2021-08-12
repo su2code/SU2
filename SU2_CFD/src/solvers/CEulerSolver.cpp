@@ -1887,6 +1887,8 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
    *    further reduction if function is called in parallel ---*/
   unsigned long nonPhysicalPoints = 0;
 
+  AD::StartNoSharedReading();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -1900,6 +1902,8 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, c
     if (!physical) nonPhysicalPoints++;
   }
   END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
 
   return nonPhysicalPoints;
 }
@@ -1992,6 +1996,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -2177,6 +2187,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
+
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
     if (implicit)
@@ -2285,6 +2299,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   if (body_force) {
 
     /*--- Loop over all points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2303,6 +2318,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
   }
 
   if (rotating_frame) {
@@ -2313,6 +2329,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     SetRotatingFrame_GCL(geometry, config);
 
     /*--- Loop over all points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2334,6 +2351,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     }
     END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
   }
 
   if (axisymmetric) {
@@ -2344,6 +2362,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
 
     /*--- loop over points ---*/
+    AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -2388,7 +2407,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
+
+  AD::StartNoSharedReading();
 
   if (gravity) {
 
@@ -2493,6 +2516,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
   }
 
+  AD::EndNoSharedReading();
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
