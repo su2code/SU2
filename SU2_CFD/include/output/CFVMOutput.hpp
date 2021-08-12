@@ -34,12 +34,7 @@ protected:
   /*!
    * \brief Constructor of the class
    */
-  CFVMOutput(CConfig *config, unsigned short nDim, bool femOutput);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFVMOutput(void) = default;
+  CFVMOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Add Coordinates to output.

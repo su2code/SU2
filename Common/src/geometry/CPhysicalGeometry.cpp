@@ -7701,7 +7701,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
 
       const auto nNodes = bound[iMarker][iElem]->GetnNodes();
 
-      AD::StartPreacc();
+      /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+      if (omp_get_num_threads() == 1) AD::StartPreacc();
 
       /*--- Get pointers to the coordinates of all the element nodes ---*/
       array<const su2double*, N_POINTS_MAXIMUM> Coord;
