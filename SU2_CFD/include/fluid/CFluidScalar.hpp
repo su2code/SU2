@@ -21,8 +21,9 @@ private:
   std::vector<su2double> specificHeat;                /*!< \brief Specific heat of all species. */
   std::vector<su2double> laminarthermalConductivity;  /*!< \brief Laminar thermal conductivity of all species. */
 
-  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[100];  // How to fix this such that I don't need to hardcode the size?
-  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[100];
+  static const int ARRAYSIZE = 100;
+  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
+  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
 
   /*!
    * \brief Convert mass fractions to mole fractions.

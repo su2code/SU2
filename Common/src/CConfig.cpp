@@ -3685,65 +3685,72 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  /*--- Set default values for various fluid properties. ---*/
+
+  static const su2double Molecular_Weight_Default = 28.96;
+  static const su2double Mu_Constant_Default = 1.716E-5;
+  static const su2double Mu_Ref_Default = Mu_Constant_Default;
+  static const su2double Mu_Temperature_Ref_Default = 273.15;
+  static const su2double Mu_S_Default = 110.4;
+  static const su2double Specific_Heat_Cp_Default = 1004.73;
+  static const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
+  static const su2double Prandtl_Lam_Default = 0.72;
+  static const su2double Prandtl_Turb_Default = 0.9;
+
   if (Molecular_Weight == nullptr){
     Molecular_Weight = new su2double[1];
-    Molecular_Weight[0] = 28.96;
+    Molecular_Weight[0] = Molecular_Weight_Default;
   }
 
   if (Mu_Constant == nullptr){
     Mu_Constant = new su2double[1];
-    Mu_Constant[0] = 1.716E-5;
-  }
-
-  if (Specific_Heat_Cp == nullptr){
-    Specific_Heat_Cp = new su2double[1];
-    Specific_Heat_Cp[0] = 1004.703;
-  }
-
-  if (Thermal_Conductivity_Constant == nullptr){
-    Thermal_Conductivity_Constant = new su2double[1];
-    Thermal_Conductivity_Constant[0] = 2.57E-2;
-  }
-
-  if (Prandtl_Turb == nullptr){
-    Prandtl_Turb = new su2double[1];
-    Prandtl_Turb[0] = 0.9;
-  }
-
-  if (Prandtl_Lam == nullptr){
-    Prandtl_Lam = new su2double[1];
-    Prandtl_Lam[0] = 0.72;
+    Mu_Constant[0] = Mu_Constant_Default;
   }
 
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr){
     Mu_Ref = new su2double[1];
     Mu_Temperature_Ref = new su2double[1];
     Mu_S = new su2double[1];
-    Mu_Ref[0] = 1.716E-5;
-    Mu_Temperature_Ref[0] = 273.15;
-    Mu_S[0] = 110.4;
+    Mu_Ref[0] = Mu_Ref_Default;
+    Mu_Temperature_Ref[0] = Mu_Temperature_Ref_Default;
+    Mu_S[0] = Mu_S_Default;
+  }
+
+  if (Specific_Heat_Cp == nullptr){
+    Specific_Heat_Cp = new su2double[1];
+    Specific_Heat_Cp[0] = Specific_Heat_Cp_Default;
+  }
+
+  if (Thermal_Conductivity_Constant == nullptr){
+    Thermal_Conductivity_Constant = new su2double[1];
+    Thermal_Conductivity_Constant[0] = Thermal_Conductivity_Constant_Default;
+  }
+
+  if (Prandtl_Lam == nullptr){
+    Prandtl_Lam = new su2double[1];
+    Prandtl_Lam[0] = Prandtl_Lam_Default;
+  }
+
+  if (Prandtl_Turb == nullptr){
+    Prandtl_Turb = new su2double[1];
+    Prandtl_Turb[0] = Prandtl_Turb_Default;
   }
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
 
-    static const su2double Mu_Constant_Default_SI = 1.716E-5;
-    static const su2double Mu_Temperature_Ref_Default_SI = 273.15;
-    static const su2double Mu_S_Default_SI = 110.4;
-    static const su2double Thermal_Conductivity_Constant_Default_SI = 0.0257;
-
     /* Correct the viscosities, if they contain the default SI values. */
     for(unsigned short iVar = 0; iVar < n_species; iVar++){
-      if(fabs(Mu_Constant[iVar]-Mu_Constant_Default_SI) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
-      if(fabs(Mu_Ref[iVar]-Mu_Constant_Default_SI)      < 1.0E-15) Mu_Ref[iVar]      /= 47.88025898;
+      if(fabs(Mu_Constant[iVar]-Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
+      if(fabs(Mu_Ref[iVar]-Mu_Constant_Default)      < 1.0E-15) Mu_Ref[iVar]      /= 47.88025898;
 
       /* Correct the values with temperature dimension, if they contain the default SI values. */
-      if(fabs(Mu_Temperature_Ref[iVar]-Mu_Temperature_Ref_Default_SI) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
-      if(fabs(Mu_S[iVar]-Mu_S_Default_SI)                < 1.0E-8) Mu_S[iVar]               *= 1.8;
+      if(fabs(Mu_Temperature_Ref[iVar]-Mu_Temperature_Ref_Default) < 1.0E-8) Mu_Temperature_Ref[iVar] *= 1.8;
+      if(fabs(Mu_S[iVar]-Mu_S_Default)                < 1.0E-8) Mu_S[iVar]               *= 1.8;
 
       /* Correct the thermal conductivity, if it contains the default SI value. */
-      if(fabs(Thermal_Conductivity_Constant[iVar]-Thermal_Conductivity_Constant_Default_SI) < 1.0E-10) Thermal_Conductivity_Constant[iVar] *= 0.577789317;
+      if(fabs(Thermal_Conductivity_Constant[iVar]-Thermal_Conductivity_Constant_Default) < 1.0E-10) Thermal_Conductivity_Constant[iVar] *= 0.577789317;
     }
   }
 

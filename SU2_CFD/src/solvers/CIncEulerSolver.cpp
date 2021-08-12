@@ -266,8 +266,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   su2double *dummy_scalar;
   unsigned short n_scalars;
-  // n_scalars = 1; //To work with regression test. Get rid of maybe unitialised warning. TODO MH
-  // dummy_scalar = new su2double[n_scalars]();
   CFluidModel* auxFluidModel = nullptr;
 
   switch (config->GetKind_FluidModel()) {
@@ -316,12 +314,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       break;
 
     case MIXTURE_FLUID_MODEL:
-
-      //config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(28.965/1000.0));
+      n_scalars = config->GetNScalarsInit();
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight(n_scalars)/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       auxFluidModel = new CFluidScalar(config, Pressure_Thermodynamic);
-      n_scalars = config->GetNScalarsInit();
       dummy_scalar = new su2double[n_scalars]();
       dummy_scalar[n_scalars-1] = 1;
       auxFluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
@@ -504,14 +500,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case MIXTURE_FLUID_MODEL:
         fluidModel   = new CFluidScalar(config, Pressure_Thermodynamic);
-	n_scalars    = fluidModel->GetNScalars();
+	      n_scalars    = fluidModel->GetNScalars();
         dummy_scalar = new su2double[n_scalars]();
         fluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
         delete[] dummy_scalar;
         break;
     }
-
-    // delete[] dummy_scalar;
 
     if (viscous) {
 
