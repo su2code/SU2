@@ -34,7 +34,6 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
 
   turb_model = config->GetKind_Turb_Model();
   scalar_model = config->GetKind_Scalar_Model();
-  gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -770,7 +769,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(flow_solver, geometry, config, false);
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

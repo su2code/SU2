@@ -119,7 +119,7 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
 
 }
 
-void CFlowOutput::SetAnalyzeSurface(const CSolver *solver, const CGeometry *geometry, CConfig *config, bool output){
+void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry, CConfig *config, bool output){
 
   unsigned short iDim, iMarker, iMarker_Analyze;
   unsigned long iVertex, iPoint;
@@ -1648,6 +1648,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
               if (iVar < config->GetnPolyCoeffs() - 1) file << ", ";
             }
             file << ").\n";
+            break;
+
+          case CONDUCTIVITYMODEL::FLAMELET:
             break;
         }
 
