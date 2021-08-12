@@ -661,7 +661,7 @@ void CFlowOutput::AddAerodynamicCoefficients(CConfig *config){
   /// DESCRIPTION: Lift-to-drag ratio
   AddHistoryOutput("EFFICIENCY", "CEff", ScreenOutputFormat::FIXED, "AERO_COEFF", "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Custom objective
-  AddHistoryOutput("CUSTOM_OBJFUNC", "Custom_ObjFunc", ScreenOutputFormat::FIXED, "AERO_COEFF", "Custom objective function on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("CUSTOM_OBJFUNC", "Custom_ObjFunc", ScreenOutputFormat::FIXED, "CUSTOM", "Custom objective function on all surfaces set with MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
