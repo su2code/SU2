@@ -920,9 +920,9 @@ def update_mesh(config,state=None):
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
 
     try:
-        do_remesh   = config['ENABLE_REMESHING'] == 'YES'
+        do_remesh = config['ENABLE_REMESHING'] == 'YES'
     except:
-        pass
+        do_remesh = False
 
     if deform_set and deform_todo:
     
