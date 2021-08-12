@@ -85,7 +85,9 @@ def deform ( config, dv_new=None, dv_old=None ):
         return info
     
     # setup mesh name
-    suffix = 'deformed'
+    suffix = 'deform'
+    if konfig['ENABLE_REMESHING'] == 'YES':
+        suffix += 'ed'
     mesh_name = konfig['MESH_FILENAME']
     mesh_name_suffixed = su2io.add_suffix( mesh_name , suffix )
     konfig['MESH_OUT_FILENAME'] = mesh_name_suffixed
