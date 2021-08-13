@@ -1070,7 +1070,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     else
       NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
 
-    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
         NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
@@ -1088,7 +1088,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
       else
         NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
 
-      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+      for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
         NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
 
