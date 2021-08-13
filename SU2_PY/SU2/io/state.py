@@ -258,11 +258,13 @@ class State(ordered_bunch):
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'
         targetheatflux_name = 'TargetHeatFlux.dat'
-        lookuptable_name = config.FILENAME_LUT
+
+        special_cases = get_specialCases(config)
+        if 'FLAMELET_FLUID_MODEL' in special_cases:
+            lookuptable_name = config.FILENAME_LUT
 
         adj_map = get_adjointSuffix()
         restart = config.RESTART_SOL == 'YES'
-        special_cases = get_specialCases(config)
 
         if config.get('OPT_OBJECTIVE'):
             def_objs = config['OPT_OBJECTIVE']

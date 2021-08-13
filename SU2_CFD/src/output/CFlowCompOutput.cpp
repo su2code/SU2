@@ -25,17 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/output/CFlowCompOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
-CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
+CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
   scalar_model = config->GetKind_Scalar_Model();
-  gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -247,8 +245,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
@@ -302,6 +298,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /*--- Add Cp diff fields ---*/
 
   Add_CpInverseDesignOutput();
+
+  /*--- Add nearfield diff fields ---*/
+
+  Add_NearfieldInverseDesignOutput();
 
 }
 
@@ -788,6 +788,9 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set Cp diff fields ---*/
 
   Set_CpInverseDesign(flow_solver, geometry, config);
+
+  /*--- Set nearfield diff fields ---*/
+  if (config->GetEquivArea()) Set_NearfieldInverseDesign(flow_solver, geometry, config);
 
 }
 

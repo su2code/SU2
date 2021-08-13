@@ -201,6 +201,17 @@ def main():
     bluntbody.tol       = 0.00001
     test_list.append(bluntbody)
 
+    # Equivalent area NACA64-206
+    ea_naca64206           = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file  = "NACA64206.cfg"
+    ea_naca64206.test_iter = 10
+    ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.0]
+    ea_naca64206.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ea_naca64206.timeout   = 1600
+    ea_naca64206.tol       = 0.00001
+    test_list.append(ea_naca64206)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -210,7 +221,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360]
+    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001

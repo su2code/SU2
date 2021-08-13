@@ -29,7 +29,7 @@
 
 #include "CVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
-#include "../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable
@@ -81,6 +81,7 @@ protected:
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+  const bool implicit;      /*!< \brief Implicit flag. */
 
 public:
 

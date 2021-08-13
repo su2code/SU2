@@ -152,18 +152,6 @@ public:
   inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_CEquivArea(su2double val_cequivarea) final { Total_CEquivArea = val_cequivarea; }
-
-  /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

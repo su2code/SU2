@@ -38,22 +38,22 @@ protected:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, unsigned short nDim, bool femOutput);
+  CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Add flow surface output fields
    * \param[in] config - Definition of the particular problem.
    */
-  void AddAnalyzeSurfaceOutput(CConfig *config);
+  void AddAnalyzeSurfaceOutput(const CConfig *config);
 
   /*!
    * \brief Set flow surface output field values
    * \param[in] solver - The container holding all solution data.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in,out] config - Definition of the particular problem.
    * \param[in] output - Boolean indicating whether information should be written to screen
    */
-  void SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConfig *config, bool output);
+  void SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry, CConfig *config, bool output);
 
   /*!
    * \brief Add aerodynamic coefficients as output fields
@@ -87,6 +87,19 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Add nearfield inverse design output as history fields
+   */
+  void Add_NearfieldInverseDesignOutput();
+
+  /*!
+   * \brief Set nearfield inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
@@ -152,10 +165,9 @@ protected:
   /*!
    * \brief Write the forces breakdown file
    * \param[in] config - Definition of the particular problem per zone.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - The container holding all solution data.
+   * \param[in] flow_solver - The container holding all solution data.
    */
-  void WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container);
+  void WriteForcesBreakdown(const CConfig *config, const CSolver *flow_solver) const;
 
   /*!
    * \brief Set the time averaged output fields.

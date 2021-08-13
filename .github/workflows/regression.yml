@@ -79,6 +79,8 @@ jobs:
             tag: NoMPI
           - testscript: 'hybrid_regression.py'
             tag: OMP
+          - testscript: 'hybrid_regression_AD.py'
+            tag: OMP
     steps:
       - name: Download All artifact
         uses: actions/download-artifact@v2

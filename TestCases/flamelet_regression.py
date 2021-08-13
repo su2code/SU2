@@ -77,22 +77,6 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
 
-    ######################################
-    ### RUN SU2_SOL TESTS              ###
-    ######################################
-
-    # parallel STL output using
-    stl_writer_test                = TestCase('stl_writer_test')
-    stl_writer_test.cfg_dir        = "rans/oneram6"
-    stl_writer_test.cfg_file       = "turb_ONERAM6.cfg"
-    stl_writer_test.test_iter      = 1
-    stl_writer_test.su2_exec       = "mpirun -n 2 SU2_SOL"
-    stl_writer_test.timeout        = 1600
-    stl_writer_test.reference_file = "surface_flow.stl.ref"
-    stl_writer_test.test_file      = "surface_flow.stl"
-    pass_list.append(stl_writer_test.run_filediff())
-    test_list.append(stl_writer_test)
-
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')
