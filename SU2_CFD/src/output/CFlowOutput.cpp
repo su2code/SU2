@@ -73,8 +73,6 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutput("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total average mass fraction of CO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of NO    
   AddHistoryOutput("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total average mass fraction of NO on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average temperature
-  AddHistoryOutput("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF", "Total average temperature on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
@@ -113,8 +111,6 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   AddHistoryOutputPerSurface("AVG_CO",                   "Avg_CO",                    ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Average mass fraction of NO    
   AddHistoryOutputPerSurface("AVG_NOX",                  "Avg_NOx",                   ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Average temperature    
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  ScreenOutputFormat::SCIENTIFIC, "FLOW_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
 }
@@ -177,7 +173,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   su2double  Tot_SecondOverUniformity      = 0.0;
   su2double  Tot_Surface_CO                = 0.0;
   su2double  Tot_Surface_NOx               = 0.0;
-  su2double  Tot_Surface_Temp              = 0.0;
   //su2double  Tot_Surface_Scalar[n_scalars];
   //for (int i_scalar = 0; i_scalar < n_scalars; ++i_scalar)
   //  Tot_Surface_Scalar[i_scalar] = 0.0;
@@ -516,11 +511,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
     SetHistoryOutputPerSurfaceValue("AVG_NOX", y_NOx, iMarker_Analyze);
     Tot_Surface_NOx += y_NOx;
     config->SetSurface_NOx(iMarker_Analyze, y_NOx);
-
-    su2double temp = Surface_TotalTemperature_Total[iMarker_Analyze];
-    SetHistoryOutputPerSurfaceValue("AVG_TEMP", temp, iMarker_Analyze);
-    Tot_Surface_Temp += temp;
-    config->SetSurface_Temperature(iMarker_Analyze, temp);
   }
 
   /*--- Compute the average static pressure drop between two surfaces. Note
@@ -552,7 +542,6 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, const CGeometry *geometry,
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   SetHistoryOutputValue("AVG_CO",   Tot_Surface_CO);
   SetHistoryOutputValue("AVG_NOX",  Tot_Surface_NOx);
-  SetHistoryOutputValue("AVG_TEMP", Tot_Surface_Temp);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
