@@ -793,7 +793,7 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
   ofstream EquivArea_file, FuncGrad_file;
-  su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign, DeltaX,
+  su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX,
     Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFunction,
     *Face_Normal = nullptr, auxArea, auxPress, jFunction, jp1Function;
   unsigned long iPoint, auxPoint, auxDomain;
