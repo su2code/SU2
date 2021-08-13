@@ -799,11 +799,11 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   unsigned long iPoint, auxPoint, auxDomain;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
 
-  su2double XCoordBegin_OF = config->GetEA_IntLimit(0);
-  su2double XCoordEnd_OF = config->GetEA_IntLimit(1);
+  const su2double XCoordBegin_OF = config->GetEA_IntLimit(0);
+  const su2double XCoordEnd_OF = config->GetEA_IntLimit(1);
 
-  su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
-  su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
+  const su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
+  const su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
 
   const su2double Mach  = config->GetMach();
   const su2double Gamma = config->GetGamma();
@@ -823,7 +823,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
 
   unsigned long nLocalVertex_NearField = 0;
-  for (unsignde short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -888,7 +888,9 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
             Buffer_Send_IdPoint[nLocalVertex_NearField] = iPoint;
             Buffer_Send_Xcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 0);
             Buffer_Send_Ycoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 1);
-            Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
+            if (nDim == 3) {
+              Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->nodes->GetCoord(iPoint, 2);
+            }
             Buffer_Send_Pressure[nLocalVertex_NearField] = solver->GetNodes()->GetPressure(iPoint);
             Buffer_Send_FaceArea[nLocalVertex_NearField] = fabs(Face_Normal[nDim-1]);
             nLocalVertex_NearField++;
@@ -920,7 +922,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     vector<su2double> Weight(nVertex_NearField);
 
     nVertex_NearField = 0;
-    for (int iProcessor = 0; iProcessor < size; iProcessor++)
+    for (int iProcessor = 0; iProcessor < size; iProcessor++) {
       for (unsigned long iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         Xcoord[nVertex_NearField] = Buffer_Receive_Xcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
         Ycoord[nVertex_NearField] = Buffer_Receive_Ycoord[iProcessor*MaxLocalVertex_NearField+iVertex];
@@ -939,8 +941,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
           /*--- Compute the Azimuthal angle ---*/
 
-          su2double AngleDouble; short AngleInt;
-          AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
+          const su2double AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
 
           /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
 
@@ -949,7 +950,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
           if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1))
             AngleDouble = FixAzimuthalLine - 0.1;
 
-          AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
+          const auto AngleInt = SU2_TYPE::Short(floor(AngleDouble + 0.5));
 
           if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
           else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
@@ -962,8 +963,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
           IdDomain[nVertex_NearField] = iProcessor;
           nVertex_NearField++;
         }
-
       }
+    }
 
 
     vector<short> PhiAngleList;
@@ -1010,7 +1011,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Order the arrays (x Coordinate, Pressure, Point, and Domain) ---*/
 
-    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (unsigned long iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
         for (unsigned long jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
           if (Xcoord_PhiAngle[iPhiAngle][jVertex] > Xcoord_PhiAngle[iPhiAngle][jVertex+1]) {
@@ -1027,7 +1028,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     /*--- Check that all the azimuth lists have the same size ---*/
 
     auto nVertex = Xcoord_PhiAngle[0].size();
-    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       auto nVertex_aux = Xcoord_PhiAngle[iPhiAngle].size();
       if (nVertex_aux != nVertex) cout <<"Be careful! One azimuth list is shorter than the other.\n";
       nVertex = min(nVertex, nVertex_aux);
@@ -1035,7 +1036,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Compute equivalent area distribution at each azimuth angle ---*/
 
-    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_PhiAngle[iPhiAngle][0] = 0.0;
       for (unsigned long iVertex = 1; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         EquivArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
@@ -1106,7 +1107,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     if (TargetEA_file.fail()) {
       /*--- Set the table to 0 ---*/
-      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         for (unsigned long iVertex = 0; iVertex < TargetArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
     }
@@ -1144,7 +1145,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
         TargetArea_PhiAngle_Trans.push_back(row);
       }
 
-      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
 
@@ -1157,7 +1158,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     /*--- Evaluate the objective function ---*/
 
     InverseDesign = 0;
-    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
