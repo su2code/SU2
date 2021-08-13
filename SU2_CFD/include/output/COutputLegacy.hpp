@@ -128,15 +128,6 @@ public:
   ~COutputLegacy(void);
 
   /*!
-   * \brief Writes equivalent area.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
-
-  /*!
    * \brief Writes inverse design.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
