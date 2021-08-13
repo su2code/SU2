@@ -793,19 +793,15 @@ void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
   ofstream EquivArea_file, FuncGrad_file;
-  unsigned short iMarker = 0;
-  su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX,
+  su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign, DeltaX,
     Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFunction,
     *Face_Normal = nullptr, auxArea, auxPress, jFunction, jp1Function;
-  unsigned long jVertex, iVertex, iPoint, nVertex_NearField = 0, auxPoint,
-    auxDomain;
-  unsigned short iPhiAngle;
+  unsigned long iPoint, auxPoint, auxDomain;
   ofstream NearFieldEA_file; ifstream TargetEA_file;
 
   su2double XCoordBegin_OF = config->GetEA_IntLimit(0);
   su2double XCoordEnd_OF = config->GetEA_IntLimit(1);
 
-  unsigned short nDim = geometry->GetnDim();
   su2double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   su2double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
 
@@ -819,9 +815,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   if (rank == MASTER_NODE) cout << "Writing Equivalent Area files." << endl ;
 
-  unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
-  int iProcessor;
-
   vector<unsigned long> Buffer_Receive_nVertex;
   if (rank == MASTER_NODE) {
     Buffer_Receive_nVertex.resize(size);
@@ -829,10 +822,10 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
 
-  nLocalVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  unsigned long nLocalVertex_NearField = 0;
+  for (unsignde short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Coord = geometry->nodes->GetCoord(iPoint);
@@ -843,6 +836,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
       }
 
   /*--- Send Near-Field vertex information --*/
+  unsigned long MaxLocalVertex_NearField, nVertex_NearField;
 
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
@@ -882,9 +876,9 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
 
   nLocalVertex_NearField = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Coord = geometry->nodes->GetCoord(iPoint);
@@ -926,8 +920,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     vector<su2double> Weight(nVertex_NearField);
 
     nVertex_NearField = 0;
-    for (iProcessor = 0; iProcessor < size; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+    for (int iProcessor = 0; iProcessor < size; iProcessor++)
+      for (unsigned long iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         Xcoord[nVertex_NearField] = Buffer_Receive_Xcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
         Ycoord[nVertex_NearField] = Buffer_Receive_Ycoord[iProcessor*MaxLocalVertex_NearField+iVertex];
 
@@ -975,7 +969,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     vector<short> PhiAngleList;
     vector<short>::iterator IterPhiAngleList;
 
-    for (iVertex = 0; iVertex < nVertex_NearField; iVertex++)
+    for (unsigned long iVertex = 0; iVertex < nVertex_NearField; iVertex++)
       PhiAngleList.push_back(AzimuthalAngle[iVertex]);
 
     sort( PhiAngleList.begin(), PhiAngleList.end());
@@ -998,8 +992,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Distribute the values among the different PhiAngles ---*/
 
-    for (iVertex = 0; iVertex < nVertex_NearField; iVertex++)
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+    for (unsigned long iVertex = 0; iVertex < nVertex_NearField; iVertex++)
+      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         if (AzimuthalAngle[iVertex] == PhiAngleList[iPhiAngle]) {
           Xcoord_PhiAngle[iPhiAngle].push_back(Xcoord[iVertex]);
           Ycoord_PhiAngle[iPhiAngle].push_back(Ycoord[iVertex]);
@@ -1016,9 +1010,9 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Order the arrays (x Coordinate, Pressure, Point, and Domain) ---*/
 
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
-        for (jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
+    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
+        for (unsigned long jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
           if (Xcoord_PhiAngle[iPhiAngle][jVertex] > Xcoord_PhiAngle[iPhiAngle][jVertex+1]) {
             auxXCoord = Xcoord_PhiAngle[iPhiAngle][jVertex]; Xcoord_PhiAngle[iPhiAngle][jVertex] = Xcoord_PhiAngle[iPhiAngle][jVertex+1]; Xcoord_PhiAngle[iPhiAngle][jVertex+1] = auxXCoord;
             auxYCoord = Ycoord_PhiAngle[iPhiAngle][jVertex]; Ycoord_PhiAngle[iPhiAngle][jVertex] = Ycoord_PhiAngle[iPhiAngle][jVertex+1]; Ycoord_PhiAngle[iPhiAngle][jVertex+1] = auxYCoord;
@@ -1032,23 +1026,23 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Check that all the azimuth lists have the same size ---*/
 
-    unsigned short nVertex = Xcoord_PhiAngle[0].size();
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      unsigned short nVertex_aux = Xcoord_PhiAngle[iPhiAngle].size();
-      if (nVertex_aux != nVertex) cout <<"Be careful!!! one azimuth list is shorter than the other"<< endl;
+    auto nVertex = Xcoord_PhiAngle[0].size();
+    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+      auto nVertex_aux = Xcoord_PhiAngle[iPhiAngle].size();
+      if (nVertex_aux != nVertex) cout <<"Be careful! One azimuth list is shorter than the other.\n";
       nVertex = min(nVertex, nVertex_aux);
     }
 
     /*--- Compute equivalent area distribution at each azimuth angle ---*/
 
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_PhiAngle[iPhiAngle][0] = 0.0;
-      for (iVertex = 1; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
+      for (unsigned long iVertex = 1; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         EquivArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
 
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][iVertex]*sin(AoA);
 
-        for (jVertex = 0; jVertex < iVertex-1; jVertex++) {
+        for (unsigned long jVertex = 0; jVertex < iVertex-1; jVertex++) {
 
           Coord_j = Xcoord_PhiAngle[iPhiAngle][jVertex]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][jVertex]*sin(AoA);
           jp1Coord = Xcoord_PhiAngle[iPhiAngle][jVertex+1]*cos(AoA) - Zcoord_PhiAngle[iPhiAngle][jVertex+1]*sin(AoA);
@@ -1075,7 +1069,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     else
       NearFieldEA_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\"";
 
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
         NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), <greek>F</greek>= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
@@ -1083,7 +1077,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     }
 
     NearFieldEA_file << "\n";
-    for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+    for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
 
       su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
       su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
@@ -1093,7 +1087,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
       else
         NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
 
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
         NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
 
@@ -1112,8 +1106,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     if (TargetEA_file.fail()) {
       /*--- Set the table to 0 ---*/
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        for (iVertex = 0; iVertex < TargetArea_PhiAngle[iPhiAngle].size(); iVertex++)
+      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+        for (unsigned long iVertex = 0; iVertex < TargetArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = 0.0;
     }
     else {
@@ -1150,8 +1144,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
         TargetArea_PhiAngle_Trans.push_back(row);
       }
 
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
+      for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+        for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
 
     }
@@ -1163,8 +1157,8 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     /*--- Evaluate the objective function ---*/
 
     InverseDesign = 0;
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
+    for (unsigned short iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
 
@@ -1178,11 +1172,11 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
 
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
         NearFieldWeight_PhiAngle[iPhiAngle][iVertex] = 0.0;
-        for (jVertex = iVertex; jVertex < EquivArea_PhiAngle[iPhiAngle].size(); jVertex++) {
+        for (unsigned long jVertex = iVertex; jVertex < EquivArea_PhiAngle[iPhiAngle].size(); jVertex++) {
           Coord_j = Xcoord_PhiAngle[iPhiAngle][jVertex];
           Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
 
@@ -1207,9 +1201,9 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     else
       EquivArea_file << "VARIABLES = \"Height (m) at r="<< R_Plane << " m. (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << "\n";
 
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_file << fixed << "ZONE T= \"<greek>F</greek>=" << PhiAngleList[iPhiAngle] << " deg.\"" << "\n";
-      for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
 
         su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
         su2double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
@@ -1235,14 +1229,14 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     FuncGrad_file.open("WeightNF.dat", ios::out);
 
     FuncGrad_file << scientific << "-1.0";
-    for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
     FuncGrad_file << "\n";
 
-    for (iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
+    for (unsigned long iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
       su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
       FuncGrad_file << scientific << XcoordRot;
-      for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+      for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
       FuncGrad_file << "\n";
     }

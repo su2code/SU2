@@ -3,7 +3,7 @@
 ## Introduction
 The purpose of this test case is to confirm equivalent area distribution and its adjoint can be calculated by SU2. Equivalent area is a distribution calculated from pressure along a line parallel to the aircraft axis. It can be used to supersonic aircraft design. See the paper below for an example of use of SU2 for supersonic aircraft design using equivalent area distribution.
 
-Palacios, F., Alonso, J. J., Colonno, M., Hicken, J., and Lukaczyk, T., "Adjoint-based method for supersonic aircraft design using equivalent area distribution," AIAA 2012-0269, 2012. DOI: 10.2514/6.2012-269
+Palacios, F., Alonso, J. J., Colonno, M., Hicken, J., and Lukaczyk, T., "Adjoint-based method for supersonic aircraft design using equivalent area distribution," AIAA 2012-0269, 2012. DOI: [10.2514/6.2012-269](https://arc.aiaa.org/doi/10.2514/6.2012-269)
 
 ## Expected outcome
 - Direct solver
@@ -36,4 +36,4 @@ A mesh has to have a circumferential boundary around the aircraft axis within th
 TargetEA.dat is required for shape optimization using equivalent area. After running direct solver, Equivalent_Area.dat is output, which can be used to define a target since it has the same format as TargetEA.dat. Equivalent area is calculated at each node on a surface with MARKER_NEARFIELD. Difference from target is calculated by sum of squared difference at each node.
 
 ## Implementation on SU2
-Equivalent area calculation function was temporarily unavailable after introduction of ver. 7.0.0. See PR1329 on Github for recovery.
+Equivalent area calculation function was temporarily unavailable after introduction of ver. 7.0.0. See [PR1329](https://github.com/su2code/SU2/pull/1329) on Github for recovery.
