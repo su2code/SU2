@@ -43,16 +43,27 @@ def main():
     #########################
 
     # Multicomponent flow with variable fluid properties 
-    multicompflow_variableprop           = TestCase('multicompflow_variableprop')
-    multicompflow_variableprop.cfg_dir   = "incomp_rans/multicomponentflow_variablefluidproperties"
-    multicompflow_variableprop.cfg_file  = "c6_cms_venturi_conference.cfg"
-    multicompflow_variableprop.test_iter = 5
-    multicompflow_variableprop.test_vals = [-5.560560,   -4.412340,   -4.090246,   -5.335476,          50,   -6.729831,          14,   -8.156767]
-    multicompflow_variableprop.su2_exec  = "mpirun -n 2 SU2_CFD"
-    multicompflow_variableprop.timeout   = 1600
-    multicompflow_variableprop.new_output = True
-    multicompflow_variableprop.tol       = 0.00001
-    test_list.append(multicompflow_variableprop)
+    multicompflow_variableprop_venturi_planar_velocityinlets           = TestCase('multicompflow_variableprop_venturi_planar_velocityinlets')
+    multicompflow_variableprop_venturi_planar_velocityinlets.cfg_dir   = "incomp_rans/multicomponentflow_variablefluidproperties"
+    multicompflow_variableprop_venturi_planar_velocityinlets.cfg_file  = "C6_pneumatic_venturi_planar_velocityinlets.cfg"
+    multicompflow_variableprop_venturi_planar_velocityinlets.test_iter = 5
+    multicompflow_variableprop_venturi_planar_velocityinlets.test_vals = [-5.560560,   -4.412340,   -4.090246,   -5.335476,          50,   -6.729831,          14,   -8.156767]
+    multicompflow_variableprop_venturi_planar_velocityinlets.su2_exec  = "mpirun -n 2 SU2_CFD"
+    multicompflow_variableprop_venturi_planar_velocityinlets.timeout   = 1600
+    multicompflow_variableprop_venturi_planar_velocityinlets.new_output = True
+    multicompflow_variableprop_venturi_planar_velocityinlets.tol       = 0.00001
+    test_list.append(multicompflow_variableprop_venturi_planar_velocityinlets)
+
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate           = TestCase('multicompflow_variableprop_venturi_planar_outlettargetmassflowrate')
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.cfg_dir   = "incomp_rans/multicomponentflow_variablefluidproperties"
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.cfg_file  = "C6_pneumatic_venturi_planar_outlettargetmassflowrate.cfg"
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.test_iter = 5
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.test_vals = [-5.880299,   -5.144728,   -5.180219,   -6.085338,          50,   -7.916586,          14,   -8.317872]
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.su2_exec  = "mpirun -n 2 SU2_CFD"
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.timeout   = 1600
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.new_output = True
+    # multicompflow_variableprop_venturi_planar_outlettargetmassflowrate.tol       = 0.00001
+    # test_list.append(multicompflow_variableprop_venturi_planar_outlettargetmassflowrate)
 
     ######################################
     ### RUN TESTS                      ###
