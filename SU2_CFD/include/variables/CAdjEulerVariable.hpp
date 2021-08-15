@@ -40,7 +40,6 @@ protected:
   MatrixType Psi;                /*!< \brief Vector of the adjoint variables. */
   MatrixType ForceProj_Vector;   /*!< \brief Vector d. */
   MatrixType ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
@@ -95,14 +94,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the interior boundary jump vector vector.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
-   */
-  inline void SetIntBoundary_Jump(unsigned long iPoint, const su2double *val_IntBoundary_Jump) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump(iPoint,iVar) = val_IntBoundary_Jump[iVar];
-  }
-
-  /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */
@@ -139,12 +130,6 @@ public:
    * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
    */
   inline su2double *GetObjFuncSource(unsigned long iPoint) final { return ObjFuncSource[iPoint]; }
-
-  /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  inline su2double *GetIntBoundary_Jump(unsigned long iPoint) final { return IntBoundary_Jump[iPoint]; }
 
   /*!
    * \brief Set the harmonic balance source term.

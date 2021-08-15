@@ -640,10 +640,9 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
 
   geometry[MESH_0]->SetPositive_ZArea(config);
 
-  /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
+  /*--- Set the and actuator disk boundary conditions, if necessary. ---*/
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    geometry[iMesh]->MatchNearField(config);
     geometry[iMesh]->MatchActuator_Disk(config);
   }
 

@@ -106,12 +106,6 @@ public:
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */
-  void MatchNearField(CConfig *config) override;
-
-  /*!
-   * \brief Mach the near field boundary condition.
-   * \param[in] config - Definition of the particular problem.
-   */
   void MatchActuator_Disk(CConfig *config) override;
 
   /*!
