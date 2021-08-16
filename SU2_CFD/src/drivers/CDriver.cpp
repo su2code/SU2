@@ -77,6 +77,7 @@
 #include "../../include/numerics/continuous_adjoint/adj_sources.hpp"
 #include "../../include/numerics/scalar/scalar_convection.hpp"
 #include "../../include/numerics/scalar/scalar_diffusion.hpp"
+#include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/scalar/scalar_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
