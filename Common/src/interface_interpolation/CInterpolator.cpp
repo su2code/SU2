@@ -157,11 +157,11 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
 
   unsigned long iVertex, kVertex;
 
-  unsigned long *uptr, nVertex, nElems, iDim, nDim, iPoint;
+  unsigned long *uptr, nVertex, nElems, iDim, iPoint;
 
   unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
 
-  nDim = geom->GetnDim();
+  const auto nDim = geom->GetnDim();
 
   /*--- If this zone has no parts of the marker, it will not participate
    * in the first part of this function (collection). ---*/
