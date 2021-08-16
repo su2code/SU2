@@ -567,7 +567,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620149, 0.505190, 0.415133]
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620171, 0.505178, 0.415313]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
     test_list.append(channel_3D)

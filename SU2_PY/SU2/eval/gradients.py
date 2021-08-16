@@ -272,7 +272,6 @@ def adjoint( func_name, config, state=None ):
 
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:
-        pull.append(files['WEIGHT_NF'])   
         pull.append(files['TARGET_EA'])
 
     # files: target pressure coefficient

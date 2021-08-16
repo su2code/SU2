@@ -976,13 +976,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Pointer to the internal boundary vector.
-   */
-  inline virtual su2double *GetIntBoundary_Jump(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \return Value of the eddy viscosity.
    */
   inline virtual su2double GetEddyViscosity(unsigned long iPoint) const { return 0.0; }
@@ -1155,13 +1148,6 @@ public:
    * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
    */
   inline virtual void SetObjFuncSource(unsigned long iPoint, const su2double *val_SetObjFuncSource) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump.
-   */
-  inline virtual void SetIntBoundary_Jump(unsigned long iPoint, const su2double *val_IntBoundary_Jump) {}
 
   /*!
    * \brief A virtual member.

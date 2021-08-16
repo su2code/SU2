@@ -434,13 +434,6 @@ public:
                          su2double delta, su2activematrix& preconditioner) const;
 
   /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
@@ -530,31 +523,6 @@ public:
                                CConfig *config,
                                unsigned short val_marker,
                                bool val_inlet_surface);
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
