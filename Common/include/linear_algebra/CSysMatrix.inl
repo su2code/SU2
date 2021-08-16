@@ -5,14 +5,14 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,16 +47,10 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_
 
   auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
   if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij, false);
+  MatrixCopy(val_block, ilu_ij);
 }
 
-template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
-
-  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
-  if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij, true);
-}
+namespace {
 
 template<class T, bool alpha, bool beta, bool transp>
 FORCEINLINE void gemv_impl(unsigned long n, unsigned long m, const T *a, const T *b, T *c) {
@@ -91,6 +85,7 @@ FORCEINLINE void gemm_impl(unsigned long n, const T *a, const T *b, T *c) {
     }
   }
 }
+} // namespace
 
 #define __MATVECPROD_SIGNATURE__(TYPE,NAME) \
 FORCEINLINE void CSysMatrix<TYPE>::NAME(const TYPE *matrix, const TYPE *vector, TYPE *product) const
@@ -112,10 +107,6 @@ MATVECPROD_SIGNATURE( MatrixVectorProductAdd ) {
 
 MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
   gemv_impl<ScalarType,false,true,false>(nVar, nEqn, matrix, vector, product);
-}
-
-MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
-  gemv_impl<ScalarType,true,true,true>(nVar, nEqn, matrix, vector, product);
 }
 
 template<class ScalarType>
@@ -140,11 +131,6 @@ MATVECPROD_SIGNATURE( MatrixVectorProductSub ) {
                                          const_cast<ScalarType*>(matrix), product );
 }
 
-MATVECPROD_SIGNATURE( MatrixVectorProductTransp ) {
-  MatrixVectorProductTranspKernelBetaOne(MatrixVectorProductTranspJitterBetaOne, const_cast<ScalarType*>(matrix),
-                                         const_cast<ScalarType*>(vector), product );
-}
-
 template<class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *matrix_a,
                                                              const ScalarType *matrix_b, ScalarType *product) const {
@@ -157,21 +143,21 @@ FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType *m
 #undef __MATVECPROD_SIGNATURE__
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs, bool transposed) const {
+FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const {
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block, transposed);
+  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block);
 
   Gauss_Elimination(block, rhs);
 }
 
 template<class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock, bool transposed) const {
+FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock) const {
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block, transposed);
+  MatrixCopy(&matrix[dia_ptr[block_i]*nVar*nVar], block);
 
   MatrixInverse(block, invBlock);
 }
@@ -181,7 +167,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned
 
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR*MAXNVAR];
-  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i]*nVar*nVar], block, false);
+  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i]*nVar*nVar], block);
 
   MatrixInverse(block, invBlock);
 }

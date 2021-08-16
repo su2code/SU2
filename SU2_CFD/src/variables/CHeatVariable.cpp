@@ -2,14 +2,14 @@
  * \file CHeatVariable.cpp
  * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,8 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
   : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
   bool low_fidelity = false;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- Initialization of heat variable ---*/
 
@@ -63,11 +63,11 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
 
   /*--- Gradient related fields ---*/
   Gradient.resize(nPoint,nVar,nDim,0.0);
-  
+
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }

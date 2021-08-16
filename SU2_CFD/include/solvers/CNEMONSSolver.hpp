@@ -2,14 +2,14 @@
  * \file CNEMONSSolver.hpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,17 +82,6 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                const CConfig *config,
-                                bool reconstruction = false) override;
-
-  /*!
-   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
-   */
-  void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                 const CConfig *config,
                                 bool reconstruction = false) override;
 

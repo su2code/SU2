@@ -1,15 +1,15 @@
 /*!
- * \file output_flow_comp_fem.cpp
+ * \file CFlowCompFEMOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,6 @@
 CFlowCompFEMOutput::CFlowCompFEMOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, true) {
 
   turb_model = config->GetKind_Turb_Model();
-
-  gridMovement = config->GetGrid_Movement();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -272,18 +270,9 @@ void CFlowCompFEMOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
 }
 
-bool CFlowCompFEMOutput::SetInit_Residuals(CConfig *config){
+bool CFlowCompFEMOutput::SetInit_Residuals(const CConfig *config){
 
-  return (config->GetTime_Marching() != STEADY && (curInnerIter == 0))||
-        (config->GetTime_Marching() == STEADY && (curTimeIter < 2));
-
-}
-
-bool CFlowCompFEMOutput::SetUpdate_Averages(CConfig *config){
-  return false;
-
-//  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+  return (config->GetTime_Marching() != TIME_MARCHING::STEADY && (curInnerIter == 0))||
+         (config->GetTime_Marching() == TIME_MARCHING::STEADY && (curTimeIter < 2));
 
 }
-
-

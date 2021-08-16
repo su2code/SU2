@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,11 +47,8 @@
 class CAvgGrad_Scalar : public CNumerics {
 protected:
   su2double
-  Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
   *Proj_Mean_GradTurbVar_Normal = nullptr,  /*!< \brief Mean_gradTurbVar DOT normal. */
-  *Proj_Mean_GradTurbVar_Edge = nullptr,    /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
   *Proj_Mean_GradTurbVar = nullptr,         /*!< \brief Mean_gradTurbVar DOT normal, corrected if required. */
-  dist_ij_2 = 0.0,                          /*!< \brief |Edge_Vector|^2 */
   proj_vector_ij = 0.0,                     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   *Flux = nullptr,                          /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,                   /*!< \brief Flux Jacobian w.r.t. node i. */

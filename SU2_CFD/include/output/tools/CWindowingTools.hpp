@@ -2,14 +2,14 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 #pragma once
 
 #include <vector>
+#include <limits>
 #include "../../../../Common/include/option_structure.hpp"
 
 class CWindowingTools{
@@ -38,7 +39,7 @@ public:
    * \param endTimeIter - Number of time steps to average over
    * \return Value of the window-weight-function at time curTimeIter with time-frame endTimeIter
    */
-  su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long curTimeIter, unsigned long endTimeIter) const;
+  static su2double GetWndWeight(WINDOW_FUNCTION windowId, unsigned long curTimeIter, unsigned long endTimeIter);
 
 protected:
   // Long time windows
@@ -47,74 +48,78 @@ protected:
   * \param endTimeIter - Number of time steps to average over
   * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
+  static su2double HannWindow(unsigned long curTimeIter, unsigned long endTimeIter);
 
   /*! \brief Returns the value of the Hann-Square-window function at time-step i with given end-time endTimeIter.
   * \param curTimeIter - Current time iteration of the solver
   * \param endTimeIter - Number of time steps to average over
   * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double HannSquaredWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
+  static su2double HannSquaredWindow(unsigned long curTimeIter, unsigned long endTimeIter);
 
   /*! \brief Returns the value of the Bump-window function at time-step i with given end-time endTimeIter.
   * \param curTimeIter - Current time iteration of the solver
   * \param endTimeIter - Number of time steps to average over
   * \return Value of the window-weight-function at time curTimeIter with end-time endTimeIter
   */
-  su2double BumpWindow(unsigned long curTimeIter, unsigned long endTimeIter) const;
+  static su2double BumpWindow(unsigned long curTimeIter, unsigned long endTimeIter);
 };
 
 class CWindowedAverage:CWindowingTools{
 private:
-  su2double val;                  /*!< \brief Value of the windowed-time average (of the instantaneous output) from starting time to the current time iteration. */
-  std::vector<su2double> values;  /*!< \brief Vector of instantatneous output values from starting time to the current time iteration.*/
+  su2double val = 0.0;                 /*!< \brief Value of the windowed-time average (of the instantaneous output) from starting time to the current time iteration. */
+  std::vector<su2double> values;       /*!< \brief Vector of instantatneous output values from starting time to the current time iteration.*/
+  unsigned long lastTimeIter = std::numeric_limits<unsigned long>::max();
 
 public:
-  CWindowedAverage();
+  /*!
+   * \brief Returns the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration
+   */
+  inline su2double GetVal() const { return val; }
 
-  /*! \brief Returns the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration
-  * \return val
-  */
-  inline su2double GetVal() const{
-    return val;
-  };
+  /*!
+   *\brief Resets the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration to 0.
+   */
+  inline void Reset() {
+    val = 0.0;
+    values.clear();
+    lastTimeIter = std::numeric_limits<unsigned long>::max();
+  }
 
-  /*! \brief Resets the value of windowed-time average (of the instantaneous output) from starting time to the current time iteration to 0.
-  */
-  void Reset();
-
-  /*! \brief Adds the instantaneous output of the current iteration to the values-vector, if the current iteration is greater or equal to the starting iteration.
-  * \param valIn - value of the instantaneous output, that should be added
-  * \param currentIter - current time Iteration
-  * \param startIter - iteration to start the windowed-time average.
-  */
+  /*!
+   * \brief Adds the instantaneous output of the current iteration to the values-vector, if the current iteration is greater or equal to the starting iteration.
+   * \param valIn - value of the instantaneous output, that should be added
+   * \param currentIter - current time Iteration
+   * \param startIter - iteration to start the windowed-time average.
+   */
   void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
-  /*! \brief Computes a windowed-time average of the values stored in the vector "values" using the windowing-function specified in enum windowId
-   *         and stores it in "val".
-  * \param windowId - specified windowing-function
-  * \return windowed-time average of the values stored in the vector "values"
-  */
+  /*!
+   * \brief Computes a windowed-time average of the values stored in the vector "values" using the windowing-function specified in enum windowId
+   *        and stores it in "val".
+   * \param windowId - specified windowing-function
+   * \return windowed-time average of the values stored in the vector "values"
+   */
   su2double WindowedUpdate(WINDOW_FUNCTION windowId);
 
 private:
   /*! \brief Computes a Square-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
   * \return  Squarewindowed-time average of the values stored in the vector "values"
   */
-  su2double NoWindowing();
+  su2double NoWindowing() const;
 
   /*! \brief Computes a Hann-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
   * \return  Squarewindowed-time average of the values stored in the vector "values"
   */
-  su2double HannWindowing();
+  su2double HannWindowing() const;
 
   /*! \brief Computes a Hann-Square-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
   * \return  Squarewindowed-time average of the values stored in the vector "values"
   */
-  su2double HannSquaredWindowing();
+  su2double HannSquaredWindowing() const;
 
   /*! \brief Computes a Bump-windowed-time average of the values stored in the vector "values" with the Midpoint-integration rule (for consistency with the adjoint solver).
   * \return  Squarewindowed-time average of the values stored in the vector "values"
   */
-  su2double BumpWindowing();
+  su2double BumpWindowing() const;
 };

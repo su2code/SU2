@@ -2,14 +2,14 @@
  * \file CSurfaceFEMDataSorter.cpp
  * \brief Datasorter for FEM surfaces.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,12 +29,12 @@
 #include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, const CFEMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
 
-  this->volumeSorter = valVolumeSorter;
+  volumeSorter = valVolumeSorter;
 
   connectivitySorted = false;
 
@@ -62,18 +62,9 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
-
-CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
-
-  delete linearPartitioner;
-  delete [] passiveDoubleBuffer;
-
-}
-
-
 
 void CSurfaceFEMDataSorter::SortOutputData() {
 
@@ -136,7 +127,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = linearPartitioner->GetRankContainingIndex(globalSurfaceDOFIDs[i]);
+    unsigned long iProcessor = linearPartitioner.GetRankContainingIndex(globalSurfaceDOFIDs[i]);
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -220,19 +211,16 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nPoints = globalSurfaceDOFIDs.size();
 
-
-    delete [] passiveDoubleBuffer;
-
-
-  passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
+  delete [] dataBuffer;
+  dataBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nPoints; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
+    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner.GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
-      passiveDoubleBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
+      dataBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
   }
 
   /*--- Reduce the total number of surf points we have. This will be

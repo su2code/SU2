@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@ using namespace std;
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CLong3T {
   long long0 = 0;  /*!< \brief First long to store in this class. */
@@ -59,7 +59,7 @@ struct CLong3T {
  * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CReorderElements {
 private:
@@ -131,7 +131,7 @@ public:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class CSortFaces {
@@ -172,7 +172,7 @@ public:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CSurfaceElementFEM;   // Forward declaration to avoid problems.
 struct CSortBoundaryFaces {
@@ -189,7 +189,7 @@ struct CSortBoundaryFaces {
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CVolumeElementFEM {
 public:
@@ -283,7 +283,7 @@ public:
  * \class CPointFEM
  * \brief Class to a point for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CPointFEM {
   unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */
@@ -308,7 +308,7 @@ struct CPointFEM {
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CInternalFaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
@@ -353,7 +353,7 @@ struct CInternalFaceElementFEM {
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CSurfaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
@@ -415,7 +415,7 @@ struct CSurfaceElementFEM {
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 struct CBoundaryFEM {
   string markerTag;  /*!< \brief Marker tag of this boundary. */
@@ -438,7 +438,7 @@ struct CBoundaryFEM {
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CMeshFEM: public CGeometry {
 protected:
@@ -712,7 +712,7 @@ protected:
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM {
 protected:
@@ -828,7 +828,7 @@ public:
   * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.
   * \param[in] iZone              - The currently active zone number.
   */
-  void InitStaticMeshMovement(CConfig              *config,
+  void InitStaticMeshMovement(const CConfig        *config,
                               const unsigned short Kind_Grid_Movement,
                               const unsigned short iZone);
 
@@ -1227,11 +1227,14 @@ protected:
   void SetWallDistance(su2double val) override;
 
   /*!
-   * \brief Set the wall distance based on an previously constructed ADT
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] WallADT - The ADT to compute the wall distance
+   * \brief Reduce the wall distance based on an previously constructed ADT.
+   * \details The ADT might belong to another zone, giving rise to lower wall distances
+   * than those already stored.
+   * \param[in] WallADT - The ADT to reduce the wall distance
+   * \param[in] config - Config of this geometry (not the ADT zone's geometry)
+   * \param[in] iZone - ignored
    */
-  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+  void SetWallDistance(CADTElemClass* WallADT, const CConfig* config, unsigned short iZone) override;
 };
 
 /*!

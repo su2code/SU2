@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os, subprocess, shutil, urllib.request, zipfile, time
+import sys, os, subprocess, urllib.request, zipfile, time
 
 def remove_file(path, retries=3, sleep=0.1):
   for i in range(retries):
@@ -44,10 +44,12 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '1b8d3f5f03de560fb63a2a76ad91ab7bb3fa67d8'
+  sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
   sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
+  sha_version_opdi = '2735b503f60163e8d64e1ac56cce46173a9fd4a9'
+  github_repo_opdi = 'https://github.com/SciCompKL/OpDiLib'
   sha_version_meson = '29ef4478df6d3aaca40c7993f125b29409be1de2'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
   sha_version_ninja = '52649de2c56b63f42bc59513d51286531c595b44'
@@ -57,12 +59,14 @@ def init_submodules(method = 'auto'):
 
   medi_name = 'MeDiPack'
   codi_name = 'CoDiPack'
+  opdi_name = 'OpDiLib'
   meson_name = 'meson'
   ninja_name= 'ninja'
   mpp_name= 'Mutationpp'
   base_path = cur_dir + os.path.sep + 'externals' + os.path.sep 
   alt_name_medi = base_path + 'medi'
   alt_name_codi = base_path + 'codi'
+  alt_name_opdi = base_path + 'opdi'
   alt_name_meson =  base_path + 'meson'
   alt_name_ninja =  base_path + 'ninja'
   alt_name_mpp =  cur_dir + os.path.sep + 'subprojects' + os.path.sep  + 'Mutationpp'
@@ -83,6 +87,7 @@ def init_submodules(method = 'auto'):
   if is_git:
     submodule_status(alt_name_codi, sha_version_codi)
     submodule_status(alt_name_medi, sha_version_medi)
+    submodule_status(alt_name_opdi, sha_version_opdi)
     submodule_status(alt_name_meson, sha_version_meson)
     submodule_status(alt_name_ninja, sha_version_ninja)
     submodule_status(alt_name_mpp, sha_version_mpp)
@@ -90,6 +95,7 @@ def init_submodules(method = 'auto'):
   else:
     download_module(codi_name, alt_name_codi, github_repo_codi, sha_version_codi)
     download_module(medi_name, alt_name_medi, github_repo_medi, sha_version_medi)
+    download_module(opdi_name, alt_name_opdi, github_repo_opdi, sha_version_opdi)
     download_module(meson_name, alt_name_meson, github_repo_meson, sha_version_meson)
     download_module(ninja_name, alt_name_ninja, github_repo_ninja, sha_version_ninja)
     download_module(mpp_name, alt_name_mpp, github_repo_mpp, sha_version_mpp)

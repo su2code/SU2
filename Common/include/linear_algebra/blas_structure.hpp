@@ -4,14 +4,14 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ class CConfig;
  * \class CBlasStructure
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CBlasStructure {
 public:
@@ -480,6 +480,31 @@ public:
           A_ij[i][j] += Eig_Vec[i][k] * Eig_Val[k] * Eig_Vec[j][k];
       }
     }
+  }
+
+  /*!
+   * \brief Algorithm to solve a linear system with a tridiagonal matrix.
+   * \param[in] lower - lower diagonal
+   * \param[in] main - main diagonal
+   * \param[in,out] upper - upper diagonal (modified on exit)
+   * \param[in,out] rhs - right hand side on entry, solution on exit
+   * \note Same size for all vectors. Use row index for lower and upper vector (e.g. lower[0] does not matter).
+   */
+  template<class Vec, class Scalar = su2double>
+  static void tdma(const Vec& lower, const Vec& main, Vec& upper, Vec& rhs) {
+    const int N = main.size();
+
+    upper[0] /= main[0];
+    rhs[0] /= main[0];
+
+    for (int i=1; i<N; i++) {
+      const Scalar denom = 1.0 / (main[i]-lower[i]*upper[i-1]);
+      upper[i] *= denom;
+      rhs[i] = (rhs[i]-lower[i]*rhs[i-1])*denom;
+    }
+
+    for (int i=N-2; i>=0; i--)
+      rhs[i] -= upper[i]*rhs[i+1];
   }
 
 private:

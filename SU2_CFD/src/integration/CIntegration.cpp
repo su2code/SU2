@@ -2,14 +2,14 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,8 +46,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                    (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
 
   /*--- Compute inviscid residuals ---*/
 
@@ -57,9 +57,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       break;
     case SPACE_UPWIND:
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics, config, iMesh);
-      break;
-    case FINITE_ELEMENT:
-      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
       break;
   }
 
@@ -78,6 +75,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   CNumerics* conv_bound_numerics = numerics[CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
   CNumerics* visc_bound_numerics = numerics[VISC_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  /*--- Pause preaccumulation in boundary conditions for hybrid parallel AD. ---*/
+  /// TODO: Check if this is really needed.
+  //const auto pausePreacc = (omp_get_num_threads() > 1) && AD::PausePreaccumulation();
 
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
@@ -140,14 +141,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case SYMMETRY_PLANE:
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
-      case ELECTRODE_BOUNDARY:
-        solver_container[MainSolver]->BC_Electrode(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        break;
-      case DIELEC_BOUNDARY:
-        solver_container[MainSolver]->BC_Dielec(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        break;
     }
   }
+
+  /*--- Modification of the system on the whole domain, like for a strong BC. ---*/
+  solver_container[MainSolver]->Impose_Fixed_Values(geometry, config);
 
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 
@@ -159,11 +157,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
+      case HEAT_TRANSFER:
+        solver_container[MainSolver]->BC_HeatTransfer_Wall(geometry, config, iMarker);
+        break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case CHT_WALL_INTERFACE:
-        if ((MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+        if ((MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
         }
         else {
@@ -178,11 +179,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
+   accumulated correctly during the communications. ---*/
 
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
+
+  //AD::ResumePreaccumulation(pausePreacc);
 
 }
 
@@ -223,7 +226,8 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 
   if ((iMesh==MESH_0) && config->GetDeform_Mesh()) mesh_solver->SetDualTime_Mesh();
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
@@ -236,6 +240,7 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
 
   SU2_OMP_MASTER
   solver->ResetCFLAdapt();
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
@@ -247,6 +252,8 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
     /*--- Initialize the local CFL number ---*/
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
   }
+  END_SU2_OMP_FOR
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }

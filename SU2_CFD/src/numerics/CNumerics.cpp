@@ -4,14 +4,14 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,19 +33,9 @@
 
 CNumerics::CNumerics(void) {
 
-  Normal      = nullptr;
-  UnitNormal  = nullptr;
-  UnitNormald = nullptr;
-
   Proj_Flux_Tensor  = nullptr;
-  Flux_Tensor       = nullptr;
 
   tau = nullptr;
-
-  Vector = nullptr;
-
-  l = nullptr;
-  m = nullptr;
 
   using_uq = false;
 
@@ -56,9 +46,7 @@ CNumerics::CNumerics(void) {
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      const CConfig* config) {
 
-  unsigned short iVar, iDim;
-
-  Normal = nullptr;
+  unsigned short iDim;
 
   nDim = val_nDim;
   nVar = val_nVar;
@@ -69,13 +57,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
-  UnitNormal = new su2double [nDim] ();
-  UnitNormald = new su2double [nDim] ();
-
-  Flux_Tensor = new su2double* [nVar];
-  for (iVar = 0; iVar < (nVar); iVar++)
-    Flux_Tensor[iVar] = new su2double [nDim] ();
-
   tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     tau[iDim] = new su2double [nDim] ();
@@ -84,11 +65,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   turb_ke_i = 0.0;
   turb_ke_j = 0.0;
-
-  Vector = new su2double[nDim] ();
-
-  l = new su2double [nDim] ();
-  m = new su2double [nDim] ();
 
   Dissipation_ij = 1.0;
 
@@ -103,62 +79,13 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  delete [] UnitNormal;
-  delete [] UnitNormald;
-
   // visc
   delete [] Proj_Flux_Tensor;
-
-  if (Flux_Tensor) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      delete [] Flux_Tensor[iVar];
-    delete [] Flux_Tensor;
-  }
 
   if (tau) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] tau[iDim];
     delete [] tau;
-  }
-
-  delete [] Vector;
-
-  delete [] l;
-  delete [] m;
-}
-
-void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velocity,
-    su2double val_pressure, su2double val_enthalpy) {
-  if (nDim == 3) {
-    Flux_Tensor[0][0] = val_density*val_velocity[0];
-    Flux_Tensor[1][0] = Flux_Tensor[0][0]*val_velocity[0]+val_pressure;
-    Flux_Tensor[2][0] = Flux_Tensor[0][0]*val_velocity[1];
-    Flux_Tensor[3][0] = Flux_Tensor[0][0]*val_velocity[2];
-    Flux_Tensor[4][0] = Flux_Tensor[0][0]*val_enthalpy;
-
-    Flux_Tensor[0][1] = val_density*val_velocity[1];
-    Flux_Tensor[1][1] = Flux_Tensor[0][1]*val_velocity[0];
-    Flux_Tensor[2][1] = Flux_Tensor[0][1]*val_velocity[1]+val_pressure;
-    Flux_Tensor[3][1] = Flux_Tensor[0][1]*val_velocity[2];
-    Flux_Tensor[4][1] = Flux_Tensor[0][1]*val_enthalpy;
-
-    Flux_Tensor[0][2] = val_density*val_velocity[2];
-    Flux_Tensor[1][2] = Flux_Tensor[0][2]*val_velocity[0];
-    Flux_Tensor[2][2] = Flux_Tensor[0][2]*val_velocity[1];
-    Flux_Tensor[3][2] = Flux_Tensor[0][2]*val_velocity[2]+val_pressure;
-    Flux_Tensor[4][2] = Flux_Tensor[0][2]*val_enthalpy;
-
-  }
-  else {
-    Flux_Tensor[0][0] = val_density*val_velocity[0];
-    Flux_Tensor[1][0] = Flux_Tensor[0][0]*val_velocity[0]+val_pressure;
-    Flux_Tensor[2][0] = Flux_Tensor[0][0]*val_velocity[1];
-    Flux_Tensor[3][0] = Flux_Tensor[0][0]*val_enthalpy;
-
-    Flux_Tensor[0][1] = val_density*val_velocity[1];
-    Flux_Tensor[1][1] = Flux_Tensor[0][1]*val_velocity[0];
-    Flux_Tensor[2][1] = Flux_Tensor[0][1]*val_velocity[1]+val_pressure;
-    Flux_Tensor[3][1] = Flux_Tensor[0][1]*val_enthalpy;
   }
 }
 
@@ -1678,7 +1605,7 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
   }
 }
 
-void CNumerics::CreateBasis(const su2double *val_Normal) {
+void CNumerics::CreateBasis(const su2double *val_Normal, su2double* l, su2double* m) {
 
   unsigned short iDim;
   su2double modm, modl;

@@ -2,14 +2,14 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,10 +86,10 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
     const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                 Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
-    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
+    Buffer_Send_GlobalPoint.resize(MaxLocalVertex_Donor);
+    Buffer_Receive_Coord.resize(nProcessor * MaxLocalVertex_Donor, nDim);
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
@@ -121,7 +121,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
           const auto idx = iProcessor*MaxLocalVertex_Donor + jVertex;
           const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
-          const su2double* Coord_j = &Buffer_Receive_Coord[idx*nDim];
+          const su2double* Coord_j = Buffer_Receive_Coord[idx];
           const auto dist2 = GeometryToolbox::SquaredDistance(nDim, Coord_i, Coord_j);
 
           donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
@@ -158,19 +158,16 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         target_vertex.coefficient[iDonor] = donorInfo[iDonor].dist/denom;
       }
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       totalTargetPoints += numTarget;
       AvgDistance += avgDist;
       MaxDistance = max(MaxDistance, maxDist);
     }
-    } // end SU2_OMP_PARALLEL
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
   }
 

@@ -3,14 +3,14 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -119,8 +119,6 @@ def direct ( config ):
     info = su2io.State()
     info.FUNCTIONS.update( aerodynamics )
     info.FILES.DIRECT = konfig['RESTART_FILENAME']
-    if 'EQUIV_AREA' in special_cases:
-        info.FILES.WEIGHT_NF = 'WeightNF.dat'
     if 'INV_DESIGN_CP' in special_cases:
         info.FILES.TARGET_CP = 'TargetCp.dat'
     if 'INV_DESIGN_HEATFLUX' in special_cases:

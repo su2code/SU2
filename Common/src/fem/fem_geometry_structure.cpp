@@ -2,14 +2,14 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -5370,14 +5370,14 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   bool FullMassMatrix   = false, FullInverseMassMatrix = false;
   bool LumpedMassMatrix = false, DerMetricTerms = false;
 
-  if(config->GetTime_Marching() == STEADY ||
-     config->GetTime_Marching() == ROTATIONAL_FRAME) {
+  if(config->GetTime_Marching() == TIME_MARCHING::STEADY ||
+     config->GetTime_Marching() == TIME_MARCHING::ROTATIONAL_FRAME) {
     if( UseLumpedMassMatrix) LumpedMassMatrix      = true;
     else                     FullInverseMassMatrix = true;
   }
-  else if(config->GetTime_Marching() == DT_STEPPING_1ST ||
-          config->GetTime_Marching() == DT_STEPPING_2ND ||
-          config->GetTime_Marching() == HARMONIC_BALANCE) {
+  else if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND ||
+          config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     if( UseLumpedMassMatrix ) FullMassMatrix = LumpedMassMatrix = true;
     else                      FullInverseMassMatrix = true;
   }
@@ -6128,7 +6128,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE)
           wallFunctions = true;
         break;
       }
@@ -6235,19 +6235,19 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+        if(config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE) {
 
           /* An LES wall model is used for this boundary marker. Determine
              which wall model and allocate the memory for the member variable. */
           switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
-            case EQUILIBRIUM_WALL_MODEL: {
+            case WALL_FUNCTIONS::EQUILIBRIUM_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
               boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
-            case LOGARITHMIC_WALL_MODEL: {
+            case WALL_FUNCTIONS::LOGARITHMIC_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
 
@@ -6589,7 +6589,7 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 }
 
-void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+void CMeshFEM_DG::InitStaticMeshMovement(const CConfig        *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 

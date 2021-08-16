@@ -3,14 +3,14 @@
 ## \file FSIInterface.py
 #  \brief FSI interface class that handles fluid/solid solvers synchronisation and communication.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1900,8 +1900,8 @@ class Interface:
 
           if FSI_config['RESTART_SOL'] == 'YES':
             NbTimeIter = ((totTime)/deltaT)-1
-            time = (FSI_config['RESTART_ITER']+1)*deltaT
-            TimeIter = FSI_config['RESTART_ITER']+1
+            time = (FSI_config['RESTART_ITER'])*deltaT
+            TimeIter = FSI_config['RESTART_ITER']
           else:
             NbTimeIter = (totTime/deltaT)-1		# number of time iterations
             time = 0.0					# initial time
@@ -1922,13 +1922,6 @@ class Interface:
             TimeIterTreshold = -1
             self.getSolidInterfaceDisplacement(SolidSolver)
             self.displacementPredictor(FSI_config, SolidSolver, deltaT)
-            # We need now to update the solution because both restarter functions (solid and fluid)
-            # load the files in the solution containers, pushing back the previous solutions. We need
-            # then to push it back once more to compute the solution at the next time level
-            # Also this is required because in the fluid iteration preprocessor, if we do not update
-            # and step to the next time level, there is a flag "fsi" that will initialise the flow
-            if myid in self.fluidSolverProcessors:
-              FluidSolver.Update()
             if myid in self.solidSolverProcessors:
               SolidSolver.updateSolution()
           #If no restart

@@ -2,14 +2,14 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subrotuines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  unsigned short iDim, iVar, nLineLets;
+  unsigned short nLineLets;
 
   adjoint = true;
 
@@ -58,14 +58,14 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  Residual   = new su2double [nVar]; Residual_RMS = new su2double[nVar];
-  Residual_i = new su2double [nVar]; Residual_j = new su2double [nVar];
-  Residual_Max = new su2double [nVar]; Point_Max = new unsigned long[nVar];
-  Point_Max_Coord = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-  }
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
+
+  Residual   = new su2double [nVar];
+  Residual_i = new su2double [nVar];
+  Residual_j = new su2double [nVar];
 
   Solution   = new su2double [nVar];
   Solution_i = new su2double [nVar];
@@ -288,7 +288,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   unsigned long iEdge, iPoint, jPoint;
-  su2double *U_i, *U_j, *TurbPsi_i, *TurbPsi_j, **TurbVar_Grad_i, **TurbVar_Grad_j;
+  su2double *U_i, *U_j, *TurbPsi_i, *TurbPsi_j;
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -310,8 +310,8 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTurbAdjointVar(TurbPsi_i, TurbPsi_j);
 
     /*--- Gradient of turbulent variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
-    TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
+    const auto TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+    const auto TurbVar_Grad_j = solver_container[TURB_SOL]->GetNodes()->GetGradient(jPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
 
     /*--- Set normal vectors and length ---*/
@@ -387,8 +387,8 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   //CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
 
   unsigned long iPoint;
-  su2double *U_i, **GradPrimVar_i, *TurbVar_i;
-  su2double **TurbVar_Grad_i, *TurbPsi_i, **PsiVar_Grad_i; // Gradients
+  su2double *U_i, *TurbVar_i;
+  su2double *TurbPsi_i; // Gradients
 
   /*--- Piecewise source term ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -398,7 +398,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetConservative(U_i, nullptr);
 
     /*--- Gradient of primitive variables w/o reconstruction ---*/
-    GradPrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+    auto GradPrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
     numerics->SetPrimVarGradient(GradPrimVar_i, nullptr);
 
     /*--- Laminar viscosity of the fluid ---*/
@@ -409,7 +409,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetTurbVar(TurbVar_i, nullptr);
 
     /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
-    TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
+    auto TurbVar_Grad_i = solver_container[TURB_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetTurbVarGradient(TurbVar_Grad_i, nullptr);
 
     /*--- Turbulent adjoint variables w/o reconstruction ---*/
@@ -418,7 +418,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Gradient of Adjoint flow variables w/o reconstruction
      (for non-conservative terms depending on gradients of flow adjoint vars.) ---*/
-    PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->GetNodes()->GetGradient(iPoint);
+    auto PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->GetNodes()->GetGradient(iPoint);
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, nullptr);
 
     /*--- Set volume and distances to the surface ---*/
@@ -476,10 +476,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Build implicit system ---*/
 
@@ -501,7 +498,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
       total_index = iPoint*nVar+iVar;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 

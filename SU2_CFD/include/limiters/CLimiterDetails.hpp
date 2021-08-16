@@ -3,14 +3,14 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -177,6 +177,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin.resize(varEnd) = largeNum;
       sharedMax.resize(varEnd) =-largeNum;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Per thread reduction. ---*/
@@ -185,7 +186,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     localMin = largeNum;
     localMax =-largeNum;
 
-    SU2_OMP(for schedule(static, 512) nowait)
+    SU2_OMP_FOR_(schedule(static, 512) SU2_NOWAIT)
     for(size_t iPoint = 0; iPoint < geometry.GetnPointDomain(); ++iPoint)
     {
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -194,6 +195,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
         localMax(iVar) = max(localMax(iVar), field(iPoint, iVar));
       }
     }
+    END_SU2_OMP_FOR
 
     /*--- Per rank reduction. ---*/
 
@@ -203,6 +205,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       sharedMin(iVar) = min(sharedMin(iVar), localMin(iVar));
       sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
     }
+    END_SU2_OMP_CRITICAL
     SU2_OMP_BARRIER
 
     /*--- Global reduction. ---*/
@@ -215,6 +218,7 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
       localMax = sharedMax;
       SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Compute eps^2 (each thread has its own copy of it). ---*/

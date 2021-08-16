@@ -2,14 +2,14 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_GEO);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_GEO);
 
   nZone    = config->GetnZone();
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    config_container[iZone] = new CConfig(config_file_name, SU2_GEO, true);
+    config_container[iZone] = new CConfig(config_file_name, SU2_COMPONENT::SU2_GEO, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/

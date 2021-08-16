@@ -2,14 +2,14 @@
  * \file CNEMOCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, W. Maier.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,8 +41,6 @@ private:
   unsigned short turb_model, /*!< \brief Kind of turbulence model */
                  iSpecies,   /*!< \brief Species index */
                  nSpecies;   /*!< \brief Number of species */
-  unsigned long lastInnerIter;
-
 public:
 
   /*!
@@ -50,12 +48,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOCompOutput(CConfig *config, unsigned short nDim);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CNEMOCompOutput(void) override;
-
 
   /*!
    * \brief Load the history output field values
@@ -101,30 +93,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(CConfig *config) override;
-
-  /*!
-   * \brief Check whether the averaged values should be updated
-   * \param[in] config - Definition of the particular problem.
-   * \return <TRUE> averages should be updated.
-   */
-  bool SetUpdate_Averages(CConfig *config) override;
+  bool SetInit_Residuals(const CConfig *config) override;
 
   /*!
    * \brief Write any additional output defined for the current solver.
    * \param[in] config - Definition of the particular problem per zone.
    */
-  void SetAdditionalScreenOutput(CConfig *config) override;
-
-  /*!
-   * \brief Write additional output for fixed CL mode.
-   * \param[in] config - Definition of the particular problem per zone.
-   */
-  void SetFixedCLScreenOutput(CConfig *config);
+  void SetAdditionalScreenOutput(const CConfig *config) override;
 
   /*!
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteHistoryFile_Output(CConfig *config) override;
+  bool WriteHistoryFile_Output(const CConfig *config) override;
 };

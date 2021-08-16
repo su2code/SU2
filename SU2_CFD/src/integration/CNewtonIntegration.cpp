@@ -2,14 +2,14 @@
  * \file CNewtonIntegration.cpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,27 +91,9 @@ void CNewtonIntegration::Setup() {
   /*--- Check if the solver is able to provide a linear preconditioner. ---*/
   if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) return;
 
-  switch (config->GetKind_Linear_Solver_Prec()) {
-    case JACOBI:
-      preconditioner = new CJacobiPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-      break;
-    case LINELET:
-      preconditioner = new CLineletPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-      break;
-    case LU_SGS:
-      preconditioner = new CLU_SGSPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-      break;
-    case ILU:
-      preconditioner = new CILUPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-      break;
-    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-      preconditioner = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
-                                                              config->GetKind_Linear_Solver_Prec(), false);
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized preconditioner for Newton-Krylov iterations.", CURRENT_FUNCTION);
-      break;
-  }
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
+
+  preconditioner = CPreconditioner<MixedScalar>::Create(kindPrec, solvers[FLOW_SOL]->Jacobian, geometry, config);
 
   if (!std::is_same<Scalar,MixedScalar>::value) {
     precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
@@ -131,6 +113,7 @@ void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar m
     for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
       solvers[FLOW_SOL]->GetNodes()->AddSolution(iPoint,iVar, mag*dir(iPoint,iVar));
   }
+  END_SU2_OMP_FOR
 }
 
 void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
@@ -140,6 +123,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
   if (type == EXPLICIT) {
     SU2_OMP_MASTER
     config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -151,6 +135,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
   if (type == EXPLICIT) {
     SU2_OMP_MASTER
     config->SetKind_TimeIntScheme(TimeIntScheme);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -163,11 +148,13 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 
   SU2_OMP_MASTER
   rmsSol = 0.0;
+  END_SU2_OMP_MASTER
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint)
     for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
       rmsSol_loc += pow(solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint,iVar), 2);
+  END_SU2_OMP_FOR
 
   atomicAdd(rmsSol_loc, rmsSol);
 
@@ -177,6 +164,7 @@ void CNewtonIntegration::ComputeFinDiffStep() {
     SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     finDiffStep = finDiffStepND * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
 }
@@ -212,6 +200,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
     LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
+  END_SU2_OMP_FOR
 
   su2double residual = 0.0;
   for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar)
@@ -226,6 +215,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
       firstResidual = max(firstResidual, residual);
       if (startupIters) startupIters -= 1;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     endStartup = (startupIters == 0) && (residual - firstResidual < startupResidual);
   }
@@ -237,6 +227,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   if (!startupPeriod && tolRelaxFactor > 1 && fullTolResidual < 0.0) {
     SU2_OMP_MASTER
     firstResidual = max(firstResidual, residual);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
     su2double x = (residual - firstResidual) / fullTolResidual;
     toleranceFactor = 1.0 + (tolRelaxFactor-1)*max(0.0, 1.0-SU2_TYPE::GetValue(x));
@@ -267,6 +258,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     solvers[FLOW_SOL]->SetIterLinSolver(iter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
   }
+  END_SU2_OMP_MASTER
   SU2_OMP_BARRIER
 
   /// TODO: Clever back-tracking and CFL adaptation based on residual reduction.
@@ -286,6 +278,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
     solvers[FLOW_SOL]->Friction_Forces(geometry, config);
   }
+  END_SU2_OMP_MASTER
 
   /*--- At the end of the startup period the CFL is reset to the initial value. ---*/
 
@@ -294,12 +287,15 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
       startupPeriod = false;
       firstResidual = residual;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint)
       solvers[FLOW_SOL]->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(MESH_0));
+    END_SU2_OMP_FOR
   }
 
-  } // end SU2_OMP_PARALLEL
+  }
+  END_SU2_OMP_PARALLEL
 }
 
 void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
@@ -328,6 +324,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
       v(iPoint,iVar) += SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
   }
+  END_SU2_OMP_FOR
 
   CSysMatrixComms::Initiate(v, geometry, config);
   CSysMatrixComms::Complete(v, geometry, config);
@@ -350,6 +347,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)
         v(iPoint,iVar) = SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
+    END_SU2_OMP_FOR
 
     CSysMatrixComms::Initiate(v, geometry, config);
     CSysMatrixComms::Complete(v, geometry, config);

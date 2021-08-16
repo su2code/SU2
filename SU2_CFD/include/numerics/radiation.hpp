@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the classes used to compute
  *        residual terms in radiation problems.
  * \author Ruben Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,8 @@ protected:
   bool implicit, incompressible;
   const su2double *RadVar_i;              /*!< \brief Vector of radiation variables at point i. */
   const su2double *RadVar_j;              /*!< \brief Vector of radiation variables at point j. */
-  const su2double* const* RadVar_Grad_i;  /*!< \brief Gradient of turbulent variables at point i. */
-  const su2double* const* RadVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
+  CMatrixView<const su2double> RadVar_Grad_i;  /*!< \brief Gradient of turbulent variables at point i. */
+  CMatrixView<const su2double> RadVar_Grad_j;  /*!< \brief Gradient of turbulent variables at point j. */
   su2double Absorption_Coeff;             /*!< \brief Absorption coefficient. */
   su2double Scattering_Coeff;             /*!< \brief Scattering coefficient. */
 
@@ -61,14 +61,13 @@ public:
     RadVar_j = val_radvar_j;
   }
 
-
   /*!
    * \brief Set the gradient of the radiation variables.
    * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
-  inline void SetRadVarGradient(const su2double* const* val_radvar_grad_i,
-                                const su2double* const* val_radvar_grad_j) final {
+  inline void SetRadVarGradient(CMatrixView<const su2double> val_radvar_grad_i,
+                                CMatrixView<const su2double> val_radvar_grad_j) final {
     RadVar_Grad_i = val_radvar_grad_i;
     RadVar_Grad_j = val_radvar_grad_j;
   }
@@ -101,14 +100,7 @@ public:
 
 class CAvgGradCorrected_P1 final : public CNumericsRadiation {
  private:
-  su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
-  su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradP1Var_Edge,      /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradP1Var_Kappa,
-            *Proj_Mean_GradP1Var_Corrected; /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
-  su2double dist_ij,                        /*!< \brief Length of the edge and face. */
-            proj_vector_ij;                 /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  su2double GammaP1;                        /*!< \brief P1 parameter */
+  su2double GammaP1;  /*!< \brief P1 parameter */
 
  public:
   /*!
@@ -118,11 +110,6 @@ class CAvgGradCorrected_P1 final : public CNumericsRadiation {
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_P1(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_P1(void) override;
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.

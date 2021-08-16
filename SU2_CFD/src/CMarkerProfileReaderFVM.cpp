@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,9 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
                                                  CConfig        *val_config,
                                                  string         val_filename,
                                                  unsigned short val_kind_marker,
-                                                 unsigned short val_number_vars) {
+                                                 unsigned short val_number_vars,
+                                                 vector<string> val_columnNames,
+                                                 vector<string> val_columnValues) {
 
   /*--- Store input values and pointers to class data. ---*/
 
@@ -45,6 +47,8 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   filename     = val_filename;
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
+  columnNames  = val_columnNames;
+  columnValues = val_columnValues;
 
   /* Attempt to open the specified file. */
   ifstream profile_file;
@@ -71,14 +75,19 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
   ifstream profile_file;
   profile_file.open(filename.data(), ios::in);
+  bool nmarkFound = false; 
+  unsigned long skip = 0;
 
   /*--- Identify the markers and data set in the profile file ---*/
 
   string text_line;
+  /*--- We search the file until we find the keyword NMARK=. Data before NMARK= will be ignored. 
+        This allows for some information in a header that will be ignored by the profile reader. ---*/
   while (getline (profile_file, text_line)) {
-
+    /*--- read NMARK ---*/
     string::size_type position = text_line.find ("NMARK=",0);
     if (position != string::npos) {
+      nmarkFound = true;
       text_line.erase (0,6); numberOfProfiles = atoi(text_line.c_str());
 
       numberOfRowsInProfile.resize(numberOfProfiles);
@@ -86,6 +95,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
       for (unsigned short iMarker = 0 ; iMarker < numberOfProfiles; iMarker++) {
 
+        /*--- read MARKER_TAG ---*/
         getline (profile_file, text_line);
         text_line.erase (0,11);
         for (unsigned short iChar = 0; iChar < 20; iChar++) {
@@ -95,23 +105,37 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         }
         profileTags.push_back(text_line.c_str());
 
+        /*--- read NROW ---*/
         getline (profile_file, text_line);
         text_line.erase (0,5); numberOfRowsInProfile[iMarker] = atoi(text_line.c_str());
 
+        /*--- read NCOL ---*/
         getline (profile_file, text_line);
         text_line.erase (0,5); numberOfColumnsInProfile[iMarker] = atoi(text_line.c_str());
 
-        /*--- Skip the data. This is read in the next loop. ---*/
+        /*--- read the column format description. This line is not required, so if we cannot find it, we just continue  ---*/
+        getline (profile_file, text_line);
+        string::size_type dataheader = text_line.find ("# COORD",0);
+        if (dataheader == 0) {
+          skip = 0;
+        } else {
+          /*--- no header, but we have read a line, so we have to read one line less data ---*/
+          skip = 1;
+        }
 
-        for (unsigned long iRow = 0; iRow < numberOfRowsInProfile[iMarker]; iRow++) getline (profile_file, text_line);
+        /*--- Skip the data. This is read in the next loop. ---*/
+        
+        for (unsigned long iRow = 0; iRow < (numberOfRowsInProfile[iMarker]-skip); iRow++) getline (profile_file, text_line);
 
       }
-    } else {
-      SU2_MPI::Error("While opening profile file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
     }
   }
 
   profile_file.close();
+
+  if (nmarkFound==false) {
+    SU2_MPI::Error("While opening profile file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
+  }
 
   /*--- Compute array bounds and offsets. Allocate data structure. ---*/
 
@@ -132,11 +156,14 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
       for (unsigned short iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
 
-        /*--- Skip the tag, nRow, and nCol lines. ---*/
+        /*--- Skip the tag, nRow and nCol lines. ---*/
 
         getline (profile_file, text_line);
         getline (profile_file, text_line);
         getline (profile_file, text_line);
+        
+        /*--- if skip=0 then we can expect column format description ---*/
+        if (skip == 0) getline (profile_file, text_line);
 
         /*--- Now read the data for each row and store. ---*/
 
@@ -419,7 +446,7 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
 
   if (rank == MASTER_NODE) {
 
-    ofstream node_file("profile_example.dat");
+    ofstream node_file("example_"+filename);
 
     node_file << "NMARK= " << numberOfProfiles << endl;
 
@@ -435,6 +462,9 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
       node_file << "NROW="        << numberOfRowsInProfile[iMarker] << endl;
       node_file << "NCOL="        << nColumns          << endl;
 
+      /*--- header line (names of the columns) --- */
+      node_file << columnNames[iMarker] << endl;
+
       node_file << setprecision(15);
       node_file << std::scientific;
 
@@ -445,10 +475,9 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
         for (unsigned short iDim = 0; iDim < dimension; iDim++) {
           node_file << profileCoords[iMarker][iDim][iPoint] << "\t";
         }
-        for (unsigned short iDim = 0; iDim < numberOfVars; iDim++) {
-          node_file << 0.0 << "\t";
-        }
-        node_file << endl;
+
+        node_file << columnValues[iMarker] << endl;
+
       }
 
     }
@@ -460,8 +489,8 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
     err << endl;
     err << "  Could not find the input file for the marker profile." << endl;
     err << "  Looked for: " << filename << "." << endl;
-    err << "  Created a template profile file with node coordinates" << endl;
-    err << "  and correct number of columns at `profile_example.dat`." << endl;
+    err << "  Created a template profile file with default values" << endl;
+    err << "  named example_" << filename << endl;
     err << "  You can use this file as a guide for making your own profile" << endl;
     err << "  specification." << endl << endl;
     SU2_MPI::Error(err.str(), CURRENT_FUNCTION);

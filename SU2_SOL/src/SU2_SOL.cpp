@@ -2,14 +2,14 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   else { strcpy(config_file_name, "default.cfg"); }
 
   CConfig *config = nullptr;
-  config = new CConfig(config_file_name, SU2_SOL);
+  config = new CConfig(config_file_name, SU2_COMPONENT::SU2_SOL);
 
   const auto nZone = config->GetnZone();
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_SOL, false);
+  driver_config = new CConfig(config_file_name, SU2_COMPONENT::SU2_SOL, false);
 
   /*--- Initialize a char to store the zone filename ---*/
   char zone_file_name[MAX_STRING_SIZE];
@@ -99,10 +99,10 @@ int main(int argc, char *argv[]) {
 
     if (driver_config->GetnConfigFiles() > 0){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_SOL, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_SOL, iZone, nZone, true);
     }
     else{
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_SOL, iZone, nZone, true);
+      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_SOL, iZone, nZone, true);
     }
 
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
@@ -352,11 +352,11 @@ int main(int argc, char *argv[]) {
       if (
           ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
            ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-            !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
+            !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
            (StopCalc) ||
-           (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-             (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
+           (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+             (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
             ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0))))
 
           &&
@@ -445,9 +445,9 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-             !(config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING)) ||
+             !(config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING)) ||
             (StopCalc) ||
-            ((config_container[ZONE_0]->GetTime_Marching() == TIME_STEPPING) &&
+            ((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0)))) {
 
               /*--- Read in the restart file for this time step ---*/
@@ -538,11 +538,11 @@ int main(int argc, char *argv[]) {
 
         if ((TimeIter+1 == config_container[ZONE_0]->GetnTime_Iter()) ||
             ((TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0) && (TimeIter != 0) &&
-             !((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-               (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND))) ||
+             !((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+               (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND))) ||
             (StopCalc) ||
-            (((config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_1ST) ||
-              (config_container[ZONE_0]->GetTime_Marching() == DT_STEPPING_2ND)) &&
+            (((config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+              (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) &&
              ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetVolume_Wrt_Freq() == 0)))) {
 
 
@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    else if (config_container[ZONE_0]->GetTime_Marching() == HARMONIC_BALANCE) {
+    else if (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
 
       /*--- Read in the restart file for this time step ---*/
       for (iZone = 0; iZone < nZone; iZone++) {

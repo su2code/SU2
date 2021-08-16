@@ -3,14 +3,14 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -503,7 +503,7 @@ class CBaseMPIWrapper {
   static int Rank, Size;
   static Comm currentComm;
 
-  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype);
+  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
 
  public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
@@ -570,7 +570,7 @@ class CBaseMPIWrapper {
 
   static inline void Allgatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcnt,
                                 const int* displs, Datatype recvtype, Comm comm) {
-    CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+    CopyData(sendbuf, recvbuf, sendcnt, sendtype, displs[0]);
   }
 
   static inline void Allgather(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
@@ -596,7 +596,7 @@ class CBaseMPIWrapper {
   static inline void Alltoallv(const void* sendbuf, const int* sendcounts, const int* sdispls, Datatype sendtype,
                                void* recvbuf, const int* recvcounts, const int* recvdispls, Datatype recvtype,
                                Comm comm) {
-    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
+    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype, recvdispls[0], sdispls[0]);
   }
 
   static inline void Probe(int source, int tag, Comm comm, Status* status) {}

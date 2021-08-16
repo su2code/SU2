@@ -2,14 +2,14 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -126,7 +126,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
   /*--- Disable the screen output if we're running SU2_CFD ---*/
 
-  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD && !Derivative) Screen_Output = false;
 
   /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
 
@@ -176,14 +176,17 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
+    /*--- To keep legacy behavior ---*/
+    System.SetToleranceType(LinearToleranceType::RELATIVE);
+
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
+    if (!Derivative || ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) && Derivative)) {
 
       Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
-    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
+    } else if (Derivative && (config->GetKind_SU2() == SU2_COMPONENT::SU2_DOT)) {
 
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
@@ -353,68 +356,8 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
         nNonconvexElements++;
       }
     }
-  } else if (false) {
-
-    /*--- 3D elements ---*/
-    unsigned short iNode, iFace, nFaceNodes;
-
-    for (iElem = 0; iElem < geometry->GetnElem(); iElem++){
-      for (iFace = 0; iFace < geometry->elem[iElem]->GetnFaces(); iFace++){
-        nFaceNodes = geometry->elem[iElem]->GetnNodesFace(iFace);
-
-        su2double minCrossProductLength = 1.e6, maxCrossProductLength = -1.e6;
-        for (iNode = 0; iNode < nFaceNodes; iNode++) {
-          su2double crossProductLength = 0.0;
-
-          /*--- Get coords of node face_point_i and its adjacent nodes in the face ---*/
-          unsigned long face_point_i, face_point_j, face_point_k;
-
-          face_point_i = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode));
-
-          /// TODO: Faces may have up to 4 nodes, not all posibilities are covered
-
-          if (iNode == 0) {
-            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, nFaceNodes-1));
-            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode+1));
-          } else if (iNode == nFaceNodes-1) {
-            face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode-1));
-            face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, 0));
-          }
-
-          const auto Coords_i = geometry->nodes->GetCoord(face_point_i);
-          const auto Coords_j = geometry->nodes->GetCoord(face_point_j);
-          const auto Coords_k = geometry->nodes->GetCoord(face_point_k);
-
-          /*--- Get edge vectors from point k to i and point j to i ---*/
-          su2double edgeVector_i[3], edgeVector_j[3];
-          GeometryToolbox::Distance(nDim, Coords_k, Coords_i, edgeVector_i);
-          GeometryToolbox::Distance(nDim, Coords_j, Coords_i, edgeVector_j);
-
-          /*--- Calculate cross product of edge vectors and its length---*/
-          su2double crossProduct[3];
-          GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
-
-          /// TODO: This logic is incorrect, the norm will never be less than 0
-
-          crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
-
-          /*--- Check if length is minimum or maximum ---*/
-          if (crossProductLength < minCrossProductLength) {
-            minCrossProductLength = crossProductLength;
-          } else if (crossProductLength > maxCrossProductLength) {
-            maxCrossProductLength = crossProductLength;
-          }
-        }
-
-      /*--- If minimum cross product length is smaller than 0,
-      face (and therefore element) is not convex ---*/
-      if (minCrossProductLength < 0) {
-        nNonconvexElements++;
-        break;
-      }
-
-      }
-    }
+  } else if (rank == MASTER_NODE) {
+    cout << "\nWARNING: Convexity is not checked for 3D elements (issue #1171).\n" << endl;
   }
 
   unsigned long nNonconvexElements_Local = nNonconvexElements; nNonconvexElements = 0;
@@ -441,12 +384,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if(config->GetSolid_Wall(iMarker))
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
-    }
   }
 
   /*--- Allocate the vectors to hold boundary node coordinates
@@ -460,10 +399,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if (config->GetSolid_Wall(iMarker)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1632,7 +1568,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
   /*--- If requested (no by default) impose the surface deflections in
    increments and solve the grid deformation equations iteratively with
@@ -1663,10 +1599,10 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
+        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1740,7 +1676,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Move the FSI interfaces ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1761,8 +1697,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
   unsigned long iPoint, total_index, iVertex;
 
   su2double * VarCoord;
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1777,7 +1713,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
       }
     }
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1794,11 +1730,11 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
   unsigned long iPoint, total_index, iVertex;
   su2double *new_coord = new su2double[3];
 
-  unsigned short Kind_SU2 = config->GetKind_SU2();
+  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1808,13 +1744,9 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->nodes->SetCoord(iPoint, new_coord);
     }
-  } else if (Kind_SU2 == SU2_DOT) {
+  } else if (Kind_SU2 == SU2_COMPONENT::SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
-         (config->GetMarker_All_DV(iMarker) == YES)) {
+      if(config->GetSolid_Wall(iMarker) || (config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
@@ -1888,7 +1820,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Problem dimension and physical time step ---*/
@@ -2050,7 +1982,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2196,7 +2128,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/
@@ -2327,7 +2259,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
+  bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
 
   /*--- Retrieve values from the config file ---*/

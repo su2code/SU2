@@ -2,14 +2,14 @@
  * \file CAdjEulerVariable.hpp
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,6 @@ protected:
   MatrixType Psi;                /*!< \brief Vector of the adjoint variables. */
   MatrixType ForceProj_Vector;   /*!< \brief Vector d. */
   MatrixType ObjFuncSource;      /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  MatrixType IntBoundary_Jump;   /*!< \brief Interior boundary jump vector. */
   MatrixType HB_Source;          /*!< \brief Harmonic balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
@@ -95,14 +94,6 @@ public:
   }
 
   /*!
-   * \brief Set the value of the interior boundary jump vector vector.
-   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
-   */
-  inline void SetIntBoundary_Jump(unsigned long iPoint, const su2double *val_IntBoundary_Jump) final {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump(iPoint,iVar) = val_IntBoundary_Jump[iVar];
-  }
-
-  /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */
@@ -141,12 +132,6 @@ public:
   inline su2double *GetObjFuncSource(unsigned long iPoint) final { return ObjFuncSource[iPoint]; }
 
   /*!
-   * \brief Get the value of the force projection vector.
-   * \return Pointer to the force projection vector.
-   */
-  inline su2double *GetIntBoundary_Jump(unsigned long iPoint) final { return IntBoundary_Jump[iPoint]; }
-
-  /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.
@@ -165,38 +150,19 @@ public:
   }
 
   /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \return Value of the reconstruction variables gradient at a node.
-   */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
-
-  /*!
-   * \brief Get the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
-
-  /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final {
+    return Gradient_Reconstruction[iPoint];
+  }
 
   /*!
    * \brief Get the reconstruction gradient for variables at all points.
    * \return Reference to reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline CVectorOfMatrix& GetGradient_Reconstruction() final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
 };

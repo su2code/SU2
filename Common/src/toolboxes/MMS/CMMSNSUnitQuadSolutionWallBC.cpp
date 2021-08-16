@@ -2,14 +2,14 @@
  * \file CMMSNSUnitQuadSolutionWallBC.cpp
  * \brief Implementations of the member functions of CMMSNSUnitQuadSolutionWallBC.
  * \author T. Economon, E. van der Weide
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,7 +81,7 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
   a_T2 = -0.85;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
-  if(config->GetTime_Marching() != STEADY)
+  if(config->GetTime_Marching() != TIME_MARCHING::STEADY)
     SU2_MPI::Error("Steady mode must be selected for the MMS NS Unit Quad case with wall BCs.",
                    CURRENT_FUNCTION);
 
@@ -101,11 +101,11 @@ CMMSNSUnitQuadSolutionWallBC::CMMSNSUnitQuadSolutionWallBC(unsigned short val_nD
     SU2_MPI::Error("Standard air or ideal gas must be selected for the MMS NS Unit Quad case with wall BCs.",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ViscosityModel() != CONSTANT_VISCOSITY)
+  if(config->GetKind_ViscosityModel() != VISCOSITYMODEL::CONSTANT)
     SU2_MPI::Error("Sutherland must be selected for viscosity for the MMS NS Unit Quad case with wall BCs.",
                    CURRENT_FUNCTION);
 
-  if(config->GetKind_ConductivityModel() != CONSTANT_PRANDTL)
+  if(config->GetKind_ConductivityModel() != CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
     SU2_MPI::Error("Constant Prandtl number must be selected for the MMS NS Unit Quad case with wall BCs.",
                    CURRENT_FUNCTION);
 }

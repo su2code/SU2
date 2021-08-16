@@ -2,14 +2,14 @@
  * \file CMeshVariable.cpp
  * \brief Definition of the variables for mesh motion using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,9 +31,6 @@
 CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *config) :
   CVariable(npoint, ndim, config) {
 
-  /*--- Booleans that determine the kind of problems ---*/
-  bool time_domain = config->GetTime_Domain();
-
   /*--- Store the dimensionality of the problem ---*/
   nDim = ndim;
 
@@ -42,21 +39,12 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
   WallDistance.resize(nPoint) = su2double(1e-9);
 
   /*--- Initialize the variables necessary when the problem is time domain ---*/
-  if (time_domain) {
+  if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nDim) = su2double(0.0);
     Solution_time_n1.resize(nPoint,nDim) = su2double(0.0);
   }
 }
 
-void CMeshVariable::Register_MeshCoord(bool input) {
-  if (input) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterInput(Mesh_Coord(iPoint,iDim));
-  }
-  else {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        AD::RegisterOutput(Mesh_Coord(iPoint,iDim));
-  }
+void CMeshVariable::Register_MeshCoord() {
+  RegisterContainer(true, Mesh_Coord);
 }

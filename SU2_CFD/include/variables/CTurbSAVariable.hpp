@@ -2,14 +2,14 @@
  * \file CTurbSAVariable.hpp
  * \brief Declaration of the variables of the SA turbulence model.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -108,7 +108,7 @@ public:
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
    */
-  void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double>,
                          const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!

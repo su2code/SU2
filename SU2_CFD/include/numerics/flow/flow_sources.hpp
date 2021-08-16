@@ -2,14 +2,14 @@
  * \file flow_sources.hpp
  * \brief Delarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,12 +74,12 @@ class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
 protected:
     bool implicit, viscous, rans;
     su2double yinv{0.0};
-    
+
   /*!
   * \brief Diffusion residual of the axisymmetric source term.
   */
   void ResidualDiffusion();
-    
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -95,7 +95,7 @@ public:
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-  
+
 };
 
 /*!
@@ -106,7 +106,7 @@ public:
  */
 class CSourceGeneralAxisymmetric_Flow final : public CSourceAxisymmetric_Flow {
 public:
-  
+
   using CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow;
   /*!
    * \brief Residual of the general axisymmetric source term.
@@ -114,7 +114,7 @@ public:
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-  
+
 };
 
 /*!
@@ -177,7 +177,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
@@ -204,7 +204,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];

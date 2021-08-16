@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,6 +60,7 @@ protected:
 
   class Identity : public CPreconditioner<Scalar> {
   public:
+    inline bool IsIdentity() const override { return true; }
     inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
   };
 
@@ -87,7 +88,7 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  int RecordingState = NONE;      /*!< \brief The kind of recording that the tape currently holds. */
+  RECORDING RecordingState = RECORDING::CLEAR_INDICES;      /*!< \brief The kind of recording that the tape currently holds. */
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
@@ -97,6 +98,7 @@ protected:
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
   vector<unsigned short> direct_nInst;  /*!< \brief Total number of instances in the direct problem. */
   vector<unsigned long> nInnerIter;     /*!< \brief Number of inner iterations for each zone. */
+  unsigned long wrt_sol_freq = std::numeric_limits<unsigned long>::max(); /*!< \brief File output frequency. */
 
   su2vector<bool> Has_Deformation;  /*!< \brief True if iZone has mesh deformation (used for
                                                 lazy evaluation of TRANSFER tape section). */
@@ -138,6 +140,11 @@ public:
 protected:
 
   /*!
+   * \brief Preprocess the multizone iteration
+   */
+  void Preprocess(unsigned long TimeIter) override;
+
+  /*!
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
@@ -149,14 +156,25 @@ protected:
   bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
 
   /*!
-   * \brief Evaluate sensitivites for the current adjoint solution and output files.
-   * \param[in] iOuterIter - Current outer iteration.
-   * \param[in] StopCalc - Final iteration flag (converged or reached max number of iters).
+   * \brief Run inner iterations using a Krylov method (GMRES atm).
    */
-  void EvaluateSensitivities(unsigned long iOuterIter, bool StopCalc);
+  void KrylovInnerIters(unsigned short iZone);
 
   /*!
-   * \brief Setup the matrix of cross-terms.
+   * \brief Evaluate the gradient of the objective function and add to "External".
+   * \return "True" if the gradient is numerically 0.
+   */
+  bool EvaluateObjectiveFunctionGradient();
+
+  /*!
+   * \brief Evaluate sensitivites for the current adjoint solution and output files.
+   * \param[in] Iter - Current outer or time iteration.
+   * \param[in] force_writing - Force file output.
+   */
+  void EvaluateSensitivities(unsigned long Iter, bool force_writing);
+
+  /*!
+   * \brief Setup the matrix of cross-terms. Allocate necessary memory and initialize to zero.
    */
   void InitializeCrossTerms();
 
@@ -166,7 +184,7 @@ protected:
    * \param[in] tape_type - indicator which part of a solution update will be recorded.
    * \param[in] record_zone - zone where solution update will be recorded.
    */
-  void SetRecording(unsigned short kind_recording, Kind_Tape tape_type, unsigned short record_zone);
+  void SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone);
 
   /*!
    * \brief Transfer data between zones and update grids when required.
@@ -178,13 +196,13 @@ protected:
    * \param[in] iZone - Zone in which we run an iteration.
    * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
-  void DirectIteration(unsigned short iZone, unsigned short kind_recording);
+  void DirectIteration(unsigned short iZone, RECORDING kind_recording);
 
   /*!
    * \brief Set the objective function.
    * \param[in] kind_recording - Kind of variables with respect to which we are recording.
    */
-  void SetObjFunction(unsigned short kind_recording);
+  void SetObjFunction(RECORDING kind_recording);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
@@ -215,6 +233,11 @@ protected:
    * \param[in] iZone - Zone index.
    */
   void Add_Solution_To_External(unsigned short iZone);
+
+  /*!
+   * \brief Puts dual time derivative vector to External.
+   */
+  void Set_External_To_DualTimeDer();
 
   /*!
    * \brief Add External_Old vector to Solution.

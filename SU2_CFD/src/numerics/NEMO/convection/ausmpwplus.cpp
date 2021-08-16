@@ -2,14 +2,14 @@
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
  * \author F. Palacios, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,16 +94,16 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
   h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
   rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
-  
+
   rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
-  
-  rhoEve_i = 0.0; rhoEve_j = 0.0; 
+
+  rhoEve_i = 0.0; rhoEve_j = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhoEve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies]);
     rhoEve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies]);
   }
- 
+
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
