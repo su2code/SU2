@@ -195,7 +195,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
     const auto iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
-      unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
+      const auto iLocalVertex = iVertex_to_iLocalVertex[iVertex];
       Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
       for (unsigned long iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(iLocalVertex,iDim) = geom->nodes->GetCoord(iPoint, iDim);
       neighbors.insert(pair<unsigned long, set<unsigned long> >(iPoint, set<unsigned long>()));
@@ -226,7 +226,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
     const auto iPoint = geom->vertex[val_marker][iVertex]->GetNode();
     if (geom->nodes->GetDomain(iPoint)) {
-      unsigned long iLocalVertex = iVertex_to_iLocalVertex[iVertex];
+      const auto iLocalVertex = iVertex_to_iLocalVertex[iVertex];
       Buffer_Send_nLinkedNodes[iLocalVertex] = neighbors.at(iPoint).size();
       Buffer_Send_StartLinkedNodes[iLocalVertex] = nLocalLinkedNodes;
       nLocalLinkedNodes += Buffer_Send_nLinkedNodes[iLocalVertex];
@@ -347,7 +347,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
       unsigned long *uptr = &Buffer_Receive_LinkedNodes[Buffer_Receive_StartLinkedNodes[iVertex]];
 
       for (unsigned long jLinkedNode = 0; jLinkedNode < Buffer_Receive_nLinkedNodes[iVertex]; jLinkedNode++) {
-        unsigned long jPoint = uptr[jLinkedNode];
+        const auto jPoint = uptr[jLinkedNode];
         bool found = false;  // Global point index has been found
         for (unsigned long kVertex = 0; kVertex < nGlobalVertex; kVertex++) {
           if (Buffer_Receive_GlobalPoint[kVertex] == jPoint) {
