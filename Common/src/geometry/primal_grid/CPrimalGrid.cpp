@@ -50,7 +50,7 @@ CPrimalGrid::~CPrimalGrid() {
  delete[] JacobianFaceIsConstant;
 }
 
-void CPrimalGrid::GetAllNeighbor_Elements() {
+void CPrimalGrid::GetAllNeighbor_Elements() const {
   cout << "( ";
   for (unsigned short iFace = 0; iFace < GetnFaces(); iFace++)
   {

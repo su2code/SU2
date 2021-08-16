@@ -65,7 +65,7 @@ public:
    * \param[in] val_node - Local (to the line) index of the node (a line has 2 nodes).
    * \return Global index of the line node.
    */
-  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
+  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
 
   /*!
    * \brief Set the point associated at a node.
@@ -78,19 +78,19 @@ public:
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that composes an element.
    */
-  inline unsigned short GetnNodes(void) override { return nNodes; }
+  inline unsigned short GetnNodes(void) const override { return nNodes; }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.
    * \return Type of the element using VTK nomenclature.
    */
-  inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
+  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
    * \brief Get the type of rotation/traslation that must be applied.
    * \return Type of the element using VTK nomenclature.
    */
-  inline unsigned short GetRotation_Type(void) override { return Rotation_Type; }
+  inline unsigned short GetRotation_Type(void) const override { return Rotation_Type; }
 
   /*!
    * \brief Set the type of rotation/traslation that must be applied.
@@ -108,41 +108,41 @@ public:
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetnNeighbor_Elements(void) override { return 0; }
+  inline unsigned short GetnNeighbor_Elements(void) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return 0; }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetnFaces(void) override { return 0; }
+  inline unsigned short GetnFaces(void) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return 0; }
+  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetMaxNodesFace(void) override { return 0; }
+  inline unsigned short GetMaxNodesFace(void) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return 0; }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return 0; }
 
   /*!
    * \brief This function does nothing (it comes from a pure virtual function, that implies the
    *        definition of the function in all the derived classes).
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return 0; }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return 0; }
 };

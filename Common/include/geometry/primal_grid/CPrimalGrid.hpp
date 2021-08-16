@@ -88,7 +88,7 @@ public:
    * \param[in] val_face - Local index of the face.
    * \return Global index of the element.
    */
-  inline long GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
+  inline long GetNeighbor_Elements(unsigned short val_face) const { return Neighbor_Elements[val_face]; }
 
   /*!
    * \brief Set the elements that surround an element.
@@ -127,7 +127,7 @@ public:
   * \param[in] val_face - Local index of the face.
   * \return   Boolean to indicate whether or not the face is owned by this element.
   */
-  inline bool GetOwnerFace(unsigned short val_face) { return ElementOwnsFace[val_face]; }
+  inline bool GetOwnerFace(unsigned short val_face) const { return ElementOwnsFace[val_face]; }
 
   /*!
   * \brief Set the boolean to indicate whether or not this element owns the face
@@ -142,7 +142,7 @@ public:
   * \param[in] val_face - Local index of the face.
   * \return   Index of the periodic transformation to the neighboring element.
   */
-  inline short GetPeriodicIndex(unsigned short val_face) {return PeriodIndexNeighbors[val_face];}
+  inline short GetPeriodicIndex(unsigned short val_face) const {return PeriodIndexNeighbors[val_face];}
 
   /*!
   * \brief Set the index of the periodic transformation to the neighboring element.
@@ -156,7 +156,7 @@ public:
   * \param[in] val_face - Local index of the face.
   * \return  Whether or not the Jacobian of the face is considered constant.
   */
-  inline bool GetJacobianConstantFace(unsigned short val_face) { return JacobianFaceIsConstant[val_face]; }
+  inline bool GetJacobianConstantFace(unsigned short val_face) const { return JacobianFaceIsConstant[val_face]; }
 
   /*!
   * \brief Set whether or not the Jacobian of the given face is considered constant.
@@ -204,7 +204,7 @@ public:
    * \brief Get all the neighbors of an element.
    * \return List of all the neighbor of an element.
    */
-  void GetAllNeighbor_Elements(void);
+  void GetAllNeighbor_Elements(void) const ;
 
   /*!
    * \brief Set that an element must be divided in the adaptation stage.
@@ -240,7 +240,7 @@ public:
   * \brief A virtual member.
   * \return The color of the element in the partitioning.
   */
-  inline virtual unsigned long GetColor(void) { return std::numeric_limits<unsigned long>::max(); }
+  inline virtual unsigned long GetColor(void) const { return std::numeric_limits<unsigned long>::max(); }
 
   /*!
    * \brief Get the element global index in a parallel computation.
@@ -264,7 +264,7 @@ public:
    * \brief A virtual member.
    * \return Relate the boundary element which a face of a domain element.
    */
-  inline virtual unsigned long GetDomainElement(void) { return DomainElement; }
+  inline virtual unsigned long GetDomainElement(void) const{ return DomainElement; }
 
   /*!
    * \brief A pure virtual member.
@@ -275,13 +275,13 @@ public:
    * \brief A pure virtual member.
    * \return Kind of element using the vtk nomenclature.
    */
-  virtual unsigned short GetVTK_Type(void) = 0;
+  virtual unsigned short GetVTK_Type(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \return Type of the element using VTK nomenclature.
    */
-  inline virtual unsigned short GetRotation_Type(void) { return 0; }
+  inline virtual unsigned short GetRotation_Type(void) const{ return 0; }
 
   /*!
    * \brief A pure virtual member.
@@ -294,45 +294,45 @@ public:
    * \param[in] val_node - Local index of the node.
    * \return Number of neighbors nodes of a node in the element.
    */
-  virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) = 0;
+  virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \return Number of neighbors elements of a element.
    */
-  virtual unsigned short GetnNeighbor_Elements(void) = 0;
+  virtual unsigned short GetnNeighbor_Elements(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \return Number of nodes of an element.
    */
-  virtual unsigned short GetnNodes(void) = 0;
+  virtual unsigned short GetnNodes(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \return Number of faces of an element.
    */
-  virtual unsigned short GetnFaces(void) = 0;
+  virtual unsigned short GetnFaces(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \param[in] val_face - Local index of a face.
    * \return Local index of the nodes that compose a face.
    */
-  inline virtual unsigned short GetnNodesFace(unsigned short val_face) { return 0; }
+  inline virtual unsigned short GetnNodesFace(unsigned short val_face) const { return 0; }
 
   /*!
    * \brief A pure virtual member.
    * \return Maximum number of nodes that compose a face.
    */
-  virtual unsigned short GetMaxNodesFace(void) = 0;
+  virtual unsigned short GetMaxNodesFace(void) const = 0;
 
   /*!
    * \brief A pure virtual member.
    * \param[in] val_node - Local index of a node.
    * \return Global index of the node.
    */
-  virtual unsigned long GetNode(unsigned short val_node) = 0;
+  virtual unsigned long GetNode(unsigned short val_node) const = 0;
 
   /*!
    * \brief A pure virtual member.
@@ -347,7 +347,7 @@ public:
    * \param[in] val_index - Local index of the nodes that compose the face.
    * \return - Local index of the nodes that compose the face.
    */
-  virtual unsigned short GetFaces(unsigned short val_face, unsigned short val_index) = 0;
+  virtual unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const = 0;
 
   /*!
    * \brief A pure virtual member.
@@ -355,7 +355,7 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of <i>val_node</i>) index of the nodes that are neighbor to val_node.
    * \return Local index of the nodes that are neighbor to <i>val_node</i>.
    */
-  virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+  virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const = 0;
 
   /*!
    * \brief Virtual function, that must be overwritten by the derived class, if needed.
@@ -371,43 +371,43 @@ public:
    * \brief Virtual function to make available the global ID of this element.
    * \return The global ID of this element.
    */
-  inline virtual unsigned long GetGlobalElemID(void) { return 0; }
+  inline virtual unsigned long GetGlobalElemID(void) const { return 0; }
 
   /*!
    * \brief Virtual function to make available the global offset of the solution DOFs.
    * \return The global offset of the solution DOFs.
    */
-  inline virtual unsigned long GetGlobalOffsetDOFsSol(void) { return 0; }
+  inline virtual unsigned long GetGlobalOffsetDOFsSol(void) const { return 0; }
 
   /*!
    * \brief Virtual function to make available the polynomial degree of the grid.
    * \return The polynomial degree of the grid.
    */
-  inline virtual unsigned short GetNPolyGrid(void) { return 0; }
+  inline virtual unsigned short GetNPolyGrid(void) const { return 0; }
 
   /*!
    * \brief Virtual function to make available the polynomial degree of the solution.
    * \return The polynomial degree of the solution.
    */
-  inline virtual unsigned short GetNPolySol(void) { return 0; }
+  inline virtual unsigned short GetNPolySol(void) const{ return 0; }
 
   /*!
    * \brief Virtual function to make available the number of DOFs of the grid in the element.
    * \return The number of DOFs of the Grid in the element.
    */
-  inline virtual unsigned short GetNDOFsGrid(void) { return 0; }
+  inline virtual unsigned short GetNDOFsGrid(void) const { return 0; }
 
   /*!
    * \brief Virtual function to make available the number of DOFs of the solution in the element.
    * \return The number of DOFs of the solution in the element.
    */
-  inline virtual unsigned short GetNDOFsSol(void) { return 0; }
+  inline virtual unsigned short GetNDOFsSol(void) const { return 0; }
 
   /*!
    * \brief Virtual function to get whether or not the Jacobian is considered constant.
    * \return True if the Jacobian is (almost) constant and false otherwise.
    */
-  inline virtual bool GetJacobianConsideredConstant(void) { return false; }
+  inline virtual bool GetJacobianConsideredConstant(void) const { return false; }
 
   /*!
    * \brief Virtual function to set the value of JacobianConsideredConstant.
@@ -431,7 +431,7 @@ public:
    * \brief Virtual function to make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
+  inline virtual unsigned short GetNDonorsWallFunctions(void) const {return 0;}
 
   /*!
    * \brief Virtual function to make available the pointer to the vector for the donor elements
@@ -439,6 +439,7 @@ public:
    * \return The pointer to the data of donorElementsWallFunctions.
    */
   inline virtual unsigned long *GetDonorsWallFunctions(void) {return nullptr;}
+  inline virtual const unsigned long *GetDonorsWallFunctions(void) const {return nullptr;}
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.

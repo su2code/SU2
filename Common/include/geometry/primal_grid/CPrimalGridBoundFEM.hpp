@@ -80,14 +80,14 @@ public:
    * \param[in] val_node - Local (to the element) index of the node.
    * \return Global index of the node.
    */
-  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
+  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the face index of an element.
@@ -95,7 +95,7 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -103,26 +103,26 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
    * \return Local (to the element) index of the nodes that are neighbor to val_node.
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that composes an element.
    */
-  inline unsigned short GetnNodes(void) override { return nDOFsGrid; }
+  inline unsigned short GetnNodes(void) const override { return nDOFsGrid; }
 
   /*!
    * \brief Get the number of faces of an element.
    * \return Number of faces of an element.
    */
-  inline unsigned short GetnFaces(void) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnFaces(void) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the number of neighbors nodes of a node.
    * \param[in] val_node - Local (to the element) index of a node.
    * \return Number if neighbors of a node val_node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Change the orientation of an element.
@@ -133,31 +133,31 @@ public:
    * \brief Get the number of element that are neighbor to this element.
    * \return Number of neighbor elements.
    */
-  inline unsigned short GetnNeighbor_Elements(void) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnNeighbor_Elements(void) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */
-  inline unsigned short GetMaxNodesFace(void) override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetMaxNodesFace(void) const override { return std::numeric_limits<unsigned short>::max(); }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.
    * \return Type of the element using VTK nomenclature.
    */
-  inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
+  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
    * \brief Get the polynomial degree of the grid for this element.
    * \return The polynomial degree of the grid.
    */
-  inline unsigned short GetNPolyGrid(void) override { return nPolyGrid; }
+  inline unsigned short GetNPolyGrid(void) const override { return nPolyGrid; }
 
   /*!
    * \brief Function to make available the number of DOFs of the grid in the element.
    * \return The number of DOFs of the grid in the element.
    */
-  inline unsigned short GetNDOFsGrid(void) override { return nDOFsGrid; }
+  inline unsigned short GetNDOFsGrid(void) const override { return nDOFsGrid; }
 
   /*!
    * \brief Get the corner points of this boundary element.
@@ -188,13 +188,13 @@ public:
    * \brief Make available the global ID of this element.
    * \return The global ID of this element.
    */
-  inline unsigned long GetGlobalElemID(void) override { return boundElemIDGlobal; }
+  inline unsigned long GetGlobalElemID(void) const override { return boundElemIDGlobal; }
 
   /*!
    * \brief Function to get whether or not the Jacobian is considered constant.
    * \return True if the Jacobian is (almost) constant and false otherwise.
    */
-  inline bool GetJacobianConsideredConstant(void) override {return JacobianConsideredConstant;}
+  inline bool GetJacobianConsideredConstant(void) const override {return JacobianConsideredConstant;}
 
   /*!
    * \brief Function to set the value of JacobianConsideredConstant.
@@ -212,7 +212,7 @@ public:
    * \brief Make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline unsigned short GetNDonorsWallFunctions(void) override {return donorElementsWallFunctions.size();}
+  inline unsigned short GetNDonorsWallFunctions(void) const override {return donorElementsWallFunctions.size();}
 
   /*!
    * \brief Make available the pointer to the vector for the donor elements
@@ -220,6 +220,7 @@ public:
    * \return The pointer to the data of donorElementsWallFunctions.
    */
   inline unsigned long *GetDonorsWallFunctions(void) override {return donorElementsWallFunctions.data();}
+  inline const unsigned long *GetDonorsWallFunctions(void) const override {return donorElementsWallFunctions.data();}
 
   /*!
    * \brief Set the global ID's of the donor elements for the wall function treatment.

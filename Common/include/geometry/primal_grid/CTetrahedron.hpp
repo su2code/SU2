@@ -69,7 +69,7 @@ public:
    * \param[in] val_node - Local (to the tetrahedron) index of the node (a tetrahedron has 4 nodes).
    * \return Global index of the tetrahedron node.
    */
-  inline unsigned long GetNode(unsigned short val_node) override { return Nodes[val_node]; }
+  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
 
   /*!
    * \brief Set the point associated at a node.
@@ -84,7 +84,7 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) override { return Faces[val_face][val_index]; }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return Faces[val_face][val_index]; }
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -92,51 +92,51 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
    * \return Local (to the element) index of the nodes that are neighbor to val_node.
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) override { return Neighbor_Nodes[val_node][val_index]; }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return Neighbor_Nodes[val_node][val_index]; }
 
   /*!
    * \brief Get the number of neighbors nodes of a node.
    * \param[in] val_node - Local (to the element) index of a node.
    * \return Number if neighbors of a node val_node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) override { return nNeighbor_Nodes[val_node]; }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return nNeighbor_Nodes[val_node]; }
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) override { return nNodesFace[val_face]; }
+  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return nNodesFace[val_face]; }
 
   /*!
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that composes an element.
    */
-  inline unsigned short GetnNodes(void) override { return nNodes; }
+  inline unsigned short GetnNodes(void) const override { return nNodes; }
 
   /*!
    * \brief Get the number of faces of an element.
    * \return Number of faces of an element.
    */
-  inline unsigned short GetnFaces(void) override { return nFaces; }
+  inline unsigned short GetnFaces(void) const override { return nFaces; }
 
   /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */
-  inline unsigned short GetMaxNodesFace(void) override { return maxNodesFace; }
+  inline unsigned short GetMaxNodesFace(void) const override { return maxNodesFace; }
 
   /*!
    * \brief Get the type of the element using VTK nomenclature.
    * \return Type of the element using VTK nomenclature.
    */
-  inline unsigned short GetVTK_Type(void) override { return VTK_Type; }
+  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
    * \brief Get the number of element that are neighbor to this element.
    * \return Number of neighbor elements.
    */
-  inline unsigned short GetnNeighbor_Elements(void) override { return nNeighbor_Elements; }
+  inline unsigned short GetnNeighbor_Elements(void) const override { return nNeighbor_Elements; }
 
   /*!
    * \brief Change the orientation of an element.
