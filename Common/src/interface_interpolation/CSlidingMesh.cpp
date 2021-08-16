@@ -229,7 +229,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Contruct information regarding the target cell ---*/
 
-          unsigned long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+          auto dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
           for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
             if( dPoint == Target_GlobalPoint[jVertexTarget] )
               break;
