@@ -135,6 +135,7 @@ void computeGradientsGreenGauss(CSolver* solver,
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
   {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
       /*--- Work is shared in inner loop as two markers

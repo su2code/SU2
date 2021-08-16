@@ -725,12 +725,6 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void MatchNearField(CConfig *config) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
   inline virtual void MatchActuator_Disk(CConfig *config) {}
 
   /*!

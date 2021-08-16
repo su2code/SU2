@@ -1076,9 +1076,6 @@ enum BC_TYPE {
   PERIODIC_BOUNDARY = 6,      /*!< \brief Periodic boundary definition. */
   NEARFIELD_BOUNDARY = 7,     /*!< \brief Near-Field boundary definition. */
   CUSTOM_BOUNDARY = 10,       /*!< \brief custom boundary definition. */
-  INTERFACE_BOUNDARY = 11,    /*!< \brief Domain interface boundary definition. */
-  DIRICHLET = 12,             /*!< \brief Boundary Euler wall definition. */
-  NEUMANN = 13,               /*!< \brief Boundary Neumann definition. */
   DISPLACEMENT_BOUNDARY = 14, /*!< \brief Boundary displacement definition. */
   LOAD_BOUNDARY = 15,         /*!< \brief Boundary Load definition. */
   FLOWLOAD_BOUNDARY = 16,     /*!< \brief Boundary Load definition. */
