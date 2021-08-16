@@ -30,7 +30,6 @@
 #include "../../include/containers/C2DContainer.hpp"
 #include "../../include/containers/container_decorators.hpp"
 #include <vector>
-#include <forward_list>
 #include <algorithm>
 
 class CConfig;
