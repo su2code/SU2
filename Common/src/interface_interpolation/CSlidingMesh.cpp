@@ -723,49 +723,45 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered
    *    surface element around the node and store it into "element" ---*/
 
-  unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes;
-
   constexpr unsigned short nDim = 3;
-  unsigned short iDim, nTmp;
 
-  int NextNode, **OuterNodesNeighbour, CurrentNode, StartIndex, count;
-  const unsigned long *OuterNodes, *ptr;
+  int **OuterNodesNeighbour;
+  const unsigned long *OuterNodes;
 
   /* --- Store central node as element first point --- */
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     element[0][iDim] = coord(centralNode,iDim);
 
-  nOuterNodes = nNeighbor[centralNode];
+  unsigned long nOuterNodes = nNeighbor[centralNode];
 
   OuterNodes = &map[ startIndex[centralNode] ];
 
   /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
 
   OuterNodesNeighbour = new int*[nOuterNodes];
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
+  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ )
     OuterNodesNeighbour[ iNode ] = new int[2];
 
   /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
 
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ ){
+  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ ){
     OuterNodesNeighbour[ iNode ][0] = -1;
     OuterNodesNeighbour[ iNode ][1] = -1;
   }
 
   /* --- For each outer node, the program finds the two neighbouring outer nodes --- */
 
-  StartIndex = 0;
-  for( iNode = 0; iNode < nOuterNodes; iNode++ ){
+  int StartNode = 0;
+  for( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ ){
 
-  count = 0;
-  iPoint = OuterNodes[ iNode ];
-  ptr = &map[ startIndex[iPoint] ];
-  nTmp = nNeighbor[iPoint];
+  int count = 0; // number of neighboring outer nodes already found
+  const unsigned long iPoint = OuterNodes[ iNode ];
+  const unsigned long *ptr = &map[ startIndex[iPoint] ];
 
-  for ( jNode = 0; jNode < nTmp; jNode++ ){
-    jPoint = ptr[jNode];
-    for( kNode = 0; kNode < nOuterNodes; kNode++ ){
+  for ( unsigned long jNode = 0; jNode < nNeighbor[iPoint]; jNode++ ){
+    const unsigned long jPoint = ptr[jNode];
+    for( unsigned long kNode = 0; kNode < nOuterNodes; kNode++ ){
       if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
         OuterNodesNeighbour[iNode][count] = (int)kNode;
         count++;
@@ -776,23 +772,23 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
 
   // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
   if( count == 1 )
-    StartIndex = (int)iNode;
+    StartNode = (int)iNode;
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
 
-  CurrentNode = StartIndex;
-  NextNode    = OuterNodesNeighbour[ CurrentNode ][0];
-  iElementNode = 1;
+  int CurrentNode = StartNode;
+  int NextNode    = OuterNodesNeighbour[ CurrentNode ][0];
+  unsigned long iElementNode = 1;
 
   while( NextNode != -1 ){
 
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
 
     iElementNode++;
 
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] +
                                         coord(OuterNodes[ NextNode ], iDim) )/3.;
     iElementNode++;
@@ -806,23 +802,23 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
       NextNode = OuterNodesNeighbour[ NextNode ][0];
     }
 
-    if (CurrentNode == StartIndex)
+    if (CurrentNode == StartNode)
       break;
     }
 
-    if( CurrentNode == StartIndex ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
+    if( CurrentNode == StartNode ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
 
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = element[1][iDim];
     iElementNode++;
   }
   else{
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
     element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
     iElementNode++;
   }
 
-  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
+  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ )
     delete [] OuterNodesNeighbour[ iNode ];
   delete [] OuterNodesNeighbour;
 
