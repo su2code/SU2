@@ -725,7 +725,6 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
 
   constexpr unsigned short nDim = 3;
 
-  int **OuterNodesNeighbour;
   const unsigned long *OuterNodes;
 
   /* --- Store central node as element first point --- */
@@ -737,51 +736,42 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
 
   OuterNodes = &map[ startIndex[centralNode] ];
 
-  /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
-
-  OuterNodesNeighbour = new int*[nOuterNodes];
-  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ )
-    OuterNodesNeighbour[ iNode ] = new int[2];
-
-  /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
-
-  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ ){
-    OuterNodesNeighbour[ iNode ][0] = -1;
-    OuterNodesNeighbour[ iNode ][1] = -1;
-  }
-
-  /* --- For each outer node, the program finds the two neighbouring outer nodes --- */
-
+  // For each neighbor n of centralNode, store <=2 neighbors of centralNode that are neighbors of n.
+  su2matrix<int> OuterNodesNeighbour(nOuterNodes,2);
+  OuterNodesNeighbour = -1;
+  // Typically there are exactly 2 such neighbors, and all the neighbors of centralNode can be
+  // arranged into a closed chain. However at 1D boundaries of 2D markers, the neighbors might
+  // be an open chain, with the two ends having only 1 such neighbor.
+  // StartNode is a node where we can start to iterate through the chain. I.e. it's any node in
+  // case of a closed chain, or one of the two ends in case of an open chain.
   int StartNode = 0;
   for( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ ){
 
-  int count = 0; // number of neighboring outer nodes already found
-  const unsigned long iPoint = OuterNodes[ iNode ];
-  const unsigned long *ptr = &map[ startIndex[iPoint] ];
+    int count = 0; // number of neighboring outer nodes already found
+    const unsigned long iPoint = OuterNodes[ iNode ];
+    const unsigned long *ptr = &map[ startIndex[iPoint] ];
 
-  for ( unsigned long jNode = 0; jNode < nNeighbor[iPoint]; jNode++ ){
-    const unsigned long jPoint = ptr[jNode];
-    for( unsigned long kNode = 0; kNode < nOuterNodes; kNode++ ){
-      if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-        OuterNodesNeighbour[iNode][count] = (int)kNode;
-        count++;
-        break;
+    for ( unsigned long jNode = 0; jNode < nNeighbor[iPoint]; jNode++ ){
+      const unsigned long jPoint = ptr[jNode];
+      for( unsigned long kNode = 0; kNode < nOuterNodes; kNode++ ){
+        if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
+          OuterNodesNeighbour(iNode,count) = static_cast<int>(kNode);
+          count++;
+          break;
+        }
       }
     }
-  }
-
-  // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
-  if( count == 1 )
-    StartNode = (int)iNode;
+    if( count == 1 )
+      StartNode = static_cast<int>(iNode);
   }
 
   /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
 
   int CurrentNode = StartNode;
-  int NextNode    = OuterNodesNeighbour[ CurrentNode ][0];
+  int NextNode    = OuterNodesNeighbour(CurrentNode,0);
   unsigned long iElementNode = 1;
 
-  while( NextNode != -1 ){
+  while( NextNode != -1 ){ // We finished iterating through the chain if it is an open chain and we reached the other end.
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
@@ -793,36 +783,31 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
                                         coord(OuterNodes[ NextNode ], iDim) )/3.;
     iElementNode++;
 
-    if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
+    // "Place the next domino piece in the correct orientation."
+    if( OuterNodesNeighbour(NextNode, 0) == CurrentNode){
       CurrentNode = NextNode;
-      NextNode = OuterNodesNeighbour[ NextNode ][1];
-    }
-    else{
+      NextNode = OuterNodesNeighbour(NextNode, 1);
+    } else{
       CurrentNode = NextNode;
-      NextNode = OuterNodesNeighbour[ NextNode ][0];
+      NextNode = OuterNodesNeighbour(NextNode, 0);
     }
 
+    // We finished iterating through the chain if it is closed and we reached the beginning again.
     if (CurrentNode == StartNode)
       break;
-    }
+  }
 
-    if( CurrentNode == StartNode ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
-
+  if( CurrentNode == StartNode ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = element[1][iDim];
     iElementNode++;
-  }
-  else{
+  } else{
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
     iElementNode++;
   }
 
-  for ( unsigned long iNode = 0; iNode < nOuterNodes; iNode++ )
-    delete [] OuterNodesNeighbour[ iNode ];
-  delete [] OuterNodesNeighbour;
-
-  return (int)iElementNode;
+  return static_cast<int>(iElementNode);
 
 }
 
