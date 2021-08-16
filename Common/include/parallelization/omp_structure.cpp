@@ -3,7 +3,7 @@
  * \brief Source file counterpart for omp_structure.hpp.
  * \note Contains OpDiLib initialization, finalization and includes the OpDiLib source file.
  * \author J. Blühdorn
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
