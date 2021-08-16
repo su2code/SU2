@@ -27,3 +27,65 @@
  */
 
 #pragma once
+
+#include "../scalar/scalar_convection.hpp"
+
+/*!
+ * \class CUpwSca_TurbSA
+ * \brief Class for doing a scalar upwind solver for the Spalar-Allmaras turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno.
+ */
+class CUpwSca_TurbSA final : public CUpwScalar {
+private:
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn() override;
+
+  /*!
+   * \brief SA specific steps in the ComputeResidual method
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(const CConfig* config) override;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+};
+
+/*!
+ * \class CUpwSca_TurbSST
+ * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author A. Campos.
+ */
+class CUpwSca_TurbSST final : public CUpwScalar {
+private:
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn() override;
+
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(const CConfig* config) override;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+};
