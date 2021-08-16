@@ -56,6 +56,12 @@
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
 
+#ifdef HAVE_LIBROM
+#include "BasisGenerator.h"
+#include "QDEIM.h"
+#include "DEIM.h"
+#endif
+
 using namespace std;
 
 class CSolver {
@@ -196,6 +202,11 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
+  
+#ifdef HAVE_LIBROM
+  std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
+#endif
+  
   /*!
    * \brief Constructor of the class.
    */
@@ -1049,6 +1060,16 @@ public:
                                        CNumerics *visc_numerics,
                                        CConfig *config,
                                        unsigned short val_marker) { }
+
+  /*!
+   * \brief Impose a heat flux by prescribing a heat transfer coefficient and a temperature at infinity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                                           const CConfig *config,
+                                           const unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.
@@ -4326,7 +4347,14 @@ public:
    * \return Struct holding 4 su2doubles.
    */
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
-
+  
+  /*!
+   * \brief Save snapshot or POD data using libROM
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] converged - Whether or not solution has converged.
+  */
+  void SavelibROM(CGeometry *geometry, CConfig *config, bool converged);
 
 protected:
   /*!

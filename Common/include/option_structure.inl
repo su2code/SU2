@@ -26,6 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using namespace std;
+
 template <class Tenum, class TField>
 class COptionEnum final : public COptionBase {
 

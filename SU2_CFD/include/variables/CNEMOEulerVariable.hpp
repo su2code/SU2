@@ -29,6 +29,7 @@
 
 #include "CVariable.hpp"
 #include "../fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 /*!
  * \class CNEMOEulerVariable
@@ -80,6 +81,7 @@ protected:
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+  const bool implicit;      /*!< \brief Implicit flag. */
 
 public:
 
@@ -255,7 +257,7 @@ public:
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Subtract <i>value</i> to the gradient of the primitive variables.
@@ -281,7 +283,9 @@ public:
    * \brief Get the value of the primitive variables gradient.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double **GetGradient_Primitive(unsigned long iPoint) final { return Gradient_Primitive[iPoint]; }
+  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final {
+    return Gradient_Primitive(iPoint,iVar);
+  }
 
   /*!
    * \brief Get the primitive variable gradients for all points.

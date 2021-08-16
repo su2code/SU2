@@ -319,7 +319,11 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
       cout << "WARNING: On " << numRanksUsingReducer << " MPI ranks the coloring efficiency was less than "
            << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
-           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+           << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)."
+#ifdef HAVE_OPDI
+           << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
+#endif
+           << endl;
     }
 
     if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
@@ -1053,8 +1057,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
-  su2double** Grad_Reflected = new su2double*[nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) Grad_Reflected[iVar] = new su2double[nDim];
+  su2activematrix Grad_Reflected(nPrimVarGrad, nDim);
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -1260,7 +1263,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
                 GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
 
         /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), Grad_Reflected);
+        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
         /*--- Turbulent kinetic energy. ---*/
         if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
@@ -1280,9 +1283,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   }      // for iVertex
   END_SU2_OMP_FOR
 
-  /*--- Free locally allocated memory ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) delete[] Grad_Reflected[iVar];
-  delete[] Grad_Reflected;
 }
 
 template <class V, ENUM_REGIME R>
@@ -1535,6 +1535,12 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
   }
 
+  /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  bool pausePreacc = false;
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
@@ -1556,6 +1562,10 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     }
     END_SU2_OMP_FOR
   }
+
+  /*--- Restore preaccumulation and adjoint evaluation state. ---*/
+  AD::ResumePreaccumulation(pausePreacc);
+  if (!ReducerStrategy) AD::EndNoSharedReading();
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
@@ -1611,6 +1621,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
 
     /*--- Loop over all nodes (excluding halos) ---*/
 
+    AD::StartNoSharedReading();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -1645,6 +1657,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
 
   }
 
@@ -1723,6 +1737,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
     /*--- Loop over all nodes (excluding halos) to compute the remainder
      of the dual time-stepping source term. ---*/
 
+    AD::StartNoSharedReading();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -1760,6 +1776,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
       }
     }
     END_SU2_OMP_FOR
+
+    AD::EndNoSharedReading();
   }
 
 }
@@ -2882,6 +2900,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case INVERSE_DESIGN_HEATFLUX:
       objFun += weight * Total_HeatFluxDiff;
       break;
+    case EQUIVALENT_AREA:
+      objFun += weight*Total_CEquivArea;
+      break;
     case THRUST_COEFFICIENT:
       objFun += weight * TotalCoeff.CT;
       break;
@@ -2926,4 +2947,33 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
   }
 
   return objFun;
+}
+
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config) {
+
+  /*--- Loop through all points to set the auxvargrad --*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+    su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+    su2double xVelocity       = nodes->GetVelocity(iPoint,0);
+    su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
+
+    if (yCoord > EPS){
+      su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
+      nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
+      nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
+      nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetAuxVar_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetAuxVar_Gradient_LS(geometry, config);
+  }
 }

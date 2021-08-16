@@ -809,7 +809,7 @@ public:
    * \param[in] iPoint - Index of the point.
    * \return Grid velocity gradient at the point.
    */
-  inline const su2double* const* GetGridVel_Grad(unsigned long iPoint) const { return GridVel_Grad[iPoint]; }
+  inline CMatrixView<const su2double> GetGridVel_Grad(unsigned long iPoint) const { return GridVel_Grad[iPoint]; }
 
   /*!
    * \brief Set the adjoint values of the (geometric) coordinates.

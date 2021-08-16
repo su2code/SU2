@@ -15,7 +15,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or

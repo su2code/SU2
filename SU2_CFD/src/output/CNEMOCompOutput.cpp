@@ -43,7 +43,6 @@
 CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model    = config->GetKind_Turb_Model();
-  gridMovement  = config->GetDynamic_Grid();
   nSpecies      = config->GetnSpecies();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -238,8 +237,6 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
-  /// DESCRIPTION: Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
@@ -284,7 +281,7 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /*--- Add Cp diff fields ---*/
 
-  Add_CpInverseDesignOutput(config);
+  Add_CpInverseDesignOutput();
 
 }
 
@@ -323,10 +320,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-
-  //Auxiliary variables for post-processment
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("MASSFRAC_" + std::to_string(iSpecies),  "MassFrac_" + std::to_string(iSpecies),  "AUXILIARY", "MassFrac_" + std::to_string(iSpecies));
 
   // Grid velocity
   if (gridMovement){

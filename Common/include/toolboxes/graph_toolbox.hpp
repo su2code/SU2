@@ -527,7 +527,7 @@ T createNaturalColoring(Index_t numInnerIndexes)
  * \param[out] indexColor - Optional, vector with colors given to the outer indices.
  * \return Coloring in the same type of the input pattern.
  */
-template<class T, typename Color_t = char, size_t MaxColors = 32, size_t MaxMB = 128>
+template<class T, typename Color_t = char, size_t MaxColors = 64, size_t MaxMB = 128>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr)
 {

@@ -614,7 +614,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the solution gradient.
    */
-  inline su2double** GetAuxVarGradient(unsigned long iPoint) {
+  inline CMatrixView<su2double> GetAuxVarGradient(unsigned long iPoint) {
     return Grad_AuxVar[iPoint];
   }
 
@@ -703,7 +703,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
    */
-  inline su2double **GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
+  inline CMatrixView<su2double> GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -1644,7 +1644,7 @@ public:
    * \brief A virtual member.
    * \return Value of the primitive variables gradient.
    */
-  inline virtual su2double **GetGradient_Primitive(unsigned long iPoint) { return nullptr; }
+  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -1656,7 +1656,7 @@ public:
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
    * \return Value of the primitive gradient for MUSCL reconstruction.
    */
-  inline virtual su2double **GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
+  inline virtual CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
@@ -2186,7 +2186,7 @@ public:
 
   inline virtual su2double GetTauWall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }

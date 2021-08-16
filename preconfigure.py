@@ -287,7 +287,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = '6a67202a3887c8da490fdfde82bc46507de68692'
+    sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
     sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
     github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
@@ -553,7 +553,7 @@ def header():
 
     print('-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 7.0.2 \'Blackbird\'                         | \n'\
+          '|   / __| | | |_  )   Release 7.1.1 \'Blackbird\'                         | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
@@ -572,7 +572,7 @@ def header():
           '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
           '| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       | \n'\
+          '| Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,       | \n'\
           '|                      Tim Albring, and the SU2 contributors.           | \n'\
           '|                                                                       | \n'\
           '| SU2 is free software; you can redistribute it and/or                  | \n'\

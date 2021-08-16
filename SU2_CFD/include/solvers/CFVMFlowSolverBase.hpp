@@ -154,6 +154,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function for all the boundaries. */
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_MassFlowRate = 0.0;   /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double Total_CNearFieldOF = 0.0;   /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   su2double Total_Heat = 0.0;           /*!< \brief Total heat load for all the boundaries. */
@@ -276,6 +277,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    */
   void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow.
+   */
+  void ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config);
 
   /*!
    * \brief Instantiate a SIMD numerics object.
@@ -997,12 +1003,11 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
-   * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
+   * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  template<size_t VelocityOffset>
+  template<unsigned long VelocityOffset>
   void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
 
-    const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
     auto& StrainMag = nodes->GetStrainMag();
 
     ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
@@ -1012,31 +1017,28 @@ class CFVMFlowSolverBase : public CSolver {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-      constexpr size_t u = VelocityOffset;
-      constexpr size_t v = VelocityOffset+1;
-      constexpr size_t w = VelocityOffset+2;
+      const auto VelocityGradient = nodes->GetGradient_Primitive(iPoint, VelocityOffset);
+      auto Vorticity = nodes->GetVorticity(iPoint);
 
       /*--- Vorticity ---*/
 
-      su2double* Vorticity = nodes->GetVorticity(iPoint);
-
-      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
-
-      Vorticity[2] = Gradient_Primitive(iPoint,v,0)-Gradient_Primitive(iPoint,u,1);
+      Vorticity[0] = 0.0;
+      Vorticity[1] = 0.0;
+      Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
 
       if (nDim == 3) {
-        Vorticity[0] = Gradient_Primitive(iPoint,w,1)-Gradient_Primitive(iPoint,v,2);
-        Vorticity[1] = -(Gradient_Primitive(iPoint,w,0)-Gradient_Primitive(iPoint,u,2));
+        Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
+        Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
       }
 
       /*--- Strain Magnitude ---*/
 
       AD::StartPreacc();
-      AD::SetPreaccIn(&Gradient_Primitive[iPoint][VelocityOffset], nDim, nDim);
+      AD::SetPreaccIn(VelocityGradient, nDim, nDim);
 
       su2double Div = 0.0;
       for (unsigned long iDim = 0; iDim < nDim; iDim++)
-        Div += Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim);
+        Div += VelocityGradient(iDim, iDim);
       Div /= 3.0;
 
       StrainMag(iPoint) = 0.0;
@@ -1044,7 +1046,7 @@ class CFVMFlowSolverBase : public CSolver {
       /*--- Add diagonal part ---*/
 
       for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-        StrainMag(iPoint) += pow(Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim) - Div, 2);
+        StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
       }
       if (nDim == 2) {
         StrainMag(iPoint) += pow(Div, 2);
@@ -1052,11 +1054,11 @@ class CFVMFlowSolverBase : public CSolver {
 
       /*--- Add off diagonals ---*/
 
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,1) + Gradient_Primitive(iPoint,v,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
 
       if (nDim == 3) {
-        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,2) + Gradient_Primitive(iPoint,w,0)), 2);
-        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,v,2) + Gradient_Primitive(iPoint,w,1)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
       }
 
       StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
@@ -2091,6 +2093,12 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_HeatFluxDiff(su2double val_heat) final { Total_HeatFluxDiff = val_heat; }
 
   /*!
+   * \brief Set the value of the Equivalent Area coefficient.
+   * \param[in] val_equiv - Value of the Equivalent Area coefficient.
+   */
+  inline void SetTotal_CEquivArea(su2double val_equiv) final { Total_CEquivArea = val_equiv; }
+
+  /*!
    * \brief Set the value of the Near-Field pressure oefficient.
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
    */
@@ -2121,6 +2129,12 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+   */
+  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
 
   /*!
    * \brief Set the value of the custom objective function.
