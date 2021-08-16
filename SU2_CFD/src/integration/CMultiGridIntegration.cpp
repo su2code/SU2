@@ -435,6 +435,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(32)
