@@ -187,8 +187,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   // global point IDs of all domain vertices on the marker
   su2vector<unsigned long> Buffer_Send_GlobalPoint(nVertex);
 
-  // Assign to each domain vertex on the marker, identified by local point ID,
-  // a set of surface-neighbor vertices on the marker, identified by global point ID.
+  /*--- Assign to each domain vertex on the marker, identified by local point ID,
+   * a set of surface-neighbor vertices on the marker, identified by global point ID. ---*/
   unordered_map<unsigned long, set<unsigned long> > neighbors;
 
   /*--- Define or initialize them. ---*/
