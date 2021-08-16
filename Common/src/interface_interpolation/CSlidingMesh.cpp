@@ -245,10 +245,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
-            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ target_segment[0] ][ iDim ] +
-                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
-            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ target_segment[1] ][ iDim ] +
-                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
+            target_iMidEdge_point[iDim] = ( TargetPoint_Coord(target_segment[0], iDim ) +
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2.;
+            target_jMidEdge_point[iDim] = ( TargetPoint_Coord(target_segment[1], iDim ) +
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2.;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -291,10 +291,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point ][ iDim] +
-                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point ][ iDim] +
-                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord(donor_forward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord(donor_backward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -374,10 +374,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             }
 
             for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  ][ iDim] +
-                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point ][ iDim] +
-                                             DonorPoint_Coord[ donor_iPoint ][ iDim] ) / 2;
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord(donor_forward_point , iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord(donor_backward_point, iDim) +
+                                             DonorPoint_Coord(donor_iPoint, iDim) ) / 2.;
             }
 
             LineIntersectionLength = ComputeLineIntersectionLength(nDim, target_iMidEdge_point, target_jMidEdge_point,
@@ -734,7 +734,7 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
   /* --- Store central node as element first point --- */
 
   for (iDim = 0; iDim < nDim; iDim++)
-    element[0][iDim] = coord[centralNode ][ iDim];
+    element[0][iDim] = coord(centralNode,iDim);
 
   nOuterNodes = nNeighbor[centralNode];
 
@@ -788,13 +788,13 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
   while( NextNode != -1 ){
 
     for (iDim = 0; iDim < nDim; iDim++)
-      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim ])/2;
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
 
     iElementNode++;
 
     for (iDim = 0; iDim < nDim; iDim++)
       element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] +
-                                        coord[ OuterNodes[ NextNode ] ][ iDim] )/3;
+                                        coord(OuterNodes[ NextNode ], iDim) )/3.;
     iElementNode++;
 
     if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
@@ -818,7 +818,7 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map, 
   }
   else{
     for (iDim = 0; iDim < nDim; iDim++)
-    element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] ][ iDim] )/2;
+    element[ iElementNode ][iDim] = ( element[0][iDim] + coord(OuterNodes[ CurrentNode ], iDim) )/2.;
     iElementNode++;
   }
 
