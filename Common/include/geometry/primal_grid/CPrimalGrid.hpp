@@ -365,7 +365,7 @@ public:
    */
   inline virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
                                       unsigned short nPointsPerFace[],
-                                      unsigned long  faceConn[6][4]) { }
+                                      unsigned long  faceConn[6][4]) const { }
 
   /*!
    * \brief Virtual function to make available the global ID of this element.

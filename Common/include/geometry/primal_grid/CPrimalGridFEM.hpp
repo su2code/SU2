@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CPrimalGridFEM(void);
+  CPrimalGridFEM() = delete;
 
   /*!
    * \brief Constructor using data to initialize the element.
@@ -213,8 +213,16 @@ public:
    */
   void GetCornerPointsAllFaces(unsigned short &numFaces,
                                unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]) override;
+                               unsigned long  faceConn[6][4]) const override;
+private:
+  /*!
+   * \brief Get the number of faces of the element.
+   * \param[in] elementType - element type
+   * \return number of faces
+   */
+  static unsigned short elementtype_to_nFaces(unsigned short elementType);
 
+public:
   /*!
    * \brief Static member function to get the local the corner points of all the faces
            of this element. It must be made sure that the numbering of the faces is

@@ -90,7 +90,7 @@ void CPrimalGridBoundFEM::GetLocalCornerPointsFace(unsigned short elementType,
 
 void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
                                                   unsigned short nPointsPerFace[],
-                                                  unsigned long  faceConn[6][4]) {
+                                                  unsigned long  faceConn[6][4]) const {
 
   /*--- For compatibility reasons with the base class, nFaces is also an
         argument to this function. However, it is always 1, because the

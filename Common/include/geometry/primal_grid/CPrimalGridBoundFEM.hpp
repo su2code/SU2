@@ -167,7 +167,7 @@ public:
    */
   void GetCornerPointsAllFaces(unsigned short &nFaces,
                                unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]) override;
+                               unsigned long  faceConn[6][4]) const override;
 
   /*!
    * \brief Static member function to get the local the corner points of all the face
