@@ -1069,7 +1069,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.397970, 0.352779, 0.405462]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1082,7 +1082,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620168, 0.505184, 0.415129]
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001

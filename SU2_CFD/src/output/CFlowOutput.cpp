@@ -787,12 +787,12 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, const CGeometry *geometry
 void CFlowOutput::Add_NearfieldInverseDesignOutput(){
 
   AddHistoryOutput("EQUIVALENT_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
-  
+
 }
 
 void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config){
 
-  ofstream EquivArea_file, FuncGrad_file;
+  ofstream EquivArea_file;
   su2double auxXCoord, auxYCoord, auxZCoord, InverseDesign = 0.0, DeltaX,
     Coord_i, Coord_j, jp1Coord, *Coord = nullptr, MeanFunction,
     *Face_Normal = nullptr, auxArea, auxPress, jFunction, jp1Function;
@@ -1173,7 +1173,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
 
     /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
 
-    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
+    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       for (unsigned long iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
         NearFieldWeight_PhiAngle[iPhiAngle][iVertex] = 0.0;
@@ -1189,6 +1189,7 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
           NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
         }
       }
+    }
 
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
 
@@ -1220,28 +1221,6 @@ void CFlowOutput::Set_NearfieldInverseDesign(CSolver *solver, const CGeometry *g
     }
 
     EquivArea_file.close();
-
-
-    /*--- Write Weight file for adjoint computation ---*/
-
-    FuncGrad_file.precision(config->GetOutput_Precision());
-
-
-    FuncGrad_file.open("WeightNF.dat", ios::out);
-
-    FuncGrad_file << scientific << "-1.0";
-    for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-      FuncGrad_file << scientific << "\t" << PhiAngleList[iPhiAngle];
-    FuncGrad_file << "\n";
-
-    for (unsigned long iVertex = 0; iVertex < NearFieldWeight_PhiAngle[0].size(); iVertex++) {
-      su2double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
-      FuncGrad_file << scientific << XcoordRot;
-      for (unsigned long iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
-        FuncGrad_file << scientific << "\t" << NearFieldWeight_PhiAngle[iPhiAngle][iVertex];
-      FuncGrad_file << "\n";
-    }
-    FuncGrad_file.close();
 
   }
 
