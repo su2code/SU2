@@ -464,7 +464,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         for (iDim = 0; iDim < nDim; iDim++)
           Coord_i[iDim] = target_geometry->nodes->GetCoord(target_iPoint, iDim);
 
-        unsigned long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
+        auto dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
         for (target_iPoint = 0; target_iPoint < nGlobalVertex_Target; target_iPoint++){
           if( dPoint == Target_GlobalPoint[target_iPoint] )
             break;
