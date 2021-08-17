@@ -2,7 +2,7 @@
  * \file roe.hpp
  * \brief Delarations of numerics classes for Roe-type schemes in NEMO.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for evaluating the Riemann problem using Roe's scheme for a two-temperature model.
  * \ingroup ConvDiscr
  * \author S. R. Copeland, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CUpwRoe_NEMO : public CNEMONumerics {
 private:
