@@ -89,7 +89,7 @@ CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
   delete [] Flux;
-  
+
   if (Jacobian_i != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];

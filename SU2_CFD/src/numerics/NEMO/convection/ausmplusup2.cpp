@@ -68,7 +68,6 @@ CUpwAUSMPLUSUP2_NEMO::~CUpwAUSMPLUSUP2_NEMO(void) {
   delete [] u_i;
   delete [] u_j;
   unsigned short iVar;
-
   delete [] Flux;
 }
 
@@ -76,7 +75,8 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
 
   unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j,
-  e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
+  mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi,
+  e_ve_i, e_ve_j, sq_veli, sq_velj;
 
   /*--- Face area ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);

@@ -83,10 +83,8 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
 CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iVar, jVar, iSpecies;
-  su2double rho_i, rho_j,
+  su2double rho_i, rho_j, Ru,
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
-
-  su2double Ru; 
 
   /*--- Compute geometric quantities ---*/
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -166,7 +164,6 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
-
   /********************************************************/
   //TODO DELETE THIS: ROE Jacobian for DEBUGGING
   if (implicit){
@@ -202,7 +199,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     fluidmodel->ComputedPdU(RoeV, roe_eves, RoedPdU);
 
     /*--- Calculate dual grid tangent vectors for P & invP ---*/
-    CreateBasis(UnitNormal);
+    su2double l[MAXNDIM], m[MAXNDIM];
+    CreateBasis(UnitNormal,l,m);
 
     /*--- Compute projected P, invP, and Lambda ---*/
     GetPMatrix    (RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
@@ -271,7 +269,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     }
   }
   /*********************************************************/
-  
+
 
   // if (implicit){
 

@@ -178,7 +178,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
        nodes->SetEddyViscosity(iPoint, eddy_visc);
     }
 
-    /*--- Incompressible flow, primitive variables ---*/
+    /*--- Compressible flow, primitive variables ---*/
 
     nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
 
@@ -637,9 +637,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Ti, Tvei, Tj, Tvej, Twall, dij, theta,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
-  su2double *V, *dTdU, *dTvedU;
-  bool ionization = config->GetIonization();
   bool implicit = (config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT);
+  bool ionization = config->GetIonization();
 
   if (ionization) {
     SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
@@ -714,7 +713,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Scale thermal conductivity with turb ---*/
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
-      V = nodes->GetPrimitive(iPoint);
+      auto V = nodes->GetPrimitive(iPoint);
       su2double Mass = 0.0;
       auto&     Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
@@ -741,9 +740,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
-      
-        dTdU   = nodes->GetdTdU(iPoint);
-        dTvedU = nodes->GetdTvedU(iPoint);
+
+        auto dTdU   = nodes->GetdTdU(iPoint);
+        auto dTvedU = nodes->GetdTvedU(iPoint);
         for (iVar = 0; iVar < nVar; iVar++) {
           Jacobian_i[nSpecies+nDim][iVar]   = -(ktr*theta/dij*dTdU[iVar] +
                                                 kve*theta/dij*dTvedU[iVar])*Area;

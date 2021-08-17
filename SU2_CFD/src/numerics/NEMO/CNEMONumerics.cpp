@@ -56,7 +56,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-    
+
     sumdFdYjeve = new su2double[nSpecies];
 
     Ys   = new su2double[nSpecies];
@@ -479,10 +479,9 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs       = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_Mean_Eve);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_Mean_Eve);
   Cvtr     = fluidmodel->GetSpeciesCvTraRot();
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
@@ -501,6 +500,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
     sumY_j += Ds[iSpecies]*theta/dij*Ys_j[iSpecies];
     sumY   += Ds[iSpecies]*theta/dij*(Ys_j[iSpecies]-Ys_i[iSpecies]);
   }
+
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies  = 0; jSpecies < nSpecies; jSpecies++) {
