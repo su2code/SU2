@@ -34,7 +34,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
-  nFaces = elementtype_to_nFaces(VTK_Type);
+  nFaces = nFacesOfElementType(VTK_Type);
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 
   nPolyGrid = val_nPolyGrid;
@@ -81,7 +81,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
-  nFaces = elementtype_to_nFaces(VTK_Type);
+  nFaces = nFacesOfElementType(VTK_Type);
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 
   nPolyGrid = val_nPolyGrid;
@@ -111,7 +111,7 @@ void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
   /*--- Determine the element type and set the face data accordingly.
         The faceConn values are local to the element.                 ---*/
 
-  numFaces = elementtype_to_nFaces(elementType);
+  numFaces = nFacesOfElementType(elementType);
   unsigned short nn2, nn3, nn4;
   switch( elementType ) {
     case TRIANGLE:
