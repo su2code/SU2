@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 /*!
  * \class CPrimalGridFEM
  * \brief Class to define primal grid element for the FEM solver.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CPrimalGridFEM final: public CPrimalGrid {
 private:

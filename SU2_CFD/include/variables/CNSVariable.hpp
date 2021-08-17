@@ -2,7 +2,7 @@
  * \file CNSVariable.hpp
  * \brief Class for defining the variables of the compressible Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
