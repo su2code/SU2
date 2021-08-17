@@ -220,7 +220,17 @@ private:
    * \param[in] elementType - element type
    * \return number of faces
    */
-  static unsigned short elementtype_to_nFaces(unsigned short elementType);
+  static inline unsigned short nFacesOfElementType(unsigned short elementType) {
+    switch (elementType) {
+      case TRIANGLE: return 3;
+      case QUADRILATERAL: return 4;
+      case TETRAHEDRON: return 4;
+      case PYRAMID: return 5;
+      case PRISM: return 5;
+      case HEXAHEDRON: return 6;
+      default: SU2_MPI::Error("Invalid elementType.", CURRENT_FUNCTION); return 0;
+    }
+  }
 
 public:
   /*!
