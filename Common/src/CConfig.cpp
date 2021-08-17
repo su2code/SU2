@@ -3692,7 +3692,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   static const su2double Mu_Ref_Default = Mu_Constant_Default;
   static const su2double Mu_Temperature_Ref_Default = 273.15;
   static const su2double Mu_S_Default = 110.4;
-  static const su2double Specific_Heat_Cp_Default = 1004.73;
+  static const su2double Specific_Heat_Cp_Default = 1004.703;
   static const su2double Thermal_Conductivity_Constant_Default = 2.57E-2;
   static const su2double Prandtl_Lam_Default = 0.72;
   static const su2double Prandtl_Turb_Default = 0.9;
@@ -3739,6 +3739,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
+    if (GetKind_FluidModel() != MIXTURE_FLUID_MODEL) {
+      n_species = 1; 
+    }
 
     /* Correct the viscosities, if they contain the default SI values. */
     for(unsigned short iVar = 0; iVar < n_species; iVar++){
