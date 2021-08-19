@@ -3700,11 +3700,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Molecular_Weight == nullptr){
     Molecular_Weight = new su2double[1];
     Molecular_Weight[0] = Molecular_Weight_Default;
+    nMolecular_Weight = 1;
   }
 
   if (Mu_Constant == nullptr){
     Mu_Constant = new su2double[1];
     Mu_Constant[0] = Mu_Constant_Default;
+    nMu_Constant = 1;
   }
 
   if (Mu_Ref == nullptr && Mu_Temperature_Ref == nullptr && Mu_S == nullptr){
@@ -3714,100 +3716,102 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Mu_Ref[0] = Mu_Ref_Default;
     Mu_Temperature_Ref[0] = Mu_Temperature_Ref_Default;
     Mu_S[0] = Mu_S_Default;
+    nMu_Ref = 1;
+    nMu_Temperature_Ref = 1;
+    nMu_S = 1;
   }
 
   if (Specific_Heat_Cp == nullptr){
     Specific_Heat_Cp = new su2double[1];
     Specific_Heat_Cp[0] = Specific_Heat_Cp_Default;
+    nSpecific_Heat_Cp = 1;
   }
 
   if (Thermal_Conductivity_Constant == nullptr){
     Thermal_Conductivity_Constant = new su2double[1];
     Thermal_Conductivity_Constant[0] = Thermal_Conductivity_Constant_Default;
+    nThermal_Conductiviy_Constant = 1;
   }
 
   if (Prandtl_Lam == nullptr){
     Prandtl_Lam = new su2double[1];
     Prandtl_Lam[0] = Prandtl_Lam_Default;
+    nPrandtl_Lam = 1;
   }
 
   if (Prandtl_Turb == nullptr){
     Prandtl_Turb = new su2double[1];
     Prandtl_Turb[0] = Prandtl_Turb_Default;
+    nPrandtl_Turb = 1;
   }
 
   /*--- Check whether inputs for MIXTURE_FLUID_MODEL are correctly specified. ---*/
+  unsigned short n_species = 1; //TODO TK:: make it static?
 
-  if (Kind_FluidModel == MIXTURE_FLUID_MODEL) {
+  if (Kind_FluidModel == MIXTURE_FLUID_MODEL)
+    n_species = nScalar_Init + 1; 
 
-    static const unsigned short n_species = nScalar_Init + 1; 
+  /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
+    * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
+    * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active. --- */
+  if ((nMolecular_Weight != n_species) || (nSpecific_Heat_Cp != n_species)) {
+    SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
+                   "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+  }
 
-    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
-     * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
-     * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active. --- */
-    if ((nMolecular_Weight != n_species) || (nSpecific_Heat_Cp != n_species)) {
-      SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
-                     "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
-    }
+  switch (Kind_ViscosityModel) {
+    case VISCOSITYMODEL::CONSTANT:
+      if (nMu_Constant != n_species) {
+        SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_CONSTANT,\n"
+                       "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+      }
+      break;
+    case VISCOSITYMODEL::SUTHERLAND:
+      if ((nMu_Ref != n_species) || (nMu_Temperature_Ref != n_species) || (nMu_S != n_species)) {
+        SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_REF, MU_T_REF and SUTHERLAND_CONSTANT,\n"
+                       "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+      }
+      break;
+    default:
+      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+      break;
+  }
 
-    switch (Kind_ViscosityModel) {
-      case VISCOSITYMODEL::CONSTANT:
-        if (nMu_Constant != n_species) {
-          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_CONSTANT,\n"
+  switch (Kind_ConductivityModel) {
+    case CONDUCTIVITYMODEL::CONSTANT:
+      if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+        if ((nThermal_Conductiviy_Constant != n_species) || (nPrandtl_Turb != n_species)) {
+          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and PRANDTL_TURB,\n"
                          "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
         }
-        break;
-      case VISCOSITYMODEL::SUTHERLAND:
-        if ((nMu_Ref != n_species) || (nMu_Temperature_Ref != n_species) || (nMu_S != n_species)) {
-          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_REF, MU_T_REF and SUTHERLAND_CONSTANT,\n"
+      } else {
+          if (nThermal_Conductiviy_Constant != n_species) {
+            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
+                           "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+          } 
+      }
+      break;
+    case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+      if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+        if ((nPrandtl_Lam != n_species) || (nPrandtl_Turb != n_species)) {
+          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
                          "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
         }
-        break;
-      default:
-        SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
-        break;
-    }
-
-    switch (Kind_ConductivityModel) {
-      case CONDUCTIVITYMODEL::CONSTANT:
-        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-          if ((nThermal_Conductiviy_Constant != n_species) || (nPrandtl_Turb != n_species)) {
-            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and PRANDTL_TURB,\n"
+      } else {
+          if (nPrandtl_Lam != n_species) {
+            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM,\n"
                            "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
-          }
-        } else {
-            if (nThermal_Conductiviy_Constant != n_species) {
-              SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
-                             "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
-            } 
-        }
-        break;
-      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
-        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
-          if ((nPrandtl_Lam != n_species) || (nPrandtl_Turb != n_species)) {
-            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
-                           "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
-          }
-        } else {
-            if (nPrandtl_Lam != n_species) {
-              SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM,\n"
-                             "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
-            } 
-        }
-        break;
-      default:
-        SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
-        break;
-    }
+          } 
+      }
+      break;
+    default:
+      SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+      break;
   }
 
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
-    if (Kind_FluidModel != MIXTURE_FLUID_MODEL) {
-      n_species = 1; 
-    }
-
     /* Correct the viscosities, if they contain the default SI values. */
     for(unsigned short iVar = 0; iVar < n_species; iVar++){
       if(fabs(Mu_Constant[iVar]-Mu_Constant_Default) < 1.0E-15) Mu_Constant[iVar] /= 47.88025898;
@@ -4796,8 +4800,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if ((Kind_DensityModel == INC_DENSITYMODEL::CONSTANT) || (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ))
       Kind_FluidModel = CONSTANT_DENSITY;
-      // if (Kind_FluidModel != CONSTANT_DENSITY)
-        // SU2_MPI::Error("Incompressible problems with DENSITY_MODEL = CONSTANT or DENSITY_MODEL = BOUSSINESQ must use FLUID_MODEL = CONSTANT_DENSITY.", CURRENT_FUNCTION);
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
