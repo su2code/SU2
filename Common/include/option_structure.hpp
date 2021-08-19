@@ -127,6 +127,13 @@ const unsigned short N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CG
 const unsigned short N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 enum: unsigned short{N_POINTS_MAXIMUM = 8};      /*!< \brief Max. out of the above, used for static arrays, keep it up to date. */
+const unsigned short N_FACES_TRIANGLE = 3;       /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_QUADRILATERAL = 4;  /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_TETRAHEDRON = 4;    /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_PYRAMID = 5;        /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_PRISM = 5;          /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_HEXAHEDRON = 6;      /*!< \brief General output & CGNS defines. */
+
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element

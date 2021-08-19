@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CPrimalGrid.hpp"
+#include "../../option_structure.hpp"
 
 /*!
  * \class CPrimalGridFEM
@@ -222,12 +223,12 @@ private:
    */
   static inline unsigned short nFacesOfElementType(unsigned short elementType) {
     switch (elementType) {
-      case TRIANGLE: return 3;
-      case QUADRILATERAL: return 4;
-      case TETRAHEDRON: return 4;
-      case PYRAMID: return 5;
-      case PRISM: return 5;
-      case HEXAHEDRON: return 6;
+      case TRIANGLE: return N_FACES_TRIANGLE;
+      case QUADRILATERAL: return N_FACES_QUADRILATERAL;
+      case TETRAHEDRON: return N_FACES_TETRAHEDRON;
+      case PYRAMID: return N_FACES_PYRAMID;
+      case PRISM: return N_FACES_PRISM;
+      case HEXAHEDRON: return N_FACES_TETRAHEDRON;
       default: SU2_MPI::Error("Invalid elementType.", CURRENT_FUNCTION); return 0;
     }
   }
