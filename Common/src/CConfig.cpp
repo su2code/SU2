@@ -1165,13 +1165,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief GAMMA_VALUE  \n DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
-  addDoubleListOption("SPECIFIC_HEAT_CP", n_species, Specific_Heat_Cp);
+  addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant volume, Cp (717.645 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleOption("SPECIFIC_HEAT_CV", Specific_Heat_Cv, 717.645);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
-  addDoubleListOption("MOLECULAR_WEIGHT", n_species, Molecular_Weight);
+  addDoubleListOption("MOLECULAR_WEIGHT", nMolecular_Weight, Molecular_Weight);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/
@@ -1212,16 +1212,16 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to Constant Viscosity Model ---*/
 
   /* DESCRIPTION: default value for AIR */
-  addDoubleListOption("MU_CONSTANT", n_species, Mu_Constant);
+  addDoubleListOption("MU_CONSTANT", nMu_Constant, Mu_Constant);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
 
   /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
-  addDoubleListOption("MU_REF", n_species, Mu_Ref);
+  addDoubleListOption("MU_REF", nMu_Ref, Mu_Ref);
   /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
-  addDoubleListOption("MU_T_REF", n_species, Mu_Temperature_Ref);
+  addDoubleListOption("MU_T_REF", nMu_Temperature_Ref, Mu_Temperature_Ref);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
-  addDoubleListOption("SUTHERLAND_CONSTANT", n_species, Mu_S);
+  addDoubleListOption("SUTHERLAND_CONSTANT", nMu_S, Mu_S);
 
   /*--- Options related to Thermal Conductivity Model ---*/
 
@@ -1233,7 +1233,7 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-   addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", n_species, Thermal_Conductivity_Constant);
+   addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductiviy_Constant, Thermal_Conductivity_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
@@ -1259,9 +1259,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
   addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /*!\brief PRANDTL_LAM \n DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) \n DEFAULT: 0.72 \ingroup Config*/
-  addDoubleListOption("PRANDTL_LAM", n_species, Prandtl_Lam);
+  addDoubleListOption("PRANDTL_LAM", nPrandtl_Lam, Prandtl_Lam);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
-  addDoubleListOption("PRANDTL_TURB", n_species, Prandtl_Turb);
+  addDoubleListOption("PRANDTL_TURB", nPrandtl_Turb, Prandtl_Turb);
   /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
   addDoubleOption("WALLMODELKAPPA", wallModelKappa, 0.41);
   /*!\brief WALLMODELB \n DESCRIPTION: constant B used for the wall model \n DEFAULT 5.0 \ingroup Config*/
@@ -3736,10 +3736,75 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Prandtl_Turb[0] = Prandtl_Turb_Default;
   }
 
+  /*--- Check whether inputs for MIXTURE_FLUID_MODEL are correctly specified. ---*/
+
+  if (Kind_FluidModel == MIXTURE_FLUID_MODEL) {
+
+    static const unsigned short n_species = nScalar_Init + 1; 
+
+    /*--- Check whether the number of entries of each specified fluid property equals the number of transported scalar equations solved + 1.
+     * nMolecular_Weight and nSpecific_Heat_Cp are used because they are required for the fluid mixing models. 
+     * Cp is required in case of MIXTURE_FLUID_MODEL because the energy equation needs to be active. --- */
+    if ((nMolecular_Weight != n_species) || (nSpecific_Heat_Cp != n_species)) {
+      SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MOLECULAR_WEIGHT and SPECIFIC_HEAT_CP,\n"
+                     "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+    }
+
+    switch (Kind_ViscosityModel) {
+      case VISCOSITYMODEL::CONSTANT:
+        if (nMu_Constant != n_species) {
+          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_CONSTANT,\n"
+                         "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+        }
+        break;
+      case VISCOSITYMODEL::SUTHERLAND:
+        if ((nMu_Ref != n_species) || (nMu_Temperature_Ref != n_species) || (nMu_S != n_species)) {
+          SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for MU_REF, MU_T_REF and SUTHERLAND_CONSTANT,\n"
+                         "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+        }
+        break;
+      default:
+        SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+        break;
+    }
+
+    switch (Kind_ConductivityModel) {
+      case CONDUCTIVITYMODEL::CONSTANT:
+        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          if ((nThermal_Conductiviy_Constant != n_species) || (nPrandtl_Turb != n_species)) {
+            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT and PRANDTL_TURB,\n"
+                           "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+          }
+        } else {
+            if (nThermal_Conductiviy_Constant != n_species) {
+              SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for THERMAL_CONDUCTIVITY_CONSTANT,\n"
+                             "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+            } 
+        }
+        break;
+      case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
+        if (Kind_ConductivityModel_Turb == CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL) {
+          if ((nPrandtl_Lam != n_species) || (nPrandtl_Turb != n_species)) {
+            SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM and PRANDTL_TURB,\n"
+                           "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+          }
+        } else {
+            if (nPrandtl_Lam != n_species) {
+              SU2_MPI::Error("The use of MIXTURE_FLUID_MODEL requires the number of entries for PRANDTL_LAM,\n"
+                             "to be equal to the number of entries of SCALAR_INIT + 1", CURRENT_FUNCTION);
+            } 
+        }
+        break;
+      default:
+        SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+        break;
+    }
+  }
+
   /*--- Overrule the default values for viscosity if the US measurement system is used. ---*/
 
   if (SystemMeasurements == US) {
-    if (GetKind_FluidModel() != MIXTURE_FLUID_MODEL) {
+    if (Kind_FluidModel != MIXTURE_FLUID_MODEL) {
       n_species = 1; 
     }
 
@@ -4730,8 +4795,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if ((Kind_DensityModel == INC_DENSITYMODEL::CONSTANT) || (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ))
-      if (Kind_FluidModel != CONSTANT_DENSITY)
-        SU2_MPI::Error("Incompressible problems with DENSITY_MODEL = CONSTANT or DENSITY_MODEL = BOUSSINESQ must use FLUID_MODEL = CONSTANT_DENSITY.", CURRENT_FUNCTION);
+      Kind_FluidModel = CONSTANT_DENSITY;
+      // if (Kind_FluidModel != CONSTANT_DENSITY)
+        // SU2_MPI::Error("Incompressible problems with DENSITY_MODEL = CONSTANT or DENSITY_MODEL = BOUSSINESQ must use FLUID_MODEL = CONSTANT_DENSITY.", CURRENT_FUNCTION);
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/

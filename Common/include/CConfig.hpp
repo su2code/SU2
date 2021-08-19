@@ -1146,10 +1146,19 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
-  unsigned short n_scalars;
-  unsigned short n_species;
-  unsigned short n_lookups;
-  unsigned short n_table_sources;       /* the number of transported scalars for combustion */
+  unsigned short n_scalars,       /*!< \brief Number of transported scalars. */
+  n_species,                      /*!< \brief Number of species in multicomponent flow. */
+  nMolecular_Weight,              /*!< \brief Number of species molecular weights. */        
+  nSpecific_Heat_Cp,              /*!< \brief Number of species specific heat constants at constant pressure. */
+  nMu_Constant,                   /*!< \brief Number of species constant viscosities. */
+  nMu_Ref,                        /*!< \brief Number of species reference constants for Sutherland model. */
+  nMu_Temperature_Ref,            /*!< \brief Number of species reference temperature for Sutherland model. */
+  nMu_S,                          /*!< \brief Number of species reference S for Sutherland model. */
+  nThermal_Conductiviy_Constant,  /*!< \brief Number of species constant thermal conductivity. */
+  nPrandtl_Lam,                   /*!< \brief Number of species laminar Prandtl number. */
+  nPrandtl_Turb,                  /*!< \brief Number of species turbulent Prandtl number. */
+  n_lookups,                      /*!< \brief Number of transported scalars for combustion. */              
+  n_table_sources;                /*!< \brief Number of transported scalars for combustion. */
 
   vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
   vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
