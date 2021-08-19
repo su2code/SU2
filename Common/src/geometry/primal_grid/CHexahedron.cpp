@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CHexahedron.hpp"
+#include "../../../include/option_structure.hpp"
 
 unsigned short CHexahedron::Faces[6][4] = {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},{0,3,2,1},{4,5,6,7}};
 
@@ -35,9 +36,9 @@ unsigned short CHexahedron::nNodesFace[6] = {4,4,4,4,4,4};
 
 unsigned short CHexahedron::nNeighbor_Nodes[8] = {3,3,3,3,3,3,3,3};
 
-unsigned short CHexahedron::nFaces = 6;
+unsigned short CHexahedron::nFaces = N_FACES_HEXAHEDRON;
 
-unsigned short CHexahedron::nNodes = 8;
+unsigned short CHexahedron::nNodes = N_POINTS_HEXAHEDRON;
 
 unsigned short CHexahedron::nNeighbor_Elements = 6;
 

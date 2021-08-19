@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CTetrahedron.hpp"
+#include "../../../include/option_structure.hpp"
 
 unsigned short CTetrahedron::Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
 
@@ -35,9 +36,9 @@ unsigned short CTetrahedron::nNodesFace[4]={3,3,3,3};
 
 unsigned short CTetrahedron::nNeighbor_Nodes[4]={3,3,3,3};
 
-unsigned short CTetrahedron::nFaces = 4;
+unsigned short CTetrahedron::nFaces = N_FACES_TETRAHEDRON;
 
-unsigned short CTetrahedron::nNodes = 4;
+unsigned short CTetrahedron::nNodes = N_POINTS_TETRAHEDRON;
 
 unsigned short CTetrahedron::nNeighbor_Elements = 4;
 

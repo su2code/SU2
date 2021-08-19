@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CLine.hpp"
-
+#include "../../../include/option_structure.hpp"
 
 unsigned short CLine::Faces[1][2]={{0,1}};
 
@@ -36,9 +36,9 @@ unsigned short CLine::nNodesFace[1]={2};
 
 unsigned short CLine::nNeighbor_Nodes[2]={1,1};
 
-unsigned short CLine::nFaces = 1;
+unsigned short CLine::nFaces = N_FACES_LINE;
 
-unsigned short CLine::nNodes = 2;
+unsigned short CLine::nNodes = N_POINTS_LINE;
 
 unsigned short CLine::nNeighbor_Elements = 1;
 

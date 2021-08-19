@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrism.hpp"
+#include "../../../include/option_structure.hpp"
 
 unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
@@ -35,9 +36,9 @@ unsigned short CPrism::nNodesFace[5] = {4,4,4,3,3};
 
 unsigned short CPrism::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
 
-unsigned short CPrism::nFaces = 5;
+unsigned short CPrism::nFaces = N_FACES_PRISM;
 
-unsigned short CPrism::nNodes = 6;
+unsigned short CPrism::nNodes = N_POINTS_PRISM;
 
 unsigned short CPrism::nNeighbor_Elements = 5;
 

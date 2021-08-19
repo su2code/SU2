@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CTriangle.hpp"
+#include "../../../include/option_structure.hpp"
 
 unsigned short CTriangle::Faces[3][2] = {{0,1},{1,2},{2,0}};
 
@@ -35,9 +36,9 @@ unsigned short CTriangle::nNodesFace[3] = {2,2,2};
 
 unsigned short CTriangle::nNeighbor_Nodes[3] = {2,2,2};
 
-unsigned short CTriangle::nFaces = 3;
+unsigned short CTriangle::nFaces = N_POINTS_TRIANGLE;
 
-unsigned short CTriangle::nNodes = 3;
+unsigned short CTriangle::nNodes = N_FACES_TRIANGLE;
 
 unsigned short CTriangle::nNeighbor_Elements = 3;
 

@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CQuadrilateral.hpp"
+#include "../../../include/option_structure.hpp"
 
 unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 
@@ -35,9 +36,9 @@ unsigned short CQuadrilateral::nNodesFace[4] = {2,2,2,2};
 
 unsigned short CQuadrilateral::nNeighbor_Nodes[4] = {2,2,2,2};
 
-unsigned short CQuadrilateral::nFaces = 4;
+unsigned short CQuadrilateral::nFaces = N_FACES_QUADRILATERAL;
 
-unsigned short CQuadrilateral::nNodes = 4;
+unsigned short CQuadrilateral::nNodes = N_POINTS_QUADRILATERAL;
 
 unsigned short CQuadrilateral::nNeighbor_Elements = 4;
 
