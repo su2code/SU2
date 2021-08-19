@@ -228,7 +228,7 @@ private:
       case TETRAHEDRON: return N_FACES_TETRAHEDRON;
       case PYRAMID: return N_FACES_PYRAMID;
       case PRISM: return N_FACES_PRISM;
-      case HEXAHEDRON: return N_FACES_TETRAHEDRON;
+      case HEXAHEDRON: return N_FACES_HEXAHEDRON;
       default: SU2_MPI::Error("Invalid elementType.", CURRENT_FUNCTION); return 0;
     }
   }
