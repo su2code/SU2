@@ -4730,7 +4730,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) {
     if ((Kind_DensityModel == INC_DENSITYMODEL::CONSTANT) || (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ))
-      Kind_FluidModel = CONSTANT_DENSITY;
+      if (Kind_FluidModel != CONSTANT_DENSITY)
+        SU2_MPI::Error("Incompressible problems with DENSITY_MODEL = CONSTANT or DENSITY_MODEL = BOUSSINESQ must use FLUID_MODEL = CONSTANT_DENSITY.", CURRENT_FUNCTION);
   }
 
   /*--- Energy equation must be active for any fluid models other than constant density. ---*/
