@@ -133,7 +133,7 @@ const unsigned short N_FACES_QUADRILATERAL = 4;  /*!< \brief General output & CG
 const unsigned short N_FACES_TETRAHEDRON = 4;    /*!< \brief General output & CGNS defines. */
 const unsigned short N_FACES_PYRAMID = 5;        /*!< \brief General output & CGNS defines. */
 const unsigned short N_FACES_PRISM = 5;          /*!< \brief General output & CGNS defines. */
-const unsigned short N_FACES_HEXAHEDRON = 6;      /*!< \brief General output & CGNS defines. */
+const unsigned short N_FACES_HEXAHEDRON = 6;     /*!< \brief General output & CGNS defines. */
 
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
