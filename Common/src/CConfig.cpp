@@ -3773,7 +3773,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
       break;
     default:
-      SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+      if (n_species != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       break;
   }
 
@@ -3805,7 +3805,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
       break;
     default:
-      SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
+      if (n_species != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
       break;
   }
 
