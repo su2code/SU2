@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -414,6 +414,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -633,6 +634,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -2129,7 +2131,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   inline su2double GetTotal_HeatFluxDiff() const final { return Total_HeatFluxDiff; }
-  
+
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).

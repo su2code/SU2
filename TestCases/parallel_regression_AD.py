@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -80,7 +80,7 @@ def main():
     ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file     = "NACA64206.cfg"
     ea_naca64206.test_iter    = 10
-    ea_naca64206.test_vals    = [2.782467, 2.056357, 2372200.0, 3.878]
+    ea_naca64206.test_vals    = [3.181093, 2.471539, -5487700.0, 8.3604]
     ea_naca64206.su2_exec     = "mpirun -n 2 SU2_CFD_AD"
     ea_naca64206.timeout      = 1600
     ea_naca64206.tol          = 0.00001
