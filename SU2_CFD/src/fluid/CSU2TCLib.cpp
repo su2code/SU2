@@ -643,7 +643,7 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(su2double val_T){
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
-  /*--- Rename cause im lazy TODO ---*/
+  /*--- Rename for convenience. ---*/
   Tve = val_T;
 
   /*--- Loop through species ---*/
@@ -785,10 +785,9 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T, bool vibe_only)
   return eves;
 }
 
-vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double *V,
-                                                                su2double* eve, su2double *cvve,
-                                                                su2double* dTdU, su2double* dTvedU,
-                                                                su2double **val_jacobian){
+vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
+                                                        su2double* cvve, su2double* dTdU, su2double* dTvedU,
+							su2double **val_jacobian){
 
   /*---                          ---*/
   /*--- Nonequilibrium chemistry ---*/
@@ -798,6 +797,8 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
   unsigned short ii, iReaction;
   su2double Keq;
   ws.resize(nSpecies,0.0);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++)
+    ws[iSpecies] = 0.0; 
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -828,8 +829,8 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, su2double
     ComputeKeqConstants(iReaction);
 
     /*--- Calculate Keq ---*/
-    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb) +
-                A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
+    Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
+        + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
 
     /*--- Calculate rate coefficients ---*/
     kf  = ArrheniusCoefficient[iReaction] * exp(ArrheniusEta[iReaction]*log(Thf)) * exp(-ArrheniusTheta[iReaction]/Thf);
@@ -1114,11 +1115,11 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
     tauP = 1/(sig_s*Cs*N);
 
     /*--- Species relaxation time ---*/
-    taus[iSpecies] = tauMW + tauP;
+    taus = tauMW + tauP;
 
     /*--- Add species contribution to residual ---*/
     omegaVT += rhos[iSpecies] * (eve_eq[iSpecies] -
-                                 eve[iSpecies]) / taus[iSpecies];
+                                 eve[iSpecies]) / taus;
   }
 
   /*--- Vibrational energy change due to chemical reactions ---*/

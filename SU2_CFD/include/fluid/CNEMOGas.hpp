@@ -123,18 +123,17 @@ public:
    */
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
 
-    /*!
-   * \brief Get vibrational energy source term.
+  /*!
+   * \brief Compute species net production rates.
    */
-  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V,
-                                                       su2double* eve, su2double* cvve,
-                                                       su2double* dTdU, su2double* dTvedU,
+  virtual vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
+                                                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                        su2double **val_jacobian) = 0;
 
   /*!
    * \brief Populate chemical source term jacobian. 
    */
-  virtual void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve,
+  virtual void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
                                  su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                  su2double **val_jacobian){};
 
@@ -144,14 +143,14 @@ public:
   virtual su2double ComputeEveSourceTerm() { return 0; }
 
   /*!
-   * \brief Get vibration enery source term jacobian.
+   * \brief Compute vibration enery source term jacobian.
    */
-   virtual void GetEveSourceTermJacobian(su2double *V,su2double *eve, su2double *cvve,
-                                         su2double *dTdU, su2double* dTvedU,
-                                         su2double **val_jacobian){};
+  virtual void GetEveSourceTermJacobian(const su2double *V,su2double *eve, su2double *cvve,
+                                        su2double *dTdU, su2double* dTvedU,
+                                        su2double **val_jacobian){};
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
   virtual vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) = 0;
 

@@ -65,12 +65,11 @@ CSource_NEMO::~CSource_NEMO(void) {
   delete [] Y;
 
   delete [] residual;
-  if (jacobian){
+  if (jacobian) {
     for(unsigned short iVar = 0; iVar < nVar; ++iVar)
       delete [] jacobian[iVar];
     delete [] jacobian;
   }
-
 }
 
 CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) {
@@ -105,7 +104,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   ws = fluidmodel->ComputeNetProductionRates(implicit, V_i, eve_i, Cvve_i,
                                              dTdU_i, dTvedU_i, jacobian);
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     residual[iSpecies] = ws[iSpecies] *Volume;
 
     if (implicit) {
@@ -115,7 +114,6 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
         }
       }
     }
-
 
   return ResidualType<>(residual, jacobian, nullptr);
 

@@ -72,17 +72,17 @@ private:
   C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
   Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
-  /*--- Implicit Variables *---*/
+  /*--- Implicit variables ---*/
   su2double                     /*!< \brief Derivatives w.r.t. conservative variables */
   *dPdU, *dTdU, *dTvedU;
- 
+
   su2double fwdRxn, bkwRxn,
 	kf,kfb,kb,
 	coeff, eta, epsilon, T_min,
 	Trxnf, Trxnb,
 	Thf, Thb, dThf, dThb,
 	theta, af, bf, ab, bb;
-  
+
   vector<su2double>
   dkf, dkb,
   dRfok, dRbok,
@@ -139,15 +139,16 @@ public:
   /*!
    * \brief Compute species net production rates.
    */
-  vector<su2double>& ComputeNetProductionRates(bool implicit, su2double *V, su2double* eve,
+  vector<su2double>& ComputeNetProductionRates(bool implicit, const su2double *V, su2double* eve,
                                                su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
   /*!
-   * \brief Populate chemical source term jacobian. 
+   * \brief Compute chemical source term jacobian. 
    */
-  void ChemistryJacobian(unsigned short iReaction, su2double *V, su2double* eve, su2double* cvve,
-                         su2double* dTdU, su2double* dTvedU, su2double **val_jacobian) final;
+  //void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
+  //                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
+  //                       su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
@@ -155,9 +156,10 @@ public:
   su2double ComputeEveSourceTerm() final;
 
   /*!
-   * \brief Get vibration enery source term jacobian.
+   * \brief Compute relaxation source term jacobian.
    */
-  void GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU,
+  void GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve,
+                                su2double *dTdU, su2double* dTvedU,
                                 su2double **val_jacobian) final;
 
   /*!
