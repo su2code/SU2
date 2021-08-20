@@ -70,7 +70,8 @@ class CFluidModel {
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
   su2double mass_diffusivity{0.0};
-  su2double MeanMolecularWeight{0.0};    /*!< \brief Mean molecular weight. */ 
+  su2double MeanMolecularWeight{0.0};    /*!< \brief Mean molecular weight. */
+  su2double MeanSpecificHeatCp{0.0};     /*!< \brief Mean specific heat capacity at constant pressure. */
 
   unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
@@ -129,7 +130,43 @@ class CFluidModel {
   /*!
    * \brief Get fluid mean molecular weight.
    */
-  su2double GetMeanMolecularWeight() const { return MeanMolecularWeight; }
+  su2double GetMeanMolecularWeight(const std::vector<su2double> molar_masses, const su2double * const val_scalars) {
+      MeanMolecularWeight = 1/(val_scalars[0]/(molar_masses[0]/1000) + (1-val_scalars[0])/(molar_masses[1]/1000));
+    return MeanMolecularWeight;
+  }
+
+  /* GetMeanMolecularWeight() in case of multiple scalars. */
+  // su2double GetMeanMolecularWeight(const std::vector<su2double> molar_masses, std::vector<const su2double * const> val_scalars) {
+  //   su2double OneOverMeanMolecularWeight = 0.0;
+  //   su2double sum_val_scalars = 0.0;
+  //   MeanMolecularWeight = 0.0;
+  //   for (int i = 0; i < val_scalars.size; i++){
+  //     OneOverMeanMolecularWeight += val_scalars[i][0]/(molar_masses[i]/1000);
+  //     sum_val_scalars += val_scalars[i][0];
+  //   }
+  //   OneOverMeanMolecularWeight += molar_masses[val_scalars.size]*(1 - sum_val_scalars);
+  //   return MeanMolecularWeight = 1/OneOverMeanMolecularWeight;
+  // }
+
+  /*!
+   * \brief Get fluid mean specific heat capacity at constant pressure.
+   */
+  su2double GetMeanSpecificHeatCp(const std::vector<su2double> specific_heat_cp, const su2double * const val_scalars) {
+      MeanSpecificHeatCp = specific_heat_cp[0] * val_scalars[0] + specific_heat_cp[1] * (1- val_scalars[0]);
+    return MeanSpecificHeatCp;
+  }
+
+  /* GetMeanSpecificHeatCp() in case of multiple scalars. */
+  // su2double GetMeanSpecificHeatCp(const std::vector<su2double> specific_heat_cp, std::vector<const su2double * const> val_scalars) {
+  //   su2double sum_val_scalars = 0.0;
+  //   MeanSpecificHeatCp = 0.0;
+  //   for (int i = 0; i < val_scalars.size; i++){
+  //     MeanSpecificHeatCp += specific_heat_cp[i] * val_scalars[i][0];
+  //     sum_val_scalars += val_scalars[i][0];
+  //   }
+  //   MeanSpecificHeatCp += specific_heat_cp[val_scalars.size]*(1 - sum_val_scalars);
+  //   return MeanSpecificHeatCp;
+  // }
 
   /*!
    * \brief Get the source term of the transported scalar

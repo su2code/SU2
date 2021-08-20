@@ -149,7 +149,7 @@ su2double CFluidScalar::wilkeViscosity(const su2double * const val_scalars){
 
   for(int i = 0; i < n_species_mixture; i++){
     for(int j = 0; j < n_species_mixture; j++){
-      phi.push_back(pow((1 + pow(laminarViscosity[i] / laminarViscosity[j],0.5) * pow(molarMasses[j] / molarMasses[i],0.25)),2) / pow(8 * (1 + molarMasses[i] / molarMasses[j]),0.5));
+      phi.push_back(pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) / sqrt(8 * (1 + molarMasses[i] / molarMasses[j])));
       wilkeDenumerator += moleFractions[j] * phi[j];
     }
     wilkeDenumeratorSum.push_back(wilkeDenumerator);
@@ -208,7 +208,7 @@ su2double CFluidScalar::wilkeConductivity(const su2double * const val_scalars){
 
   for(int i = 0; i < n_species_mixture; i++){
     for(int j = 0; j < n_species_mixture; j++){
-      phi.push_back(pow((1 + pow((laminarViscosity[i]) / (laminarViscosity[j]),0.5) * pow(molarMasses[j] / molarMasses[i],0.25)),2) / pow(8 * (1 + molarMasses[i] / molarMasses[j]),0.5));
+      phi.push_back(pow(1 + sqrt((laminarViscosity[i]) / (laminarViscosity[j])) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) / sqrt(8 * (1 + molarMasses[i] / molarMasses[j])));
       wilkeDenumerator += moleFractions[j] * phi[j];
     }
     wilkeDenumeratorSum.push_back(wilkeDenumerator);
@@ -221,12 +221,13 @@ su2double CFluidScalar::wilkeConductivity(const su2double * const val_scalars){
 }
 
 unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * const val_scalars){
-  MeanMolecularWeight = 1/(val_scalars[0]/(molarMasses[0]/1000) + (1-val_scalars[0])/(molarMasses[1]/1000));
+  CFluidModel::GetMeanMolecularWeight(molarMasses, val_scalars);
 
-  // Cp = specificHeat[0] * val_scalars[0] + specificHeat[1] * (1- val_scalars[0]);
-  Cp = 1009.39;
-  // Cp = 1009.3;
-  Cv = Cp/1.4;
+  // CFluidModel::GetMeanSpecificHeatCp(specificHeat, val_scalars);
+  constexpr su2double CpAir300Kelvin = 1009.39;
+  constexpr su2double RatioSpecificHeatsAir = 1.4;
+  Cp = CpAir300Kelvin;
+  Cv = Cp/RatioSpecificHeatsAir;
   Temperature = val_temperature;
   Density = Pressure / ((Temperature * UNIVERSAL_GAS_CONSTANT) / MeanMolecularWeight);
 
