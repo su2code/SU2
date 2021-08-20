@@ -157,10 +157,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
   /*--- Compute residual and jacobians ---*/
   VTterm = fluidmodel -> ComputeEveSourceTerm();
-    if (implicit) {
-        fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
+  if (implicit) {
+    fluidmodel->GetEveSourceTermJacobian(V_i, eve_i, Cvve_i, dTdU_i,
                                          dTvedU_i, jacobian);
-    }
+  }
     
   residual[nSpecies+nDim+1] = VTterm * Volume;
   
@@ -184,6 +184,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
   unsigned short iDim, iSpecies, iVar;
+  unsigned short jSpecies, jVar;
   su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
   su2double ktr, kve;
 
@@ -215,10 +216,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   /*--- Rename for convenience ---*/
   rho    = V_i[RHO_INDEX];
-  rhou   = U_i[nSpecies];
+  su2double rhou   = U_i[nSpecies];
   rhov   = U_i[nSpecies+1];
   H      = V_i[H_INDEX];
-  rhoEve = U_i[nVar-1];
+  su2double rhoEve = U_i[nVar-1];
   vel2   = 0.0;
 
   for (iDim = 0; iDim < nDim; iDim++)

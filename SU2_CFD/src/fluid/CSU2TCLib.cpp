@@ -873,13 +873,12 @@ vector<su2double>& CSU2TCLib::ComputeNetProductionRates(bool implicit, const su2
     if (implicit) {
       ChemistryJacobian(iReaction, V, eve, cvve, dTdU, dTvedU, val_jacobian);
     }
-
   } //iReaction
 
   return ws;
 }
 
-void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V, 
+void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, 
                                   su2double* eve, su2double *cvve,
                                   su2double* dTdU, su2double* dTvedU,
                                   su2double **val_jacobian) {
@@ -1004,7 +1003,6 @@ void CSU2TCLib::ChemistryJacobian(unsigned short iReaction, su2double *V,
     }
   } // ii
 }
-
 void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii;
@@ -1134,7 +1132,7 @@ su2double CSU2TCLib::ComputeEveSourceTerm(){
 
 }
 
-void CSU2TCLib::GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
+void CSU2TCLib::GetEveSourceTermJacobian(const su2double *V, su2double *eve, su2double *cvve, su2double *dTdU, su2double* dTvedU, su2double **val_jacobian){
 
   unsigned short iVar;	
   unsigned short nEv  = nSpecies+nDim+1;
@@ -1158,7 +1156,6 @@ void CSU2TCLib::GetEveSourceTermJacobian(su2double *V, su2double *eve, su2double
     val_jacobian[nEv][iSpecies] += (eve_eq[iSpecies]-eve[iSpecies])/taus[iSpecies];//TODO *Volume;
 
 }
-
 vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;

@@ -42,7 +42,6 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   eves.resize(nSpecies,0.0);
   hs.resize(2*nSpecies,0.0);
   ws.resize(nSpecies,0.0);
-  taus.resize(nSpecies,0.0);
   DiffusionCoeff.resize(nSpecies,0.0);
   Enthalpy_Formation.resize(nSpecies,0.0);
   Ref_Temperature.resize(nSpecies,0.0);
@@ -147,7 +146,7 @@ su2double CNEMOGas::ComputeGamma(){
 
 su2double CNEMOGas::ComputerhoCvve() {
 
-  Cvves = ComputeSpeciesCvVibEle(Tve);
+    Cvves = ComputeSpeciesCvVibEle(Tve);
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
