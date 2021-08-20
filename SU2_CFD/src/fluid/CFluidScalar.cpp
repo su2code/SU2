@@ -223,9 +223,9 @@ su2double CFluidScalar::wilkeConductivity(const su2double * const val_scalars){
 unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * const val_scalars){
   CFluidModel::GetMeanMolecularWeight(molarMasses, val_scalars);
 
-  // CFluidModel::GetMeanSpecificHeatCp(specificHeat, val_scalars);
-  constexpr su2double CpAir300Kelvin = 1009.39;
-  constexpr su2double RatioSpecificHeatsAir = 1.4;
+  // Cp = CFluidModel::GetMeanSpecificHeatCp(specificHeat, val_scalars);
+  const su2double CpAir300Kelvin = 1009.39;
+  const su2double RatioSpecificHeatsAir = 1.4;
   Cp = CpAir300Kelvin;
   Cv = Cp/RatioSpecificHeatsAir;
   Temperature = val_temperature;
