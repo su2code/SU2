@@ -61,20 +61,6 @@ public:
   ~CVertexMPI(void) override;
 
   /*!
-   * \brief Get the nodes shared by the line.
-   * \param[in] val_node - Local (to the line) index of the node (a line has 2 nodes).
-   * \return Global index of the line node.
-   */
-  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
-
-  /*!
-   * \brief Set the point associated at a node.
-   * \param[in] val_node - Local index of a node.
-   * \param[in] val_point - Point associated to the node.
-   */
-  inline void SetNode(unsigned short val_node, unsigned long val_point) override { Nodes[val_node] = val_point; }
-
-  /*!
    * \brief Get the number of nodes of an element.
    * \return Number of nodes that composes an element.
    */

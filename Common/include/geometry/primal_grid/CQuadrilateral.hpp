@@ -66,20 +66,6 @@ public:
   ~CQuadrilateral(void) override;
 
   /*!
-   * \brief Get the nodes shared by the triangle.
-   * \param[in] val_node - Local (to the quadrilateral) index of the node (a quadrilateral has 4 nodes).
-   * \return Global index of the triangle node.
-   */
-  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
-
-  /*!
-   * \brief Set the point associated at a node.
-   * \param[in] val_node - Local index of a node.
-   * \param[in] val_point - Point associated to the node.
-   */
-  inline void SetNode(unsigned short val_node, unsigned long val_point) override { Nodes[val_node] = val_point; }
-
-  /*!
    * \brief Get the face index of and element.
    * \param[in] val_face - Local index of the face.
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.

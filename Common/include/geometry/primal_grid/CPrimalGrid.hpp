@@ -82,6 +82,20 @@ public:
   virtual ~CPrimalGrid(void);
 
   /*!
+   * \brief Get the nodes shared by the primal grid element.
+   * \param[in] val_node - Local (to the element) index of the node (lines have 2 nodes, triangles 3 nodes etc).
+   * \return Global index of the node.
+   */
+  inline unsigned long GetNode(unsigned short val_node) const { return Nodes[val_node]; }
+
+  /*!
+   * \brief Get the nodes shared by the primal grid element.
+   * \param[in] val_node - Local (to the element) index of the node (lines have 2 nodes, triangles 3 nodes etc).
+   * \param[in] val_point - Global index of the node.
+   */
+  inline void SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+
+  /*!
    * \brief Get the elements that surround an element.
    * \param[in] val_face - Local index of the face.
    * \return Global index of the element.
@@ -312,20 +326,6 @@ public:
    * \return Maximum number of nodes that compose a face.
    */
   virtual unsigned short GetMaxNodesFace(void) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   * \param[in] val_node - Local index of a node.
-   * \return Global index of the node.
-   */
-  virtual unsigned long GetNode(unsigned short val_node) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   * \param[in] val_node - Local index of a node.
-   * \param[in] val_point - Point associated to the node.
-   */
-  inline virtual void SetNode(unsigned short val_node, unsigned long val_point) { }
 
   /*!
    * \brief A pure virtual member.

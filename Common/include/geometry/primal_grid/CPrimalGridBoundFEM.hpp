@@ -76,13 +76,6 @@ public:
   ~CPrimalGridBoundFEM(void) override;
 
   /*!
-   * \brief Get the node shared by the element
-   * \param[in] val_node - Local (to the element) index of the node.
-   * \return Global index of the node.
-   */
-  inline unsigned long GetNode(unsigned short val_node) const override { return Nodes[val_node]; }
-
-  /*!
    * \brief Get the number of nodes that composes a face of an element.
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
