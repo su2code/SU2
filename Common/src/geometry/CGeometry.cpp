@@ -58,12 +58,6 @@ CGeometry::~CGeometry(void) {
     delete [] bound;
   }
 
-  if (face != nullptr) {
-    for (iFace = 0; iFace < nFace; iFace ++)
-      delete face[iFace];
-    delete[] face;
-  }
-
   delete nodes;
 
   delete edges;
