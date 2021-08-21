@@ -61,6 +61,7 @@ protected:
   bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
+  bool FEM = false;  /*!< True if this is a FEM element. */
 public:
 
   /*!
@@ -89,11 +90,15 @@ public:
   inline unsigned long GetNode(unsigned short val_node) const { return Nodes[val_node]; }
 
   /*!
-   * \brief Get the nodes shared by the primal grid element.
+   * \brief Set the nodes shared by the primal grid element.
+   * \details Called for RCM reordering, which is not done for FEM elements - this is checked here.
    * \param[in] val_node - Local (to the element) index of the node (lines have 2 nodes, triangles 3 nodes etc).
    * \param[in] val_point - Global index of the node.
    */
-  inline void SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+  inline void SetNodeNonFEM(unsigned short val_node, unsigned long val_point) {
+    if(FEM) SU2_MPI::Error("SetNodeNonFEM called for a FEM element.", CURRENT_FUNCTION);
+    Nodes[val_node] = val_point;
+  }
 
   /*!
    * \brief Get the elements that surround an element.

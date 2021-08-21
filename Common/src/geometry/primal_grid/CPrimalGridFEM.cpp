@@ -33,6 +33,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
                                unsigned long  val_offDOfsSol,   istringstream  &elem_line)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
+  FEM = true;
   VTK_Type = val_VTK_Type;
   nFaces = nFacesOfElementType(VTK_Type);
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;

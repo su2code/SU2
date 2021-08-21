@@ -4870,7 +4870,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
   for (auto iElem = 0ul; iElem < nElem; iElem++) {
     for (auto iNode = 0u; iNode < elem[iElem]->GetnNodes(); iNode++) {
       auto iPoint = elem[iElem]->GetNode(iNode);
-      elem[iElem]->SetNode(iNode, InvResult[iPoint]);
+      elem[iElem]->SetNodeNonFEM(iNode, InvResult[iPoint]);
     }
   }
 
@@ -4884,7 +4884,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
 
       for (auto iNode = 0u; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
         auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        bound[iMarker][iElem]->SetNode(iNode, InvResult[iPoint]);
+        bound[iMarker][iElem]->SetNodeNonFEM(iNode, InvResult[iPoint]);
         nodes->SetBoundary(InvResult[iPoint], nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
             config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&

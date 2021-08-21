@@ -35,7 +35,7 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
                                          vector<unsigned long> &val_nodes)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
-
+FEM = true;
   VTK_Type = val_VTK_Type;
   nDim = (VTK_Type == LINE) ? 1 : 2;
 
