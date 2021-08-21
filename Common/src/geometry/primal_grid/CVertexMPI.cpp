@@ -37,9 +37,7 @@ unsigned short CVertexMPI::VTK_Type = 1;
 
 unsigned short CVertexMPI::maxNodesFace = 0;
 
-CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrimalGrid() {
-
-  nDim = val_nDim;
+CVertexMPI::CVertexMPI(unsigned long val_point) : CPrimalGrid() {
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];

@@ -47,10 +47,8 @@ unsigned short CTriangle::VTK_Type = 5;
 unsigned short CTriangle::maxNodesFace = 2;
 
 CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
-           unsigned long val_point_2, unsigned short val_nDim) : CPrimalGrid() {
+           unsigned long val_point_2) : CPrimalGrid() {
   unsigned short iNeighbor_Elements;
-
-  nDim = val_nDim;
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];

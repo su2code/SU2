@@ -54,10 +54,9 @@ public:
    * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
    * \param[in] val_point_1 - Index of the 2nd triangle point read from the grid file.
    * \param[in] val_point_2 - Index of the 3th triangle point read from the grid file.
-   * \param[in] val_nDim - Number of dimension of the problem (2D or 3D), be careful a triangle could be 2D or 3D.
    */
   CTriangle(unsigned long val_point_0, unsigned long val_point_1,
-            unsigned long val_point_2, unsigned short val_nDim);
+            unsigned long val_point_2);
 
   /*!
    * \brief Destructor of the class.

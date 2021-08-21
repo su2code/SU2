@@ -27,8 +27,6 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
-unsigned short CPrimalGrid::nDim;
-
 CPrimalGrid::CPrimalGrid(void) {
 
   /*--- Set the default values for the pointers ---*/

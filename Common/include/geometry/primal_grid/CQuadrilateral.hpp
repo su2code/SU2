@@ -55,10 +55,9 @@ public:
    * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
    * \param[in] val_point_2 - Index of the 3th point read from the grid file.
    * \param[in] val_point_3 - Index of the 4th point read from the grid file.
-   * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
    */
   CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
-                 unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim);
+                 unsigned long val_point_2, unsigned long val_point_3);
 
   /*!
    * \brief Destructor of the class.

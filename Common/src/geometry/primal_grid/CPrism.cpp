@@ -51,8 +51,6 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_4, unsigned long val_point_5) : CPrimalGrid() {
   unsigned short iNeighbor_Elements;
 
-  nDim = 3;
-
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];
   Nodes[0] = val_point_0;

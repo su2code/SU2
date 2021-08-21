@@ -47,11 +47,9 @@ unsigned short CQuadrilateral::VTK_Type = 9;
 unsigned short CQuadrilateral::maxNodesFace = 2;
 
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
-             unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim)
+             unsigned long val_point_2, unsigned long val_point_3)
 : CPrimalGrid() {
   unsigned short iNeighbor_Elements;
-
-  nDim = val_nDim;
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];

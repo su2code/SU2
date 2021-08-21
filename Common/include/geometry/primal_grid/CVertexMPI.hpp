@@ -51,9 +51,8 @@ public:
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point - Index of the 1st triangle point read from the grid file.
-   * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
    */
-  CVertexMPI(unsigned long val_point, unsigned short val_nDim);
+  CVertexMPI(unsigned long val_point);
 
   /*!
    * \brief Destructor of the class.

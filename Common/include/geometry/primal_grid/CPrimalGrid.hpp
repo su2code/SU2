@@ -51,8 +51,6 @@ protected:
   short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                             A -1 indicates no periodic transformation to the neighbor. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
-  static unsigned short nDim;    /*!< \brief Dimension of the element (2D or 3D) useful for triangles,
-                                               quadrilateral and edges. */
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
                                                correspond with a boundary element is stored. */
   su2double Volume;                /*!< \brief Volume of the element. */
@@ -184,10 +182,11 @@ public:
 
   /*!
    * \brief Set the center of gravity of an element (including edges).
+   * \param[in] nDim - Number of dimensions (2 or 3).
    * \param[in] val_coord - Coordinates of the element.
    */
   template<class T>
-  inline su2double* SetCoord_CG(const T& val_coord) {
+  inline su2double* SetCoord_CG(size_t nDim, const T& val_coord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       Coord_CG[iDim] = 0.0;
       for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)

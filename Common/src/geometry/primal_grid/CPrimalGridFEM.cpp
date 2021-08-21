@@ -36,7 +36,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
   FEM = true;
   VTK_Type = val_VTK_Type;
   nFaces = nFacesOfElementType(VTK_Type);
-  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 
   nPolyGrid = val_nPolyGrid;
   nPolySol  = val_nPolySol;
@@ -83,7 +82,6 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
   nFaces = nFacesOfElementType(VTK_Type);
-  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
 
   nPolyGrid = val_nPolyGrid;
   nPolySol  = val_nPolySol;

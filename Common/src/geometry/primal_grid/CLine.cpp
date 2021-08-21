@@ -46,9 +46,7 @@ unsigned short CLine::VTK_Type = 3;
 
 unsigned short CLine::maxNodesFace = 2;
 
-CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
-             unsigned short val_nDim) : CPrimalGrid() {
-  nDim = val_nDim;
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) : CPrimalGrid() {
 
   /*--- Allocate and define face structure of the element ---*/
 
