@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -185,6 +185,17 @@ def main():
     bluntbody.tol       = 0.00001
     test_list.append(bluntbody)
 
+    # Equivalent area NACA64-206
+    ea_naca64206           = TestCase('ea_naca64206')
+    ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
+    ea_naca64206.cfg_file  = "NACA64206.cfg"
+    ea_naca64206.test_iter = 10
+    ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.0]
+    ea_naca64206.su2_exec  = "mpirun -n 2 SU2_CFD"
+    ea_naca64206.timeout   = 1600
+    ea_naca64206.tol       = 0.00001
+    test_list.append(ea_naca64206)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -194,7 +205,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360]
+    flatplate.test_vals = [-4.648977, 0.813132, -0.130619, 0.024360, 9.0144e-04, 2.3622e+00, -2.3613e+00]
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
@@ -1058,7 +1069,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.397970, 0.352779, 0.405462]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398052, 0.352783, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1071,7 +1082,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_WA.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [2.000000, 0.000000, 0.620168, 0.505184, 0.415129]
+    channel_3D.test_vals = [2.000000, 0.000000, 0.620176, 0.505161, 0.415248]
     channel_3D.su2_exec  = "parallel_computation.py -f"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001

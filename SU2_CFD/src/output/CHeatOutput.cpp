@@ -2,7 +2,7 @@
  * \file CHeatOutput.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,6 @@
 #include "../../include/solvers/CSolver.hpp"
 
 CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(config, nDim, false) {
-
-  multiZone = config->GetMultizone_Problem();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -287,7 +287,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = '6a67202a3887c8da490fdfde82bc46507de68692'
+    sha_version_codi = '3c3211fef2e225ab89680a4063b62bb3bb38a7e4'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
     sha_version_medi = '6aef76912e7099c4f08c9705848797ca9e8070da'
     github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'

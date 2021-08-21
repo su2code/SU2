@@ -2,7 +2,7 @@
  * \file CFVMOutput.hpp
  * \brief  Headers of the Finite Volume Method output.
  * \author T. Kattmann
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,12 +34,7 @@ protected:
   /*!
    * \brief Constructor of the class
    */
-  CFVMOutput(CConfig *config, unsigned short nDim, bool femOutput);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFVMOutput(void) = default;
+  CFVMOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Add Coordinates to output.

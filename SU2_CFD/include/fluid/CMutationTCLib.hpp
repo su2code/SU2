@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,14 +96,10 @@ public:
                                                su2double* cvve, su2double* dTdU, su2double* dTvedU,
                                                su2double **val_jacobian) final;
 
-
-
   /*!
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
-
-
 
   /*!
    * \brief Compute species enthalpies.

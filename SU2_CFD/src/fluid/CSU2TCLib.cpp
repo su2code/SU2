@@ -2,7 +2,7 @@
  * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1173,9 +1173,9 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double 
 
 vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
    DiffusionCoeffWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
    DiffusionCoeffGY();
 
   return DiffusionCoeff;
@@ -1184,9 +1184,9 @@ vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
 su2double CSU2TCLib::GetViscosity(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ViscosityWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ViscosityGY();
 
   return Mu;
@@ -1195,9 +1195,9 @@ su2double CSU2TCLib::GetViscosity(){
 
 vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
-  if(Kind_TransCoeffModel == WILKE)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::WILKE)
     ThermalConductivitiesWBE();
-  if(Kind_TransCoeffModel == GUPTAYOS)
+  if(Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)
     ThermalConductivitiesGY();
 
   return ThermalConductivities;

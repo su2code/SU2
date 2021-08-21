@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -540,13 +540,15 @@ MakePair("ONESPECIES", ONESPECIES)
 /*!
  * \brief types of coefficient transport model
  */
-enum ENUM_TRANSCOEFFMODEL {
-  WILKE      = 0,
-  GUPTAYOS   = 1
+enum class TRANSCOEFFMODEL {
+  WILKE,
+  GUPTAYOS,
+  CHAPMANN_ENSKOG
 };
-static const MapType<std::string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
-MakePair("WILKE", WILKE)
-MakePair("GUPTA-YOS", GUPTAYOS)
+static const MapType<std::string, TRANSCOEFFMODEL> TransCoeffModel_Map = {
+MakePair("WILKE", TRANSCOEFFMODEL::WILKE)
+MakePair("GUPTA-YOS", TRANSCOEFFMODEL::GUPTAYOS)
+MakePair("CHAPMANN-ENSKOG", TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
 };
 
 /*!
@@ -1074,9 +1076,6 @@ enum BC_TYPE {
   PERIODIC_BOUNDARY = 6,      /*!< \brief Periodic boundary definition. */
   NEARFIELD_BOUNDARY = 7,     /*!< \brief Near-Field boundary definition. */
   CUSTOM_BOUNDARY = 10,       /*!< \brief custom boundary definition. */
-  INTERFACE_BOUNDARY = 11,    /*!< \brief Domain interface boundary definition. */
-  DIRICHLET = 12,             /*!< \brief Boundary Euler wall definition. */
-  NEUMANN = 13,               /*!< \brief Boundary Neumann definition. */
   DISPLACEMENT_BOUNDARY = 14, /*!< \brief Boundary displacement definition. */
   LOAD_BOUNDARY = 15,         /*!< \brief Boundary Load definition. */
   FLOWLOAD_BOUNDARY = 16,     /*!< \brief Boundary Load definition. */

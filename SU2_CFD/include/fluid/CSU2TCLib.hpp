@@ -2,7 +2,7 @@
  * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -146,9 +146,9 @@ public:
   /*!
    * \brief Compute chemical source term jacobian. 
    */
-  //void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
-  //                       su2double* cvve, su2double* dTdU, su2double* dTvedU,
-  //                       su2double **val_jacobian) final;
+  void ChemistryJacobian(unsigned short iReaction, const su2double *V, su2double* eve,
+                         su2double* cvve, su2double* dTdU, su2double* dTvedU,
+                         su2double **val_jacobian) final;
 
   /*!
    * \brief Compute vibrational energy source term.
