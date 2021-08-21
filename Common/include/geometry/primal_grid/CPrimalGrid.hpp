@@ -55,8 +55,6 @@ protected:
                                                quadrilateral and edges. */
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
                                                correspond with a boundary element is stored. */
-  bool Divide;                     /*!< \brief Marker used to know if we are going to divide this element
-                                               in the adaptation proccess. */
   su2double Volume;                /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant;    /*!< \brief Whether or not the Jacobian of the faces can be considered
                                                constant in the transformation to the standard element. */
@@ -205,18 +203,6 @@ public:
    * \return List of all the neighbor of an element.
    */
   void GetAllNeighbor_Elements(void) const ;
-
-  /*!
-   * \brief Set that an element must be divided in the adaptation stage.
-   * \param[in] val_divide - <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
-   */
-  inline void SetDivide (bool val_divide) { Divide = val_divide; }
-
-  /*!
-   * \brief Get if an element must be divided in the adaptation stage.
-   * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
-   */
-  inline bool GetDivide (void) const { return Divide; }
 
   /*!
   * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
