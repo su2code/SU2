@@ -62,21 +62,23 @@ protected:
   std::bitset<N_FACES_MAXIMUM> ElementOwnsFace;
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
-  bool FEM = false;  /*!< True if this is a FEM element. */
+  const bool FEM;  /*!< Whether this is a FEM element. */
 public:
 
   /*!
    * \brief Constructor of the class.
+   * \param[in] FEM - Whether this is a FEM element.
    */
-  CPrimalGrid(void);
+  CPrimalGrid(bool FEM);
 
   /*!
    * \overload
    * \param[in] val_nNodes - Number of nodes of the element.
    * \param[in] val_nFaces - Number of faces of the element.
    * \param[in] val_VTK_Type - Type of the element using the vtk nomenclature.
+   * \param[in] FEM - Whether this is a FEM element.
    */
-  CPrimalGrid(unsigned short val_nNodes, unsigned short val_nFaces, unsigned short val_VTK_Type);
+  CPrimalGrid(unsigned short val_nNodes, unsigned short val_nFaces, unsigned short val_VTK_Type, bool FEM);
 
   /*!
    * \brief Destructor of the class.
@@ -466,6 +468,8 @@ public:
 template<typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
 public:
+
+  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM) {}
 
   inline unsigned short GetnNodes(void) const final {
     return Connectivity::nNodes;

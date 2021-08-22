@@ -40,7 +40,8 @@ constexpr unsigned short CHexahedronConnectivity::VTK_Type;
 CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3,
              unsigned long val_point_4, unsigned long val_point_5,
-             unsigned long val_point_6, unsigned long val_point_7)
+             unsigned long val_point_6, unsigned long val_point_7):
+  CPrimalGridWithConnectivity<CHexahedronConnectivity>(false)
 {
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

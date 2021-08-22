@@ -38,7 +38,8 @@ constexpr unsigned short CQuadrilateralConnectivity::Neighbor_Nodes[4][2];
 constexpr unsigned short CQuadrilateralConnectivity::VTK_Type;
 
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
-             unsigned long val_point_2, unsigned long val_point_3)
+             unsigned long val_point_2, unsigned long val_point_3):
+  CPrimalGridWithConnectivity<CQuadrilateralConnectivity>(false)
 {
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

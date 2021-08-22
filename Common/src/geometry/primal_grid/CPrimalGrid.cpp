@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
-CPrimalGrid::CPrimalGrid(void) {
+CPrimalGrid::CPrimalGrid(bool FEM) : FEM(FEM) {
 
   GlobalIndex = 0;
 

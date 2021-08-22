@@ -39,7 +39,8 @@ constexpr unsigned short CPyramidConnectivity::VTK_Type;
 
 CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2, unsigned long val_point_3,
-           unsigned long val_point_4)
+           unsigned long val_point_4):
+  CPrimalGridWithConnectivity<CPyramidConnectivity>(false)
 {
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

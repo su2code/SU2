@@ -36,7 +36,9 @@ constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
 constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
 constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
 
-CVertexMPI::CVertexMPI(unsigned long val_point) {
+CVertexMPI::CVertexMPI(unsigned long val_point):
+  CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false)
+{
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

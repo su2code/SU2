@@ -38,7 +38,8 @@ constexpr unsigned short CTetrahedronConnectivity::Neighbor_Nodes[4][3];
 constexpr unsigned short CTetrahedronConnectivity::VTK_Type;
 
 CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
-               unsigned long val_point_2, unsigned long val_point_3)
+               unsigned long val_point_2, unsigned long val_point_3):
+  CPrimalGridWithConnectivity<CTetrahedronConnectivity>(false)
 {
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

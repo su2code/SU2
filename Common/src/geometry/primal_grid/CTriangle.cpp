@@ -38,7 +38,8 @@ constexpr unsigned short CTriangleConnectivity::Neighbor_Nodes[3][2];
 constexpr unsigned short CTriangleConnectivity::VTK_Type;
 
 CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
-           unsigned long val_point_2)
+           unsigned long val_point_2):
+  CPrimalGridWithConnectivity<CTriangleConnectivity>(false)
 {
   /*--- Allocate and define face structure of the element ---*/
   Nodes.resize(GetnNodes());

@@ -38,7 +38,9 @@ constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
 constexpr unsigned short CLineConnectivity::VTK_Type;
 
 
-CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) {
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1):
+  CPrimalGridWithConnectivity<CLineConnectivity>(false)
+{
 
   /*--- Allocate and define face structure of the element ---*/
 
