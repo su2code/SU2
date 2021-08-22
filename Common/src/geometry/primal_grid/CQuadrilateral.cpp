@@ -28,40 +28,30 @@
 #include "../../../include/geometry/primal_grid/CQuadrilateral.hpp"
 #include "../../../include/option_structure.hpp"
 
-unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
-
-unsigned short CQuadrilateral::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
-
-unsigned short CQuadrilateral::nNodesFace[4] = {2,2,2,2};
-
-unsigned short CQuadrilateral::nNeighbor_Nodes[4] = {2,2,2,2};
-
-unsigned short CQuadrilateral::nFaces = N_FACES_QUADRILATERAL;
-
-unsigned short CQuadrilateral::nNodes = N_POINTS_QUADRILATERAL;
-
-unsigned short CQuadrilateral::nNeighbor_Elements = 4;
-
-unsigned short CQuadrilateral::VTK_Type = 9;
-
-unsigned short CQuadrilateral::maxNodesFace = 2;
+constexpr unsigned short CQuadrilateralConnectivity::Faces[4][2];
+constexpr unsigned short CQuadrilateralConnectivity::Neighbor_Nodes[4][2];
+constexpr unsigned short CQuadrilateralConnectivity::nNodesFace[4];
+constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Nodes[4];
+constexpr unsigned short CQuadrilateralConnectivity::nFaces;
+constexpr unsigned short CQuadrilateralConnectivity::nNodes;
+constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Elements;
+constexpr unsigned short CQuadrilateralConnectivity::VTK_Type;
+constexpr unsigned short CQuadrilateralConnectivity::maxNodesFace;
 
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3)
-: CPrimalGrid() {
+{
   unsigned short iNeighbor_Elements;
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
 
-
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnNeighbor_Elements()];
+  for (iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 
