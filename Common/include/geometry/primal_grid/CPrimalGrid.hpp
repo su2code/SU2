@@ -462,35 +462,39 @@ public:
 
   CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM) {}
 
-  inline unsigned short GetnNodes(void) const final {
+  inline unsigned short GetnNodes() const final {
     return Connectivity::nNodes;
   }
 
-  inline unsigned short GetnFaces(void) const final {
+  inline unsigned short GetnFaces() const final {
     return Connectivity::nFaces;
   }
 
   inline unsigned short GetnNodesFace(unsigned short val_face) const final {
+    assert(val_face < Connectivity::nFaces);
     return Connectivity::nNodesFace[val_face];
   }
 
-  inline unsigned short GetMaxNodesFace(void) const final {
+  inline unsigned short GetMaxNodesFace() const final {
     return Connectivity::maxNodesFace;
   }
 
   inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const final {
+    assert(val_face < GetnFaces() && val_index < GetnNodesFace(val_face));
     return Connectivity::Faces[val_face][val_index];
   }
 
   inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const final {
+    assert(val_node < Connectivity::nNodes);
     return Connectivity::nNeighbor_Nodes[val_node];
   }
 
   inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const final {
+    assert(val_node < Connectivity::nNodes && val_index < GetnNeighbor_Nodes(val_node));
     return Connectivity::Neighbor_Nodes[val_node][val_index];
   }
 
-  inline unsigned short GetVTK_Type(void) const final {
+  inline unsigned short GetVTK_Type() const final {
     return Connectivity::VTK_Type;
   }
 
