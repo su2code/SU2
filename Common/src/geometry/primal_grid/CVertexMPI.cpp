@@ -27,14 +27,14 @@
 
 #include "../../../include/geometry/primal_grid/CVertexMPI.hpp"
 
-constexpr unsigned short CVertexMPIConnectivity::Faces[1][1];
-constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
-constexpr unsigned short CVertexMPIConnectivity::nNodesFace[1];
-constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
-constexpr unsigned short CVertexMPIConnectivity::nFaces;
 constexpr unsigned short CVertexMPIConnectivity::nNodes;
-constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
+constexpr unsigned short CVertexMPIConnectivity::nFaces;
+constexpr unsigned short CVertexMPIConnectivity::nNodesFace[1];
 constexpr unsigned short CVertexMPIConnectivity::maxNodesFace;
+constexpr unsigned short CVertexMPIConnectivity::Faces[1][1];
+constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
+constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
+constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
 
 CVertexMPI::CVertexMPI(unsigned long val_point) {
 

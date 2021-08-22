@@ -35,14 +35,14 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CQuadrilateralConnectivity {
-  static constexpr unsigned short Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
-  static constexpr unsigned short Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
-  static constexpr unsigned short nNodesFace[4] = {2,2,2,2};
-  static constexpr unsigned short nNeighbor_Nodes[4] = {2,2,2,2};
-  static constexpr unsigned short nFaces = N_FACES_QUADRILATERAL;
   static constexpr unsigned short nNodes = N_POINTS_QUADRILATERAL;
-  static constexpr unsigned short VTK_Type = 9;
+  static constexpr unsigned short nFaces = N_FACES_QUADRILATERAL;
+  static constexpr unsigned short nNodesFace[4] = {2,2,2,2};
   static constexpr unsigned short maxNodesFace = 2;
+  static constexpr unsigned short Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
+  static constexpr unsigned short nNeighbor_Nodes[4] = {2,2,2,2};
+  static constexpr unsigned short Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
+  static constexpr unsigned short VTK_Type = 9;
 };
 
 /*!

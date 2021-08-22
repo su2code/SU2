@@ -35,14 +35,14 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CTriangleConnectivity {
-  static constexpr unsigned short Faces[3][2] = {{0,1},{1,2},{2,0}};
-  static constexpr unsigned short Neighbor_Nodes[3][2] = {{1,2},{2,0},{0,1}};
-  static constexpr unsigned short nNodesFace[3] = {2,2,2};
-  static constexpr unsigned short nNeighbor_Nodes[3] = {2,2,2};
-  static constexpr unsigned short nFaces = N_POINTS_TRIANGLE;
   static constexpr unsigned short nNodes = N_FACES_TRIANGLE;
-  static constexpr unsigned short VTK_Type = 5;
+  static constexpr unsigned short nFaces = N_POINTS_TRIANGLE;
+  static constexpr unsigned short nNodesFace[3] = {2,2,2};
   static constexpr unsigned short maxNodesFace = 2;
+  static constexpr unsigned short Faces[3][2] = {{0,1},{1,2},{2,0}};
+  static constexpr unsigned short nNeighbor_Nodes[3] = {2,2,2};
+  static constexpr unsigned short Neighbor_Nodes[3][2] = {{1,2},{2,0},{0,1}};
+  static constexpr unsigned short VTK_Type = 5;
 };
 
 /*!

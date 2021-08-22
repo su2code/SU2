@@ -35,14 +35,14 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CPrismConnectivity {
-  static constexpr unsigned short Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
-  static constexpr unsigned short Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
-  static constexpr unsigned short nNodesFace[5] = {4,4,4,3,3};
-  static constexpr unsigned short nNeighbor_Nodes[6] = {3,3,3,3,3,3};
-  static constexpr unsigned short nFaces = N_FACES_PRISM;
   static constexpr unsigned short nNodes = N_POINTS_PRISM;
-  static constexpr unsigned short VTK_Type = 13;
+  static constexpr unsigned short nFaces = N_FACES_PRISM;
+  static constexpr unsigned short nNodesFace[5] = {4,4,4,3,3};
   static constexpr unsigned short maxNodesFace = 4;
+  static constexpr unsigned short Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
+  static constexpr unsigned short nNeighbor_Nodes[6] = {3,3,3,3,3,3};
+  static constexpr unsigned short Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
+  static constexpr unsigned short VTK_Type = 13;
 };
 
 /*!

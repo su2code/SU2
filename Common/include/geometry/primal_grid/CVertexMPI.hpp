@@ -37,14 +37,14 @@
 struct CVertexMPIConnectivity {
   // some of the index directions would actually have 0 elements,
   // but we cannot declare arrays of length 0
-  static constexpr unsigned short Faces[1][1] = {{0}};
-  static constexpr unsigned short Neighbor_Nodes[1][1] = {{0}};
-  static constexpr unsigned short nNodesFace[1] = {0};
-  static constexpr unsigned short nNeighbor_Nodes[1] = {0};
-  static constexpr unsigned short nFaces = 0;
   static constexpr unsigned short nNodes = 1;
-  static constexpr unsigned short VTK_Type = 1;
+  static constexpr unsigned short nFaces = 0;
+  static constexpr unsigned short nNodesFace[1] = {0};
   static constexpr unsigned short maxNodesFace = 0;
+  static constexpr unsigned short Faces[1][1] = {{0}};
+  static constexpr unsigned short nNeighbor_Nodes[1] = {0};
+  static constexpr unsigned short Neighbor_Nodes[1][1] = {{0}};
+  static constexpr unsigned short VTK_Type = 1;
 };
 
 /*!

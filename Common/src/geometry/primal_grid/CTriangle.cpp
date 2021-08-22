@@ -28,14 +28,14 @@
 #include "../../../include/geometry/primal_grid/CTriangle.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CTriangleConnectivity::Faces[3][2];
-constexpr unsigned short CTriangleConnectivity::Neighbor_Nodes[3][2];
-constexpr unsigned short CTriangleConnectivity::nNodesFace[3];
-constexpr unsigned short CTriangleConnectivity::nNeighbor_Nodes[3];
-constexpr unsigned short CTriangleConnectivity::nFaces;
 constexpr unsigned short CTriangleConnectivity::nNodes;
-constexpr unsigned short CTriangleConnectivity::VTK_Type;
+constexpr unsigned short CTriangleConnectivity::nFaces;
+constexpr unsigned short CTriangleConnectivity::nNodesFace[3];
 constexpr unsigned short CTriangleConnectivity::maxNodesFace;
+constexpr unsigned short CTriangleConnectivity::Faces[3][2];
+constexpr unsigned short CTriangleConnectivity::nNeighbor_Nodes[3];
+constexpr unsigned short CTriangleConnectivity::Neighbor_Nodes[3][2];
+constexpr unsigned short CTriangleConnectivity::VTK_Type;
 
 CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2)

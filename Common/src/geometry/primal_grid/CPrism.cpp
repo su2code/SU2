@@ -28,14 +28,14 @@
 #include "../../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CPrismConnectivity::Faces[5][4];
-constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
-constexpr unsigned short CPrismConnectivity::nNodesFace[5];
-constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
-constexpr unsigned short CPrismConnectivity::nFaces;
 constexpr unsigned short CPrismConnectivity::nNodes;
-constexpr unsigned short CPrismConnectivity::VTK_Type;
+constexpr unsigned short CPrismConnectivity::nFaces;
+constexpr unsigned short CPrismConnectivity::nNodesFace[5];
 constexpr unsigned short CPrismConnectivity::maxNodesFace;
+constexpr unsigned short CPrismConnectivity::Faces[5][4];
+constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
+constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
+constexpr unsigned short CPrismConnectivity::VTK_Type;
 
 CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,

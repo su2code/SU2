@@ -35,14 +35,14 @@
  * See CPrimalGridWithConnectivity.
  */
 struct CLineConnectivity {
-  static constexpr unsigned short Faces[1][2]={{0,1}};
-  static constexpr unsigned short Neighbor_Nodes[2][1]={{1},{0}};
-  static constexpr unsigned short nNodesFace[1]={2};
-  static constexpr unsigned short nNeighbor_Nodes[2]={1,1};
-  static constexpr unsigned short nFaces = N_FACES_LINE;
   static constexpr unsigned short nNodes = N_POINTS_LINE;
-  static constexpr unsigned short VTK_Type = 3;
+  static constexpr unsigned short nFaces = N_FACES_LINE;
+  static constexpr unsigned short nNodesFace[1]={2};
   static constexpr unsigned short maxNodesFace = 2;
+  static constexpr unsigned short Faces[1][2]={{0,1}};
+  static constexpr unsigned short nNeighbor_Nodes[2]={1,1};
+  static constexpr unsigned short Neighbor_Nodes[2][1]={{1},{0}};
+  static constexpr unsigned short VTK_Type = 3;
 };
 
 /*!

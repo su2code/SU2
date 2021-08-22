@@ -28,14 +28,14 @@
 #include "../../../include/geometry/primal_grid/CLine.hpp"
 #include "../../../include/option_structure.hpp"
 
-constexpr unsigned short CLineConnectivity::Faces[1][2];
-constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
-constexpr unsigned short CLineConnectivity::nNodesFace[1];
-constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
-constexpr unsigned short CLineConnectivity::CLineConnectivity::nFaces;
 constexpr unsigned short CLineConnectivity::nNodes;
-constexpr unsigned short CLineConnectivity::VTK_Type;
+constexpr unsigned short CLineConnectivity::CLineConnectivity::nFaces;
+constexpr unsigned short CLineConnectivity::nNodesFace[1];
 constexpr unsigned short CLineConnectivity::maxNodesFace;
+constexpr unsigned short CLineConnectivity::Faces[1][2];
+constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
+constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
+constexpr unsigned short CLineConnectivity::VTK_Type;
 
 
 CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) {
