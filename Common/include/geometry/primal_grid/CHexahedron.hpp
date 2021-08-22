@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CHexahedronConnectivity
+ * Defines the connectivity of a hexahedron element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CHexahedronConnectivity {
   static constexpr unsigned short Faces[6][4] = {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},{0,3,2,1},{4,5,6,7}};
   static constexpr unsigned short Neighbor_Nodes[8][3] = {{1,3,4},{0,2,5},{1,3,6},{0,2,7},{0,5,7},{4,6,1},{2,5,7},{4,3,6}};

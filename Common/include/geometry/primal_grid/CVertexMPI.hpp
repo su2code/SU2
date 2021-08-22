@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CVertexMPIConnectivity
+ * Defines the connectivity of a vertex element for parallelization.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CVertexMPIConnectivity {
   // some of the index directions would actually have 0 elements,
   // but we cannot declare arrays of length 0

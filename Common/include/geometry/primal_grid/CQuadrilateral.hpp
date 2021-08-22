@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CQuadrilateralConnectivity
+ * Defines the connectivity of a quadrilateral element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CQuadrilateralConnectivity {
   static constexpr unsigned short Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
   static constexpr unsigned short Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};

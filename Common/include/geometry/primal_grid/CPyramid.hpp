@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CPyramidConnectivity
+ * Defines the connectivity of a pyramid element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CPyramidConnectivity {
   static constexpr unsigned short Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
   static constexpr unsigned short Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};

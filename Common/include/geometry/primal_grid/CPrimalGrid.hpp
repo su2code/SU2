@@ -277,12 +277,6 @@ public:
 
   /*!
    * \brief A pure virtual member.
-   * \return Kind of element using the vtk nomenclature.
-   */
-  virtual unsigned short GetVTK_Type(void) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
    * \return Type of the element using VTK nomenclature.
    */
   inline virtual unsigned short GetRotation_Type(void) const{ return 0; }
@@ -293,53 +287,62 @@ public:
    */
   inline virtual void SetRotation_Type(unsigned short val_rotation_type) { }
 
+  /*-- The following virtual functions are overridden in
+   CPrimalGridWithConnectivity, except for the FEM classes. --*/
   /*!
-   * \brief A pure virtual member.
-   * \param[in] val_node - Local index of the node.
-   * \return Number of neighbors nodes of a node in the element.
-   */
-  virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
-   * \return Number of nodes of an element.
+   * \brief Get number of nodes of the element.
+   * \return Number of nodes.
    */
   virtual unsigned short GetnNodes(void) const = 0;
 
   /*!
-   * \brief A pure virtual member.
-   * \return Number of faces of an element.
+   * \brief Get number of faces of the element.
+   * \return Number of faces.
    */
   virtual unsigned short GetnFaces(void) const = 0;
 
   /*!
-   * \brief A pure virtual member.
-   * \param[in] val_face - Local index of a face.
-   * \return Local index of the nodes that compose a face.
+   * \brief Get number of nodes of a face of the element.
+   * \param[in] val_face - Index of the face among all faces of the element.
+   * \return Number of nodes contained in the face.
    */
   inline virtual unsigned short GetnNodesFace(unsigned short val_face) const { return 0; }
 
   /*!
-   * \brief A pure virtual member.
-   * \return Maximum number of nodes that compose a face.
+   * \brief Get the maximum number of nodes contained in a face of the element.
+   * \return Maximum number of nodes contained in a face.
    */
   virtual unsigned short GetMaxNodesFace(void) const = 0;
 
   /*!
-   * \brief A pure virtual member.
-   * \param[in] val_face - Local index of the face.
-   * \param[in] val_index - Local index of the nodes that compose the face.
-   * \return - Local index of the nodes that compose the face.
+   * \brief Get nodes contained in a face.
+   * \param[in] val_face - Index of the face among all faces of the element.
+   * \param[in] val_index - Index of the node among all nodes of the face.
+   * \return - Index of the node among all nodes of the element.
    */
   virtual unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const = 0;
 
   /*!
-   * \brief A pure virtual member.
-   * \param[in] val_node - Local index of a node.
-   * \param[in] val_index - Local (to the neighbor nodes of <i>val_node</i>) index of the nodes that are neighbor to val_node.
-   * \return Local index of the nodes that are neighbor to <i>val_node</i>.
+   * \brief Get number of neighbor nodes of a node.
+   * \param[in] val_node - Index of node among all nodes of the element.
+   * \return Number of neighbor nodes.
+   */
+  virtual unsigned short GetnNeighbor_Nodes(unsigned short val_node) const = 0;
+
+  /*!
+   * \brief Get neighbor nodes of a node.
+   * \param[in] val_node - Index of node N among all nodes of the element.
+   * \param[in] val_index - Index of the neighbor node among all neighbor nodes of the node N.
+   * \return Index of neighbor node among all nodes of the element.
    */
   virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const = 0;
+
+  /*!
+   * \brief Get VTK type.
+   * \return Type of element using the VTK nomenclature.
+   */
+  virtual unsigned short GetVTK_Type(void) const = 0;
+  /*-- Until here --*/
 
   /*!
    * \brief Virtual function, that must be overwritten by the derived class, if needed.
@@ -438,25 +441,29 @@ public:
 };
 
 /*! \class CPrimalGridWithConnectivity
+ * \brief Override the connectivity getters of CPrimalGrid.
+ *
+ * \details Non-FEM primal grid classes like CLine, CTriangle etc
+ * are derived from CPrimalGridWithConnectivity<CLineConnectivity> etc.
+ * The Connectivity class must have the following static members of
+ * type unsigned short / unsigned short array, typically constexpr:
+ * - nNodes: Number of nodes of the element.
+ * - nFaces:  Number of faces of the element.
+ * - nNodesFace[]: Number of nodes of each face of the element.
+ * - maxNodesFace: Maximum number of nodes for a face.
+ * - Faces[][]: Matrix to store the local nodes of all the faces.
+ * - nNeighbor_Nodes[]: Number of neighbor nodes of each node of the element.
+ * - Neighbor_Nodes[][]: Matrix to store the neighbors of all the nodes.
+ * - VTK_Type: Type of element using VTK nomenclature.
+ *
+ * The getter functions for connectivity in CPrimalGrid have final overrides
+ * in this class, accessing the static members of Connectivity.
+ *
+ * \tparam Connectivity - class defining the connectivity structure
  */
 template<typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
 public:
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const final {
-    return Connectivity::Faces[val_face][val_index];
-  }
-
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const final {
-    return Connectivity::Neighbor_Nodes[val_node][val_index];
-  }
-
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const final {
-    return Connectivity::nNeighbor_Nodes[val_node];
-  }
-
-  inline unsigned short GetnNodesFace(unsigned short val_face) const final {
-    return Connectivity::nNodesFace[val_face];
-  }
 
   inline unsigned short GetnNodes(void) const final {
     return Connectivity::nNodes;
@@ -466,8 +473,24 @@ public:
     return Connectivity::nFaces;
   }
 
+  inline unsigned short GetnNodesFace(unsigned short val_face) const final {
+    return Connectivity::nNodesFace[val_face];
+  }
+
   inline unsigned short GetMaxNodesFace(void) const final {
     return Connectivity::maxNodesFace;
+  }
+
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const final {
+    return Connectivity::Faces[val_face][val_index];
+  }
+
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const final {
+    return Connectivity::nNeighbor_Nodes[val_node];
+  }
+
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const final {
+    return Connectivity::Neighbor_Nodes[val_node][val_index];
   }
 
   inline unsigned short GetVTK_Type(void) const final {

@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CTriangleConnectivity
+ * Defines the connectivity of a triangle element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CTriangleConnectivity {
   static constexpr unsigned short Faces[3][2] = {{0,1},{1,2},{2,0}};
   static constexpr unsigned short Neighbor_Nodes[3][2] = {{1,2},{2,0},{0,1}};

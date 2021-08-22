@@ -30,6 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
+/*! \class CTetrahedronConnectivity
+ * Defines the connectivity of a tetrahedron element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CTetrahedronConnectivity {
   static constexpr unsigned short Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
   static constexpr unsigned short Neighbor_Nodes[4][3]={{1,2,3},{0,2,3},{0,1,3},{0,1,2}};

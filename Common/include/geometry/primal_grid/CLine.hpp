@@ -30,7 +30,10 @@
 
 #include "CPrimalGrid.hpp"
 
-
+/*! \class CLineConnectivity
+ * Defines the connectivity of a line element.
+ * See CPrimalGridWithConnectivity.
+ */
 struct CLineConnectivity {
   static constexpr unsigned short Faces[1][2]={{0,1}};
   static constexpr unsigned short Neighbor_Nodes[2][1]={{1},{0}};
