@@ -28,31 +28,22 @@
 #include "../../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../../include/option_structure.hpp"
 
-unsigned short CPyramid::Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
-
-unsigned short CPyramid::Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
-
-unsigned short CPyramid::nNodesFace[5] = {4,3,3,3,3};
-
-unsigned short CPyramid::nNeighbor_Nodes[5] = {3,3,3,3,4};
-
-unsigned short CPyramid::nFaces = N_FACES_PYRAMID;
-
-unsigned short CPyramid::nNodes = N_POINTS_PYRAMID;
-
-unsigned short CPyramid::nNeighbor_Elements = 5;
-
-unsigned short CPyramid::VTK_Type = 14;
-
-unsigned short CPyramid::maxNodesFace = 4;
+constexpr unsigned short CPyramidConnectivity::Faces[5][4];
+constexpr unsigned short CPyramidConnectivity::Neighbor_Nodes[5][4];
+constexpr unsigned short CPyramidConnectivity::nNodesFace[5];
+constexpr unsigned short CPyramidConnectivity::nNeighbor_Nodes[5];
+constexpr unsigned short CPyramidConnectivity::nFaces;
+constexpr unsigned short CPyramidConnectivity::nNodes;
+constexpr unsigned short CPyramidConnectivity::nNeighbor_Elements;
+constexpr unsigned short CPyramidConnectivity::VTK_Type;
+constexpr unsigned short CPyramidConnectivity::maxNodesFace;
 
 CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2, unsigned long val_point_3,
-           unsigned long val_point_4) : CPrimalGrid() {
-  unsigned short iNeighbor_Elements;
+           unsigned long val_point_4) {
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
@@ -60,9 +51,8 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[4] = val_point_4;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnNeighbor_Elements()];
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 
