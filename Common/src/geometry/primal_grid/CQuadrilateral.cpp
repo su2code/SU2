@@ -41,8 +41,6 @@ constexpr unsigned short CQuadrilateralConnectivity::maxNodesFace;
 CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3)
 {
-  unsigned short iNeighbor_Elements;
-
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
@@ -51,7 +49,7 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
   Nodes[3] = val_point_3;
 
   Neighbor_Elements = new long[GetnNeighbor_Elements()];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 
