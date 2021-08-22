@@ -30,21 +30,30 @@
 
 #include "CPrimalGrid.hpp"
 
+struct CVertexMPIConnectivity {
+  // some of the index directions would actually have 0 elements,
+  // but we cannot declare arrays of length 0
+  static constexpr unsigned short Faces[1][1] = {{0}};
+  static constexpr unsigned short Neighbor_Nodes[1][1] = {{0}};
+  static constexpr unsigned short nNodesFace[1] = {0};
+  static constexpr unsigned short nNeighbor_Nodes[1] = {0};
+  static constexpr unsigned short nFaces = 0;
+  static constexpr unsigned short nNodes = 1;
+  static constexpr unsigned short nNeighbor_Elements = 0;
+  static constexpr unsigned short VTK_Type = 1;
+  static constexpr unsigned short maxNodesFace = 0;
+};
+
 /*!
  * \class CVertexMPI
  * \brief Class for vertex element definition. This kind
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
  */
-class CVertexMPI final: public CPrimalGrid {
+class CVertexMPI final: public CPrimalGridWithConnectivity<CVertexMPIConnectivity> {
 private:
-  static unsigned short nFaces;       /*!< \brief Number of faces of the element. */
-  static unsigned short nNodes;       /*!< \brief Number of nodes of the element. */
-  static unsigned short VTK_Type;     /*!< \brief Type of element using VTK nomenclature. */
-  unsigned short Rotation_Type;         /*!< \brief Definition of the rotation, traslation of the
-                                                                    solution at the vertex. */
-  static unsigned short maxNodesFace;   /*!< \brief Maximum number of nodes for a face. */
-  static unsigned short nNeighbor_Elements; /*!< \brief Number of Neighbor_Elements. */
+  /*! \brief Definition of the rotation, translation of the solution at the vertex. */
+  unsigned short Rotation_Type;
 
 public:
 
@@ -58,18 +67,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CVertexMPI(void) override;
-
-  /*!
-   * \brief Get the number of nodes of an element.
-   * \return Number of nodes that composes an element.
-   */
-  inline unsigned short GetnNodes(void) const override { return nNodes; }
-
-  /*!
-   * \brief Get the type of the element using VTK nomenclature.
-   * \return Type of the element using VTK nomenclature.
-   */
-  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
    * \brief Get the type of rotation/traslation that must be applied.
@@ -89,45 +86,4 @@ public:
    */
   void Change_Orientation(void) override;
 
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetnNeighbor_Elements(void) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetnFaces(void) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetMaxNodesFace(void) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return 0; }
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return 0; }
 };

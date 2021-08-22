@@ -27,20 +27,20 @@
 
 #include "../../../include/geometry/primal_grid/CVertexMPI.hpp"
 
-unsigned short CVertexMPI::nFaces = 0;
+constexpr unsigned short CVertexMPIConnectivity::Faces[1][1];
+constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
+constexpr unsigned short CVertexMPIConnectivity::nNodesFace[1];
+constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
+constexpr unsigned short CVertexMPIConnectivity::nFaces;
+constexpr unsigned short CVertexMPIConnectivity::nNodes;
+constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Elements;
+constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
+constexpr unsigned short CVertexMPIConnectivity::maxNodesFace;
 
-unsigned short CVertexMPI::nNodes = 1;
-
-unsigned short CVertexMPI::nNeighbor_Elements = 0;
-
-unsigned short CVertexMPI::VTK_Type = 1;
-
-unsigned short CVertexMPI::maxNodesFace = 0;
-
-CVertexMPI::CVertexMPI(unsigned long val_point) : CPrimalGrid() {
+CVertexMPI::CVertexMPI(unsigned long val_point) {
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point;
 
   /*--- By default, no rotation in the solution ---*/
