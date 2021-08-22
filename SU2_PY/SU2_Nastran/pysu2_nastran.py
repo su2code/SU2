@@ -77,7 +77,7 @@ class ImposedMotionClass:
     if self.typeOfMotion == "BLENDED_STEP":
       if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
       return self.amplitude
 
@@ -93,7 +93,7 @@ class ImposedMotionClass:
     if self.typeOfMotion == "BLENDED_STEP":
       if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
       return 0.0
 
@@ -108,7 +108,7 @@ class ImposedMotionClass:
     if self.typeOfMotion == "BLENDED_STEP":
       if (time < 0.0) or (time > self.timeStop):
         return 0.0
-      elif time < self.tmax:
+      if time < self.tmax:
         return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
       return 0.0
 
@@ -511,8 +511,7 @@ class Solver:
 
     if string == '        ':
       return int(0)
-    else:
-      return int(string)
+    return int(string)
 
 
   def __setStructuralMatrices(self):
@@ -808,7 +807,7 @@ class Solver:
           self.__computeInterfacePosVel(False)
           nSet = True
           break
-          
+
     if (not nM1Set) or (not nSet):
       raise Exception('The restart iteration was not found in the structural history')
 

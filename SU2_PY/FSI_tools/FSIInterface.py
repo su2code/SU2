@@ -2189,10 +2189,10 @@ class Interface:
 
               if myid == self.rootProcess:
                   AllFiles = os.listdir()
-                  for FileNumber in range(len(AllFiles)):
-                      if SurfaceFileName in AllFiles[FileNumber]:
-                          file = AllFiles[FileNumber].split(".")[0]
-                          extension = AllFiles[FileNumber].split(".")[1]
+                  for FileNumber,FileName in enumerate(AllFiles):
+                      if SurfaceFileName in FileName:
+                          file = FileName.split(".")[0]
+                          extension = FileName.split(".")[1]
                           os.rename(file+"."+extension,"Mode{}.".format(mode)+extension)
 
           self.MPIPrint('\n*************************')
