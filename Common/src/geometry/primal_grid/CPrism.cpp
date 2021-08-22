@@ -28,31 +28,22 @@
 #include "../../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../../include/option_structure.hpp"
 
-unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
-
-unsigned short CPrism::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
-
-unsigned short CPrism::nNodesFace[5] = {4,4,4,3,3};
-
-unsigned short CPrism::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
-
-unsigned short CPrism::nFaces = N_FACES_PRISM;
-
-unsigned short CPrism::nNodes = N_POINTS_PRISM;
-
-unsigned short CPrism::nNeighbor_Elements = 5;
-
-unsigned short CPrism::VTK_Type = 13;
-
-unsigned short CPrism::maxNodesFace = 4;
+constexpr unsigned short CPrismConnectivity::Faces[5][4];
+constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
+constexpr unsigned short CPrismConnectivity::nNodesFace[5];
+constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
+constexpr unsigned short CPrismConnectivity::nFaces;
+constexpr unsigned short CPrismConnectivity::nNodes;
+constexpr unsigned short CPrismConnectivity::nNeighbor_Elements;
+constexpr unsigned short CPrismConnectivity::VTK_Type;
+constexpr unsigned short CPrismConnectivity::maxNodesFace;
 
 CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
          unsigned long val_point_2, unsigned long val_point_3,
-         unsigned long val_point_4, unsigned long val_point_5) : CPrimalGrid() {
-  unsigned short iNeighbor_Elements;
+         unsigned long val_point_4, unsigned long val_point_5) {
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
@@ -61,9 +52,8 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[5] = val_point_5;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnNeighbor_Elements()];
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 
