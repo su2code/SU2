@@ -39,7 +39,7 @@ CGeometry::CGeometry(void) :
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iFace, iVertex;
+  unsigned long iElem, iElem_Bound, iVertex;
   unsigned short iMarker;
 
   if (elem != nullptr) {
