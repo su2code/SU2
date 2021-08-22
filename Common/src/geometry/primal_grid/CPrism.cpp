@@ -53,7 +53,7 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[5] = val_point_5;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements.resize(GetnFaces(),1);
+  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CPrism::~CPrism() {}
