@@ -1007,8 +1007,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Evaluate the vorticity and strain rate magnitude.
    * \tparam VelocityOffset - Index in the primitive variables where the velocity starts.
    */
-  template<unsigned long VelocityOffset>
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh,
+                                    const size_t VelocityOffset = 1) {
 
     auto& StrainMag = nodes->GetStrainMag();
 
