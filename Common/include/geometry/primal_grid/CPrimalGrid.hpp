@@ -442,3 +442,47 @@ public:
    */
   inline virtual void RemoveMultipleDonorsWallFunctions(void) {}
 };
+
+/*! \class CPrimalGridWithConnectivity
+ */
+template<typename Connectivity>
+class CPrimalGridWithConnectivity : public CPrimalGrid {
+public:
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const final {
+    return Connectivity::Faces[val_face][val_index];
+  }
+
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const final {
+    return Connectivity::Neighbor_Nodes[val_node][val_index];
+  }
+
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const final {
+    return Connectivity::nNeighbor_Nodes[val_node];
+  }
+
+  inline unsigned short GetnNodesFace(unsigned short val_face) const final {
+    return Connectivity::nNodesFace[val_face];
+  }
+
+  inline unsigned short GetnNodes(void) const final {
+    return Connectivity::nNodes;
+  }
+
+  inline unsigned short GetnFaces(void) const final {
+    return Connectivity::nFaces;
+  }
+
+  inline unsigned short GetMaxNodesFace(void) const final {
+    return Connectivity::maxNodesFace;
+  }
+
+  inline unsigned short GetVTK_Type(void) const final {
+    return Connectivity::VTK_Type;
+  }
+
+  inline unsigned short GetnNeighbor_Elements(void) const final {
+    return Connectivity::nNeighbor_Elements;
+  }
+
+};
+

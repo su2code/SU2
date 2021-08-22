@@ -28,29 +28,22 @@
 #include "../../../include/geometry/primal_grid/CLine.hpp"
 #include "../../../include/option_structure.hpp"
 
-unsigned short CLine::Faces[1][2]={{0,1}};
+constexpr unsigned short CLineConnectivity::Faces[1][2];
+constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
+constexpr unsigned short CLineConnectivity::nNodesFace[1];
+constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
+constexpr unsigned short CLineConnectivity::CLineConnectivity::nFaces;
+constexpr unsigned short CLineConnectivity::nNodes;
+constexpr unsigned short CLineConnectivity::nNeighbor_Elements;
+constexpr unsigned short CLineConnectivity::VTK_Type;
+constexpr unsigned short CLineConnectivity::maxNodesFace;
 
-unsigned short CLine::Neighbor_Nodes[2][1]={{1},{0}};
 
-unsigned short CLine::nNodesFace[1]={2};
-
-unsigned short CLine::nNeighbor_Nodes[2]={1,1};
-
-unsigned short CLine::nFaces = N_FACES_LINE;
-
-unsigned short CLine::nNodes = N_POINTS_LINE;
-
-unsigned short CLine::nNeighbor_Elements = 1;
-
-unsigned short CLine::VTK_Type = 3;
-
-unsigned short CLine::maxNodesFace = 2;
-
-CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) : CPrimalGrid() {
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) {
 
   /*--- Allocate and define face structure of the element ---*/
 
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
 

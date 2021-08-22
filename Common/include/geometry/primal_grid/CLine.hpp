@@ -31,22 +31,24 @@
 #include "CPrimalGrid.hpp"
 
 
+struct CLineConnectivity {
+  static constexpr unsigned short Faces[1][2]={{0,1}};
+  static constexpr unsigned short Neighbor_Nodes[2][1]={{1},{0}};
+  static constexpr unsigned short nNodesFace[1]={2};
+  static constexpr unsigned short nNeighbor_Nodes[2]={1,1};
+  static constexpr unsigned short nFaces = N_FACES_LINE;
+  static constexpr unsigned short nNodes = N_POINTS_LINE;
+  static constexpr unsigned short nNeighbor_Elements = 1;
+  static constexpr unsigned short VTK_Type = 3;
+  static constexpr unsigned short maxNodesFace = 2;
+};
+
 /*!
  * \class CLine
  * \brief Class for line element definition.
  * \author F. Palacios
  */
-class CLine final : public CPrimalGrid {
-private:
-  static unsigned short Faces[1][2];       /*!< \brief Matrix to store the local nodes of all the faces. */
-  static unsigned short Neighbor_Nodes[2][1];  /*!< \brief Neighbor to a nodes in the element. */
-  static unsigned short nNodesFace[1];       /*!< \brief Number of nodes of each face of the element. */
-  static unsigned short nNeighbor_Nodes[2];    /*!< \brief Number of Neighbor to a nodes in the element. */
-  static unsigned short nFaces;          /*!< \brief Number of faces of the element. */
-  static unsigned short nNodes;          /*!< \brief Number of nodes of the element. */
-  static unsigned short VTK_Type;        /*!< \brief Type of element using VTK nomenclature. */
-  static unsigned short maxNodesFace;      /*!< \brief Maximum number of nodes for a face. */
-  static unsigned short nNeighbor_Elements;    /*!< \brief Number of Neighbor_Elements. */
+class CLine final : public CPrimalGridWithConnectivity<CLineConnectivity> {
 
 public:
 
@@ -61,67 +63,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CLine(void) override;
-
-  /*!
-   * \brief Get the face index of and element.
-   * \param[in] val_face - Local index of the face.
-   * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
-   * \return Local (to the line) index of the nodes that compose the face.
-   */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return Faces[val_face][val_index]; }
-
-  /*!
-   * \brief Get the local index of the neighbors to a node (given the local index).
-   * \param[in] val_node - Local (to the line) index of a node.
-   * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes
-   that are neighbor to val_node (each face is composed by 3 nodes).
-   * \return Local (to the line) index of the nodes that are neighbor to val_node.
-   */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return Neighbor_Nodes[val_node][val_index]; }
-
-  /*!
-   * \brief Get the number of neighbors nodes of a node.
-   * \param[in] val_node - Local (to the line) index of a node.
-   * \return Number if neighbors of a node val_node.
-   */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return nNeighbor_Nodes[val_node]; }
-
-  /*!
-   * \brief Get the number of nodes that composes a face of an element.
-   * \param[in] val_face - Local index of the face.
-   * \return Number of nodes that composes a face of an element.
-   */
-  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return nNodesFace[val_face]; }
-
-  /*!
-   * \brief Get the number of nodes of an element.
-   * \return Number of nodes that composes an element.
-   */
-  inline unsigned short GetnNodes(void) const override { return nNodes; }
-
-  /*!
-   * \brief Get the number of faces of an element.
-   * \return Number of faces of an element.
-   */
-  inline unsigned short GetnFaces(void) const override { return nFaces; }
-
-  /*!
-   * \brief Get the Maximum number of nodes of a face of an element.
-   * \return Maximum number of nodes of a face of an element.
-   */
-  inline unsigned short GetMaxNodesFace(void) const override { return maxNodesFace; }
-
-  /*!
-   * \brief Get the type of the element using VTK nomenclature.
-   * \return Type of the element using VTK nomenclature.
-   */
-  inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
-
-  /*!
-   * \brief Get the number of element that are neighbor to this element.
-   * \return Number of neighbor elements.
-   */
-  inline unsigned short GetnNeighbor_Elements(void) const override { return nNeighbor_Elements; }
 
   /*!
    * \brief Change the orientation of an element.
