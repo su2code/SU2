@@ -28,39 +28,30 @@
 #include "../../../include/geometry/primal_grid/CTetrahedron.hpp"
 #include "../../../include/option_structure.hpp"
 
-unsigned short CTetrahedron::Faces[4][3]={{0,2,1},{0,1,3},{0,3,2},{1,2,3}};
-
-unsigned short CTetrahedron::Neighbor_Nodes[4][3]={{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
-
-unsigned short CTetrahedron::nNodesFace[4]={3,3,3,3};
-
-unsigned short CTetrahedron::nNeighbor_Nodes[4]={3,3,3,3};
-
-unsigned short CTetrahedron::nFaces = N_FACES_TETRAHEDRON;
-
-unsigned short CTetrahedron::nNodes = N_POINTS_TETRAHEDRON;
-
-unsigned short CTetrahedron::nNeighbor_Elements = 4;
-
-unsigned short CTetrahedron::VTK_Type = 10;
-
-unsigned short CTetrahedron::maxNodesFace = 3;
+constexpr unsigned short CTetrahedronConnectivity::Faces[4][3];
+constexpr unsigned short CTetrahedronConnectivity::Neighbor_Nodes[4][3];
+constexpr unsigned short CTetrahedronConnectivity::nNodesFace[4];
+constexpr unsigned short CTetrahedronConnectivity::nNeighbor_Nodes[4];
+constexpr unsigned short CTetrahedronConnectivity::nFaces;
+constexpr unsigned short CTetrahedronConnectivity::nNodes;
+constexpr unsigned short CTetrahedronConnectivity::nNeighbor_Elements;
+constexpr unsigned short CTetrahedronConnectivity::VTK_Type;
+constexpr unsigned short CTetrahedronConnectivity::maxNodesFace;
 
 CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
-               unsigned long val_point_2, unsigned long val_point_3) : CPrimalGrid() {
+               unsigned long val_point_2, unsigned long val_point_3) {
   unsigned short iNeighbor_Elements;
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[nNodes];
+  Nodes = new unsigned long[GetnNodes()];
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  nNeighbor_Elements = nFaces;
-  Neighbor_Elements = new long[nNeighbor_Elements];
-  for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnNeighbor_Elements()];
+  for (iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 
