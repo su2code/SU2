@@ -39,7 +39,7 @@ constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
 CVertexMPI::CVertexMPI(unsigned long val_point) {
 
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[GetnNodes()];
+  Nodes.resize(GetnNodes());
   Nodes[0] = val_point;
 
   /*--- By default, no rotation in the solution ---*/

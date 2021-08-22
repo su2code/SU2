@@ -42,7 +42,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_4)
 {
   /*--- Allocate and define face structure of the element ---*/
-  Nodes = new unsigned long[GetnNodes()];
+  Nodes.resize(GetnNodes());
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
@@ -50,11 +50,7 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[4] = val_point_4;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements = new long[GetnFaces()];
-  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnFaces(); iNeighbor_Elements++) {
-    Neighbor_Elements[iNeighbor_Elements]=-1;
-  }
-
+  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CPyramid::~CPyramid() {}

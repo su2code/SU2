@@ -42,7 +42,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1) {
 
   /*--- Allocate and define face structure of the element ---*/
 
-  Nodes = new unsigned long[GetnNodes()];
+  Nodes.resize(GetnNodes());
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
 

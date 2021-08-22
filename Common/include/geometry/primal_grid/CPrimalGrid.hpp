@@ -46,10 +46,10 @@
  */
 class CPrimalGrid {
 protected:
-  unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
+  vector<unsigned long> Nodes;         /*!< \brief Global node indices of the element. */
   unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
-  long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
-  short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
+  vector<long> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
+  vector<short> PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                             A -1 indicates no periodic transformation to the neighbor. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which

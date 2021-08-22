@@ -47,7 +47,7 @@ FEM = true;
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy them from val_nodes.                        ---*/
 
-  Nodes = new unsigned long[nDOFsGrid];
+  Nodes.resize(nDOFsGrid);
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = val_nodes[i];
 

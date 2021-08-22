@@ -47,7 +47,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and read them from elem_line.                        ---*/
-  Nodes = new unsigned long[nDOFsGrid];
+  Nodes.resize(nDOFsGrid);
   for(unsigned short i=0; i<nDOFsGrid; i++)
     elem_line >> Nodes[i];
 
@@ -93,7 +93,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy the data from connGrid. ---*/
-  Nodes = new unsigned long[nDOFsGrid];
+  Nodes.resize(nDOFsGrid);
   for(unsigned short i=0; i<nDOFsGrid; i++)
     Nodes[i] = connGrid[i];
 }

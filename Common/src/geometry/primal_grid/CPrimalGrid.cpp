@@ -29,20 +29,11 @@
 
 CPrimalGrid::CPrimalGrid(void) {
 
-  /*--- Set the default values for the pointers ---*/
-  Nodes = nullptr;
-  Neighbor_Elements = nullptr;
-  PeriodIndexNeighbors = nullptr;
   GlobalIndex = 0;
 
 }
 
-CPrimalGrid::~CPrimalGrid() {
-
- delete[] Nodes;
- delete[] Neighbor_Elements;
- delete[] PeriodIndexNeighbors;
-}
+CPrimalGrid::~CPrimalGrid() { }
 
 void CPrimalGrid::GetAllNeighbor_Elements() const {
   cout << "( ";
@@ -58,13 +49,7 @@ void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
   /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
         initialize the arrays to -1 to indicate that no neighbor is present and
         that no periodic transformation is needed to the neighbor. ---*/
-
-  Neighbor_Elements    = new long[val_nFaces];
-  PeriodIndexNeighbors = new short[val_nFaces];
-  for(unsigned short i=0; i<val_nFaces; ++i) {
-    Neighbor_Elements[i]    = -1;
-    PeriodIndexNeighbors[i] = -1;
-  }
-
+  Neighbor_Elements.resize(val_nFaces,-1);
+  PeriodIndexNeighbors.resize(val_nFaces,-1);
   ElementOwnsFace.reset();
 }
