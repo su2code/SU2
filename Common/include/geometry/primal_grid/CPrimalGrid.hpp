@@ -462,11 +462,11 @@ public:
 
   CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM) {}
 
-  inline unsigned short GetnNodes(void) const final {
+  inline unsigned short GetnNodes() const final {
     return Connectivity::nNodes;
   }
 
-  inline unsigned short GetnFaces(void) const final {
+  inline unsigned short GetnFaces() const final {
     return Connectivity::nFaces;
   }
 
@@ -474,7 +474,7 @@ public:
     return Connectivity::nNodesFace[val_face];
   }
 
-  inline unsigned short GetMaxNodesFace(void) const final {
+  inline unsigned short GetMaxNodesFace() const final {
     return Connectivity::maxNodesFace;
   }
 
@@ -490,7 +490,7 @@ public:
     return Connectivity::Neighbor_Nodes[val_node][val_index];
   }
 
-  inline unsigned short GetVTK_Type(void) const final {
+  inline unsigned short GetVTK_Type() const final {
     return Connectivity::VTK_Type;
   }
 
