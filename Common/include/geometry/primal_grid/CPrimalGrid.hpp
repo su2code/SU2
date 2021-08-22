@@ -34,6 +34,7 @@
 #include <vector>
 #include <cstdlib>
 #include <limits>
+#include <bitset>
 
 #include "../../CConfig.hpp"
 
@@ -54,9 +55,11 @@ protected:
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
                                                correspond with a boundary element is stored. */
   su2double Volume;                /*!< \brief Volume of the element. */
-  bool *JacobianFaceIsConstant;    /*!< \brief Whether or not the Jacobian of the faces can be considered
-                                               constant in the transformation to the standard element. */
-  bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
+  /*! \brief Whether or not the Jacobian of the faces can be considered
+   * constant in the transformation to the standard element. */
+  std::bitset<N_FACES_MAXIMUM> JacobianFaceIsConstant;
+  /*!< \brief Whether or not the element owns the face. */
+  std::bitset<N_FACES_MAXIMUM> ElementOwnsFace;
   su2double LenScale;       /*!< \brief Length scale of the element. */
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
   bool FEM = false;  /*!< True if this is a FEM element. */
@@ -223,10 +226,9 @@ public:
   void GetAllNeighbor_Elements(void) const ;
 
   /*!
-  * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
-  * \param[in] val_nFaces - Number of faces for which Jacobians must be initialized.
+  * \brief Reset the array, which stores whether or not the faces have a constant Jacobian, to false.
   */
-  void InitializeJacobianConstantFaces(unsigned short val_nFaces);
+  inline void ResetJacobianConstantFaces() { JacobianFaceIsConstant.reset(); }
 
   /*!
   * \brief Initialize the information about the neighboring elements.

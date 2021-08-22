@@ -3185,9 +3185,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-    /*--- Initialize the array, which stores whether or not the faces are
-          considered to have a constant Jacobian. ---*/
-    elem[i]->InitializeJacobianConstantFaces(nFaces);
+    /*--- Reset the array, which stores whether or not the faces are
+          considered to have a constant Jacobian, to false. ---*/
+    elem[i]->ResetJacobianConstantFaces();
 
     /*--- Loop over the number of faces of this element. ---*/
     su2double jacFaceMax = 0.0;

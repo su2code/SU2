@@ -32,9 +32,7 @@ CPrimalGrid::CPrimalGrid(void) {
   /*--- Set the default values for the pointers ---*/
   Nodes = nullptr;
   Neighbor_Elements = nullptr;
-  ElementOwnsFace = nullptr;
   PeriodIndexNeighbors = nullptr;
-  JacobianFaceIsConstant = nullptr;
   GlobalIndex = 0;
 
 }
@@ -43,9 +41,7 @@ CPrimalGrid::~CPrimalGrid() {
 
  delete[] Nodes;
  delete[] Neighbor_Elements;
- delete[] ElementOwnsFace;
  delete[] PeriodIndexNeighbors;
- delete[] JacobianFaceIsConstant;
 }
 
 void CPrimalGrid::GetAllNeighbor_Elements() const {
@@ -57,27 +53,18 @@ void CPrimalGrid::GetAllNeighbor_Elements() const {
   cout << ")"  << endl;
 }
 
-void CPrimalGrid::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
-
-  /*--- Allocate the memory for JacobianFaceIsConstant and initialize
-        its values to false.     ---*/
-  JacobianFaceIsConstant = new bool[val_nFaces];
-  for(unsigned short i=0; i<val_nFaces; ++i)
-    JacobianFaceIsConstant[i] = false;
-}
-
 void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
 
   /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
         initialize the arrays to -1 to indicate that no neighbor is present and
         that no periodic transformation is needed to the neighbor. ---*/
-  Neighbor_Elements    = new long[val_nFaces];
-  ElementOwnsFace      = new bool[val_nFaces];
-  PeriodIndexNeighbors = new short[val_nFaces];
 
+  Neighbor_Elements    = new long[val_nFaces];
+  PeriodIndexNeighbors = new short[val_nFaces];
   for(unsigned short i=0; i<val_nFaces; ++i) {
     Neighbor_Elements[i]    = -1;
-    ElementOwnsFace[i]      =  false;
     PeriodIndexNeighbors[i] = -1;
   }
+
+  ElementOwnsFace.reset();
 }
