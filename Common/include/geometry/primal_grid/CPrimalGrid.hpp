@@ -72,15 +72,6 @@ public:
   CPrimalGrid(bool FEM);
 
   /*!
-   * \overload
-   * \param[in] val_nNodes - Number of nodes of the element.
-   * \param[in] val_nFaces - Number of faces of the element.
-   * \param[in] val_VTK_Type - Type of the element using the vtk nomenclature.
-   * \param[in] FEM - Whether this is a FEM element.
-   */
-  CPrimalGrid(unsigned short val_nNodes, unsigned short val_nFaces, unsigned short val_VTK_Type, bool FEM);
-
-  /*!
    * \brief Destructor of the class.
    */
   virtual ~CPrimalGrid(void);
