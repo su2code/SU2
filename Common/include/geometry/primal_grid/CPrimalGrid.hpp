@@ -182,7 +182,7 @@ public:
    * \param[in] val_coord - Coordinates of the element.
    */
   template<class T>
-  inline su2double* SetCoord_CG(size_t nDim, const T& val_coord) {
+  inline su2double* SetCoord_CG(unsigned short nDim, const T& val_coord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       Coord_CG[iDim] = 0.0;
       for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
