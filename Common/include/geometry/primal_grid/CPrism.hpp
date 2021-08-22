@@ -37,7 +37,6 @@ struct CPrismConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[6] = {3,3,3,3,3,3};
   static constexpr unsigned short nFaces = N_FACES_PRISM;
   static constexpr unsigned short nNodes = N_POINTS_PRISM;
-  static constexpr unsigned short nNeighbor_Elements = 5;
   static constexpr unsigned short VTK_Type = 13;
   static constexpr unsigned short maxNodesFace = 4;
 };

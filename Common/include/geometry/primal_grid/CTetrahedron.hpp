@@ -37,7 +37,6 @@ struct CTetrahedronConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[4]={3,3,3,3};
   static constexpr unsigned short nFaces = N_FACES_TETRAHEDRON;
   static constexpr unsigned short nNodes = N_POINTS_TETRAHEDRON;
-  static constexpr unsigned short nNeighbor_Elements = 4;
   static constexpr unsigned short VTK_Type = 10;
   static constexpr unsigned short maxNodesFace = 3;
 };

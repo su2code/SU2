@@ -302,12 +302,6 @@ public:
 
   /*!
    * \brief A pure virtual member.
-   * \return Number of neighbors elements of a element.
-   */
-  virtual unsigned short GetnNeighbor_Elements(void) const = 0;
-
-  /*!
-   * \brief A pure virtual member.
    * \return Number of nodes of an element.
    */
   virtual unsigned short GetnNodes(void) const = 0;
@@ -478,10 +472,6 @@ public:
 
   inline unsigned short GetVTK_Type(void) const final {
     return Connectivity::VTK_Type;
-  }
-
-  inline unsigned short GetnNeighbor_Elements(void) const final {
-    return Connectivity::nNeighbor_Elements;
   }
 
 };

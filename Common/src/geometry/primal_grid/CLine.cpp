@@ -34,7 +34,6 @@ constexpr unsigned short CLineConnectivity::nNodesFace[1];
 constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
 constexpr unsigned short CLineConnectivity::CLineConnectivity::nFaces;
 constexpr unsigned short CLineConnectivity::nNodes;
-constexpr unsigned short CLineConnectivity::nNeighbor_Elements;
 constexpr unsigned short CLineConnectivity::VTK_Type;
 constexpr unsigned short CLineConnectivity::maxNodesFace;
 

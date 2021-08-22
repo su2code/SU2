@@ -34,7 +34,6 @@ constexpr unsigned short CTriangleConnectivity::nNodesFace[3];
 constexpr unsigned short CTriangleConnectivity::nNeighbor_Nodes[3];
 constexpr unsigned short CTriangleConnectivity::nFaces;
 constexpr unsigned short CTriangleConnectivity::nNodes;
-constexpr unsigned short CTriangleConnectivity::nNeighbor_Elements;
 constexpr unsigned short CTriangleConnectivity::VTK_Type;
 constexpr unsigned short CTriangleConnectivity::maxNodesFace;
 
@@ -48,8 +47,8 @@ CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[2] = val_point_2;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements = new long[GetnNeighbor_Elements()];
-  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnFaces()];
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnFaces(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 

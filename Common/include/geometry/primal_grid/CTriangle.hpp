@@ -37,7 +37,6 @@ struct CTriangleConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[3] = {2,2,2};
   static constexpr unsigned short nFaces = N_POINTS_TRIANGLE;
   static constexpr unsigned short nNodes = N_FACES_TRIANGLE;
-  static constexpr unsigned short nNeighbor_Elements = 3;
   static constexpr unsigned short VTK_Type = 5;
   static constexpr unsigned short maxNodesFace = 2;
 };

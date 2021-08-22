@@ -123,12 +123,6 @@ public:
   inline void Change_Orientation(void) override {}
 
   /*!
-   * \brief Get the number of element that are neighbor to this element.
-   * \return Number of neighbor elements.
-   */
-  inline unsigned short GetnNeighbor_Elements(void) const override { return std::numeric_limits<unsigned short>::max(); }
-
-  /*!
    * \brief Get the Maximum number of nodes of a face of an element.
    * \return Maximum number of nodes of a face of an element.
    */

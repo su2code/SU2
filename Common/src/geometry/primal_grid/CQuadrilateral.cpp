@@ -34,7 +34,6 @@ constexpr unsigned short CQuadrilateralConnectivity::nNodesFace[4];
 constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Nodes[4];
 constexpr unsigned short CQuadrilateralConnectivity::nFaces;
 constexpr unsigned short CQuadrilateralConnectivity::nNodes;
-constexpr unsigned short CQuadrilateralConnectivity::nNeighbor_Elements;
 constexpr unsigned short CQuadrilateralConnectivity::VTK_Type;
 constexpr unsigned short CQuadrilateralConnectivity::maxNodesFace;
 
@@ -48,8 +47,8 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
 
-  Neighbor_Elements = new long[GetnNeighbor_Elements()];
-  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnFaces()];
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnFaces(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 

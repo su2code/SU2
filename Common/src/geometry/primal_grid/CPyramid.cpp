@@ -34,7 +34,6 @@ constexpr unsigned short CPyramidConnectivity::nNodesFace[5];
 constexpr unsigned short CPyramidConnectivity::nNeighbor_Nodes[5];
 constexpr unsigned short CPyramidConnectivity::nFaces;
 constexpr unsigned short CPyramidConnectivity::nNodes;
-constexpr unsigned short CPyramidConnectivity::nNeighbor_Elements;
 constexpr unsigned short CPyramidConnectivity::VTK_Type;
 constexpr unsigned short CPyramidConnectivity::maxNodesFace;
 
@@ -51,8 +50,8 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[4] = val_point_4;
 
   /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements = new long[GetnNeighbor_Elements()];
-  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnNeighbor_Elements(); iNeighbor_Elements++) {
+  Neighbor_Elements = new long[GetnFaces()];
+  for (unsigned short iNeighbor_Elements = 0; iNeighbor_Elements<GetnFaces(); iNeighbor_Elements++) {
     Neighbor_Elements[iNeighbor_Elements]=-1;
   }
 

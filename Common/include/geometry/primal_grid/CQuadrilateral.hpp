@@ -37,7 +37,6 @@ struct CQuadrilateralConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[4] = {2,2,2,2};
   static constexpr unsigned short nFaces = N_FACES_QUADRILATERAL;
   static constexpr unsigned short nNodes = N_POINTS_QUADRILATERAL;
-  static constexpr unsigned short nNeighbor_Elements = 4;
   static constexpr unsigned short VTK_Type = 9;
   static constexpr unsigned short maxNodesFace = 2;
 };

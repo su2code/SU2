@@ -126,12 +126,6 @@ public:
   inline unsigned short GetVTK_Type(void) const override { return VTK_Type; }
 
   /*!
-   * \brief Get the number of element that are neighbor to this element.
-   * \return Number of neighbor elements.
-   */
-  inline unsigned short GetnNeighbor_Elements(void) const override { return nNeighbor_Elements; }
-
-  /*!
    * \brief Change the orientation of an element.
    */
   void Change_Orientation(void) override;

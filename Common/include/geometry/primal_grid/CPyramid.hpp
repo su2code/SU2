@@ -37,7 +37,6 @@ struct CPyramidConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[5] = {3,3,3,3,4};
   static constexpr unsigned short nFaces = N_FACES_PYRAMID;
   static constexpr unsigned short nNodes = N_POINTS_PYRAMID;
-  static constexpr unsigned short nNeighbor_Elements = 5;
   static constexpr unsigned short VTK_Type = 14;
   static constexpr unsigned short maxNodesFace = 4;
 };

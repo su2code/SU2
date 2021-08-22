@@ -38,7 +38,6 @@ struct CLineConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[2]={1,1};
   static constexpr unsigned short nFaces = N_FACES_LINE;
   static constexpr unsigned short nNodes = N_POINTS_LINE;
-  static constexpr unsigned short nNeighbor_Elements = 1;
   static constexpr unsigned short VTK_Type = 3;
   static constexpr unsigned short maxNodesFace = 2;
 };

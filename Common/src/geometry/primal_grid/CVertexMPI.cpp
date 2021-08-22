@@ -33,7 +33,6 @@ constexpr unsigned short CVertexMPIConnectivity::nNodesFace[1];
 constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
 constexpr unsigned short CVertexMPIConnectivity::nFaces;
 constexpr unsigned short CVertexMPIConnectivity::nNodes;
-constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Elements;
 constexpr unsigned short CVertexMPIConnectivity::VTK_Type;
 constexpr unsigned short CVertexMPIConnectivity::maxNodesFace;
 

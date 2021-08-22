@@ -39,7 +39,6 @@ struct CVertexMPIConnectivity {
   static constexpr unsigned short nNeighbor_Nodes[1] = {0};
   static constexpr unsigned short nFaces = 0;
   static constexpr unsigned short nNodes = 1;
-  static constexpr unsigned short nNeighbor_Elements = 0;
   static constexpr unsigned short VTK_Type = 1;
   static constexpr unsigned short maxNodesFace = 0;
 };
