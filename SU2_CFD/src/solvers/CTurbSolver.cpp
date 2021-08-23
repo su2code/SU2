@@ -72,6 +72,7 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
   }
 }
 
+
 void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -205,7 +206,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) {
+void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
 
   /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
   if(config->GetTurb_Fixed_Values()){

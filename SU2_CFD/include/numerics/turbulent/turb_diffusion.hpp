@@ -26,9 +26,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "../scalar/scalar_diffusion.hpp"
 
-#pragma once
 
 /*!
  * \class CAvgGrad_TurbSA

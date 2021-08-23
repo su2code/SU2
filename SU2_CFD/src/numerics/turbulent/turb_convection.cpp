@@ -71,4 +71,3 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
   }
 }
-

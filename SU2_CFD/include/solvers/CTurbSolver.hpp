@@ -180,7 +180,6 @@ public:
     SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
   }
 
-
   /*!
    * \brief Set the number of outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -200,7 +199,7 @@ public:
     return SlidingStateNodes[val_marker][val_vertex];
   }
 
-    /*!
+  /*!
    * \brief Set custom turbulence variables at the vertex of an inlet.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.

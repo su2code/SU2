@@ -37,7 +37,6 @@
  */
 class CTurbVariable : public CScalarVariable {
 protected:
-
   VectorType muT; /*!< \brief Eddy viscosity. */
   MatrixType HB_Source; /*!< \brief Harmonic Balance source term. */
 
@@ -56,7 +55,7 @@ public:
    */
   ~CTurbVariable() override = default;
 
-    /*!
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \param[in] iPoint - Point index.
    * \return the value of the eddy viscosity.

@@ -28,7 +28,6 @@
 
 #include "../../../include/numerics/turbulent/turb_sources.hpp"
 
-
 CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
