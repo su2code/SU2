@@ -174,56 +174,6 @@ public:
                      CNumerics      *visc_numerics,
                      CConfig        *config,
                      unsigned short val_marker) override;
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Riemann(CGeometry *geometry,
-                  CSolver **solver_container,
-                  CNumerics *conv_numerics,
-                  CNumerics *visc_numerics,
-                  CConfig *config,
-                  unsigned short val_marker) override{
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_TurboRiemann(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics *conv_numerics,
-                       CNumerics *visc_numerics,
-                       CConfig *config,
-                       unsigned short val_marker) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Giles(CGeometry *geometry,
-                CSolver **solver_container,
-                CNumerics *conv_numerics,
-                CNumerics *visc_numerics,
-                CConfig *config,
-                unsigned short val_marker) override{
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -238,21 +188,6 @@ public:
                    CConfig *config) final;
 
   /*!
-   * \brief Impose the fluid interface boundary condition using tranfer data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
@@ -262,15 +197,6 @@ public:
       nodes->SetSolution(iPoint, Solution_Inf);
     }
     END_SU2_OMP_FOR
-  }
-
-  /*!
-   * \brief Impose fixed values to turbulence quantities.
-   * \details Turbulence quantities are set to far-field values in an upstream half-plane
-   * in order to keep them from decaying.
-   */
-  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
   }
 
   /*!
@@ -328,84 +254,6 @@ public:
                    CConfig *config,
                    int val_iter,
                    bool val_update_geo) final;
-
- /*!
-  * \brief Get the outer state for fluid interface nodes.
-  * \param[in] val_marker - marker index
-  * \param[in] val_vertex - vertex index
-  * \param[in] val_state  - requested state component
-  * \param[in] donor_index- index of the donor node to get
-  */
-  inline su2double GetSlidingState(unsigned short val_marker,
-                                   unsigned long val_vertex,
-                                   unsigned short val_state,
-                                   unsigned long donor_index) const override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-    return 0.0;
-  }
-
-  /*!
-   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
-   * \param[in] val_marker   - marker index
-   * \param[in] val_vertex   - vertex index
-   */
-  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-
-
-  /*!
-   * \brief Set the outer state for fluid interface nodes.
-   * \param[in] val_marker   - marker index
-   * \param[in] val_vertex   - vertex index
-   * \param[in] val_state    - requested state component
-   * \param[in] donor_index  - index of the donor node to set
-   * \param[in] component    - set value
-   */
-  inline void SetSlidingState(unsigned short val_marker,
-                              unsigned long val_vertex,
-                              unsigned short val_state,
-                              unsigned long donor_index,
-                              su2double component) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-
-
-  /*!
-   * \brief Set the number of outer state for fluid interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_vertex - vertex index
-   * \param[in] value - number of outer states
-   */
-  inline void SetnSlidingStates(unsigned short val_marker,
-                                unsigned long val_vertex,
-                                int value) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
-
-  /*!
-   * \brief Get the number of outer state for fluid interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_vertex - vertex index
-   */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-    return 0;
-  }
-
-  /*!
-   * \brief Set custom turbulence variables at the vertex of an inlet.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
-   * \param[in] val_turb_var - Value of the turbulence variable to be used.
-   */
-  inline void SetInlet_TurbVar(unsigned short val_marker,
-                               unsigned long val_vertex,
-                               unsigned short val_dim,
-                               su2double val_turb_var) override {
-    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
-  }
 
   /*!
    * \brief SA and SST support OpenMP+MPI.
