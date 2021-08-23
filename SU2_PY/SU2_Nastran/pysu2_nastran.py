@@ -509,7 +509,7 @@ class Solver:
     This method considers that Nastran apply 0 when the reference system is not specified
     """
 
-    if string == '        ':
+    if string == ' '*8:
       return int(0)
     return int(string)
 
@@ -932,12 +932,13 @@ class Solver:
     self.__computeInterfacePosVel(False)
 
   def activateMode(self, iMode):
-      """ This method is used to artificially set only one mode activated, thus
-          with non zero amplitude.
-      """
-      self.__reset(self.q)
-      self.q[iMode] = 1.0
-      self.__computeInterfacePosVel(True)
+    """
+    This method is used to artificially set only one mode activated, thus
+    with non zero amplitude.
+    """
+    self.__reset(self.q)
+    self.q[iMode] = 1.0
+    self.__computeInterfacePosVel(True)
 
   def setInitialDisplacements(self):
     """
@@ -987,10 +988,11 @@ class Solver:
     self.node[iPoint].SetForce((fx,fy,fz))
 
   def getNumberOfModes(self):
-      """ This method provides the number of degrees of freedom used in
-          the structural solver.
-      """
-      return self.nDof
+    """
+    This method provides the number of degrees of freedom used in
+    the structural solver.
+    """
+    return self.nDof
 
   def getFSIMarkerID(self):
     """

@@ -2129,72 +2129,72 @@ class Interface:
           self.MPIPrint(' ')
 
     def MapModes(self, FSI_config, FluidSolver, SolidSolver):
-          """
-          Runs nothing, just extract the structural modes mapped on the fluid mesh
-          """
+      """
+      Runs nothing, just extract the structural modes mapped on the fluid mesh
+      """
 
-          if self.have_MPI:
-            myid = self.comm.Get_rank()
-            numberPart = self.comm.Get_size()
-          else:
-            myid = 0
-            numberPart = 1
+      if self.have_MPI:
+        myid = self.comm.Get_rank()
+        numberPart = self.comm.Get_size()
+      else:
+        myid = 0
+        numberPart = 1
 
-          nodeNormals = {}
-          for iVertex in range(self.nLocalFluidInterfaceNodes):
-              nx, ny, nz = FluidSolver.GetVertexNormal(self.fluidInterfaceIdentifier, iVertex, False)
-              GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
-              nodeNormals[GlobalIndex] = [nx, ny, nz]
+      nodeNormals = {}
+      for iVertex in range(self.nLocalFluidInterfaceNodes):
+        nx, ny, nz = FluidSolver.GetVertexNormal(self.fluidInterfaceIdentifier, iVertex, False)
+        GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
+        nodeNormals[GlobalIndex] = [nx, ny, nz]
 
-          nodeNormals = self.comm.gather(nodeNormals, root=self.rootProcess)
-          if myid == self.rootProcess:
-              normalsToPrint = {}
-              for iDictionary in range(numberPart):
-                  for key, value in nodeNormals[iDictionary].items():
-                      normalsToPrint[key] = value
-              normalsToPrint = dict(sorted(normalsToPrint.items()))
-              with open('Normals.csv', 'w') as f:
-                  writer = csv.writer(f)
-                  for key, value in normalsToPrint.items():
-                      writer.writerow([key, value])
+      nodeNormals = self.comm.gather(nodeNormals, root=self.rootProcess)
+      if myid == self.rootProcess:
+        normalsToPrint = {}
+        for iDictionary in range(numberPart):
+          for key, value in nodeNormals[iDictionary].items():
+            normalsToPrint[key] = value
+        normalsToPrint = dict(sorted(normalsToPrint.items()))
+        with open('Normals.csv', 'w') as f:
+          writer = csv.writer(f)
+          for key, value in normalsToPrint.items():
+            writer.writerow([key, value])
 
 
-          SurfaceFileName = FluidSolver.GetSurfaceFileName()
+      SurfaceFileName = FluidSolver.GetSurfaceFileName()
 
-          self.MPIPrint('\n********************************')
-          self.MPIPrint('* Begin mapping the modes *')
-          self.MPIPrint('********************************\n')
-          self.MPIPrint("\n")
+      self.MPIPrint('\n********************************')
+      self.MPIPrint('* Begin mapping the modes *')
+      self.MPIPrint('********************************\n')
+      self.MPIPrint("\n")
 
-          if myid == self.rootProcess:  # The root process contains the solid solver for sure
-              modesNumber = np.array(int(SolidSolver.getNumberOfModes()))
-          else:
-              modesNumber = np.empty(1, dtype=np.int)
+      if myid == self.rootProcess:  # The root process contains the solid solver for sure
+        modesNumber = np.array(int(SolidSolver.getNumberOfModes()))
+      else:
+        modesNumber = np.empty(1, dtype=np.int)
 
-          self.comm.Bcast(modesNumber, root=self.rootProcess)
+      self.comm.Bcast(modesNumber, root=self.rootProcess)
 
-          for mode in range(np.asscalar(modesNumber)):
-              self.MPIPrint("Setting mode {} active".format(mode))
-              if myid in self.solidSolverProcessors:
-                  SolidSolver.activateMode(mode)
-              self.MPIBarrier()
-              self.getSolidInterfaceDisplacement(SolidSolver)
-              self.interpolateSolidPositionOnFluidMesh(FSI_config)
-              self.setFluidInterfaceVarCoord(FluidSolver)
+      for mode in range(np.asscalar(modesNumber)):
+        self.MPIPrint("Setting mode {} active".format(mode))
+        if myid in self.solidSolverProcessors:
+          SolidSolver.activateMode(mode)
+        self.MPIBarrier()
+        self.getSolidInterfaceDisplacement(SolidSolver)
+        self.interpolateSolidPositionOnFluidMesh(FSI_config)
+        self.setFluidInterfaceVarCoord(FluidSolver)
 
-              self.MPIPrint('\nPerforming mesh deformation...\n')
-              FluidSolver.DynamicMeshUpdate(0)
-              FluidSolver.Output(0)
-              self.MPIBarrier()
+        self.MPIPrint('\nPerforming mesh deformation...\n')
+        FluidSolver.DynamicMeshUpdate(0)
+        FluidSolver.Output(0)
+        self.MPIBarrier()
 
-              if myid == self.rootProcess:
-                  AllFiles = os.listdir()
-                  for FileNumber,FileName in enumerate(AllFiles):
-                      if SurfaceFileName in FileName:
-                          file = FileName.split(".")[0]
-                          extension = FileName.split(".")[1]
-                          os.rename(file+"."+extension,"Mode{}.".format(mode)+extension)
+        if myid == self.rootProcess:
+          AllFiles = os.listdir()
+          for FileNumber,FileName in enumerate(AllFiles):
+            if SurfaceFileName in FileName:
+              file = FileName.split(".")[0]
+              extension = FileName.split(".")[1]
+              os.rename(file+"."+extension,"Mode{}.".format(mode)+extension)
 
-          self.MPIPrint('\n*************************')
-          self.MPIPrint('*  Mapping completed  *')
-          self.MPIPrint('*************************\n')
+      self.MPIPrint('\n*************************')
+      self.MPIPrint('*  Mapping completed  *')
+      self.MPIPrint('*************************\n')
