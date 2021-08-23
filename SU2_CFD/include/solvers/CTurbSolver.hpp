@@ -164,6 +164,7 @@ public:
       SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
   }
 
+
   /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker   - marker index
@@ -179,6 +180,7 @@ public:
                               su2double component) final {
     SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
   }
+
 
   /*!
    * \brief Set the number of outer state for fluid interface nodes.

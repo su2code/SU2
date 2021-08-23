@@ -71,4 +71,3 @@ public:
   inline const CVectorOfMatrix& GetGradient_Reconstruction() const final { return Gradient_Reconstruction; }
 
 };
-
