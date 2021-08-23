@@ -37,8 +37,6 @@
  */
 class CScalarVariable : public CVariable {
 protected:
-  VectorType muT;         /*!< \brief Eddy viscosity. */
-  MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
@@ -57,20 +55,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CScalarVariable() override = default;
-
-  /*!
-   * \brief Get the value of the eddy viscosity.
-   * \param[in] iPoint - Point index.
-   * \return the value of the eddy viscosity.
-   */
-  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
-
-  /*!
-   * \brief Set the value of the eddy viscosity.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_muT - Value of the eddy viscosity.
-   */
-  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
 
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.

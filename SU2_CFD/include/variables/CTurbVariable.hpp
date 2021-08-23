@@ -36,6 +36,11 @@
  * \author A. Bueno.
  */
 class CTurbVariable : public CScalarVariable {
+protected:
+
+  VectorType muT; /*!< \brief Eddy viscosity. */
+  MatrixType HB_Source; /*!< \brief Harmonic Balance source term. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -50,6 +55,20 @@ public:
    * \brief Destructor of the class.
    */
   ~CTurbVariable() override = default;
+
+    /*!
+   * \brief Get the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \return the value of the eddy viscosity.
+   */
+  inline su2double GetmuT(unsigned long iPoint) const final { return muT(iPoint); }
+
+  /*!
+   * \brief Set the value of the eddy viscosity.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_muT - Value of the eddy viscosity.
+   */
+  inline void SetmuT(unsigned long iPoint, su2double val_muT) final { muT(iPoint) = val_muT; }
 
 };
 

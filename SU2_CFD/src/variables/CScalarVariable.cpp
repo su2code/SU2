@@ -32,12 +32,6 @@
 CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
 
-  /*--- Allocate space for the harmonic balance source terms ---*/
-
-  if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
-    HB_Source.resize(nPoint,nVar) = su2double(0.0);
-  }
-
   /*--- Gradient related fields ---*/
 
   Gradient.resize(nPoint,nVar,nDim,0.0);
