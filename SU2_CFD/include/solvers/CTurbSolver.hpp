@@ -38,6 +38,16 @@
  * \author A. Bueno.
  */
 class CTurbSolver : public CScalarSolver {
+protected:
+
+  vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
+
+  /*--- Sliding meshes variables. ---*/
+
+  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
+  vector<vector<int> > SlidingStateNodes;
+
+
 public:
 
   /*!
@@ -56,5 +66,161 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CGeometry* geometry, CConfig *config);
+
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_TurboRiemann(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *conv_numerics,
+                       CNumerics *visc_numerics,
+                       CConfig *config,
+                       unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Giles(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final;
+
+  /*!
+   * \brief Impose fixed values to turbulence quantities.
+   * \details Turbulence quantities are set to far-field values in an upstream half-plane
+   * in order to keep them from decaying.
+   */
+  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
+
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  * \param[in] donor_index- index of the donor node to get
+  */
+  inline su2double GetSlidingState(unsigned short val_marker,
+                                   unsigned long val_vertex,
+                                   unsigned short val_state,
+                                   unsigned long donor_index) const final {
+    return SlidingState[val_marker][val_vertex][val_state][donor_index];
+  }
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
+    int iVar;
+
+    for( iVar = 0; iVar < nVar+1; iVar++){
+      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
+        delete [] SlidingState[val_marker][val_vertex][iVar];
+    }
+
+    for( iVar = 0; iVar < nVar+1; iVar++)
+      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+  }
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  inline void SetSlidingState(unsigned short val_marker,
+                              unsigned long val_vertex,
+                              unsigned short val_state,
+                              unsigned long donor_index,
+                              su2double component) final {
+    SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+  }
+
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  inline void SetnSlidingStates(unsigned short val_marker,
+                                unsigned long val_vertex,
+                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
+    return SlidingStateNodes[val_marker][val_vertex];
+  }
+
+    /*!
+   * \brief Set custom turbulence variables at the vertex of an inlet.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  inline void SetInlet_TurbVar(unsigned short val_marker,
+                               unsigned long val_vertex,
+                               unsigned short val_dim,
+                               su2double val_turb_var) final {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    if (val_marker >= nMarker)
+      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    else if (val_vertex >= nVertex[val_marker])
+      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    else if (val_dim >= nVar)
+      SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
+    else
+      Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+  }
 
 };

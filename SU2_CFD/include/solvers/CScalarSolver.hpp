@@ -53,14 +53,8 @@ protected:
   upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
   Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
-  vector<su2activematrix> Inlet_TurbVars;  /*!< \brief Turbulence variables at inlet profiles */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
-
-  /*--- Sliding meshes variables. ---*/
-
-  vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
-  vector<vector<int> > SlidingStateNodes;
 
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
@@ -193,7 +187,9 @@ public:
                   CNumerics *conv_numerics,
                   CNumerics *visc_numerics,
                   CConfig *config,
-                  unsigned short val_marker) final;
+                  unsigned short val_marker) override{
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -208,7 +204,9 @@ public:
                        CNumerics *conv_numerics,
                        CNumerics *visc_numerics,
                        CConfig *config,
-                       unsigned short val_marker) final;
+                       unsigned short val_marker) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -223,7 +221,9 @@ public:
                 CNumerics *conv_numerics,
                 CNumerics *visc_numerics,
                 CConfig *config,
-                unsigned short val_marker) final;
+                unsigned short val_marker) override{
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -249,8 +249,9 @@ public:
                           CSolver **solver_container,
                           CNumerics *conv_numerics,
                           CNumerics *visc_numerics,
-                          CConfig *config) final;
-
+                          CConfig *config) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
@@ -268,7 +269,9 @@ public:
    * \details Turbulence quantities are set to far-field values in an upstream half-plane
    * in order to keep them from decaying.
    */
-  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) final;
+  void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief Prepare an implicit iteration.
@@ -336,8 +339,9 @@ public:
   inline su2double GetSlidingState(unsigned short val_marker,
                                    unsigned long val_vertex,
                                    unsigned short val_state,
-                                   unsigned long donor_index) const final {
-    return SlidingState[val_marker][val_vertex][val_state][donor_index];
+                                   unsigned long donor_index) const override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+    return 0.0;
   }
 
   /*!
@@ -345,16 +349,8 @@ public:
    * \param[in] val_marker   - marker index
    * \param[in] val_vertex   - vertex index
    */
-  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) final {
-    int iVar;
-
-    for( iVar = 0; iVar < nVar+1; iVar++){
-      if( SlidingState[val_marker][val_vertex][iVar] != nullptr )
-        delete [] SlidingState[val_marker][val_vertex][iVar];
-    }
-
-    for( iVar = 0; iVar < nVar+1; iVar++)
-      SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
+  inline void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
   }
 
 
@@ -370,8 +366,8 @@ public:
                               unsigned long val_vertex,
                               unsigned short val_state,
                               unsigned long donor_index,
-                              su2double component) final {
-    SlidingState[val_marker][val_vertex][val_state][donor_index] = component;
+                              su2double component) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
   }
 
 
@@ -383,15 +379,18 @@ public:
    */
   inline void SetnSlidingStates(unsigned short val_marker,
                                 unsigned long val_vertex,
-                                int value) final { SlidingStateNodes[val_marker][val_vertex] = value; }
+                                int value) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief Get the number of outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
    * \param[in] val_vertex - vertex index
    */
-  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
-    return SlidingStateNodes[val_marker][val_vertex];
+  inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
+    return 0;
   }
 
   /*!
@@ -404,17 +403,8 @@ public:
   inline void SetInlet_TurbVar(unsigned short val_marker,
                                unsigned long val_vertex,
                                unsigned short val_dim,
-                               su2double val_turb_var) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_marker >= nMarker)
-      SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    else if (val_vertex >= nVertex[val_marker])
-      SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
-    else if (val_dim >= nVar)
-      SU2_MPI::Error("Out-of-bounds index used for inlet turbulence variable.", CURRENT_FUNCTION);
-    else
-      Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
+                               su2double val_turb_var) override {
+    SU2_MPI::Error("Function not implemented.", CURRENT_FUNCTION);
   }
 
   /*!
