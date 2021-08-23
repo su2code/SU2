@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,6 +64,10 @@ protected:
 
   /*--- New solution container for Classical RK4 ---*/
   MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
+
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
   /*--- Other Necessary Variable Definition ---*/
   MatrixType dPdU;   /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
@@ -535,6 +539,19 @@ public:
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Solution(iPoint, nSpecies+iDim) = Primitive(iPoint,RHO_INDEX) * val_vector[iDim];
   }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
 
   /*!
    * \brief Set the momentum part of the truncation error to zero.

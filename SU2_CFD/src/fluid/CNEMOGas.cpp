@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,12 +240,10 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
 void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
-  su2double Vel[3] = {0.0};
-
   /*--- Necessary indexes to assess primitive variables ---*/
-  unsigned long T_INDEX       = nSpecies;
-  unsigned long VEL_INDEX     = nSpecies+2;
-  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  const unsigned long T_INDEX       = nSpecies;
+  const unsigned long VEL_INDEX     = nSpecies+2;
+  const unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
 
   /*--- Rename for convenience ---*/
   T                 = V[T_INDEX];
@@ -256,9 +254,7 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
   Ref_Temperature    = GetRefTemperature();
 
   /*--- Calculate supporting quantities ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
-  su2double v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
+  const su2double v2 = GeometryToolbox::SquaredNorm(nDim, &V[VEL_INDEX]);
 
   /*--- Species density derivatives ---*/
   for (iSpecies = nEl; iSpecies < nSpecies; iSpecies++) {

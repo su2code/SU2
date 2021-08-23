@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1012,25 +1012,6 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   }
 }
 
-void CMultiGridGeometry::MatchNearField(CConfig *config) {
-
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int iProcessor = size;
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (nodes->GetDomain(iPoint)) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, nodes->GetGlobalIndex(iPoint), iVertex, iMarker, iProcessor);
-        }
-      }
-    }
-  }
-
-}
-
 void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 
   unsigned short iMarker;
@@ -1337,7 +1318,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY ) {
 
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {

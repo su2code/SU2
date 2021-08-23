@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -720,12 +720,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void VisualizeControlVolume(const CConfig *config) const {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void MatchNearField(CConfig *config) {}
 
   /*!
    * \brief A virtual member.

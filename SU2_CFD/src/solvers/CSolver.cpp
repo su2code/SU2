@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2064,7 +2064,8 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
   /*--- Loop boundary edges ---*/
 
   for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)  &&
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)

@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -435,6 +435,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(32)
