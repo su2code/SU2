@@ -653,9 +653,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const unsigned short max_iter =config->GetwallModelMaxIter();  /*--- maximum number of iterations for the Newton Solver---*/
-  const su2double tol = 1e-12;                                   /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
-  const su2double relax = config->GetwallModelRelFac();          /*--- relaxation factor for the Newton solver ---*/
+  const unsigned short max_iter =config->GetwallModelMaxIter();  /*!< \brief maximum number of iterations for the Newton Solver */
+  const su2double tol = 1e-12;                                   /*!< \brief convergence criterium for the Newton solver, note that 1e-10 is too large */
+  const su2double relax = config->GetwallModelRelFac();          /*!< \brief relaxation factor for the Newton solver */
 
   /*--- Compute the recovery factor 
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
