@@ -742,7 +742,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   const unsigned short max_iter = config->GetwallModelMaxIter() ;  /*--- maximum number of iterations for the Newton Solver---*/
   const su2double tol = 1e-12;                          /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
   const su2double relax = config->GetwallModelRelFac(); /*--- relaxation factor for the Newton solver ---*/
-
+  
   /*--- Compute the recovery factor ---*/
   // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
@@ -821,7 +821,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
       /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-
+      /*--- For compressible flow: aerodynamic wall heating ---*/
       //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
       //su2double T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
 
@@ -832,7 +832,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
-        T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
+        //T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
       } 
 
       /*--- Extrapolate the pressure from the interior & compute the
@@ -864,9 +864,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
        *    shear stress as a starting guess for the wall function. ---*/
 
       unsigned long counter = 0;
-      su2double diff = 1.0, Eddy_Visc = 1.0;
+      su2double diff = 1.0;
+      su2double Eddy_Visc = 1.0;
       su2double U_Tau = sqrt(WallShearStress/Density_Wall);
-      su2double Y_Plus = 5.0;
+      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // to avoid warning
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
@@ -874,6 +875,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       if (Y_Plus_Start < config->GetwallModelMinYPlus() ) {
         skipCounter++;
+        continue;
       }
       else while (fabs(diff) > tol) {
 
@@ -888,20 +890,17 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /*--- Crocco-Busemann equation for wall temperature (eq. 11 of Nichols and Nelson) ---*/
 
-        su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-
         /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal ---*/
 
-        //if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
-        //  su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-        //  if (abs(denum)>EPS) 
-        // nijso TODO FIXME 
-        //    T_Wall = T_Normal / denum; 
-        //}
+        if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
+          su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
+          if (abs(denum)>EPS) 
+            T_Wall = T_Normal / denum; 
+            /* nijso: at this point we should also update the global wall temperature */
+        }
 
-        /*--- update of wall density ---*/
-        // nijso TODO FIXME
-        //Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+        /*--- update of wall density using the wall temperature ---*/
+        Density_Wall = P_Wall/(Gas_Constant*T_Wall);
 
         /*--- Y+ defined by White & Christoph (compressibility and heat transfer) negative value for (2.0*Gam*U_Plus - Beta)/Q ---*/
 
@@ -911,7 +910,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
          *    outer velocity form of White & Christoph above. ---*/
  
         su2double kUp = kappa*U_Plus;
-        su2double Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
         su2double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
 
@@ -936,7 +935,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
         U_Tau = U_Tau - relax*(diff / grad_diff);
 
         counter++;
-
         if (counter > max_iter) {
           notConvergedCounter++;
           // use some safe values for convergence
@@ -960,8 +958,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       // done in CFVMFlowSolverBase.inl
       // nijso TODO FIXME
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
+      //for (auto iDim = 0u; iDim < nDim; iDim++)
+      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 

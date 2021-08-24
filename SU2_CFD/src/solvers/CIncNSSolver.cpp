@@ -720,14 +720,11 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         //su2double T_w = config->GetIsothermal_Temperature(Marker_Tag);
         su2double T_n = nodes->GetTemperature(Point_Normal);
         q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
-        cout << "wall heat flux = " << q_w << endl;
       }  
       else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         su2double T_n = nodes->GetTemperature(Point_Normal);
         q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
-        cout << "estimated wall heat flux = " << q_w << endl;
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
-        cout << "wall heat flux = " << q_w << endl;
       }
     
 
@@ -757,7 +754,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       unsigned long counter = 0;
       su2double diff = 1.0;
       su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
-      su2double Y_Plus = 5.0; // clipping value
+      su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // clipping value
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
@@ -775,8 +772,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) page 1110 ---*/
 
         su2double Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-        /*--- nijso: heated wall needs validation testcase! ---*/
-        su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); // TODO: nonzero heatflux needs validation case
+        su2double Beta = q_w*Lam_Visc_Wall/(Density_Wall*T_Wall*Conductivity_Wall*U_Tau); 
         su2double Q    = sqrt(Beta*Beta + 4.0*Gam);
         su2double Phi  = asin(-1.0*Beta/Q);
 
@@ -833,11 +829,9 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
 
-      // nijso: skinfriction for wall functions gives opposite sign?
-
       // done in CFVMFlowSolverBase.inl
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
+      //for (auto iDim = 0u; iDim < nDim; iDim++)
+      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
