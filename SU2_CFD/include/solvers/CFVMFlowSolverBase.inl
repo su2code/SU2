@@ -2533,9 +2533,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
 
-      /*--- for wall functions, the wall stresses need to be scald by the wallfunction stress Tau_Wall---*/
-      if (wallfunctions && YPlus[iMarker][iVertex] > minYPlus){
-        su2double Tau_Wall = nodes->GetTauWall(iPoint); 
+      /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
+      if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
+        const su2double Tau_Wall = nodes->GetTauWall(iPoint); 
         for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauTangent[iDim];
         for (iDim = 0; iDim < nDim; iDim++) TauElem[iDim] = (Tau_Wall/WallShearStress[iMarker][iVertex])*TauElem[iDim];
         WallShearStress[iMarker][iVertex] = Tau_Wall;
