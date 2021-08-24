@@ -1223,7 +1223,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /*!\brief PRANDTL_TURB \n DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) \n DEFAULT 0.90 \ingroup Config*/
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
-  /*!\brief WALLMODELKAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
+  /*!\brief WALLMODEL_KAPPA \n DESCRIPTION: von Karman constant used for the wall model \n DEFAULT 0.41 \ingroup Config*/
   addDoubleOption("WALLMODEL_KAPPA", wallModelKappa, 0.41);
   /*!\brief WALLMODEL_MAXITER \n DESCRIPTION: Max iterations used for the wall model \n DEFAULT 200 \ingroup Config*/
   addUnsignedShortOption("WALLMODEL_MAXITER", wallModelMaxIter, 200);

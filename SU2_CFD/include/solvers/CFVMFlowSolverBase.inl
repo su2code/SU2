@@ -2542,7 +2542,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        /* --- Note that in the wall model, we switch off the computation when the computed y+ < 5    --- */
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
