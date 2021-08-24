@@ -742,12 +742,10 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       su2double q_w = 0.0;
 
       if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        su2double T_n = nodes->GetTemperature(Point_Normal);
+        const su2double T_n = nodes->GetTemperature(Point_Normal);
         q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
       }  
       else if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-        su2double T_n = nodes->GetTemperature(Point_Normal);
-        q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
       }
     
