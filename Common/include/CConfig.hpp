@@ -1680,19 +1680,19 @@ public:
    * \brief Get the value of the max. number of Newton iterations for turbulence wall modeling.
    * \return max number of iterations.
    */
-  unsigned short GetwallModelMaxIter(void) const { return wallModelMaxIter; }
+  unsigned short GetwallModelMaxIter() const { return wallModelMaxIter; }
 
   /*!
    * \brief Get the value of the relaxation factor for turbulence wall modeling.
    * \return relaxation factor.
    */
-  su2double GetwallModelRelFac(void) const { return wallModelRelFac; }
+  su2double GetwallModelRelFac() const { return wallModelRelFac; }
 
   /*!
    * \brief Get the value of the minimum Y+ value below which the wall function is deactivated
    * \return minimum Y+ value.
    */
-  su2double GetwallModelMinYPlus(void) const { return wallModelMinYplus; }
+  su2double GetwallModelMinYPlus() const { return wallModelMinYplus; }
 
   /*!
    * \brief Get the value of the von Karman constant kappa for turbulence wall modeling.
