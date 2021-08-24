@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,19 +57,21 @@ protected:
 
   /*----------------------------- General ----------------------------*/
 
-  int rank,     /*!< \brief MPI Rank. */
-  size;         /*!< \brief MPI Size. */
+  const int rank;     /*!< \brief MPI Rank. */
+  const int size;     /*!< \brief MPI Size. */
 
-  unsigned short nDim;   /*!< \brief Physical Dimension */
+  const unsigned short nDim;   /*!< \brief Physical Dimension */
 
-  bool multiZone,       /*!< \brief Boolean to store whether we are running a multizone problem */
-  gridMovement,         /*!< \brief Boolean to store whether we have grid movement enabled */
-  femOutput;            /*!< \brief Boolean to store whether we should use the FEM routines */
+  const bool multiZone;     /*!< \brief Boolean to store whether we are running a multizone problem */
+  const bool gridMovement;  /*!< \brief Boolean to store whether we have grid movement enabled */
+  const bool femOutput;     /*!< \brief Boolean to store whether we should use the FEM routines */
+  const bool si_units;
+  const bool us_units;
 
   /*----------------------------- Screen and history output ----------------------------*/
 
+  const unsigned short fieldWidth = 12; /*!< \brief Width of each column for the screen output (hardcoded for now) */
   string historySep;              /*!< \brief Character which separates values in the history file */
-  unsigned short fieldWidth;      /*!< \brief Width of each column for the screen output (hardcoded for now) */
   bool noWriting;                 /*!< \brief Boolean indicating whether a screen/history output should be written */
   unsigned long curTimeIter,      /*!< \brief Current value of the time iteration index */
   curAbsTimeIter,                 /*!< \brief Current value of the time iteration index */
@@ -250,7 +252,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  COutput(CConfig *config, unsigned short nDim, bool femOutput);
+  COutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
    * \brief Preprocess the volume output by setting the requested volume output fields.
@@ -532,8 +534,9 @@ protected:
    * \param[in] value - The new value of this field.
    */
   inline void SetHistoryOutputValue(string name, su2double value){
-    if (historyOutput_Map.count(name) > 0){
-      historyOutput_Map[name].value = value;
+    auto it = historyOutput_Map.find(name);
+    if (it != historyOutput_Map.end()){
+      it->second.value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }
@@ -549,13 +552,16 @@ protected:
    * \param[in] field_type - The type of the field (::HistoryFieldType).
    */
   inline void AddHistoryOutputPerSurface(string name, string field_name, ScreenOutputFormat format,
-                                         string groupname, vector<string> marker_names,
-                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT){
-    if (marker_names.size() != 0){
+                                         string groupname, const vector<string>& marker_names,
+                                         HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
+    if (!marker_names.empty()) {
       historyOutputPerSurface_List.push_back(name);
-      for (unsigned short i = 0; i < marker_names.size(); i++){
-        historyOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type, ""));
+      vector<HistoryOutputField> fields;
+      fields.reserve(marker_names.size());
+      for (const auto& marker : marker_names) {
+        fields.push_back(HistoryOutputField(field_name+"("+marker+")", format, groupname, field_type, ""));
       }
+      historyOutputPerSurface_Map[name] = std::move(fields);
     }
   }
 
@@ -565,9 +571,10 @@ protected:
    * \param[in] value - The new value of this field.
    * \param[in] iMarker - The index of the marker.
    */
-  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
-    if (historyOutputPerSurface_Map.count(name) > 0){
-      historyOutputPerSurface_Map[name][iMarker].value = value;
+  inline void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker) {
+    auto it = historyOutputPerSurface_Map.find(name);
+    if (it != historyOutputPerSurface_Map.end()) {
+      it->second[iMarker].value = value;
     } else {
       SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
     }

@@ -2,7 +2,7 @@
  * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,7 @@ private:
   ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
   ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
   CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,	          /*!< \brief Rotational modes of energy storage */
+  RotationModes,                  /*!< \brief Rotational modes of energy storage */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
@@ -115,7 +115,7 @@ public:
   /*!
    * \brief Compute species V-E energy.
    */
-  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) final;
 
   /*!
    * \brief Compute species net production rates.

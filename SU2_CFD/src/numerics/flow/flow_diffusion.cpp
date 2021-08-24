@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -211,6 +211,8 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
                                        const su2double *val_normal) {
 
   /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
@@ -675,6 +677,8 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
                                              su2double val_thermal_conductivity) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;

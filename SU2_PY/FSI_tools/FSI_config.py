@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.1.1 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -120,8 +120,12 @@ class FSIConfig:
 
     def applyDefaults(self):
         if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
-            self._ConfigContent["AITKEN_RELAX"] = "STATIC"
-            self._ConfigContent["AITKEN_PARAM"] = 1.0
+            if self._ConfigContent["AITKEN_RELAX"] != "STATIC" or self._ConfigContent["AITKEN_PARAM"] != 1.0:
+                print("WARNING: Setting the Aitken parameter as static and equal to 1 for IMPOSED solver")
+                self._ConfigContent["AITKEN_RELAX"] = "STATIC"
+                self._ConfigContent["AITKEN_PARAM"] = 1.0
 
         if self._ConfigContent["RESTART_SOL"] == "YES":
-            self._ConfigContent["TIME_TRESHOLD"] = -1
+            if self._ConfigContent["TIME_TRESHOLD"] != -1:
+                print("WARNING: Setting the time threshold to -1 for immediate coupling when using restart")
+                self._ConfigContent["TIME_TRESHOLD"] = -1

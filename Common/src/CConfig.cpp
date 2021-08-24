@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -819,26 +819,26 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Marker Pointers ---*/
 
-  Marker_Euler                = nullptr;    Marker_FarField         = nullptr;    Marker_Custom         = nullptr;
-  Marker_SymWall              = nullptr;    Marker_PerBound         = nullptr;
-  Marker_PerDonor             = nullptr;    Marker_NearFieldBound   = nullptr;
-  Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr; Marker_Fluid_Load    = nullptr;
-  Marker_Inlet                = nullptr;    Marker_Outlet           = nullptr;
-  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;    Marker_Smoluchowski_Maxwell   = nullptr;
-  Marker_Isothermal           = nullptr;    Marker_HeatFlux         = nullptr;    Marker_EngineInflow   = nullptr;
-  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;    Marker_RoughWall      = nullptr;
-  Marker_EngineExhaust        = nullptr;    Marker_Displacement     = nullptr;    Marker_Load           = nullptr;
-  Marker_Load_Dir             = nullptr;    Marker_Load_Sine        = nullptr;    Marker_Clamped        = nullptr;
-  Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;
-  Marker_All_TagBound         = nullptr;    Marker_CfgFile_TagBound = nullptr;    Marker_All_KindBC     = nullptr;
-  Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv     = nullptr;    Marker_All_PerBound   = nullptr;
-  Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface= nullptr;    Marker_Riemann        = nullptr;
-  Marker_Fluid_InterfaceBound = nullptr;    Marker_CHTInterface     = nullptr;    Marker_Damper         = nullptr;
-  Marker_Emissivity           = nullptr;
+  Marker_Euler                = nullptr;    Marker_FarField             = nullptr;    Marker_Custom              = nullptr;
+  Marker_SymWall              = nullptr;    Marker_PerBound             = nullptr;
+  Marker_PerDonor             = nullptr;    Marker_NearFieldBound       = nullptr;
+  Marker_Deform_Mesh          = nullptr;    Marker_Deform_Mesh_Sym_Plane= nullptr;    Marker_Fluid_Load          = nullptr;
+  Marker_Inlet                = nullptr;    Marker_Outlet               = nullptr;
+  Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet    = nullptr;    Marker_Smoluchowski_Maxwell= nullptr;
+  Marker_Isothermal           = nullptr;    Marker_HeatFlux             = nullptr;    Marker_EngineInflow        = nullptr;
+  Marker_Load                 = nullptr;    Marker_Disp_Dir             = nullptr;    Marker_RoughWall           = nullptr;
+  Marker_EngineExhaust        = nullptr;    Marker_Displacement         = nullptr;    Marker_Load                = nullptr;
+  Marker_Load_Dir             = nullptr;    Marker_Load_Sine            = nullptr;    Marker_Clamped             = nullptr;
+  Marker_FlowLoad             = nullptr;    Marker_Internal             = nullptr;
+  Marker_All_TagBound         = nullptr;    Marker_CfgFile_TagBound     = nullptr;    Marker_All_KindBC          = nullptr;
+  Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv         = nullptr;    Marker_All_PerBound        = nullptr;
+  Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface    = nullptr;    Marker_Riemann             = nullptr;
+  Marker_Fluid_InterfaceBound = nullptr;    Marker_CHTInterface         = nullptr;    Marker_Damper              = nullptr;
+  Marker_Emissivity           = nullptr;    Marker_HeatTransfer         = nullptr;
 
     /*--- Boundary Condition settings ---*/
 
-  Isothermal_Temperature = nullptr;
+  Isothermal_Temperature = nullptr;    HeatTransfer_Coeff     = nullptr;    HeatTransfer_WallTemp  = nullptr;
   Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
   FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
   Roughness_Height       = nullptr;
@@ -867,11 +867,11 @@ void CConfig::SetPointersNull(void) {
   Engine_Power = nullptr;    Engine_NetThrust    = nullptr;    Engine_GrossThrust = nullptr;
   Engine_Area  = nullptr;    EngineInflow_Target = nullptr;
 
-  Exhaust_Temperature_Target  = nullptr;     Exhaust_Temperature   = nullptr;
-  Exhaust_Pressure_Target   = nullptr;     Inlet_Ttotal                = nullptr;     Inlet_Ptotal          = nullptr;
-  Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
-  Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
-  Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
+  Exhaust_Temperature_Target  = nullptr;   Exhaust_Temperature     = nullptr;   Exhaust_Pressure      = nullptr;
+  Exhaust_Pressure_Target     = nullptr;   Inlet_Ttotal            = nullptr;   Inlet_Ptotal          = nullptr;
+  Inlet_FlowDir               = nullptr;   Inlet_Temperature       = nullptr;   Inlet_Pressure        = nullptr;
+  Inlet_Velocity              = nullptr;   Inflow_Mach             = nullptr;   Inflow_Pressure       = nullptr;
+  Outlet_Pressure             = nullptr;   Isothermal_Temperature  = nullptr;
 
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
@@ -1149,7 +1149,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
   addStringOption("GAS_MODEL", GasModel, string("N2"));
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
-  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, WILKE);
+  addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, TRANSCOEFFMODEL::WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
   /* DESCRIPTION: Specify if mixture is frozen */
@@ -1204,7 +1204,7 @@ void CConfig::SetConfig_Options() {
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
-  addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
+  addDoubleOption("THERMAL_CONDUCTIVITY_CONSTANT", Thermal_Conductivity_Constant , 0.0257);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
@@ -1286,12 +1286,6 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
-  /* DESCRIPTION: Thermal conductivity used for heat equation */
-  addDoubleOption("SOLID_THERMAL_CONDUCTIVITY", Thermal_Conductivity_Solid, 0.0);
-  /* DESCRIPTION: Solids temperature at freestream conditions */
-  addDoubleOption("SOLID_TEMPERATURE_INIT", Temperature_Freestream_Solid, 288.15);
-  /* DESCRIPTION: Density used in solids */
-  addDoubleOption("SOLID_DENSITY", Density_Solid, 2710.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
@@ -1524,6 +1518,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
+   * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
+  addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
   /*!\brief Smluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
    Format: ( Heat flux marker,  wall temperature (static), momentum accomodation coefficient, thermal accomodation coefficient ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_SMOLUCHOWSKI_MAXWELL", nMarker_Smoluchowski_Maxwell, Marker_Smoluchowski_Maxwell, Isothermal_Temperature); //Missing TMAC and TAC
@@ -2505,12 +2502,6 @@ void CConfig::SetConfig_Options() {
   /*  Options: NO, YES \ingroup Config */
   addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
 
-  /* DESCRIPTION: Thermal diffusivity constant */
-  addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
-
-  /* DESCRIPTION: Thermal diffusivity constant */
-  addDoubleOption("THERMAL_DIFFUSIVITY_SOLID", Thermal_Diffusivity_Solid, 1.172E-5);
-
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
 
@@ -2784,6 +2775,25 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
+  
+  /*--- options that are used for libROM ---*/
+  /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
+  
+  /*!\brief SAVE_LIBROM \n DESCRIPTION: Flag for saving data with libROM. */
+  addBoolOption("SAVE_LIBROM", libROM, false);
+  
+  /*!\brief LIBROM_BASE_FILENAME \n DESCRIPTION: Output base file name for libROM   \ingroup Config*/
+  addStringOption("LIBROM_BASE_FILENAME", libROMbase_FileName, string("su2"));
+  
+  /*!\brief BASIS_GENERATION \n DESCRIPTION: Flag for saving data with libROM. */
+  addEnumOption("BASIS_GENERATION", POD_Basis_Gen, POD_Map, POD_KIND::STATIC);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("MAX_BASIS_DIM", maxBasisDim, 100);
+  
+  /*!\brief MAX_BASIS_DIM \n DESCRIPTION: Maximum number of basis vectors.*/
+  addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2898,6 +2908,16 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           /*else if (!option_name.compare("CONV_CRITERIA"))
             newString.append(string("CONV_CRITERIA is deprecated. SU2 will choose the criteria automatically based on the CONV_FIELD.\n") +
                              string("RESIDUAL for any RMS_* BGS_* value. CAUCHY for coefficients like DRAG etc.\n\n"));*/
+          if (!option_name.compare("THERMAL_DIFFUSIVITY"))
+            newString.append("THERMAL_DIFFUSIVITY is deprecated. See the INC_ENERGY_EQUATION options instead.\n\n");
+          if (!option_name.compare("THERMAL_DIFFUSIVITY_SOLID"))
+            newString.append("THERMAL_DIFFUSIVITY_SOLID is deprecated. Set THERMAL_CONDUCTIVITY_CONSTANT, MATERIAL_DENSITY and SPECIFIC_HEAT_CP instead.\n\n");
+          if (!option_name.compare("SOLID_THERMAL_CONDUCTIVITY"))
+            newString.append("SOLID_THERMAL_CONDUCTIVITY is deprecated. Use THERMAL_CONDUCTIVITY_CONSTANT instead.\n\n");
+          if (!option_name.compare("SOLID_DENSITY"))
+            newString.append("SOLID_DENSITY is deprecated. Use MATERIAL_DENSITY instead.\n\n");
+          if (!option_name.compare("SOLID_TEMPERATURE_INIT"))
+            newString.append("SOLID_TEMPERATURE_INIT is deprecated. Use FREESTREAM_TEMPERATURE instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3089,7 +3109,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.1.1 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.2.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3564,7 +3584,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if(fabs(Mu_S-110.4)                < 1.0E-8) Mu_S               *= 1.8;
 
     /* Correct the thermal conductivity, if it contains the default SI value. */
-    if(fabs(Kt_Constant-0.0257) < 1.0E-10) Kt_Constant *= 0.577789317;
+    if(fabs(Thermal_Conductivity_Constant-0.0257) < 1.0E-10) Thermal_Conductivity_Constant *= 0.577789317;
   }
 
   /*--- Check for Measurement System ---*/
@@ -3573,8 +3593,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_TransCoeffModel != WILKE ) {
-    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
+  if (Kind_FluidModel == SU2_NONEQ && Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE ) {
+    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+  }
+
+  if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
+    SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.", CURRENT_FUNCTION);
   }
 
   if (!ideal_gas && !nemo) {
@@ -3586,14 +3610,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
-  }
-
-  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
-      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
-  }
-
-  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
-      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -4467,11 +4483,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
 
-#if defined HAVE_OMP
-  AD::PreaccEnabled = false;
-#else
   AD::PreaccEnabled = AD_Preaccumulation;
-#endif
 
 #else
   if (AD_Mode == YES) {
@@ -4689,10 +4701,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
-   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_CHTInterface > 0)) {
+   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_HeatTransfer) || (nMarker_CHTInterface > 0)) {
 
      /*--- The total number of wall markers. ---*/
-     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_CHTInterface;
+     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + nMarker_CHTInterface;
 
      /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
      if (nRough_Wall == 0) {
@@ -4708,9 +4720,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
          Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
          Kind_Wall[nMarker_HeatFlux + iMarker] = WALL_TYPE::SMOOTH;
        }
-       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
+       for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++) {
          Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
          Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = WALL_TYPE::SMOOTH;
+       }
+       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
+         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = 0.0;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker] = WALL_TYPE::SMOOTH;
        }
 
        /*--- Check for mismatch in number of rough walls and solid walls. ---*/
@@ -4736,7 +4752,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
          Kind_Wall[iMarker] = WALL_TYPE::SMOOTH;
        }
 
-       /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
+       /*--- Look through heat flux, isothermal, heat transfer and cht_interface markers and assign proper values. ---*/
        for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
          for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
            if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
@@ -4750,9 +4766,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
              chkRough++;
            }
 
+         for (jMarker = 0; jMarker < nMarker_HeatTransfer; jMarker++)
+           if (Marker_HeatTransfer[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+
          for (jMarker = 0; jMarker < nMarker_CHTInterface; jMarker++)
            if (Marker_CHTInterface[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
-             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
+             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + jMarker] = temp_rough[iMarker];
              chkRough++;
            }
        }
@@ -5029,7 +5051,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
-  if (GetGasModel() == "ARGON") monoatomic = true;
+  if (GetGasModel() == "ARGON") {monoatomic = true;}
+  else {monoatomic = false;}
 
   // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
   if(OptionIsSet("CONV_CRITERIA") && rank == MASTER_NODE) {
@@ -5045,7 +5068,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
   iMarker_Smoluchowski_Maxwell,
-  iMarker_Isothermal,iMarker_HeatFlux,
+  iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
@@ -5059,12 +5082,11 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 
   /*--- Compute the total number of markers in the config file ---*/
-
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
-  nMarker_HeatFlux +
+  nMarker_HeatFlux + nMarker_HeatTransfer +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
@@ -5353,6 +5375,12 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_HeatTansfer = 0; iMarker_HeatTansfer < nMarker_HeatTransfer; iMarker_HeatTansfer++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatTransfer[iMarker_HeatTansfer];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_TRANSFER;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Clamped[iMarker_Clamped];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = CLAMPED_BOUNDARY;
@@ -5548,7 +5576,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
   iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
-  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
@@ -6933,6 +6961,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_HeatTransfer != 0) {
+    BoundaryTable << "Heat transfer wall";
+    for (iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++) {
+      BoundaryTable << Marker_HeatTransfer[iMarker_HeatTransfer];
+      if (iMarker_HeatTransfer < nMarker_HeatTransfer-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nWall_Catalytic != 0) {
     BoundaryTable << "Catalytic wall";
     for (iWall_Catalytic = 0; iWall_Catalytic < nWall_Catalytic; iWall_Catalytic++) {
@@ -7349,6 +7386,7 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
 }
@@ -7709,6 +7747,8 @@ CConfig::~CConfig(void) {
      delete[] Outlet_Pressure;
      delete[] Isothermal_Temperature;
      delete[] Heat_Flux;
+     delete[] HeatTransfer_Coeff;
+     delete[] HeatTransfer_WallTemp;
      delete[] Displ_Value;
      delete[] Load_Value;
      delete[] Damper_Constant;
@@ -8830,25 +8870,38 @@ void CConfig::SetIncPressureOut_BC(su2double val_pressure) {
 
 su2double CConfig::GetIsothermal_Temperature(string val_marker) const {
 
-  unsigned short iMarker_Isothermal = 0;
+  for (unsigned short iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
+    if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
+      return Isothermal_Temperature[iMarker_Isothermal];
 
-  if (nMarker_Isothermal > 0) {
-    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
-      if (Marker_Isothermal[iMarker_Isothermal] == val_marker) break;
-  }
-
-  return Isothermal_Temperature[iMarker_Isothermal];
+  return Isothermal_Temperature[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(string val_marker) const {
-  unsigned short iMarker_HeatFlux = 0;
 
-  if (nMarker_HeatFlux > 0) {
-  for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
-    if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
-  }
+  for (unsigned short iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
+    if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker)
+      return Heat_Flux[iMarker_HeatFlux];
 
-  return Heat_Flux[iMarker_HeatFlux];
+  return Heat_Flux[0];
+}
+
+su2double CConfig::GetWall_HeatTransfer_Coefficient(string val_marker) const {
+
+  for (unsigned short iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
+    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker)
+      return HeatTransfer_Coeff[iMarker_HeatTransfer];
+
+  return HeatTransfer_Coeff[0];
+}
+
+su2double CConfig::GetWall_HeatTransfer_Temperature(string val_marker) const {
+
+  for (unsigned short iMarker_HeatTransfer = 0; iMarker_HeatTransfer < nMarker_HeatTransfer; iMarker_HeatTransfer++)
+    if (Marker_HeatTransfer[iMarker_HeatTransfer] == val_marker)
+      return HeatTransfer_WallTemp[iMarker_HeatTransfer];
+
+  return HeatTransfer_WallTemp[0];
 }
 
 pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
@@ -8856,7 +8909,7 @@ pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker
   short          flag = -1;
   pair<WALL_TYPE, su2double> WallProp;
 
-  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
+  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_HeatTransfer || nMarker_CHTInterface > 0) {
     for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
       if (Marker_HeatFlux[iMarker] == val_marker) {
         flag = iMarker;
@@ -8869,9 +8922,15 @@ pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(string val_marker
         WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
         return WallProp;
       }
+    for (iMarker = 0; iMarker < nMarker_HeatTransfer; iMarker++)
+      if (Marker_HeatTransfer[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
     for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
       if (Marker_CHTInterface[iMarker] == val_marker) {
-        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+        flag = nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer + iMarker;
         WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
         return WallProp;
       }

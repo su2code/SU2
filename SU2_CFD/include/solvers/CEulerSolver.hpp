@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -434,13 +434,6 @@ public:
                          su2double delta, su2activematrix& preconditioner) const;
 
   /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
@@ -530,31 +523,6 @@ public:
                                CConfig *config,
                                unsigned short val_marker,
                                bool val_inlet_surface);
-
-  /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) final;
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -837,12 +805,6 @@ public:
   inline su2double GetInflow_Mach(unsigned short val_marker) const final { return Inflow_Mach[val_marker]; }
 
   /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
-  inline su2double GetTotal_CEquivArea() const final { return Total_CEquivArea; }
-
-  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional aero CD.
    * \return Value of the Aero CD coefficient (inviscid + viscous contribution).
    */
@@ -860,12 +822,6 @@ public:
    * \param[in] val_obj - Value of the contribution to the 'combo' objective.
    */
   inline void AddTotal_ComboObj(su2double val_obj) final {Total_ComboObj +=val_obj;}
-
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  inline void SetTotal_CEquivArea(su2double val_cequivarea) final { Total_CEquivArea = val_cequivarea; }
 
   /*!
    * \brief Set the value of the Aero drag.
