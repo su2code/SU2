@@ -4,7 +4,7 @@
 # \file pySU2ad.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas, R. Sanchez
-#  \version 7.1.1 "Falcon"
+#  \version 7.2.0 "Falcon"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

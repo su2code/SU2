@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for Roe-type schemes,
  *        implemented in roe.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -119,7 +119,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CUpwL2Roe_Flow final : public CUpwRoeBase_Flow {
 private:
@@ -149,7 +149,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios, P. Gomes
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CUpwLMRoe_Flow final : public CUpwRoeBase_Flow {
 private:

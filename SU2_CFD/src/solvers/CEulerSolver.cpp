@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -8551,7 +8551,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
    * \brief Actuator disk model with variable load along disk radius.
    * \author: E. Saetta, L. Russo, R. Tognaccini (GitHub references EttoreSaetta, lorenzorusso07, rtogna).
    * Theoretical and Applied Aerodynamics Research Group (TAARG), University of Naples Federico II.
-   * \version 7.1.1 “Blackbird”
+   * \version 7.2.0 “Blackbird”
    * First release date : July 1st 2020
    * modified on:
    *

@@ -3,7 +3,7 @@
 ## \file updateHistoryMap.py
 #  \brief Python script for updating the historyMap.py file.
 #  \author T. Albring
-#  \version 7.1.1 "Falcon"
+#  \version 7.2.0 "Falcon"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

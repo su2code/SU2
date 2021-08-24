@@ -2,7 +2,7 @@
  * \file lax.hpp
  * \brief Declaration of numerics classes for Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.1.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.1.1
+ * \version 7.2.0
  */
 class CCentLax_NEMO : public CNEMONumerics {
 private:
