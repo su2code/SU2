@@ -2528,18 +2528,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
        * on the wall ---*/
 
-      //TauNormal = 0.0;
-      //for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-      //TauNormal = GeometryToolbox::DotProduct(int(MAXNDIM), TauElem, UnitNormal);
-
-      //WallShearStress[iMarker][iVertex] = 0.0;
-
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, Tau, UnitNormal, TauTangent);
 
       WallShearStress[iMarker][iVertex] = GeometryToolbox::Norm(int(MAXNDIM), TauTangent);
-
 
       /*--- for wall functions, the wall stresses need to be scald by the wallfunction stress Tau_Wall---*/
       if (wallfunctions && YPlus[iMarker][iVertex] > minYPlus){
@@ -2550,39 +2542,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-      //  TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-
-
-        /* --- in case of wall functions, we have computed the skin friction in the turbulence solver --- */
         /* --- Note that in the wall model, we switch off the computation when the computed y+ < 5    --- */
-        /* --- We have to compute skinfriction in that case as well (we do not recompute y+)          --- */
-
-        //if (!wallfunctions || (wallfunctions && YPlus[iMarker][iVertex] < minYPlus)) 
-          CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
-          //CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
-
-        //WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
-      //WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
 
       su2double WallDist[MAXNDIM] = {0.0};
       GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
 
       WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      //for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-      //WallDistMod = 0.0;
-      //for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim] * WallDist[iDim];
-      //WallDistMod = sqrt(WallDistMod);
-
-      /*--- Compute y+ and non-dimensional velocity ---*/
+      /*--- Compute non-dimensional velocity and y+ ---*/
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      /* --- in case of wall functions, we have computed YPlus in the turbulence class --- */
-      /* --- Note that we do not recompute y+ when y+<5 because y+ can become > 5 again --- */
-      //if (!wallfunctions)
-        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+      YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 

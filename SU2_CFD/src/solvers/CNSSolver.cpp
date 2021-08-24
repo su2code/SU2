@@ -874,25 +874,21 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
 
-      /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-      /*--- For compressible flow: aerodynamic wall heating ---*/
-      //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
-      //su2double T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
-
       /*--- initial value for wall temperature ---*/
+  
       su2double T_Wall = nodes->GetTemperature(iPoint);
 
       su2double q_w = 0.0;
 
       if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
-        //T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
       } 
 
       /*--- Extrapolate the pressure from the interior & compute the
        wall density using the equation of state ---*/
 
       /*--- compressible formulation ---*/
+
       su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
@@ -943,15 +939,14 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
         su2double Phi  = asin(-1.0*Beta/Q);
 
         /*--- Crocco-Busemann equation for wall temperature (eq. 11 of Nichols and Nelson) ---*/
-
-        /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal ---*/
+        /*--- update T_Wall due to aerodynamic heating, unless the wall is isothermal      ---*/
 
         if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
           if (abs(denum)>EPS) 
-            T_Wall = T_Normal / denum; 
-            /* nijso: at this point we should also update the global wall temperature */
-        }
+            T_Wall = T_Normal / denum;
+            nodes->SetTemperature(iPoint,T_Wall);
+       }
 
         /*--- update of wall density using the wall temperature ---*/
         Density_Wall = P_Wall/(Gas_Constant*T_Wall);
@@ -1007,13 +1002,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
       EddyViscWall[iMarker][iVertex] = Eddy_Visc_Wall;
       UTau[iMarker][iVertex] = U_Tau;
 
-      // wall model value
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-
-      // done in CFVMFlowSolverBase.inl
-      // nijso TODO FIXME
-      //for (auto iDim = 0u; iDim < nDim; iDim++)
-      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       /*--- Store this value for the wall shear stress at the node.  ---*/
 

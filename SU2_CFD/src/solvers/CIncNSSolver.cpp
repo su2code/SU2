@@ -680,14 +680,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
     if (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::STANDARD_FUNCTION) continue;
 
-    /*--- Get the specified wall heat flux from config ---*/
-    // note that we can get the heat flux from the temperature gradient
-    //su2double q_w = 0.0;
-
-    /*--- get the heat flux; when BC is the temperature, we compute it later ---*/
-    //if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)
-    //  q_w = config->GetWall_HeatFlux(Marker_Tag);
-
     /*--- Loop over all of the vertices on this boundary marker ---*/
 
     SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -750,9 +742,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
 
       su2double q_w = 0.0;
 
-
       if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-        //su2double T_w = config->GetIsothermal_Temperature(Marker_Tag);
         su2double T_n = nodes->GetTemperature(Point_Normal);
         q_w = Conductivity_Wall * (T_Wall - T_n) / WallDistMod;
       }  
@@ -762,7 +752,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
         q_w = config->GetWall_HeatFlux(Marker_Tag);  
       }
     
-
       /*--- incompressible formulation ---*/
       su2double Density_Wall = nodes->GetDensity(iPoint);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
@@ -773,8 +762,7 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
-      // do we need the total viscosity for the stress tensor?
-      //su2double total_viscosity = (Lam_Visc_Wall + Eddy_Visc_Wall);
+
       CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
       su2double TauTangent[MAXNDIM] = {0.0};
@@ -863,10 +851,6 @@ void CIncNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container
       UTau[iMarker][iVertex] = U_Tau;
 
       su2double Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-
-      // done in CFVMFlowSolverBase.inl
-      //for (auto iDim = 0u; iDim < nDim; iDim++)
-      //  CSkinFriction[iMarker](iVertex,iDim) = (Tau_Wall/WallShearStress)*TauTangent[iDim] / DynamicPressureRef;
 
       nodes->SetTauWall(iPoint, Tau_Wall);
 
