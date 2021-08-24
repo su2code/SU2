@@ -915,7 +915,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       unsigned long counter = 0;
       su2double diff = 1.0;
-      su2double Eddy_Visc = 1.0;
       su2double U_Tau = sqrt(WallShearStress/Density_Wall);
       su2double Y_Plus = 0.99*config->GetwallModelMinYPlus(); // to avoid warning
 
@@ -943,9 +942,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         if (config->GetMarker_All_KindBC(iMarker) != ISOTHERMAL) {
           su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus); 
-          if (abs(denum)>EPS) 
+          if (abs(denum)>EPS){ 
             T_Wall = T_Normal / denum;
             nodes->SetTemperature(iPoint,T_Wall);
+          }
        }
 
         /*--- update of wall density using the wall temperature ---*/
