@@ -69,7 +69,7 @@ private:
   /*!
    * \brief Reads all SU2 ASCII mesh metadata and checks for errors.
    */
-  void ReadMetadata();
+  void ReadMetadata(CConfig *config);
 
   /*!
    * \brief Splits a single surface actuator disk boundary into two separate markers (repeated points).
