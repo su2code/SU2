@@ -166,6 +166,30 @@ passivedouble CDriver::Get_LiftCoeff() const {
   return SU2_TYPE::GetValue(CLift);
 }
 
+passivedouble CDriver::Get_MxCoeff() {
+
+    unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+    su2double CMx = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+
+    return SU2_TYPE::GetValue(CMx);
+}
+
+passivedouble CDriver::Get_MyCoeff() {
+
+    unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+    su2double CMy = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+
+    return SU2_TYPE::GetValue(CMy);
+}
+
+passivedouble CDriver::Get_MzCoeff() {
+
+    unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
+    su2double CMz = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+
+    return SU2_TYPE::GetValue(CMz);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 /* Functions to obtain information from the geometry/mesh                  */
 /////////////////////////////////////////////////////////////////////////////

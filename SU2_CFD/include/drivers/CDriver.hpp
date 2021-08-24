@@ -408,6 +408,24 @@ public:
   passivedouble Get_LiftCoeff() const;
 
   /*!
+   * \brief Get the total x moment coefficient.
+   * \return Total x moment coefficient.
+   */
+  passivedouble Get_MxCoeff() const;
+
+  /*!
+   * \brief Get the total y moment coefficient.
+   * \return Total y moment coefficient.
+   */
+  passivedouble Get_MyCoeff() const;
+
+  /*!
+   * \brief Get the total z moment coefficient.
+   * \return Total z moment coefficient.
+   */
+  passivedouble Get_MzCoeff() const;
+
+  /*!
    * \brief Get the number of vertices (halo nodes included) from a specified marker.
    * \param[in] iMarker -  Marker identifier.
    * \return Number of vertices.
@@ -570,7 +588,7 @@ public:
    */
   vector<passivedouble> GetResiduals();
 
-   /*!
+  /*!
    * \brief Get vector of flow residuals at the specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Flow residuals (vector) at the marker.
