@@ -417,6 +417,24 @@ public:
   passivedouble Get_LiftCoeff();
 
   /*!
+   * \brief Get the total x moment coefficient.
+   * \return Total x moment coefficient.
+   */
+  passivedouble Get_MxCoeff();
+
+  /*!
+   * \brief Get the total y moment coefficient.
+   * \return Total y moment coefficient.
+   */
+  passivedouble Get_MyCoeff();
+
+  /*!
+   * \brief Get the total z moment coefficient.
+   * \return Total z moment coefficient.
+   */
+  passivedouble Get_MzCoeff();
+
+  /*!
    * \brief Get the moving marker identifier.
    * \return Moving marker identifier.
    */
