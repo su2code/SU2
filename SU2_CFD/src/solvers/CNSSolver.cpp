@@ -796,7 +796,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
   const su2double tol = 1e-12;  /*--- convergence criterium for the Newton solver, note that 1e-10 is too large ---*/
   const unsigned short max_iter = config->GetwallModelMaxIter();
   const su2double relax = config->GetwallModelRelFac();
-  
   /*--- Compute the recovery factor ---*/
   // Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature )
   const su2double Recovery = pow(config->GetPrandtl_Lam(), (1.0/3.0));
