@@ -73,7 +73,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 //  AD::SetPreaccIn(Vorticity_i, nDim);
 //  AD::SetPreaccIn(StrainMag_i);
 //  AD::SetPreaccIn(ScalarVar_i[0]);
-//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   // Set the boolean here depending on whether the point is closest to a rough wall or not.
@@ -178,7 +178,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+      norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -227,7 +227,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
   //  AD::SetPreaccIn(ScalarVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
@@ -290,7 +290,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+      norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -349,7 +349,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
   //  AD::SetPreaccIn(ScalarVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
@@ -430,7 +430,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -476,7 +476,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
   //  AD::SetPreaccIn(Vorticity_i, nDim);
   //  AD::SetPreaccIn(StrainMag_i);
   //  AD::SetPreaccIn(ScalarVar_i[0]);
-  //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+  //  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
@@ -556,7 +556,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
 
     norm2_Grad = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
     CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -616,7 +616,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 //  AD::SetPreaccIn(Vorticity_i, nDim);
 //  AD::SetPreaccIn(StrainMag_i);
 //  AD::SetPreaccIn(ScalarVar_i[0]);
-//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
@@ -684,7 +684,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
       norm2_Grad = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -726,7 +726,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
 
       norm2_Grad = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+        norm2_Grad += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
 
       CrossProduction = cb2_sigma*norm2_Grad*Volume;
 
@@ -790,7 +790,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(ScalarVar_i, nVar);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);

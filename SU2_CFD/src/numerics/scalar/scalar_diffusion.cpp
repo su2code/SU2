@@ -70,8 +70,8 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
-  AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
   if (correct_gradient) {
     AD::SetPreaccIn(ScalarVar_i, nVar); AD::SetPreaccIn(ScalarVar_j ,nVar);
   }
@@ -92,8 +92,8 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
 
-  proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, TurbVar_Grad_i,
-                                            TurbVar_Grad_j, correct_gradient, ScalarVar_i, ScalarVar_j,
+  proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, ScalarVar_Grad_i,
+                                            ScalarVar_Grad_j, correct_gradient, ScalarVar_i, ScalarVar_j,
                                             Proj_Mean_GradTurbVar_Normal, Proj_Mean_GradTurbVar);
   FinishResidualCalc(config);
 

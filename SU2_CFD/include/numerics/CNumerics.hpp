@@ -130,8 +130,8 @@ protected:
   *Psi_i,    /*!< \brief Vector of adjoint variables at point i. */
   *Psi_j;    /*!< \brief Vector of adjoint variables at point j. */
   const su2double
-  *ScalarVar_i,   /*!< \brief Vector of turbulent variables at point i. */
-  *ScalarVar_j;   /*!< \brief Vector of turbulent variables at point j. */
+  *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
+  *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -146,8 +146,8 @@ protected:
   PrimVar_Grad_j,  /*!< \brief Gradient of primitive variables at point j. */
   PsiVar_Grad_i,   /*!< \brief Gradient of adjoint variables at point i. */
   PsiVar_Grad_j,   /*!< \brief Gradient of adjoint variables at point j. */
-  TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
-  TurbVar_Grad_j,  /*!< \brief Gradient of turbulent variables at point j. */
+  ScalarVar_Grad_i,  /*!< \brief Gradient of scalar variables at point i. */
+  ScalarVar_Grad_j,  /*!< \brief Gradient of scalar variables at point j. */
   TransVar_Grad_i, /*!< \brief Gradient of turbulent variables at point i. */
   TransVar_Grad_j, /*!< \brief Gradient of turbulent variables at point j. */
   TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
@@ -373,8 +373,8 @@ public:
    */
   inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalarvar_grad_i,
                                    CMatrixView<const su2double> val_scalarvar_grad_j) {
-    TurbVar_Grad_i = val_scalarvar_grad_i;
-    TurbVar_Grad_j = val_scalarvar_grad_j;
+    ScalarVar_Grad_i = val_scalarvar_grad_i;
+    ScalarVar_Grad_j = val_scalarvar_grad_j;
   }
 
   /*!

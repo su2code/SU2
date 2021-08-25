@@ -358,8 +358,8 @@ private:
     pw_axi = alfa_blended*zeta/k*pk_axi;
 
     /*--- Convection-Diffusion ---*/
-    cdk_axi = rhov*k-(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
-    cdw_axi = rhov*w-(Laminar_Viscosity_i+sigma_w_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
+    cdk_axi = rhov*k-(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*ScalarVar_Grad_i[0][1];
+    cdw_axi = rhov*w-(Laminar_Viscosity_i+sigma_w_i*Eddy_Viscosity_i)*ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
     Residual[0] += yinv*Volume*(pk_axi-cdk_axi);

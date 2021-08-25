@@ -574,7 +574,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //
 //      su2double gradTurbVar_gradTurbPsi = 0, vel_gradTurbPsi = 0;
 //      for (iDim = 0; iDim < nDim; iDim++) {
-//        gradTurbVar_gradTurbPsi += TurbVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
+//        gradTurbVar_gradTurbPsi += ScalarVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
 //        vel_gradTurbPsi += V_i[iDim+1]*TurbPsi_Grad_i[0][iDim];
 //      }
 //
@@ -633,8 +633,8 @@ void CSourceConservative_AdjTurb::ComputeResidual(su2double *val_residual, su2do
 
   E_ij = 0.0;  proj_TurbVar_Grad_i = 0.0; proj_TurbVar_Grad_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    proj_TurbVar_Grad_i += coeff*TurbVar_Grad_i[0][iDim]*Normal[iDim];
-    proj_TurbVar_Grad_j += coeff*TurbVar_Grad_j[0][iDim]*Normal[iDim];
+    proj_TurbVar_Grad_i += coeff*ScalarVar_Grad_i[0][iDim]*Normal[iDim];
+    proj_TurbVar_Grad_j += coeff*ScalarVar_Grad_j[0][iDim]*Normal[iDim];
     E_ij += 0.5*(TurbPsi_i[0]*proj_TurbVar_Grad_i + TurbPsi_j[0]*proj_TurbVar_Grad_j);
   }
 
