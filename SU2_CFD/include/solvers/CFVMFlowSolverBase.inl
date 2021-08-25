@@ -2548,10 +2548,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       /*--- Compute non-dimensional velocity and y+ ---*/
 
