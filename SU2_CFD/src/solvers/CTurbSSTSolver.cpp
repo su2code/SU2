@@ -485,7 +485,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
     su2double Lam_Visc_Wall = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    /*--- Do not use wall model at the ipoint when y+ < 5.0, use zero flux (Neumann) conditions. ---*/
+    /*--- Do not use wall model at the ipoint when y+ < "limit", use zero flux (Neumann) conditions. ---*/
 
     if (Y_Plus < minYPlus) {
       /* --- use zero flux (Neumann) conditions --- */
