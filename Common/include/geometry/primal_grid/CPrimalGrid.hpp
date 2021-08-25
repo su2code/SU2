@@ -51,7 +51,6 @@ protected:
   /*! If this is a domain element, store the global index.
    * If this is a boundary element, store the index of the incident domain element. */
   unsigned long GlobalIndex_DomainElement;
-  bool gi;
   unique_ptr<long[]> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
 
@@ -250,24 +249,24 @@ public:
    * \brief Get the element global index in a parallel computation.
    * \return Global index of the element in a parallel computation.
    */
-  inline unsigned long GetGlobalIndex() const { if(!gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
+  inline unsigned long GetGlobalIndex() const { return GlobalIndex_DomainElement; }
 
   /*!
    * \brief Set the global index for an element in a parallel computation.
    * \return Global index of an element in a parallel computation.
    */
-  inline void SetGlobalIndex(unsigned long val_globalindex) { gi=true; GlobalIndex_DomainElement = val_globalindex; }
+  inline void SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex_DomainElement = val_globalindex; }
 
   /*!
    * \brief Set the index of the domain element of which this boundary element is a face.
    * \param[in] val_domainelement - Value to set.
    */
-  inline void SetDomainElement(unsigned long val_domainelement) { gi=false; GlobalIndex_DomainElement = val_domainelement; }
+  inline void SetDomainElement(unsigned long val_domainelement) { GlobalIndex_DomainElement = val_domainelement; }
 
   /*!
    * \brief Get the index of the domain element of which this boundary element is a face.
    */
-  inline unsigned long GetDomainElement() const{ if(gi) SU2_MPI::Error("gi",CURRENT_FUNCTION); return GlobalIndex_DomainElement; }
+  inline unsigned long GetDomainElement() const{ return GlobalIndex_DomainElement; }
 
   /*!
    * \brief A pure virtual member.

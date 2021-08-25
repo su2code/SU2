@@ -42,7 +42,6 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
 
   boundElemIDGlobal = val_elemGlobalID;
   GlobalIndex_DomainElement     = val_domainElementID;
-  gi = false;
 
   /*--- Copy face structure of the element from val_nodes. ---*/
 

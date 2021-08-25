@@ -36,7 +36,6 @@ CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighb
   GlobalIndex_DomainElement = 0;
   for(unsigned short i=0; i<nNeighbor_Elements; i++)
     Neighbor_Elements[i] = -1;
-  gi =true;
 
 }
 
