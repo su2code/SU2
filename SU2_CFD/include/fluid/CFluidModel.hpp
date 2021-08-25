@@ -130,7 +130,7 @@ class CFluidModel {
    */
   su2double ComputeMeanSpecificHeatCp(const std::vector<su2double> specific_heat_cp, const su2double * const val_scalars) {
     su2double val_scalars_sum = 0.0;
-    su2double n_scalars = specific_heat_cp.size() - 1;
+    unsigned short n_scalars = specific_heat_cp.size() - 1;
 
     for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
       Cp += specific_heat_cp[i_scalar] * val_scalars[i_scalar];
@@ -145,7 +145,7 @@ class CFluidModel {
   static su2double ComputeMeanMolecularWeight(const std::vector<su2double> molar_masses, const su2double * const val_scalars) {
     su2double OneOverMeanMolecularWeight = 0.0;
     su2double val_scalars_sum = 0.0;
-    su2double n_scalars = molar_masses.size() - 1;
+    unsigned short n_scalars = molar_masses.size() - 1;
 
     for (int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
       OneOverMeanMolecularWeight += val_scalars[i_scalar]/(molar_masses[i_scalar]/1000);
