@@ -1654,6 +1654,10 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         file << "Critical Temperature (non-dim) :  "
              << config->GetTemperature_Critical() / config->GetTemperature_Ref() << "\n";
         break;
+        
+      case LUT_GAS:
+        file << "Fluid Model: LUT_GAS "<< "\n";
+        break;
     }
 
     if (viscous) {
@@ -1684,11 +1688,8 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
         default:
           break;
-          
-        case LUT_GAS:
-          Breakdown_file << "Fluid Model: LUT_GAS "<< "\n";
-          break;
       }
+      
       switch (config->GetKind_ConductivityModel()) {
         case CONDUCTIVITYMODEL::CONSTANT_PRANDTL:
           file << "Conductivity Model: CONSTANT_PRANDTL \n";
