@@ -875,7 +875,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       /*--- initial value for wall temperature ---*/
   
-      su2double T_Wall = nodes->GetTemperature(iPoint);
 
       su2double q_w = 0.0;
 
