@@ -28,9 +28,9 @@
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
 
 CPrimalGrid::CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements) :
-  FEM(FEM),
   Nodes(new unsigned long[nNodes]),
-  Neighbor_Elements(new long[nNeighbor_Elements])
+  Neighbor_Elements(new long[nNeighbor_Elements]),
+  FEM(FEM)
 {
 
   GlobalIndex_DomainElement = 0;
