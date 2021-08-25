@@ -45,9 +45,6 @@ CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
-
-  /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CTriangle::~CTriangle() {}

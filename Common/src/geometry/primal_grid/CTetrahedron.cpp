@@ -46,9 +46,6 @@ CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
-
-  /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CTetrahedron::~CTetrahedron() {}

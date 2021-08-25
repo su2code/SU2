@@ -52,7 +52,7 @@ protected:
    * If this is a boundary element, store the index of the incident domain element. */
   unsigned long GlobalIndex_DomainElement;
   bool gi;
-  vector<long> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
+  unique_ptr<long[]> Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
 
   su2double Volume;                /*!< \brief Volume of the element. */
@@ -72,8 +72,9 @@ public:
    * \brief Constructor of the class.
    * \param[in] FEM - Whether this is a FEM element.
    * \param[in] nNodes - Number of nodes.
+   * \param[in] nNeighbor_Elements - Number of neighbor elements.
    */
-  CPrimalGrid(bool FEM, unsigned short nNodes);
+  CPrimalGrid(bool FEM, unsigned short nNodes, unsigned short nNeighbor_Elements);
 
   /*!
    * \brief Destructor of the class.
@@ -463,7 +464,7 @@ template<typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
 public:
 
-  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM, Connectivity::nNodes) {}
+  CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM, Connectivity::nNodes, Connectivity::nFaces) {}
 
   inline unsigned short GetnNodes() const final {
     return Connectivity::nNodes;

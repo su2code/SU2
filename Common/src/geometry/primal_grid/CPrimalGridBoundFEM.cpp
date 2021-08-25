@@ -32,7 +32,7 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
                                          unsigned short        val_VTK_Type,
                                          unsigned short        val_nPolyGrid,
                                          unsigned short        val_nDOFsGrid,
-                                         vector<unsigned long> &val_nodes): CPrimalGrid(true, val_nDOFsGrid)
+                                         vector<unsigned long> &val_nodes): CPrimalGrid(true, val_nDOFsGrid, 1)
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;

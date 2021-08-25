@@ -48,9 +48,6 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[2] = val_point_2; Nodes[3] = val_point_3;
   Nodes[4] = val_point_4; Nodes[5] = val_point_5;
   Nodes[6] = val_point_6; Nodes[7] = val_point_7;
-
-  /*--- Allocate and define neighbor elements to a element ---*/
-  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CHexahedron::~CHexahedron() {}

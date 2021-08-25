@@ -30,7 +30,7 @@
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   istringstream  &elem_line) : CPrimalGrid(true, val_nDOFsGrid)
+                               unsigned long  val_offDOfsSol,   istringstream  &elem_line) : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;
@@ -75,7 +75,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
                                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
                                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
-                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid): CPrimalGrid(true, val_nDOFsGrid)
+                               unsigned long  val_offDOfsSol,   const unsigned long *connGrid): CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type))
 {
   /*--- Store the integer data in the member variables of this object. ---*/
   VTK_Type = val_VTK_Type;

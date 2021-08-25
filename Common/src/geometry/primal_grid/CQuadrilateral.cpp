@@ -46,8 +46,6 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
   Nodes[1] = val_point_1;
   Nodes[2] = val_point_2;
   Nodes[3] = val_point_3;
-
-  Neighbor_Elements.resize(GetnFaces(),-1);
 }
 
 CQuadrilateral::~CQuadrilateral() {}
