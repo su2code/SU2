@@ -488,7 +488,7 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     /*--- Do not use wall model at the ipoint when y+ < "limit", use zero flux (Neumann) conditions. ---*/
 
     if (Y_Plus < minYPlus) {
-      /* --- use zero flux (Neumann) conditions --- */
+      /* --- Use zero flux (Neumann) conditions, i.e. nothing has to be done. --- */
       continue;
     }
 
