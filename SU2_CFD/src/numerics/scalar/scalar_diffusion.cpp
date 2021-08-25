@@ -37,8 +37,8 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
 {
-  Proj_Mean_GradTurbVar_Normal = new su2double [nVar] ();
-  Proj_Mean_GradTurbVar = new su2double [nVar] ();
+  Proj_Mean_GradScalarVar_Normal = new su2double [nVar] ();
+  Proj_Mean_GradScalarVar = new su2double [nVar] ();
 
   Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
@@ -51,8 +51,8 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
 
 CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
-  delete [] Proj_Mean_GradTurbVar_Normal;
-  delete [] Proj_Mean_GradTurbVar;
+  delete [] Proj_Mean_GradScalarVar_Normal;
+  delete [] Proj_Mean_GradScalarVar;
 
   delete [] Flux;
   if (Jacobian_i != nullptr) {
@@ -94,7 +94,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, ScalarVar_Grad_i,
                                             ScalarVar_Grad_j, correct_gradient, ScalarVar_i, ScalarVar_j,
-                                            Proj_Mean_GradTurbVar_Normal, Proj_Mean_GradTurbVar);
+                                            Proj_Mean_GradScalarVar_Normal, Proj_Mean_GradScalarVar);
   FinishResidualCalc(config);
 
   AD::SetPreaccOut(Flux, nVar);

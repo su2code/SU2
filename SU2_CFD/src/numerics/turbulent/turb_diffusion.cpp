@@ -43,13 +43,13 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   su2double nu_j = Laminar_Viscosity_j/Density_j;
   su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
 
-  Flux[0] = nu_e*Proj_Mean_GradTurbVar[0]/sigma;
+  Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
   if (implicit) {
-    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
-    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+    Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
+    Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
   }
 
 }
@@ -83,13 +83,13 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
     nu_e = nu_ij + fn*nu_tilde_ij;
   }
 
-  Flux[0] = nu_e*Proj_Mean_GradTurbVar_Normal[0]/sigma;
+  Flux[0] = nu_e*Proj_Mean_GradScalarVar_Normal[0]/sigma;
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
   if (implicit) {
-    Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
-    Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+    Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
+    Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
   }
 
 }
@@ -131,8 +131,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
   su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
 
-  Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];
-  Flux[1] = diff_omega*Proj_Mean_GradTurbVar[1];
+  Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
+  Flux[1] = diff_omega*Proj_Mean_GradScalarVar[1];
 
   /*--- For Jacobians -> Use of TSL (Thin Shear Layer?) approx. to compute derivatives of the gradients ---*/
   if (implicit) {
