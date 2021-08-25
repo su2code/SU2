@@ -34,9 +34,6 @@ CScalarSolver::CScalarSolver(void) : CSolver() { }
 
 CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/

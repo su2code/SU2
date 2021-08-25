@@ -42,9 +42,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   bool multizone = config->GetMultizone_Problem();
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
 
   nVar = 1;

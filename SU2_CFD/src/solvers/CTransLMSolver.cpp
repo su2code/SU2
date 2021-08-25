@@ -47,8 +47,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
   cout << "Entered constructor for CTransLMSolver -AA\n";
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
 
   /*--- Define geometry constans in the solver structure ---*/
   nDim = geometry->GetnDim();

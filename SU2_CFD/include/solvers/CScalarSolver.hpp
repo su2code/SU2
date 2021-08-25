@@ -50,9 +50,7 @@ protected:
 
   su2double
   lowerlimit[MAXNVAR] = {0.0},  /*!< \brief contains lower limits for turbulence variables. */
-  upperlimit[MAXNVAR] = {0.0},  /*!< \brief contains upper limits for turbulence variables. */
-  Gamma,                        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  Gamma_Minus_One;              /*!< \brief Fluids's Gamma - 1.0  . */
+  upperlimit[MAXNVAR] = {0.0};  /*!< \brief contains upper limits for turbulence variables. */
 
   su2double Solution_Inf[MAXNVAR] = {0.0}; /*!< \brief Far-field solution. */
 

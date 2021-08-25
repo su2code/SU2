@@ -42,11 +42,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   bool multizone = config->GetMultizone_Problem();
 
-  /*--- Array initialization ---*/
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
   nVar = 2;
