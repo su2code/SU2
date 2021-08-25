@@ -919,7 +919,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       su2double Y_Plus_Start = Density_Wall * U_Tau * WallDistMod / Lam_Visc_Wall;
 
-      /*--- Automatic switch off when y+ < 5.0 according to Nichols & Nelson (2004) ---*/
+      /*--- Automatic switch off when y+ < "limit" according to Nichols & Nelson (2004) ---*/
 
       if (Y_Plus_Start < config->GetwallModelMinYPlus() ) {
         skipCounter++;
