@@ -1284,7 +1284,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);
 
-      /*--- Do not use wall model at the ipoint when y+ < 5.0 ---*/
+      /*--- Do not use wall model at the ipoint when y+ < "limit" ---*/
 
       if (Y_Plus < config->GetwallModelMinYPlus()) continue;
 
