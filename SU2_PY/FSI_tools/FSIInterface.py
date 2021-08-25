@@ -1239,8 +1239,8 @@ class Interface:
           if myid == self.rootProcess:
             for iProc in self.fluidInterfaceProcessors:
               sendBuff = {}
-              for key in self.FluidHaloNodeList[iProc].keys():                  # The key is the SU2 global
-                globalIndex = self.fluidIndexing[key]                           # This is the interface global, not the SU2 global
+              for key in self.FluidHaloNodeList[iProc].keys():                  # The keys are the SU2 global IDs of the interface nodes
+                globalIndex = self.fluidIndexing[key]                           # These are the interface global IDs, not the SU2 global IDs
                 DispX = self.fluidInterface_array_DispX_recon[globalIndex]
                 DispY = self.fluidInterface_array_DispY_recon[globalIndex]
                 DispZ = self.fluidInterface_array_DispZ_recon[globalIndex]
