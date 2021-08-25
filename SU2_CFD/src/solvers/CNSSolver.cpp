@@ -956,7 +956,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
- 
         su2double kUp = kappa*U_Plus;
         Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)* (1.0 + kUp + 0.5*kUp*kUp + kUp*kUp*kUp/6.0));
 
