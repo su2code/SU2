@@ -887,6 +887,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, c
 
       /*--- compressible formulation ---*/
 
+  su2double T_Wall = nodes->GetTemperature(iPoint);
       su2double P_Wall = P_Normal;
       su2double Density_Wall = P_Wall/(Gas_Constant*T_Wall);
       su2double Lam_Visc_Normal = nodes->GetLaminarViscosity(Point_Normal);
