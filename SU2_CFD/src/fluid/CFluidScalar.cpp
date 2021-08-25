@@ -17,7 +17,7 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 
 CFluidScalar::CFluidScalar(CConfig *config, const su2double value_pressure_operating) : CFluidModel() {
-  unsigned short n_scalars = config->GetNScalarsInit();
+  n_scalars = config->GetNScalarsInit();
   config->SetNScalarsInit(n_scalars);
   n_species_mixture = n_scalars + 1;
 
@@ -116,10 +116,13 @@ void CFluidScalar::SetThermalConductivityModel(const CConfig* config) {
 
 std::vector<su2double>& CFluidScalar::massToMoleFractions(const su2double * const val_scalars){
   su2double mixtureMolarMass {0.0};
+  su2double val_scalars_sum {0.0};
 
-  /* Change if val_scalars becomes array of scalar su2double*. */
-  massFractions[0] = val_scalars[0];
-  massFractions[1] = 1 - val_scalars[0];
+  for(int i_scalar = 0; i_scalar < n_scalars; i_scalar++){
+    massFractions[i_scalar] = val_scalars[i_scalar];
+    val_scalars_sum += val_scalars[i_scalar];
+  }
+  massFractions[n_scalars] = 1 - val_scalars_sum;
 
   for(int iVar = 0; iVar < n_species_mixture; iVar++){
     mixtureMolarMass += massFractions[iVar] / molarMasses[iVar];
@@ -221,9 +224,9 @@ su2double CFluidScalar::wilkeConductivity(const su2double * const val_scalars){
 }
 
 unsigned long CFluidScalar::SetTDState_T(const su2double val_temperature, su2double * const val_scalars){
-  CFluidModel::GetMeanMolecularWeight(molarMasses, val_scalars);
+  const su2double MeanMolecularWeight = ComputeMeanMolecularWeight(molarMasses, val_scalars);
 
-  // Cp = CFluidModel::GetMeanSpecificHeatCp(specificHeat, val_scalars);
+  // CFluidModel::ComputeMeanSpecificHeatCp(specificHeat, val_scalars);
   const su2double CpAir300Kelvin = 1009.39;
   const su2double RatioSpecificHeatsAir = 1.4;
   Cp = CpAir300Kelvin;

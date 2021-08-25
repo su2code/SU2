@@ -245,10 +245,15 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
   const bool limiter  = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER) &&
                         (config->GetInnerIter() <= config->GetLimiterIter());
 
+  su2double * scalars = new su2double[nVar];
+
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
 
     CFluidModel * fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
-    su2double * scalars = nodes->GetSolution(i_point);
+
+    for(int i_scalar = 0; i_scalar < nVar; i_scalar++){
+      scalars[i_scalar] = nodes->GetSolution(i_point, i_scalar);
+    }
 
     su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
 
@@ -256,7 +261,7 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
 
     // Temporary solution: compute mass diffusivity here with variable Cp.
     su2double cp = 2224.43 * scalars[0] + 1009.39 * (1- scalars[0]);
-    // su2double cp = 2219.8 * scalars[0] + 1009.3 * (1- scalars[0]);
+    // su2double cp = 2224.43 * scalars[0] + 14310.0 * scalars[1] + 1009.39 * (1- scalars[0] - scalars[1]);
     su2double density     = solver_container[FLOW_SOL]->GetNodes()->GetDensity(i_point);
     su2double thermal_conductivity     = solver_container[FLOW_SOL]->GetNodes()->GetThermalConductivity(i_point);
     su2double Lewis = 1;
@@ -273,6 +278,8 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry, CSolver **solver_c
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
 
   }
+
+  delete[] scalars;
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
