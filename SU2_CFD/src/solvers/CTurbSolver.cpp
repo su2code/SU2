@@ -147,7 +147,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         for (auto iVar = 0u; iVar < nVar; ++iVar)
           solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
 
-        conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+        conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
 
         /*--- Set the normal vector ---*/
 
@@ -181,8 +181,8 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Turbulent variables and their gradients ---*/
 
-      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
 

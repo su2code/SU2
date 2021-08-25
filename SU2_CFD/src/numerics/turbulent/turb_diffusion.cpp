@@ -122,7 +122,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
   sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
-  /*--- Compute mean effective viscosity ---*/
+  /*--- Compute mean effective dynamic viscosity ---*/
   diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
   diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
   diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
@@ -134,7 +134,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   Flux[1] = diff_omega*Proj_Mean_GradTurbVar[1];
 
-  /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+  /*--- For Jacobians -> Use of TSL (Thin Shear Layer?) approx. to compute derivatives of the gradients ---*/
   if (implicit) {
     su2double proj_on_rho = proj_vector_ij/Density_i;
 

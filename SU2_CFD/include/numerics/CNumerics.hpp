@@ -347,13 +347,13 @@ public:
   }
 
   /*!
-   * \brief Set the value of the turbulent variable.
-   * \param[in] val_turbvar_i - Value of the turbulent variable at point i.
-   * \param[in] val_turbvar_j - Value of the turbulent variable at point j.
+   * \brief Set the value of the scalar variable.
+   * \param[in] val_scalarvar_i - Value of the scalar variable at point i.
+   * \param[in] val_scalarvar_j - Value of the scalar variable at point j.
    */
-  inline void SetTurbVar(const su2double *val_turbvar_i, const su2double *val_turbvar_j) {
-    TurbVar_i = val_turbvar_i;
-    TurbVar_j = val_turbvar_j;
+  inline void SetScalarVar(const su2double *val_scalarvar_i, const su2double *val_scalarvar_j) {
+    TurbVar_i = val_scalarvar_i;
+    TurbVar_j = val_scalarvar_j;
   }
 
   /*!
@@ -367,14 +367,14 @@ public:
   }
 
   /*!
-   * \brief Set the gradient of the turbulent variables.
-   * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
-   * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
+   * \brief Set the gradient of the scalar variables.
+   * \param[in] val_scalarvar_grad_i - Gradient of the scalar variable at point i.
+   * \param[in] val_scalarvar_grad_j - Gradient of the scalar variable at point j.
    */
-  inline void SetTurbVarGradient(CMatrixView<const su2double> val_turbvar_grad_i,
-                                 CMatrixView<const su2double> val_turbvar_grad_j) {
-    TurbVar_Grad_i = val_turbvar_grad_i;
-    TurbVar_Grad_j = val_turbvar_grad_j;
+  inline void SetScalarVarGradient(CMatrixView<const su2double> val_scalarvar_grad_i,
+                                   CMatrixView<const su2double> val_scalarvar_grad_j) {
+    TurbVar_Grad_i = val_scalarvar_grad_i;
+    TurbVar_Grad_j = val_scalarvar_grad_j;
   }
 
   /*!

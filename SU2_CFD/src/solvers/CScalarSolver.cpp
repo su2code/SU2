@@ -132,11 +132,11 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
     const auto V_j = flowNodes->GetPrimitive(jPoint);
     numerics->SetPrimitive(V_i, V_j);
 
-    /*--- Turbulent variables w/o reconstruction ---*/
+    /*--- Scalar variables w/o reconstruction ---*/
 
-    const auto Turb_i = nodes->GetSolution(iPoint);
-    const auto Turb_j = nodes->GetSolution(jPoint);
-    numerics->SetTurbVar(Turb_i, Turb_j);
+    const auto Scalar_i = nodes->GetSolution(iPoint);
+    const auto Scalar_j = nodes->GetSolution(jPoint);
+    numerics->SetScalarVar(Scalar_i, Scalar_j);
 
     /*--- Grid Movement ---*/
 
@@ -204,11 +204,11 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
             Project_Grad_i *= Limiter_i[iVar];
             Project_Grad_j *= Limiter_j[iVar];
           }
-          solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
-          solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+          solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
+          solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
         }
 
-        numerics->SetTurbVar(solution_i, solution_j);
+        numerics->SetScalarVar(solution_i, solution_j);
       }
     }
 
@@ -268,9 +268,9 @@ void CScalarSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, C
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-  numerics->SetTurbVar(nodes->GetSolution(iPoint),
+  numerics->SetScalarVar(nodes->GetSolution(iPoint),
                        nodes->GetSolution(jPoint));
-  numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
+  numerics->SetScalarVarGradient(nodes->GetGradient(iPoint),
                                nodes->GetGradient(jPoint));
 
   /*--- Menter's first blending function (only SST)---*/

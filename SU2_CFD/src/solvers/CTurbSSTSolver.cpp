@@ -309,8 +309,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetTurbVar(nodes->GetSolution(iPoint), nullptr);
-    numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
 
@@ -554,7 +554,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_Inf);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Solution_Inf);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -622,7 +622,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
        values for the turbulent state at the inflow. ---*/
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint),
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
                                 Inlet_TurbVars[val_marker][iVertex]);
 
       /*--- Set various other quantities in the solver class ---*/
@@ -654,8 +654,8 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       //
       //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       //
-      //     visc_numerics->SetTurbVar(Solution_i, Solution_j);
-      //      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      //     visc_numerics->SetScalarVar(Solution_i, Solution_j);
+      //     visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
       //
       //      /*--- Menter's first blending function ---*/
       //
@@ -709,7 +709,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint),
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
                                 nodes->GetSolution(iPoint));
 
       /*--- Set Normal (negate for outward convention) ---*/
@@ -746,8 +746,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 //
 //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 //
-//      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+//      visc_numerics->SetScalarVar(Solution_i, Solution_j);
+//      visc_numerics->SetScalarVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
 //
 //      /*--- Menter's first blending function ---*/
 //
@@ -818,7 +818,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -842,8 +842,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
@@ -928,7 +928,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       /*--- Set the turbulent variable states. Use average span-wise values
              values for the turbulent state at the inflow. ---*/
 
-      conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -952,9 +952,9 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
 
-      visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
+      visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
       visc_numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(iPoint));
