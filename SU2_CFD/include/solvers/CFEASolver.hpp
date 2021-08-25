@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,8 +67,10 @@ protected:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
-  su2double Total_OFCombo = 0.0;    /*!< \brief One of the above, for output/history purposes. */
+  su2double Total_OFStressPenalty;  /*!< \brief Total Objective Function: Stress penalty. */
+  su2double ObjFunc;
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -198,6 +200,34 @@ protected:
                                  su2double der,
                                  su2double der_avg) const;
 
+  /*!
+   * \brief Compute the objective function for a reference geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefGeom(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the objective function for a reference node
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefNode(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the objective function for a volume fraction
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFVolFrac(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the compliance objective function
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFCompliance(CGeometry *geometry, const CConfig *config);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -246,20 +276,6 @@ public:
                            unsigned long TimeIter) override;
 
   /*!
-   * \brief Compute the time step for solving the FEM equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
-   */
-  inline void SetTime_Step(CGeometry *geometry,
-                           CSolver **solver_container,
-                           CConfig *config,
-                           unsigned short iMesh,
-                           unsigned long Iteration) override { }
-
-  /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] indexNode - Index of the node.
@@ -298,7 +314,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassMatrix(CGeometry *geometry,
+  void Compute_MassMatrix(const CGeometry *geometry,
                           CNumerics **numerics,
                           const CConfig *config) final;
 
@@ -308,7 +324,7 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_MassRes(CGeometry *geometry,
+  void Compute_MassRes(const CGeometry *geometry,
                        CNumerics **numerics,
                        const CConfig *config) final;
 
@@ -345,48 +361,40 @@ public:
   /*!
    * \brief Clamped boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped(CGeometry *geometry,
-                  CNumerics *numerics,
                   const CConfig *config,
                   unsigned short val_marker) final;
 
   /*!
    * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Clamped_Post(CGeometry *geometry,
-                       CNumerics *numerics,
                        const CConfig *config,
                        unsigned short val_marker) final;
 
   /*!
    * \brief Symmetry boundary conditions.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Sym_Plane(CGeometry *geometry,
-                    CNumerics *numerics,
                     const CConfig *config,
                     unsigned short val_marker) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_DispDir(CGeometry *geometry,
-                  CNumerics *numerics,
                   const CConfig *config,
                   unsigned short val_marker) final;
 
@@ -398,57 +406,38 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Normal_Load(CGeometry *geometry,
-                      CNumerics *numerics,
                       const CConfig *config,
                       unsigned short val_marker) final;
 
   /*!
    * \brief Impose a load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Dir_Load(CGeometry *geometry,
-                   CNumerics *numerics,
                    const CConfig *config,
                    unsigned short val_marker) final;
 
   /*!
    * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   inline void BC_Sine_Load(CGeometry *geometry,
-                           CNumerics *numerics,
                            const CConfig *config,
                            unsigned short val_marker) final { }
 
   /*!
    * \brief Impose a damping load.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Damper(CGeometry *geometry,
-                 CNumerics *numerics,
                  const CConfig *config,
                  unsigned short val_marker) final;
-
-  /*!
-   * \brief Deformable boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Deforming(CGeometry *geometry,
-                    CNumerics *numerics,
-                    const CConfig *config,
-                    unsigned short val_marker) final;
 
   /*!
    * \brief Iterate using an implicit Newmark solver.
@@ -456,7 +445,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Iteration(CGeometry *geometry,
+  void ImplicitNewmark_Iteration(const CGeometry *geometry,
                                  CNumerics **numerics,
                                  const CConfig *config) final;
 
@@ -465,14 +454,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Update(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) final;
+  void ImplicitNewmark_Relaxation(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Iterate using an implicit Generalized Alpha solver.
@@ -480,7 +469,7 @@ public:
    * \param[in] numerics - Numerical methods.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_Iteration(CGeometry *geometry,
+  void GeneralizedAlpha_Iteration(const CGeometry *geometry,
                                   CNumerics **numerics,
                                   const CConfig *config) final;
 
@@ -489,34 +478,30 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateDisp(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *config) final;
+  void GeneralizedAlpha_UpdateSolution(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Update the solution using an implicit Generalized Alpha solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig *config) final;
+  void GeneralizedAlpha_UpdateLoads(const CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Postprocessing.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] numerics - Implementation of numerical method.
+   * \param[in] of_comp_mode - Mode to compute just the objective function.
    */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      CNumerics **numerics,
-                      unsigned short iMesh) final;
+  void Postprocessing(CGeometry *geometry, CConfig *config, CNumerics **numerics, bool of_comp_mode) final;
 
   /*!
    * \brief Routine to solve the Jacobian-Residual linearized system.
@@ -535,39 +520,71 @@ public:
 
   /*!
    * \brief Provide the maximum Von Mises Stress for structural analysis.
-   * \return Value of the maximum Von Mises Stress.
    */
   inline su2double GetTotal_CFEA(void) const final { return Total_CFEA; }
 
   /*!
    * \brief Retrieve the value of the objective function for a reference geometry
-   * \param[out] OFRefGeom - value of the objective function.
    */
   inline su2double GetTotal_OFRefGeom(void) const final { return Total_OFRefGeom; }
 
   /*!
    * \brief Retrieve the value of the objective function for a reference node
-   * \param[out] OFRefNode - value of the objective function.
    */
   inline su2double GetTotal_OFRefNode(void) const final { return Total_OFRefNode; }
 
   /*!
    * \brief Retrieve the value of the volume fraction objective function
-   * \param[out] OFVolFrac - value of the objective function.
    */
   inline su2double GetTotal_OFVolFrac(void) const final { return Total_OFVolFrac; }
 
   /*!
+   * \brief Retrieve the value of the discreteness objective function
+   */
+  inline su2double GetTotal_OFDiscreteness(void) const final { return Total_OFDiscreteness; }
+
+  /*!
    * \brief Retrieve the value of the structural compliance objective function
-   * \return Value of the objective function.
    */
   inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
 
   /*!
-   * \brief Retrieve the value of the combined objective function
-   * \note For now there is no combination, this is just a seletion.
+   * \brief Retrieve the value of the stress penalty objective function
    */
-  inline su2double GetTotal_ComboObj(void) const final { return Total_OFCombo; }
+  inline su2double GetTotal_OFStressPenalty(void) const final { return Total_OFStressPenalty; }
+
+  /*!
+   * \brief Compute the objective function.
+   * \param[in] config - Definition of the problem.
+   */
+  inline void Evaluate_ObjFunc(const CConfig *config) final {
+    ObjFunc = 0.0;
+    switch (config->GetKind_ObjFunc()) {
+      case REFERENCE_GEOMETRY:
+        ObjFunc = GetTotal_OFRefGeom();
+        break;
+      case REFERENCE_NODE:
+        ObjFunc = GetTotal_OFRefNode();
+        break;
+      case TOPOL_COMPLIANCE:
+        ObjFunc = GetTotal_OFCompliance();
+        break;
+      case VOLUME_FRACTION:
+        ObjFunc = GetTotal_OFVolFrac();
+        break;
+      case TOPOL_DISCRETENESS:
+        ObjFunc = GetTotal_OFDiscreteness();
+        break;
+      case STRESS_PENALTY:
+        ObjFunc = GetTotal_OFStressPenalty();
+        break;
+    }
+  }
+
+  /*!
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   */
+  inline su2double GetTotal_ComboObj() const final { return ObjFunc; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -637,7 +654,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Configuration of the problem.
    */
-  void PredictStruct_Displacement(CGeometry *geometry, CConfig *config) final;
+  void PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.
@@ -646,7 +663,7 @@ public:
    * \param[in] iOuterIter - Current outer iteration.
    */
   void ComputeAitken_Coefficient(CGeometry *geometry,
-                                 CConfig *config,
+                                 const CConfig *config,
                                  unsigned long iOuterIter) final;
 
   /*!
@@ -654,45 +671,15 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAitken_Relaxation(CGeometry *geometry, CConfig *config) final;
-
-  /*!
-   * \brief Compute the objective function for a reference geometry
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFRefGeom(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the objective function for a reference node
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFRefNode(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the objective function for a volume fraction
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFVolFrac(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the compliance objective function
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFCompliance(CGeometry *geometry, const CConfig *config) final;
+  void SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the penalty due to the stiffness increase
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Stiffness_Penalty(CGeometry *geometry,
-                         CSolver **solver_container,
                          CNumerics **numerics_container,
                          CConfig *config);
 

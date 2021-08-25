@@ -2,14 +2,14 @@
  * \file test_driver.cpp
  * \brief The main entry point for unit tests (the main()).
  * \author C. Pederson
- * \version 7.0.0 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,30 +37,18 @@
 int main(int argc, char *argv[]) {
 
   /*--- Startup MPI, if supported ---*/
-#ifdef HAVE_MPI
-  int  buffsize;
-  char *buffptr;
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
-#endif
-  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
 #endif
 
   /*--- Run the test driver supplied by Catch ---*/
   int result = Catch::Session().run(argc, argv);
 
   /*--- Finalize MPI parallelization ---*/
-#ifdef HAVE_MPI
-  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
-  free(buffptr);
   SU2_MPI::Finalize();
-#endif
 
   return result;
 }

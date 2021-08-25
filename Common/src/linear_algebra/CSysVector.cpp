@@ -2,14 +2,14 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType>(64, nElm * sizeof(ScalarType));
+  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType,true>(64, nElm*sizeof(ScalarType));
 
   if (val != nullptr) {
     if (!valIsArray) {
@@ -63,13 +63,18 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
+  if (!std::is_trivial<ScalarType>::value)
+    for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   MemoryAllocation::aligned_free(vec_val);
 }
 
 /*--- Explicit instantiations ---*/
 /*--- We allways need su2double (regardless if it is passive or active). ---*/
 template class CSysVector<su2double>;
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+#ifdef USE_MIXED_PRECISION
 /*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors. ---*/
 template class CSysVector<su2mixedfloat>;
+#endif
+#ifdef CODI_REVERSE_TYPE
+template class CSysVector<passivedouble>;
 #endif

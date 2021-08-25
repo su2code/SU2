@@ -3,14 +3,14 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -144,10 +144,6 @@ class CBaseMPIWrapper {
     winMinRankErrorInUse = true;
   }
 
-  static inline void Buffer_attach(void* buffer, int size) { MPI_Buffer_attach(buffer, size); }
-
-  static inline void Buffer_detach(void* buffer, int* size) { MPI_Buffer_detach(buffer, size); }
-
   static inline void Comm_rank(Comm comm, int* rank) { MPI_Comm_rank(comm, rank); }
 
   static inline void Comm_size(Comm comm, int* size) { MPI_Comm_size(comm, size); }
@@ -176,6 +172,8 @@ class CBaseMPIWrapper {
 
   static inline void Wait(Request* request, Status* status) { MPI_Wait(request, status); }
 
+  static inline int Request_free(Request *request) { return MPI_Request_free(request); }
+
   static inline void Testall(int count, Request* array_of_requests, int* flag, Status* array_of_statuses) {
     MPI_Testall(count, array_of_requests, flag, array_of_statuses);
   }
@@ -196,10 +194,6 @@ class CBaseMPIWrapper {
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {
     MPI_Bcast(buf, count, datatype, root, comm);
-  }
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {
-    MPI_Bsend(buf, count, datatype, dest, tag, comm);
   }
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
@@ -351,10 +345,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
     }
   }
 
-  static inline void Buffer_attach(void* buffer, int size) { AMPI_Buffer_attach(buffer, size); }
-
-  static inline void Buffer_detach(void* buffer, int* size) { AMPI_Buffer_detach(buffer, size); }
-
   static inline void Comm_rank(Comm comm, int* rank) { AMPI_Comm_rank(convertComm(comm), rank); }
 
   static inline void Comm_size(Comm comm, int* size) { AMPI_Comm_size(convertComm(comm), size); }
@@ -385,6 +375,8 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
   static inline void Wait(SU2_MPI::Request* request, Status* status) { AMPI_Wait(request, status); }
 
+  static inline int Request_free(Request *request) { return AMPI_Request_free(request); }
+
   static inline void Testall(int count, Request* array_of_requests, int* flag, Status* array_of_statuses) {
     AMPI_Testall(count, array_of_requests, flag, array_of_statuses);
   }
@@ -407,10 +399,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {
     AMPI_Bcast(buf, count, convertDatatype(datatype), root, convertComm(comm));
-  }
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {
-    AMPI_Bsend(buf, count, convertDatatype(datatype), dest, tag, convertComm(comm));
   }
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
@@ -479,7 +467,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
 #else  // HAVE_MPI
 
-#define MPI_COMM_WORLD 0
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3
@@ -516,48 +503,7 @@ class CBaseMPIWrapper {
   static int Rank, Size;
   static Comm currentComm;
 
-  static inline void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype) {
-    switch (datatype) {
-      case MPI_DOUBLE:
-        for (int i = 0; i < size; i++) {
-          static_cast<su2double*>(recvbuf)[i] = static_cast<const su2double*>(sendbuf)[i];
-        }
-        break;
-      case MPI_UNSIGNED_LONG:
-        for (int i = 0; i < size; i++) {
-          static_cast<unsigned long*>(recvbuf)[i] = static_cast<const unsigned long*>(sendbuf)[i];
-        }
-        break;
-      case MPI_LONG:
-        for (int i = 0; i < size; i++) {
-          static_cast<long*>(recvbuf)[i] = static_cast<const long*>(sendbuf)[i];
-        }
-        break;
-      case MPI_UNSIGNED_SHORT:
-        for (int i = 0; i < size; i++) {
-          static_cast<unsigned short*>(recvbuf)[i] = static_cast<const unsigned short*>(sendbuf)[i];
-        }
-        break;
-      case MPI_CHAR:
-        for (int i = 0; i < size; i++) {
-          static_cast<char*>(recvbuf)[i] = static_cast<const char*>(sendbuf)[i];
-        }
-        break;
-      case MPI_SHORT:
-        for (int i = 0; i < size; i++) {
-          static_cast<short*>(recvbuf)[i] = static_cast<const short*>(sendbuf)[i];
-        }
-        break;
-      case MPI_INT:
-        for (int i = 0; i < size; i++) {
-          static_cast<int*>(recvbuf)[i] = static_cast<const int*>(sendbuf)[i];
-        }
-        break;
-      default:
-        Error("Unknown type", CURRENT_FUNCTION);
-        break;
-    };
-  }
+  static void CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift=0, int sendshift=0);
 
  public:
   static void Error(std::string ErrorMsg, std::string FunctionName);
@@ -573,10 +519,6 @@ class CBaseMPIWrapper {
   static inline void Init(int* argc, char*** argv) {}
 
   static inline void Init_thread(int* argc, char*** argv, int required, int* provided) { *provided = required; }
-
-  static inline void Buffer_attach(void* buffer, int size) {}
-
-  static inline void Buffer_detach(void* buffer, int* size) {}
 
   static inline void Barrier(Comm comm) {}
 
@@ -595,6 +537,8 @@ class CBaseMPIWrapper {
 
   static inline void Wait(Request* request, Status* status) {}
 
+  static inline int Request_free(Request *request) { return 0; }
+
   static inline void Waitall(int nrequests, Request* request, Status* status) {}
 
   static inline void Waitany(int nrequests, Request* request, int* index, Status* status) {}
@@ -604,8 +548,6 @@ class CBaseMPIWrapper {
   static inline void Recv(void* buf, int count, Datatype datatype, int dest, int tag, Comm comm, Status* status) {}
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {}
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {}
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
                             Comm comm) {
@@ -628,7 +570,7 @@ class CBaseMPIWrapper {
 
   static inline void Allgatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcnt,
                                 const int* displs, Datatype recvtype, Comm comm) {
-    CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+    CopyData(sendbuf, recvbuf, sendcnt, sendtype, displs[0]);
   }
 
   static inline void Allgather(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
@@ -654,7 +596,7 @@ class CBaseMPIWrapper {
   static inline void Alltoallv(const void* sendbuf, const int* sendcounts, const int* sdispls, Datatype sendtype,
                                void* recvbuf, const int* recvcounts, const int* recvdispls, Datatype recvtype,
                                Comm comm) {
-    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
+    CopyData(sendbuf, recvbuf, recvcounts[0], recvtype, recvdispls[0], sdispls[0]);
   }
 
   static inline void Probe(int source, int tag, Comm comm, Status* status) {}

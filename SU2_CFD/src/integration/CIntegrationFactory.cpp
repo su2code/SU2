@@ -2,7 +2,7 @@
  * \file CIntegrationFactory.cpp
  * \brief Main subroutines for CIntegrationFactory .
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #include "../../include/integration/CIntegrationFactory.hpp"
 #include "../../include/integration/CSingleGridIntegration.hpp"
 #include "../../include/integration/CMultiGridIntegration.hpp"
+#include "../../include/integration/CNewtonIntegration.hpp"
 #include "../../include/integration/CStructuralIntegration.hpp"
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
@@ -59,6 +60,9 @@ CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integratio
       break;
     case INTEGRATION_TYPE::MULTIGRID:
       integration = new CMultiGridIntegration();
+      break;
+    case INTEGRATION_TYPE::NEWTON:
+      integration = new CNewtonIntegration();
       break;
     case INTEGRATION_TYPE::STRUCTURAL:
       integration = new CStructuralIntegration();

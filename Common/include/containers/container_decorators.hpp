@@ -3,14 +3,14 @@
  * \brief Collection of small classes that decorate C2DContainer to
  * augment its functionality, e.g. give it extra dimensions.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,43 @@
 #include "C2DContainer.hpp"
 
 /*!
+ * \brief Class to represent a matrix (without owning the data, this just wraps a pointer).
+ */
+template<class T>
+class CMatrixView {
+public:
+  using Scalar = typename std::remove_const<T>::type;
+  using Index = unsigned long;
+
+private:
+  T* m_ptr;
+  Index m_cols;
+
+public:
+  CMatrixView(T* ptr = nullptr, Index cols = 0) : m_ptr(ptr), m_cols(cols) {}
+
+  template<class U> friend class CMatrixView;
+  template<class U>
+  CMatrixView(const CMatrixView<U>& other) : m_ptr(other.m_ptr), m_cols(other.m_cols) {}
+
+  explicit CMatrixView(su2matrix<Scalar>& mat) : m_ptr(mat.data()), m_cols(mat.cols()) {}
+
+  template<class U = T, su2enable_if<std::is_const<U>::value> = 0>
+  explicit CMatrixView(const su2matrix<Scalar>& mat) : m_ptr(mat.data()), m_cols(mat.cols()) {}
+
+  const Scalar* operator[] (Index i) const noexcept { return &m_ptr[i*m_cols]; }
+  const Scalar& operator() (Index i, Index j) const noexcept { return m_ptr[i*m_cols + j]; }
+
+  template<class U = T, su2enable_if<!std::is_const<U>::value> = 0>
+  Scalar* operator[] (Index i) noexcept { return &m_ptr[i*m_cols]; }
+
+  template<class U = T, su2enable_if<!std::is_const<U>::value> = 0>
+  Scalar& operator() (Index i, Index j) noexcept { return m_ptr[i*m_cols + j]; }
+
+  friend CMatrixView operator+ (CMatrixView mv, Index incr) { return CMatrixView(mv[incr], mv.m_cols); }
+};
+
+/*!
  * \class C3DContainerDecorator
  * \brief Decorate a matrix type (Storage) with 3 dimensions.
  */
@@ -43,6 +80,9 @@ public:
   using Index = typename Storage::Index;
   static constexpr bool IsRowMajor = true;
   static constexpr bool IsColumnMajor = false;
+
+  using Matrix = CMatrixView<Scalar>;
+  using ConstMatrix = CMatrixView<const Scalar>;
 
   using CInnerIter = typename Storage::CInnerIter;
   template<class T, size_t N>
@@ -79,6 +119,18 @@ public:
   const Scalar& operator() (Index i, Index j, Index k) const noexcept { return m_storage(i, j*m_innerSz + k); }
 
   /*!
+   * \brief Matrix access.
+   */
+  Matrix operator[] (Index i) noexcept { return Matrix(m_storage[i], m_innerSz); }
+  ConstMatrix operator[] (Index i) const noexcept { return ConstMatrix(m_storage[i], m_innerSz); }
+
+  /*!
+   * \brief Matrix access with an offset.
+   */
+  Matrix operator() (Index i, Index j) noexcept { return Matrix(m_storage[i]+j*m_innerSz, m_innerSz); }
+  ConstMatrix operator() (Index i, Index j) const noexcept { return ConstMatrix(m_storage[i]+j*m_innerSz, m_innerSz); }
+
+  /*!
    * \brief Get a scalar iterator to the inner-most dimension of the container.
    */
   FORCEINLINE CInnerIter innerIter(Index i, Index j) const noexcept {
@@ -105,42 +157,11 @@ public:
 };
 
 /*!
- * \brief Some typedefs for the
+ * \brief Some typedefs for 3D containers
  */
 using C3DIntMatrix = C3DContainerDecorator<su2matrix<unsigned long> >;
 using C3DDoubleMatrix = C3DContainerDecorator<su2activematrix>;
-
-/*!
- * \class CVectorOfMatrix
- * \brief This contrived container is used to store small matrices in a contiguous manner
- *        but still present the "su2double**" interface to the outside world.
- *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
- */
-class CVectorOfMatrix: public C3DDoubleMatrix {
-private:
-  su2matrix<Scalar*> interface;
-
-public:
-  CVectorOfMatrix() = default;
-
-  CVectorOfMatrix(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
-    resize(length, rows, cols, value);
-  }
-
-  void resize(Index length, Index rows, Index cols, Scalar value = 0) noexcept {
-    C3DDoubleMatrix::resize(length, rows, cols, value);
-    interface.resize(length,rows);
-    for(Index i=0; i<length; ++i)
-      for(Index j=0; j<rows; ++j)
-        interface(i,j) = &(*this)(i,j,0);
-  }
-
-  /*!
-   * \brief Matrix-wise access.
-   */
-  Scalar** operator[] (Index i) noexcept { return interface[i]; }
-  const Scalar* const* operator[] (Index i) const noexcept { return interface[i]; }
-};
+using CVectorOfMatrix = C3DDoubleMatrix;
 
 /*!
  * \class C2DDummyLastView
@@ -205,3 +226,60 @@ struct C3DDummyMiddleView
     return data(i,k);
   }
 };
+
+/*--- Helper functions to allocate containers of containers. ---*/
+
+/*!
+ * \brief Allocate a vector of varying-size vectors and initialize with some value.
+ * \param[in] M - the first index is >=0 and < M
+ * \param[in] N - the second index is >=0 and < N[first index]
+ * \param[in,out] X - the vector of vectors
+ * \param[in] val - the value for initialization, default is 0
+ * \tparam IndexVector - type of N
+ * \tparam VectorOfVector - type of X
+ */
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(size_t M, const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
+  X.resize(M);
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i]);
+    for (auto& x : X[i]) x = val;
+  }
+}
+
+/*!
+ * \overload Deduce outer size from index vector.
+ */
+template<class IndexVector, class VectorOfVector, class Scalar = int>
+inline void AllocVectorOfVectors(const IndexVector& N, VectorOfVector& X, Scalar val = 0) {
+  auto M = N.size();
+  AllocVectorOfVectors(M, N, X, val);
+}
+
+/*!
+ * \brief Allocate a vector of matrices with varying row count, and initialize with some value.
+ * \param[in] M - the first index is >=0 and < M
+ * \param[in] N - the second index is >=0 and < N[first index]
+ * \param[in] P - the third index is >=0 and < P
+ * \param[in,out] X - the vector of matrices
+ * \param[in] val - the value for initialization, default is 0
+ * \tparam IndexVector - type of N
+ * \tparam VectorOfMatrix - type of X
+ */
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(size_t M, const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
+  X.resize(M);
+  for(size_t i = 0; i < M; ++i){
+    X[i].resize(N[i],P);
+    for (auto& x : X[i]) x = val;
+  }
+}
+
+/*!
+ * \overload Deduce outer size from index vector.
+ */
+template<class IndexVector, class VectorOfMatrix, class Scalar = int>
+inline void AllocVectorOfMatrices(const IndexVector& N, size_t P, VectorOfMatrix& X, Scalar val=0) {
+  auto M = N.size();
+  AllocVectorOfMatrices(M, N, P, X, val);
+}

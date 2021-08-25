@@ -4,14 +4,14 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
-    implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
+    implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
     ionization = config->GetIonization();
     if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -64,11 +64,15 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //fluidmodel = new CMutationTCLib(config, nDim);
-      cout << "TODO: Mutation coming soon" << endl;
+        #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+          fluidmodel = new CMutationTCLib(config, nDim);
+        #else
+          SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string, and recompile."),
+          CURRENT_FUNCTION);
+        #endif
       break;
-      case USER_DEFINED_NONEQ:
-      fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+      case SU2_NONEQ:
+        fluidmodel = new CSU2TCLib(config, nDim, false);
       break;
     }
 }
@@ -159,7 +163,7 @@ void CNEMONumerics::GetInviscidProjJac(const su2double *val_U,    const su2doubl
   const su2double *rhos;
 
   rhos = &val_V[RHOS_INDEX];
-  
+
   /*--- Initialize the Jacobian tensor ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
@@ -240,6 +244,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
+  su2activematrix Flux_Tensor(nVar,nDim);
+
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
@@ -261,15 +267,16 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   Ru  = 1000.0*RuSI;
 
   hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
-  
+
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
+  // NOTE: V[iSpecies] is == Ys.
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
     Mass += V[iSpecies]*Ms[iSpecies];
-  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  Cptr = V[RHOCVTR_INDEX]/V[RHO_INDEX]+Ru/Mass;
   tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
   scl  = tmp1/ktr;
   ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
@@ -278,8 +285,10 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
   /*--- Pre-compute mixture quantities ---*/
+
+  su2double Vector[MAXNDIM] = {0.0};
+
   for (iDim = 0; iDim < nDim; iDim++) {
-    Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
@@ -291,13 +300,12 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   /*--- Populate entries in the viscous flux vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     /*--- Species diffusion velocity ---*/
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) { 
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
     if (ionization) {
-      cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
-      exit(1);
+      SU2_MPI::Error("NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!",CURRENT_FUNCTION);
     }
 
     /*--- Shear stress related terms ---*/
@@ -704,7 +712,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+iDim][nSpecies+1]   = m[iDim];
       val_p_tensor[nSpecies+iDim][nSpecies+2]   = (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
       val_p_tensor[nSpecies+iDim][nSpecies+3]   = (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
-      val_p_tensor[nSpecies+iDim][nSpecies+4]   = 0.0;  
+      val_p_tensor[nSpecies+iDim][nSpecies+4]   = 0.0;
     }
 
     val_p_tensor[nSpecies+3][nSpecies]   = vV;

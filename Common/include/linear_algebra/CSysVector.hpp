@@ -3,14 +3,14 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,12 +45,14 @@
  */
 #ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
-#define CSYSVEC_PARFOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(simd schedule(static,omp_chunk_size) SU2_NOWAIT)
 #else
-#define CSYSVEC_PARFOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
 #endif
+#define END_CSYSVEC_PARFOR END_SU2_OMP_FOR
 #else
 #define CSYSVEC_PARFOR SU2_OMP_SIMD
+#define END_CSYSVEC_PARFOR
 #endif
 
 /*!
@@ -66,9 +68,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
   unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
-  unsigned long nVar = 0;          /*!< \brief Number of elements in a block. */
-  mutable ScalarType dotRes = 0.0; /*!< \brief Result of dot product. to perform a reduction with OpenMP the
-                                               variable needs to be declared outside the parallel region. */
+  unsigned long nVar = 1;          /*!< \brief Number of elements in a block. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -101,7 +101,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector() {}
+  CSysVector() = default;
 
   /*!
    * \brief Destructor
@@ -113,7 +113,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] val - Default value for elements.
    */
-  CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
+  explicit CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
 
   /*!
    * \brief Construct from size and value (block version).
@@ -131,7 +131,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] u_array - Vector stored as array being copied.
    */
-  explicit CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
+  CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
 
   /*!
    * \brief Constructor from array (block version).
@@ -140,8 +140,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - number of variables in each block
    * \param[in] u_array - vector stored as array being copied
    */
-  explicit CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
-                      const ScalarType* u_array) {
+  CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* u_array) {
     Initialize(numBlk, numBlkDomain, numVar, u_array, true);
   }
 
@@ -189,10 +188,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
     SU2_OMP_MASTER
     Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
+    END_CSYSVEC_PARFOR
   }
 
   /*!
@@ -253,6 +254,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& operator=(const CSysVector& other) {
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
+    END_CSYSVEC_PARFOR
     return *this;
   }
 
@@ -264,12 +266,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& operator OP(ScalarType val) {                               \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
+    END_CSYSVEC_PARFOR                                                    \
     return *this;                                                         \
   }                                                                       \
   template <class T>                                                      \
   CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
+    END_CSYSVEC_PARFOR                                                    \
     return *this;                                                         \
   }
   MAKE_COMPOUND(=)
@@ -291,9 +295,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
+    static ScalarType dotRes;
     /*--- All threads get the same "view" of the vectors and shared variable. ---*/
     SU2_OMP_BARRIER
+    SU2_OMP_MASTER
     dotRes = 0.0;
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
 
     /*--- Local dot product for each thread. ---*/
@@ -303,21 +310,20 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     for (auto i = 0ul; i < nElmDomain; ++i) {
       sum += vec_val[i] * expr.derived()[i];
     }
+    END_CSYSVEC_PARFOR
 
     /*--- Update shared variable with "our" partial sum. ---*/
     atomicAdd(sum, dotRes);
 
 #ifdef HAVE_MPI
-    /*--- Reduce across all mpi ranks, only master thread communicates.
-     * The nElm condition is to allow vectors to also be used locally. ---*/
-    if (nElm != nElmDomain) {
-      SU2_OMP_BARRIER
-      SU2_OMP_MASTER {
-        sum = dotRes;
-        const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
-        SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, MPI_COMM_WORLD);
-      }
+    /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER {
+      sum = dotRes;
+      const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+      SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
     }
+    END_SU2_OMP_MASTER
 #endif
     /*--- Make view of result consistent across threads. ---*/
     SU2_OMP_BARRIER
@@ -444,3 +450,4 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 };
 
 #undef CSYSVEC_PARFOR
+#undef END_CSYSVEC_PARFOR

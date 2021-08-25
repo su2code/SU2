@@ -2,14 +2,14 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,14 +62,13 @@ protected:
 };
 
 /*!
- * \class CCompressibleViscousFlux
- * \brief Decorator class to add viscous fluxes (compressible flow, ideal gas).
+ * \class CCompressibleViscousFluxBase
+ * \brief Decorator class to add viscous fluxes (compressible flow).
  */
-template<size_t NDIM>
-class CCompressibleViscousFlux : public CNumericsSIMD {
+template<size_t NDIM, class Derived>
+class CCompressibleViscousFluxBase : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
-  static constexpr size_t nPrimVar = nDim+7;
   static constexpr size_t nPrimVarGrad = nDim+1;
 
   const su2double gamma;
@@ -79,19 +78,35 @@ protected:
   const su2double cp;
   const bool correct;
   const bool useSA_QCR;
+  const bool wallFun;
+  const bool uq;
+  const bool uq_permute;
+  const size_t uq_eigval_comp;
+  const su2double uq_delta_b;
+  const su2double uq_urlx;
+
+  const CVariable* turbVars;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
    */
   template<class... Ts>
-  CCompressibleViscousFlux(const CConfig& config, int iMesh, Ts&...) :
+  CCompressibleViscousFluxBase(const CConfig& config, int iMesh,
+                               const CVariable* turbVars_, Ts&...) :
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlLam(config.GetPrandtl_Lam()),
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
     correct(iMesh == MESH_0),
-    useSA_QCR(config.GetQCR()) {
+    useSA_QCR(config.GetQCR()),
+    wallFun(config.GetWall_Functions()),
+    uq(config.GetUsing_UQ()),
+    uq_permute(config.GetUQ_Permute()),
+    uq_eigval_comp(config.GetEig_Val_Comp()),
+    uq_delta_b(config.GetUQ_Delta_B()),
+    uq_urlx(config.GetUQ_URLX()),
+    turbVars(turbVars_) {
   }
 
   /*!
@@ -114,7 +129,11 @@ protected:
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j) const {
 
-    static_assert(PrimVarType::nVar <= nPrimVar,"");
+    static_assert(PrimVarType::nVar <= Derived::nPrimVar,"");
+
+    /*--- Pointer on which to call the "compile-time virtual" methods. ---*/
+
+    const auto derived = static_cast<const Derived*>(this);
 
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
@@ -130,14 +149,19 @@ protected:
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
 
-    /// TODO: Uncertainty quantification (needs a way to access tke, maybe in ctor).
-
     /*--- Stress and heat flux tensors. ---*/
 
-    auto tau = stressTensor(avgV, avgGrad);
+    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad);
     if(useSA_QCR) addQCR(avgGrad, tau);
+    if(uq) {
+      Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                            gatherVariables(jPoint, turbVars->GetSolution()));
+      addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
+                      uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
+    }
+    if(wallFun) addTauWall(iPoint, jPoint, solution.GetTauWall(), unitNormal, tau);
 
-    Double cond = cp * (avgV.laminarVisc()/prandtlLam + avgV.eddyVisc()/prandtlTurb);
+    Double cond = derived->thermalConductivity(avgV);
     VectorDbl<nDim> heatFlux;
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       heatFlux(iDim) = cond * avgGrad(0,iDim);
@@ -157,23 +181,9 @@ protected:
 
     Double dist_ij = sqrt(dist2_ij);
     auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
-    Double contraction = 0.0;
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      contraction += dtau(iDim,0) * avgV.velocity(iDim);
-    }
 
     /*--- Energy flux Jacobian. ---*/
-    VectorDbl<nVar> dEdU;
-    Double vel2 = 0.5 * squaredNorm<nDim>(avgV.velocity());
-    Double phi = (gamma-1) / avgV.density();
-    Double RdTdrho = phi*vel2 - avgV.pressure() / pow(avgV.density(),2);
-    Double condOnRd = cond / (gasConst * dist_ij);
-
-    dEdU(0) = area * (condOnRd * RdTdrho - contraction);
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      dEdU(iDim+1) = area * (condOnRd*phi*avgV.velocity(iDim) + dtau(iDim,0));
-    }
-    dEdU(nDim+1) = area * condOnRd * phi;
+    auto dEdU = derived->energyJacobian(avgV, dtau, cond, area, dist_ij, iPoint, jPoint, solution);
 
     /*--- Update momentum and energy terms ("symmetric" part). ---*/
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -232,5 +242,127 @@ protected:
 
     /*--- Continue calculation. ---*/
     viscousTerms(iEdge, iPoint, jPoint, avgV, V, solution_, vector_ij, geometry, args...);
+  }
+};
+
+/*!
+ * \class CCompressibleViscousFlux
+ * \brief Decorator class to add viscous fluxes (compressible flow, ideal gas).
+ */
+template<size_t NDIM>
+class CCompressibleViscousFlux : public CCompressibleViscousFluxBase<NDIM, CCompressibleViscousFlux<NDIM> > {
+public:
+  static constexpr size_t nPrimVar = NDIM+7;
+  using Base = CCompressibleViscousFluxBase<NDIM, CCompressibleViscousFlux<NDIM> >;
+  using Base::gamma;
+  using Base::gasConst;
+  using Base::prandtlLam;
+  using Base::prandtlTurb;
+  using Base::cp;
+
+  /*!
+   * \brief Constructor, initialize constants and booleans.
+   */
+  template<class... Ts>
+  CCompressibleViscousFlux(Ts&... args) : Base(args...) {}
+
+  /*!
+   * \brief Compute the thermal conductivity.
+   */
+  template<class PrimitiveType>
+  FORCEINLINE Double thermalConductivity(const PrimitiveType& V) const {
+    return cp * (V.laminarVisc()/prandtlLam + V.eddyVisc()/prandtlTurb);
+  }
+
+  /*!
+   * \brief Compute Jacobian of the energy flux, except the part due to the work of viscous forces.
+   */
+  template<size_t nVar, size_t nDim, class PrimitiveType, class... Ts>
+  FORCEINLINE VectorDbl<nVar> energyJacobian(const PrimitiveType& V,
+                                             const MatrixDbl<nDim,nVar>& dtau,
+                                             Double thermalCond,
+                                             Double area,
+                                             Double dist_ij,
+                                             Ts&... args) const {
+    Double vel2 = 0.5 * squaredNorm<nDim>(V.velocity());
+    Double phi = (gamma-1) / V.density();
+    Double RdTdrho = phi*vel2 - V.pressure() / pow(V.density(),2);
+    Double condOnRd = thermalCond / (gasConst * dist_ij);
+    Double contraction = 0.0;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      contraction += dtau(iDim,0) * V.velocity(iDim);
+    }
+    VectorDbl<nVar> dEdU;
+    dEdU(0) = area * (condOnRd * RdTdrho - contraction);
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      dEdU(iDim+1) = area * (dtau(iDim,0) - condOnRd*phi*V.velocity(iDim));
+    }
+    dEdU(nDim+1) = area * condOnRd * phi;
+
+    return dEdU;
+  }
+};
+
+/*!
+ * \class CGeneralCompressibleViscousFlux
+ * \brief Decorator class to add viscous fluxes (compressible flow, real gas).
+ */
+template<size_t NDIM>
+class CGeneralCompressibleViscousFlux : public CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> > {
+public:
+  static constexpr size_t nPrimVar = NDIM+9;
+  static constexpr size_t nSecVar = 4;
+  using Base = CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> >;
+  using Base::prandtlTurb;
+
+  /*!
+   * \brief Constructor, initialize constants and booleans.
+   */
+  template<class... Ts>
+  CGeneralCompressibleViscousFlux(Ts&... args) : Base(args...) {}
+
+  /*!
+   * \brief Compute the thermal conductivity.
+   */
+  template<class PrimitiveType>
+  FORCEINLINE Double thermalConductivity(const PrimitiveType& V) const {
+    return V.thermalCond() + V.cp()*V.eddyVisc()/prandtlTurb;
+  }
+
+  /*!
+   * \brief Compute Jacobian of the energy flux, except the part due to the work of viscous forces.
+   */
+  template<size_t nVar, size_t nDim, class PrimitiveType, class VariableType>
+  FORCEINLINE VectorDbl<nVar> energyJacobian(const PrimitiveType& V,
+                                             const MatrixDbl<nDim,nVar>& dtau,
+                                             Double thermalCond,
+                                             Double area,
+                                             Double dist_ij,
+                                             Int iPoint,
+                                             Int jPoint,
+                                             const VariableType& solution) const {
+    Double vel2 = squaredNorm<nDim>(V.velocity());
+    Double contraction = 0.0;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      contraction += dtau(iDim,0) * V.velocity(iDim);
+    }
+
+    auto secVar_i = gatherVariables<nSecVar>(iPoint, solution.GetSecondary());
+    auto secVar_j = gatherVariables<nSecVar>(jPoint, solution.GetSecondary());
+
+    Double dTdrho_e = 0.5 * (secVar_i(2) + secVar_j(2));
+    Double dTde_rho = 0.5 * (secVar_i(3) + secVar_j(3)) / V.density();
+
+    Double condOnDist = thermalCond / dist_ij;
+    Double dTdrho = dTdrho_e + dTde_rho*(vel2-V.enthalpy()+V.pressure()/V.density());
+
+    VectorDbl<nVar> dEdU;
+    dEdU(0) = area * (condOnDist * dTdrho - contraction);
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      dEdU(iDim+1) = area * (dtau(iDim,0) - condOnDist*dTde_rho*V.velocity(iDim));
+    }
+    dEdU(nDim+1) = area * condOnDist * dTde_rho;
+
+    return dEdU;
   }
 };

@@ -3,14 +3,14 @@
  * \brief Header file for the class CSU2ASCIIMeshReaderFVM.
  *        The implementations are in the <i>CSU2ASCIIMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,78 +36,78 @@
  * \author: T. Economon
  */
 class CSU2ASCIIMeshReaderFVM: public CMeshReaderFVM {
-  
+
 private:
-  
+
   unsigned short myZone; /*!< \brief Current SU2 zone index. */
   unsigned short nZones; /*!< \brief Total number of zones in the SU2 file. */
-  
+
   string meshFilename; /*!< \brief Name of the SU2 ASCII mesh file being read. */
   ifstream mesh_file;  /*!< \brief File object for the SU2 ASCII mesh file. */
-  
+
   bool actuator_disk; /*!< \brief Boolean for whether we have an actuator disk to split. */
-  
+
   unsigned long ActDiskNewPoints; /*!< \brief Total number of new grid points to add due to actuator disk splitting. */
-  
+
   su2double Xloc; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
   su2double Yloc; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
   su2double Zloc; /*!< \brief X-coordinate of the CG of the actuator disk surface. */
-  
+
   vector<bool> ActDisk_Bool; /*!< \brief Flag to identify the grid points on the actuator disk. */
-  
+
   vector<unsigned long> ActDiskPoint_Back; /*!< \brief Vector containing the global index for the new grid points added to the back of the actuator disk. */
   vector<unsigned long> VolumePoint_Inv; /*!< \brief Vector containing the inverse mapping from the global index to the added point index for the actuator disk. */
-  
+
   vector<su2double> CoordXActDisk; /*!< \brief X-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
   vector<su2double> CoordYActDisk; /*!< \brief Y-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
   vector<su2double> CoordZActDisk; /*!< \brief Z-coordinates of the new grid points added by splitting the actuator disk (size = ActDiskNewPoints). */
-  
+
   vector<su2double> CoordXVolumePoint; /*!< \brief X-coordinates of the volume elements touching the actuator disk. */
   vector<su2double> CoordYVolumePoint; /*!< \brief Y-coordinates of the volume elements touching the actuator disk. */
   vector<su2double> CoordZVolumePoint; /*!< \brief Z-coordinates of the volume elements touching the actuator disk. */
-  
+
   /*!
    * \brief Reads all SU2 ASCII mesh metadata and checks for errors.
    */
   void ReadMetadata();
-  
+
   /*!
    * \brief Splits a single surface actuator disk boundary into two separate markers (repeated points).
    */
   void SplitActuatorDiskSurface();
-  
+
   /*!
    * \brief Reads the grid points from an SU2 zone into linear partitions across all ranks.
    */
   void ReadPointCoordinates();
-  
+
   /*!
    * \brief Reads the interior volume elements from one section of an SU2 zone into linear partitions across all ranks.
    */
   void ReadVolumeElementConnectivity();
-  
+
   /*!
    * \brief Reads the surface (boundary) elements from the SU2 zone.
    */
   void ReadSurfaceElementConnectivity();
-  
+
   /*!
    * \brief Helper function to find the current zone in an SU2 ASCII mesh object.
    */
   void FastForwardToMyZone();
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the CSU2ASCIIMeshReaderFVM class.
    */
   CSU2ASCIIMeshReaderFVM(CConfig        *val_config,
                          unsigned short val_iZone,
                          unsigned short val_nZone);
-  
+
   /*!
    * \brief Destructor of the CSU2ASCIIMeshReaderFVM class.
    */
   ~CSU2ASCIIMeshReaderFVM(void);
-  
+
 };

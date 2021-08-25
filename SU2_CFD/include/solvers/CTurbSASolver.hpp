@@ -2,14 +2,14 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 
 class CTurbSASolver final : public CTurbSolver {
 private:
-  su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
+  su2double nu_tilde_Engine, nu_tilde_ActDisk;
 
   /*!
    * \brief A virtual member.
@@ -51,11 +51,25 @@ private:
                           CGeometry *geometry,
                           CConfig *config);
 
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetTurbVars_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     const CConfig *config,
+                     unsigned short val_marker);
+
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSASolver(void);
+  CTurbSASolver();
 
   /*!
    * \overload
@@ -69,7 +83,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void) override;
+  ~CTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -272,34 +286,6 @@ public:
                          unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the interface boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Interface_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose the near-field boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_NearField_Boundary(CGeometry *geometry,
-                             CSolver **solver_container,
-                             CNumerics *numerics,
-                             CConfig *config,
-                             unsigned short val_marker) override;
-
-  /*!
    * \brief Impose an actuator disk inlet boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -350,14 +336,6 @@ public:
                   bool val_inlet_surface) override;
 
   /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void SetFreeStream_Solution(CConfig *config) override {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
-  }
-
-  /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
@@ -398,21 +376,6 @@ public:
    * \brief Get the value of nu tilde at the far-field.
    * \return Value of nu tilde at the far-field.
    */
-  inline su2double GetNuTilde_Inf(void) const override { return nu_tilde_Inf; }
+  inline su2double GetNuTilde_Inf(void) const override { return Solution_Inf[0]; }
 
-  /*!
-   * \brief Compute nu tilde from the wall functions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void SetNuTilde_WF(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CNumerics *conv_numerics,
-                     CNumerics *visc_numerics,
-                     CConfig *config,
-                     unsigned short val_marker) override;
 };

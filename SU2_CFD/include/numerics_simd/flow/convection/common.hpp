@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Common convection-related methods.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -79,13 +79,13 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
   auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
 
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    auto proj_i = dot(grad_i[iVar], vector_ij);
-    auto proj_j = dot(grad_j[iVar], vector_ij);
-    auto delta_ij = V.j.all(iVar) - V.i.all(iVar);
-    auto delta_ij_2 = pow(delta_ij, 2) + 1e-6;
+    const Double proj_i = dot(grad_i[iVar], vector_ij);
+    const Double proj_j = dot(grad_j[iVar], vector_ij);
+    const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
+    const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
     /// TODO: Customize the limiter function.
-    auto lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2);
-    auto lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2);
+    const Double lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2);
+    const Double lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2);
     V.i.all(iVar) += lim_i * 0.5 * proj_i;
     V.j.all(iVar) -= lim_j * 0.5 * proj_j;
   }

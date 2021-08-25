@@ -1,15 +1,15 @@
 /*!
  * \file CTransLMSolver.cpp
- * \brief Main subrotuines for Transition model solver.
+ * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,11 +30,14 @@
 #include "../../include/variables/CTransLMVariable.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
 
-
+/*---  This is the implementation of the Langtry-Menter transition model.
+       The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009 
+       DOI: https://doi.org/10.2514/1.42362 ---*/
+       
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-  unsigned short iVar, iDim, nLineLets;
+  unsigned short iVar, nLineLets;
   unsigned long iPoint, index;
   su2double tu_Inf, dull_val, rey;
   ifstream restart_file;
@@ -62,18 +65,15 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   if (iMesh == MESH_0) {
 
     /*--- Define some auxillary vectors related to the residual ---*/
-    Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-    Residual_i   = new su2double[nVar]; Residual_j   = new su2double[nVar];
-    Residual_Max = new su2double[nVar];
+    Residual     = new su2double[nVar];
+    Residual_i   = new su2double[nVar];
+    Residual_j   = new su2double[nVar];
 
     /*--- Define some structures for locating max residuals ---*/
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-    }
+    Residual_RMS.resize(nVar,0.0);
+    Residual_Max.resize(nVar,0.0);
+    Point_Max.resize(nVar,0);
+    Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
     /*--- Define some auxiliar vector related with the solution ---*/
     Solution   = new su2double[nVar];
@@ -107,7 +107,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
     /*--- Read farfield conditions from config ---*/
     Intermittency_Inf = config->GetIntermittency_FreeStream();
-    tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
+    tu_Inf            = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
     /*-- Initialize REth from correlation --*/
     if (tu_Inf <= 1.3) {
@@ -187,10 +187,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- Set maximum residual to zero ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
+  SetResToZero();
 
   /*--- Build implicit system ---*/
 
@@ -210,7 +207,7 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]*Vol);
+      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index]*Vol;
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }

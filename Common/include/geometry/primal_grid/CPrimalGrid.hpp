@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <limits>
 
 #include "../../CConfig.hpp"
 
@@ -49,9 +50,7 @@ protected:
   long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
   short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                             A -1 indicates no periodic transformation to the neighbor. */
-  su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
-  su2double **Coord_FaceElems_CG;  /*!< \brief Coordinates of the center-of-gravity of the face of the
-                                               elements. */
+  su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
   static unsigned short nDim;    /*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                                quadrilateral and edges. */
   unsigned long DomainElement;     /*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -170,14 +169,23 @@ public:
    * \brief Set the center of gravity of an element (including edges).
    * \param[in] val_coord - Coordinates of the element.
    */
-  void SetCoord_CG(const su2double* const* val_coord);
+  template<class T>
+  inline su2double* SetCoord_CG(const T& val_coord) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Coord_CG[iDim] = 0.0;
+      for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
+        Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
+    }
+    return Coord_CG;
+  }
 
   /*!
    * \brief Get the center of gravity of an element (including edges).
    * \param[in] val_dim - Coordinate of the center of gravity.
    * \return Coordinates of the center of gravity.
    */
-  inline su2double GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+  inline su2double GetCG(unsigned short val_dim) const { return Coord_CG[val_dim]; }
+  inline const su2double* GetCG() const { return Coord_CG; }
 
   /*!
    * \brief Set the center of gravity of an element (including edges).
@@ -191,14 +199,6 @@ public:
    * \return Coordinates of the center of gravity.
    */
   inline su2double GetVolume(void) const { return Volume; }
-
-  /*!
-   * \brief Get the CG of a face of an element.
-   * \param[in] val_face - Local index of the face.
-   * \param[in] val_dim - Coordinate of the center of gravity.
-   * \return Coordinates of the center of gravity.
-   */
-  inline su2double GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
 
   /*!
    * \brief Get all the neighbors of an element.
@@ -431,7 +431,7 @@ public:
    * \brief Virtual function to make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline  virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
+  inline virtual unsigned short GetNDonorsWallFunctions(void) {return 0;}
 
   /*!
    * \brief Virtual function to make available the pointer to the vector for the donor elements

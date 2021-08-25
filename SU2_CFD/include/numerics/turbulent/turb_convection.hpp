@@ -3,14 +3,14 @@
  * \brief Delarations of numerics classes for discretization of
  *        convective fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,6 @@
 class CUpwScalar : public CNumerics {
 protected:
   su2double
-  q_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
   a0 = 0.0,                    /*!< \brief The maximum of the face-normal velocity and 0 */
   a1 = 0.0,                    /*!< \brief The minimum of the face-normal velocity and 0 */
   *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */

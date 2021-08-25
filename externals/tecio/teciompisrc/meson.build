@@ -12,6 +12,15 @@ if (host_machine.system() == 'windows')
   tec_cxx_flags += ['-DMSWIN']
 endif
 
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    tec_cxx_flags += ['-Wno-misleading-indentation',
+                      '-Wno-uninitialized',
+                      '-Wno-placement-new',
+                      '-Wno-pedantic']
+  endif
+endif
+
 
 teciompi_include = include_directories(['../', './'])
 

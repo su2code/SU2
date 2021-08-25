@@ -2,14 +2,14 @@
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -93,10 +93,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
     const auto nGlobalVertexDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                     Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
 
-    Buffer_Send_Coord = new su2double [ MaxLocalVertex_Donor * nDim ];
-    Buffer_Send_GlobalPoint = new long [ MaxLocalVertex_Donor ];
-    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim ];
-    Buffer_Receive_GlobalPoint = new long [ nProcessor * MaxLocalVertex_Donor ];
+    Buffer_Send_Coord.resize(MaxLocalVertex_Donor, nDim);
+    Buffer_Send_GlobalPoint .resize(MaxLocalVertex_Donor);
+    Buffer_Receive_Coord.resize(nProcessor*MaxLocalVertex_Donor,nDim);
+    Buffer_Receive_GlobalPoint.resize(nProcessor * MaxLocalVertex_Donor);
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
@@ -115,7 +115,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       auto offset = iProcessor * MaxLocalVertex_Donor;
       for (auto iVertex = 0ul; iVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++iVertex) {
         for (int iDim = 0; iDim < nDim; ++iDim)
-          donorCoord(iCount,iDim) = Buffer_Receive_Coord[(offset+iVertex)*nDim + iDim];
+          donorCoord(iCount,iDim) = Buffer_Receive_Coord(offset+iVertex, iDim);
         donorPoint[iCount] = Buffer_Receive_GlobalPoint[offset+iVertex];
         donorProc[iCount] = iProcessor;
         assert((globalToLocalMap.count(donorPoint[iCount]) == 0) && "Duplicate donor point found.");
@@ -124,11 +124,6 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       }
     }
     assert((iCount == nGlobalVertexDonor) && "Global donor point count mismatch.");
-
-    delete[] Buffer_Send_Coord;
-    delete[] Buffer_Send_GlobalPoint;
-    delete[] Buffer_Receive_Coord;
-    delete[] Buffer_Receive_GlobalPoint;
 
     /*--- Collect donor element (face) information. ---*/
 
@@ -253,22 +248,25 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
       }
 
     }
+    END_SU2_OMP_FOR
     SU2_OMP_CRITICAL
     {
       MaxDistance = max(MaxDistance, maxDist);
       ErrorCounter += errorCount;
       nGlobalVertexTarget += totalCount;
     }
-    } // end SU2_OMP_PARALLEL
+    END_SU2_OMP_CRITICAL
+    }
+    END_SU2_OMP_PARALLEL
 
   } // end nMarkerInt loop
 
   /*--- Final reduction of statistics. ---*/
   su2double tmp = MaxDistance;
   unsigned long tmp1 = ErrorCounter, tmp2 = nGlobalVertexTarget;
-  SU2_MPI::Allreduce(&tmp, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&tmp1, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&tmp2, &nGlobalVertexTarget, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&tmp, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&tmp1, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&tmp2, &nGlobalVertexTarget, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   ErrorRate = 100*su2double(ErrorCounter) / nGlobalVertexTarget;
 

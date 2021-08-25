@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 
   ws = fluidmodel->ComputeNetProductionRates();
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     residual[iSpecies] = ws[iSpecies] *Volume;
 
   //if (implicit) {
@@ -230,7 +230,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
 //    } // implicit
 
   return ResidualType<>(residual, nullptr, nullptr);
- 
+
 }
 
 CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *config) {
@@ -286,9 +286,9 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //  }
 
   if(config->GetVTTransferResidualLimiting()){
-    if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max; 
+    if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
     if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
-  } 
+  }
 
   return ResidualType<>(residual, nullptr, nullptr);
 }
@@ -296,7 +296,25 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
   unsigned short iDim, iSpecies, iVar;
-  su2double rho, rhov, vel2, H, yinv;
+  su2double rho, rhov, vel2, H, yinv, T, Tve, Ru, RuSI;
+  su2double ktr, kve;
+
+  /*--- Rename for convenience ---*/
+  auto Ds = Diffusion_Coeff_i;
+  ktr = Thermal_Conductivity_i;
+  kve = Thermal_Conductivity_ve_i;
+  rho = V_i[RHO_INDEX];
+  T   = V_i[T_INDEX];
+  Tve  = V_i[TVE_INDEX];
+  auto GV  = PrimVar_Grad_i;
+  RuSI= UNIVERSAL_GAS_CONSTANT;
+  Ru  = 1000.0*RuSI;
+
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
+
+  bool viscous = config->GetViscous();
+  bool rans = (config->GetKind_Turb_Model() != NONE);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, eve_i);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -312,6 +330,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   rhov   = U_i[nSpecies+1];
   H      = V_i[H_INDEX];
   vel2   = 0.0;
+
   for (iDim = 0; iDim < nDim; iDim++)
     vel2 += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -323,6 +342,47 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   residual[nSpecies+1] = yinv*rhov*U_i[nSpecies+1]/rho*Volume;
   residual[nSpecies+2] = yinv*rhov*H*Volume;
   residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
+
+  if (viscous) {
+    if (!rans){ turb_ke_i = 0.0; }
+
+    su2double Vector = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+      Vector += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1];
+
+    su2double sumJhs_y  = 0.0;
+    su2double sumJeve_y = 0.0;
+    su2double Mass      = 0.0;
+
+    for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      Mass += V_i[iSpecies]*Ms[iSpecies];
+
+    su2double heat_capacity_cp_i   = V_i[RHOCVTR_INDEX]/rho + Ru/Mass;
+    su2double total_viscosity_i    = Laminar_Viscosity_i + Eddy_Viscosity_i;
+    su2double total_conductivity_i = ktr + kve + heat_capacity_cp_i*Eddy_Viscosity_i/Prandtl_Turb;
+    su2double u                    = V_i[VEL_INDEX];
+    su2double v                    = V_i[VEL_INDEX+1];
+    su2double qy_t                 = -total_conductivity_i*GV[T_INDEX][1];
+    su2double qy_ve                = -kve*GV[TVE_INDEX][1];
+
+    /*--- Enthalpy and vib-el energy transport due to y-direction diffusion---*/
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      sumJhs_y  += -(rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * hs[iSpecies];
+      sumJeve_y += -(rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector) * eve_i[iSpecies];
+    }
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      residual[iSpecies] -= 0.0;
+    residual[nSpecies] -= Volume*(yinv*total_viscosity_i*(GV[nSpecies+2][1]+GV[nSpecies+3][0])
+                                                         -TWO3*AuxVar_Grad_i[0][0]);
+    residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(GV[nSpecies+3][1]-v*yinv)
+                                                             -TWO3*AuxVar_Grad_i[0][1]);
+    residual[nSpecies+2] -= Volume*(yinv*(-sumJhs_y + total_viscosity_i*(u*(GV[nSpecies+3][0]+GV[nSpecies+2][1])
+                                                                        +v*TWO3*(2*GV[nSpecies+2][1]-GV[nSpecies+2][0]
+                                                                        -v*yinv+rho*turb_ke_i))-qy_t)
+                                                                        -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][0]));
+    residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
+  }
 
 //  if (implicit) {
 //

@@ -2,14 +2,14 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,69 +42,19 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
-}
 
-bool CIncNSVariable::SetVorticity_StrainMag() {
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-    /*--- Vorticity ---*/
-
-    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
-
-    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
-
-    if (nDim == 3) {
-      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
-      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
-    }
-
-    /*--- Strain Magnitude ---*/
-
-    AD::StartPreacc();
-    AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
-
-    StrainMag(iPoint) = 0.0;
-
-    /*--- Add diagonal part ---*/
-
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
-    }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
-    }
-
-    /*--- Add off diagonals ---*/
-
-    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
-
-    if (nDim == 3) {
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
-    }
-
-    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-
-    AD::SetPreaccOut(StrainMag(iPoint));
-    AD::EndPreacc();
+  /*--- Allocate memory for the AuxVar+gradient of eddy viscosity mu_t ---*/
+  if (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != NONE)) {
+    nAuxVar = 1;
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
-  return false;
 }
-
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 

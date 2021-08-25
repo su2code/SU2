@@ -3,14 +3,14 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 7.0.8 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -63,7 +63,7 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 7.0.8 \"Blackbird\"                         |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 7.2.0 \"Blackbird\"                         |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -73,7 +73,7 @@ def main():
     sys.stdout.write('| The SU2 Project is maintained by the SU2 Foundation                   |\n')
     sys.stdout.write('| (http://su2foundation.org)                                            |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)                |\n')
+    sys.stdout.write('| Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)                |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
     sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')

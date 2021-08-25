@@ -2,14 +2,14 @@
  * \file CParaviewFileWriter.cpp
  * \brief Filewriter class for Paraview ASCII format.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,7 +75,7 @@ void CParaviewFileWriter::Write_Data(){
   Paraview_File.close();
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Each processor opens the file. ---*/
@@ -99,7 +99,7 @@ void CParaviewFileWriter::Write_Data(){
 
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -124,7 +124,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Write connectivity data. ---*/
@@ -196,7 +196,7 @@ void CParaviewFileWriter::Write_Data(){
 
     }    Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -209,7 +209,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -224,7 +224,7 @@ void CParaviewFileWriter::Write_Data(){
     }
     Paraview_File.flush();
 #ifdef HAVE_MPI
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
   }
 
@@ -236,7 +236,7 @@ void CParaviewFileWriter::Write_Data(){
 
   Paraview_File.flush();
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   unsigned short varStart = 2;
@@ -263,7 +263,7 @@ void CParaviewFileWriter::Write_Data(){
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -273,7 +273,7 @@ void CParaviewFileWriter::Write_Data(){
       //skip
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       VarCounter++;
     }
@@ -288,7 +288,7 @@ void CParaviewFileWriter::Write_Data(){
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -307,7 +307,7 @@ void CParaviewFileWriter::Write_Data(){
 
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
 
@@ -323,7 +323,7 @@ void CParaviewFileWriter::Write_Data(){
 
       Paraview_File.flush();
 #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
       /*--- Write surface and volumetric point coordinates. ---*/
@@ -340,7 +340,7 @@ void CParaviewFileWriter::Write_Data(){
         }
         Paraview_File.flush();
 #ifdef HAVE_MPI
-        SU2_MPI::Barrier(MPI_COMM_WORLD);
+        SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
       }
 

@@ -2,14 +2,14 @@
  * \file CSurfaceFEMDataSorter.cpp
  * \brief Datasorter for FEM surfaces.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,12 +29,12 @@
 #include "../../../../Common/include/fem/fem_geometry_structure.hpp"
 #include <numeric>
 
-CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
+CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, const CFEMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
   nDim = geometry->GetnDim();
 
-  this->volumeSorter = valVolumeSorter;
+  volumeSorter = valVolumeSorter;
 
   connectivitySorted = false;
 
@@ -58,22 +58,13 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
   }
 
   SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
 }
-
-CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
-
-  delete linearPartitioner;
-  delete [] passiveDoubleBuffer;
-
-}
-
-
 
 void CSurfaceFEMDataSorter::SortOutputData() {
 
@@ -136,7 +127,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(unsigned long i=0; i<globalSurfaceDOFIDs.size(); ++i) {
 
     /* Search for the processor that owns this point. */
-    unsigned long iProcessor = linearPartitioner->GetRankContainingIndex(globalSurfaceDOFIDs[i]);
+    unsigned long iProcessor = linearPartitioner.GetRankContainingIndex(globalSurfaceDOFIDs[i]);
 
     /* Store the global ID in the send buffer for iProcessor. */
     sendBuf[iProcessor].push_back(globalSurfaceDOFIDs[i]);
@@ -154,7 +145,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   vector<unsigned long> nDOFRecv(size);
 
   SU2_MPI::Alltoall(nDOFSend.data(), 1, MPI_UNSIGNED_LONG,
-                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                    nDOFRecv.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   /* Determine the number of messages this rank will receive. */
   int nRankRecv = 0;
@@ -172,7 +163,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Isend(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, rank, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, rank, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }
@@ -184,7 +175,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
     if(nDOFRecv[i] && (i != rank)) {
       recvBuf[i].resize(nDOFRecv[i]);
       SU2_MPI::Irecv(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, i, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, i, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -220,25 +211,22 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   /* Allocate the memory for Parallel_Surf_Data. */
   nPoints = globalSurfaceDOFIDs.size();
 
-
-    delete [] passiveDoubleBuffer;
-
-
-  passiveDoubleBuffer = new passivedouble[nPoints*VARS_PER_POINT];
+  delete [] dataBuffer;
+  dataBuffer = new passivedouble[nPoints*VARS_PER_POINT];
 
   /* Determine the local index of the global surface DOFs and
      copy the data into Parallel_Surf_Data. */
   for(unsigned long i=0; i<nPoints; ++i) {
-    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner->GetCumulativeSizeBeforeRank(rank);
+    const unsigned long ii = globalSurfaceDOFIDs[i] - linearPartitioner.GetCumulativeSizeBeforeRank(rank);
 
     for(int jj=0; jj<VARS_PER_POINT; jj++)
-      passiveDoubleBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
+      dataBuffer[i*VARS_PER_POINT+jj] = volumeSorter->GetData(jj,ii);
   }
 
   /*--- Reduce the total number of surf points we have. This will be
         needed for writing the surface solution files later. ---*/
   SU2_MPI::Allreduce(&nPoints, &nPointsGlobal, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   /*-------------------------------------------------------------------*/
   /*--- Step 3: Modify the surface connectivities, such that only   ---*/
@@ -253,7 +241,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
 
   SU2_MPI::Allgather(&nPoints, 1, MPI_UNSIGNED_LONG,
                      nSurfaceDOFsRanks.data(), 1, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
+                     SU2_MPI::GetComm());
 
   for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
 #endif
@@ -283,7 +271,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFRecv[i] && (i != rank)) {
       SU2_MPI::Isend(recvBuf[i].data(), nDOFRecv[i], MPI_UNSIGNED_LONG,
-                     i, rank+1, MPI_COMM_WORLD, &recvReq[nRankRecv]);
+                     i, rank+1, SU2_MPI::GetComm(), &recvReq[nRankRecv]);
       ++nRankRecv;
     }
   }
@@ -294,7 +282,7 @@ void CSurfaceFEMDataSorter::SortOutputData() {
   for(int i=0; i<size; ++i) {
     if(nDOFSend[i] && (i != rank)) {
       SU2_MPI::Irecv(sendBuf[i].data(), nDOFSend[i], MPI_UNSIGNED_LONG,
-                     i, i+1, MPI_COMM_WORLD, &sendReq[nRankSend]);
+                     i, i+1, SU2_MPI::GetComm(), &sendReq[nRankSend]);
       ++nRankSend;
     }
   }

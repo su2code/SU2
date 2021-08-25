@@ -2,14 +2,14 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -209,33 +209,13 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-  const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin      = config->GetRefOriginMoment(0);
-  const bool grid_movement     = config->GetGrid_Movement();
 
-/*--- Evaluate reference values for non-dimensionalization.
-        For dynamic meshes, use the motion Mach number as a reference value
-        for computing the force coefficients. Otherwise, use the freestream
-        values, which is the standard convention. ---*/
-  const su2double RefTemp     = Temperature_Inf;
-  const su2double RefDensity  = Density_Inf;
+  /*--- Evaluate reference values for non-dimensionalization. ---*/
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
 
-  su2double RefVel2;
-  if (grid_movement) {
-    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
-    const su2double Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for(unsigned short iDim=0; iDim<nDim; ++iDim)
-      RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-  }
-
-  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Variables initialization ---*/
   AllBound_CD_Visc = 0.0;  AllBound_CL_Visc  = 0.0; AllBound_CSF_Visc = 0.0;
@@ -850,7 +830,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                       MPI_SUM, MPI_COMM_WORLD);
+                       MPI_SUM, SU2_MPI::GetComm());
   }
 
   /*--- Copy the data back from globBuf into the required variables. ---*/
@@ -877,7 +857,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   su2double localMax = AllBound_MaxHeatFlux_Visc;
   if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                       MPI_MAX, MPI_COMM_WORLD);
+                       MPI_MAX, SU2_MPI::GetComm());
   }
 #endif
 
@@ -913,7 +893,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
                                     unsigned short iMesh, unsigned long Iteration) {
 
   /* Check whether or not a time stepping scheme is used. */
-  const bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -971,7 +951,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   } else {
 
     /*--- Check for a compressible solver. ---*/
-    if(config->GetKind_Regime() == COMPRESSIBLE) {
+    if(config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
 
       /*--- Loop over the owned volume elements. Multiple elements are treated
             simultaneously to improve the performance of the matrix
@@ -1301,10 +1281,10 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       rbuf_time = Max_Delta_Time;
-      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
     }
 
@@ -3175,7 +3155,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -6075,7 +6055,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
   /*--- Get the physical time if necessary. ---*/
   su2double time = 0.0;
-  if (config->GetTime_Marching()) time = config->GetPhysicalTime();
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
   /*--- Loop over the requested range of surface faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix

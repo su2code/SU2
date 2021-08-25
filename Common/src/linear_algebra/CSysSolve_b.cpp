@@ -1,15 +1,15 @@
 /*!
  * \file CSysSolve_b.cpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
- * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \author T. Albring, J. Blühdorn
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,38 +37,44 @@ void CSysSolve_b<ScalarType>::Solve_b(const codi::RealReverse::Real* x, codi::Re
                                       codi::DataStore* d) {
 
   CSysVector<su2double>* LinSysRes_b = nullptr;
-  d->getData(LinSysRes_b);
+  d->getDataByIndex(LinSysRes_b, 0);
 
   CSysVector<su2double>* LinSysSol_b = nullptr;
-  d->getData(LinSysSol_b);
+  d->getDataByIndex(LinSysSol_b, 1);
 
   CSysMatrix<ScalarType>* Jacobian = nullptr;
-  d->getData(Jacobian);
+  d->getDataByIndex(Jacobian, 2);
 
   CGeometry* geometry = nullptr;
-  d->getData(geometry);
+  d->getDataByIndex(geometry, 3);
 
   const CConfig* config = nullptr;
-  d->getData(config);
+  d->getDataByIndex(config, 4);
 
   CSysSolve<ScalarType>* solver = nullptr;
-  d->getData(solver);
+  d->getDataByIndex(solver, 5);
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
+  SU2_OMP_BARRIER
+  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
   for (unsigned long i = 0; i < n; i++) {
     (*LinSysRes_b)[i] = y_b[i];
     (*LinSysSol_b)[i] = 0.0;
   }
+  END_SU2_OMP_FOR
 
-  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config);
+  solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
+  SU2_OMP_FOR_STAT(roundUpDiv(n,omp_get_num_threads()))
   for (unsigned long i = 0; i < n; i ++) {
-    x_b[i] = SU2_TYPE::GetValue(LinSysSol_b->operator [](i));
+    x_b[i] = SU2_TYPE::GetValue((*LinSysSol_b)[i]);
   }
-
+  END_SU2_OMP_FOR
 }
 
 template class CSysSolve_b<su2mixedfloat>;
-
+#ifdef USE_MIXED_PRECISION
+template class CSysSolve_b<passivedouble>;
+#endif
 #endif

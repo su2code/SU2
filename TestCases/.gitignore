@@ -9,19 +9,23 @@
 # changes to the meshes/solutions/restarts.
 
 # Things appearing in TestCases/ repo to ignore:
+# mesh files
 *.su2
-*.dat
-*.vtk
-*.csv
-*.plt
-*.szplt
-*.pw
-*.IGS
 *.cgns
-*.tgz
-COPYING
-README.md
+*.pw
+
+# binary/ascii restart/solution files. Note that .csv can be a history, of_grad, etc file as well.
+*.dat
+*.csv
+
+# auto-generated files by regression tests
 *.autotest
 config_*.cfg
-*.eqn
+
+# flip the pickle
 *.pkl
+
+*.IGS
+*.tgz
+COPYING
+*.eqn

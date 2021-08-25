@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 7.0.8 "Blackbird"
+# \version 7.2.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2021, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -94,13 +94,6 @@ nobase_dist_mypkg_DATA= \
     SU2/util/polarSweepLib.py \
     SU2/util/switch.py \
     SU2/util/which.py \
-    SU2/util/__init__.py \
-    FSI/__init__.py \
-    FSI/FSIInterface.py \
-    FSI/PitchPlungeAirfoilStructuralTester.py \
-    FSI/io/__init__.py \
-    FSI/io/FSI_config.py \
-    FSI/util/__init__.py \
-    FSI/util/switch.py
+    SU2/util/__init__.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

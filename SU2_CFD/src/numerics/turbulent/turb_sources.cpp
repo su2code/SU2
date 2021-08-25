@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
-  incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+  incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE),
   rotating_frame(config->GetRotating_Frame())
 {
   /*--- Spalart-Allmaras closure constants ---*/
@@ -94,8 +94,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
   CrossProduction = 0.0;
   Jacobian_i[0]   = 0.0;
 
-  gamma_BC = 0.0;
-
   /*--- Evaluate Omega ---*/
 
   Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
@@ -141,7 +139,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       const su2double chi_1 = 0.002;
       const su2double chi_2 = 50.0;
 
-      su2double tu = config->GetTurbulenceIntensity_FreeStream();
+      /*--- turbulence intensity is u'/U so we multiply by 100 to get percentage ---*/
+      su2double tu = 100.0 * config->GetTurbulenceIntensity_FreeStream();
 
       su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
 
@@ -153,9 +152,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       su2double term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
       su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.));
       su2double term_exponential = (term1 + term2);
-      su2double gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      Gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = Gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
     }
     else {
       Production = cb1*Shat*TurbVar_i[0]*Volume;
@@ -192,7 +192,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
 
     if (transition) {
-      Jacobian_i[0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += Gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
       Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
@@ -759,18 +759,21 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
                                                    const CConfig* config) :
                           CNumerics(val_nDim, val_nVar, config) {
 
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/
-  beta_star     = constants[6];
-  sigma_omega_1 = constants[2];
-  sigma_omega_2 = constants[3];
+  sigma_k_1     = constants[0];
+  sigma_k_2     = constants[1];
+  sigma_w_1     = constants[2];
+  sigma_w_2     = constants[3];
   beta_1        = constants[4];
   beta_2        = constants[5];
+  beta_star     = constants[6];
+  a1            = constants[7];
   alfa_1        = constants[8];
   alfa_2        = constants[9];
-  a1            = constants[7];
 
   /*--- Set the ambient values of k and omega to the free stream values. ---*/
   kAmb     = val_kine_Inf;
@@ -835,8 +838,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
-     SetReynoldsStressMatrix(TurbVar_i[0]);
-     SetPerturbedRSM(TurbVar_i[0], config);
+     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                         PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
+                         TurbVar_i[0], MeanPerturbedRSM);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
@@ -844,7 +848,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    else {
      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
    }
-
 
    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
    pk = max(pk,0.0);
@@ -890,6 +893,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
 
+   /*--- Contribution due to 2D axisymmetric formulation ---*/
+
+   if (axisymmetric) ResidualAxisymmetric(alfa_blended,zeta);
+
    /*--- Implicit part ---*/
 
    Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
@@ -905,152 +912,19 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  ComputeStressTensor(nDim, MeanReynoldsStress, PrimVar_Grad_i+1, Eddy_Viscosity_i, Density_i, turb_ke, true);
-  for(unsigned short iDim=0; iDim<3; iDim++){
-    for(unsigned short jDim=0; jDim<3; jDim++){
-      MeanReynoldsStress[iDim][jDim] /= (-Density_i);
-    }
-  }
-}
-
-void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
-
-  unsigned short iDim,jDim;
-
-  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
-
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
-      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
-    }
-  }
-
-  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
-
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
-
-  /* compute convex combination coefficients */
-  su2double c1c = Eig_Val[2] - Eig_Val[1];
-  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
-  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
-
-  /* define barycentric traingle corner points */
-  Corners[0][0] = 1.0;
-  Corners[0][1] = 0.0;
-  Corners[1][0] = 0.0;
-  Corners[1][1] = 0.0;
-  Corners[2][0] = 0.5;
-  Corners[2][1] = 0.866025;
-
-  /* define barycentric coordinates */
-  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
-  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
-
-  if (Eig_Val_Comp == 1) {
-    /* 1C turbulence */
-    New_Coord[0] = Corners[0][0];
-    New_Coord[1] = Corners[0][1];
-  }
-  else if (Eig_Val_Comp == 2) {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  else if (Eig_Val_Comp == 3) {
-    /* 3C turbulence */
-    New_Coord[0] = Corners[2][0];
-    New_Coord[1] = Corners[2][1];
-  }
-  else {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  /* calculate perturbed barycentric coordinates */
-
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
-
-  /* rebuild c1c,c2c,c3c based on new barycentric coordinates */
-  c3c = Barycentric_Coord[1] / Corners[2][1];
-  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
-  c2c = 1 - c1c - c3c;
-
-  /* build new anisotropy eigenvalues */
-  Eig_Val[0] = (c3c - 1) / 3.0;
-  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
-  Eig_Val[2] = c1c + Eig_Val[1];
-
-  /* permute eigenvectors if required */
-  if (uq_permute) {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
-      }
-    }
-  }
-
-  else {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
-      }
-    }
-  }
-
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
-
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
-      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
-    }
-  }
-
-}
-
 void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
-  unsigned short iDim, jDim;
+
+  /*--- Compute norm of perturbed strain rate tensor. ---*/
+
   PerturbedStrainMag = 0;
-  su2double **StrainRate = new su2double* [nDim];
-  for (iDim= 0; iDim< nDim; iDim++){
-    StrainRate[iDim] = new su2double [nDim];
-  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short jDim = 0; jDim < nDim; jDim++){
+      su2double StrainRate_ij = MeanPerturbedRSM[iDim][jDim] - TWO3 * turb_ke * delta[iDim][jDim];
+      StrainRate_ij = - StrainRate_ij * Density_i / (2 * Eddy_Viscosity_i);
 
-  /* compute perturbed strain rate tensor */
-
-  for (iDim = 0; iDim < nDim; iDim++){
-    for (jDim =0; jDim < nDim; jDim++){
-      StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
-      - TWO3 * turb_ke * delta[iDim][jDim];
-      StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * Density_i / (2 * Eddy_Viscosity_i);
+      PerturbedStrainMag += pow(StrainRate_ij, 2.0);
     }
   }
-
-  /*--- Add diagonal part ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.0);
-  }
-
-  /*--- Add off diagonals ---*/
-
-  PerturbedStrainMag += 2.0*pow(StrainRate[1][0], 2.0);
-
-  if (nDim == 3) {
-    PerturbedStrainMag += 2.0*pow(StrainRate[0][2], 2.0);
-    PerturbedStrainMag += 2.0*pow(StrainRate[1][2], 2.0);
-  }
-
   PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
 
-  for (iDim= 0; iDim< nDim; iDim++){
-    delete [] StrainRate[iDim];
-  }
-
-  delete [] StrainRate;
 }

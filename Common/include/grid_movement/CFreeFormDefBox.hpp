@@ -2,14 +2,14 @@
  * \file CFreeFormDefBox.hpp
  * \brief Headers of the CFreeFormDefBox class.
  * \author F. Palacios & A. Galdran.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -755,14 +755,5 @@ public:
    * \return Value of the nested level of the the FFDBox.
    */
   inline unsigned short GetLevel() const { return Level; }
-
-  /*!
-   * \brief Compute the determinant of a 3 by 3 matrix.
-   * \param[in] val_matrix 3 by 3 matrix.
-   * \result Determinant of the matrix
-   */
-  inline su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
-  }
 
 };

@@ -2,14 +2,14 @@
  * \file gradients.cpp
  * \brief Unit tests for gradient calculation.
  * \author P. Gomes, T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,7 +64,7 @@ struct GradientTestBase {
     auto origBuf = cout.rdbuf();
     cout.rdbuf(nullptr);
     stringstream ss(configOptions);
-    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_CFD, false));
+    config = std::unique_ptr<CConfig>(new CConfig(ss, SU2_COMPONENT::SU2_CFD, false));
     cout.rdbuf(origBuf);
   }
 
@@ -87,7 +87,6 @@ struct GradientTestBase {
     geometry->Check_BoundElem_Orientation(config.get());
     geometry->SetEdges();
     geometry->SetVertex(config.get());
-    geometry->SetCoord_CG();
     geometry->SetControlVolume(config.get(), ALLOCATE);
     geometry->SetBoundControlVolume(config.get(), ALLOCATE);
     geometry->FindNormal_Neighbor(config.get());

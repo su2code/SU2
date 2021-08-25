@@ -2,14 +2,14 @@
  * \file CFEALinearElasticity.cpp
  * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,8 +56,6 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
@@ -234,19 +232,27 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 }
 
 
-void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
+su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
   unsigned short iNode, nNode;
   unsigned short iDim, bDim;
 
-  /*--- Auxiliary vector ---*/
-  su2double Strain[6], Stress[6];
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
+
+  /*--- Register pre-accumulation inputs ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
@@ -275,9 +281,7 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
       }
     }
 
-    for (iVar = 0; iVar < bDim; iVar++) {
-      Strain[iVar] = 0.0;
-    }
+    su2double Strain[DIM_STRAIN_3D] = {0.0};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -312,11 +316,13 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
     /*--- Compute the Stress Vector as D*epsilon ---*/
 
+    su2double Stress[DIM_STRAIN_3D] = {0.0};
+
     for (iVar = 0; iVar < bDim; iVar++) {
-      Stress[iVar] = 0.0;
       for (jVar = 0; jVar < bDim; jVar++) {
         Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
       }
+      avgStress[iVar] += Stress[iVar] / nGauss;
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
@@ -341,6 +347,15 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
   }
 
+  if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
+  auto elStress = VonMisesStress(nDim, avgStress);
+
+  /*--- We only differentiate w.r.t. an avg VM stress for the element as
+   * considering all nodal stresses would use too much memory. ---*/
+  AD::SetPreaccOut(elStress);
+  AD::EndPreacc();
+
+  return elStress;
 }
 
 

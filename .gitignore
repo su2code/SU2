@@ -79,7 +79,11 @@ TestData
 # Ignore output files if tests are run locally
 *.vtk
 *.vtu
+*.vtm
+*.pvsm
 *.ref
+*.plt
+*.szplt
 
 Mercurial
 .hg*
@@ -90,3 +94,6 @@ build/
 
 # ninja binary (build system)
 ninja
+
+# Ignore vscode folder
+.vscode/

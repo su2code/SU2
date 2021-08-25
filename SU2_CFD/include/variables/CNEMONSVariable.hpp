@@ -2,14 +2,14 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,6 @@
  * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.8
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
@@ -52,8 +51,6 @@ private:
 
   su2double inv_TimeScale;      /*!< \brief Inverse of the reference time scale. */
 
-  MatrixType Vorticity;         /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;         /*!< \brief Magnitude of rate of strain tensor. */
   VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
@@ -103,17 +100,6 @@ public:
    * \return Reference to primitives.
    */
   inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
-
-  /*!
-   * \brief Set the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  /* Works as a dummy function for consistency since no reconstruction is needed for primitive variables*/
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override { }
-
 
   /*!
    * \brief Set all the primitive variables for compressible flows.
@@ -167,12 +153,4 @@ public:
   inline void SetWallTemperature(unsigned long iPoint, su2double temperature_wall) override {
     Primitive(iPoint,T_INDEX) = temperature_wall;
   }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-
 };

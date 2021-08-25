@@ -2,14 +2,14 @@
  * \file CParaviewBinaryFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
 CParaviewBinaryFileWriter::CParaviewBinaryFileWriter(string valFileName, CParallelDataSorter *valDataSorter) :
   CFileWriter(std::move(valFileName), valDataSorter, fileExt){
-  
+
   /* Check for big endian. We have to swap bytes otherwise.
    * Since size of character is 1 byte when the character pointer
    *  is de-referenced it will contain only first byte of integer. ---*/
@@ -66,12 +66,12 @@ void CParaviewBinaryFileWriter::Write_Data(){
   const int NCOORDS = 3;
 
   OpenMPIFile();
-  
+
   string header = "# vtk DataFile Version 3.0\n"
                   "vtk output\n"
                   "BINARY\n"
                   "DATASET UNSTRUCTURED_GRID\n";
-                  
+
   WriteMPIString(header, MASTER_NODE);
 
   /*--- Communicate the number of total points that will be
@@ -85,12 +85,12 @@ void CParaviewBinaryFileWriter::Write_Data(){
   myPoint     = dataSorter->GetnPoints();
 
   SPRINTF(str_buf, "POINTS %i float\n", SU2_TYPE::Int(GlobalPoint));
-  
+
   WriteMPIString(string(str_buf), MASTER_NODE);
 
   /*--- Load/write the 1D buffer of point coordinates. Note that we
    always have 3 coordinate dimensions, even for 2D problems. ---*/
-  
+
   vector<float> dataBufferFloat(myPoint*NCOORDS);
   for (iPoint = 0; iPoint < myPoint; iPoint++) {
     for (iDim = 0; iDim < NCOORDS; iDim++) {
@@ -102,23 +102,23 @@ void CParaviewBinaryFileWriter::Write_Data(){
       }
     }
   }
-  
+
   if (!bigEndian) SwapBytes((char *)dataBufferFloat.data(), sizeof(float), myPoint*NCOORDS);
-  
+
   /*--- Compute various data sizes --- */
-  
+
   unsigned long sizeInBytesPerPoint = sizeof(float)*NCOORDS;
   unsigned long sizeInBytesLocal    = sizeInBytesPerPoint*myPoint;
   unsigned long sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalPoint;
   unsigned long offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
-  
+
   WriteMPIBinaryDataAll(dataBufferFloat.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
   /*--- Compute our local number of elements, the required storage,
    and reduce the total number of elements and storage globally. ---*/
 
   unsigned long myElem, myElemStorage, GlobalElem, GlobalElemStorage;
-  
+
   unsigned long nParallel_Line = dataSorter->GetnElem(LINE),
                 nParallel_Tria = dataSorter->GetnElem(TRIANGLE),
                 nParallel_Quad = dataSorter->GetnElem(QUADRILATERAL),
@@ -135,7 +135,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
   SPRINTF(str_buf, "\nCELLS %i %i\n", SU2_TYPE::Int(GlobalElem),
           SU2_TYPE::Int(GlobalElemStorage+GlobalElem));
   WriteMPIString(str_buf, MASTER_NODE);
-  
+
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
 
   vector<int> connBuf(myElemStorage + myElem);
@@ -151,7 +151,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       iStorage += nPoints + 1;
     }
   };
- 
+
   copyToBuffer(LINE,          nParallel_Line, N_POINTS_LINE);
   copyToBuffer(TRIANGLE,      nParallel_Tria, N_POINTS_TRIANGLE);
   copyToBuffer(QUADRILATERAL, nParallel_Quad, N_POINTS_QUADRILATERAL);
@@ -160,18 +160,18 @@ void CParaviewBinaryFileWriter::Write_Data(){
   copyToBuffer(PRISM,         nParallel_Pris, N_POINTS_PRISM);
   copyToBuffer(PYRAMID,       nParallel_Pyra, N_POINTS_PYRAMID);
 
-  if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int), myElemStorage+myElem);  
-  
+  if (!bigEndian) SwapBytes((char *)connBuf.data(), sizeof(int), myElemStorage+myElem);
+
   /*--- Compute various data sizes --- */
-  
+
   sizeInBytesPerPoint = sizeof(int);
   sizeInBytesLocal    = sizeInBytesPerPoint*(myElemStorage + myElem);
   sizeInBytesGlobal   = sizeInBytesPerPoint*(GlobalElemStorage + GlobalElem);
   offsetInBytes       = sizeInBytesPerPoint*
                         (dataSorter->GetnElemConnCumulative(rank) + dataSorter->GetnElemCumulative(rank));
-  
+
   WriteMPIBinaryDataAll(connBuf.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
-    
+
   SPRINTF (str_buf, "\nCELL_TYPES %i\n", SU2_TYPE::Int(GlobalElem));
   WriteMPIString(str_buf, MASTER_NODE);
 
@@ -187,11 +187,11 @@ void CParaviewBinaryFileWriter::Write_Data(){
   std::fill(typeIter, typeIter+nParallel_Hexa, HEXAHEDRON);    typeIter += nParallel_Hexa;
   std::fill(typeIter, typeIter+nParallel_Pris, PRISM);         typeIter += nParallel_Pris;
   std::fill(typeIter, typeIter+nParallel_Pyra, PYRAMID);       typeIter += nParallel_Pyra;
-  
+
   if (!bigEndian) SwapBytes((char *)typeBuf.data(), sizeof(int), myElem);
-  
+
   /*--- Compute various data sizes --- */
-  
+
   sizeInBytesPerPoint = sizeof(int);
   sizeInBytesLocal    = sizeInBytesPerPoint*myElem;
   sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalElem;
@@ -201,7 +201,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
 
   SPRINTF (str_buf, "\nPOINT_DATA %i\n", SU2_TYPE::Int(GlobalPoint));
   WriteMPIString(str_buf, MASTER_NODE);
-  
+
   /*--- Adjust container start location to avoid point coords. ---*/
 
   unsigned short varStart = 2;
@@ -244,7 +244,7 @@ void CParaviewBinaryFileWriter::Write_Data(){
       /*--- Adjust the string name to remove the leading "X-" ---*/
 
       fieldname.erase(fieldname.end()-2,fieldname.end());
-      
+
       SPRINTF (str_buf, "\nVECTORS %s float\n", fieldname.c_str());
       WriteMPIString(str_buf, MASTER_NODE);
 
@@ -265,22 +265,22 @@ void CParaviewBinaryFileWriter::Write_Data(){
         SwapBytes((char *)dataBufferFloat.data(), sizeof(float), myPoint*NCOORDS);
 
       /*--- Compute various data sizes --- */
-      
+
       sizeInBytesPerPoint = sizeof(float)*NCOORDS;
       sizeInBytesLocal    = sizeInBytesPerPoint*myPoint;
       sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalPoint;
       offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
-      
+
       WriteMPIBinaryDataAll(dataBufferFloat.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
       VarCounter++;
 
     } else if (output_variable) {
-      
+
       SPRINTF (str_buf, "\nSCALARS %s float 1\n", fieldname.c_str());
       WriteMPIString(str_buf, MASTER_NODE);
       WriteMPIString("LOOKUP_TABLE default\n", MASTER_NODE);
-      
+
       /*--- For now, create a temp 1D buffer to load up the data for writing.
        This will be replaced with a derived data type most likely. ---*/
 
@@ -288,17 +288,17 @@ void CParaviewBinaryFileWriter::Write_Data(){
         float val = (float)dataSorter->GetData(VarCounter,iPoint);
         dataBufferFloat[iPoint] = val;
       }
-      
+
       if (!bigEndian)
         SwapBytes((char *)dataBufferFloat.data(), sizeof(float), myPoint);
-      
+
       /*--- Compute various data sizes --- */
-      
+
       sizeInBytesPerPoint = sizeof(float);
       sizeInBytesLocal    = sizeInBytesPerPoint*myPoint;
       sizeInBytesGlobal   = sizeInBytesPerPoint*GlobalPoint;
       offsetInBytes       = sizeInBytesPerPoint*dataSorter->GetnPointCumulative(rank);
-  
+
       WriteMPIBinaryDataAll(dataBufferFloat.data(), sizeInBytesLocal, sizeInBytesGlobal, offsetInBytes);
 
       VarCounter++;

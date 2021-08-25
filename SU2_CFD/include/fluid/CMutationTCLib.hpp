@@ -2,14 +2,14 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,9 @@
 
 #include "CNEMOGas.hpp"
 
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#include "mutation++.h"
+
 /*!
  * \derived class CMutationTCLib
  * \brief Child class for Mutation++ nonequilibrium gas model.
@@ -38,10 +41,11 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
+  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
+
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
-  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
-  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+  omega_vec;                              /*!< \brief Dummy vector for vibrational energy source term. */
 
   su2double Tref;                         /*!< \brief Reference temperature. */
 
@@ -74,7 +78,7 @@ public:
    * \brief Compute species V-E specific heats at constant volume.
    */
   vector<su2double>& ComputeSpeciesCvVibEle() final;
-    
+
   /*!
    * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
@@ -83,8 +87,8 @@ public:
   /*!
    * \brief Compute vector of species V-E energy.
    */
-  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
-  
+  vector<su2double>& ComputeSpeciesEve(su2double val_T, bool vibe_only = false) final;
+
   /*!
    * \brief Compute species net production rates.
    */
@@ -94,7 +98,7 @@ public:
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
-  
+
   /*!
    * \brief Compute species enthalpies.
    */
@@ -110,16 +114,17 @@ public:
    */
   su2double GetViscosity() final;
 
+
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
   vector<su2double>& GetThermalConductivities() final;
-  
+
   /*!
    * \brief Compute translational and vibrational temperatures vector.
    */
   vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
-   
+
   /*!
    * \brief Get species molar mass.
    */
@@ -136,3 +141,4 @@ public:
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };
+#endif

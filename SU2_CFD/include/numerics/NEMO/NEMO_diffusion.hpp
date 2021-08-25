@@ -2,14 +2,14 @@
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,12 +34,12 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar;    /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
+  unsigned short iVar;        /*!< \brief Iterators in dimension an variable. */
+  su2double *Mean_PrimVar,    /*!< \brief Mean primitive variables. */
   *Mean_U,
   **Mean_GU,
   *Mean_dTdU,
@@ -54,9 +54,8 @@ private:
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
-  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
- 
+
 public:
 
   /*!
@@ -90,7 +89,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
@@ -109,13 +108,11 @@ private:
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
-  
-  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
   bool implicit;                /*!< \brief Implicit calculus. */
 
   su2double* Flux = nullptr;    /*!< \brief The flux / residual across the edge. */
-  
+
 public:
 
   /*!
@@ -142,5 +139,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   ResidualType<> ComputeResidual(const CConfig* config) final;
-  
+
 };

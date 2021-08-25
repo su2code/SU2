@@ -1,14 +1,14 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,16 +31,16 @@
 namespace GeometryToolbox {
 
 /*! \return ||a-b||^2 */
-template<class T, typename Int>
-inline T SquaredDistance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T SquaredDistance(Int nDim, const T* a, const U* b) {
   T d(0);
   for(Int i = 0; i < nDim; i++) d += pow(a[i]-b[i], 2);
   return d;
 }
 
 /*! \return ||a-b|| */
-template<class T, typename Int>
-inline T Distance(Int nDim, const T* a, const T* b) {
+template<class T, class U, typename Int>
+inline T Distance(Int nDim, const T* a, const U* b) {
   return sqrt(SquaredDistance(nDim, a, b));
 }
 
@@ -48,6 +48,13 @@ inline T Distance(Int nDim, const T* a, const T* b) {
 template<class T, typename Int>
 inline void Distance(Int nDim, const T* a, const T* b, T* d) {
   for(Int i = 0; i < nDim; i++) d[i] = a[i] - b[i];
+}
+
+/*! \brief Reflect a at b: c = 2*b - a
+ */
+template<class T, typename Int>
+inline void PointPointReflect(Int nDim, const T* a, const T* b, T* d){
+  for(Int i = 0; i < nDim; i++) d[i] = 2 * b[i] - a[i];
 }
 
 /*! \return a.b */
@@ -183,6 +190,19 @@ inline void Rotate(const Scalar R[][nDim], const Scalar* O, const Scalar* d, Sca
     c[iDim] = O[iDim];
     for (int k = 0; k < nDim; ++k) c[iDim] += R[iDim][k] * d[k];
   }
+}
+
+/*! \brief Tangent projection  */
+template<class Mat, class Scalar, class Int>
+inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector, Scalar* proj) {
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] = DotProduct(nDim, tensor[iDim], vector);
+
+  auto normalProj = DotProduct(nDim, proj, vector);
+
+  for (Int iDim = 0; iDim < nDim; iDim++)
+    proj[iDim] -= normalProj * vector[iDim];
 }
 
 }

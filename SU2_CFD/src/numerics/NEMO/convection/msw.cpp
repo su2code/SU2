@@ -2,14 +2,14 @@
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,7 +59,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
 
   eves_st_i.resize(nSpecies,0.0);
   eves_st_j.resize(nSpecies,0.0);
-  
+
   P_Tensor    = new su2double* [nVar];
   invP_Tensor = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -198,7 +198,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis(UnitNormal);
+  su2double l[MAXNDIM], m[MAXNDIM];
+  CreateBasis(UnitNormal,l,m);
   GetPMatrix(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, invP_Tensor);
 
@@ -232,7 +233,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis(UnitNormal);
+  CreateBasis(UnitNormal,l,m);
   GetPMatrix(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, invP_Tensor);
 

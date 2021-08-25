@@ -2,14 +2,14 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  const su2double *val_massfrac,
-                                 su2double *val_mach, 
+                                 su2double *val_mach,
                                  su2double val_temperature,
                                  su2double val_temperature_ve,
                                  unsigned long npoint,
@@ -51,7 +51,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                                                        val_nvarprimgrad,
                                                                        config,
                                                                        fluidmodel) {
-                               
+
 
 
   Temperature_Ref = config->GetTemperature_Ref();
@@ -104,29 +104,31 @@ bool CNEMONSVariable::SetVorticity(void) {
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys;
   unsigned short iVar, iSpecies;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*--- Convert conserved to primitive variables ---*/
-  nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+  bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
-  Gamma(iPoint) = fluidmodel->ComputeGamma();  
+  /*--- Set additional point quantities ---*/
+  Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);
 
   Ds = fluidmodel->GetDiffusionCoeff();
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
-  
+
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
   thermalconductivities    = fluidmodel->GetThermalConductivities();

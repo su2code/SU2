@@ -3,14 +3,14 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.8 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -470,6 +470,10 @@ def read_config(filename):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
                 break
+            if case("CONFIG_LIST"):
+                data_dict[this_param] = this_value.strip("()").split(",")
+                data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
+                break
             if case("HISTORY_OUTPUT"):
                 data_dict[this_param] = this_value.strip("()").split(",")
                 data_dict[this_param] = [i.strip(" ") for i in data_dict[this_param]]
@@ -572,6 +576,7 @@ def read_config(filename):
                       raise SystemExit('Multiple occurrences of the same objective in the OPT_OBJECTIVE definition are not currently supported. To evaluate one objective over multiple surfaces, list the objective once.')
                     # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
                     this_def.update({ this_name : {'SCALE':this_scale, 'OBJTYPE':this_type, 'VALUE':this_val} })
+                    # OPT_OBJECTIVE has to appear after MARKER_MONITORING in the .cfg, maybe catch that here
                     if (len(data_dict['MARKER_MONITORING'])>1):
                         this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
                     else:
@@ -899,6 +904,16 @@ def write_config(filename,param_dict):
                 output_file.write(" )") 
                 break                
             if case("OUTPUT_FILES"):
+                n_lists = len(new_value)
+                output_file.write("(")
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(")")
+                break
+
+            if case("CONFIG_LIST"):
                 n_lists = len(new_value)
                 output_file.write("(")
                 for i_value in range(n_lists):

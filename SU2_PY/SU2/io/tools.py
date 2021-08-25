@@ -3,14 +3,14 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.8 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
 # The SU2 Project is maintained by the SU2 Foundation 
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -154,10 +154,15 @@ def read_history( History_filename, nZones = 1):
     for key in plot_data.keys():
         var = key
         for field in historyOutFields:
-            if key == historyOutFields[field]['HEADER']:
+            
+            if key == historyOutFields[field]['HEADER'] and nZones == 1:
                 var = field
+
+            if key.split('[')[0] == historyOutFields[field]['HEADER'] and nZones > 1:
+                var = field + '[' + key.split('[')[1]
+                
         history_data[var] = plot_data[key]
-    
+
     return history_data
     
 #: def read_history()
@@ -323,9 +328,15 @@ def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_av
     # pull only these functions
     Func_Values = ordered_bunch()
     for this_objfun in historyOutFields:
-        if this_objfun in history_data:
-            if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
-                Func_Values[this_objfun] = history_data[this_objfun] 
+        if nZones == 1:
+            if this_objfun in history_data:
+                if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
+                    Func_Values[this_objfun] = history_data[this_objfun]
+        else:
+            for iZone in range(nZones):
+                if this_objfun + '[' + str(iZone) + ']' in history_data:
+                    if historyOutFields[this_objfun]['TYPE'] == 'COEFFICIENT' or historyOutFields[this_objfun]['TYPE'] == 'D_COEFFICIENT':
+                        Func_Values[this_objfun + '[' + str(iZone) + ']'] = history_data[this_objfun + '[' + str(iZone) + ']']
 
     if 'TIME_MARCHING' in special_cases:
         # for unsteady cases, average time-accurate objective function values

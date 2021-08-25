@@ -2,14 +2,14 @@
  * \file CFVMDataSorter.cpp
  * \brief Datasorter class for FVM solvers.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
   nGlobalPointBeforeSort = geometry->GetGlobal_nPointDomain();
   nLocalPointsBeforeSort  = geometry->GetnPointDomain();
 
-  Local_Halo = new int[geometry->GetnPoint()]();
+  Local_Halo.resize(geometry->GetnPoint());
 
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
 
@@ -60,21 +60,11 @@ CFVMDataSorter::CFVMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   /*--- Create the linear partitioner --- */
 
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
+  linearPartitioner.Initialize(nGlobalPointBeforeSort, 0);
 
   /*--- Prepare the send buffers ---*/
 
   PrepareSendBuffers(globalID);
-
-}
-
-CFVMDataSorter::~CFVMDataSorter(){
-
-  delete [] Local_Halo;
-
-        delete [] Index;
-       delete [] idSend;
-  delete linearPartitioner;
 
 }
 
@@ -107,9 +97,6 @@ void CFVMDataSorter::SetHaloPoints(CGeometry *geometry, CConfig *config){
   }
 }
 
-
-
-
 void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool val_sort) {
 
   /*--- Sort connectivity for each type of element (excluding halos). Note
@@ -117,14 +104,14 @@ void CFVMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
    across all processors based on the global index of the grid nodes. ---*/
 
   nElemPerType.fill(0);
-  
+
   SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
   SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
   SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
   SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
   SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
   SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
-  
+
   SetTotalElements();
 
   connectivitySorted = true;
@@ -218,7 +205,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -241,7 +228,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -262,14 +249,11 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
 
-  unsigned long *connSend = nullptr;
-  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
+  auto connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]]();
 
   /*--- Allocate arrays for storing halo flags. ---*/
 
-  unsigned short *haloSend = new unsigned short[nElem_Send[size]]();
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    haloSend[ii] = false;
+  auto haloSend = new unsigned short[nElem_Send[size]]();
 
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
@@ -308,7 +292,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
          own elements into the connectivity data structure. ---*/
 
         if (val_sort) {
-          iProcessor = linearPartitioner->GetRankContainingIndex(Global_Index);
+          iProcessor = linearPartitioner.GetRankContainingIndex(Global_Index);
         } else {
           iProcessor = rank;
         }
@@ -356,10 +340,9 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *connRecv = nullptr;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
+  auto connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Cum[size]]();
 
-  unsigned short *haloRecv = new unsigned short[nElem_Cum[size]]();
+  auto haloRecv = new unsigned short[nElem_Cum[size]]();
 
 #ifdef HAVE_MPI
 
@@ -377,7 +360,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -393,7 +376,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -409,7 +392,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -425,7 +408,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
@@ -476,7 +459,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       }
     }
   }
-  
+
   nElemPerType[TypeMap.at(Elem_Type)] = nElem_Total;
 
   /*--- Store the particular global element count in the class data,

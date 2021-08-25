@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,7 +81,6 @@ private:
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
-  mutable bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
   mutable bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
   mutable VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
@@ -100,7 +99,10 @@ private:
   VectorType* LinSysSol_ptr;        /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
   const VectorType* LinSysRes_ptr;  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
 
-  LinearToleranceType tol_type = LinearToleranceType::RELATIVE; /*!< \brief How the linear solvers interpret the tolerance. */
+  LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
+  bool xIsZero = false;           /*!< \brief If true assume the initial solution is always 0. */
+  bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
+  unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
 
   /*!
    * \brief sign transfer function
@@ -219,6 +221,7 @@ private:
       LinSysRes_ptr = &LinSysRes;
       LinSysSol_ptr = &LinSysSol;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -240,6 +243,7 @@ private:
       LinSysRes_ptr = &LinSysRes_tmp;
       LinSysSol_ptr = &LinSysSol_tmp;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -252,10 +256,12 @@ private:
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -271,10 +277,12 @@ private:
     LinSysSol.PassiveCopy(LinSysSol_tmp);
 
     /*--- Reset the pointers. ---*/
+    SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       LinSysRes_ptr = nullptr;
       LinSysSol_ptr = nullptr;
     }
+    END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
   }
 
@@ -316,6 +324,13 @@ public:
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
+
+  /*!
+   * \brief Flexible Generalized Minimal Residual method with restarts (frequency comes from config).
+   */
+  unsigned long RFGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
+                                  const PrecondType & precond, ScalarType tol, unsigned long m,
+                                  ScalarType & residual, bool monitoring, const CConfig *config);
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -367,9 +382,10 @@ public:
    * \param[in,out] LinSysSol - Linear system solution
    * \param[in] geometry -  Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] directCall - If this method is called directly, or in AD context.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, const CConfig *config);
+                        CGeometry *geometry, const CConfig *config, const bool directCall = true);
 
   /*!
    * \brief Get the number of iterations.
@@ -387,5 +403,20 @@ public:
    * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).
    */
   inline void SetToleranceType(LinearToleranceType type) {tol_type = type;}
+
+  /*!
+   * \brief Assume the initial solution is 0 to save one product, or don't.
+   */
+  inline void SetxIsZero(bool isZero) {xIsZero = isZero;}
+
+  /*!
+   * \brief Set whether to recompute residuals at the end (while monitoring only).
+   */
+  inline void SetRecomputeResidual(bool recompRes) {recomputeRes = recompRes;}
+
+  /*!
+   * \brief Set the screen output frequency during monitoring.
+   */
+  inline void SetMonitoringFrequency(bool frequency) {monitorFreq = frequency;}
 
 };

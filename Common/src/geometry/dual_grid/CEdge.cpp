@@ -2,14 +2,14 @@
  * \file CEdge.cpp
  * \brief Implementation of the edge class.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,6 @@ CEdge::CEdge(unsigned long nEdge, unsigned long nDim) {
   const auto nEdgeSIMD = nextMultiple(nEdge, simd::preferredLen<su2double>());
   Nodes.resize(nEdgeSIMD,2) = 0;
   Normal.resize(nEdgeSIMD,nDim) = su2double(0.0);
-  Coord_CG.resize(nEdgeSIMD,nDim) = su2double(0.0);
 }
 
 void CEdge::SetZeroValues(void) {
@@ -52,24 +51,13 @@ su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, vec_c[nDim] = {0.0}, vec_d[nDim] = {0.0};
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(coord_Edge_CG, nDim);
-  AD::SetPreaccIn(coord_Elem_CG, nDim);
-  AD::SetPreaccIn(coord_FaceElem_CG, nDim);
-  AD::SetPreaccIn(coord_Point, nDim);
-
   Distance(nDim, coord_Edge_CG,     coord_Point, vec_a);
   Distance(nDim, coord_FaceElem_CG, coord_Point, vec_b);
   Distance(nDim, coord_Elem_CG,     coord_Point, vec_c);
 
   CrossProduct(vec_a, vec_b, vec_d);
 
-  su2double Local_Volume = fabs(DotProduct(nDim, vec_c, vec_d)) / 6.0;
-
-  AD::SetPreaccOut(Local_Volume);
-  AD::EndPreacc();
-
-  return Local_Volume;
+  return fabs(DotProduct(nDim, vec_c, vec_d)) / 6.0;
 }
 
 su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
@@ -80,20 +68,10 @@ su2double CEdge::GetVolume(const su2double *coord_Edge_CG,
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0};
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(coord_Edge_CG, nDim);
-  AD::SetPreaccIn(coord_Elem_CG, nDim);
-  AD::SetPreaccIn(coord_Point, nDim);
-
   Distance(nDim, coord_Elem_CG, coord_Point, vec_a);
   Distance(nDim, coord_Edge_CG, coord_Point, vec_b);
 
-  su2double Local_Volume = 0.5 * fabs(vec_a[0]*vec_b[1] - vec_a[1]*vec_b[0]);
-
-  AD::SetPreaccOut(Local_Volume);
-  AD::EndPreacc();
-
-  return Local_Volume;
+  return 0.5 * fabs(vec_a[0]*vec_b[1] - vec_a[1]*vec_b[0]);
 }
 
 void CEdge::SetNodes_Coord(unsigned long iEdge,
@@ -105,12 +83,6 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
 
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, Dim_Normal[nDim];
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(coord_Edge_CG, nDim);
-  AD::SetPreaccIn(coord_Elem_CG, nDim);
-  AD::SetPreaccIn(coord_FaceElem_CG, nDim);
-  AD::SetPreaccIn(Normal[iEdge], nDim);
-
   Distance(nDim, coord_Elem_CG, coord_Edge_CG, vec_a);
   Distance(nDim, coord_FaceElem_CG, coord_Edge_CG, vec_b);
 
@@ -118,26 +90,12 @@ void CEdge::SetNodes_Coord(unsigned long iEdge,
 
   for (auto iDim = 0ul; iDim < nDim; ++iDim)
     Normal(iEdge,iDim) += 0.5 * Dim_Normal[iDim];
-
-  AD::SetPreaccOut(Normal[iEdge], nDim);
-  AD::EndPreacc();
 }
 
 void CEdge::SetNodes_Coord(unsigned long iEdge,
                            const su2double *coord_Edge_CG,
                            const su2double *coord_Elem_CG) {
 
-  constexpr unsigned long nDim = 2;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(coord_Elem_CG, nDim);
-  AD::SetPreaccIn(coord_Edge_CG, nDim);
-  AD::SetPreaccIn(Normal[iEdge], nDim);
-
   Normal(iEdge,0) += coord_Elem_CG[1] - coord_Edge_CG[1];
   Normal(iEdge,1) -= coord_Elem_CG[0] - coord_Edge_CG[0];
-
-  AD::SetPreaccOut(Normal[iEdge], nDim);
-  AD::EndPreacc();
-
 }

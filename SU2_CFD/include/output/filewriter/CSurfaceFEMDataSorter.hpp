@@ -2,14 +2,14 @@
  * \file CSurfaceFEMDataSorter.hpp
  * \brief Headers fo the surface FEM data sorter class.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,10 +31,10 @@
 
 class CSurfaceFEMDataSorter final: public CParallelDataSorter{
 
-  CFEMDataSorter* volumeSorter;                  //!< Pointer to the volume sorter instance
+  const CFEMDataSorter* volumeSorter;            //!< Pointer to the volume sorter instance
   vector<unsigned long> globalSurfaceDOFIDs;     //!< Structure to map the local sorted point ID to the global point ID
   vector<unsigned long> nSurfaceDOFsRanks;       //!< Number of points on each rank
-  
+
 public:
 
   /*!
@@ -43,12 +43,7 @@ public:
    * \param[in] geometry - Pointer to the current geometry
    * \param[in] valVolumeSorter - The datasorter containing the volume data
    */
-  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CSurfaceFEMDataSorter() override;
+  CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, const CFEMDataSorter* valVolumeSorter);
 
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
@@ -83,7 +78,7 @@ public:
   unsigned long GetGlobalIndex(unsigned long iPoint) const override {
     return globalSurfaceDOFIDs[iPoint];
   }
-  
+
   /*!
     * \brief Get the beginning global renumbered node ID of the linear partition owned by a specific processor.
     * \param[in] rank - the processor rank.
@@ -93,7 +88,7 @@ public:
      unsigned long offsetSurfaceDOFs = 0;
      for(int i=0; i<rank; ++i) offsetSurfaceDOFs += nSurfaceDOFsRanks[i];
      return offsetSurfaceDOFs;
-   } 
+   }
 
    /*!
     * \brief Get the Processor ID a Point belongs to.
@@ -101,7 +96,7 @@ public:
     * \return The rank/processor number.
     */
    unsigned short FindProcessor(unsigned long iPoint) const override {
-     unsigned long offsetSurfaceDOFs = nSurfaceDOFsRanks[0];     
+     unsigned long offsetSurfaceDOFs = nSurfaceDOFsRanks[0];
      for (unsigned short iRank = 1; iRank < size; iRank++){
        if (offsetSurfaceDOFs > iPoint){
          return iRank - 1;
@@ -110,7 +105,7 @@ public:
      }
      return size-1;
    }
-   
+
    /*!
     * \brief Get the cumulated number of points
     * \param[in] rank - the processor rank.
@@ -119,7 +114,7 @@ public:
    unsigned long GetnPointCumulative(unsigned short rank) const override {
      return GetNodeBegin(rank);
    }
-   
+
 private:
 
   /*!

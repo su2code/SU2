@@ -209,7 +209,7 @@
 		357BEE48256D589B00423D14 /* CNEMOEulerSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE46256D589B00423D14 /* CNEMOEulerSolver.cpp */; };
 		357BEE49256D589B00423D14 /* CNEMONSSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE47256D589B00423D14 /* CNEMONSSolver.cpp */; };
 		357BEE53256D592C00423D14 /* CPengRobinson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE4C256D592C00423D14 /* CPengRobinson.cpp */; };
-		357BEE54256D592C00423D14 /* CUserDefinedTCLib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE4D256D592C00423D14 /* CUserDefinedTCLib.cpp */; };
+		357BEE54256D592C00423D14 /* CSU2TCLib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE4D256D592C00423D14 /* CSU2TCLib.cpp */; };
 		357BEE55256D592C00423D14 /* CIdealGas.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE4E256D592C00423D14 /* CIdealGas.cpp */; };
 		357BEE56256D592C00423D14 /* CFluidModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE4F256D592C00423D14 /* CFluidModel.cpp */; };
 		357BEE57256D592C00423D14 /* CNEMOGas.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 357BEE50256D592C00423D14 /* CNEMOGas.cpp */; };
@@ -713,7 +713,7 @@
 		357BEE46256D589B00423D14 /* CNEMOEulerSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CNEMOEulerSolver.cpp; sourceTree = "<group>"; };
 		357BEE47256D589B00423D14 /* CNEMONSSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CNEMONSSolver.cpp; sourceTree = "<group>"; };
 		357BEE4C256D592C00423D14 /* CPengRobinson.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CPengRobinson.cpp; sourceTree = "<group>"; };
-		357BEE4D256D592C00423D14 /* CUserDefinedTCLib.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CUserDefinedTCLib.cpp; sourceTree = "<group>"; };
+		357BEE4D256D592C00423D14 /* CSU2TCLib.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSU2TCLib.cpp; sourceTree = "<group>"; };
 		357BEE4E256D592C00423D14 /* CIdealGas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CIdealGas.cpp; sourceTree = "<group>"; };
 		357BEE4F256D592C00423D14 /* CFluidModel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CFluidModel.cpp; sourceTree = "<group>"; };
 		357BEE50256D592C00423D14 /* CNEMOGas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CNEMOGas.cpp; sourceTree = "<group>"; };
@@ -776,7 +776,7 @@
 		357BEEA5256D706900423D14 /* CPolynomialConductivity.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CPolynomialConductivity.hpp; sourceTree = "<group>"; };
 		357BEEA6256D706900423D14 /* CVanDerWaalsGas.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CVanDerWaalsGas.hpp; sourceTree = "<group>"; };
 		357BEEA7256D706900423D14 /* CViscosityModel.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CViscosityModel.hpp; sourceTree = "<group>"; };
-		357BEEA8256D706900423D14 /* CUserDefinedTCLib.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CUserDefinedTCLib.hpp; sourceTree = "<group>"; };
+		357BEEA8256D706900423D14 /* CSU2TCLib.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CSU2TCLib.hpp; sourceTree = "<group>"; };
 		357BEEA9256D706900423D14 /* CPolynomialConductivityRANS.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CPolynomialConductivityRANS.hpp; sourceTree = "<group>"; };
 		357BEEAA256D706900423D14 /* CIdealGas.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CIdealGas.hpp; sourceTree = "<group>"; };
 		357BEEAB256D706900423D14 /* CConstantPrandtlRANS.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CConstantPrandtlRANS.hpp; sourceTree = "<group>"; };
@@ -1849,7 +1849,7 @@
 			isa = PBXGroup;
 			children = (
 				357BEE4C256D592C00423D14 /* CPengRobinson.cpp */,
-				357BEE4D256D592C00423D14 /* CUserDefinedTCLib.cpp */,
+				357BEE4D256D592C00423D14 /* CSU2TCLib.cpp */,
 				357BEE4E256D592C00423D14 /* CIdealGas.cpp */,
 				357BEE4F256D592C00423D14 /* CFluidModel.cpp */,
 				357BEE50256D592C00423D14 /* CNEMOGas.cpp */,
@@ -1970,7 +1970,7 @@
 				357BEEA5256D706900423D14 /* CPolynomialConductivity.hpp */,
 				357BEEA6256D706900423D14 /* CVanDerWaalsGas.hpp */,
 				357BEEA7256D706900423D14 /* CViscosityModel.hpp */,
-				357BEEA8256D706900423D14 /* CUserDefinedTCLib.hpp */,
+				357BEEA8256D706900423D14 /* CSU2TCLib.hpp */,
 				357BEEA9256D706900423D14 /* CPolynomialConductivityRANS.hpp */,
 				357BEEAA256D706900423D14 /* CIdealGas.hpp */,
 				357BEEAB256D706900423D14 /* CConstantPrandtlRANS.hpp */,
@@ -2223,7 +2223,7 @@
 				357BEED9256D711C00423D14 /* CTurboIteration.cpp in Sources */,
 				354902052537E0050095B597 /* CSU2ASCIIMeshReaderFVM.cpp in Sources */,
 				3549039D2537E0290095B597 /* CFlowIncOutput.cpp in Sources */,
-				357BEE54256D592C00423D14 /* CUserDefinedTCLib.cpp in Sources */,
+				357BEE54256D592C00423D14 /* CSU2TCLib.cpp in Sources */,
 				354902012537E0050095B597 /* CDualGrid.cpp in Sources */,
 				354903CF2537E0290095B597 /* centered.cpp in Sources */,
 				354903932537E0290095B597 /* CSU2FileWriter.cpp in Sources */,

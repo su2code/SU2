@@ -2,14 +2,14 @@
  * \file CCSVFileWriter.cpp
  * \brief CSV Writer output class
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,11 +71,11 @@ void CCSVFileWriter::Write_Data(){
    to the master node with collective calls. ---*/
 
   SU2_MPI::Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1,
-                     MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
 
   SU2_MPI::Gather(&Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nVertex,  1, MPI_UNSIGNED_LONG,
-                  MASTER_NODE, MPI_COMM_WORLD);
+                  MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
 
@@ -113,10 +113,10 @@ void CCSVFileWriter::Write_Data(){
   /*--- Collective comms of the solution data and global IDs. ---*/
 
   SU2_MPI::Gather(bufD_Send, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE,
-                  bufD_Recv, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                  bufD_Recv, (int)MaxLocalVertex_Surface*fieldNames.size(), MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
 
   SU2_MPI::Gather(bufL_Send, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG,
-                  bufL_Recv, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+                  bufL_Recv, (int)MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- The master rank alone writes the surface CSV file. ---*/
 

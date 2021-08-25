@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  */
 class CMultizoneDriver : public CDriver {
 protected:
@@ -129,6 +129,11 @@ public:
    */
   bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
+  /*!
+   * \brief Check if simulation converged and return appropriate boolean.
+   * \param[in] TimeIter - Current time iteration.
+   * \return Boolean that indicates to stop the iteration loop.
+   */
   bool Monitor(unsigned long TimeIter) override;
 
   /*!

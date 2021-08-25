@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #include "../../CNumericsSIMD.hpp"
 #include "../../util.hpp"
 #include "../variables.hpp"
+#include "../../../numerics/CNumerics.hpp"
 
 /*!
  * \brief Average gradients at i/j points.
@@ -65,14 +66,12 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
 }
 
 /*!
- * \brief Compute the stress tensor (using the total viscosity).
+ * \brief Compute the stress tensor.
  * \note Second viscosity term ignored.
  */
-template<size_t nVar, size_t nDim, class PrimitiveType>
-FORCEINLINE MatrixDbl<nDim> stressTensor(const PrimitiveType& V,
-                                         const MatrixDbl<nVar,nDim> grad) {
-  Double viscosity = V.laminarVisc() + V.eddyVisc();
-
+template<size_t nVar, size_t nDim>
+FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
+                                         const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -89,6 +88,33 @@ FORCEINLINE MatrixDbl<nDim> stressTensor(const PrimitiveType& V,
     tau(iDim,iDim) -= pTerm;
   }
   return tau;
+}
+
+/*!
+ * \brief Add perturbed stress tensor.
+ * \note Not inlined because it is not easy to vectorize properly, due to tred2 and tql2.
+ */
+template<class PrimitiveType, class MatrixType, size_t nDim, class... Ts>
+NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
+                                 const MatrixType& grad,
+                                 const Double& turb_ke,
+                                 MatrixDbl<nDim,nDim>& tau,
+                                 Ts... uq_args) {
+  /*--- Handle SIMD dimensions 1 by 1. ---*/
+  for (size_t k = 0; k < Double::Size; ++k) {
+    su2double velgrad[nDim][nDim];
+    for (size_t iVar = 0; iVar < nDim; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        velgrad[iVar][iDim] = grad(iVar+1,iDim)[k];
+
+    su2double rsm[3][3];
+    CNumerics::ComputePerturbedRSM(nDim, uq_args..., velgrad, V.density()[k],
+                                   V.eddyVisc()[k], turb_ke[k], rsm);
+
+    for (size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t jDim = 0; jDim < nDim; ++jDim)
+        tau(iDim,jDim)[k] -= V.density()[k] * rsm[iDim][jDim];
+  }
 }
 
 /*!
@@ -124,11 +150,40 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
 }
 
 /*!
+ * \brief Scale the stress tensor according to the target (from a
+ *        wall function) magnitute in the tangential direction.
+ */
+template<class Container, size_t nDim>
+FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
+                            const Container& tauWall,
+                            const VectorDbl<nDim>& unitNormal,
+                            MatrixDbl<nDim>& tau) {
+
+  Double tauWall_i = max(gatherVariables(iPoint, tauWall), 0.0);
+  Double tauWall_j = max(gatherVariables(jPoint, tauWall), 0.0);
+
+  Double isWall_i = tauWall_i > 0.0;
+  Double isWall_j = tauWall_j > 0.0;
+  /*--- Arithmetic xor. ---*/
+  Double isNormalEdge = isWall_i+isWall_j - 2*isWall_i*isWall_j;
+
+  /*--- Tau wall is 0 for edges that are not normal to walls. ---*/
+  Double tauWall_ij = (tauWall_i+tauWall_j) * isNormalEdge;
+
+  /*--- Scale is 1 for those edges, i.e. tau is not changed. ---*/
+  Double scale = tauWall_ij / norm(tangentProjection(tau,unitNormal)) + (1.0-isNormalEdge);
+
+  for (size_t iDim = 0; iDim < nDim; ++iDim)
+    for (size_t jDim = 0; jDim < nDim; ++jDim)
+      tau(iDim,jDim) *= scale;
+}
+
+/*!
  * \brief Jacobian of the stress tensor (compressible flow).
  */
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
-                                                      const VectorDbl<nDim> normal,
+                                                      const VectorDbl<nDim>& normal,
                                                       Double dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);

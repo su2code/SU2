@@ -3,14 +3,14 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.0.8 "Blackbird"
+#  \version 7.2.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -97,7 +97,8 @@ def main():
 
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
-    print('\n***************************** Initializing fluid solver *****************************')
+    print("\n")
+    print(" Initializing fluid solver ".center(80,"*"))
   try:
     FluidSolver = pysu2.CSinglezoneDriver(CFD_ConFile, 1, comm)
   except TypeError as exception:
@@ -113,11 +114,15 @@ def main():
 
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   if myid == rootProcess:
-    print('\n***************************** Initializing solid solver *****************************')
+    print("\n")
+    print(" Initializing solid solver ".center(80,"*"))
     if CSD_Solver == 'AEROELASTIC':
       from SU2_Nastran import pysu2_nastran
       SolidSolver = pysu2_nastran.Solver(CSD_ConFile,False)
     elif CSD_Solver == 'IMPOSED':
+      from SU2_Nastran import pysu2_nastran
+      SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
+    elif CSD_Solver == 'MAPPING':
       from SU2_Nastran import pysu2_nastran
       SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
@@ -130,19 +135,22 @@ def main():
 
   # --- Initialize and set the FSI interface (coupling environement) --- #
   if myid == rootProcess:
-    print('\n***************************** Initializing FSI interface *****************************')
+    print("\n")
+    print(" Initializing FSI interface ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
 
   if myid == rootProcess:
-    print('\n***************************** Connect fluid and solid solvers *****************************')
+    print("\n")
+    print(" Connect fluid and solid solvers ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface.connect(FSI_config, FluidSolver, SolidSolver)
 
   if myid == rootProcess:
-    print('\n***************************** Mapping fluid-solid interfaces *****************************')
+    print("\n")
+    print(" Mapping fluid-solid interfaces ".center(80,"*"))
   if have_MPI:
     comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)
@@ -150,31 +158,44 @@ def main():
   if have_MPI:
     comm.barrier()
 
-  # --- Launch a steady or unsteady FSI computation --- #
-  if FSI_config['TIME_MARCHING'] == "YES":
-    try:
-      FSIInterface.UnsteadyFSI(FSI_config, FluidSolver, SolidSolver)
-    except NameError as exception:
-      if myid == rootProcess:
-        print('An NameError occured in FSIInterface.UnsteadyFSI : ',exception)
-    except TypeError as exception:
-      if myid == rootProcess:
-        print('A TypeError occured in FSIInterface.UnsteadyFSI : ',exception)
-    except KeyboardInterrupt as exception :
-      if myid == rootProcess:
-        print('A KeyboardInterrupt occured in FSIInterface.UnsteadyFSI : ',exception)
+  if CSD_Solver != "MAPPING":
+    # --- Launch a steady or unsteady FSI computation --- #
+    if FSI_config['TIME_MARCHING'] == "YES":
+      try:
+        FSIInterface.UnsteadyFSI(FSI_config, FluidSolver, SolidSolver)
+      except NameError as exception:
+        if myid == rootProcess:
+          print('An NameError occured in FSIInterface.UnsteadyFSI : ',exception)
+      except TypeError as exception:
+        if myid == rootProcess:
+          print('A TypeError occured in FSIInterface.UnsteadyFSI : ',exception)
+      except KeyboardInterrupt as exception :
+        if myid == rootProcess:
+          print('A KeyboardInterrupt occured in FSIInterface.UnsteadyFSI : ',exception)
+    else:
+      try:
+        FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver)
+      except NameError as exception:
+        if myid == rootProcess:
+          print('An NameError occured in FSIInterface.SteadyFSI : ',exception)
+      except TypeError as exception:
+        if myid == rootProcess:
+          print('A TypeError occured in FSIInterface.SteadyFSI : ',exception)
+      except KeyboardInterrupt as exception :
+        if myid == rootProcess:
+          print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
   else:
     try:
-      FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver)
+      FSIInterface.MapModes(FSI_config, FluidSolver, SolidSolver)
     except NameError as exception:
       if myid == rootProcess:
-        print('An NameError occured in FSIInterface.SteadyFSI : ',exception)
+        print('An NameError occured in FSIInterface.MapModes : ',exception)
     except TypeError as exception:
       if myid == rootProcess:
-        print('A TypeError occured in FSIInterface.SteadyFSI : ',exception)
+        print('A TypeError occured in FSIInterface.MapModes : ',exception)
     except KeyboardInterrupt as exception :
       if myid == rootProcess:
-        print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
+        print('A KeyboardInterrupt occured in FSIInterface.MapModes : ',exception)
 
   if have_MPI:
     comm.barrier()

@@ -2,7 +2,7 @@
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -66,6 +66,7 @@ enum class SUB_SOLVER_TYPE {
 
 enum class INTEGRATION_TYPE{
   MULTIGRID,
+  NEWTON,
   SINGLEGRID,
   DEFAULT,
   FEM_DG,
@@ -83,10 +84,10 @@ class CGeometry;
 class CConfig;
 
 class CSolverFactory {
-  
+
 private:
 
-  static map<const CSolver*, SolverMetaData> allocatedSolvers;
+  static std::map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!
    * \brief Create a turbulent solver
@@ -99,10 +100,10 @@ private:
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
-  
+
   /*!
-   * \brief Create a heat solver 
-   * \param[in] solver        - The solver container 
+   * \brief Create a heat solver
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
@@ -110,10 +111,10 @@ private:
    * \return                  - A pointer to the allocated heat solver
    */
   static CSolver* CreateHeatSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
-  
+
   /*!
-   * \brief Create a mesh solver 
-   * \param[in] solver        - The solver container 
+   * \brief Create a mesh solver
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
@@ -121,9 +122,9 @@ private:
    * \return                  - A pointer to the allocated mesh solver
    */
   static CSolver* CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint);
-  
+
   /*!
-   * \brief Create a DG solver 
+   * \brief Create a DG solver
    * \param[in] kindTurbModel - Kind of DG solver
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
@@ -131,9 +132,9 @@ private:
    * \return                  - A pointer to the allocated DG solver
    */
   static CSolver* CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
+
   /*!
-   * \brief Create a flow solver 
+   * \brief Create a flow solver
    * \param[in] kindFlowSolver - Kind of flow solver
    * \param[in] solver         - The solver container
    * \param[in] geometry       - The geometry definition
@@ -143,28 +144,17 @@ private:
    */
   static CSolver* CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
 
-    /*!
-   * \brief Create a NEMO flow solver 
-   * \param[in] kindNEMOSolver - Kind of flow solver
-   * \param[in] solver         - The solver container
-   * \param[in] geometry       - The geometry definition
-   * \param[in] config         - The configuration
-   * \param[in] iMGLevel       - The multigrid level
-   * \return                   - A pointer to the allocated flow solver
-   */
-  static CSolver* CreateNEMOSolver(SUB_SOLVER_TYPE kindNEMOSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
   /*!
-   * \brief Generic routine to create a solver 
+   * \brief Generic routine to create a solver
    * \param[in] kindSolver    - Kind of solver
-   * \param[in] solver        - The solver container 
+   * \param[in] solver        - The solver container
    * \param[in] geometry      - The geometry definition
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \return                  - A pointer to the allocated solver
    */
   static CSolver* CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
-  
+
 public:
 
   /*!
@@ -173,7 +163,7 @@ public:
   CSolverFactory() = delete;
 
   /*!
-   * \brief Create the solver container by allocating the primary solver 
+   * \brief Create the solver container by allocating the primary solver
    * and secondary solvers like heat solver, turbulent solver etc
    * \param[in] kindSolver    - The kind of primary solver
    * \param[in] config        - The configuration

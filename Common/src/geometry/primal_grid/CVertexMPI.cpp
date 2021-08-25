@@ -2,14 +2,14 @@
  * \file CVertexMPI.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,12 +38,8 @@ unsigned short CVertexMPI::VTK_Type = 1;
 unsigned short CVertexMPI::maxNodesFace = 0;
 
 CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrimalGrid() {
-  unsigned short iDim;
 
-  /*--- Allocate CG coordinates ---*/
   nDim = val_nDim;
-  Coord_CG = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];
@@ -54,13 +50,6 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 
 }
 
-CVertexMPI::~CVertexMPI() {
-  unsigned short iFaces;
-
-    for (iFaces = 0; iFaces < nFaces; iFaces++)
-      if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
-    delete[] Coord_FaceElems_CG;
-
-}
+CVertexMPI::~CVertexMPI() {}
 
 void CVertexMPI::Change_Orientation(void) { }

@@ -2,14 +2,14 @@
  * \file CNumerics_tests.cpp
  * \brief Unit tests for the numerics classes.
  * \author C. Pederson
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,7 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   
   /*--- Setup ---*/
 
-  const unsigned short nDim = 3;
-
-  CConfig* config = new CConfig(config_options, SU2_CFD, false);
+  CConfig* config = new CConfig(config_options, SU2_COMPONENT::SU2_CFD, false);
 
   const su2double dissipation_i = 0;
   const su2double dissipation_j = 0;

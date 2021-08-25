@@ -3,14 +3,14 @@
  * \brief This file contains the routines for setting the tangent matrix and
  *        residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    const CConfig *config) : CFEAElasticity(val_nDim, val_nVar, config) {
 
-  nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
+  nearly_incompressible = (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP);
 
   unsigned short iVar;
 
@@ -240,8 +240,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   if (maxwell_stress) {
     AD::SetPreaccIn(EFieldMod_Ref);
     AD::SetPreaccIn(ke_DE);
@@ -483,8 +481,6 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   if (maxwell_stress) {
     AD::SetPreaccIn(EFieldMod_Ref);
     AD::SetPreaccIn(ke_DE);
@@ -745,16 +741,33 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
 
 }
 
-void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
+su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
   unsigned short iDim, iNode, nNode;
 
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
+
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
+
+  /*--- Register pre-accumulation inputs ---*/
+  /*--- WARNING: Outputs must be registered outside of this method, this allows more
+   * flexibility in selecting what is captured by AD, capturing the entire stress
+   * tensor would use more memory than that used by the stress residuals. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  if (maxwell_stress) {
+    AD::SetPreaccIn(EFieldMod_Ref);
+    AD::SetPreaccIn(ke_DE);
+  }
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
 
   su2double Weight, Jac_x;
 
@@ -837,6 +850,15 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, co
     Compute_Stress_Tensor(element, config);
     if (maxwell_stress) Add_MaxwellStress(element, config);
 
+    avgStress[0] += Stress_Tensor[0][0] / nGauss;
+    avgStress[1] += Stress_Tensor[1][1] / nGauss;
+    avgStress[2] += Stress_Tensor[0][1] / nGauss;
+    if (nDim == 3) {
+      avgStress[3] += Stress_Tensor[2][2] / nGauss;
+      avgStress[4] += Stress_Tensor[0][2] / nGauss;
+      avgStress[5] += Stress_Tensor[1][2] / nGauss;
+    }
+
     for (iNode = 0; iNode < nNode; iNode++) {
 
       /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
@@ -868,4 +890,12 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, co
 
   }
 
+  auto elStress = VonMisesStress(nDim, avgStress);
+
+  /*--- We only differentiate w.r.t. an avg VM stress for the element as
+   * considering all nodal stresses would use too much memory. ---*/
+  AD::SetPreaccOut(elStress);
+  AD::EndPreacc();
+
+  return elStress;
 }

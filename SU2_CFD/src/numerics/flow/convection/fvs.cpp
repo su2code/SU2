@@ -2,14 +2,14 @@
  * \file fvs.cpp
  * \brief Implementations of Flux-Vector-Splitting schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.2.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,6 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Allocate arrays ---*/
-  Diff_U   = new su2double [nVar];
   Fc_i     = new su2double [nVar];
   Fc_j     = new su2double [nVar];
   Lambda_i = new su2double [nVar];
@@ -47,10 +46,8 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
   u_j      = new su2double [nDim];
   ust_i    = new su2double [nDim];
   ust_j    = new su2double [nDim];
-  Vst_i    = new su2double [nPrimVar];
-  Vst_j    = new su2double [nPrimVar];
-  Ust_i    = new su2double [nVar];
-  Ust_j    = new su2double [nVar];
+  Vst_i    = new su2double [nDim+5];
+  Vst_j    = new su2double [nDim+5];
 
   Velst_i    = new su2double [nDim];
   Velst_j    = new su2double [nDim];
@@ -70,7 +67,6 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 
 CUpwMSW_Flow::~CUpwMSW_Flow(void) {
 
-  delete [] Diff_U;
   delete [] Fc_i;
   delete [] Fc_j;
   delete [] Lambda_i;
@@ -80,9 +76,7 @@ CUpwMSW_Flow::~CUpwMSW_Flow(void) {
   delete [] u_j;
   delete [] ust_i;
   delete [] ust_j;
-  delete [] Ust_i;
   delete [] Vst_i;
-  delete [] Ust_j;
   delete [] Vst_j;
   delete [] Velst_i;
   delete [] Velst_j;
@@ -105,7 +99,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   unsigned short iDim, iVar, jVar, kVar;
-  su2double P_i, P_j;
+  su2double rho_i, rho_j, P_i, P_j, H_i, H_j;
   su2double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
   su2double sqvel_i, sqvel_j;
   su2double alpha, w, dp, onemw;
@@ -138,14 +132,28 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Load variables from nodes i & j ---*/
 
-  rhos_i = V_i[0];
-  rhos_j = V_j[0];
   for (iDim = 0; iDim < nDim; iDim++) {
     u_i[iDim] = V_i[iDim+1];
     u_j[iDim] = V_j[iDim+1];
   }
   P_i = V_i[nDim+1];
   P_j = V_j[nDim+1];
+  rho_i = V_i[nDim+2];
+  rho_j = V_j[nDim+2];
+  H_i = V_i[nDim+3];
+  H_j = V_j[nDim+3];
+
+  /*--- Recompute conservatives ---*/
+
+  su2double U_i[5] = {0.0}, U_j[5] = {0.0};
+
+  U_i[0] = rho_i; U_j[0] = rho_j;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    U_i[iDim+1] = rho_i*u_i[iDim];
+    U_j[iDim+1] = rho_j*u_j[iDim];
+  }
+  U_i[nDim+1] = rho_i*H_i - P_i;
+  U_j[nDim+1] = rho_j*H_j - P_j;
 
   /*--- Calculate supporting quantities ---*/
 
@@ -166,10 +174,6 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Calculate weighted state vector (*) for i & j ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Ust_i[iVar] = onemw*U_i[iVar] + w*U_j[iVar];
-    Ust_j[iVar] = onemw*U_j[iVar] + w*U_i[iVar];
-  }
   for (iVar = 0; iVar < nDim+5; iVar++) {
     Vst_i[iVar] = onemw*V_i[iVar] + w*V_j[iVar];
     Vst_j[iVar] = onemw*V_j[iVar] + w*V_i[iVar];
